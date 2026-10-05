@@ -65,6 +65,31 @@ function Assert-NoLinkedOutput([string]$Path) {
     }
 }
 
+function Resolve-ManifestPath([string]$Path, $Visited = $null) {
+    $full = [IO.Path]::GetFullPath($Path)
+    if ($null -eq $Visited) { $Visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase) }
+    if (-not $Visited.Add($full)) { throw 'Input manifest link resolution contains a cycle.' }
+    try {
+        $root = [IO.Path]::GetPathRoot($full)
+        $current = $root
+        foreach ($part in $full.Substring($root.Length).Split([char[]]@('\', '/'), [StringSplitOptions]::RemoveEmptyEntries)) {
+            $item = Get-Item -LiteralPath ([IO.Path]::Combine($current, $part)) -Force
+            if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                $targets = @($item.Target)
+                if ($targets.Count -ne 1 -or [string]::IsNullOrWhiteSpace([string]$targets[0])) { throw 'Input manifest link target cannot be resolved.' }
+                $target = [string]$targets[0]
+                if (-not [IO.Path]::IsPathRooted($target)) { $target = [IO.Path]::Combine($current, $target) }
+                $current = Resolve-ManifestPath $target $Visited
+            } else {
+                $current = $item.FullName
+            }
+        }
+        return $current
+    } finally {
+        $Visited.Remove($full) | Out-Null
+    }
+}
+
 function Read-Json([string]$Path) {
     return Get-Content -LiteralPath $Path -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
 }
@@ -201,7 +226,16 @@ $sourcePrefix = $source.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
 if ($output.Equals($source, [StringComparison]::OrdinalIgnoreCase) -or $output.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'OutputPath must be outside the source tree.' }
 Assert-NoLinkedOutput $output
 Assert-NoLinkedOutput ($output + '.local.json')
-$manifest = Read-Json $InputManifestPath
+$inputManifest = [IO.Path]::GetFullPath($InputManifestPath)
+if ($Mode -ne 'Verify') {
+    $inputManifest = Resolve-ManifestPath $inputManifest
+    foreach ($collectorOutput in @($output, ($output + '.local.json'))) {
+        if ($collectorOutput.Equals($inputManifest, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Collector outputs must be distinct from the input manifest.'
+        }
+    }
+}
+$manifest = Read-Json $inputManifest
 if ($manifest.schema_version -ne 1 -or [string]::IsNullOrWhiteSpace([string]$manifest.id) -or -not $manifest.ContainsKey('files')) { throw 'Input manifest requires schema_version 1, id and explicit files array.' }
 $entries = @($manifest.files)
 $paths = [string[]]@($entries | ForEach-Object { [string]$_.path })
@@ -337,7 +371,7 @@ if ($Mode -eq 'Materialize') {
 Write-Json $output $record
 Invoke-Contracts @('validate', $output)
 # Private local locators are deliberately separate from the portable JSON payload.
-$local = [ordered]@{ source_root = $source; input_manifest_path = [IO.Path]::GetFullPath($InputManifestPath) }
+$local = [ordered]@{ source_root = $source; input_manifest_path = $inputManifest }
 if ($Mode -eq 'Materialize') { $local.materialized_root = $target }
 Write-Json ($output + '.local.json') $local
 Write-Output "$($record.record_type) written; only explicit declared files were hashed."

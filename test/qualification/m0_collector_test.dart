@@ -217,6 +217,7 @@ void main() {
       String output, {
       String? lock,
       String? target,
+      String? inputManifest,
       bool allowMaterialization = false,
     }) async {
       await File(manifestPath).writeAsString(jsonEncode(manifest));
@@ -232,7 +233,7 @@ void main() {
           '-OutputPath',
           output,
           '-InputManifestPath',
-          manifestPath,
+          inputManifest ?? manifestPath,
           '-Mode',
           mode,
           if (lock != null) ...['-LockPath', lock],
@@ -386,6 +387,123 @@ void main() {
         'private_reference clearance is required',
       );
       await _noOutput(materializedLock, target: target);
+    });
+
+    test('record and sidecar manifest aliases refuse before replacing the recipe', () async {
+      for (final mode in ['Intake', 'Lock', 'Materialize']) {
+        for (final suffix in ['', '.local.json']) {
+          for (final alias in ['exact', 'case', 'dot']) {
+            final path = output(
+              'manifest-$mode-${suffix.isEmpty ? 'record' : 'sidecar'}-$alias',
+            );
+            await File(path).parent.create();
+            manifestPath = '$path$suffix';
+            final destination = switch (alias) {
+              'case' => path.toUpperCase(),
+              'dot' => '${File(path).parent.path}/unused/../record.json',
+              _ => path,
+            };
+            final target =
+                '${temporary.path}/not-created-manifest-$mode-$alias-${suffix.length}';
+            _refuses(
+              await collect(
+                mode,
+                destination,
+                target: mode == 'Materialize' ? target : null,
+                allowMaterialization: mode == 'Materialize',
+              ),
+              'Collector outputs must be distinct from the input manifest',
+            );
+            expect(
+              await File(manifestPath).readAsString(),
+              jsonEncode(manifest),
+            );
+            final other = suffix.isEmpty ? '$path.local.json' : path;
+            expect(await File(other).exists(), isFalse);
+            expect(await Directory(target).exists(), isFalse);
+            expect(
+              await File('${source.path}/$_payloadPath').readAsBytes(),
+              _payloadBytes,
+            );
+          }
+        }
+      }
+    });
+
+    test(
+      'Verify may name the manifest as unused output without modifying it',
+      () async {
+        final lockPath = output('verify-manifest-lock');
+        _succeeds(await collect('Lock', lockPath));
+        final original = await File(manifestPath).readAsBytes();
+        _succeeds(await collect('Verify', manifestPath, lock: lockPath));
+        expect(await File(manifestPath).readAsBytes(), original);
+        expect(await File('$manifestPath.local.json').exists(), isFalse);
+      },
+    );
+
+    test('distinct hardlinked manifest entries survive record and sidecar replacement', () async {
+      final recipe = jsonEncode(manifest);
+      await File(manifestPath).writeAsString(recipe);
+      for (final suffix in ['', '.local.json']) {
+        final path = output('manifest-hardlink-${suffix.length}');
+        await File(path).parent.create();
+        _succeeds(
+          await _run(
+            'powershell.exe',
+            [
+              '-NoProfile',
+              '-Command',
+              r'$ErrorActionPreference = "Stop"; New-Item -ItemType HardLink -Path $env:M0_LINK_PATH -Target $env:M0_LINK_TARGET | Out-Null',
+            ],
+            workingDirectory: temporary.path,
+            environment: {
+              ...environment,
+              'M0_LINK_PATH': '$path$suffix',
+              'M0_LINK_TARGET': manifestPath,
+            },
+          ),
+        );
+        _succeeds(await collect('Lock', path));
+        expect(await File(manifestPath).readAsString(), recipe);
+        final record = await _readRecord(path);
+        validateRecord(record);
+        await verifySourceIntegrity(record, source.path);
+        expect(
+          (await _readRecord('$path.local.json'))['input_manifest_path'],
+          File(manifestPath).absolute.path.replaceAll('/', '\\'),
+        );
+      }
+    });
+
+    test('linked manifest aliases to record or sidecar refuse without destroying the recipe', () async {
+      for (final suffix in ['', '.local.json']) {
+        for (final kind in ['file', 'directory']) {
+          final path = output('manifest-link-$kind-${suffix.length}');
+          await File(path).parent.create();
+          manifestPath = '$path$suffix';
+          final linked =
+              '${temporary.path}/manifest-alias-$kind-${suffix.length}';
+          late String alias;
+          if (kind == 'file') {
+            await File(manifestPath).writeAsString(jsonEncode(manifest));
+            final link = Link(linked);
+            await link.create(manifestPath);
+            addTearDown(() => link.delete());
+            alias = linked;
+          } else {
+            await junction(linked, File(path).parent.path);
+            alias = '$linked/record.json$suffix';
+          }
+          _refuses(
+            await collect('Lock', path, inputManifest: alias),
+            'Collector outputs must be distinct from the input manifest',
+          );
+          expect(await File(manifestPath).readAsString(), jsonEncode(manifest));
+          final other = suffix.isEmpty ? '$path.local.json' : path;
+          expect(await File(other).exists(), isFalse);
+        }
+      }
     });
 
     test('linked output ancestry refuses before source overwrite or directory creation', () async {
