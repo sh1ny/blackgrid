@@ -25,11 +25,77 @@
   },
   "review_evidence": [
     {
+      "id": "m0-user-modified-fork-independent-recreation-2026-10-06",
+      "kind": "user_attestation",
+      "reviewed_at": "2026-10-06",
+      "declaration_basis": "User's 2026-10-06 clarification: TarkovTracker is their modified fork of another person's original project under their account; ownership concerns their contributions, not all upstream contents. The user intentionally detached it from the upstream fork relationship to prevent agents opening PRs upstream; do not restore that relationship or target upstream PRs. Local configured origin is git@github.com:sh1ny/TarkovTracker.git. Separately inspected GitHub repository metadata is recorded in m0-tarkovtracker-repository-metadata-2026-10-06.",
+      "scope": "Independently recreate useful behavior in Dart/Flutter with no copied reference code or shipped old runtime. Independent M1 authoring and independently authored fixtures may start now without full M0 rights/replay/qualification closure. Blackgrid owns its Dart scanner pipeline, not a RatScanner/RatEye/RatStash integration or C# FFI bridge; the existing native OpenCV/Tesseract binding plan remains distinct. The user specifies tarkov.dev map downloads for local caching/rendering and license notices when the repository becomes public; actual artwork and redistributed inputs retain their applicable terms. Rights checks apply to actual selected third-party inputs and uses. Ownership-only questions are closed; this declaration is not blanket artifact clearance or a designated rights-review decision. Preserve reference-use, real-input, game-testing, privacy/export, baseline/parity and release gates. User intends Blackgrid to be open source when functional; license unselected, current private-repository visibility unchanged."
+    },
+    {
+      "id": "m0-tarkovtracker-repository-metadata-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://api.github.com/repos/sh1ny/TarkovTracker",
+      "declaration_basis": "Fenced KintsugiBot GitHub metadata read 2026-10-06 after user-granted access: full_name sh1ny/TarkovTracker, owner sh1ny, private true, default_branch main, fork false, no parent/source metadata returned. This successful read supersedes the earlier unavailable lookup.",
+      "scope": "Repository identity and platform metadata only, not file-by-file authorship, upstream rights clearance or a designated rights-review decision. The user explains fork false as intentional upstream detachment, not an absence of modified-fork history. Work targets the user's repositories, never the historical upstream. No visibility, fork relationship or license change made."
+    },
+    {
       "id": "m0-u2-original-authorship-request",
       "kind": "self_authorship",
       "scope": "New developer metadata/JSON authored for this user M0 work request; no third-party rights approval.",
       "reviewer": "m0-implementing-author",
       "reviewed_at": "2026-10-05"
+    },
+    {
+      "id": "m0-u2-rat-eye-primary-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://github.com/tarkovtracker-org/RatEye/blob/24f8806e866add0750c8d24479f94639cef2ccae/LICENSE",
+      "revision": "24f8806e866add0750c8d24479f94639cef2ccae",
+      "text_sha256": "690f84f39ff2c525338c19107ab39644e9a4f128d8a306e5d291dbbfb9f11c1d",
+      "declaration_basis": "2026-10-06 local exact LICENSE hash matches intake; pinned upstream LICENSE freshly read with matching custom content, not independently raw-byte hashed. This hash identifies local intake text only.",
+      "scope": "Factual terms evidence for RatEye: custom commercial-distribution prohibition including larger packages, terms-copy and prominent modification notices. Not standard Elastic-2.0 and not a designated-reviewer decision."
+    },
+    {
+      "id": "m0-u2-ratstash-catalog-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://api.nuget.org/v3/catalog0/data/2024.01.26.21.40.37/ratstash.6.0.0.json",
+      "version": "6.0.0",
+      "sha512": "IzNwxKRtIOy+pDE8ps0NeJ5KXxvih9Bg4EiJsl1TQQgdj6vc2wwtJVcJ39qF83A5CAhgj4HEfndrIIkQP0lsBw==",
+      "size_bytes": 88446,
+      "declaration_basis": "Primary exact-version catalog read 2026-10-06: author Blightbuster, project ratscanner.com, empty repository and no licenseExpression/licenseUrl. No package archive inspected.",
+      "scope": "Terms unresolved. Catalog package SHA-512 differs from recorded restore SHA-512; exact restored package identity and hash reconciliation remain missing, not explained away by presumed hash roles."
+    },
+    {
+      "id": "m0-u2-tessdata-primary-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://github.com/tesseract-ocr/tessdata_fast/blob/4.1.0/LICENSE",
+      "version": "4.1.0",
+      "expression": "Apache-2.0",
+      "declaration_basis": "Primary tagged repository LICENSE read 2026-10-06. Exact tag commit, license raw-byte hash and upstream model-to-local-byte match not independently established.",
+      "scope": "Repository license declaration only; redistribution copy/notices/modification obligations and trademark limits require scoped review. Does not clear the local traineddata or native binaries."
+    },
+    {
+      "id": "m0-u2-map-repository-primary-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://github.com/the-hideout/tarkov-dev-svg-maps/blob/5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178/LICENSE.md",
+      "revision": "5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178",
+      "expression": "CC-BY-NC-SA-4.0",
+      "declaration_basis": "Primary repository LICENSE.md read 2026-10-06; this inspected license revision is not an upstream byte identity for any local map or resource.",
+      "scope": "Source-repository declaration only. Per-file authorship, revisions, modifications, exclusions, nested artwork and derivation/NC/SA/attribution applicability remain unresolved."
+    },
+    {
+      "id": "m0-u2-icebreaker-page-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://reemr.se/icebreaker/",
+      "version": "1.7",
+      "declaration_basis": "Primary creator page read 2026-10-06 identifies re3mr and map/Photoshop copyright. Copyright paragraph links BY-NC-SA 2.0 while separate COPYRIGHT/footer identify BY-NC-SA 4.0.",
+      "scope": "Current-page version and conflicting terms links are not bound to the 16 local floor hashes or wrapper. Preserve prior 4.0 declaration as a lead, pending exact acquisition-version, authority and derivation reconciliation."
+    },
+    {
+      "id": "m0-user-private-design-reference-attestation2026-10-05",
+      "kind": "user_attestation",
+      "reviewed_at": "2026-10-05T21:22:08.941Z",
+      "declaration_basis": "Prior user selection verified this run: Include — I own them or have permission.",
+      "scope": "Include docs/vision/mapscreen.png and docs/vision/scanscreen.png in this private repository as design references; this does not establish permission for later product redistribution. Historical narrow authorization, not a designated rights-review decision, qualification fixture clearance, private replay, report export or release approval."
     }
   ],
   "artifacts": [
@@ -453,8 +519,8 @@
       "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2",
       "declared_terms": {
         "expression": "Apache-2.0",
-        "text_locator": "https://github.com/tesseract-ocr/tessdata_fast/tree/4.1.0",
-        "declaration_basis": "Reference notice declaration; model exact bytes separately hashed; not reviewed clearance."
+        "text_locator": "https://github.com/tesseract-ocr/tessdata_fast/blob/4.1.0/LICENSE",
+        "declaration_basis": "Tagged primary Apache-2.0 LICENSE read 2026-10-06; see m0-u2-tessdata-primary-2026-10-06. Model local intake bytes separately hashed; exact upstream commit/model-byte lineage and use review remain unresolved."
       },
       "depends_on": [],
       "derived_from": [],
@@ -1607,7 +1673,7 @@
         "expression": "LicenseRef-RatEye-Custom-Commercial-Restriction",
         "text_locator": "External/RatEye/LICENSE",
         "text_sha256": "690f84f39ff2c525338c19107ab39644e9a4f128d8a306e5d291dbbfb9f11c1d",
-        "declaration_basis": "Pinned custom ELv2-based text, not standard Elastic-2.0. Resource third-party authorship still unresolved."
+        "declaration_basis": "Pinned custom ELv2-based text, not standard Elastic-2.0; see m0-u2-rat-eye-primary-2026-10-06 for local hash match and freshly read pinned upstream text. Resource third-party authorship and scoped review still unresolved."
       },
       "depends_on": [],
       "derived_from": [],
@@ -37313,7 +37379,7 @@
         "version": "6.0.0",
         "locator": "reference/obj/project.assets.json",
         "sha512": "Enh3XcCgfFrGp1S7t46Xvi1+bEioM1UAPp3ymD8NxSzzpHd8ZfvaB34XTSYUlOKZw2Xv+pDT7M06+IZATgH++A==",
-        "declaration_basis": "Resolved restore metadata, not package byte SHA-256 or final reproducible closure; absolute package/cache roots excluded."
+        "declaration_basis": "Resolved restore metadata retained unchanged. Primary RatStash 6.0.0 catalog read 2026-10-06 has different package SHA-512 and no licenseExpression/licenseUrl; see m0-u2-ratstash-catalog-2026-10-06. Package identity/hash reconciliation and exact terms remain missing; no archive inspected."
       },
       "sha256": null,
       "declared_terms": {
@@ -40423,7 +40489,8 @@
       "purpose": "Existing asset proposed for reuse; metadata and hash only, no image captured or copied.",
       "source": {
         "path": "docs/vision/mapscreen.png",
-        "revision": "current-working-tree"
+        "revision": "current-working-tree",
+        "declaration_basis": "See m0-user-private-design-reference-attestation2026-10-05: prior user authorized this PNG in this private repository as a design reference only. No qualification-fixture, report-export, public-repository or product-redistribution clearance."
       },
       "sha256": "db20b0621f261dc6d774d7bc234caabe0dd881018f03cdffb3ef181857e3dfa0",
       "declared_terms": {
@@ -40500,7 +40567,8 @@
       "purpose": "Existing asset proposed for reuse; metadata and hash only, no image captured or copied.",
       "source": {
         "path": "docs/vision/scanscreen.png",
-        "revision": "current-working-tree"
+        "revision": "current-working-tree",
+        "declaration_basis": "See m0-user-private-design-reference-attestation2026-10-05: prior user authorized this PNG in this private repository as a design reference only. No qualification-fixture, report-export, public-repository or product-redistribution clearance."
       },
       "sha256": "00ec23550978bd5dc6a87d031834a3041dcb53172ed241993bca139d23f71b6b",
       "declared_terms": {

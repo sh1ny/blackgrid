@@ -32,7 +32,7 @@ Qualify M0 only: establish reproducible reference evidence, independent fixtures
 
 The reference contains useful behavior, weak historical fixture oracles, and unmeasured end-to-end paths. Its current working files also differ materially from its recorded commit. Copying its outputs or credits would make later parity and distribution claims unreliable.
 
-**Product Contract preservation:** `STRATEGY.md` and `docs/IMPLEMENTATION_STRATEGY.md` remain unchanged. Their later milestones remain obligations, not work silently removed by selecting M0.
+**Product Contract preservation:** The product boundaries and later milestone obligations in `STRATEGY.md` and `docs/IMPLEMENTATION_STRATEGY.md` are preserved. The 2026-10-06 clarification below allows independent M1 authoring alongside incomplete M0; it does not remove qualification work or add product implementation to this documentation unit.
 
 ### Key Decisions
 
@@ -358,6 +358,55 @@ For an unresolved future release asset, record owner, missing evidence, affected
 - Build/native/model availability and exact resolved oracle package versions are checked during execution and bound by U1/U4. Do not assert the saved-image benchmark already runs successfully.
 - Quote timestamp quality is a required baseline finding. Missing/future/unsupported source age remains an expected uncertainty case; a fresh download envelope must not hide an old quote.
 - Physical-input video and software-hook timestamps have different origins. Preserve separate distributions unless calibrated; uncertainty can prevent a future near-threshold pass claim even when a baseline is recorded.
+
+---
+
+## Run Addendum: Bounded U2 Evidence Package (2026-10-06)
+
+This run prepares the U2 provenance and permission evidence needed for a designated rights reviewer and later U3 acquisition owners to act.
+It resumes this plan in place; the Product Contract boundaries, U1-U6 obligations and full M0 Definition of Done remain unchanged. The governing strategies now record the user's 2026-10-06 independent-authoring direction.
+Documentation and provenance updates do not implement product behavior or complete M0 qualification.
+
+**Latest user clarification (2026-10-06):** TarkovTracker is the user's modified fork of another person's original project, maintained under their account; the user owns their contributions, not all upstream or third-party contents. Blackgrid is independently recreated in Dart/Flutter without copied reference code or a shipped old runtime. Ownership-only questions are closed on this declaration; do not ask the user to prove ownership of every host file. Independent M1 authoring and independent fixtures may start now without full M0 rights/replay/qualification closure. Scope remaining rights checks to actual selected inputs and uses. Reference execution, real-input acquisition, privacy/export, native baseline, full parity and release gates remain intact and missing evidence remains unverified. The user's intent is open source when functional, with no selected license or authorization to change current private-repository visibility.
+
+### Run Decisions
+
+- KTD9. **Execute only the bounded U2 evidence package** (session-settled: user-directed — chosen over executing full M0 this run: permission evidence can be prepared without acquiring or replaying restricted material). Update the existing ledger and protocol, and author `docs/qualification/m0/u2-rights-decision-packet.md`; do not rebuild the tooling described by U1/U2/U6. Governs this run's application of R7, R8, R13 and U2.
+- KTD10. **Keep missing permissions unresolved** (session-settled: user-directed — chosen over inferring clearance: declarations, attribution and public availability do not establish each intended use). Group questions for the designated reviewer under KTD4 without issuing grants, sending permission requests, or expanding the version-1 schema.
+- KTD11. **Prepare U3 instructions without executing U3-U5** (session-settled: user-directed — chosen over qualification execution and feature work: this run authorizes evidence documents only). No Blackgrid, reference or game launches, game process/memory inspection, capture, private materialization, native replay, acquisition, labeling execution or measurements are included. Apply R2, R3, R5, R8 and R13.
+- KTD12. **Publish permitted documentation through one open PR** (session-settled: user-directed — chosen over direct-main delivery: the user authorized a new feature branch and review without merge). Commit only permitted documentation/provenance records, leave the PR open, and do not merge it. Publication remains subject to R7/R8 rather than treating branch or PR authority as restricted-material clearance.
+
+### Evidence Baseline and Work Sequence
+
+1. **Inspect the current dossier and contracts.** Read `docs/qualification/m0/reports/2026-10-05-m0-intake/README.md`, its `qualification.json`, the relevant sections of `docs/qualification/m0/protocol.md`, `docs/qualification/m0/contracts.md` and `docs/qualification/m0/provenance.json`. The inspected dossier is incomplete, with zero actual attempts and zero real scanner masters; missing observations are not user-approved skips. The existing intake documents 405 exact metadata rows, incomplete closure and no final freeze. Preserve the historical dossier unless new permitted evidence actually warrants a separately identified report; this run does not require report regeneration.
+2. **Update primary-source evidence, not rights conclusions.** Inspect only the source files needed to substantiate ledger declarations: reference `THIRD-PARTY-NOTICES.txt`, `External/RatEye/LICENSE`, `Assets/Scanner/rat-eye-integrity.json`, `tools/README.md` and directly linked artifact/configuration evidence. Record portable source-relative locators, inspected revision/hash, relevant terms and missing evidence. Distinguish native integrity declarations from observed staged bytes. Retain RatEye's custom LicenseRef and keep RatStash, map/resource/icon/font/model/native and other unresolved uses unresolved without genuine reviewer evidence. Never copy restricted source, capture, binary/model/artwork or confidential-grant bytes into the package.
+3. **Assemble the grouped rights decision packet.** In `docs/qualification/m0/u2-rights-decision-packet.md`, group exact ledger IDs into reference source/managed/native/model inputs, maps and nested resources, templates/icons/fonts/mockups, and prospective real fixtures. Each group names its actual source evidence, intended uses, dependency/derivation/build closure, missing grant or terms, reviewer owner and concrete next action. Link existing evidence rather than reproducing restricted text or adding a licensing framework. Separate a factual evidence update from a dated designated-reviewer decision.
+4. **Prepare the U3 acquisition and independent-labeling checklist.** Put the checklist in the same packet and link it from `docs/qualification/m0/protocol.md`. Require an exact source/revision/hash, applicable permissions, privacy-safe acquisition/display metadata, independent item/negative/ambiguity labels before reference predictions, parent/transform linkage, label/corpus versions and KTD3's second review. Carry forward U3's 36 real scanner masters, all 16 offline display cells, all 13 map identities/revisions and at least 39 independently grounded controls plus floor/raster/frame examples. Name the user/annotator/reviewer handoffs; no material is acquired, copied, adjudicated or marked qualified by writing this checklist.
+5. **Validate the permitted records and publication surface offline.** The main executor uses the existing `qualification:validate` entrypoint documented in `docs/qualification/m0/contracts.md` on changed version-1 records, then checks JSON/link consistency and the exact publication diff for restricted payloads, personal absolute paths, local sidecars/archive locators, credentials/account/progression/chat data and confidential grants. Run expensive checks serially. Do not invoke collector materialization, hash-lock writes, native tools, app/reference/game launches, builds, linters, formatters or tests for this documentation-only package.
+6. **Review and publish only the permitted package.** Resolve documentation review findings against R7/R8/R13 and this addendum, update existing documentation links and the repository's documentation-change record, and leave one feature-branch PR open without merge under KTD12. The historical incomplete dossier remains evidence of outstanding full-M0 obligations, not a qualification result for this run.
+
+### Use-Specific Decision Boundaries
+
+The packet expresses these distinctions using the existing four disposition fields and their scope text, not new fields or a broader schema:
+
+| Requested activity | Existing disposition and scope to review | Not authorized by that decision |
+| --- | --- | --- |
+| Private reference execution | `private_reference`: exact copying/build/replay purpose and complete input closure | Repository publication, report export or redistribution |
+| Private fixture storage | Explicit storage/acquisition scope within the applicable private-use decision; record archive access/retention separately | Private replay unless included, or any committed fixture |
+| Repository fixture storage/publication | `repository_fixture`: exact sanitized payload, derivations, repository audience and notices | Report export or release solely because the file is committed |
+| Report export | `report_export`: exact metadata/observation payload and any attachments/derived metrics | Exporting denied source bytes or treating metadata authority as observation authority |
+| Redistribution in a release | `release`: exact shipped component/artifact, modifications and obligations | Clearance of unreviewed parents, dependencies or future candidate versions |
+
+If a requested storage or execution activity is outside the recorded scope, that activity remains blocked even when another use is cleared (KTD4, R7, AE5).
+Original portable metadata and third-party material retain separate evidence and permission bases.
+
+### Run Acceptance and Remaining Gates
+
+The package is complete when the current evidence is traceable, the grouped packet identifies every addressed use and unresolved decision owner/action, the U3 handoff is actionable without inferring truth or permission, changed records pass the existing offline validator, and privacy/link/document review covers the exact published files.
+**Test expectation: none — this run changes documentation/provenance evidence only and implements no tooling or product behavior.**
+Report only checks actually exercised by the executor; a valid ledger is not legal approval.
+Full M0 remains incomplete until its required evidence gates pass, and affected private execution, fixture intake, export or release stays blocked by unresolved applicable permissions.
+U3-U5 reference acquisition/replay/measurement require their applicable later execution authority and input gates. The latest user direction already authorizes independent M1 authoring; it does not execute M1 in this documentation unit. No missing check is silently passed, excluded or converted into a user-approved skip.
 
 ---
 
