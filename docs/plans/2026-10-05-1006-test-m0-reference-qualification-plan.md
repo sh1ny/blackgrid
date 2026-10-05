@@ -32,7 +32,7 @@ Qualify M0 only: establish reproducible reference evidence, independent fixtures
 
 The reference contains useful behavior, weak historical fixture oracles, and unmeasured end-to-end paths. Its current working files also differ materially from its recorded commit. Copying its outputs or credits would make later parity and distribution claims unreliable.
 
-**Product Contract preservation:** `STRATEGY.md` and `docs/IMPLEMENTATION_STRATEGY.md` remain unchanged. Their later milestones remain obligations, not work silently removed by selecting M0.
+**Product Contract preservation:** The product boundaries and later milestone obligations in `STRATEGY.md` and `docs/IMPLEMENTATION_STRATEGY.md` are preserved. The 2026-10-06 clarification below allows independent M1 authoring alongside incomplete M0; it does not remove qualification work or add product implementation to this documentation unit.
 
 ### Key Decisions
 
@@ -364,8 +364,10 @@ For an unresolved future release asset, record owner, missing evidence, affected
 ## Run Addendum: Bounded U2 Evidence Package (2026-10-06)
 
 This run prepares the U2 provenance and permission evidence needed for a designated rights reviewer and later U3 acquisition owners to act.
-It resumes this plan in place; the Product Contract, U1-U6 obligations, full M0 Definition of Done and governing strategy documents remain unchanged.
+It resumes this plan in place; the Product Contract boundaries, U1-U6 obligations and full M0 Definition of Done remain unchanged. The governing strategies now record the user's 2026-10-06 independent-authoring direction.
 Documentation and provenance updates do not implement product behavior or complete M0 qualification.
+
+**Latest user clarification (2026-10-06):** TarkovTracker is the user's modified fork of another person's original project, maintained under their account; the user owns their contributions, not all upstream or third-party contents. Blackgrid is independently recreated in Dart/Flutter without copied reference code or a shipped old runtime. Ownership-only questions are closed on this declaration; do not ask the user to prove ownership of every host file. Independent M1 authoring and independent fixtures may start now without full M0 rights/replay/qualification closure. Scope remaining rights checks to actual selected inputs and uses. Reference execution, real-input acquisition, privacy/export, native baseline, full parity and release gates remain intact and missing evidence remains unverified. The user's intent is open source when functional, with no selected license or authorization to change current private-repository visibility.
 
 ### Run Decisions
 
@@ -404,7 +406,7 @@ The package is complete when the current evidence is traceable, the grouped pack
 **Test expectation: none — this run changes documentation/provenance evidence only and implements no tooling or product behavior.**
 Report only checks actually exercised by the executor; a valid ledger is not legal approval.
 Full M0 remains incomplete until its required evidence gates pass, and affected private execution, fixture intake, export or release stays blocked by unresolved applicable permissions.
-U3-U5 and product milestones require their own later execution authority; no missing check is silently passed, excluded or converted into a user-approved skip.
+U3-U5 reference acquisition/replay/measurement require their applicable later execution authority and input gates. The latest user direction already authorizes independent M1 authoring; it does not execute M1 in this documentation unit. No missing check is silently passed, excluded or converted into a user-approved skip.
 
 ---
 

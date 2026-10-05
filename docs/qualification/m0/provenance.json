@@ -25,6 +25,20 @@
   },
   "review_evidence": [
     {
+      "id": "m0-user-modified-fork-independent-recreation-2026-10-06",
+      "kind": "user_attestation",
+      "reviewed_at": "2026-10-06",
+      "declaration_basis": "User's 2026-10-06 clarification: TarkovTracker is their modified fork of another person's original project under their account; ownership concerns their contributions, not all upstream contents. The user intentionally detached it from the upstream fork relationship to prevent agents opening PRs upstream; do not restore that relationship or target upstream PRs. Local configured origin is git@github.com:sh1ny/TarkovTracker.git. Separately inspected GitHub repository metadata is recorded in m0-tarkovtracker-repository-metadata-2026-10-06.",
+      "scope": "Independently recreate useful behavior in Dart/Flutter with no copied reference code or shipped old runtime. Independent M1 authoring and independently authored fixtures may start now without full M0 rights/replay/qualification closure. Blackgrid owns its Dart scanner pipeline, not a RatScanner/RatEye/RatStash integration or C# FFI bridge; the existing native OpenCV/Tesseract binding plan remains distinct. The user specifies tarkov.dev map downloads for local caching/rendering and license notices when the repository becomes public; actual artwork and redistributed inputs retain their applicable terms. Rights checks apply to actual selected third-party inputs and uses. Ownership-only questions are closed; this declaration is not blanket artifact clearance or a designated rights-review decision. Preserve reference-use, real-input, game-testing, privacy/export, baseline/parity and release gates. User intends Blackgrid to be open source when functional; license unselected, current private-repository visibility unchanged."
+    },
+    {
+      "id": "m0-tarkovtracker-repository-metadata-2026-10-06",
+      "kind": "source_inspection",
+      "locator": "https://api.github.com/repos/sh1ny/TarkovTracker",
+      "declaration_basis": "Fenced KintsugiBot GitHub metadata read 2026-10-06 after user-granted access: full_name sh1ny/TarkovTracker, owner sh1ny, private true, default_branch main, fork false, no parent/source metadata returned. This successful read supersedes the earlier unavailable lookup.",
+      "scope": "Repository identity and platform metadata only, not file-by-file authorship, upstream rights clearance or a designated rights-review decision. The user explains fork false as intentional upstream detachment, not an absence of modified-fork history. Work targets the user's repositories, never the historical upstream. No visibility, fork relationship or license change made."
+    },
+    {
       "id": "m0-u2-original-authorship-request",
       "kind": "self_authorship",
       "scope": "New developer metadata/JSON authored for this user M0 work request; no third-party rights approval.",
