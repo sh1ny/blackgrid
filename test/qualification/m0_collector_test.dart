@@ -244,6 +244,26 @@ void main() {
       );
     }
 
+    Future<void> junction(String path, String target) async {
+      _succeeds(
+        await _run(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-Command',
+            r'$ErrorActionPreference = "Stop"; New-Item -ItemType Junction -Path $env:M0_LINK_PATH -Target $env:M0_LINK_TARGET | Out-Null',
+          ],
+          workingDirectory: temporary.path,
+          environment: {
+            ...environment,
+            'M0_LINK_PATH': path,
+            'M0_LINK_TARGET': target,
+          },
+        ),
+      );
+      addTearDown(() => Link(path).delete());
+    }
+
     String output(String name) => '${temporary.path}/$name/record.json';
 
     test(
@@ -366,6 +386,142 @@ void main() {
         'private_reference clearance is required',
       );
       await _noOutput(materializedLock, target: target);
+    });
+
+    test('linked output ancestry refuses before source overwrite or directory creation', () async {
+      final linked = '${temporary.path}/linked-output';
+      await junction(linked, source.path);
+      final original = await File('${source.path}/$_configPath').readAsBytes();
+      for (final mode in ['Intake', 'Lock', 'Materialize']) {
+        final target = '${temporary.path}/not-created-linked-$mode';
+        for (final path in [
+          '$linked/$_configPath',
+          '$linked/nested/not-created/record.json',
+        ]) {
+          _refuses(
+            await collect(
+              mode,
+              path,
+              target: mode == 'Materialize' ? target : null,
+              allowMaterialization: mode == 'Materialize',
+            ),
+            'Output ancestry contains a link',
+          );
+          expect(
+            await File('${source.path}/$_configPath').readAsBytes(),
+            original,
+          );
+          expect(await File('$path.local.json').exists(), isFalse);
+          expect(await Directory('${source.path}/nested').exists(), isFalse);
+          expect(await Directory(target).exists(), isFalse);
+        }
+      }
+    });
+
+    test('linked output file and locator sidecar refuse without overwriting source', () async {
+      final original = await File('${source.path}/$_configPath').readAsBytes();
+      for (final suffix in ['', '.local.json']) {
+        final path = output(
+          suffix.isEmpty ? 'linked-record' : 'linked-sidecar',
+        );
+        await File(path).parent.create();
+        final link = Link('$path$suffix');
+        await link.create('${source.path}/$_configPath');
+        addTearDown(() => link.delete());
+        _refuses(
+          await collect('Lock', path),
+          'Output ancestry contains a link',
+        );
+        expect(
+          await File('${source.path}/$_configPath').readAsBytes(),
+          original,
+        );
+        final other = suffix.isEmpty ? '$path.local.json' : path;
+        expect(await File(other).exists(), isFalse);
+      }
+    });
+
+    test('hardlinked record and locator sidecar replace their entries without mutating source', () async {
+      final original = await File('${source.path}/$_configPath').readAsBytes();
+      for (final suffix in ['', '.local.json']) {
+        final path = output(
+          suffix.isEmpty ? 'hardlinked-record' : 'hardlinked-sidecar',
+        );
+        await File(path).parent.create();
+        _succeeds(
+          await _run(
+            'powershell.exe',
+            [
+              '-NoProfile',
+              '-Command',
+              r'$ErrorActionPreference = "Stop"; New-Item -ItemType HardLink -Path $env:M0_LINK_PATH -Target $env:M0_LINK_TARGET | Out-Null',
+            ],
+            workingDirectory: temporary.path,
+            environment: {
+              ...environment,
+              'M0_LINK_PATH': '$path$suffix',
+              'M0_LINK_TARGET': '${source.path}/$_configPath',
+            },
+          ),
+        );
+        _succeeds(await collect('Lock', path));
+        expect(
+          await File('${source.path}/$_configPath').readAsBytes(),
+          original,
+        );
+        final record = await _readRecord(path);
+        validateRecord(record);
+        await verifySourceIntegrity(record, source.path);
+        final local = await _readRecord('$path.local.json');
+        expect(
+          local['source_root'],
+          source.absolute.path.replaceAll('/', '\\'),
+        );
+        _succeeds(await collect('Lock', path));
+        final replaced = await _readRecord(path);
+        validateRecord(replaced);
+        expect(replaced['freeze_id'], record['freeze_id']);
+        expect(await _readRecord('$path.local.json'), local);
+        expect(
+          await File('${source.path}/$_configPath').readAsBytes(),
+          original,
+        );
+        final remaining = await File(path).parent
+            .list()
+            .map((entity) => entity.uri.pathSegments.last)
+            .toList();
+        expect(
+          remaining,
+          unorderedEquals(['record.json', 'record.json.local.json']),
+        );
+      }
+    });
+
+    test('materialization refuses record or sidecar inside the snapshot before creation', () async {
+      for (final placement in ['nested', 'record-root', 'sidecar-root']) {
+        final path = placement == 'nested'
+            ? '${temporary.path}/snapshot-nested/metadata/record.json'
+            : output('snapshot-$placement');
+        final target = switch (placement) {
+          'nested' => '${temporary.path}/snapshot-nested',
+          'record-root' => path,
+          _ => '$path.local.json',
+        };
+        _refuses(
+          await collect(
+            'Materialize',
+            path,
+            target: target,
+            allowMaterialization: true,
+          ),
+          'Collector outputs must be outside the materialization tree',
+        );
+        await _noOutput(path, target: target);
+        expect(
+          await File('${source.path}/$_payloadPath').readAsBytes(),
+          _payloadBytes,
+        );
+      }
     });
 
     test(

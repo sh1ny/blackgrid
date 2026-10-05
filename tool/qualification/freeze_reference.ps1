@@ -49,15 +49,44 @@ function Assert-NoLinks([string]$Root, [string]$Relative, [bool]$FileRequired = 
     return $current
 }
 
+function Assert-NoLinkedOutput([string]$Path) {
+    $current = $Path
+    while (-not [string]::IsNullOrEmpty($current)) {
+        $item = $null
+        try {
+            $item = Get-Item -LiteralPath $current -Force -ErrorAction Stop
+        } catch [System.Management.Automation.ItemNotFoundException] {
+            # Missing output components are allowed; existing ancestry is not skipped.
+        }
+        if ($null -ne $item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'Output ancestry contains a link.'
+        }
+        $current = [IO.Path]::GetDirectoryName($current)
+    }
+}
+
 function Read-Json([string]$Path) {
     return Get-Content -LiteralPath $Path -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
 }
 
 function Write-Json([string]$Path, $Value) {
+    Assert-NoLinkedOutput $Path
     $parent = [IO.Path]::GetDirectoryName($Path)
     [IO.Directory]::CreateDirectory($parent) | Out-Null
     $json = ConvertTo-Json -InputObject $Value -Depth 100
-    [IO.File]::WriteAllText($Path, $json + "`n", [Text.UTF8Encoding]::new($false))
+    $temporary = Join-Path $parent ('.tmp-' + [guid]::NewGuid().ToString('N'))
+    try {
+        [IO.File]::WriteAllText($temporary, $json + "`n", [Text.UTF8Encoding]::new($false))
+        Assert-NoLinkedOutput $Path
+        # Replace the directory entry instead of truncating a hardlinked source.
+        if ([IO.File]::Exists($Path)) {
+            [IO.File]::Replace($temporary, $Path, [NullString]::Value)
+        } else {
+            [IO.File]::Move($temporary, $Path)
+        }
+    } finally {
+        if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) }
+    }
 }
 
 function Get-FileFact([string]$Root, [Collections.IDictionary]$Entry) {
@@ -170,6 +199,8 @@ while ($null -ne $ancestor) {
 $output = [IO.Path]::GetFullPath($OutputPath)
 $sourcePrefix = $source.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
 if ($output.Equals($source, [StringComparison]::OrdinalIgnoreCase) -or $output.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'OutputPath must be outside the source tree.' }
+Assert-NoLinkedOutput $output
+Assert-NoLinkedOutput ($output + '.local.json')
 $manifest = Read-Json $InputManifestPath
 if ($manifest.schema_version -ne 1 -or [string]::IsNullOrWhiteSpace([string]$manifest.id) -or -not $manifest.ContainsKey('files')) { throw 'Input manifest requires schema_version 1, id and explicit files array.' }
 $entries = @($manifest.files)
@@ -275,6 +306,12 @@ if ($Mode -eq 'Materialize') {
     Assert-Clearance $record
     $target = [IO.Path]::GetFullPath($MaterializePath)
     if ($target.Equals($source, [StringComparison]::OrdinalIgnoreCase) -or $target.StartsWith($sourcePrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Materialization must be outside the source tree.' }
+    $targetPrefix = $target.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+    foreach ($collectorOutput in @($output, ($output + '.local.json'))) {
+        if ($collectorOutput.Equals($target, [StringComparison]::OrdinalIgnoreCase) -or $collectorOutput.StartsWith($targetPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Collector outputs must be outside the materialization tree.'
+        }
+    }
     if (Test-Path -LiteralPath $target) { throw 'Materialization target must not already exist; nothing is overwritten.' }
     $parentPath = [IO.Path]::GetDirectoryName($target)
     while (-not (Test-Path -LiteralPath $parentPath)) {
