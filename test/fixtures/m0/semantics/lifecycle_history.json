@@ -1,0 +1,2229 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-lifecycle-history",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "lifecycle-active-pending-replacement",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:active-pending-replacement"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "active_request": "a",
+          "active_generation": 1,
+          "pending_request": "none",
+          "native_calls": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "enqueue",
+          "args": {
+            "request": "b",
+            "generation": 2
+          }
+        },
+        {
+          "event": "enqueue",
+          "args": {
+            "request": "c",
+            "generation": 3
+          }
+        },
+        {
+          "event": "complete_native",
+          "args": {
+            "request": "a",
+            "ignores_cancellation": true
+          }
+        },
+        {
+          "event": "complete_native",
+          "args": {
+            "request": "c"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "started_requests",
+            "equals": [
+              "a",
+              "c"
+            ]
+          },
+          {
+            "path": "superseded_requests",
+            "equals": [
+              "a",
+              "b"
+            ]
+          },
+          {
+            "path": "accepted_generations",
+            "equals": [
+              3
+            ]
+          },
+          {
+            "path": "max_native_calls",
+            "equals": 1
+          },
+          {
+            "path": "max_pending_requests",
+            "equals": 1
+          }
+        ],
+        "non_effects": [
+          "Do not free borrowed buffers before native completion"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-mode-epoch",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:mode-epoch",
+        "epochs:mode"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "request_epoch": 1,
+          "authority_epoch": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "mode_change",
+          "args": {
+            "epoch": 2
+          }
+        },
+        {
+          "event": "complete_request",
+          "args": {
+            "epoch": 1
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "stale_publication",
+            "equals": false
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "authority_epoch",
+            "equals": 2
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-session-epoch",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:session-epoch",
+        "epochs:session"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "request_epoch": 1,
+          "authority_epoch": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "session_change",
+          "args": {
+            "epoch": 2
+          }
+        },
+        {
+          "event": "complete_request",
+          "args": {
+            "epoch": 1
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "stale_publication",
+            "equals": false
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "authority_epoch",
+            "equals": 2
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-map-epoch",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:map-epoch",
+        "epochs:map"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "request_epoch": 1,
+          "authority_epoch": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "map_change",
+          "args": {
+            "epoch": 2
+          }
+        },
+        {
+          "event": "complete_request",
+          "args": {
+            "epoch": 1
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "stale_publication",
+            "equals": false
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "authority_epoch",
+            "equals": 2
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-late-catalog",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:late-catalog",
+        "late-completions:catalog"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "generation": 2,
+          "active_dependency_generation": 1,
+          "published_generation": 2,
+          "published_payload": {
+            "kind": "catalog",
+            "generation": 2,
+            "value": "synthetic-published-catalog-generation-2"
+          },
+          "publication_count": 1,
+          "accepted_events": 0
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "dependency_complete",
+          "args": {
+            "kind": "catalog",
+            "generation": 1,
+            "payload": {
+              "kind": "catalog",
+              "generation": 1,
+              "value": "synthetic-obsolete-catalog-generation-1"
+            }
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "published_generation",
+            "equals": 2
+          },
+          {
+            "path": "stale_commit",
+            "equals": false
+          },
+          {
+            "path": "published_payload",
+            "equals": {
+              "kind": "catalog",
+              "generation": 2,
+              "value": "synthetic-published-catalog-generation-2"
+            }
+          },
+          {
+            "path": "publication_count",
+            "equals": 1
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Obsolete generation 1 completion preserves the initialized generation 2 sentinel and counters; it creates no publication or acceptance."
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "lifecycle-late-progress",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:late-progress",
+        "late-completions:progress"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "generation": 2,
+          "active_dependency_generation": 1,
+          "published_generation": 2,
+          "published_payload": {
+            "kind": "progress",
+            "generation": 2,
+            "value": "synthetic-published-progress-generation-2"
+          },
+          "publication_count": 1,
+          "accepted_events": 0
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "dependency_complete",
+          "args": {
+            "kind": "progress",
+            "generation": 1,
+            "payload": {
+              "kind": "progress",
+              "generation": 1,
+              "value": "synthetic-obsolete-progress-generation-1"
+            }
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "published_generation",
+            "equals": 2
+          },
+          {
+            "path": "stale_commit",
+            "equals": false
+          },
+          {
+            "path": "published_payload",
+            "equals": {
+              "kind": "progress",
+              "generation": 2,
+              "value": "synthetic-published-progress-generation-2"
+            }
+          },
+          {
+            "path": "publication_count",
+            "equals": 1
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Obsolete generation 1 completion preserves the initialized generation 2 sentinel and counters; it creates no publication or acceptance."
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "lifecycle-late-icon",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:late-icon",
+        "late-completions:icon"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "generation": 2,
+          "active_dependency_generation": 1,
+          "published_generation": 2,
+          "published_payload": {
+            "kind": "icon",
+            "generation": 2,
+            "value": "synthetic-published-icon-generation-2"
+          },
+          "publication_count": 1,
+          "accepted_events": 0
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "dependency_complete",
+          "args": {
+            "kind": "icon",
+            "generation": 1,
+            "payload": {
+              "kind": "icon",
+              "generation": 1,
+              "value": "synthetic-obsolete-icon-generation-1"
+            }
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "published_generation",
+            "equals": 2
+          },
+          {
+            "path": "stale_commit",
+            "equals": false
+          },
+          {
+            "path": "published_payload",
+            "equals": {
+              "kind": "icon",
+              "generation": 2,
+              "value": "synthetic-published-icon-generation-2"
+            }
+          },
+          {
+            "path": "publication_count",
+            "equals": 1
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Obsolete generation 1 completion preserves the initialized generation 2 sentinel and counters; it creates no publication or acceptance."
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "lifecycle-late-asset",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:late-asset",
+        "late-completions:asset"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "generation": 2,
+          "active_dependency_generation": 1,
+          "published_generation": 2,
+          "published_payload": {
+            "kind": "asset",
+            "generation": 2,
+            "value": "synthetic-published-asset-generation-2"
+          },
+          "publication_count": 1,
+          "accepted_events": 0
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "dependency_complete",
+          "args": {
+            "kind": "asset",
+            "generation": 1,
+            "payload": {
+              "kind": "asset",
+              "generation": 1,
+              "value": "synthetic-obsolete-asset-generation-1"
+            }
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "published_generation",
+            "equals": 2
+          },
+          {
+            "path": "stale_commit",
+            "equals": false
+          },
+          {
+            "path": "published_payload",
+            "equals": {
+              "kind": "asset",
+              "generation": 2,
+              "value": "synthetic-published-asset-generation-2"
+            }
+          },
+          {
+            "path": "publication_count",
+            "equals": 1
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Obsolete generation 1 completion preserves the initialized generation 2 sentinel and counters; it creates no publication or acceptance."
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "lifecycle-late-exfil",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:late-exfil",
+        "late-completions:exfil"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "generation": 2,
+          "active_dependency_generation": 1,
+          "published_generation": 2,
+          "published_payload": {
+            "kind": "exfil",
+            "generation": 2,
+            "value": "synthetic-published-exfil-generation-2"
+          },
+          "publication_count": 1,
+          "accepted_events": 0
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "dependency_complete",
+          "args": {
+            "kind": "exfil",
+            "generation": 1,
+            "payload": {
+              "kind": "exfil",
+              "generation": 1,
+              "value": "synthetic-obsolete-exfil-generation-1"
+            }
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "published_generation",
+            "equals": 2
+          },
+          {
+            "path": "stale_commit",
+            "equals": false
+          },
+          {
+            "path": "published_payload",
+            "equals": {
+              "kind": "exfil",
+              "generation": 2,
+              "value": "synthetic-published-exfil-generation-2"
+            }
+          },
+          {
+            "path": "publication_count",
+            "equals": 1
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Obsolete generation 1 completion preserves the initialized generation 2 sentinel and counters; it creates no publication or acceptance."
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "lifecycle-shutdown-drain",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:shutdown-drain"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "active_native": "a",
+          "borrowed_buffers": 1,
+          "handles": 1,
+          "ingress_open": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "shutdown",
+          "args": {}
+        },
+        {
+          "event": "enqueue",
+          "args": {
+            "request": "b"
+          }
+        },
+        {
+          "event": "complete_native",
+          "args": {
+            "request": "a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "new_work_started",
+            "equals": false
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "release_order",
+            "equals": [
+              "native_completed",
+              "borrowed_buffers_released",
+              "handles_destroyed"
+            ]
+          },
+          {
+            "path": "ingress_open",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-acceptance-once",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:acceptance-once"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "generation": 7,
+          "map_latest_generation": 6
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "accept_scan",
+          "args": {
+            "generation": 7,
+            "trigger_kind": "automatic",
+            "item_id": "synthetic-a"
+          }
+        },
+        {
+          "event": "accept_scan",
+          "args": {
+            "generation": 7,
+            "trigger_kind": "automatic",
+            "item_id": "synthetic-a"
+          }
+        },
+        {
+          "event": "accept_scan",
+          "args": {
+            "generation": 6,
+            "trigger_kind": "manual",
+            "item_id": "synthetic-b"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "accepted_generations",
+            "equals": [
+              7
+            ]
+          },
+          {
+            "path": "map_latest_generation",
+            "equals": 7
+          },
+          {
+            "path": "map_latest_identity",
+            "equals": "synthetic-a"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-manual-acceptance",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:manual-acceptance"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_latest_generation": 7
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "accept_scan",
+          "args": {
+            "generation": 8,
+            "trigger_kind": "manual",
+            "item_id": "synthetic-b"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "accepted_generations",
+            "equals": [
+              8
+            ]
+          },
+          {
+            "path": "map_latest_generation",
+            "equals": 8
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-unknown-mode-detected-authority",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:unknown-mode-detected-authority"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "mode": "unknown",
+          "manual_fallback_mode": "pvp",
+          "evidence_generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "recognition_complete",
+          "args": {
+            "generation": 1,
+            "item_id": "synthetic-a"
+          }
+        },
+        {
+          "event": "detect_mode",
+          "args": {
+            "mode": "pve",
+            "session_epoch": 1
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "resolution_mode",
+            "equals": "pve"
+          },
+          {
+            "path": "evidence_generation",
+            "equals": 1
+          },
+          {
+            "path": "manual_mode_overrode_detected",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-navigation-worker-lifetime",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:navigation-worker-lifetime"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "active_request": "a",
+          "current_identity": "synthetic-a"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "navigate",
+          "args": {
+            "area": "Map"
+          }
+        },
+        {
+          "event": "navigate",
+          "args": {
+            "area": "Scanner"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "active_request",
+            "equals": "a"
+          },
+          {
+            "path": "current_identity",
+            "equals": "synthetic-a"
+          },
+          {
+            "path": "worker_restarted",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-targeted-fallback-original-trigger",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:targeted-fallback-original-trigger",
+        "targeted:fallback"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "trigger_ms": 0,
+          "enqueued_ms": 0,
+          "targeted_start_ms": 50
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "targeted_rejected",
+          "args": {
+            "at_ms": 260
+          }
+        },
+        {
+          "event": "fallback_started",
+          "args": {
+            "at_ms": 260
+          }
+        },
+        {
+          "event": "fallback_complete",
+          "args": {
+            "at_ms": 900,
+            "identity": "synthetic-b"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "fallback_delay_origin",
+            "equals": "enqueue"
+          },
+          {
+            "path": "total_from_original_trigger_ms",
+            "equals": 900
+          },
+          {
+            "path": "fallback_started_ms",
+            "equals": 260
+          },
+          {
+            "path": "timeout_label_counts_as_fallback",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-unaccepted-correction",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:unaccepted-correction"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-old",
+          "map_latest_generation": 4
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "scan_rejected",
+          "args": {
+            "generation": 5,
+            "candidates": [
+              "synthetic-a",
+              "synthetic-b"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "current_identity",
+            "equals": "synthetic-old"
+          },
+          {
+            "path": "correction_candidates",
+            "equals": [
+              "synthetic-a",
+              "synthetic-b"
+            ]
+          },
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-correction-not-scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:correction-not-scan",
+        "authority:not-new-map-scan"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true,
+          "live_mode": "pvp",
+          "map_latest_generation": 4,
+          "accepted_at": "2026-10-05T11:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "correction",
+          "args": {
+            "item_id": "synthetic-a",
+            "stored_mode": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "accepted_at",
+            "equals": "2026-10-05T11:00:00Z"
+          },
+          {
+            "path": "instance",
+            "equals": {
+              "fir": null,
+              "fir_reason": "New decision context resets transient instance evidence."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-manual_selection-not-scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:manual_selection-not-scan",
+        "authority:not-new-map-scan"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true,
+          "live_mode": "pvp",
+          "map_latest_generation": 4,
+          "accepted_at": "2026-10-05T11:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "manual_selection",
+          "args": {
+            "item_id": "synthetic-a",
+            "stored_mode": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "accepted_at",
+            "equals": "2026-10-05T11:00:00Z"
+          },
+          {
+            "path": "instance",
+            "equals": {
+              "fir": null,
+              "fir_reason": "New decision context resets transient instance evidence."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-search-not-scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:search-not-scan",
+        "authority:not-new-map-scan"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true,
+          "live_mode": "pvp",
+          "map_latest_generation": 4,
+          "accepted_at": "2026-10-05T11:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "search",
+          "args": {
+            "item_id": "synthetic-a",
+            "stored_mode": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "accepted_at",
+            "equals": "2026-10-05T11:00:00Z"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-history_selection-not-scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:history_selection-not-scan",
+        "authority:not-new-map-scan"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true,
+          "live_mode": "pvp",
+          "map_latest_generation": 4,
+          "accepted_at": "2026-10-05T11:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "history_selection",
+          "args": {
+            "item_id": "synthetic-a",
+            "stored_mode": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "accepted_at",
+            "equals": "2026-10-05T11:00:00Z"
+          },
+          {
+            "path": "instance",
+            "equals": {
+              "fir": null,
+              "fir_reason": "New decision context resets transient instance evidence."
+            }
+          },
+          {
+            "path": "displayed_mode",
+            "equals": "pve"
+          },
+          {
+            "path": "live_mode",
+            "equals": "pvp"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-catalog_refresh-not-scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:catalog_refresh-not-scan",
+        "authority:not-new-map-scan"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true,
+          "live_mode": "pvp",
+          "map_latest_generation": 4,
+          "accepted_at": "2026-10-05T11:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "catalog_refresh",
+          "args": {
+            "item_id": "synthetic-a",
+            "stored_mode": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "accepted_at",
+            "equals": "2026-10-05T11:00:00Z"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-progress_refresh-not-scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:progress_refresh-not-scan",
+        "authority:not-new-map-scan"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true,
+          "live_mode": "pvp",
+          "map_latest_generation": 4,
+          "accepted_at": "2026-10-05T11:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "progress_refresh",
+          "args": {
+            "item_id": "synthetic-a",
+            "stored_mode": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_latest_generation",
+            "equals": 4
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          },
+          {
+            "path": "accepted_at",
+            "equals": "2026-10-05T11:00:00Z"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-fir-reset-new_scan",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:fir-reset-new_scan",
+        "instance:fir-reset"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "new_scan",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "instance",
+            "equals": {
+              "fir": null,
+              "fir_reason": "Transient instance evidence cannot cross a request or authority change."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-fir-reset-mode_change",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:fir-reset-mode_change",
+        "instance:fir-reset"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "mode_change",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "instance",
+            "equals": {
+              "fir": null,
+              "fir_reason": "Transient instance evidence cannot cross a request or authority change."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-fir-reset-session_change",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:fir-reset-session_change",
+        "instance:fir-reset"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "current_identity": "synthetic-a",
+          "instance_fir": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "session_change",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "instance",
+            "equals": {
+              "fir": null,
+              "fir_reason": "Transient instance evidence cannot cross a request or authority change."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-advice-aging",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:advice-aging",
+        "advice:aging"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "snapshot": {
+            "identity": "synthetic-a",
+            "accepted_at": "2026-10-05T11:30:00Z",
+            "original_verdict": "Sell on Flea",
+            "gross_avg24h": 12000,
+            "quote_utc": "2026-10-05T11:00:00Z"
+          },
+          "clock_utc": "2026-10-05T11:30:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "clock_advanced",
+          "args": {
+            "clock_utc": "2026-10-05T12:00:01Z"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "presentation.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "snapshot.identity",
+            "equals": "synthetic-a"
+          },
+          {
+            "path": "snapshot.accepted_at",
+            "equals": "2026-10-05T11:30:00Z"
+          },
+          {
+            "path": "snapshot.original_verdict",
+            "equals": "Sell on Flea"
+          },
+          {
+            "path": "snapshot.gross_avg24h",
+            "equals": 12000
+          },
+          {
+            "path": "accepted_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "lifecycle-history-save-failed",
+      "source_id": "m0-author-doc-lifecycle-v1",
+      "annotation_source_id": "m0-independent-target-annotation-lifecycle-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "lifecycle:history-save-failed"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_latest_generation": 6
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "scan_accepted",
+          "args": {
+            "generation": 7,
+            "identity": "synthetic-a"
+          }
+        },
+        {
+          "event": "history_save_failed",
+          "args": {
+            "error": "synthetic-disk-error"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "current_identity",
+            "equals": "synthetic-a"
+          },
+          {
+            "path": "map_latest_generation",
+            "equals": 7
+          },
+          {
+            "path": "history_error_visible",
+            "equals": true
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    }
+  ],
+  "authoring_source_id": "M0AnnotationCorrections"
+}

@@ -1,0 +1,298 @@
+# M0 qualification dossier: 2026-10-05-m0-intake
+
+Status: **incomplete**. Qualification JSON SHA-256: `978405b0c59670a16e620791259d1d5843aba9d168f81504dc4e0bb501450c04`.
+
+This dossier consumes only explicit portable serialized evidence; no old checkout, .NET oracle, private captures, network or running application is required.
+Missing required observations are not user-approved skips. Synthetic vectors are expectations, not real screenshots, independent landmarks, native recognition or live display proof.
+
+## Actual measurement denominators
+
+- Actual attempts: 0; actionable-visible samples: 0.
+- Unique real scanner masters: 0 of 36.
+- All 16 requested display rows and all 13 requested maps remain in qualification.json.
+- Internal stage/publication latency does not establish physical-trigger-to-actionable-visible latency.
+
+## Required evidence gates
+
+- `declared-case-roster`: pass (required); owner `fixture-owner`. Every requested case ID exists in the supplied manifest.
+- `effective-reference-freeze`: unverified (required); owner `reference-input-owner`. Metadata-only intake is not a permission-cleared, reproducible final source lock.
+- `oracle-evidence-linkage`: unverified (required); owner `implementing-agent`. No actual native/host replay: reviewed private-reference rights, a complete effective source/build/archive/native/catalog lock and permitted independently adjudicated real inputs are unavailable. No permitted private snapshot/native wrapper or actual offline reference replay is supplied; source inspection and comparator tests are not native evidence.
+- `offline-reference-characterization`: unverified (required); owner `implementing-agent`. Required real corpus/native replay remains missing or incompletely measured; zero eligible cases do not qualify requested masters and maps.
+- `attempt-evidence-linkage`: unverified (required); owner `measurement-owner`. No actual offline or user-operated native/live attempts have been collected.
+- `scanner-independent-masters`: unverified (required); owner `user-and-independent-annotators`. Require 36 distinct adjudicated real master/source cases: four positives, four negatives and one independently identified multi-inspection per resolution.
+- `display-offline-1920-100`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-1920-125`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-1920-150`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-1920-200`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-2560-100`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-2560-125`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-2560-150`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-2560-200`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3440-100`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3440-125`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3440-150`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3440-200`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3840-100`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3840-125`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3840-150`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `display-offline-3840-200`: unverified (required); owner `fixture-owner`. Each display cell requires adjudicated positive, no-marker, chrome/ambiguous and multi image variants; synthetic geometry cannot satisfy recognition/native gates.
+- `map-input-linkage`: unverified (required); owner `map-evidence-owner`. Independent map evidence must bind actual declared artwork/config hashes; absent controls are not measurements.
+- `map-independent-controls`: unverified (required); owner `user-and-independent-annotators`. Require all 13 configured frames, at least 39 independently reviewed distinct noncollinear controls and configured floor identities; synthetic geometry/reference predictions cannot supply landmarks.
+- `semantic-roster`: pass (required); owner `independent-reviewer`. Every requested semantic area must be present with adjudicated independent truth; authored pending expectations are not observed product/reference behavior.
+- `sampling-allocation-roster`: pass (required); owner `measurement-protocol-owner`. The approved 800 warm-offline, 10 cold-offline, 200 balanced live-warm, 10 live-cold, 15 burst and 12 map/startup allocations must stay preregistered even when unattempted.
+- `planned-master-1920-ordinary-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-ordinary-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-quantity-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-quantity-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-empty-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-ui-chrome`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-occluded`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-1920-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-ordinary-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-ordinary-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-quantity-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-quantity-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-empty-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-ui-chrome`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-occluded`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-2560-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-ordinary-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-ordinary-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-quantity-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-quantity-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-empty-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-ui-chrome`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-occluded`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3440-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-ordinary-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-ordinary-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-quantity-positive-a`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-quantity-positive-b`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-empty-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-ui-chrome`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-occluded`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-master-3840-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-100-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-100-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-100-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-100-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-1920-100`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-125-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-125-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-125-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-125-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-1920-125`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-150-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-150-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-150-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-150-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-1920-150`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-200-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-200-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-200-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-1920-200-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-1920-200`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-100-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-100-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-100-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-100-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-2560-100`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-125-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-125-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-125-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-125-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-2560-125`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-150-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-150-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-150-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-150-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-2560-150`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-200-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-200-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-200-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-2560-200-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-2560-200`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-100-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-100-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-100-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-100-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3440-100`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-125-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-125-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-125-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-125-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3440-125`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-150-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-150-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-150-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-150-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3440-150`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-200-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-200-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-200-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3440-200-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3440-200`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-100-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-100-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-100-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-100-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3840-100`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-125-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-125-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-125-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-125-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3840-125`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-150-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-150-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-150-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-150-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3840-150`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-200-positive`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-200-no-marker`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-200-chrome-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-image-3840-200-multi`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-native-3840-200`: unverified (optional); owner `user-M2-M6`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-factory-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-factory-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-factory-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-factory-Ground_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-factory-Second_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-factory-Third_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-factory-Basement`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-customs-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-customs-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-customs-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-customs-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-customs-Second_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-customs-Third_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-customs-Underground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-woods-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-woods-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-woods-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-woods-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-shoreline-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-shoreline-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-shoreline-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-shoreline-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-shoreline-Second_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-shoreline-Third_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-shoreline-Underground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-interchange-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-interchange-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-interchange-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-interchange-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-interchange-First_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-interchange-Second_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-lab-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-lab-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-lab-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-lab-First_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-lab-Second_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-lab-Technical_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-reserve-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-reserve-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-reserve-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-reserve-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-reserve-Bunkers`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-lighthouse-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-lighthouse-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-lighthouse-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-lighthouse-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-streetsoftarkov-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-streetsoftarkov-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-streetsoftarkov-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-streetsoftarkov-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-streetsoftarkov-Second_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-streetsoftarkov-Third_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-streetsoftarkov-Fourth_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-streetsoftarkov-Fifth_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-streetsoftarkov-Underground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-groundzero-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-groundzero-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-groundzero-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-groundzero-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-groundzero-Second_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-groundzero-Third_Floor`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-groundzero-Underground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-terminal-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-terminal-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-terminal-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-terminal-Ground_Level`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-icebreaker-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-icebreaker-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-icebreaker-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Control_Room`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Engine_Room`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Engine_Room_Upper`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Fuel_Pumps_Lower`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Fuel_Pumps`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Storage_Security`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Infirmary`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Helipad`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Gym_Canteen`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Accommodation_Lower`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Accommodation_Mid`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Accommodation_Upper`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Officers_Deck`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Stairs_Blocked`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Bridge`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-floor-anchor-icebreaker-Bridge_Roof`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-labyrinth-1`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-labyrinth-2`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-control-labyrinth-3`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-labs-tile-seam`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-labs-tile-extent`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-labyrinth-raster-bounds`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-panel-crop-matched-extract-transit`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-panel-crop-present-empty`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-panel-crop-absent`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-panel-crop-chrome`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-panel-crop-ambiguous`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-panel-crop-partial-unreadable`: unverified (required); owner `user-and-independent-annotators`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-1920-host-inspection`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-1920-full-viewport`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-2560-host-inspection`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-2560-full-viewport`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-3440-host-inspection`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-3440-full-viewport`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-3840-host-inspection`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-warm-3840-full-viewport`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-offline-cold`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-live-warm-intended-targeted`: unverified (required); owner `user`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-live-warm-fallback-required`: unverified (required); owner `user`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-live-cold`: unverified (required); owner `user`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-live-burst-1`: unverified (required); owner `user`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-live-burst-2`: unverified (required); owner `user`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-live-burst-3`: unverified (required); owner `user`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-observation-vector-multilevel`: unverified (required); owner `agent-only-game-closed-after-rights`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-observation-lab`: unverified (required); owner `agent-only-game-closed-after-rights`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-observation-icebreaker`: unverified (required); owner `agent-only-game-closed-after-rights`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-map-observation-labyrinth`: unverified (required); owner `agent-only-game-closed-after-rights`. Required real evidence is not acquired; no skip decision has been made.
+- `planned-reference-corpus-characterization`: unverified (required); owner `agent-after-rights-and-freeze`. Required real evidence is not acquired; no skip decision has been made.
+- `map-floor-raster-anchors`: unverified (required); owner `independent-map-annotators`. Configured floor artwork, Labs tile seam/extent, all 16 Icebreaker floor identities and Labyrinth raster bounds remain explicit required independent anchors.
+- `user-native-visible-baseline`: unverified (required); owner `user`. Require one named native setup and exactly 200 warm live attempts: 100 per intended path, 50 automatic/50 manual, with batches 17/17, 17/16, 16/17. Every attempt needs correlated observable physical actuation; only correct outcomes need eligible actionable-visible endpoints. Known completed noncorrect outcomes retain the denominator; incomplete collection/outcomes stay unverified.
+- `report-export`: pass (required); owner `designated-rights-reviewer`. Original authored metadata and listed sibling payloads have explicit sanitized export clearance.
+
+## Exported siblings
+
+Only qualification.exports payloads have been exported; each listed SHA-256 binds the actual canonical JSON bytes. qualification.json does not hash itself; this external README names its hash.
+Blocked attachments and affected uses remain visible in evidence_index and rights_blockers; their bytes are absent.
+
+- `inputs/source_intake.json` — `4f5aaf51417ac71addd0c3031a32d4bafa89fcbc33abcbb60d8aa7e8023eb10f`
+- `inputs/provenance.json` — `d8caec0d7c838f9d73c448eb330209541224cd01f993577c2788ce0efef51f50`
+- `inputs/fixture_manifest.json` — `4c316b7e14c262c9efc18befc258068f8899caebf8caf395ef754f6fb0ee235b`
+- `inputs/map_controls.json` — `2c0985c43416968ddb2116335220d13a291530e4671e25a273208640fbd0f51d`
+- `inputs/display_matrix.json` — `730aba8ae161ae9397915ad41f8837c759c3dd3238a1371ee5570e5b424c9eda`
+- `inputs/planned_checks.json` — `6da30352f0ddeb97e2e753f2d77f18ea2a5e60664d246892d4c367e5576de2b0`
+- `inputs/environment.json` — `699df8539884267c24d3d413dad5c39de42d2c07baef36ad9c2a4135665d0ac3`
+- `baseline-summary.json` — `ba456c4afcb02dd3ad23aca609582dd6982e82eb6f5e97efde3a2c5a53a8acfa`
+- `divergences.json` — `0afba1a50a11f02c4620d49db66ac796b6237a1de1cbe2dc27bc685307d87c87`
+
+## Remaining full-M0 observations
+
+Use the required evidence gates above to identify outstanding observations: reviewed affected-use permissions and final effective closure; actual permitted private native wrapper/materialization/replay; 36 independently adjudicated real masters and image variants across all 16 offline cells; 39 independent map controls and configured floor/raster anchors; named-setup offline warm/cold and map/startup/memory observations; user-performed warm targeted/fallback, cold/startup, burst and same-clock physical/visible measurements.
+No oracle result file, synthetic failed attempt or non-null freeze is fabricated when those records are unavailable.

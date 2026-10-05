@@ -1,0 +1,1280 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-session-panel",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "input-partial-line",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:partial-line"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "buffer": "",
+          "session_epoch": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "append_log",
+          "args": {
+            "text_fragment": "{\"event\":\"session\",\"map\":\"the"
+          }
+        },
+        {
+          "event": "append_log",
+          "args": {
+            "text_fragment": "lab\",\"mode\":\"regular\",\"id\":\"s1\"}\n"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "session_events",
+            "equals": 1
+          },
+          {
+            "path": "map_id",
+            "equals": "lab"
+          },
+          {
+            "path": "source_alias",
+            "equals": "thelab"
+          },
+          {
+            "path": "mode",
+            "equals": "pvp"
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-duplicate",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:duplicate"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "session_epoch": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "append_log",
+          "args": {
+            "text_fragment": "{\"event\":\"session\",\"map\":\"factory\",\"mode\":\"pve\",\"id\":\"s1\"}\n"
+          }
+        },
+        {
+          "event": "append_log",
+          "args": {
+            "text_fragment": "{\"event\":\"session\",\"map\":\"factory\",\"mode\":\"pve\",\"id\":\"s1\"}\n"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "session_events",
+            "equals": 1
+          },
+          {
+            "path": "session_epoch",
+            "equals": 2
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-truncated",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:truncated"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "offset": 300,
+          "session_epoch": 1,
+          "partial_line": "unfinished"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "file_size_changed",
+          "args": {
+            "size": 30
+          }
+        },
+        {
+          "event": "append_log",
+          "args": {
+            "text_fragment": "{\"event\":\"session\",\"map\":\"lab\",\"mode\":\"pvp-season\",\"id\":\"s2\"}\n"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "partial_old_line_discarded",
+            "equals": true
+          },
+          {
+            "path": "mode",
+            "equals": "seasonal"
+          },
+          {
+            "path": "new_file_read_from",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-rotated",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:rotated"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "file_identity": "log-a",
+          "offset": 300
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "file_rotated",
+          "args": {
+            "file_identity": "log-b"
+          }
+        },
+        {
+          "event": "append_log",
+          "args": {
+            "text_fragment": "{\"event\":\"session\",\"map\":\"factory\",\"mode\":\"regular\",\"id\":\"s2\"}\n"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "read_offset_origin",
+            "equals": 0
+          },
+          {
+            "path": "stale_file_events_accepted",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-missing",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:missing"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "session_authority": "known",
+          "mode": "pvp"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "log_missing",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "authority",
+            "equals": "unavailable"
+          },
+          {
+            "path": "invented_session_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-sampled-filename",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:sampled-filename"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "session_epoch": 3,
+          "map_id": "lab"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "parse_screenshot_filename",
+          "args": {
+            "filename": "synthetic_X10_Y0_Z20_QX0_QY0_QZ0_QW1.png",
+            "grammar": "synthetic_sample_v1",
+            "session_epoch": 3
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "sample",
+            "equals": {
+              "game_xyz": {
+                "x": 10,
+                "y": 0,
+                "z": 20
+              },
+              "quaternion": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            }
+          },
+          {
+            "path": "continuous_telemetry",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-late-sample",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:late-sample"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "session_epoch": 4,
+          "map_generation": 3
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "sample_complete",
+          "args": {
+            "session_epoch": 3,
+            "map_generation": 2,
+            "game_xyz": {
+              "x": 10,
+              "y": 0,
+              "z": 20
+            }
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "sample_committed",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-panel-absence",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:panel-absence"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "factory",
+          "highlights": [
+            "factory-exit-a"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "parse_panel",
+          "args": {
+            "disposition": "absent",
+            "map_id": "factory"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "highlights",
+            "equals": [
+              "factory-exit-a"
+            ]
+          },
+          {
+            "path": "authoritative_empty",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-panel-empty",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:panel-empty"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "factory",
+          "highlights": [
+            "factory-exit-a"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "parse_panel",
+          "args": {
+            "disposition": "present_empty",
+            "map_id": "factory",
+            "extract_text": [],
+            "transit_text": []
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "highlights",
+            "equals": []
+          },
+          {
+            "path": "authoritative_empty",
+            "equals": true
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-panel-map-scoped",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:panel-map-scoped"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "factory",
+          "identities": [
+            {
+              "id": "factory-exit-a",
+              "map_id": "factory",
+              "name": "Shared Exit"
+            },
+            {
+              "id": "woods-exit-a",
+              "map_id": "woods",
+              "name": "Shared Exit"
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "parse_panel",
+          "args": {
+            "disposition": "matched",
+            "map_id": "factory",
+            "extract_text": [
+              "Shared Exit"
+            ],
+            "transit_text": []
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "highlights",
+            "equals": [
+              "factory-exit-a"
+            ]
+          },
+          {
+            "path": "cross_map_highlights",
+            "equals": []
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-panel-stale-map",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:panel-stale-map"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "woods",
+          "map_generation": 2
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "parse_panel_complete",
+          "args": {
+            "map_id": "factory",
+            "map_generation": 1,
+            "extract_text": [
+              "Shared Exit"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "stale_commit",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-panel-chrome-ambiguous-partial",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "session-inputs:panel-chrome-ambiguous-partial"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "highlights": [
+            "factory-exit-a"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "parse_panel",
+          "args": {
+            "disposition": "ambiguous",
+            "extract_text": [
+              "EXITS",
+              "Shared"
+            ],
+            "transit_text": [],
+            "crop": "synthetic-partial"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "highlights",
+            "equals": [
+              "factory-exit-a"
+            ]
+          },
+          {
+            "path": "authoritative_empty",
+            "equals": false
+          },
+          {
+            "path": "invented_match",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Synthetic log grammar and panel semantics are not native log/OCR qualification"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-mode-alias-regular",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "aliases:mode"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "detect_log_mode",
+          "args": {
+            "source_alias": "regular"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "mode",
+            "equals": "pvp"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-mode-alias-pve",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "aliases:mode"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "detect_log_mode",
+          "args": {
+            "source_alias": "pve"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "mode",
+            "equals": "pve"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-mode-alias-pvp-season",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "aliases:mode"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "detect_log_mode",
+          "args": {
+            "source_alias": "pvp-season"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "mode",
+            "equals": "seasonal"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-map-alias-thelab",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "aliases:map"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "detect_log_map",
+          "args": {
+            "source_alias": "thelab"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_id",
+            "equals": "lab"
+          },
+          {
+            "path": "source_alias",
+            "equals": "thelab"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-map-alias-lab",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "aliases:map"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "detect_log_map",
+          "args": {
+            "source_alias": "lab"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_id",
+            "equals": "lab"
+          },
+          {
+            "path": "source_alias",
+            "equals": "lab"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "input-map-alias-streetsoftarkov",
+      "source_id": "m0-author-doc-session-inputs-v1",
+      "annotation_source_id": "m0-independent-target-annotation-session-inputs-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "aliases:map"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "detect_log_map",
+          "args": {
+            "source_alias": "streetsoftarkov"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "map_id",
+            "equals": "streetsoftarkov"
+          },
+          {
+            "path": "source_alias",
+            "equals": "streetsoftarkov"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    }
+  ],
+  "authoring_source_id": "M0SafeSyntheticEncoding"
+}

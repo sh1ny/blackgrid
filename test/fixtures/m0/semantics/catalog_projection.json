@@ -1,0 +1,3363 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-catalog-projection",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "catalog-items-mode-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:items",
+        "catalog:mode-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "items": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pve",
+              "source": "json.tarkov.dev",
+              "locale": "en"
+            },
+            "dataset": "items",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-items-source-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:items",
+        "catalog:source-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "items": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "synthetic-alternate-source",
+              "locale": "en"
+            },
+            "dataset": "items",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-items-locale-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:items",
+        "catalog:locale-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "items": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "json.tarkov.dev",
+              "locale": "fr"
+            },
+            "dataset": "items",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-required-items-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:required-omissions"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "last_good_generation": 1,
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "generation": 2,
+            "present_datasets": [
+              "traders",
+              "tasks",
+              "hideout",
+              "crafts",
+              "barters"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "candidate_status",
+            "equals": "Incomplete"
+          },
+          {
+            "path": "published_generation",
+            "equals": 1
+          },
+          {
+            "path": "missing_datasets",
+            "equals": [
+              "items"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-traders-mode-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:traders",
+        "catalog:mode-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "traders": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pve",
+              "source": "json.tarkov.dev",
+              "locale": "en"
+            },
+            "dataset": "traders",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-traders-source-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:traders",
+        "catalog:source-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "traders": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "synthetic-alternate-source",
+              "locale": "en"
+            },
+            "dataset": "traders",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-traders-locale-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:traders",
+        "catalog:locale-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "traders": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "json.tarkov.dev",
+              "locale": "fr"
+            },
+            "dataset": "traders",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-required-traders-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:required-omissions"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "last_good_generation": 1,
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "generation": 2,
+            "present_datasets": [
+              "items",
+              "tasks",
+              "hideout",
+              "crafts",
+              "barters"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "candidate_status",
+            "equals": "Incomplete"
+          },
+          {
+            "path": "published_generation",
+            "equals": 1
+          },
+          {
+            "path": "missing_datasets",
+            "equals": [
+              "traders"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-tasks-mode-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:tasks",
+        "catalog:mode-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "tasks": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pve",
+              "source": "json.tarkov.dev",
+              "locale": "en"
+            },
+            "dataset": "tasks",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-tasks-source-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:tasks",
+        "catalog:source-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "tasks": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "synthetic-alternate-source",
+              "locale": "en"
+            },
+            "dataset": "tasks",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-tasks-locale-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:tasks",
+        "catalog:locale-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "tasks": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "json.tarkov.dev",
+              "locale": "fr"
+            },
+            "dataset": "tasks",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-required-tasks-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:required-omissions"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "last_good_generation": 1,
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "generation": 2,
+            "present_datasets": [
+              "items",
+              "traders",
+              "hideout",
+              "crafts",
+              "barters"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "candidate_status",
+            "equals": "Incomplete"
+          },
+          {
+            "path": "published_generation",
+            "equals": 1
+          },
+          {
+            "path": "missing_datasets",
+            "equals": [
+              "tasks"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-hideout-mode-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:hideout",
+        "catalog:mode-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "hideout": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pve",
+              "source": "json.tarkov.dev",
+              "locale": "en"
+            },
+            "dataset": "hideout",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-hideout-source-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:hideout",
+        "catalog:source-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "hideout": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "synthetic-alternate-source",
+              "locale": "en"
+            },
+            "dataset": "hideout",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-hideout-locale-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:hideout",
+        "catalog:locale-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "hideout": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "json.tarkov.dev",
+              "locale": "fr"
+            },
+            "dataset": "hideout",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-required-hideout-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:required-omissions"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "last_good_generation": 1,
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "generation": 2,
+            "present_datasets": [
+              "items",
+              "traders",
+              "tasks",
+              "crafts",
+              "barters"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "candidate_status",
+            "equals": "Incomplete"
+          },
+          {
+            "path": "published_generation",
+            "equals": 1
+          },
+          {
+            "path": "missing_datasets",
+            "equals": [
+              "hideout"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-crafts-mode-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:crafts",
+        "catalog:mode-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "crafts": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pve",
+              "source": "json.tarkov.dev",
+              "locale": "en"
+            },
+            "dataset": "crafts",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-crafts-source-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:crafts",
+        "catalog:source-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "crafts": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "synthetic-alternate-source",
+              "locale": "en"
+            },
+            "dataset": "crafts",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-crafts-locale-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:crafts",
+        "catalog:locale-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "crafts": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "json.tarkov.dev",
+              "locale": "fr"
+            },
+            "dataset": "crafts",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-required-crafts-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:required-omissions"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "last_good_generation": 1,
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "generation": 2,
+            "present_datasets": [
+              "items",
+              "traders",
+              "tasks",
+              "hideout",
+              "barters"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "candidate_status",
+            "equals": "Incomplete"
+          },
+          {
+            "path": "published_generation",
+            "equals": 1
+          },
+          {
+            "path": "missing_datasets",
+            "equals": [
+              "crafts"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-barters-mode-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:barters",
+        "catalog:mode-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "barters": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pve",
+              "source": "json.tarkov.dev",
+              "locale": "en"
+            },
+            "dataset": "barters",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-barters-source-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:barters",
+        "catalog:source-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "barters": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "synthetic-alternate-source",
+              "locale": "en"
+            },
+            "dataset": "barters",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-barters-locale-isolation",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:barters",
+        "catalog:locale-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "selected_key": {
+            "mode": "pvp",
+            "source": "json.tarkov.dev",
+            "locale": "en"
+          },
+          "datasets": {
+            "barters": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 11
+              }
+            ]
+          },
+          "generation": 1
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_dataset",
+          "args": {
+            "key": {
+              "mode": "pvp",
+              "source": "json.tarkov.dev",
+              "locale": "fr"
+            },
+            "dataset": "barters",
+            "generation": 2,
+            "rows": [
+              {
+                "id": "synthetic-shared-id",
+                "value": 22
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_dataset_value",
+            "equals": 11
+          },
+          {
+            "path": "other_key_dataset_value",
+            "equals": 22
+          },
+          {
+            "path": "selected_generation",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-required-barters-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:required-omissions"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "last_good_generation": 1,
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "generation": 2,
+            "present_datasets": [
+              "items",
+              "traders",
+              "tasks",
+              "hideout",
+              "crafts"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "candidate_status",
+            "equals": "Incomplete"
+          },
+          {
+            "path": "published_generation",
+            "equals": 1
+          },
+          {
+            "path": "missing_datasets",
+            "equals": [
+              "barters"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-optional-english-omission",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:optional-omission"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "required_datasets": [
+            "items",
+            "traders",
+            "tasks",
+            "hideout",
+            "crafts",
+            "barters"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_complete",
+          "args": {
+            "present_datasets": [
+              "items",
+              "traders",
+              "tasks",
+              "hideout",
+              "crafts",
+              "barters"
+            ],
+            "english_identity_status": "missing"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "status",
+            "equals": "Ready"
+          },
+          {
+            "path": "identity_locale",
+            "equals": "selected_locale"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-last-good-refresh",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:last-good"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "generation": 4,
+          "status": "Ready",
+          "items": [
+            {
+              "id": "synthetic-a",
+              "gross_avg24h": 12000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_started",
+          "args": {
+            "generation": 5
+          }
+        },
+        {
+          "event": "refresh_failed",
+          "args": {
+            "generation": 5,
+            "error": "synthetic-network-failure"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "generation",
+            "equals": 4
+          },
+          {
+            "path": "status",
+            "equals": "Stale"
+          },
+          {
+            "path": "items",
+            "equals": [
+              {
+                "id": "synthetic-a",
+                "gross_avg24h": 12000
+              }
+            ]
+          },
+          {
+            "path": "refresh_error",
+            "equals": "synthetic-network-failure"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "catalog-no-last-good",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "catalog:unavailable"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "snapshots": []
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "refresh_failed",
+          "args": {
+            "generation": 1,
+            "error": "synthetic-failure"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "catalog",
+            "equals": {
+              "status": "Unavailable",
+              "gross_avg24h": null,
+              "gross_avg24h_reason": "No usable snapshot."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "projection-dimensions-2x3",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:dimensions-2x3"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width_slots": 2,
+          "height_slots": 3,
+          "gross_avg24h": 12000
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "slots": 6,
+              "gross_per_slot": 2000,
+              "value_kind": "gross"
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "projection-dimensions-unknown",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:dimensions-unknown"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width_slots": null,
+          "width_slots_reason": "Missing source dimension.",
+          "height_slots": 3,
+          "gross_avg24h": 12000
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "slots": null,
+              "slots_reason": "Cannot derive slots from an unknown width.",
+              "gross_per_slot": null,
+              "gross_per_slot_reason": "Unknown slot count."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "projection-paired-find-give",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:paired-find-give"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "objectives": [
+            {
+              "id": "find-a",
+              "pair_id": "need-a",
+              "kind": "find",
+              "required": 5,
+              "completed": 2,
+              "fir_required": true,
+              "quest_id": "synthetic-quest-a"
+            },
+            {
+              "id": "give-a",
+              "pair_id": "need-a",
+              "kind": "give",
+              "required": 5,
+              "completed": 2,
+              "fir_required": true,
+              "quest_id": "synthetic-quest-a"
+            }
+          ],
+          "pair_convention": {
+            "scope": "this original synthetic same-quest pair only",
+            "shared_inventory": true,
+            "finding_then_hand_in_reuses_unit": true,
+            "remaining_required": "max(max(0, find.required - find.completed), max(0, give.required - give.completed))",
+            "fir_partition": "both objectives explicitly require FIR; shared remaining quantity is FIR, not counted twice"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "remaining_total": 3,
+              "fir_remaining": 3,
+              "non_fir_remaining": 0
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "Original synthetic same-quest shared-inventory pair convention; one unit can satisfy finding then hand-in; not universal objective API truth.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "projection-nullable-counts",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:nullable-counts"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "find_count": null,
+          "find_count_reason": "Objective count unknown.",
+          "give_count": 2,
+          "hideout_count": null,
+          "hideout_count_reason": "Progress unavailable.",
+          "find_fir_required": true,
+          "give_fir_required": false
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "fir_remaining": null,
+              "fir_remaining_reason": "Required objective count unknown.",
+              "non_fir_remaining": 2,
+              "hideout_remaining": null,
+              "hideout_remaining_reason": "Progress unavailable."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "projection-faction-gate",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:faction-gate"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "player_faction": "BEAR",
+          "quest_faction": "USEC",
+          "gate": "locked",
+          "remaining": 3
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "confirmed_current": 0,
+              "known_future": 0,
+              "conditional_need": 3
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "projection-craft-barter",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:craft-barter"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "crafts": [
+            {
+              "id": "craft-a",
+              "input_item": "synthetic-a",
+              "count": 2
+            }
+          ],
+          "barters": [
+            {
+              "id": "barter-a",
+              "input_item": "synthetic-a",
+              "count": 4
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "craft_input_count": 2,
+              "barter_input_count": 4,
+              "quest_need_from_acquisition": 0
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "projection-paired-find-give-unequal",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:paired-find-give-unequal",
+        "projection:shared-inventory-max"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "objectives": [
+            {
+              "id": "find-a",
+              "pair_id": "need-a",
+              "kind": "find",
+              "required": 5,
+              "completed": 2,
+              "fir_required": true,
+              "quest_id": "synthetic-quest-a"
+            },
+            {
+              "id": "give-a",
+              "pair_id": "need-a",
+              "kind": "give",
+              "required": 5,
+              "completed": 0,
+              "fir_required": true,
+              "quest_id": "synthetic-quest-a"
+            }
+          ],
+          "pair_convention": {
+            "scope": "this original synthetic same-quest pair only",
+            "shared_inventory": true,
+            "finding_then_hand_in_reuses_unit": true,
+            "remaining_required": "max(max(0, find.required - find.completed), max(0, give.required - give.completed))",
+            "fir_partition": "both objectives explicitly require FIR; shared remaining quantity is FIR, not counted twice"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "remaining_total": 5,
+              "fir_remaining": 5,
+              "non_fir_remaining": 0
+            }
+          }
+        ],
+        "non_effects": [
+          "Shared same-quest pair has remaining find 3 and give 5; one shared FIR bag requires max(3,5)=5, not sum 8."
+        ]
+      },
+      "truth": {
+        "basis": "Original synthetic scenario convention selected for target qualification; not observed reference behavior or a universal API contract.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "projection-independent-give-consumption",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:independent-consumption",
+        "projection:fir-partition"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "objectives": [
+            {
+              "id": "give-a",
+              "quest_id": "synthetic-quest-a",
+              "pair_id": "independent-a",
+              "kind": "give",
+              "required": 3,
+              "completed": 0,
+              "fir_required": true,
+              "consumes_inventory": true
+            },
+            {
+              "id": "give-b",
+              "quest_id": "synthetic-quest-b",
+              "pair_id": "independent-b",
+              "kind": "give",
+              "required": 3,
+              "completed": 0,
+              "fir_required": false,
+              "consumes_inventory": true
+            }
+          ],
+          "consumption_convention": {
+            "scope": "this original synthetic scenario only",
+            "independent_quest_obligations": true,
+            "units_consumed_by_one_objective_cannot_satisfy_the_other": true,
+            "inventory_allocation": "three distinct FIR units for quest A and three distinct non-FIR units for quest B",
+            "remaining_required": "sum independent consuming give requirements; no shared pair deduplication"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "remaining_total": 6,
+              "fir_remaining": 3,
+              "non_fir_remaining": 3
+            }
+          }
+        ],
+        "non_effects": [
+          "Different quest/pair identities and explicit disjoint consumption establish independent requirements, rather than assuming find and give are independent."
+        ]
+      },
+      "truth": {
+        "basis": "Original synthetic scenario convention selected for target qualification; not observed reference behavior or a universal API contract.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "projection-exclusive-unresolved",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:exclusive-objective-group",
+        "projection:alternative-unresolved"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "group": {
+            "id": "synthetic-exclusive-group",
+            "kind": "exclusive_alternative",
+            "quest_id": "synthetic-branching-quest",
+            "selected_branch": "unresolved",
+            "selection_authority": "current_session_known_unresolved_choice",
+            "selection_exhaustive": true,
+            "branches": [
+              {
+                "id": "branch-a",
+                "objective_id": "give-a",
+                "pair_id": "branch-pair-a",
+                "kind": "give",
+                "required": 3,
+                "completed": 0,
+                "fir_required": false,
+                "consumes_inventory": true
+              },
+              {
+                "id": "branch-b",
+                "objective_id": "give-b",
+                "pair_id": "branch-pair-b",
+                "kind": "give",
+                "required": 8,
+                "completed": 0,
+                "fir_required": false,
+                "consumes_inventory": true
+              }
+            ]
+          },
+          "confirmed_current_need": 0,
+          "known_future_need": 0,
+          "other_needs_absent": true,
+          "group_convention": {
+            "scope": "original synthetic scenario only, not a global API aggregation algorithm",
+            "exactly_one_branch_can_consume": true,
+            "unresolved_branch": "conditional need exists; exact quantity remains unknown and cannot authorize Sell",
+            "confirmed_selected_branch": "only selected current branch consumes; exclude all unselected alternatives"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        },
+        {
+          "event": "resolve_advice",
+          "args": {
+            "need_source": "projected exclusive group with stated current-session authority"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "remaining_total": null,
+              "remaining_total_reason": "Unresolved exclusive choice between 3 and 8; no exact selected requirement.",
+              "confirmed_current": 0,
+              "known_future": 0,
+              "conditional_need": true,
+              "excluded_branch_ids": []
+            }
+          },
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "conditional_need"
+            ]
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not sum exclusive alternatives into 11.",
+          "Do not turn unresolved choice into zero exact need or confident Sell.",
+          "Projection/advice resolution is not an accepted Map scan."
+        ]
+      },
+      "truth": {
+        "basis": "Original synthetic scenario convention selected for target qualification; not observed reference behavior or a universal API contract.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "projection-exclusive-selected",
+      "source_id": "m0-author-doc-catalog-v1",
+      "annotation_source_id": "m0-independent-target-annotation-catalog-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "projection:exclusive-objective-group",
+        "projection:alternative-selected"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "group": {
+            "id": "synthetic-exclusive-group",
+            "kind": "exclusive_alternative",
+            "quest_id": "synthetic-branching-quest",
+            "selected_branch": "branch-a",
+            "selection_authority": "current_session_confirmed_selection",
+            "selection_exhaustive": true,
+            "branches": [
+              {
+                "id": "branch-a",
+                "objective_id": "give-a",
+                "pair_id": "branch-pair-a",
+                "kind": "give",
+                "required": 3,
+                "completed": 0,
+                "fir_required": false,
+                "consumes_inventory": true
+              },
+              {
+                "id": "branch-b",
+                "objective_id": "give-b",
+                "pair_id": "branch-pair-b",
+                "kind": "give",
+                "required": 8,
+                "completed": 0,
+                "fir_required": false,
+                "consumes_inventory": true
+              }
+            ]
+          },
+          "confirmed_current_need": 3,
+          "known_future_need": 0,
+          "other_needs_absent": true,
+          "group_convention": {
+            "scope": "original synthetic scenario only, not a global API aggregation algorithm",
+            "exactly_one_branch_can_consume": true,
+            "unresolved_branch": "conditional need exists; exact quantity remains unknown and cannot authorize Sell",
+            "confirmed_selected_branch": "only selected current branch consumes; exclude all unselected alternatives"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_item",
+          "args": {
+            "item_id": "synthetic-a"
+          }
+        },
+        {
+          "event": "resolve_advice",
+          "args": {
+            "need_source": "projected exclusive group with stated current-session authority"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projection",
+            "equals": {
+              "remaining_total": 3,
+              "fir_remaining": 0,
+              "non_fir_remaining": 3,
+              "confirmed_current": 3,
+              "known_future": 0,
+              "conditional_need": false,
+              "excluded_branch_ids": [
+                "branch-b"
+              ]
+            }
+          },
+          {
+            "path": "decision.verdict",
+            "equals": "Keep"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "current_need"
+            ]
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not sum exclusive alternatives into 11.",
+          "Do not count the unselected 8-unit branch as a current, future or conditional obligation.",
+          "Projection/advice resolution is not an accepted Map scan."
+        ]
+      },
+      "truth": {
+        "basis": "Original synthetic scenario convention selected for target qualification; not observed reference behavior or a universal API contract.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    }
+  ],
+  "authoring_source_id": "M0AnnotationCorrections"
+}

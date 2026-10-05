@@ -1,0 +1,2851 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-advice-policy",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "policy-current-keep-stale-irrelevant",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:current-keep-stale-irrelevant"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": null,
+          "progress_authority": "current_session",
+          "current_need": 2,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T09:00:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "instance_fir_reason": "Not observed."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Keep"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "current_need",
+              "stale_market",
+              "unknown_fir"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-actionable-hideout",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:actionable-hideout"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "hideout_need": 2
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Keep"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "actionable_hideout"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-future-keep",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:future-keep"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 2,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T09:00:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Keep for later"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "future_need",
+              "stale_market"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-current-over-future",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:current-over-future"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 1,
+          "future_need": 2,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Keep"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "current_need"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-future-over-conditional",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:future-over-conditional"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 2,
+          "conditional_need": 1,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Keep for later"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "future_need",
+              "conditional_need"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-conditional-check",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:conditional-check"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 1,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "conditional_need"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-unknown-fir-check",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:unknown-fir-check"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": null,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "instance_fir_reason": "Not observed."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_fir"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-flea-gross",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:flea-gross"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Sell on Flea"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "gross_not_net"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-flea-banned",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:flea-banned"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": false,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Sell to trader"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "flea_banned"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          },
+          {
+            "path": "decision.trader_id",
+            "equals": "trader-a"
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-flea-eligibility-unknown",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:flea-eligibility-unknown"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": null,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "flea_eligible_reason": "Not observed."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_eligibility"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-flea-restriction-unknown",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:flea-restriction-unknown"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": null,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "flea_allowed_reason": "Source does not establish permission."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_restriction"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-equal-flea-trader",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:equal-flea-trader"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 10000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Sell to trader"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "equal_values_choose_trader"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          },
+          {
+            "path": "decision.trader_id",
+            "equals": "trader-a"
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-trader-tie",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:trader-tie"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": false,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-b",
+              "name": "Synthetic B",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            },
+            {
+              "id": "trader-a",
+              "name": "Synthetic A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Sell to trader"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "deterministic_trader_id"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          },
+          {
+            "path": "decision.trader_id",
+            "equals": "trader-a"
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-no-destination",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:no-destination"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": false,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": []
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Price Unavailable"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "no_usable_destination"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-noncash-nonrub-nonpositive",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:noncash-nonrub-nonpositive"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": false,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "a",
+              "currency": "USD",
+              "cash": true,
+              "value": 5
+            },
+            {
+              "id": "b",
+              "currency": "RUB",
+              "cash": false,
+              "value": 9
+            },
+            {
+              "id": "c",
+              "currency": "RUB",
+              "cash": true,
+              "value": 0
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Price Unavailable"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "no_positive_cash_rub"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-quote-below-hour",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:quote-below-hour"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:00:01Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Sell on Flea"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "fresh_quote"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-quote-at-hour",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:quote-at-hour"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:00:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "quote_freshness_convention": {
+            "fresh_when": "0 <= age_seconds < market_validity_seconds",
+            "authority": "parent-selected conservative target TTL convention; comparator is not mandated by strategy"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "stale_quote"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "Parent-selected conservative exclusive TTL target policy at exactly 3600 seconds; not strategy-mandated comparator or reference observation.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "policy-quote-above-hour",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:quote-above-hour"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T10:59:59Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "stale_quote"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-quote-unknown",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:quote-unknown"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": null,
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "quote_utc_reason": "No source timestamp."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_quote_age"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-quote-future",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:quote-future"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T12:00:01Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "future_quote"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-fresh-envelope-old-quote",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:fresh-envelope-old-quote"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T09:00:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "fetched_utc": "2026-10-05T12:00:00Z"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "stale_quote"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-progress-absent",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:progress-absent"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "absent",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_or_stale_progress"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-progress-unauthorized",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:progress-unauthorized"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "unauthorized",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_or_stale_progress"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-progress-wrong_mode",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:progress-wrong_mode"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "wrong_mode",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_or_stale_progress"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-progress-same_session_stale",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:progress-same_session_stale"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "same_session_stale",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_or_stale_progress"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-progress-restart_stale",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:progress-restart_stale"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "restart_stale",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "decision.reasons",
+            "equals": [
+              "unknown_or_stale_progress"
+            ]
+          },
+          {
+            "path": "display.value_kind",
+            "equals": "gross"
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Do not infer FIR or progression from identity confidence",
+          "Do not turn advice resolution into an accepted Map event"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-stale-progress-known-need",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:stale-progress-positive-needs"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "same_session_stale",
+          "current_need": 2,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "resolve_advice",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "decision.verdict",
+            "equals": "Keep"
+          },
+          {
+            "path": "decision.warnings",
+            "equals": [
+              "stale_progress"
+            ]
+          },
+          {
+            "path": "fresh_no_needs_authority",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-intentional-unknown-fir-divergence",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:intentional-divergence"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T12:00:00Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": null,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:30:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "instance_fir_reason": "Not observed."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "compare_legacy_claim",
+          "args": {
+            "legacy_verdict": "Sell",
+            "observation_status": "hypothetical_not_observed"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "target.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "divergence.kind",
+            "equals": "intentional_safety_policy"
+          },
+          {
+            "path": "legacy_observation_established",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "policy-quote-aging-at-expiry",
+      "source_id": "m0-author-doc-advice-v1",
+      "annotation_source_id": "m0-independent-target-annotation-advice-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "advice:quote-aging-at-expiry",
+        "advice:exclusive-ttl",
+        "history:immutable-original-decision"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "clock_utc": "2026-10-05T11:59:59Z",
+          "market_validity_seconds": 3600,
+          "item_id": "synthetic-a",
+          "mode": "pvp",
+          "instance_fir": true,
+          "progress_authority": "current_session",
+          "current_need": 0,
+          "future_need": 0,
+          "conditional_need": 0,
+          "flea_allowed": true,
+          "flea_eligible": true,
+          "gross_avg24h": 12000,
+          "quote_utc": "2026-10-05T11:00:00Z",
+          "trader_offers": [
+            {
+              "id": "trader-a",
+              "name": "Synthetic Trader A",
+              "currency": "RUB",
+              "cash": true,
+              "value": 10000
+            }
+          ],
+          "quote_freshness_convention": {
+            "fresh_when": "0 <= age_seconds < market_validity_seconds",
+            "authority": "parent-selected conservative target TTL convention; comparator is not mandated by strategy"
+          },
+          "snapshot": {
+            "identity": "synthetic-a",
+            "accepted_at": "2026-10-05T11:59:59Z",
+            "original_verdict": "Sell on Flea",
+            "original_reasons": [
+              "fresh_quote"
+            ],
+            "gross_avg24h": 12000,
+            "quote_utc": "2026-10-05T11:00:00Z"
+          },
+          "presentation": {
+            "verdict": "Sell on Flea",
+            "reasons": [
+              "fresh_quote"
+            ]
+          },
+          "accepted_map_events": 0
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "clock_advanced",
+          "args": {
+            "clock_utc": "2026-10-05T12:00:00Z"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "presentation.verdict",
+            "equals": "Check"
+          },
+          {
+            "path": "presentation.reasons",
+            "equals": [
+              "stale_quote"
+            ]
+          },
+          {
+            "path": "snapshot",
+            "equals": {
+              "identity": "synthetic-a",
+              "accepted_at": "2026-10-05T11:59:59Z",
+              "original_verdict": "Sell on Flea",
+              "original_reasons": [
+                "fresh_quote"
+              ],
+              "gross_avg24h": 12000,
+              "quote_utc": "2026-10-05T11:00:00Z"
+            }
+          },
+          {
+            "path": "accepted_map_events",
+            "equals": 0
+          }
+        ],
+        "non_effects": [
+          "Initial age 3599 permits the initialized current Flea presentation; exact age 3600 expires under the selected exclusive TTL.",
+          "Presentation aging changes neither original accepted identity, decision, reasons, gross quote nor acceptance time, and emits no accepted Map scan."
+        ]
+      },
+      "truth": {
+        "basis": "Parent-selected conservative exclusive TTL convention, with independently authored original synthetic immutable snapshot; not observed reference behavior.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    }
+  ],
+  "authoring_source_id": "M0AnnotationCorrections"
+}

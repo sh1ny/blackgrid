@@ -1,0 +1,144 @@
+# M0 qualification protocol
+
+## Authority and evidence boundary
+
+This protocol accompanies the approved M0 plan and [version-1 contracts](contracts.md). It documents developer-only serialized-evidence tooling, not implemented product behavior or permission to run the reference. Product strategies, human-only game testing and the offline matrix/named native baseline remain unchanged. Normal consumers require no old checkout, network, .NET/native application or game interaction. No reference, Blackgrid or game launch, attachment, capture, personal-settings acquisition, native replay or live measurement is established by this dossier.
+
+The current dossier is incomplete. Missing rights, an independently labeled real image corpus and independently grounded map landmarks are prerequisites, not exclusions or a user-approved live skip. Reference declarations, public download locations and attribution are source leads, not reviewed legal conclusions.
+
+## Metadata-only source intake
+
+The actual local `source_intake` contains **405 exact-file SHA-256/size rows** from an explicit include set. Host HEAD is `04cf9e4b618d4921cd4d125753ece255d3e37eb0` with a dirty working tree; RatEye is clean at `24f8806e866add0750c8d24479f94639cef2ccae`. This is not a HEAD-only oracle identity. The collected manifest retains `closure_complete: false` and `freeze_id: null` with its reason.
+
+Only portable hashes, revisions, relative file identities and dependency/relationship metadata entered [provenance.json](provenance.json). No restricted source, artwork, traineddata, binary, historical real-image fixture or personal progression bytes were copied into this repository. The ignored local intake and its private `.local.json` sidecar are separate: **never commit or export the sidecar**, local source roots, cache roots, private archive locations or account/credential data. A sanitized metadata copy, if exported, must pass the export gate independently; it never becomes a source lock.
+
+The intake does not freeze complete processing/configuration, permitted catalog snapshots, native build identity, adapter/instrumentation source and recipes, reviewed archive retention or the full effective input closure. Restored package metadata is useful inventory evidence, but is neither a reproducible package lock nor confirmation that expected staged native files are present. No full source lock, materialization, build/replay or qualification claim is established.
+
+## Exact input and component inventory
+
+The ledger records every actual intake path/hash separately, including host and RatEye source/project/configuration files, **13 SVGs**, **244 Labs tiles**, **16 Icebreaker floors**, the Labyrinth raster, marker templates/category icons, map markers and the exact English model hash. The three raster-backed SVGs link every nested resource as dependencies/derivation relationships; relative placement, dimensions and group IDs where declared are metadata, not independent map controls. The configured Lab coordinate revision is 1; absent explicit revisions remain null with reasons, not guessed revision numbers. Preserve the actual Icebreaker `05_storage_ecurity.png` spelling.
+
+The actual Blackgrid lock's SDK/dev/transitive graph is separate from the reference's restored managed graph. Package MCP metadata records actual Dart package dependencies and license declarations; hosted lock hashes identify package archives, while SDK `0.0.0` is a sentinel, not a selected upstream release version. The reference inventory distinguishes resolved NuGet package versions/SHA-512 metadata from declared native staging paths and expected SHA-256 values. The English model hash is from the actual intake; native DLL hashes are integrity-manifest declarations, not a staging/build observation.
+
+The inventory binds `test/fixtures/m0/manifest.json` and its 11 original JSON payloads by path, raw byte hash and size. Original-authorship repository/report decisions and recorded independent synthetic annotation reviews remain separate from old-material rights. Recipe hashes describe authorship, not observations.
+
+Existing runner icon and both proposed visual mockups have exact hashes, but missing generator/author/upstream/license evidence. SDK Material Icons and the reference's system Arial request have explicit unresolved font rows; neither a framework dependency nor a CSS family name proves font redistribution rights. Future SVG/vector/CV/native/model/layer/item-icon and legacy-real-image candidates remain unselected, with null version/hash reasons. Inventory them again at selection; do not fabricate versions or implement replacement assets as part of rights intake.
+
+RatEye's pinned terms use `LicenseRef-RatEye-Custom-Commercial-Restriction`, **not** standard `Elastic-2.0`. RatStash's notice is unresolved, not redistribution permission. Icebreaker records the re3mr/CC-BY-NC-SA-4.0 source declaration; a designated reviewer must assess exact authorship, upstream revision, modifications, notices and NC/SA/attribution obligations for each use. Other map/icon/template credits remain leads requiring the same exact-artifact assessment.
+
+## Per-use rights and acquisition gate
+
+Each artifact stores independent `private_reference`, `repository_fixture`, `report_export` and `release` decisions. Every old-source/artwork/model/native/dependency use remains unresolved: no genuine designated reviewer evidence or grant was supplied. Every unresolved row identifies missing evidence, the designated rights-review owner, affected milestone and a concrete obtain/review-or-independently-replace action. No permission requests were sent. The blocked-use counts preserve those rows; a future-release blocker does not invalidate an unrelated independently cleared metadata export.
+
+Derived artifacts retain their parents and dependencies **without inheriting clearance**. A crop, converted layer, compiled artifact or composed SVG needs its own scoped decision and cleared dependency/derived/build closure for the requested use. A private-only decision cannot authorize repository fixtures, report export or release.
+
+The original metadata artifact IDs `m0-reference-intake-metadata`, `m0-provenance-metadata`, `m0-planned-checks-metadata`, `m0-display-matrix-metadata`, `m0-setup-metadata`, `m0-original-synthetic-fixtures` and `m0-authored-report-metadata` have a separate self-authorship attestation under this user-authorized M0 implementation request. Their repository/report scope covers only original JSON, synthetic expected semantics and portable fact metadata, with no old-byte dependencies or attachments. It is not legal approval of referenced third-party material, private materialization/replay authority, or annotation/native/live qualification. Independent synthetic annotation review is recorded separately. Their unavailable self-hashes are intentional; hash the final payload externally rather than create circular ledger/report identities. Third-party release clearance remains unresolved.
+
+Before acquiring or reusing restricted material, obtain:
+
+1. The exact artifact source/revision/hash and matching license text or grant, intended use scope, attribution/notices and modification obligations.
+2. The designated reviewer's dated decision and evidence IDs for **each** requested use and every dependency/derived/build input; preserve unresolved/excluded rows.
+3. Owner-controlled archive retention and complete effective reference closure/build/replay identities before a final source lock or private replay.
+4. Permitted independently labeled screenshots/panels, original acquisition/display metadata and independent landmark/control evidence, with the required second review. Synthetic geometry and reference predictions cannot supply real landmark truth.
+5. User-produced native/live observations and same-recording-clock physical-trigger/actionable-endpoint evidence. Missing evidence is blocked/unverified; nothing here grants an agent permission to collect it or declares the user skipped it.
+
+## Sanitized export mechanism
+
+`tool/qualification/export.dart` exposes:
+
+```dart
+ExportDecision inspectExport(
+  Map<String, dynamic> payload,
+  List<String> artifactIds,
+  Map<String, dynamic> provenance, {
+  String use = 'report_export',
+});
+
+Map<String, dynamic> sanitizedExport(
+  Map<String, dynamic> payload,
+  List<String> artifactIds,
+  Map<String, dynamic> provenance, {
+  String use = 'report_export',
+});
+```
+
+`ExportDecision` carries `allowed`, retained `blockers`, the complete caller-plus-nested `artifactIds`, and independent `privacyBlockers` from the original recursive privacy/portable-field walk. Empty privacy blockers alone are not schema validity or scoped-use authorization. `sanitizedExport` returns the original payload only after every check passes; otherwise it throws `ContractException`. It does **not** redact a bad payload and call the remainder safe. Consumers retain refusals in the dossier's blocked-use report.
+
+Allowed record roots and nested field vocabulary are explicit. Unknown extension bags and attachment/credential/account/chat/private-locator fields are refused recursively, including inside synthetic objects. Sensitive-key detection normalizes camel case and separators, including hyphenated token/account keys. Path/locator fields must be strings or honest nulls; containers cannot bypass path checks. Payload paths must be portable relative paths; public source evidence locators may be HTTPS without user info, queries or fragments. Absolute/private paths and native/archive/video/model attachments are refused. The ledger may describe an old artifact's relative path/hash without exporting its bytes. Named metric/stage dictionaries have context-specific key handling rather than treating IDs as unknown schema fields.
+
+Original synthetic expectation-only fixtures (or explicitly synthetic acquisition cases) may contain specified synthetic state/input/expected-effect semantics, including progression. Synthetic activation is bound to actual `cases[]` rows; an `acquisition: synthetic` marker inside arbitrary nested context cannot authorize progression. Attachment-path exceptions are bound to genuine provenance/source-intake metadata locations, not any object named `source`. Real personal progression is prohibited; a generic report or real acquisition record cannot gain semantic permission by adding an extension field. Embedded `provenance_ids` are checked even if omitted from the caller's artifact list, and every required dependency/derived/build artifact needs its own reviewed scoped clearance.
+
+Reference and measured attempt observation records require their own nonempty root `provenance_ids`, naming the observation artifact(s), not the authored metadata grant. Raw observation attachments and observation-derived comparison metrics/payloads use those report-export decisions and dependency/derivation/build closure. An unresolved observation remains ID/hash/index plus blocked-use and unverified coverage; neither raw results nor copied/derived observations enter the public dossier under metadata-only clearance. Diagnostic punctuation such as `source=...` or parenthesized absolute locators cannot bypass the path filter; ordinary SDK separators and space-delimited arithmetic remain permitted.
+
+Invalid-attempt denominator salvage requires the original payload's privacy checks and complete root/nested provenance closure to clear before projecting away invalid rows. Authorized invalid observations retain their counts and linkage; denied or privacy-forbidden observations retain only indexed bundle identity/hash and payload-independent public diagnostics. An unverified index citation is not a payload provenance grant. Supported identity `label` and nullable measured byte counters do not authorize extension bags or private reason fields.
+
+## Original synthetic corpus and exercised evidence
+
+The v2 preregistered checks keep all 16 comprehensive native cells visible, applicable and unverified, but nonrequired for M0; those capture/display obligations belong to M2/M6. M0 still requires all 16 offline display cells and its separately named native baseline. This boundary does not mark any untested native cell passed or authorize a live-testing skip.
+
+The current original corpus is `m0-synthetic-v3`, annotation version `m0-independent-target-v3`, catalog `m0-original-catalog-v1`, configuration `m0-synthetic-config-v1`, mode `synthetic-mode-scoped`. All **193 expectation-only cases** have recorded independent acceptance. Earlier reviews accepted 170 unchanged and 23 corrected/new scenarios; a fresh independent v3 review accepted the 16 cases whose safe encoding changed without changing target truth. Review rows retain authorship, reviewer, date and evidence IDs. There are **16 synthetic geometry cells**, **zero real scanner masters**, **zero independent real controls**, and **zero native/live observations**. These reviewed expectations are neither invented reference predictions nor full M0 qualification.
+
+Explicit scenario conventions are selected target expectations, not undocumented universal reference/API facts:
+
+- Quote freshness is `0 <= age_seconds < 3600`; at exact expiry the current market presentation becomes **Check**. Original accepted snapshot identity/decision/reasons/quote/time remain immutable; presentation aging emits no accepted Map scan. Future/absent/unsupported age cannot authorize fresh advice.
+- A declared same-quest paired find/give requirement shares inventory: remaining need is the **maximum** of each nonnegative remainder, not their sum; finding then hand-in reuses a unit. Unequal paired remainder 3/5 therefore needs 5. Independent consuming requirements are additive and retain separate FIR/non-FIR partitions.
+- An unresolved exclusive branch has conditional need with unknown exact quantity and cannot authorize Sell. A confirmed selected branch consumes only that branch; do not sum alternatives or retain unselected obligations.
+- Project quaternion forward bearing through the declared XZ rotation and vertical inversion; the scenario's projected map bearing is separate from a rendering glyph offset. Invalid zero-length quaternion is unknown, not guessed heading.
+- Local/layer/scene/viewport frames are explicit. For the anchor case, `screen = zoom * (local_anchor + layer_translation) + viewport_translation`; transformed extents are not transformed twice. Rotated extents use all four corners and fixed declared tolerance. Capture expectations distinguish logical/physical pixels, signed monitor origin, scale, clipping, stride/channel/orientation. None supplies real DPI/capture or independently grounded map control truth.
+
+V3 uses `channel_values`, `numeric_words`/`chrome_words` and `text_fragment` for original channel/OCR/log vectors, not raw captures or credential containers. Privacy scenarios store forbidden field-name/presence/value-kind descriptors without credential values. Later owning-feature tests **must construct local dummy sensitive fields from those descriptors before exercising persistence**; serializing descriptors alone cannot demonstrate leak exclusion. Expected identity/activity-only history and exact excluded-field obligations remain frozen.
+
+Fixture `files[].sha256`/`size_bytes` bind **raw on-disk bytes**, not canonicalized JSON. Embedded case rosters/truth must match the hashed payload cases. The scoped `.gitattributes` entries `test/fixtures/m0/** -text` and `docs/qualification/m0/**/*.json -text` disable Git EOL conversion for those byte-bound files; they do not change the repository's general text policy.
+
+The parent exercised **152 offline tests across serial MCP subsets**: 132 Dart consumer/widget checks, 13 fixture-integrity checks and seven real PowerShell collector-mode checks against temporary synthetic Git sources. A single longer fixture request hit the MCP's 30-second transport limit with unknown outcome; terminal subset results establish the counts above. Whole-project analysis reported no errors or other diagnostics. The real fixture checker passed **193 cases / 11 payloads / 16 synthetic geometry cells**. The actual post-review CLI generated and validated all ten JSON records in the incomplete dossier at [`reports/2026-10-05-m0-intake/README.md`](reports/2026-10-05-m0-intake/README.md): **262 gates (4 pass, 258 unverified), 246 required gates**, including the separately required named native baseline. All **9 exported sibling hashes matched**. This is the actual entrypoint, not completed qualification: **0 attempts, 0 real scanner masters and 0 independent real controls**. The current frozen manifest SHA-256 is `4892949ff6866e62cf6e35af86b8fb6fdb01ca1c0997544f7831991df3753597`. An earlier disposable v3 `core.autocrlf=true` Git commit/clone preserved all **23 exact JSON byte files** (12 manifest/payload files, provenance and ten dossier JSON files) and passed the same corpus counts; its owned repositories were removed without changing user Git configuration. No native/game launch or user skip occurred. Rights closure, real corpus/control truth, native evidence and the user baseline remain blockers.
+
+Raw payload bytes remain independently verified against exact manifest hashes. Generated public role records have canonical JSON identities and must be logically identical to matching verified frozen records; serialization is not tampering, but changed logical fields or frozen bytes must fail. After the earlier `m0-display-matrix` linkage repair, the actual post-review isolated CLI again consumed seven public canonical records plus 12 exact original manifest/payload files and reproduced all 262 gate statuses, coverage, denominators and baseline. All 1,918 rights blockers retained identical facts; canonical dictionary serialization changed only their display ordering. Nine portable sibling hashes matched. A separate wholly synthetic cleared-oracle generator regression proves canonical public reconsumption preserves the specific observed comparison/divergence while refusing whitespace-only frozen-byte drift. It is not native replay or public measured evidence. No old checkout, native oracle, companion or network was used; owned smoke workspaces are removed after proof.
+
+## Dossier consumption
+
+Use the actual CLI and explicit role/path/null-reason request in [Report request, API and output](contracts.md#report-request-api-and-output). Report generation reads only named serialized inputs and local fixture payloads, refuses an existing output directory, and exports only scoped cleared allowlisted JSON. `baseline_summary` retains attempted/missing/eligible denominators and age findings; `divergence_register` separates observed reference defects from synthetic policy expectations. Speed defects bind actual case sets/strata and targets without a fake singular case/profile. A faithfully measured slow reference is still valid evidence; it does not invalidate the evidence freeze or excuse missing required observations. Missing reference/attempt inputs do not create an Oracle scaffold, fake failed trial, non-null freeze or successful no-op.
+
+## Human-only live baseline handoff
+
+**Not ready to collect:** private-reference use, complete effective freeze/build/instrumentation identities, independently adjudicated permitted cases, and tracing perturbation remain unresolved. The allocation below is fixed before collection; it is not evidence that a trial occurred. No agent may launch, restart, drive, attach to, capture or verify either app while Escape from Tarkov is running. Live acquisition/testing belongs entirely to the user. A user-approved skip remains required/unverified and cannot authorize agent execution.
+
+### Preregister the setup and cases
+
+Before the first attempt, record the setup alias/hardware/build, one native resolution/scaling cell, signed monitor origin/topology, physical viewport/client dimensions, game UI scale and locale, windowed/borderless/fullscreen-like mode, reference build/freeze, catalog/config/annotation versions, cache state, observer method and fixed case order. Do not infer those fields from a resized image or the current monitor. Actual case IDs cannot be assigned until independent labels and permission are established. Store raw recordings/private traces in owner-controlled private storage; export only sanitized records with scoped permission.
+
+Use the concrete serialized [environment fields](contracts.md#environment), not name-only placeholders. Every warm/cold live attempt carries its display cell and physical viewport; these must agree with the named setup. Missing fields remain unverified, while contradictory supplied dimensions/scaling or recording clocks are invalid evidence. Fulfilled sampling allocation alone is not measurement completeness: scope-specific timing/init, startup/first-scan uncertainty, and map interaction/process CPU-memory observations remain required as described in the [attempt bundle contract](contracts.md#attempt-bundle). Preserve every unsuccessful attempt and explicit null reason without replacing failures to reach a success quota.
+
+### Finite trial allocation
+
+For **each** canonical `intended_path` (`intended-targeted`, `fallback-required`), perform exactly **100 attempted warm-live trials** on the preregistered native cell. These strings match planned `stratum_id`, not new aliases. Every attempt requires correlated observed physical actuation. Preserve actual outcome vocabulary `correct`, `wrong_id`, `rejected`, `error`, `canceled`, `superseded`, `incomplete`:
+
+| `batch_ordinal` | Automatic | Manual | Total |
+| --- | ---: | ---: | ---: |
+| 1 | 17 | 17 | 34 |
+| 2 | 17 | 16 | 33 |
+| 3 | 16 | 17 | 33 |
+| Total per intended path | 50 | 50 | 100 |
+
+This is **exactly 200 attempts, not 200 successes**. Record integer `batch_ordinal` 1..3, `scope: live-warm`, matching planned `stratum_id`, `executor: user`, `evidence_mode: live_user`, `warm_state: warm`, `acquisition_class: actual`, and `trigger_kind: automatic|manual` on every row. Each path's batch counts must be exactly 17/17, 17/16, 16/17, totaling 50 automatic and 50 manual; a differently balanced 200-row aggregate does not satisfy this handoff.
+
+Wrong/rejected/error/canceled/superseded/incomplete attempts stay in the attempted denominator **without success replacements**. Correct completion additionally requires an observed independently correct actionable endpoint; outcome text alone is not proof. An incomplete attempt cannot be described as observed completion. Missing physical actuation/linkage keeps the required collection incomplete even if an internal stage or result was recorded. Keep trigger routes, intended/actual paths and outcomes separate, freeze exact trial/case order before execution, and retain earlier attempts under any newly versioned protocol rather than repeating to reach a success quota.
+
+Additional allocations:
+
+- Ten user-operated fresh companion starts and first scans; record launch-to-first-usable and first-scan observations with cache state/uncertainty, not a stable tail claim.
+- Three user-operated bursts of five triggers (15 dispositions); mark the intended latest request, replacements and any stale publication. No burst p95 claim.
+- Separately, three game-closed repeats on a named vector multilevel map, Labs, Icebreaker and Labyrinth (12 map paths), using a declared fixed pan/zoom/floor-switch path. Permission and fresh game-absence confirmation still apply. Record legacy load/switch/interaction elapsed/process CPU-memory observations; these do not qualify Flutter rendering.
+
+### One recording clock; explicit endpoints
+
+For each live request, identify request ID, ordinal/generation, batch ordinal, case/input hash, intended/actual path and trigger kind. In one high-frame-rate video timeline, retain last-before/first-after frame timestamp intervals for physical actuation on every attempt. For a correct completion, also retain the first independently correct actionable item/verdict/uncertainty frame. Where no correct actionable endpoint is observed, record `endpoint: null` with `endpoint_reason`; retain the unsuccessful disposition and any separate visible fallback annotation. Both actuation and eligible endpoint annotations must bind the same request ID, generation, ordinal and case. Keep variable frame timestamps, recording resolution/method, correctness, occlusion, linkage and observation overhead. Decorative icon completion is excluded.
+
+Visible fallback onset is a distinct genuine running phase linked to actual fallback work, not a deadline/timeout label or final result. Raw QPC hook/manual receipt, queue, capture, targeted/fallback/host/acceptance/UI-assignment intervals are reported separately. Request-ID correlation is not clock calibration; never subtract QPC ticks from video time. Publication/UI assignment/DwmFlush is not visible proof.
+
+Calculate same-video elapsed lower = max(0, endpoint lower - trigger upper) and upper = endpoint upper - trigger lower; the lower clamp preserves overlapping frame uncertainty, not a measured zero. Missing/unobservable actuation, endpoint or linkage yields null with a reason. Report lower/upper nearest-rank p95 and eligible N, every attempted outcome/missing stage, unique master/source coverage and observer uncertainty. A bound crossing a target is indeterminate. Rejection is not actionable success; a correctly identified item with honest Check can be.
+
+### Return and assessment boundary
+
+The user supplies only sanitized trial settings, all dispositions, endpoint bounds and explicitly permitted evidence locators. No raw captures, account/chat content, tokens, real personal progression, private source/binaries or personal absolute paths enter the repository or exported dossier. Agent assessment of user records requires confirming that the game is closed first and attributes the observations to the user.
+
+A skipped or unavailable live baseline keeps `physical_to_actionable_visible` and `physical_to_fallback_visible` unverified (null p95/bounds where represented), `actionable_sample_n: 0`, `fallback_visible_sample_n: 0`, and full M0 classification `incomplete`. Offline replay timings cannot fill those endpoints. All 16 display cells remain visible; the named native-cell baseline does not qualify untested cells, mixed-monitor transitions or capture/DPI behavior.

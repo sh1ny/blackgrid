@@ -1,0 +1,2591 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-capture-geometry",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "capture-1920-100",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "1920-100",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            1920,
+            1080
+          ],
+          "monitor_origin_px": [
+            -1920,
+            -1080
+          ],
+          "os_scale_percent": 100,
+          "flutter_logical_size": [
+            1920.0,
+            1080.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 7696,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -1840.0,
+              -1040.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-1920-125",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "1920-125",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            1920,
+            1080
+          ],
+          "monitor_origin_px": [
+            -1920,
+            -1080
+          ],
+          "os_scale_percent": 125,
+          "flutter_logical_size": [
+            1536.0,
+            864.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 7696,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -1820.0,
+              -1030.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-1920-150",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "1920-150",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            1920,
+            1080
+          ],
+          "monitor_origin_px": [
+            -1920,
+            -1080
+          ],
+          "os_scale_percent": 150,
+          "flutter_logical_size": [
+            1280.0,
+            720.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 7696,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -1800.0,
+              -1020.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-1920-200",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "1920-200",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            1920,
+            1080
+          ],
+          "monitor_origin_px": [
+            -1920,
+            -1080
+          ],
+          "os_scale_percent": 200,
+          "flutter_logical_size": [
+            960.0,
+            540.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 7696,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -1760.0,
+              -1000.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-2560-100",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "2560-100",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            2560,
+            1440
+          ],
+          "monitor_origin_px": [
+            -2560,
+            -1440
+          ],
+          "os_scale_percent": 100,
+          "flutter_logical_size": [
+            2560.0,
+            1440.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 10256,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -2480.0,
+              -1400.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-2560-125",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "2560-125",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            2560,
+            1440
+          ],
+          "monitor_origin_px": [
+            -2560,
+            -1440
+          ],
+          "os_scale_percent": 125,
+          "flutter_logical_size": [
+            2048.0,
+            1152.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 10256,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -2460.0,
+              -1390.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-2560-150",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "2560-150",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            2560,
+            1440
+          ],
+          "monitor_origin_px": [
+            -2560,
+            -1440
+          ],
+          "os_scale_percent": 150,
+          "flutter_logical_size": [
+            1706.6666666666667,
+            960.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 10256,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -2440.0,
+              -1380.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-2560-200",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "2560-200",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            2560,
+            1440
+          ],
+          "monitor_origin_px": [
+            -2560,
+            -1440
+          ],
+          "os_scale_percent": 200,
+          "flutter_logical_size": [
+            1280.0,
+            720.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 10256,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -2400.0,
+              -1360.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3440-100",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3440-100",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3440,
+            1440
+          ],
+          "monitor_origin_px": [
+            -3440,
+            -1440
+          ],
+          "os_scale_percent": 100,
+          "flutter_logical_size": [
+            3440.0,
+            1440.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 13776,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3360.0,
+              -1400.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3440-125",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3440-125",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3440,
+            1440
+          ],
+          "monitor_origin_px": [
+            -3440,
+            -1440
+          ],
+          "os_scale_percent": 125,
+          "flutter_logical_size": [
+            2752.0,
+            1152.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 13776,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3340.0,
+              -1390.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3440-150",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3440-150",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3440,
+            1440
+          ],
+          "monitor_origin_px": [
+            -3440,
+            -1440
+          ],
+          "os_scale_percent": 150,
+          "flutter_logical_size": [
+            2293.3333333333335,
+            960.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 13776,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3320.0,
+              -1380.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3440-200",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3440-200",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3440,
+            1440
+          ],
+          "monitor_origin_px": [
+            -3440,
+            -1440
+          ],
+          "os_scale_percent": 200,
+          "flutter_logical_size": [
+            1720.0,
+            720.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 13776,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3280.0,
+              -1360.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3840-100",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3840-100",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3840,
+            2160
+          ],
+          "monitor_origin_px": [
+            -3840,
+            -2160
+          ],
+          "os_scale_percent": 100,
+          "flutter_logical_size": [
+            3840.0,
+            2160.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 15376,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3760.0,
+              -2120.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3840-125",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3840-125",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3840,
+            2160
+          ],
+          "monitor_origin_px": [
+            -3840,
+            -2160
+          ],
+          "os_scale_percent": 125,
+          "flutter_logical_size": [
+            3072.0,
+            1728.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 15376,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3740.0,
+              -2110.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3840-150",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3840-150",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3840,
+            2160
+          ],
+          "monitor_origin_px": [
+            -3840,
+            -2160
+          ],
+          "os_scale_percent": 150,
+          "flutter_logical_size": [
+            2560.0,
+            1440.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 15376,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3720.0,
+              -2100.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-3840-200",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "3840-200",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:16-cells",
+        "capture:negative-origin",
+        "capture:edge-clipping",
+        "capture:stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "physical_client_px": [
+            3840,
+            2160
+          ],
+          "monitor_origin_px": [
+            -3840,
+            -2160
+          ],
+          "os_scale_percent": 200,
+          "flutter_logical_size": [
+            1920.0,
+            1080.0
+          ],
+          "game_ui_scale": 1.1,
+          "buffer": {
+            "stride_bytes": 15376,
+            "channels": "BGRA",
+            "orientation": "top_down"
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "logical_to_desktop",
+          "args": {
+            "point_logical": [
+              80,
+              40
+            ]
+          }
+        },
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              -10,
+              -20,
+              40,
+              50
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "desktop_point_px",
+            "equals": [
+              -3680.0,
+              -2080.0
+            ]
+          },
+          {
+            "path": "clipped_roi_px",
+            "equals": [
+              0,
+              0,
+              30,
+              30
+            ]
+          },
+          {
+            "path": "padding_ltrb_px",
+            "equals": [
+              10,
+              20,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "row_zero_offset_bytes",
+            "equals": 0
+          },
+          {
+            "path": "native_capture_established",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "OS scaling does not change game_ui_scale",
+          "Synthetic geometry does not establish native DPI or recognition"
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-bgra-order",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:bgra-order"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width": 1,
+          "height": 1,
+          "stride_bytes": 4,
+          "channels": "BGRA",
+          "orientation": "top_down",
+          "channel_values": [
+            11,
+            22,
+            33,
+            255
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "decode_rgb",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "rgb",
+            "equals": [
+              33,
+              22,
+              11
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-bottom-up-padding",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:bottom-up-padding"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width": 1,
+          "height": 2,
+          "stride_bytes": 8,
+          "channels": "BGRA",
+          "orientation": "bottom_up",
+          "channel_values": [
+            1,
+            2,
+            3,
+            255,
+            99,
+            99,
+            99,
+            99,
+            4,
+            5,
+            6,
+            255,
+            99,
+            99,
+            99,
+            99
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "decode_rgb",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "rows_rgb",
+            "equals": [
+              [
+                [
+                  6,
+                  5,
+                  4
+                ]
+              ],
+              [
+                [
+                  3,
+                  2,
+                  1
+                ]
+              ]
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-short-stride",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:short-stride"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width": 2,
+          "height": 1,
+          "stride_bytes": 4,
+          "channels": "BGRA"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "validate_capture",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "outcome",
+            "equals": "invalid_stride"
+          },
+          {
+            "path": "recognition_started",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-unknown-channel",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:unknown-channel"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width": 1,
+          "height": 1,
+          "stride_bytes": 4,
+          "channels": "UNKNOWN"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "validate_capture",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "outcome",
+            "equals": "unsupported_channels"
+          },
+          {
+            "path": "recognition_started",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-unknown-orientation",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:unknown-orientation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "width": 1,
+          "height": 1,
+          "stride_bytes": 4,
+          "channels": "BGRA",
+          "orientation": "unknown"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "validate_capture",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "outcome",
+            "equals": "unsupported_orientation"
+          },
+          {
+            "path": "recognition_started",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-mixed-monitor-transition",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:mixed-monitor-transition"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "request_epoch": 1,
+          "os_scale_percent": 100,
+          "monitor_origin_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "enqueue",
+          "args": {
+            "logical_point": [
+              80,
+              40
+            ],
+            "epoch": 1
+          }
+        },
+        {
+          "event": "dpi_change",
+          "args": {
+            "os_scale_percent": 150,
+            "monitor_origin_px": [
+              -2560,
+              0
+            ],
+            "epoch": 2
+          }
+        },
+        {
+          "event": "complete_capture",
+          "args": {
+            "epoch": 1
+          }
+        },
+        {
+          "event": "enqueue",
+          "args": {
+            "logical_point": [
+              80,
+              40
+            ],
+            "epoch": 2
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "old_capture_publication",
+            "equals": false
+          },
+          {
+            "path": "new_desktop_point_px",
+            "equals": [
+              -2440,
+              60
+            ]
+          },
+          {
+            "path": "new_epoch",
+            "equals": 2
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "capture-occluded-minimized",
+      "source_id": "m0-author-doc-capture-v1",
+      "annotation_source_id": "m0-independent-target-annotation-capture-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "capture:occluded-minimized"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "foreground": false,
+          "minimized": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "capture_roi",
+          "args": {
+            "roi_client_px": [
+              0,
+              0,
+              100,
+              100
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "outcome",
+            "equals": "capture_unavailable"
+          },
+          {
+            "path": "recognition_started",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    }
+  ],
+  "authoring_source_id": "M0SafeSyntheticEncoding"
+}

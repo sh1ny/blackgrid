@@ -1,0 +1,616 @@
+{
+  "schema_version": 1,
+  "record_type": "display_matrix",
+  "id": "m0-display-matrix",
+  "data_class": "synthetic",
+  "cells": [
+    {
+      "id": "1920-100",
+      "width": 1920,
+      "height": 1080,
+      "os_scale_percent": 100,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-1920-100"
+      ],
+      "geometry_case_ids": [
+        "capture-1920-100"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-1920-100-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-1920-100-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-1920-100-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-1920-100-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "1920-125",
+      "width": 1920,
+      "height": 1080,
+      "os_scale_percent": 125,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-1920-125"
+      ],
+      "geometry_case_ids": [
+        "capture-1920-125"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-1920-125-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-1920-125-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-1920-125-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-1920-125-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "1920-150",
+      "width": 1920,
+      "height": 1080,
+      "os_scale_percent": 150,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-1920-150"
+      ],
+      "geometry_case_ids": [
+        "capture-1920-150"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-1920-150-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-1920-150-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-1920-150-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-1920-150-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "1920-200",
+      "width": 1920,
+      "height": 1080,
+      "os_scale_percent": 200,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-1920-200"
+      ],
+      "geometry_case_ids": [
+        "capture-1920-200"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-1920-200-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-1920-200-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-1920-200-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-1920-200-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "2560-100",
+      "width": 2560,
+      "height": 1440,
+      "os_scale_percent": 100,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-2560-100"
+      ],
+      "geometry_case_ids": [
+        "capture-2560-100"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-2560-100-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-2560-100-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-2560-100-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-2560-100-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "2560-125",
+      "width": 2560,
+      "height": 1440,
+      "os_scale_percent": 125,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-2560-125"
+      ],
+      "geometry_case_ids": [
+        "capture-2560-125"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-2560-125-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-2560-125-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-2560-125-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-2560-125-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "2560-150",
+      "width": 2560,
+      "height": 1440,
+      "os_scale_percent": 150,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-2560-150"
+      ],
+      "geometry_case_ids": [
+        "capture-2560-150"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-2560-150-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-2560-150-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-2560-150-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-2560-150-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "2560-200",
+      "width": 2560,
+      "height": 1440,
+      "os_scale_percent": 200,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-2560-200"
+      ],
+      "geometry_case_ids": [
+        "capture-2560-200"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-2560-200-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-2560-200-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-2560-200-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-2560-200-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3440-100",
+      "width": 3440,
+      "height": 1440,
+      "os_scale_percent": 100,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3440-100"
+      ],
+      "geometry_case_ids": [
+        "capture-3440-100"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3440-100-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3440-100-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3440-100-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3440-100-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3440-125",
+      "width": 3440,
+      "height": 1440,
+      "os_scale_percent": 125,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3440-125"
+      ],
+      "geometry_case_ids": [
+        "capture-3440-125"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3440-125-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3440-125-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3440-125-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3440-125-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3440-150",
+      "width": 3440,
+      "height": 1440,
+      "os_scale_percent": 150,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3440-150"
+      ],
+      "geometry_case_ids": [
+        "capture-3440-150"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3440-150-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3440-150-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3440-150-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3440-150-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3440-200",
+      "width": 3440,
+      "height": 1440,
+      "os_scale_percent": 200,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3440-200"
+      ],
+      "geometry_case_ids": [
+        "capture-3440-200"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3440-200-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3440-200-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3440-200-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3440-200-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3840-100",
+      "width": 3840,
+      "height": 2160,
+      "os_scale_percent": 100,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3840-100"
+      ],
+      "geometry_case_ids": [
+        "capture-3840-100"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3840-100-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3840-100-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3840-100-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3840-100-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3840-125",
+      "width": 3840,
+      "height": 2160,
+      "os_scale_percent": 125,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3840-125"
+      ],
+      "geometry_case_ids": [
+        "capture-3840-125"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3840-125-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3840-125-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3840-125-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3840-125-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3840-150",
+      "width": 3840,
+      "height": 2160,
+      "os_scale_percent": 150,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3840-150"
+      ],
+      "geometry_case_ids": [
+        "capture-3840-150"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3840-150-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3840-150-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3840-150-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3840-150-multi"
+        }
+      ],
+      "native_status": "unverified"
+    },
+    {
+      "id": "3840-200",
+      "width": 3840,
+      "height": 2160,
+      "os_scale_percent": 200,
+      "evidence_class": "synthetic",
+      "case_ids": [
+        "capture-3840-200"
+      ],
+      "geometry_case_ids": [
+        "capture-3840-200"
+      ],
+      "evidence_ids": [],
+      "limitations": "Original synthetic coordinate contracts only; no image, native DPI/capture or recognition evidence.",
+      "required_image_variants": [
+        {
+          "kind": "positive",
+          "status": "missing",
+          "planned_check_id": "image-3840-200-positive"
+        },
+        {
+          "kind": "no-marker",
+          "status": "missing",
+          "planned_check_id": "image-3840-200-no-marker"
+        },
+        {
+          "kind": "chrome-ambiguous",
+          "status": "missing",
+          "planned_check_id": "image-3840-200-chrome-ambiguous"
+        },
+        {
+          "kind": "multi",
+          "status": "missing",
+          "planned_check_id": "image-3840-200-multi"
+        }
+      ],
+      "native_status": "unverified"
+    }
+  ]
+}
