@@ -1,0 +1,730 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-persistence-privacy",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "persistence-transaction-rollback",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:transaction-rollback"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "schema_version": 1,
+          "pins": [
+            "pin-a"
+          ],
+          "history": [
+            "scan-a"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "begin_import",
+          "args": {
+            "pins": [
+              "pin-b"
+            ],
+            "history": [
+              "scan-b"
+            ]
+          }
+        },
+        {
+          "event": "interrupted",
+          "args": {
+            "stage": "before_commit"
+          }
+        },
+        {
+          "event": "restart",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "pins",
+            "equals": [
+              "pin-a"
+            ]
+          },
+          {
+            "path": "history",
+            "equals": [
+              "scan-a"
+            ]
+          },
+          {
+            "path": "schema_version",
+            "equals": 1
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-unsupported-import",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:unsupported-import"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "schema_version": 1,
+          "pins": [
+            "pin-a"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "import",
+          "args": {
+            "schema_version": 99,
+            "pins": [
+              "pin-b"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "pins",
+            "equals": [
+              "pin-a"
+            ]
+          },
+          {
+            "path": "outcome",
+            "equals": "unsupported_version"
+          },
+          {
+            "path": "source_mutated",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-successful-import",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:successful-import"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "pins": [
+            "pin-a"
+          ],
+          "history": []
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "import",
+          "args": {
+            "schema_version": 1,
+            "pins": [
+              "pin-b"
+            ],
+            "history": [
+              {
+                "identity": "synthetic-a",
+                "mode": "pve",
+                "source": "manual",
+                "activity": "selected"
+              }
+            ]
+          }
+        },
+        {
+          "event": "commit",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "pins",
+            "equals": [
+              "pin-a",
+              "pin-b"
+            ]
+          },
+          {
+            "path": "history_count",
+            "equals": 1
+          },
+          {
+            "path": "source_mutated",
+            "equals": false
+          },
+          {
+            "path": "requires_legacy_runtime",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-clear-cache-durability",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:clear-cache-durability"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "preferences": {
+            "selected_map": "lab"
+          },
+          "pins": [
+            "pin-a"
+          ],
+          "history": [
+            "scan-a"
+          ],
+          "catalog_cache": [
+            "snapshot-a"
+          ],
+          "icon_cache": [
+            "icon-a"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "clear_cache",
+          "args": {}
+        },
+        {
+          "event": "restart",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "preferences",
+            "equals": {
+              "selected_map": "lab"
+            }
+          },
+          {
+            "path": "pins",
+            "equals": [
+              "pin-a"
+            ]
+          },
+          {
+            "path": "history",
+            "equals": [
+              "scan-a"
+            ]
+          },
+          {
+            "path": "catalog_cache",
+            "equals": []
+          },
+          {
+            "path": "icon_cache",
+            "equals": []
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-history-privacy",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:history-privacy"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "scan": {
+            "identity": "synthetic-a",
+            "mode": "pve",
+            "source": "automatic",
+            "activity": "accepted",
+            "gross_avg24h": 12000,
+            "progress": {
+              "remaining": 2
+            },
+            "ocr": "synthetic OCR"
+          },
+          "field_descriptors": [
+            {
+              "parent_path": "scan",
+              "field_name": "image_bytes_label",
+              "present": true,
+              "value_kind": "string",
+              "label": "synthetic-image"
+            },
+            {
+              "parent_path": "scan",
+              "field_name": "token",
+              "present": true,
+              "value_kind": "string",
+              "label": "history-private-field"
+            }
+          ],
+          "descriptor_convention": "Original synthetic field-presence descriptions, not image data or credential values. Future product tests must construct local dummy fields on scan before save_history and prove their exclusion; a descriptor-only save cannot discharge the leak-exclusion obligation."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "save_history",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "persisted_row",
+            "equals": {
+              "identity": "synthetic-a",
+              "mode": "pve",
+              "source": "automatic",
+              "activity": "accepted"
+            }
+          },
+          {
+            "path": "excluded_fields",
+            "equals": [
+              "gross_avg24h",
+              "progress",
+              "ocr",
+              "image_bytes_label",
+              "token"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-token-leak-exclusion",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:token-leak-exclusion"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "field_descriptors": [
+            {
+              "field_name": "tokens",
+              "present": true,
+              "value_kind": "object",
+              "fields": [
+                {
+                  "field_name": "pvp",
+                  "present": true,
+                  "value_kind": "string",
+                  "label": "pvp-protected-input"
+                },
+                {
+                  "field_name": "pve",
+                  "present": true,
+                  "value_kind": "string",
+                  "label": "pve-protected-input"
+                }
+              ]
+            }
+          ],
+          "descriptor_convention": "Original synthetic field-presence descriptions only, with distinct mode labels and no credential values. Future product tests must construct distinct local dummy sensitive strings for each mode, exercise the ordered protection and serialization events, and prove none reach plaintext settings or diagnostics; descriptor-only serialization cannot discharge the leak-exclusion obligation."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "save_protected_tokens",
+          "args": {}
+        },
+        {
+          "event": "serialize_diagnostics",
+          "args": {}
+        },
+        {
+          "event": "serialize_settings",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "protected_key_modes",
+            "equals": [
+              "pvp",
+              "pve"
+            ]
+          },
+          {
+            "path": "plaintext_surfaces",
+            "equals": []
+          },
+          {
+            "path": "forbidden_diagnostic_values",
+            "equals": []
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-legacy-discard-transient",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:legacy-discard-transient"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {}
+      },
+      "ordered_inputs": [
+        {
+          "event": "import_legacy",
+          "args": {
+            "pins": [
+              "pin-a"
+            ],
+            "overlay": {
+              "enabled": true
+            },
+            "catalog": [
+              "cache-a"
+            ],
+            "progress": {
+              "remaining": 3
+            },
+            "correction": "synthetic",
+            "native_runtime_path": "synthetic-runtime"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "pins",
+            "equals": [
+              "pin-a"
+            ]
+          },
+          {
+            "path": "discarded_fields",
+            "equals": [
+              "overlay",
+              "catalog",
+              "progress",
+              "correction",
+              "native_runtime_path"
+            ]
+          },
+          {
+            "path": "legacy_credentials_imported",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "persistence-per-mode-key-isolation",
+      "source_id": "m0-author-doc-persistence-v1",
+      "annotation_source_id": "m0-independent-target-annotation-persistence-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "persistence:per-mode-key-isolation"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "protected_modes": [
+            "pvp",
+            "pve"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "read_protected_key",
+          "args": {
+            "mode": "seasonal"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "key",
+            "equals": {
+              "value": null,
+              "value_reason": "No seasonal key; do not borrow another mode token."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    }
+  ],
+  "authoring_source_id": "M0SafeSyntheticEncoding"
+}

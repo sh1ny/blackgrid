@@ -79,6 +79,7 @@ Map<String, dynamic> oracle(String freezeId) => {
   'schema_version': 1,
   'record_type': 'oracle_results',
   'id': 'result-1',
+  'provenance_ids': ['synthetic-author'],
   'freeze_id': freezeId,
   'run_id': 'run-1',
   'environment_id': 'env-1',
@@ -100,6 +101,87 @@ Map<String, dynamic> oracle(String freezeId) => {
 };
 
 void main() {
+  test('oracle contract requires explicit observation provenance linkage', () {
+    final value = oracle('a' * 64)..remove('provenance_ids');
+    expect(() => validateRecord(value), throwsA(isA<ContractException>()));
+    value['provenance_ids'] = <String>[];
+    expect(() => validateRecord(value), throwsA(isA<ContractException>()));
+    value['provenance_ids'] = ['synthetic-observations'];
+    expect(() => validateRecord(value), returnsNormally);
+  });
+
+  test(
+    'concrete environment rejects malformed supplied display measurements',
+    () {
+      final value = <String, dynamic>{
+        'schema_version': 1,
+        'record_type': 'environment',
+        'id': 'setup',
+        'setup_alias': 'synthetic',
+        for (final key in [
+          'hardware',
+          'windows',
+          'runtime',
+          'app_build',
+          'viewport',
+          'observer',
+        ]) ...{key: null, '${key}_reason': 'Not collected.'},
+        'display': {'width': '1920', 'height': 1080, 'os_scale_percent': 100},
+        'locale': null,
+        'locale_reason': 'Not collected.',
+        'display_mode': null,
+        'display_mode_reason': 'Not collected.',
+        'warm_state': null,
+        'warm_state_reason': 'Not collected.',
+      };
+      expect(() => validateRecord(value), throwsA(isA<ContractException>()));
+    },
+  );
+
+  test(
+    'source integrity refuses linked root and declared junction child',
+    () async {
+      final temp = await Directory.systemTemp.createTemp('m0-source-link-');
+      addTearDown(() => temp.delete(recursive: true));
+      final real = await Directory('${temp.path}/real').create();
+      final file = File('${real.path}/config.json');
+      await file.writeAsString(canonicalJson({'scale': 1}));
+      Future<void> junction(String path) async {
+        if (Platform.isWindows) {
+          final result = await Process.run(
+            'powershell.exe',
+            [
+              '-NoProfile',
+              '-Command',
+              r'$ErrorActionPreference = "Stop"; New-Item -ItemType Junction -Path $env:M0_LINK_PATH -Target $env:M0_LINK_TARGET | Out-Null',
+            ],
+            environment: {'M0_LINK_PATH': path, 'M0_LINK_TARGET': real.path},
+          );
+          expect(result.exitCode, 0, reason: '${result.stderr}');
+        } else {
+          await Link(path).create(real.path);
+        }
+        addTearDown(() => Link(path).delete());
+      }
+
+      final linked = '${temp.path}/linked';
+      await junction(linked);
+      await expectLater(
+        verifySourceIntegrity(lock(), linked),
+        throwsA(isA<ContractException>()),
+      );
+      final child = '${real.path}/child';
+      await junction(child);
+      final value = lock();
+      value['files'][0]['path'] = 'child/config.json';
+      value['freeze_id'] = sourceFreezeId(value);
+      await expectLater(
+        verifySourceIntegrity(value, real.path),
+        throwsA(isA<ContractException>()),
+      );
+      expect(await file.readAsString(), canonicalJson({'scale': 1}));
+    },
+  );
   group('effective input identity', () {
     test(
       'canonical JSON ignores map insertion order but preserves array order',

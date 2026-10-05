@@ -15,6 +15,15 @@ $ErrorActionPreference = 'Stop'
 $categories = @('config', 'native', 'model', 'catalog', 'build', 'archive', 'adapter', 'instrumentation', 'packages', 'maps')
 $excluded = @('.git', 'build', 'bin', 'obj', '.dart_tool', '.pub-cache', '.qualification', 'node_modules', 'cache', 'caches', 'logs', 'log', 'settings', 'credentials', 'secrets', 'appdata', '.vs', '.idea')
 
+function Test-ExactText($Left, $Right) {
+    return [string]::Equals($Left, $Right, [StringComparison]::Ordinal)
+}
+function Test-ExactMember($Values, [string]$Value) {
+    foreach ($candidate in $Values) {
+        if (Test-ExactText $candidate $Value) { return $true }
+    }
+    return $false
+}
 function Assert-RelativePath([string]$Path) {
     if ([string]::IsNullOrWhiteSpace($Path) -or $Path.Contains('\') -or $Path.Contains(':') -or $Path.StartsWith('/')) {
         throw 'Include paths must be portable, explicit relative paths.'
@@ -105,7 +114,7 @@ function Get-Revision([string]$Root, [string[]]$Paths) {
 function Assert-Integrity([string]$Root, $Record) {
     foreach ($entry in $Record.files) {
         $fact = Get-FileFact $Root $entry
-        if ($fact.sha256 -cne $entry.sha256 -or $fact.size_bytes -ne $entry.size_bytes) {
+        if (-not (Test-ExactText $fact.sha256 $entry.sha256) -or $fact.size_bytes -ne $entry.size_bytes) {
             throw "Integrity drift invalidates the run: $($entry.path)"
         }
     }
@@ -123,23 +132,23 @@ function Assert-RevisionIntegrity([string]$Root, $Record) {
 }
 
 function Assert-SameRevision($Expected, $Actual) {
-    if ($Expected.commit -cne $Actual.commit -or $Expected.dirty -ne $Actual.dirty -or
+    if (-not (Test-ExactText $Expected.commit $Actual.commit) -or $Expected.dirty -ne $Actual.dirty -or
         @($Expected.closure_status).Count -ne @($Actual.closure_status).Count) { throw 'Git revision/dirty facts drift invalidates the run.' }
     for ($index = 0; $index -lt @($Expected.closure_status).Count; $index++) {
-        if ($Expected.closure_status[$index].path -cne $Actual.closure_status[$index].path -or
-            $Expected.closure_status[$index].status -cne $Actual.closure_status[$index].status) { throw 'Git closure status drift invalidates the run.' }
+        if (-not (Test-ExactText $Expected.closure_status[$index].path $Actual.closure_status[$index].path) -or
+            -not (Test-ExactText $Expected.closure_status[$index].status $Actual.closure_status[$index].status)) { throw 'Git closure status drift invalidates the run.' }
     }
 }
 
 function Assert-Clearance($Record) {
     if (-not $Record.Contains('permission')) { throw 'No reviewed private_reference permission.' }
     $permission = $Record.permission
-    if ($permission.use -cne 'private_reference' -or $permission.status -cne 'cleared' -or
+    if (-not (Test-ExactText $permission.use 'private_reference') -or -not (Test-ExactText $permission.status 'cleared') -or
         [string]::IsNullOrWhiteSpace([string]$permission.reviewer) -or
         [string]::IsNullOrWhiteSpace([string]$permission.reviewed_at) -or
         @($permission.evidence_ids).Count -eq 0) { throw 'Reviewed private_reference clearance is required.' }
     foreach ($entry in $Record.files) {
-        if (-not (@($permission.scope_paths) -ccontains $entry.path)) { throw "Permission does not cover $($entry.path)" }
+        if (-not (Test-ExactMember $permission.scope_paths $entry.path)) { throw "Permission does not cover $($entry.path)" }
     }
 }
 
@@ -207,7 +216,7 @@ foreach ($category in $categories) {
         if ($row.ContainsKey('path')) {
             if (-not $factByPath.ContainsKey([string]$row.path)) { throw "Effective $category path is outside the explicit closure." }
             $actualHash = $factByPath[[string]$row.path].sha256
-            if ($row.ContainsKey('sha256') -and $row.sha256 -cne $actualHash) { throw "Declared $category hash differs from source bytes." }
+            if ($row.ContainsKey('sha256') -and -not (Test-ExactText $row.sha256 $actualHash)) { throw "Declared $category hash differs from source bytes." }
             $row.sha256 = $actualHash
         }
         $rows += $row

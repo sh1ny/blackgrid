@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "record_type": "map_controls",
+  "id": "m0-map-controls",
+  "data_class": "synthetic",
+  "controls": [],
+  "expected_roster": [
+    {
+      "map_id": "factory",
+      "source_key": "factory",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Factory.svg",
+      "floor_group_ids": [
+        "Ground_Floor",
+        "Second_Floor",
+        "Third_Floor",
+        "Basement"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "customs",
+      "source_key": "customs",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Customs.svg",
+      "floor_group_ids": [
+        "Ground_Level",
+        "Second_Floor",
+        "Third_Floor",
+        "Underground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "woods",
+      "source_key": "woods",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Woods.svg",
+      "floor_group_ids": [
+        "Ground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "shoreline",
+      "source_key": "shoreline",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Shoreline.svg",
+      "floor_group_ids": [
+        "Ground_Level",
+        "Second_Floor",
+        "Third_Floor",
+        "Underground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "interchange",
+      "source_key": "interchange",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Interchange.svg",
+      "floor_group_ids": [
+        "Ground_Level",
+        "First_Floor",
+        "Second_Floor"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "lab",
+      "source_key": "lab",
+      "pin_aliases": [
+        "thelab"
+      ],
+      "frame_revision": "1",
+      "artwork_path": "Maps/Labs.svg",
+      "floor_group_ids": [
+        "First_Level",
+        "Second_Level",
+        "Technical_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "reserve",
+      "source_key": "reserve",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Reserve.svg",
+      "floor_group_ids": [
+        "Ground_Level",
+        "Bunkers"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "lighthouse",
+      "source_key": "lighthouse",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Lighthouse.svg",
+      "floor_group_ids": [
+        "Ground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "streetsoftarkov",
+      "source_key": "streetsoftarkov",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/StreetsOfTarkov.svg",
+      "floor_group_ids": [
+        "Ground_Level",
+        "Second_Floor",
+        "Third_Floor",
+        "Fourth_Floor",
+        "Fifth_Floor",
+        "Underground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "groundzero",
+      "source_key": "groundzero",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/GroundZero.svg",
+      "floor_group_ids": [
+        "Ground_Level",
+        "Second_Floor",
+        "Third_Floor",
+        "Underground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "terminal",
+      "source_key": "terminal",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Terminal.svg",
+      "floor_group_ids": [
+        "Ground_Level"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "icebreaker",
+      "source_key": "icebreaker",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Icebreaker.svg",
+      "floor_group_ids": [
+        "Control_Room",
+        "Engine_Room",
+        "Engine_Room_Upper",
+        "Fuel_Pumps_Lower",
+        "Fuel_Pumps",
+        "Storage_Security",
+        "Infirmary",
+        "Helipad",
+        "Gym_Canteen",
+        "Accommodation_Lower",
+        "Accommodation_Mid",
+        "Accommodation_Upper",
+        "Officers_Deck",
+        "Stairs_Blocked",
+        "Bridge",
+        "Bridge_Roof"
+      ],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    },
+    {
+      "map_id": "labyrinth",
+      "source_key": "labyrinth",
+      "pin_aliases": [],
+      "frame_revision": "0",
+      "artwork_path": "Maps/Labyrinth.svg",
+      "floor_group_ids": [],
+      "artwork_identity_status": "unreviewed_source_identity_not_independent_coordinates",
+      "required_control_count": 3
+    }
+  ],
+  "independent_control_status": "missing",
+  "source_identity_basis": "Configured source map/group metadata only; coordinates and reference predictions not used."
+}

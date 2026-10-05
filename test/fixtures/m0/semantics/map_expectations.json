@@ -1,0 +1,2286 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-map-expectations",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "map-independent-anchor",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:independent-anchor"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "frame": {
+            "rotation_degrees": 90,
+            "affine": [
+              2,
+              100,
+              3,
+              200
+            ],
+            "native_zoom": 4,
+            "pixel_size": 4096,
+            "revision": "synthetic-1",
+            "convention": "rotate XZ counterclockwise; affine vertical inversion; tile multiplier 2^zoom"
+          },
+          "game_xyz": {
+            "x": 10,
+            "y": null,
+            "y_reason": "Height not sampled.",
+            "z": 20
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "artwork_pixel",
+            "equals": [
+              960,
+              2720
+            ]
+          },
+          {
+            "path": "normalized",
+            "equals": [
+              0.234375,
+              0.6640625
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-inverse-anchor",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:inverse-anchor"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "frame": {
+            "rotation_degrees": 90,
+            "affine": [
+              2,
+              100,
+              3,
+              200
+            ],
+            "native_zoom": 4,
+            "pixel_size": 4096,
+            "revision": "synthetic-1",
+            "convention": "rotate XZ counterclockwise; affine vertical inversion; tile multiplier 2^zoom"
+          },
+          "normalized": [
+            0.234375,
+            0.6640625
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "unproject",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "game_xz",
+            "equals": [
+              10,
+              20
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-off-artwork-unclamped",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:off-artwork-unclamped"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "frame": {
+            "rotation_degrees": 90,
+            "affine": [
+              2,
+              100,
+              3,
+              200
+            ],
+            "native_zoom": 4,
+            "pixel_size": 4096,
+            "revision": "synthetic-1",
+            "convention": "rotate XZ counterclockwise; affine vertical inversion; tile multiplier 2^zoom"
+          },
+          "game_xyz": {
+            "x": 1000,
+            "y": 0,
+            "z": 0
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "normalized",
+            "equals": [
+              0.390625,
+              -10.9375
+            ]
+          },
+          {
+            "path": "clamped",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-quaternion-heading",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:quaternion-heading"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "frame": {
+            "rotation_degrees": 90,
+            "affine": [
+              2,
+              100,
+              3,
+              200
+            ],
+            "native_zoom": 4,
+            "pixel_size": 4096,
+            "revision": "synthetic-1",
+            "convention": "rotate XZ counterclockwise; affine vertical inversion; tile multiplier 2^zoom"
+          },
+          "quaternion": {
+            "x": 0,
+            "y": 0.7071067811865476,
+            "z": 0,
+            "w": 0.7071067811865476
+          },
+          "heading_convention": "Quaternion forward +Z gives game +X (yaw 90); CCW XZ map rotation 90 sends +X to +Z; vertical inversion draws +Z upward; clockwise screen bearing from projected +Z is 0; rendering glyph offset is separate.",
+          "glyph_offset_applied_to_map_bearing": false
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_heading",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "yaw_degrees",
+            "equals": 90
+          },
+          {
+            "path": "map_bearing_degrees",
+            "equals": 0
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "map-invalid-quaternion",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:invalid-quaternion"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "quaternion": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "w": 0
+          }
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_heading",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "heading",
+            "equals": {
+              "degrees": null,
+              "degrees_reason": "Zero-length quaternion is invalid."
+            }
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-bounds-four-corners",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:bounds-four-corners"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "frame": {
+            "rotation_degrees": 90,
+            "affine": [
+              1,
+              0,
+              1,
+              0
+            ],
+            "revision": "synthetic-bounds"
+          },
+          "artwork_bounds_xz": [
+            [
+              0,
+              0
+            ],
+            [
+              10,
+              20
+            ]
+          ],
+          "game_xz": [
+            5,
+            10
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_bounds",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projected_bounds",
+            "equals": [
+              -20,
+              -10,
+              0,
+              0
+            ]
+          },
+          {
+            "path": "normalized",
+            "equals": [
+              0.5,
+              0.5
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-pin-migration",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:pin-migration"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "lab",
+          "source_alias": "thelab",
+          "pin": {
+            "normalized": [
+              0.25,
+              0.5
+            ],
+            "revision": "0"
+          },
+          "old_frame": {
+            "x_extent": 100,
+            "z_extent": 100
+          },
+          "new_frame": {
+            "x_extent": 200,
+            "z_extent": 200,
+            "x_offset": 10,
+            "z_offset": 20,
+            "projection_formula": {
+              "x_norm": "(x + x_offset) / x_extent",
+              "z_norm": "(z + z_offset) / z_extent"
+            },
+            "offset_convention": "additive original synthetic offsets, not extent minima and not actual Labs coefficients"
+          },
+          "frame_kind": "original-synthetic-not-source-labs-coefficients"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "migrate_pin",
+          "args": {
+            "target_revision": "1"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "inverted_game_xz",
+            "equals": [
+              25,
+              50
+            ]
+          },
+          {
+            "path": "pin.normalized",
+            "equals": [
+              0.175,
+              0.35
+            ]
+          },
+          {
+            "path": "pin.revision",
+            "equals": "1"
+          },
+          {
+            "path": "source_alias",
+            "equals": "thelab"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "map-unsupported-pin-frame",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:unsupported-pin-frame"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "pins": [
+            {
+              "id": "pin-a",
+              "revision": "99",
+              "normalized": [
+                0.2,
+                0.3
+              ]
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "import_pins",
+          "args": {
+            "supported_revisions": [
+              "0",
+              "1"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "outcome",
+            "equals": "unsupported_frame"
+          },
+          {
+            "path": "existing_data_unchanged",
+            "equals": true
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-base-overlay",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:base-overlay"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "exclusive": false,
+          "base_group": "Base",
+          "overlay_groups": [
+            "L1",
+            "L2"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "select_overlays",
+          "args": {
+            "selected": [
+              "L1",
+              "L2"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "visible_groups",
+            "equals": [
+              "Base",
+              "L1",
+              "L2"
+            ]
+          },
+          {
+            "path": "base_dimmed",
+            "equals": true
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-exclusive-overlay",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:exclusive-overlay"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "exclusive": true,
+          "base_group": "Base",
+          "overlay_groups": [
+            "L1",
+            "L2"
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "select_overlay",
+          "args": {
+            "selected": "L2"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "visible_groups",
+            "equals": [
+              "L2"
+            ]
+          },
+          {
+            "path": "base_visible",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-manual-nonautomatic-map",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:manual-nonautomatic-map"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "factory",
+          "automatic_bands": [],
+          "selected_group": "Basement"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "height_sample",
+          "args": {
+            "y": 0
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "Basement"
+          },
+          {
+            "path": "auto_floor_invented",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-minimum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": -10
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "low"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "low"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-below-minimum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": -10.000001
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "Base"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "Base"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-below-maximum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": -1e-06
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "low"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "low"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-maximum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 0
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "Base"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "Base"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-gap",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 1
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "Base"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "Base"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-high-minimum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 2
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "high"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "high"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-high-maximum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:half-open-bands",
+        "map:gap"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "base_group": "Base",
+          "exclusive": true,
+          "selected_group": "low"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 5
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "Base"
+          },
+          {
+            "path": "visible_groups",
+            "equals": [
+              "Base"
+            ]
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-unknown",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:unknown-vs-zero"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "selected_group": "high"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": null,
+            "y_reason": "Not sampled."
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "high"
+          },
+          {
+            "path": "automatic_selection_changed",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-floor-invalid",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:unknown-vs-zero"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "selected_group": "high"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "height_status": "invalid"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "high"
+          },
+          {
+            "path": "automatic_selection_changed",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-overlap-higher-minimum",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:overlap-order"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "a",
+              "minimum": 0,
+              "maximum": 10
+            },
+            {
+              "id": "b",
+              "minimum": 2,
+              "maximum": 12
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 3
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "b"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-overlap-narrower-upper",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:overlap-order"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "a",
+              "minimum": 0,
+              "maximum": 10
+            },
+            {
+              "id": "b",
+              "minimum": 0,
+              "maximum": 8
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 3
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "b"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-overlap-source-order",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:overlap-order"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "bands": [
+            {
+              "id": "a",
+              "minimum": 0,
+              "maximum": 10
+            },
+            {
+              "id": "b",
+              "minimum": 0,
+              "maximum": 10
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "auto_floor",
+          "args": {
+            "y": 3
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "selected_group",
+            "equals": "a"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-marker-unknown-height",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:marker-height"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "category_visible": true,
+          "selected_floor": "high",
+          "bands": [
+            {
+              "id": "low",
+              "minimum": -10,
+              "maximum": 0
+            },
+            {
+              "id": "high",
+              "minimum": 2,
+              "maximum": 5
+            }
+          ],
+          "band_convention": "half-open [minimum, maximum); original synthetic bands"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "filter_marker",
+          "args": {
+            "y": null,
+            "y_reason": "Marker height unavailable."
+          }
+        },
+        {
+          "event": "filter_marker",
+          "args": {
+            "y": 99
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "unknown_height_visible",
+            "equals": true
+          },
+          {
+            "path": "out_of_band_visible",
+            "equals": true
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "map-layer-shared-frame",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:defs-styles-clips-transforms",
+        "map:raster-extents"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "scene_viewbox": [
+            0,
+            0,
+            100,
+            100
+          ],
+          "base": {
+            "group_id": "Base",
+            "transform": [
+              1,
+              0,
+              0,
+              1,
+              10,
+              20
+            ],
+            "clip_reference": "clip-a",
+            "style_reference": "style-a",
+            "shape": {
+              "kind": "rect",
+              "rectangle": [
+                0,
+                0,
+                10,
+                10
+              ],
+              "class": "m0-layer-shape"
+            }
+          },
+          "overlay": {
+            "group_id": "Overlay",
+            "transform": [
+              1,
+              0,
+              0,
+              1,
+              10,
+              20
+            ],
+            "clip_reference": "clip-a",
+            "style_reference": "style-a",
+            "shape": {
+              "kind": "rect",
+              "rectangle": [
+                0,
+                0,
+                10,
+                10
+              ],
+              "class": "m0-layer-shape"
+            }
+          },
+          "shared_defs": [
+            "clip-a",
+            "style-a"
+          ],
+          "image_extent": [
+            20,
+            30,
+            40,
+            50
+          ],
+          "local_anchor": [
+            0,
+            0
+          ],
+          "image_extent_frame": "scene_space_already_transformed",
+          "anchor_transform_convention": "screen = zoom * (local_anchor + layer_translation) + viewport_translation",
+          "defs": {
+            "clip-a": {
+              "kind": "clipPath",
+              "coordinate_frame": "layer_local",
+              "rectangle": [
+                0,
+                0,
+                100,
+                100
+              ]
+            },
+            "style-a": {
+              "kind": "style",
+              "selector": ".m0-layer-shape",
+              "fill": "#556677",
+              "stroke": "none"
+            }
+          },
+          "asset_cache_identity": "synthetic-shared-layer-asset-v1"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "compile_layers",
+          "args": {
+            "selected": [
+              "Base",
+              "Overlay"
+            ]
+          }
+        },
+        {
+          "event": "pan_zoom",
+          "args": {
+            "zoom": 2,
+            "translation": [
+              5,
+              10
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "both_layer_anchor_screen_px",
+            "equals": [
+              25,
+              50
+            ]
+          },
+          {
+            "path": "clip_references_resolved",
+            "equals": [
+              "clip-a"
+            ]
+          },
+          {
+            "path": "styles_preserved",
+            "equals": [
+              "style-a"
+            ]
+          },
+          {
+            "path": "image_extent_scene",
+            "equals": [
+              20,
+              30,
+              40,
+              50
+            ]
+          },
+          {
+            "path": "asset_cache_identity_changed_by_pan_zoom",
+            "equals": false
+          }
+        ],
+        "non_effects": [
+          "Original defs/reference/style/clip relationships ground synthetic compilation expectations only; no native rendering observation.",
+          "Pan/zoom must not change the initialized asset cache identity."
+        ]
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "map-pin-normalized-not-game",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:pin-frame"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "map_id": "synthetic-map",
+          "revision": "1",
+          "artwork_size_px": [
+            1000,
+            500
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "add_pin",
+          "args": {
+            "artwork_pixel": [
+              250,
+              100
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "stored_pin",
+            "equals": {
+              "map_id": "synthetic-map",
+              "revision": "1",
+              "normalized": [
+                0.25,
+                0.2
+              ]
+            }
+          },
+          {
+            "path": "world_coordinate_invented",
+            "equals": false
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "map-bounds-four-corners-45deg",
+      "source_id": "m0-author-doc-map-v1",
+      "annotation_source_id": "m0-independent-target-annotation-map-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05"
+      ],
+      "coverage_tags": [
+        "map:bounds-four-corners",
+        "map:non-axis-discriminatory-bounds"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0AnnotationCorrections",
+        "reviewer": "M0AnnotationV2Review",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05"
+        ],
+        "reason": "Actual independent follow-up accepted this corrected/new original synthetic scenario; no executable/native qualification claimed."
+      },
+      "initial_context": {
+        "state": {
+          "frame": {
+            "rotation_degrees": 45,
+            "affine": [
+              1,
+              0,
+              1,
+              0
+            ],
+            "revision": "synthetic-bounds-45deg",
+            "convention": "CCW XZ rotation followed by affine vertical inversion; transform all four bounds corners before taking minima/maxima"
+          },
+          "artwork_bounds_xz": [
+            [
+              0,
+              0
+            ],
+            [
+              10,
+              20
+            ]
+          ],
+          "game_xz": [
+            5,
+            10
+          ],
+          "artwork_corners_xz": [
+            [
+              0,
+              0
+            ],
+            [
+              10,
+              0
+            ],
+            [
+              0,
+              20
+            ],
+            [
+              10,
+              20
+            ]
+          ],
+          "comparison_tolerance": 1e-09,
+          "comparison_convention": "Fixed absolute tolerance 1e-9 for each projected extent and normalized coordinate.",
+          "expected_extent_derivation": "[xmin,ymin,xmax,ymax] = [-20/sqrt(2), -30/sqrt(2), 10/sqrt(2), 0]; diagonal-only projection misses xmin and xmax."
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "project_bounds",
+          "args": {}
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "projected_bounds",
+            "equals": [
+              -14.14213562373095,
+              -21.213203435596423,
+              7.071067811865475,
+              0
+            ]
+          },
+          {
+            "path": "normalized",
+            "equals": [
+              0.5,
+              0.5
+            ]
+          }
+        ],
+        "non_effects": [
+          "Do not derive rotated extents from only the two diagonal corners.",
+          "Original synthetic arithmetic under fixed tolerance is not native map/control-point proof."
+        ]
+      },
+      "truth": {
+        "basis": "Original synthetic scenario convention selected for target qualification; not observed reference behavior or a universal API contract.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    }
+  ],
+  "authoring_source_id": "M0AnnotationCorrections"
+}

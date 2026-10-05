@@ -1,0 +1,1744 @@
+{
+  "schema_version": 1,
+  "record_type": "fixture_manifest",
+  "id": "m0-matcher-vectors",
+  "data_class": "synthetic",
+  "corpus_version": "m0-synthetic-v3",
+  "annotation_version": "m0-independent-target-v3",
+  "catalog_version": "m0-original-catalog-v1",
+  "config_version": "m0-synthetic-config-v1",
+  "cases": [
+    {
+      "id": "matcher-marker-below",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:marker:below"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.819999,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-marker-at",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:marker:at"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.82,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-marker-above",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:marker:above"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.820001,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-similarity-below",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:similarity:below"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.549999,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-similarity-at",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:similarity:at"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.55,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-similarity-above",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:similarity:above"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.550001,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-length-below",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:length:below"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "ab",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-length-at",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:length:at"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "abc",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-length-above",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:length:above"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "abcd",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-runner-below",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:runner:below"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.049999,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "ambiguous"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-runner-at",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:runner:at"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.05,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-runner-above",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:runner:above"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.050001,
+          "catalog_status": "available",
+          "quantity_agrees": true
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-secondary-below",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:secondary:below"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ],
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof."
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.02,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "secondary_margin": 0.029999,
+          "guarded_secondary_identity": "synthetic-bolt",
+          "recognized_identity": "synthetic-bolt",
+          "match_branch": "guarded_secondary",
+          "runner_up_margin_role": "ordinary branch diagnostic only; not the operative guarded-secondary margin",
+          "secondary_margin_role": "operative guarded-secondary candidate margin, inclusive threshold 0.03",
+          "ocr_title": "Bolt pack 20",
+          "guarded_normalized_identity_agrees": true,
+          "guarded_quantity_agrees": true,
+          "ocr_quantity": 20,
+          "candidate_quantity": 20
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ],
+            "candidate_title": "Bolt pack 20",
+            "numeric_words": [
+              "20"
+            ],
+            "candidate_normalized_identity": "synthetic-bolt"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "ambiguous"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "Original synthetic guarded-secondary alternative to ordinary 0.05 branch, with explicit identity/quantity guard; not observed reference routing.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "matcher-secondary-at",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:secondary:at"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ],
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof."
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.02,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "secondary_margin": 0.03,
+          "guarded_secondary_identity": "synthetic-bolt",
+          "recognized_identity": "synthetic-bolt",
+          "match_branch": "guarded_secondary",
+          "runner_up_margin_role": "ordinary branch diagnostic only; not the operative guarded-secondary margin",
+          "secondary_margin_role": "operative guarded-secondary candidate margin, inclusive threshold 0.03",
+          "ocr_title": "Bolt pack 20",
+          "guarded_normalized_identity_agrees": true,
+          "guarded_quantity_agrees": true,
+          "ocr_quantity": 20,
+          "candidate_quantity": 20
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ],
+            "candidate_title": "Bolt pack 20",
+            "numeric_words": [
+              "20"
+            ],
+            "candidate_normalized_identity": "synthetic-bolt"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "Original synthetic guarded-secondary alternative to ordinary 0.05 branch, with explicit identity/quantity guard; not observed reference routing.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "matcher-secondary-above",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:secondary:above"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ],
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof."
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.02,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "secondary_margin": 0.030001,
+          "guarded_secondary_identity": "synthetic-bolt",
+          "recognized_identity": "synthetic-bolt",
+          "match_branch": "guarded_secondary",
+          "runner_up_margin_role": "ordinary branch diagnostic only; not the operative guarded-secondary margin",
+          "secondary_margin_role": "operative guarded-secondary candidate margin, inclusive threshold 0.03",
+          "ocr_title": "Bolt pack 20",
+          "guarded_normalized_identity_agrees": true,
+          "guarded_quantity_agrees": true,
+          "ocr_quantity": 20,
+          "candidate_quantity": 20
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_ids": [
+              "synthetic-bolt",
+              "synthetic-neighbor"
+            ],
+            "candidate_title": "Bolt pack 20",
+            "numeric_words": [
+              "20"
+            ],
+            "candidate_normalized_identity": "synthetic-bolt"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "Original synthetic guarded-secondary alternative to ordinary 0.05 branch, with explicit identity/quantity guard; not observed reference routing.",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "matcher-quantity-agree",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:quantity-agree"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "ocr_title": "Bolt pack 20"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "numeric_words": [
+              "20"
+            ],
+            "candidate_title": "Bolt pack 20"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-quantity-disagree",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:quantity-disagree"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ],
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof."
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": false,
+          "ocr_title": "Bolt pack 20"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "numeric_words": [
+              "20"
+            ],
+            "candidate_title": "Bolt pack 40"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "matcher-numeric-missing",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-correction-authorship-2026-10-05",
+        "m0-second-review-v2-followup-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:numeric-missing"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "evidence_ids": [
+          "m0-second-review-v2-followup-2026-10-05",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ],
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof."
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": false,
+          "ocr_title": "Bolt pack"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "numeric_words": [],
+            "candidate_title": "Bolt pack 20"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0AnnotationCorrections"
+    },
+    {
+      "id": "matcher-numeric-unrelated-suffix",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:numeric-unrelated-suffix"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "ocr_title": "Bolt pack 20 9"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "numeric_words": [
+              "20",
+              "9"
+            ],
+            "candidate_title": "Bolt pack 20"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-unicode-formkc",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:unicode-formkc"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "ocr_title": "ＢＯＬＴ   pack"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "candidate_title": "bolt pack",
+            "normalization": "FormKC/case/space"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "accept"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-chrome-substring",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05",
+        "m0-v3-safe-encoding-authorship-2026-10-05",
+        "m0-v3-independent-encoding-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:chrome-substring"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0SafeSyntheticEncoding",
+        "reviewer": "M0V3EncodingReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Independent v3 encoding/semantic review accepted preserved original target truth; descriptor privacy scenarios require concrete local dummy-field construction in future owning-feature tests. No executable/native/reference proof.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md",
+          "m0-v3-independent-encoding-review-2026-10-05"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "ocr_title": "Inspect bolt pack"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "candidate_title": "bolt pack",
+            "chrome_words": [
+              "inspect"
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "reject"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-empty-catalog",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:empty-catalog"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "ocr_title": "Bolt pack"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_status": "empty",
+            "catalog_ids": []
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "no_match"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "matcher-unavailable-catalog",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "matcher:unavailable-catalog"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "marker_score": 0.9,
+          "similarity": 0.9,
+          "normalized_title": "bolt",
+          "runner_up_margin": 0.1,
+          "catalog_status": "available",
+          "quantity_agrees": true,
+          "ocr_title": "Bolt pack"
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "match_title",
+          "args": {
+            "catalog_status": "unavailable"
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "match.outcome",
+            "equals": "unavailable"
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    },
+    {
+      "id": "multi-independent-geometry-association",
+      "source_id": "m0-author-doc-matcher-v1",
+      "annotation_source_id": "m0-independent-target-annotation-matcher-v1",
+      "display_cell_id": "not-display-dependent",
+      "role": "expectation_only",
+      "data_class": "synthetic",
+      "provenance_ids": [
+        "m0-original-synthetic-fixtures"
+      ],
+      "adjudication_ids": [
+        "m0-original-authorship-2026-10-05",
+        "m0-second-review-2026-10-05"
+      ],
+      "coverage_tags": [
+        "multi:geometry-association",
+        "quantity:swapped-identities"
+      ],
+      "review": {
+        "status": "accepted",
+        "second_review_required": false,
+        "owner": "M0IndependentFixtures",
+        "reviewer": "M0AnnotationSecondReview",
+        "reviewed_at": "2026-10-05",
+        "reason": "Actual independent second review accepted this unchanged original synthetic expectation at scenario scope; not reference/native qualification.",
+        "evidence_ids": [
+          "m0-second-review-2026-10-05",
+          "STRATEGY.md",
+          "docs/IMPLEMENTATION_STRATEGY.md",
+          "docs/plans/2026-10-05-1006-test-m0-reference-qualification-plan.md"
+        ]
+      },
+      "initial_context": {
+        "state": {
+          "inspections": [
+            {
+              "id": "left",
+              "rect_px": [
+                10,
+                20,
+                100,
+                40
+              ],
+              "expected_identity": "synthetic-a"
+            },
+            {
+              "id": "right",
+              "rect_px": [
+                300,
+                20,
+                100,
+                40
+              ],
+              "expected_identity": "synthetic-b"
+            }
+          ]
+        }
+      },
+      "ordered_inputs": [
+        {
+          "event": "compare_observation",
+          "args": {
+            "detections": [
+              {
+                "rect_px": [
+                  300,
+                  20,
+                  100,
+                  40
+                ],
+                "identity": "synthetic-a"
+              },
+              {
+                "rect_px": [
+                  10,
+                  20,
+                  100,
+                  40
+                ],
+                "identity": "synthetic-b"
+              }
+            ]
+          }
+        }
+      ],
+      "expected_effects": {
+        "assertions": [
+          {
+            "path": "comparison.wrong_accepted_identities",
+            "equals": 2
+          },
+          {
+            "path": "comparison.successes",
+            "equals": 0
+          }
+        ],
+        "non_effects": []
+      },
+      "truth": {
+        "basis": "author-doc-derived target expectation",
+        "independent_of_reference_output": true,
+        "target_policy_id": "m0-target-policy-v1"
+      },
+      "authoring_source_id": "M0IndependentFixtures"
+    }
+  ],
+  "authoring_source_id": "M0SafeSyntheticEncoding"
+}
