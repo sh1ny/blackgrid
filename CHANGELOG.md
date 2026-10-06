@@ -24,6 +24,8 @@
 
 - *(map)* align marker browser with filtered pins
 
+- *(map)* scope pin selection to its map
+
 ### Performance
 
 - *(ui)* reuse manual search results per build (U6)

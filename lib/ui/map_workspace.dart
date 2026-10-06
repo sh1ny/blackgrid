@@ -22,6 +22,7 @@ class MapWorkspace extends StatefulWidget {
 class _MapWorkspaceState extends State<MapWorkspace> {
   String? _selectedMarker;
   String? _selectedPin;
+  String? _selectedPinMapId;
   final _focus = FocusNode(debugLabel: 'Native map workspace');
   MapController get maps => widget.services.maps;
 
@@ -59,6 +60,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     }
     setState(() {
       _selectedPin = pinId;
+      _selectedPinMapId = pinId == null ? null : maps.selectedMapId;
       _selectedMarker = pinId == null ? marker?.marker.id : null;
     });
   }
@@ -109,6 +111,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     if (!mounted || mapId != maps.selectedMapId || id == null) return;
     setState(() {
       _selectedPin = id.startsWith('pin:') ? id.substring(4) : null;
+      _selectedPinMapId = _selectedPin == null ? null : mapId;
       _selectedMarker = id.startsWith('marker:') ? id.substring(7) : null;
     });
   }
@@ -132,6 +135,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       setState(() {
         _selectedMarker = null;
         _selectedPin = null;
+        _selectedPinMapId = null;
       });
     } else {
       return KeyEventResult.ignored;
@@ -150,8 +154,9 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         if (marker.marker.id == _selectedMarker) selected = marker.marker;
       }
       CustomPin? selectedPin;
-      if (widget.services.settings.settings.markerFilters['CustomPins'] !=
-          false) {
+      if (_selectedPinMapId == maps.selectedMapId &&
+          widget.services.settings.settings.markerFilters['CustomPins'] !=
+              false) {
         for (final pin in pins) {
           if (pin.id == _selectedPin) selectedPin = pin;
         }
@@ -284,9 +289,11 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                   selectMarker: (id) => setState(() {
                                     _selectedMarker = id;
                                     _selectedPin = null;
+                                    _selectedPinMapId = null;
                                   }),
                                   selectPin: (id) => setState(() {
                                     _selectedPin = id;
+                                    _selectedPinMapId = maps.selectedMapId;
                                     _selectedMarker = null;
                                   }),
                                 ),
@@ -344,7 +351,10 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                   ),
                   IconButton(
                     tooltip: 'Close pin details',
-                    onPressed: () => setState(() => _selectedPin = null),
+                    onPressed: () => setState(() {
+                      _selectedPin = null;
+                      _selectedPinMapId = null;
+                    }),
                     icon: const Icon(Icons.close),
                   ),
                 ],

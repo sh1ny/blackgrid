@@ -37,6 +37,128 @@ Future<void> _wheel(
 }
 
 void main() {
+  for (final selection in ['canvas', 'browser', 'semantics']) {
+    testWidgets('$selection pin selection is scoped to its map', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        final h = await pumpMapFixture(tester);
+        final sourcePin = CustomPin(
+          id: 'shared-id',
+          mapId: 'shoreline',
+          x: .8,
+          y: .8,
+          frame: 'legacy-normalized',
+          frameRevision: 0,
+          label: 'Source pin',
+          updatedAt: DateTime.utc(2026),
+        );
+        final otherPin = CustomPin(
+          id: sourcePin.id,
+          mapId: 'thelab',
+          x: .2,
+          y: .2,
+          frame: 'labs-native-normalized',
+          frameRevision: 1,
+          label: 'Other map pin',
+          updatedAt: DateTime.utc(2026),
+        );
+        for (final pin in [sourcePin, otherPin]) {
+          expect(
+            await tester.runAsync(() => h.services.settings.savePin(pin)),
+            isTrue,
+          );
+        }
+        await settleMapFixture(tester, h);
+        if (selection == 'browser') {
+          await tester.tap(_markerBrowser);
+          await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(ListTile, sourcePin.label));
+        } else if (selection == 'canvas') {
+          final point = h.services.maps.projectPin(sourcePin)!;
+          await tester.tapAt(
+            tester.getTopLeft(_viewport) + Offset(point.x, point.y),
+          );
+        } else {
+          final painter = tester
+              .widget<CustomPaint>(
+                find
+                    .descendant(
+                      of: _viewport,
+                      matching: find.byType(CustomPaint),
+                    )
+                    .first,
+              )
+              .painter!;
+          final target = painter.semanticsBuilder!(tester.getSize(_viewport))
+              .singleWhere(
+                (target) => target.properties.label == 'Source pin, saved pin',
+              );
+          target.properties.onTap!();
+        }
+        await settleMapFixture(tester, h);
+        expect(find.textContaining('Source pin ·'), findsOneWidget);
+        expect(find.text('Edit pin'), findsOneWidget);
+        expect(
+          await tester.runAsync(() => h.services.settings.setMap('thelab')),
+          isTrue,
+        );
+        await settleMapFixture(tester, h);
+        expect(h.services.maps.selectedMapId, 'thelab');
+        expect(find.textContaining('Source pin ·'), findsNothing);
+        expect(find.textContaining('Other map pin ·'), findsNothing);
+        expect(find.text('Edit pin'), findsNothing);
+        final painter = tester
+            .widget<CustomPaint>(
+              find
+                  .descendant(of: _viewport, matching: find.byType(CustomPaint))
+                  .first,
+            )
+            .painter!;
+        final otherTarget = painter.semanticsBuilder!(tester.getSize(_viewport))
+            .singleWhere(
+              (target) => target.properties.label == 'Other map pin, saved pin',
+            );
+        expect(otherTarget.properties.selected, isFalse);
+        await tester.tap(_markerBrowser);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(ListTile, otherPin.label));
+        await settleMapFixture(tester, h);
+        expect(find.textContaining('Other map pin ·'), findsOneWidget);
+        await tester.tap(find.text('Edit pin'));
+        await tester.pumpAndSettle();
+        expect(
+          double.parse(
+            tester
+                .widget<TextField>(
+                  find.widgetWithText(TextField, 'Normalized X'),
+                )
+                .controller!
+                .text,
+          ),
+          otherPin.x,
+        );
+        expect(
+          double.parse(
+            tester
+                .widget<TextField>(
+                  find.widgetWithText(TextField, 'Normalized Y'),
+                )
+                .controller!
+                .text,
+          ),
+          otherPin.y,
+        );
+        expect(h.services.settings.pins, hasLength(2));
+        expect(h.services.scans.hasAcceptedScan, isFalse);
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    });
+  }
+
   for (final markers in ['filtered', 'offscreen']) {
     testWidgets('browser disables hidden pins with $markers markers', (
       tester,
