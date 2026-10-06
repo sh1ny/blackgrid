@@ -1,3 +1,5 @@
 # Qualification hashes bind exact payload bytes across Windows/Linux checkouts.
 test/fixtures/m0/** -text
 docs/qualification/m0/**/*.json -text
+assets/maps/** -text
+test/fixtures/m3/** -text

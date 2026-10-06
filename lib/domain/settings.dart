@@ -31,6 +31,10 @@ const markerCategories = <String>[
   'BossSpawns',
   'CultistSpawns',
   'BtrStops',
+  'lootContainers',
+  'lootLoose',
+  'locks',
+  'stationaryWeapons',
   'CustomPins',
 ];
 

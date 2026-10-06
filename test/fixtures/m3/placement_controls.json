@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "labelledOn": "2026-10-06",
+  "inspectionManifestSha256": "9931c91457f7ddac290d986a18f3f80beb883e4ac847a51e284857f09ae8bb88",
+  "sources": {
+    "interchange/Interchange.svg": "31a44112cd5fe33484ce6be7b7dc80d13db6077cba2583a4425ed94c665f47c4",
+    "metadata/maps.json": "c53a327dcdcff67a49b9fe2d150731edb4c1611dfc2f75db2ce97444dee2ef77",
+    "markers/maps.json": "62b06a28603ce9091fd57b3fb3e4f9bb1261140843e07cf80767679ad805d99b",
+    "markers/maps_en.json": "8848c81e16d621be9890b51036b569c2e30432ccc9a9708074cbae06aca0a087"
+  },
+  "semanticEvidence": [
+    {
+      "url": "https://markschaefer.dev/item_view?id=69bb3f278af9f360ee010a7a",
+      "observedOn": "2026-10-06",
+      "keyId": "69bb3f278af9f360ee010a7a",
+      "excerpt": "Compartment C-1 keycard",
+      "excerptUtf8Sha256": "f8a1a4bb5cd1a5a0d2404d0ba9cf86b351521fb71c8a315229030e9180ed1e18"
+    },
+    {
+      "url": "https://tarkov.help/en/quest/boreas",
+      "observedOn": "2026-10-06",
+      "excerpt": "in the center of the helipad and wait about 40 seconds for the helicopter to arrive.",
+      "excerptUtf8Sha256": "02ba2913229ca609fbf31c35a4f394546c0fca860de7e33380372aac0477d7cd"
+    },
+    {
+      "url": "https://tarkov.help/en/quest/boreas",
+      "observedOn": "2026-10-06",
+      "excerpt": "Go to the end of the corridor - on the left there will be a door to the server room. It is opened with the C-1 highest access keycard.",
+      "excerptUtf8Sha256": "2e7d52146e421934db099a95e31cfdce544a9591978de3e108e285b7df26bde6"
+    },
+    {
+      "url": "https://markschaefer.dev/item_view?id=69bb3ec9f609db77390b0e1a",
+      "observedOn": "2026-10-06",
+      "keyId": "69bb3ec9f609db77390b0e1a",
+      "excerpt": "Boreas crew quarters keycard",
+      "excerptUtf8Sha256": "191aa734bd781bf6aebd2e736af86e7507672f33dd9efbe1cd4edb457eee236f"
+    },
+    {
+      "url": "https://markschaefer.dev/item_view?id=69bb3f7df94327bc0f0230c9",
+      "observedOn": "2026-10-06",
+      "keyId": "69bb3f7df94327bc0f0230c9",
+      "excerpt": "Compartment C-3 keycard",
+      "excerptUtf8Sha256": "cf2bcb0444dc3f8c4daa7e96fbe6734d360ebb34504efb7b0e5ad43ec8adc012"
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "interchange-railway-corner",
+      "mapId": "interchange",
+      "markerId": "extracts:7954d8c2717f9ba217821834ccf3de5d91d628ad:0",
+      "name": "Railway Exfil",
+      "sourcePath": "extracts/0",
+      "game": [474.57, -433.74, 19.92],
+      "artworkUnits": "svg-viewbox",
+      "artwork": [135, 12],
+      "tolerance": 35,
+      "artworkFloor": "Ground_Level",
+      "label": "Northwest rail-track exit corridor; area centre, not a drawn extraction icon.",
+      "inspectionResidualDisplayPixels": 2.988
+    },
+    {
+      "id": "interchange-emercom-corner",
+      "mapId": "interchange",
+      "markerId": "extracts:73e006324ece078a5713c7d04557aba5035d7f05:0",
+      "name": "Emercom Checkpoint",
+      "sourcePath": "extracts/3",
+      "game": [-321.56, 266.74, 24.18],
+      "artworkUnits": "svg-viewbox",
+      "artwork": [1005, 775],
+      "tolerance": 35,
+      "artworkFloor": "Ground_Level",
+      "label": "Southeastern checkpoint road at the powerline/border approach.",
+      "inspectionResidualDisplayPixels": 1.907
+    },
+    {
+      "id": "interchange-power-station",
+      "mapId": "interchange",
+      "markerId": "extracts:f609b359144383c176a96e320b62edd6827d29a0:0",
+      "name": "Power Station V-Ex",
+      "sourcePath": "extracts/6",
+      "game": [-302.89, -367.73, 21.65],
+      "artworkUnits": "svg-viewbox",
+      "artwork": [985, 82],
+      "tolerance": 25,
+      "artworkFloor": "Ground_Level",
+      "label": "Power-station northern access road, adjacent to the station buildings.",
+      "inspectionResidualDisplayPixels": 1.038
+    },
+    {
+      "id": "interchange-power-interior",
+      "mapId": "interchange",
+      "markerId": "switches:b6ebc39ee29cb6659334df309194b696bbfef555:0",
+      "name": "Mall Main Power Switch",
+      "sourcePath": "switches/0",
+      "game": [-201.108, -357.8291, 23.1857],
+      "artworkUnits": "svg-viewbox",
+      "artwork": [910, 100],
+      "tolerance": 45,
+      "artworkFloor": "Ground_Level",
+      "label": "Power-station building area. Coarse building-level match; switch itself is not depicted.",
+      "inspectionResidualDisplayPixels": 36.869
+    },
+    {
+      "id": "labs-parking-periphery",
+      "mapId": "thelab",
+      "markerId": "extracts:99477cb352520521b92ba91a2c1cfd7fc219ad26:0",
+      "name": "Parking Gate",
+      "sourcePath": "extracts/5",
+      "game": [-231.46, -457.77, 6.19],
+      "artworkUnits": "original-256px-tile-mosaic",
+      "artwork": [420, 1420],
+      "tolerance": 90,
+      "artworkFloor": "First_Level",
+      "label": "Western parking-garage access passage; base artwork remains visible with upper level.",
+      "sourceTile": "tiles/thelab/First_Level/1/5.png",
+      "sourceTileSha256": "6749b3b5db6fc8f0a17cf2377cdff10b9de00b5ebd64597a11d0baeaaf6250ca",
+      "inspectionResidualDisplayPixels": 320.785
+    },
+    {
+      "id": "labs-hangar-periphery",
+      "mapId": "thelab",
+      "markerId": "extracts:e4449767a7b69f57de8efbd2cf7dd5ee11a8468d:0",
+      "name": "Hangar Gate",
+      "sourcePath": "extracts/0",
+      "game": [-170.49, -218.87, 5.54],
+      "artworkUnits": "original-256px-tile-mosaic",
+      "artwork": [3640, 2240],
+      "tolerance": 90,
+      "artworkFloor": "First_Level",
+      "label": "Eastern hangar access passage; large area tolerance, not an exact door icon.",
+      "sourceTile": "tiles/thelab/First_Level/14/8.png",
+      "sourceTileSha256": "c6c28a3bb4b4b82cd3b58c4342d6f6b0d54f8806d0bc4faabc8a84c2a11e2e05",
+      "inspectionResidualDisplayPixels": 926.204
+    },
+    {
+      "id": "labs-technical-main-lift",
+      "mapId": "thelab",
+      "markerId": "extracts:718b3e098cf256525a98ad84c481876082391b18:0",
+      "name": "Main Elevator",
+      "sourcePath": "extracts/4",
+      "game": [-282.69, -334.73, -2.81],
+      "artworkUnits": "original-256px-tile-mosaic",
+      "artwork": [2075, 730],
+      "tolerance": 45,
+      "artworkFloor": "Technical_Level",
+      "label": "Northern technical-level lift stub at the top of the central service corridor.",
+      "sourceTile": "tiles/thelab/Technical_Level/8/2.png",
+      "sourceTileSha256": "0e050e83f14a8b32459a17e77b5230c0af84a5f96a8b7c969f72c7367711abfa",
+      "inspectionResidualDisplayPixels": 475.112
+    },
+    {
+      "id": "labs-technical-medical-lift",
+      "mapId": "thelab",
+      "markerId": "extracts:9f0ea7a638bbcc3e2d855a66ef7a9f643cc06265:0",
+      "name": "Medical Block Elevator",
+      "sourcePath": "extracts/1",
+      "game": [-112.3, -344.04, -3.11],
+      "artworkUnits": "original-256px-tile-mosaic",
+      "artwork": [1950, 3025],
+      "tolerance": 45,
+      "artworkFloor": "Technical_Level",
+      "label": "Southern technical-level elevator stub beside the bottom service corridor.",
+      "sourceTile": "tiles/thelab/Technical_Level/7/11.png",
+      "sourceTileSha256": "f1f0f5574f93dd20cde7b5465b2faaf630cf2921660ed190b95d17265ab4741a",
+      "inspectionResidualDisplayPixels": 779.123
+    },
+    {
+      "id": "labs-upper-cargo-lift",
+      "mapId": "thelab",
+      "markerId": "extracts:aecf93f8def45d42877594c4170f5a71b5b41b39:0",
+      "name": "Cargo Elevator",
+      "sourcePath": "extracts/3",
+      "game": [-111.79, -408.55, 5.38],
+      "artworkUnits": "original-256px-tile-mosaic",
+      "artwork": [1080, 3030],
+      "tolerance": 55,
+      "artworkFloor": "Second_Level",
+      "label": "Southwestern upper-level cargo lift stub.",
+      "sourceTile": "tiles/thelab/Second_Level/4/11.png",
+      "sourceTileSha256": "b20415b64551f3c88b19cf020cccd04446a6e64a38a82eb604fb1e35bc876929",
+      "inspectionResidualDisplayPixels": 695.598
+    }
+  ],
+  "observedSourceParity": [
+    {
+      "id": "icebreaker-octagonal-helipad",
+      "markerId": "extracts:9bf65c4c24d0153f1542a90ddabadb37198ab9ff:0",
+      "name": "Helicopter",
+      "sourcePath": "extracts/0",
+      "mapId": "icebreaker",
+      "observedFloorId": "Helipad",
+      "preparedFloorId": "Helipad",
+      "sourceTile": "tiles/icebreaker/Helipad/8/2.png",
+      "sourceTileSha256": "6ed65363ec57c5ced6230ae6cd0814a0d6e9c840880292b41a96b3ff4b0af36e",
+      "game": [0.28, -66.03, 22.56],
+      "observation": "User's upstream comparison shows the original Helicopter marker above the artwork, not at the drawn landing pad. Retain the original game coordinates and shared transform; this observation is source parity, not independent game-to-artwork correctness.",
+      "semanticEvidenceUrls": ["https://tarkov.help/en/quest/boreas"],
+      "physicalFloorBasis": "Public extraction instructions establish physical Helipad ownership, not a numeric artwork point or calibrated walk-surface height."
+    },
+    {
+      "id": "icebreaker-officers-office-door",
+      "markerId": "locks:f680d37a9e9c4f7b4673a2cd1bedd4a8ed73e104:0",
+      "name": "locks",
+      "sourcePath": "locks/3",
+      "keyId": "69bb3f278af9f360ee010a7a",
+      "mapId": "icebreaker",
+      "observedFloorId": "Officers_Deck",
+      "preparedFloorId": "Officers_Deck",
+      "sourceTile": "tiles/icebreaker/Officers_Deck/8/10.png",
+      "sourceTileSha256": "fc083b63e7d6226244e3481a376c6d89fb9c4a8900ee61e2c8ba5e7d7abdcacb",
+      "game": [-5.25, 28.39, 35.64],
+      "observation": "User's side-by-side Blackgrid and tarkov.dev screenshots establish the same C-1 doorway placement. The prior manual label selected the wrong artwork feature and is withdrawn, not replaced with a production-projected point.",
+      "semanticEvidenceUrls": ["https://markschaefer.dev/item_view?id=69bb3f278af9f360ee010a7a", "https://tarkov.help/en/quest/boreas", "https://tarkovforge.com/story-guide/boreas"],
+      "physicalFloorBasis": "Independent key naming and public level-7 server-room description support Officers_Deck ownership; the user comparison is source-parity evidence, not an independent numeric placement oracle."
+    },
+    {
+      "id": "icebreaker-lower-forward-west-crew-door",
+      "mapId": "icebreaker",
+      "markerId": "locks:85d65ba335af0a32a3ce306341ee683ceb62a4a1:0",
+      "name": "locks",
+      "sourcePath": "locks/1",
+      "keyId": "69bb3ec9f609db77390b0e1a",
+      "game": [7.67, 23.62, 27.54],
+      "observedFloorId": "Accommodation_Lower",
+      "sourceTile": "tiles/icebreaker/Accommodation_Lower/7/10.png",
+      "sourceTileSha256": "dce7b305e806dce2d99aac522e181d3ee8bd73f06614f81890b56959d6c2b5de",
+      "observation": "User confirmed Accommodation Lower marker placement is correct. The prior manual doorway label selected the wrong artwork feature; this frozen CQ-key group member is retained without an artwork coordinate expectation.",
+      "groupIdentityBasis": "Exactly three frozen CQ-key doors have height 27.54: one positive-X record and two negative-X records. These source identities do not independently identify artwork doorway points.",
+      "semanticEvidenceUrls": ["https://markschaefer.dev/item_view?id=69bb3ec9f609db77390b0e1a"]
+    },
+    {
+      "id": "icebreaker-lower-middle-east-crew-door",
+      "mapId": "icebreaker",
+      "markerId": "locks:d60cab173f0df778af7bfffc834ace99df0a6564:0",
+      "name": "locks",
+      "sourcePath": "locks/7",
+      "keyId": "69bb3ec9f609db77390b0e1a",
+      "game": [-7.67, 32.63, 27.54],
+      "observedFloorId": "Accommodation_Lower",
+      "sourceTile": "tiles/icebreaker/Accommodation_Lower/8/10.png",
+      "sourceTileSha256": "01ac090c799e1ee6c929d403a7f1d2a1fccfd2a8f732a6eb257b9c3104d76d76",
+      "observation": "User confirmed Accommodation Lower marker placement is correct. The prior manual doorway label is withdrawn; retain this frozen source group member without an artwork coordinate expectation.",
+      "semanticEvidenceUrls": ["https://markschaefer.dev/item_view?id=69bb3ec9f609db77390b0e1a"]
+    },
+    {
+      "id": "icebreaker-lower-aft-east-crew-door",
+      "mapId": "icebreaker",
+      "markerId": "locks:21800040e43fff654405f45102118daca363aa90:0",
+      "name": "locks",
+      "sourcePath": "locks/0",
+      "keyId": "69bb3ec9f609db77390b0e1a",
+      "game": [-7.67, 42.43, 27.54],
+      "observedFloorId": "Accommodation_Lower",
+      "sourceTile": "tiles/icebreaker/Accommodation_Lower/8/11.png",
+      "sourceTileSha256": "9f26030d084cd9a0154a1046e1e4735d1f45b8084124ff52848a8e045f72d2d3",
+      "observation": "User confirmed Accommodation Lower marker placement is correct. The prior manual doorway label is withdrawn; retain this frozen source group member without an artwork coordinate expectation.",
+      "semanticEvidenceUrls": ["https://markschaefer.dev/item_view?id=69bb3ec9f609db77390b0e1a"]
+    }
+  ],
+  "unresolvedMarkerMatches": [
+    {
+      "id": "icebreaker-c-three-medical-door",
+      "mapId": "icebreaker",
+      "markerId": "locks:370c6515d41853a7f5f7b6929978ecd66bee6997:0",
+      "keyId": "69bb3f7df94327bc0f0230c9",
+      "game": [11.43, 41.63, 19.46],
+      "artworkFloor": "Infirmary",
+      "artwork": null,
+      "semanticEvidenceUrls": ["https://markschaefer.dev/item_view?id=69bb3f7df94327bc0f0230c9", "https://tarkov.help/en/quest/boreas"],
+      "reason": "Independent key naming establishes C-3 and the public guide describes the scientist intercom/medical supplies, but the actual medical artwork has multiple doors. No exact artwork point can yet be labelled without deriving it from another transform."
+    },
+    {
+      "id": "icebreaker-other-floor-crew-door",
+      "mapId": "icebreaker",
+      "markerId": "locks:53165935b2bf98e47b26208ffd00fc13208bf5db:0",
+      "keyId": "69bb3ec9f609db77390b0e1a",
+      "game": [-7.66, 25.98, 30.24],
+      "artworkFloor": "Accommodation_Mid",
+      "artwork": null,
+      "semanticEvidenceUrls": ["https://markschaefer.dev/item_view?id=69bb3ec9f609db77390b0e1a"],
+      "reason": "The frozen lower-floor three-door source group does not qualify a different floor. This mid-floor door remains without an independently inspected artwork location; the shared CQ key name alone cannot identify it."
+    }
+  ],
+  "floorControls": [
+    {"mapId": "interchange", "height": 23.1857, "floorId": null, "markerId": "switches:b6ebc39ee29cb6659334df309194b696bbfef555:0", "basis": "Conventional vector policy must not infer automatic floor from height."},
+    {"mapId": "interchange", "height": 37.347, "floorId": null, "preparedFloorId": "Second_Floor", "markerId": "switches:6b9023f26446d73433823e872e6d69688083beaf:0", "basis": "Exact frozen alarm-console volume and outline lie wholly inside the source Second_Floor [34,1000) band and mall rectangle. Explicit physical ownership does not turn Interchange into an automatically classified map."},
+    {"mapId": "thelab", "height": -2.81, "floorId": "Technical_Level", "markerId": "extracts:718b3e098cf256525a98ad84c481876082391b18:0", "basis": "Technical-level source art lift and frozen public marker height."},
+    {"mapId": "thelab", "height": 5.38, "floorId": "Second_Level", "markerId": "extracts:aecf93f8def45d42877594c4170f5a71b5b41b39:0", "basis": "Upper-level source art lift and frozen public marker height."},
+    {"mapId": "thelab", "height": 1.18, "floorId": "First_Level", "markerId": "transits:8:0", "basis": "Frozen metadata base band and source marker height; transit artwork identity is not independently qualified."},
+    {"mapId": "icebreaker", "height": 35.64, "floorId": "Officers_Deck", "preparedFloorId": "Officers_Deck", "markerId": "locks:f680d37a9e9c4f7b4673a2cd1bedd4a8ed73e104:0", "basis": "Frozen metadata band and real C-1 door height. Public level-7 server-room evidence supports prepared Officers_Deck ownership; user-confirmed source parity is recorded separately, not as a numeric placement oracle."},
+    {"mapId": "icebreaker", "height": 27.54, "floorId": "Accommodation_Lower", "markerId": "locks:85d65ba335af0a32a3ce306341ee683ceb62a4a1:0", "basis": "Real frozen CQ door height and unchanged metadata band. User confirmed Accommodation Lower marker placement; frozen source-group identity is retained separately without numeric artwork expectations."},
+    {"mapId": "icebreaker", "height": 19.46, "floorId": "Infirmary", "markerId": "locks:370c6515d41853a7f5f7b6929978ecd66bee6997:0", "basis": "Frozen metadata base band and real door height, not inferred from a private observation filename."},
+    {"mapId": "icebreaker", "height": 16.76, "floorId": "Storage_Security", "markerId": "locks:2cd14b4b7e2999be6deb6495becd815904c5327c:0", "basis": "Frozen metadata band and real keyed-door height; exact artwork door identity unresolved."},
+    {"mapId": "icebreaker", "height": 22.56, "floorId": "Gym_Canteen", "preparedFloorId": "Helipad", "markerId": "extracts:9bf65c4c24d0153f1542a90ddabadb37198ab9ff:0", "basis": "Unchanged metadata height band classifies 22.56 as Gym_Canteen. Independently evidenced prepared physical ownership is Helipad; source activation-volume height is not independently calibrated walk-surface height."}
+  ],
+  "unknownObservations": [
+    {"id": "filename-only-labs", "filename": "Labs_Second_Level.png", "mapId": null, "floorId": null, "height": null, "reason": "Sanitized adversarial filename, not an inspected screenshot."},
+    {"id": "filename-only-icebreaker", "filename": "icebreaker_Helipad_22.56.log", "mapId": null, "floorId": null, "height": null, "reason": "Filename supplies neither identity nor numeric position evidence."},
+    {"id": "height-without-map", "filename": "Interchange_Third_Floor.png", "mapId": null, "floorId": null, "height": 35.64, "reason": "Known scalar height alone cannot choose a map."}
+  ]
+}

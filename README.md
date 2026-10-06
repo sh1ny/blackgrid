@@ -2,9 +2,9 @@
 
 Independent **Windows desktop only** tactical companion. M1 provides real mode-scoped catalog search, manual item inspection, conservative Keep/Later/Check/Sell decisions, protected read-only Tracker access, durable identity history and custom pins, and explicit legacy JSON import.
 
-Primary navigation is **Map and Scanner only**. M1 deliberately has no capture/OCR, game/log interaction, accepted scan producer, map artwork, player position, overlay, Database browser, or progression-write controls. Empty or unavailable evidence is shown honestly rather than replaced with demonstration data.
+Primary navigation is **Map and Scanner only**. The native Map workspace renders Interchange vector artwork, Labs tiled artwork and all 16 Icebreaker raster floors from a locally bundled, versioned pack. Other map selections retain settings and pins but show artwork as unavailable. There is no capture/OCR, game/log interaction, accepted scan producer, live player position, overlay, Database browser, or progression-write control. Empty or unavailable evidence is shown honestly rather than replaced with demonstration data.
 
-The visual hierarchy follows [the Map and Scanner references](docs/vision/): compact shared navigation, near-black green surfaces, muted gold panel rules, Scanner's three columns and split lower evidence, and Map's broad workspace with a scrollable right rail. These images are design references, not shipped artwork or evidence of implemented capture/map rendering.
+The visual hierarchy follows [the Map and Scanner references](docs/vision/): compact shared navigation, near-black green surfaces, muted gold panel rules, Scanner's three columns and split lower evidence, and Map's broad workspace with a scrollable right rail. These images are design references, not shipped artwork or capture evidence. Native map qualification and its remaining limits are recorded in [M3 status](docs/qualification/m3/STATUS.md). M3 implementation and simplification are complete; the user's verification waiver and complete ce-work return allow review/shipping, with broader review in progress. Implemented rendering and offline package integrity do not establish live-game parity or completed M3 qualification; waived checks remain unverified.
 
 ## Prerequisites
 
@@ -83,6 +83,32 @@ mise exec -- dart run tool/m1/catalog_smoke.dart
 - Tracker is opt-in, read-only and GET-only on `api.tarkovtracker.org`; `PVP_`, `PVE_` and `SZN_` credentials are mode-scoped. No credentials, account identities, response bodies or personal progress are logged or persisted. No telemetry, Blackgrid account or backend is present.
 - FIR is a transient manual inspection fact. It resets on a new identity, mode, history inspection or authority context—not merely typing a query or changing Map/Scanner tabs. Restart restores durable data, not a selected item/FIR/progress/accepted scan.
 
+## Native maps
+
+- Drag to pan, use the mouse wheel for cursor-anchored zoom, or use the zoom and **Fit map** controls. The focused viewport also supports arrow-key panning, Home to fit, and Escape to clear details.
+- Floor controls use source-specific layers. Interchange and Labs retain base-plus-overlay composition; Icebreaker selects one replacement floor and restores Infirmary when that selection is cleared.
+- Select a visible marker for its source details, or open **Markers** and use Tab/Enter to select through the keyboard-accessible list. Drawing and selection share floor/filter visibility. Map interaction never produces an accepted scan.
+- **Add pin** and viewport right-click use the shared inverse geometry. Existing pin frames/revisions and finite off-artwork coordinates remain intact.
+- Runtime artwork uses bundled assets, cached vector components and lazily decoded visible tiles/active raster floors. Navigation does not download artwork or parse SVG on every gesture.
+
+The current bundled preparation-v2 pack is manifest/version `0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf`, with calibration SHA-256 `5ae8ba1752e63079027e8d01fc9f336dbd3a833bd9245c10be46fc2723c68d3a`. It retains Interchange vector artwork, Labs tiles and all 16 Icebreaker raster floors with unchanged external source bytes and hashes. Historical placement/native/performance receipts belong to their recorded generations; the new pack has no new native, performance or standalone launch qualification.
+
+Map preparation commands are maintenance-only tooling, separate from runtime rendering. Inspect the command contract with:
+
+```text
+mise exec -- dart run tool/maps/prepare.dart --help
+```
+
+`acquire` freezes the approved inputs into a fresh raw directory and is the only network operation. `rebuild` creates a fresh candidate from frozen inputs offline; `normalize` and `compile` expose its two stages. `validate` checks the complete candidate before `promote` publishes an immutable version and atomically replaces `active.json`. Failed candidates leave the active pack untouched. `assets` prints the promoted pack's complete Flutter asset declarations, including nested tiles and preparation evidence. The current declarations cover 105 active asset directories, including `evidence/tile-alpha/`; update `pubspec.yaml` when promoting another generation.
+
+Preparation-v2 validation binds canonical vector component paths, dependency-closed source SVGs, compiler SVG/native effects and actual `.vec` payload hashes to the pinned compiler output. Raster validation decodes and hash-binds visible tiles and original transparent PNG witnesses; empty tiles are not inferred from byte size or accepted on manifest assertions alone. Witnesses are deduplicated unchanged source bytes, not replacement artwork. Candidate crops must stay wholly inside the original artwork frame; the crop changes display only, not geometry or persisted pin frames.
+
+Existing preparation-v1 packs lacking transparent witnesses must be rebuilt offline from frozen inputs before this validator can promote them. This is a maintenance requirement, not a runtime `preparationVersion` gate. Runtime loads prepared artwork and marker data; it does not run acquisition, normalization, compilation or candidate validation.
+
+Only the exact Interchange console `switches:6b9023f26446d73433823e872e6d69688083beaf:0` gains prepared `Second_Floor` ownership. Its frozen full height volume `[37.187, 37.507]` and outline are contained in the locked metadata's `Second_Floor` band `[34, 1000]` and mall rectangle. The assignment retains `source.floorAssignment` provenance; source position/height/outline, pins and shared geometry are unchanged. Automatic Interchange vector height resolution still returns null. This is not a rule for unknown, out-of-extent or cross-floor records. See [placement controls](docs/qualification/m3/PLACEMENT_CONTROLS.md) for the exact frozen evidence and the retained Icebreaker ownership/source-parity limits.
+
+Selected-source identities, licences, notices and calibration evidence travel with the pack. Review source changes and rights before acquiring or promoting updates; source hosting alone does not grant redistribution permission.
+
 ## Legacy import
 
 Use **Import**, explicitly enter the chosen settings and/or history JSON paths, then **Preview** before accepting. There is no automatic directory scan. Supported settings revisions are 0–3, scanner preferences 0–1 and history 0–1. Pins require supported map identities and coordinate-frame revisions; finite off-map coordinates are retained. Labs revision 0 is converted to the revision-1 native normalized frame; revision 1 is preserved.
@@ -92,7 +118,7 @@ The preview accounts for every recognized record, source collision, existing des
 
 ## Attribution and distribution
 
-See [third-party notices](THIRD_PARTY_NOTICES.md) for the dependencies actually selected for M1. The repository's project license remains unselected; it is private and this implementation does not authorize publication. No reference implementation or map/game artwork is copied or shipped. Live JSON source hosting is not a blanket license to redistribute downloaded datasets or artwork.
+See [third-party notices](THIRD_PARTY_NOTICES.md) for selected dependencies and bundled map artwork, including each source's attribution and published terms. The repository's project license remains unselected; it is private and this implementation does not authorize public publication. No reference implementation or reference runtime is copied or shipped. Third-party artwork remains its creators' property; live source hosting is not a blanket licence to redistribute downloaded datasets or artwork.
 
 ## Changelog and release notes
 

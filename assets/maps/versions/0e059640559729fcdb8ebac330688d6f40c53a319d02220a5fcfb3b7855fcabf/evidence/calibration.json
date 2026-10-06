@@ -1,0 +1,479 @@
+{
+  "maps": [
+    {
+      "artworkFrame": {
+        "height": 947.02582,
+        "viewBox": [
+          0.0,
+          0.0,
+          1127.6852,
+          947.02582
+        ],
+        "width": 1127.6852
+      },
+      "floors": [
+        {
+          "attachedIds": [],
+          "base": true,
+          "exclusive": false,
+          "id": "Ground_Level",
+          "label": "Ground Level",
+          "manual": true
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "componentIds": [
+            "Structure-1",
+            "Pavament-1",
+            "Floor-1",
+            "Ramps-1"
+          ],
+          "exclusive": false,
+          "heightBand": [
+            25,
+            34
+          ],
+          "id": "First_Floor",
+          "label": "2nd Floor",
+          "manual": true
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "componentIds": [
+            "Structure-2",
+            "Floor-2",
+            "Ramps-2"
+          ],
+          "exclusive": false,
+          "heightBand": [
+            34,
+            1000
+          ],
+          "id": "Second_Floor",
+          "label": "3rd Floor",
+          "manual": true
+        }
+      ],
+      "geometry": {
+        "affine": [
+          0.265,
+          150.6,
+          0.265,
+          134.6
+        ],
+        "bounds": [
+          [
+            598,
+            -442
+          ],
+          [
+            -433,
+            426
+          ]
+        ],
+        "coordinateRevision": 0,
+        "nativeZoom": null,
+        "pinFrame": "legacy-normalized",
+        "projection": "bounds-normalized",
+        "rotation": 180
+      },
+      "id": "interchange",
+      "kind": "vector",
+      "markerFloorAssignments": {
+        "switches:6b9023f26446d73433823e872e6d69688083beaf:0": {
+          "basis": "frozen-console-volume-and-outline-contained-in-Second_Floor-mall-extent",
+          "evidenceHeightBand": [
+            34,
+            1000
+          ],
+          "evidenceSourceHashes": {
+            "markers/maps.json": "62b06a28603ce9091fd57b3fb3e4f9bb1261140843e07cf80767679ad805d99b",
+            "metadata/maps.json": "c53a327dcdcff67a49b9fe2d150731edb4c1611dfc2f75db2ce97444dee2ef77"
+          },
+          "evidenceSourcePaths": [
+            "metadata/maps.json:interchange/interactive/layers/Second_Floor/extents/0",
+            "markers/maps.json:5714dbc024597771384a510d/switches/1"
+          ],
+          "evidenceSpatialBounds": [
+            [
+              120,
+              218
+            ],
+            [
+              -222,
+              -327
+            ],
+            "mall"
+          ],
+          "floorId": "Second_Floor",
+          "sourceVolume": {
+            "heightBand": [
+              37.187,
+              37.507
+            ],
+            "outline": [
+              {
+                "x": -46.81,
+                "y": 37.347,
+                "z": -55.517
+              },
+              {
+                "x": -46.3,
+                "y": 37.347,
+                "z": -55.517
+              },
+              {
+                "x": -46.3,
+                "y": 37.347,
+                "z": -54.887
+              },
+              {
+                "x": -46.81,
+                "y": 37.347,
+                "z": -54.887
+              }
+            ],
+            "position": {
+              "x": -46.555,
+              "y": 37.347,
+              "z": -55.202
+            }
+          }
+        }
+      },
+      "name": "Interchange",
+      "sourceKey": "interchange"
+    },
+    {
+      "artworkFrame": {
+        "height": 2800,
+        "nativeTilePixels": 256,
+        "tileImageExtent": 175.5,
+        "tileStride": 175,
+        "width": 2800
+      },
+      "calibrationEvidence": {
+        "basis": "independently-labelled-original-tile-landmarks",
+        "nativePixelsPerSourcePixel": 1.4628571428571429,
+        "outputPixelUnits": "z4-256-pixel-native-tiles",
+        "sourceAffine": [
+          0.575,
+          281.2,
+          0.575,
+          193.7
+        ],
+        "sourcePixelUnits": "z4-175-pixel-display-stride"
+      },
+      "floors": [
+        {
+          "attachedIds": [],
+          "base": true,
+          "exclusive": false,
+          "id": "First_Level",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/1st/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "heightBand": [
+            3,
+            1000
+          ],
+          "id": "Second_Level",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/2nd/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "heightBand": [
+            -1000,
+            -0.9
+          ],
+          "id": "Technical_Level",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/technical/{z}/{x}/{y}.png"
+        }
+      ],
+      "geometry": {
+        "affine": [
+          0.8411428571428571,
+          411.35542857142855,
+          0.8411428571428571,
+          283.35542857142855
+        ],
+        "bounds": [
+          [
+            -80,
+            -477
+          ],
+          [
+            -287,
+            -193
+          ]
+        ],
+        "coordinateRevision": 1,
+        "nativeZoom": 4,
+        "pinFrame": "labs-native-normalized",
+        "projection": "native-pixels",
+        "rotation": 270
+      },
+      "id": "thelab",
+      "kind": "raster",
+      "name": "Labs",
+      "sourceKey": "the-lab"
+    },
+    {
+      "artworkFrame": {
+        "height": 4096,
+        "nativeTilePixels": 256,
+        "tileImageExtent": 256,
+        "tileStride": 256,
+        "width": 4096
+      },
+      "floors": [
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            -10000,
+            3.6
+          ],
+          "id": "Control_Room",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/00_control_room/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            3.6,
+            5.7
+          ],
+          "id": "Engine_Room",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/01_engine_room/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            5.7,
+            8.8
+          ],
+          "id": "Engine_Room_Upper",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/02_engine_room_upper/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            8.8,
+            11.9
+          ],
+          "id": "Fuel_Pumps_Lower",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/03_fuel_pumps_lower/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            11.9,
+            15
+          ],
+          "id": "Fuel_Pumps",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/04_fuel_pumps/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            15,
+            18.92
+          ],
+          "id": "Storage_Security",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/05_storage_ecurity/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": true,
+          "exclusive": true,
+          "id": "Infirmary",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/06_infirmary/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            19.57,
+            22.2
+          ],
+          "id": "Helipad",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/07_helipad/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            22.2,
+            25.3
+          ],
+          "id": "Gym_Canteen",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/08_gym-canteen/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            25.3,
+            28.3
+          ],
+          "id": "Accommodation_Lower",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/09_accommodation_lower/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            28.3,
+            31.4
+          ],
+          "id": "Accommodation_Mid",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/10_accommodation_mid/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            31.4,
+            34.5
+          ],
+          "id": "Accommodation_Upper",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/11_accommodation_upper/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            34.5,
+            37.6
+          ],
+          "id": "Officers_Deck",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/12_officers_deck/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            37.6,
+            40.7
+          ],
+          "id": "Stairs_Blocked",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/13_stairs_blocked/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            40.7,
+            43.8
+          ],
+          "id": "Bridge",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/14_bridge/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": true,
+          "heightBand": [
+            43.8,
+            10000
+          ],
+          "id": "Bridge_Roof",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/15_bridge_roof/{z}/{x}/{y}.png"
+        }
+      ],
+      "geometry": {
+        "affine": [
+          2,
+          125,
+          3.5,
+          91
+        ],
+        "bounds": [
+          [
+            77,
+            -64.5
+          ],
+          [
+            -65.5,
+            67.4
+          ]
+        ],
+        "coordinateRevision": 0,
+        "nativeZoom": 4,
+        "pinFrame": "legacy-normalized",
+        "projection": "native-pixels",
+        "rotation": 180
+      },
+      "id": "icebreaker",
+      "kind": "raster",
+      "markerFloorAssignments": {
+        "extracts:9bf65c4c24d0153f1542a90ddabadb37198ab9ff:0": {
+          "basis": "helicopter-extraction-at-physical-helipad-centre",
+          "evidenceObservedOn": "2026-10-06",
+          "evidenceUrls": [
+            "https://tarkov.help/en/quest/boreas"
+          ],
+          "floorId": "Helipad"
+        },
+        "locks:f680d37a9e9c4f7b4673a2cd1bedd4a8ed73e104:0": {
+          "basis": "level-seven-compartment-C-1-server-room-door",
+          "evidenceObservedOn": "2026-10-06",
+          "evidenceUrls": [
+            "https://tarkov.help/en/quest/boreas",
+            "https://markschaefer.dev/item_view?id=69bb3f278af9f360ee010a7a"
+          ],
+          "floorId": "Officers_Deck",
+          "keyId": "69bb3f278af9f360ee010a7a"
+        }
+      },
+      "name": "Icebreaker",
+      "sourceKey": "icebreaker"
+    }
+  ],
+  "schemaVersion": 1
+}
