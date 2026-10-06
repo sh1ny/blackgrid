@@ -40,7 +40,9 @@ The executable is `build/windows/x64/runner/Release/blackgrid.exe`; distribute t
 | Command | Purpose |
 | --- | --- |
 | `mise run analyze` | Flutter static analysis |
-| `mise run test` | Flutter tests |
+| `mise run test` | Fast development tests; excludes `qualification` |
+| `mise run test:qualification` | Expensive offline map-pack and reference-evidence qualification |
+| `mise run test:all` | Complete Flutter test suite, including qualification |
 | `mise run format` | Format Dart source |
 | `mise run format:check` | Check formatting without modifying files |
 | `mise run changelog` | Regenerate `CHANGELOG.md` from local Git history, offline |
@@ -48,7 +50,35 @@ The executable is `build/windows/x64/runner/Release/blackgrid.exe`; distribute t
 
 The full offline suite includes independently authored synthetic wire fixtures, real SQLite transactions/reopen/migrations, credential replacement failure injection, authority fencing, conservative decisions, legacy revision/frame validation, and shared UI state/layout checks at both reference sizes and 100/125/150% text scaling. Production composition uses actual HTTP, SQLite and Windows DPAPI boundaries, not these test fixtures.
 
+During normal implementation, run `mise run analyze`, `mise run test` and directly affected test files. UI-only changes need the relevant widget/UI tests, not artwork-pack rebuilds. Before completing substantial map-pipeline changes, also run `mise run test:qualification`. Final acceptance/before merge uses `mise run test:all`, plus Release/native acceptance gates when the change requires them; do not repeat full qualification after each small edit.
+
+The `qualification` tag isolates filesystem-heavy preparation, determinism, production-grid inventory, corruption and promotion checks in `test/maps/map_preparation_qualification_test.dart`, plus expensive reference-freeze collector and fixture-closure acceptance tests. Ordinary map geometry, floors, controllers, placement controls, widgets and M0 logic tests remain in the fast suite. Both workflows are deterministic and offline. Map qualification reuses read-only inputs and gives mutation cases private small packs bound to their own frozen calibration; current-production rebuilds still require all 19 raster floors and every 16×16 tile grid.
+
+For agents, the equivalent mounted `run_tests` arguments are `exclude-tags: ["qualification"]`, `tags: ["qualification"]`, and no tag filter, respectively.
+
 For agent verification, use the mounted official Dart MCP `run_tests`, `analyze_files` and `dart_format` tools; do not substitute shell test commands. Run expensive checks serially after authoring. Before each real Windows launch/restart or UI verification, freshly establish that Escape from Tarkov is closed. Never focus, inspect, capture, hook or read memory from the game or anti-cheat.
+
+### Test runtime and fixture writes
+
+The supplied pre-refactor baseline was 6m55s for the full suite, 60s for two deterministic rebuilds, 43s for generation preservation and roughly 27s per promotion case. It was not rerun.
+
+Observed runner JSON elapsed times on Windows; suite setup is included, and suites run concurrently:
+
+| Check | Passing tests | Elapsed |
+| --- | ---: | ---: |
+| Development (`--exclude-tags qualification`) | 497 | 13.1s |
+| Dedicated qualification (`--tags qualification`) | 36 | 97.3s |
+| Complete suite | 533 | 99.0s |
+| Map preparation qualification within the complete run | 8 | 22.4s |
+| Focused map preparation qualification after review | 8 | 14.1s |
+
+All checks had zero failures or skips. The dedicated qualification run preceded strengthening the normalization test to invoke the real normalize → compile path; the complete run verified that path and every qualification case. After review, additional corrupt-published-version assertions passed in the focused map qualification rerun; no production code changed after the complete run. Final analysis was clean. Test-runner times exclude dependency resolution and MCP transport overhead.
+
+The remaining qualification bottleneck is `m0_collector_test.dart`: 96.1s in the final run, including a 14.8s record/sidecar alias-safety case. These real Git/PowerShell/Dart pipeline checks remain intact and opt-in; fixture-closure checks also remain qualification, not normal development work.
+
+Map qualification now materializes one 4,864-PNG raw fixture per run instead of eight (38,912 PNGs). Narrow mutation tests copy 38-file prepared packs, not raw tile trees. The two independent complete rebuilds and real normalization reuse the raw fixture read-only; current-production tile requirements and independent promotion validation are unchanged.
+
+### Database generation
 
 Regenerate the committed Drift implementation and migration helpers after intentional schema changes:
 

@@ -96,9 +96,10 @@ String _emptyTileWitnessPath(String sourceHash) =>
     'evidence/tile-alpha/$sourceHash.png';
 
 class FrozenInputs {
-  FrozenInputs._(this.root, this.index);
+  FrozenInputs._(this.root, this.index, this._paths);
   final Directory root;
   final Map<String, dynamic> index;
+  final Set<String> _paths;
   static Future<FrozenInputs> open(Directory root) async {
     final index = await _readJson(root, 'sources.json');
     if (index['schemaVersion'] != 1 || index['sources'] is! List) {
@@ -119,11 +120,11 @@ class FrozenInputs {
         throw FormatException('Invalid frozen source URL: $path');
       }
     }
-    return FrozenInputs._(root, index);
+    return FrozenInputs._(root, index, paths);
   }
 
   Future<Uint8List> bytes(String path) async {
-    if (!(index['sources'] as List).any((s) => s['path'] == path)) {
+    if (!_paths.contains(path)) {
       throw FormatException('Unfrozen dependency: $path');
     }
     return packFile(root, path).readAsBytes();
@@ -308,6 +309,7 @@ Future<Map<String, dynamic>> rebuildCandidate(
           as Map<String, dynamic>;
   final maps = <Map<String, Object?>>[];
   final emptyTileWitnesses = <String>{};
+  final decodedTiles = <String, PngInspection>{};
   await candidate.create(recursive: true);
   for (final untyped in calibration['maps'] as List) {
     final local = Map<String, Object?>.from(untyped as Map);
@@ -380,8 +382,12 @@ Future<Map<String, dynamic>> rebuildCandidate(
           for (var y = 0; y < 16; y++) {
             final path = rawTilePath(mapId, floor['id'] as String, x, y);
             final bytes = await frozen.bytes(path);
-            final decoded = inspectPng(bytes);
             final sourceHash = _hash(bytes);
+            var decoded = decodedTiles[sourceHash];
+            if (decoded == null) {
+              decoded = inspectPng(bytes);
+              decodedTiles[sourceHash] = decoded;
+            }
             if (decoded.empty && emptyTileWitnesses.add(sourceHash)) {
               // Deduplicate by frozen source identity, not byte length or a
               // manifest assertion. Promotion can decode this original PNG
@@ -606,13 +612,30 @@ Future<Map<String, dynamic>> validateCandidate(
     if (outputs.containsKey(path)) {
       throw FormatException('Duplicate output $path');
     }
-    final bytes = await packFile(candidate, path).readAsBytes();
-    if (_hash(bytes) != entry['sha256']) {
-      throw FormatException('Candidate output hash mismatch: $path');
-    }
+    packFile(candidate, path);
     outputs[path] = entry['sha256'] as String;
   }
+  // Enumerate independently of the manifest and hash each actual output once.
+  // This inventory belongs to this validation only, not another pack boundary.
   final actual = await _outputHashes(candidate);
+  final actualHashes = {
+    for (final entry in actual)
+      entry['path'] as String: entry['sha256'] as String,
+  };
+  for (final entry in outputs.entries) {
+    final actualHash = actualHashes[entry.key];
+    if (actualHash == null) {
+      // Preserve a filesystem error for a missing listed file without reading
+      // or hashing it again. Existing excluded files still fail output closure.
+      await packFile(candidate, entry.key).length();
+      throw const FormatException(
+        'Candidate contains untracked or missing output bytes',
+      );
+    }
+    if (actualHash != entry.value) {
+      throw FormatException('Candidate output hash mismatch: ${entry.key}');
+    }
+  }
   if (canonicalJson(actual) != canonicalJson(manifest['outputs'])) {
     throw const FormatException(
       'Candidate contains untracked or missing output bytes',
