@@ -293,73 +293,6 @@ class ActiveCatalogs extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class ImportRecords extends Table with TableInfo {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  ImportRecords(this.attachedDatabase, [this._alias]);
-  late final GeneratedColumn<String> digest = GeneratedColumn<String>(
-    'digest',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  late final GeneratedColumn<int> formatVersion = GeneratedColumn<int>(
-    'format_version',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  late final GeneratedColumn<int> importedAt = GeneratedColumn<int>(
-    'imported_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  late final GeneratedColumn<int> recordCount = GeneratedColumn<int>(
-    'record_count',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    digest,
-    formatVersion,
-    importedAt,
-    recordCount,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'import_records';
-  @override
-  Set<GeneratedColumn> get $primaryKey => {digest};
-  @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
-  }
-
-  @override
-  ImportRecords createAlias(String alias) {
-    return ImportRecords(attachedDatabase, alias);
-  }
-
-  @override
-  List<String> get customConstraints => const ['PRIMARY KEY(digest)'];
-  @override
-  bool get dontWriteConstraints => true;
-}
-
 class DatabaseAtV1 extends GeneratedDatabase {
   DatabaseAtV1(QueryExecutor e) : super(e);
   late final Preferences preferences = Preferences(this);
@@ -367,7 +300,6 @@ class DatabaseAtV1 extends GeneratedDatabase {
   late final ActivityRecords activityRecords = ActivityRecords(this);
   late final CatalogRecords catalogRecords = CatalogRecords(this);
   late final ActiveCatalogs activeCatalogs = ActiveCatalogs(this);
-  late final ImportRecords importRecords = ImportRecords(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -378,7 +310,6 @@ class DatabaseAtV1 extends GeneratedDatabase {
     activityRecords,
     catalogRecords,
     activeCatalogs,
-    importRecords,
   ];
   @override
   int get schemaVersion => 1;

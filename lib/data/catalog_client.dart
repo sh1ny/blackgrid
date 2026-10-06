@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:http/http.dart' as http;
@@ -18,15 +19,24 @@ class CatalogClient {
   final http.Client _client;
   final DateTime Function() _clock;
   Future<String> _get(String route, String dataset) async {
-    final request = http.Request(
+    final abort = Completer<void>();
+    final request = http.AbortableRequest(
       'GET',
       Uri.https('json.tarkov.dev', '/$route/$dataset'),
+      abortTrigger: abort.future,
     )..followRedirects = false;
     request.headers['Accept'] = 'application/json';
     try {
-      final response = await http.Response.fromStream(
-        await _client.send(request),
-      );
+      final response = await _client
+          .send(request)
+          .then(http.Response.fromStream)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              abort.complete();
+              throw const CatalogException('Catalog transport unavailable');
+            },
+          );
       if (response.statusCode != 200) {
         throw const CatalogException('Catalog download failed');
       }

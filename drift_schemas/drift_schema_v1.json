@@ -327,15 +327,6 @@
           "sql": "CREATE TABLE IF NOT EXISTS \"active_catalogs\" (\"cache_key\" TEXT NOT NULL, \"record_id\" INTEGER NOT NULL REFERENCES catalog_records (id), PRIMARY KEY (\"cache_key\"));"
         }
       ]
-    },
-    {
-      "name": "import_records",
-      "sql": [
-        {
-          "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"import_records\" (\"digest\" TEXT NOT NULL, \"format_version\" INTEGER NOT NULL, \"imported_at\" INTEGER NOT NULL, \"record_count\" INTEGER NOT NULL, PRIMARY KEY (\"digest\"));"
-        }
-      ]
     }
   ]
 }

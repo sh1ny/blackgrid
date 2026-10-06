@@ -12,6 +12,16 @@
 
 ### Fixes
 
+- *(m1)* fence overlapping mode changes and returning-mode refresh publication
+
+- *(m1)* bound read-only requests and recover finite Tracker cooldowns without retries
+
+- *(m1)* preserve refreshed catalog observations and correct v1 migration coverage
+
+- *(m1)* retain unknown hideout gates and stored-mode history source evidence
+
+- *(m1)* validate positive import revisions and accept the legacy unset map preference
+
 - *(qualification)* Preserve collector source and snapshot boundaries (#1)
 
 - *(qualification)* Preserve collector input recipes (#1)

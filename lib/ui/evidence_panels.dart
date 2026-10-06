@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import '../application/catalog_controller.dart';
 import 'theme.dart';
 
 class RequirementPanel extends StatelessWidget {
@@ -82,8 +83,18 @@ class SourcePanel extends StatelessWidget {
       services.selection,
     ]),
     builder: (context, _) {
-      final snapshot =
-          services.selection.inspectionCatalog ?? services.catalog.snapshot;
+      final selection = services.selection;
+      final snapshot = selection.inspectionCatalog;
+      final inspectionMode = selection.inspectionMode;
+      final usesLive =
+          !selection.isHistory || inspectionMode == services.catalog.mode;
+      final catalogStatus = usesLive
+          ? services.catalog.status
+          : selection.loadingHistory
+          ? CatalogStatus.loading
+          : snapshot == null
+          ? CatalogStatus.missing
+          : CatalogStatus.stale;
       final progress = services.progress;
       final quote = services.selection.item?.quoteAt;
       return GridPanel(
@@ -93,7 +104,7 @@ class SourcePanel extends StatelessWidget {
         child: ListView(
           children: [
             Text(
-              'Catalog: ${services.catalog.status.name} • ${modeLabel(snapshot?.mode ?? services.catalog.mode)}',
+              'Catalog: ${catalogStatus.name} • ${modeLabel(inspectionMode)}',
             ),
             const SizedBox(height: 10),
             Text(

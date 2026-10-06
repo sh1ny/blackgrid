@@ -36,6 +36,156 @@ void main() {
       },
     );
   }
+  for (final version in [0, 1, 2, 3]) {
+    test(
+      'settings schema $version accepts absent or empty unset selected map',
+      () {
+        for (final present in [false, true]) {
+          final settings = syntheticSettings(version: version);
+          if (present) {
+            settings['LastSelectedMap'] = '';
+          } else {
+            settings.remove('LastSelectedMap');
+          }
+          final preview = parseLegacySources(legacyBytes(settings: settings));
+          expect(preview.settings!.selectedMap, 'shoreline');
+          expect(preview.settings!.mode, GameMode.pve);
+          expect(preview.settings!.trackerEnabled, isTrue);
+          expect(preview.settings!.markerFilters['CustomPins'], isTrue);
+          expect(preview.pins.single.mapId, 'customs');
+          expect(preview.pins.single.x, 1.2);
+        }
+      },
+    );
+    test(
+      'settings schema $version rejects malformed selected map rather than defaulting',
+      () {
+        for (final value in <Object?>[
+          null,
+          0,
+          false,
+          [],
+          {},
+          'unknown-map',
+          ' ',
+        ]) {
+          final settings = syntheticSettings(version: version);
+          settings['LastSelectedMap'] = value;
+          expect(
+            () => parseLegacySources(legacyBytes(settings: settings)),
+            throwsFormatException,
+            reason: 'Only absent or exactly empty preferences are unset.',
+          );
+        }
+      },
+    );
+  }
+  for (final version in [0, 1]) {
+    test(
+      'history schema $version rejects explicit nonpositive revisions before source collision resolution',
+      () {
+        for (final revision in [0, -1]) {
+          final rows = [
+            activity(revision: 1),
+            activity(revision: revision, time: '2026-10-06T00:01:00Z'),
+          ];
+          expect(
+            () => parseLegacySources(
+              legacyBytes(
+                history: syntheticHistory(version: version, rows: rows),
+              ),
+            ),
+            throwsFormatException,
+            reason:
+                'An invalid second row cannot be promoted above revision 1.',
+          );
+        }
+      },
+    );
+  }
+  test(
+    'absent activity revisions synthesize positive input-order revisions only',
+    () {
+      final preview = parseLegacySources(
+        legacyBytes(
+          history: syntheticHistory(
+            rows: [
+              activity(id: 'synthetic-first', revision: null),
+              activity(id: 'synthetic-second', revision: null),
+              activity(id: 'synthetic-third', revision: 7),
+            ],
+          ),
+        ),
+      );
+      expect(preview.winningActivity.map((row) => row.revision), [1, 2, 7]);
+    },
+  );
+  test('zero revision collision rejects file preview without any destination or source mutation', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'blackgrid-invalid-revision-',
+    );
+    final bytes = legacyBytes(
+      settings: syntheticSettings(),
+      history: syntheticHistory(
+        rows: [
+          activity(revision: 1),
+          activity(revision: 0, time: '2026-10-06T00:01:00Z'),
+        ],
+      ),
+    );
+    final settingsFile = File('${directory.path}/settings.json');
+    final historyFile = File('${directory.path}/history.json');
+    await settingsFile.writeAsBytes(bytes['settings']!);
+    await historyFile.writeAsBytes(bytes['history']!);
+    final databaseFile = File('${directory.path}/store.sqlite');
+    var db = BlackgridDatabase(NativeDatabase(databaseFile));
+    addTearDown(() async {
+      await db.close();
+      await directory.delete(recursive: true);
+    });
+    await db.saveSettings(
+      AppSettings(mode: GameMode.pvp, selectedMap: 'woods'),
+    );
+    await db.savePin(
+      CustomPin(
+        id: 'existing-pin',
+        mapId: 'woods',
+        x: .2,
+        y: .3,
+        frame: 'legacy-normalized',
+        frameRevision: 0,
+        label: 'Existing pin',
+        updatedAt: DateTime.utc(2026),
+      ),
+    );
+    await db.recordActivity(
+      'synthetic-unmatched',
+      GameMode.pve,
+      DateTime.utc(2026),
+    );
+    final originalSettings = await db.select(db.preferences).get();
+    final originalPins = await db.select(db.pinRecords).get();
+    final originalActivity = await db.select(db.activityRecords).get();
+    await expectLater(
+      LegacyImport(db).previewFiles(
+        settingsPath: settingsFile.path,
+        historyPath: historyFile.path,
+      ),
+      throwsFormatException,
+    );
+    expect(await db.select(db.preferences).get(), originalSettings);
+    expect(await db.select(db.pinRecords).get(), originalPins);
+    expect(await db.select(db.activityRecords).get(), originalActivity);
+    expect(await db.select(db.importRecords).get(), isEmpty);
+    expect(await settingsFile.readAsBytes(), orderedEquals(bytes['settings']!));
+    expect(await historyFile.readAsBytes(), orderedEquals(bytes['history']!));
+    await db.close();
+    db = BlackgridDatabase(NativeDatabase(databaseFile));
+    expect(await db.select(db.preferences).get(), originalSettings);
+    expect(await db.select(db.pinRecords).get(), originalPins);
+    expect(await db.select(db.activityRecords).get(), originalActivity);
+    expect(await db.select(db.importRecords).get(), isEmpty);
+  });
   test('history root 0/1 aliases numeric enum values and missing revisions preserve identities', () {
     for (final version in [0, 1]) {
       final row = activity(mode: 1, source: 1, revision: null);
@@ -88,6 +238,68 @@ void main() {
     expect(p.accounting[3].reason, contains('stable earlier input order'));
     expect(p.accounting[2].reason, contains('destination revision 99'));
   });
+  test(
+    'destination indexes preserve first activity and exact map pin identity',
+    () {
+      final settings = syntheticSettings();
+      settings['CustomPinsByMap'] = {
+        for (final map in ['customs', 'woods'])
+          map: [
+            {'id': 'synthetic-pin', 'normalizedX': 1.2, 'normalizedY': -.2},
+          ],
+      };
+      final preview = parseLegacySources(
+        legacyBytes(settings: settings, history: syntheticHistory()),
+        destinationPins: [
+          CustomPin(
+            id: 'synthetic-pin',
+            mapId: 'customs',
+            x: 0,
+            y: 0,
+            frame: 'legacy-normalized',
+            frameRevision: 0,
+            label: 'Existing customs pin',
+            updatedAt: DateTime.utc(2026),
+          ),
+        ],
+        destinationActivity: [
+          for (final revision in [99, 100])
+            ItemActivity(
+              itemId: 'synthetic-unmatched',
+              mode: GameMode.pve,
+              source: ActivitySource.manual,
+              observedAt: DateTime.utc(2026),
+              revision: revision,
+            ),
+          ItemActivity(
+            itemId: 'synthetic-unmatched',
+            mode: GameMode.pvp,
+            source: ActivitySource.manual,
+            observedAt: DateTime.utc(2026),
+            revision: 101,
+          ),
+        ],
+      );
+      final pins = preview.accounting
+          .where((row) => row.kind == 'pin')
+          .toList();
+      expect(pins.map((row) => row.key), [
+        'customs:synthetic-pin',
+        'woods:synthetic-pin',
+      ]);
+      expect(pins.map((row) => row.disposition), [
+        'destination conflict',
+        'add',
+      ]);
+      final history = preview.accounting.singleWhere(
+        (row) => row.kind == 'activity',
+      );
+      expect(history.disposition, 'destination conflict');
+      expect(history.reason, contains('destination revision 99'));
+      expect(history.reason, isNot(contains('destination revision 100')));
+      expect(history.reason, isNot(contains('destination revision 101')));
+    },
+  );
   test('duplicate supported JSON fields fail instead of silently losing a source record', () {
     for (final entry in [
       ('history', '{"SchemaVersion":0,"SchemaVersion":1,"Rows":[]}'),

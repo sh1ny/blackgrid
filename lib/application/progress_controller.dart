@@ -126,7 +126,8 @@ class ProgressController extends ChangeNotifier {
       return Future.value();
     }
     if (status == ProgressStatus.cooldown &&
-        (cooldownUntil == null || _clock().isBefore(cooldownUntil!))) {
+        cooldownUntil != null &&
+        _clock().isBefore(cooldownUntil!)) {
       return Future.value();
     }
     if (_refreshing != null) return _refreshing!;
@@ -168,7 +169,8 @@ class ProgressController extends ChangeNotifier {
       }
       if (failure.failure == TrackerFailure.cooldown) {
         status = ProgressStatus.cooldown;
-        cooldownUntil = failure.cooldownUntil;
+        cooldownUntil =
+            failure.cooldownUntil ?? _clock().add(const Duration(seconds: 60));
       } else {
         status = snapshot == null
             ? ProgressStatus.failed

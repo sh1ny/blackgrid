@@ -8,6 +8,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/progress.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/stalling_http_client.dart';
 
 Map<String, Object?> tokenWire(String token, {GameMode mode = GameMode.pvp}) =>
     {
@@ -22,6 +23,55 @@ Map<String, Object?> tokenWire(String token, {GameMode mode = GameMode.pvp}) =>
 
 void main() {
   const token = 'PVP_synthetic-fixture-only';
+  for (final path in ['token', 'progress']) {
+    for (final body in [false, true]) {
+      testWidgets(
+        'review 2 Tracker $path ${body ? 'body' : 'headers'} stall releases and next fetch works',
+        (tester) async {
+          final transport = StallingHttpClient(
+            stallPath: path,
+            body: body,
+            responses: {'token': tokenWire(token), 'progress': progressWire()},
+          );
+          addTearDown(transport.close);
+          final c = TrackerClient(client: transport, clock: () => fixtureNow);
+          Object? failure;
+          var finished = false;
+          final pending = c
+              .fetch(mode: GameMode.pvp, token: token, credentialSession: 1)
+              .then(
+                (_) {
+                  finished = true;
+                },
+                onError: (Object error) {
+                  failure = error;
+                  finished = true;
+                },
+              );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 31));
+          expect(finished, isTrue);
+          expect(
+            failure,
+            isA<TrackerException>().having(
+              (e) => e.failure,
+              'safe failure',
+              TrackerFailure.unavailable,
+            ),
+          );
+          expect(transport.aborts, 1);
+          await pending;
+          transport.stall = false;
+          final next = await c.fetch(
+            mode: GameMode.pvp,
+            token: token,
+            credentialSession: 1,
+          );
+          expect(next.mode, GameMode.pvp);
+        },
+      );
+    }
+  }
   TrackerClient client({
     Map<String, dynamic>? progress,
     Map<String, Object?>? tokenInfo,
@@ -270,6 +320,38 @@ void main() {
       );
     },
   );
+  for (final value in <String?>[
+    null,
+    'not-a-date',
+    '0',
+    '-1',
+    'Tue, 06 Oct 2026 00:01:30 GMT',
+    'Mon, 05 Oct 2026 00:00:00 GMT',
+  ]) {
+    test(
+      'review 4 Retry-After $value has a finite recoverable deadline',
+      () async {
+        final expected = switch (value) {
+          '0' => fixtureNow,
+          'Tue, 06 Oct 2026 00:01:30 GMT' => fixtureNow.add(
+            const Duration(seconds: 90),
+          ),
+          'Mon, 05 Oct 2026 00:00:00 GMT' => DateTime.utc(2026, 10, 5),
+          _ => fixtureNow.add(const Duration(seconds: 60)),
+        };
+        await expectLater(
+          fetch(client(tokenStatus: 429, headers: {'retry-after': ?value})),
+          throwsA(
+            isA<TrackerException>().having(
+              (e) => e.cooldownUntil,
+              'finite deadline',
+              expected,
+            ),
+          ),
+        );
+      },
+    );
+  }
   test('429 exposes Retry-After without body diagnostic', () async {
     await expectLater(
       fetch(client(tokenStatus: 429, headers: {'retry-after': '90'})),

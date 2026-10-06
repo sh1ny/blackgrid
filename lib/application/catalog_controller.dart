@@ -18,6 +18,7 @@ class CatalogController extends ChangeNotifier {
   final CatalogClient _client;
   final DateTime Function() _clock;
   final Map<GameMode, Future<void>> _refreshes = {};
+  final Map<GameMode, int> _refreshGenerations = {};
   GameMode mode = GameMode.unknown;
   CatalogSnapshot? snapshot;
   CatalogStatus status = CatalogStatus.missing;
@@ -73,22 +74,33 @@ class CatalogController extends ChangeNotifier {
     if (mode == GameMode.unknown || _disposed) return Future.value();
     final key = mode;
     final existing = _refreshes[key];
-    if (existing != null) return existing;
-    final future = _refresh(key, _generation);
+    _refreshGenerations[key] = _generation;
+    if (existing != null) {
+      status = CatalogStatus.loading;
+      error = null;
+      _publish();
+      return existing;
+    }
+    final future = _refresh(key);
     _refreshes[key] = future;
     return future.whenComplete(() {
-      if (identical(_refreshes[key], future)) _refreshes.remove(key);
+      if (identical(_refreshes[key], future)) {
+        _refreshes.remove(key);
+        _refreshGenerations.remove(key);
+      }
     });
   }
 
-  Future<void> _refresh(GameMode key, int generation) async {
+  Future<void> _refresh(GameMode key) async {
     status = CatalogStatus.loading;
     error = null;
     _publish();
     try {
       final candidate = await _client.fetch(key);
       await _store.commitCatalog(candidate);
-      if (_disposed || generation != _generation || mode != key) return;
+      if (_disposed || _refreshGenerations[key] != _generation || mode != key) {
+        return;
+      }
       _refreshPublication++;
       snapshot = candidate;
       status = candidate.authoritativeAt(_clock())
@@ -109,7 +121,9 @@ class CatalogController extends ChangeNotifier {
         );
       }
     } on Object {
-      if (_disposed || generation != _generation || mode != key) return;
+      if (_disposed || _refreshGenerations[key] != _generation || mode != key) {
+        return;
+      }
       status = snapshot == null ? CatalogStatus.failed : CatalogStatus.stale;
       error = 'Catalog refresh failed; last-good data retained';
     }

@@ -140,6 +140,11 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
               payload: payload,
             ),
           );
+      if (existing != null) {
+        await (update(catalogRecords)..where((r) => r.id.equals(id))).write(
+          CatalogRecordsCompanion(payload: Value(payload)),
+        );
+      }
       await into(activeCatalogs).insertOnConflictUpdate(
         ActiveCatalogsCompanion.insert(cacheKey: key, recordId: id),
       );

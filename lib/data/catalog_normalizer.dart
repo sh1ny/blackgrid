@@ -158,7 +158,11 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
     }
   }
 
-  RequirementGate gate(Map<String, dynamic> j, {bool task = false}) {
+  RequirementGate gate(
+    Map<String, dynamic> j, {
+    bool task = false,
+    bool hideout = false,
+  }) {
     final taskStatuses = <String, List<String>>{};
     final stations = <String, int>{};
     for (final raw in _list(j['taskRequirements'] ?? [])) {
@@ -204,12 +208,15 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       unknownTraderOrSkill:
           traderGates.isNotEmpty ||
           _list(j['skillRequirements'] ?? []).isNotEmpty,
-      incomplete:
-          task &&
-          (!j.containsKey('minPlayerLevel') ||
-              !j.containsKey('factionName') ||
-              !j.containsKey('taskRequirements') ||
-              !j.containsKey('traderRequirements')),
+      incomplete: task
+          ? (!j.containsKey('minPlayerLevel') ||
+                !j.containsKey('factionName') ||
+                !j.containsKey('taskRequirements') ||
+                !j.containsKey('traderRequirements'))
+          : hideout &&
+                (j['stationLevelRequirements'] == null ||
+                    j['traderRequirements'] == null ||
+                    j['skillRequirements'] == null),
     );
   }
 
@@ -311,7 +318,7 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       if (levelNumber == null || levelNumber < 1) {
         throw const FormatException('Invalid module level');
       }
-      final g = gate(level);
+      final g = gate(level, hideout: true);
       for (final part in _list(level['itemRequirements'])) {
         final p = _map(part);
         final id = _string(p['id']);

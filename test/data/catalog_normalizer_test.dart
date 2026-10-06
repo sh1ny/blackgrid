@@ -3,10 +3,70 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/decision.dart';
+import 'package:blackgrid/domain/decision_engine.dart';
+import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:blackgrid/domain/progress.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 
 void main() {
+  for (final field in [
+    'stationLevelRequirements',
+    'traderRequirements',
+    'skillRequirements',
+  ]) {
+    for (final isNull in [false, true]) {
+      test(
+        'review 8 hideout $field ${isNull ? 'null' : 'absent'} stays Check',
+        () {
+          final wire = wireFixture();
+          wire['tasks']['data']['tasks'] = <String, dynamic>{};
+          final level =
+              wire['hideout']['data']['station-a']['levels'][0] as Map;
+          if (isNull) {
+            level[field] = null;
+          } else {
+            level.remove(field);
+          }
+          final c = fixtureCatalog(wire: wire);
+          final item = c.items['item-a']!;
+          final decision = const DecisionEngine().evaluate(
+            item,
+            InspectionContext(
+              mode: GameMode.pvp,
+              now: fixtureNow,
+              catalog: c,
+              progress: decisionProgress(
+                modules: const {
+                  'station-a-1': EntityProgress(
+                    complete: false,
+                    invalid: false,
+                  ),
+                },
+                parts: const {
+                  'part-a': EntityProgress(
+                    complete: false,
+                    count: 0,
+                    invalid: false,
+                  ),
+                },
+              ),
+              fir: FirState.yes,
+            ),
+          );
+          expect(decision.recommendation, Recommendation.check);
+          expect(
+            c.requirements
+                .singleWhere((r) => r.kind == RequirementKind.hideout)
+                .gate
+                .incomplete,
+            isTrue,
+          );
+        },
+      );
+    }
+  }
   test('all six live-shaped collections, dictionaries and fractional uses normalize', () {
     final c = fixtureCatalog();
     expect(c.datasetCounts, {

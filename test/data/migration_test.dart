@@ -15,6 +15,14 @@ void main() {
   test('committed v1 schema migrates additively to v2 retaining preferences and activity', () async {
     final verifier = SchemaVerifier(GeneratedHelper());
     final schema = await verifier.schemaAt(1);
+    addTearDown(schema.close);
+    expect(
+      schema.rawDatabase.select(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'import_records'",
+      ),
+      isEmpty,
+      reason: 'The v1 fixture must not contain the v2 import ledger.',
+    );
     final settings = jsonEncode(
       AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson(),
     );
@@ -27,11 +35,28 @@ void main() {
       ['synthetic-item', 'pve', 'importedManual', 1791244800, 7],
     );
     final db = BlackgridDatabase(schema.newConnection());
+    addTearDown(db.close);
     await verifier.migrateAndValidate(db, 2);
+    expect(
+      await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'import_records'",
+          )
+          .get(),
+      hasLength(1),
+    );
+    expect((await db.readSettings()).mode, GameMode.pve);
     expect((await db.readSettings()).selectedMap, 'woods');
-    expect((await db.readActivity()).single.revision, 7);
+    final retained = (await db.readActivity()).single;
+    expect(retained.itemId, 'synthetic-item');
+    expect(retained.mode, GameMode.pve);
+    expect(retained.source, ActivitySource.importedManual);
+    expect(
+      retained.observedAt,
+      DateTime.fromMillisecondsSinceEpoch(1791244800 * 1000, isUtc: true),
+    );
+    expect(retained.revision, 7);
     expect((await db.select(db.importRecords).get()), isEmpty);
-    await db.close();
   });
   test(
     'newer schema refuses without downgrade reset deletion or byte mutation',

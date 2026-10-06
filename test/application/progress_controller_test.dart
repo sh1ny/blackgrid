@@ -11,6 +11,8 @@ import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/progress.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/stalling_http_client.dart';
+import '../data/tracker_client_test.dart' show tokenWire;
 
 class MemoryCredentials implements CredentialStore {
   final Map<GameMode, String> credentials = {};
@@ -80,6 +82,36 @@ ProgressSnapshot response(GameMode mode, int session, {DateTime? at}) =>
 
 void main() {
   const token = 'PVP_synthetic-fixture-only';
+  testWidgets(
+    'review 2 Tracker deadline retains last-good and releases next refresh',
+    (tester) async {
+      final transport = StallingHttpClient(
+        stallPath: 'progress',
+        body: true,
+        responses: {'token': tokenWire(token), 'progress': progressWire()},
+      )..stall = false;
+      addTearDown(transport.close);
+      final c = ProgressController(
+        store: MemoryCredentials()..credentials[GameMode.pvp] = token,
+        client: TrackerClient(client: transport, clock: () => fixtureNow),
+        clock: () => fixtureNow,
+      );
+      addTearDown(c.dispose);
+      await c.setMode(GameMode.pvp);
+      await c.refresh();
+      final old = c.snapshot;
+      transport.stall = true;
+      final pending = c.refresh();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 31));
+      await pending;
+      expect(c.snapshot, same(old));
+      expect(c.status, ProgressStatus.stale);
+      transport.stall = false;
+      await tester.runAsync(c.refresh);
+      expect(c.status, ProgressStatus.current);
+    },
+  );
   test('Unknown sends no requests/credential reads; missing credentials remains unknown', () async {
     final store = MemoryCredentials();
     final client = ControlledTracker((m, t, s, p) async => response(m, s));
@@ -321,6 +353,30 @@ void main() {
       expect(c.snapshot!.mode, GameMode.pve);
     },
   );
+  test('review 4 absent cooldown deadline permits explicit recovery after finite fallback', () async {
+    var now = fixtureNow;
+    var throttled = true;
+    final client = ControlledTracker((m, t, s, p) async {
+      if (throttled) throw const TrackerException(TrackerFailure.cooldown);
+      return response(m, s, at: now);
+    });
+    final c = ProgressController(
+      store: MemoryCredentials()..credentials[GameMode.pvp] = token,
+      client: client,
+      clock: () => now,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    expect(c.cooldown, const Duration(seconds: 60));
+    await c.refresh();
+    expect(client.calls, 1);
+    now = now.add(const Duration(seconds: 60));
+    throttled = false;
+    await c.refresh();
+    expect(client.calls, 2);
+    expect(c.status, ProgressStatus.current);
+  });
   test('429 cooldown emits no repeated requests; explicit refresh after deadline allowed', () async {
     var now = fixtureNow;
     final store = MemoryCredentials()..credentials[GameMode.pvp] = token;

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
 
 import '../domain/catalog.dart';
@@ -60,9 +63,11 @@ class TrackerClient {
   }
 
   Future<http.Response> _get(String path, String token, {String? etag}) async {
-    final request = http.Request(
+    final abort = Completer<void>();
+    final request = http.AbortableRequest(
       'GET',
       Uri.https('api.tarkovtracker.org', '/$path'),
+      abortTrigger: abort.future,
     )..followRedirects = false;
     request.headers.addAll({
       'Accept': 'application/json',
@@ -72,7 +77,16 @@ class TrackerClient {
     });
     final http.Response response;
     try {
-      response = await http.Response.fromStream(await _client.send(request));
+      response = await _client
+          .send(request)
+          .then(http.Response.fromStream)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              abort.complete();
+              throw const TrackerException(TrackerFailure.unavailable);
+            },
+          );
     } on Object {
       throw const TrackerException(TrackerFailure.unavailable);
     }
@@ -83,15 +97,26 @@ class TrackerClient {
       throw const TrackerException(TrackerFailure.permission);
     }
     if (response.statusCode == 429) {
-      final seconds = int.tryParse(response.headers['retry-after'] ?? '');
-      final date = DateTime.tryParse(response.headers['retry-after'] ?? '');
+      final value = response.headers['retry-after']?.trim() ?? '';
+      final seconds = int.tryParse(value);
+      final now = _clock().toUtc();
+      DateTime? deadline;
+      if (seconds != null && seconds >= 0) {
+        try {
+          deadline = now.add(Duration(seconds: seconds));
+        } on Object {
+          // Out-of-range values use the same finite unknown-header cooldown.
+        }
+      } else {
+        try {
+          deadline = HttpDate.parse(value).toUtc();
+        } on HttpException {
+          // Missing and malformed headers cannot lock the credential session.
+        }
+      }
       throw TrackerException(
         TrackerFailure.cooldown,
-        cooldownUntil: seconds != null && seconds > 0
-            ? _clock().add(Duration(seconds: seconds))
-            : date != null && date.isAfter(_clock())
-            ? date
-            : null,
+        cooldownUntil: deadline ?? now.add(const Duration(seconds: 60)),
       );
     }
     if (response.statusCode != 200 &&

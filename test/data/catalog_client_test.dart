@@ -7,8 +7,57 @@ import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/domain/catalog.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/stalling_http_client.dart';
 
 void main() {
+  for (final path in ['items', 'items_en']) {
+    for (final body in [false, true]) {
+      testWidgets(
+        'review 2 catalog $path ${body ? 'body' : 'headers'} stall releases and next fetch works',
+        (tester) async {
+          final transport = StallingHttpClient(
+            stallPath: path,
+            body: body,
+            responses: wireFixture(),
+          );
+          addTearDown(transport.close);
+          final client = CatalogClient(
+            client: transport,
+            clock: () => fixtureNow,
+          );
+          var finished = false;
+          Object? failure;
+          final fetch = client
+              .fetch(GameMode.pvp)
+              .then(
+                (_) {
+                  finished = true;
+                },
+                onError: (Object error) {
+                  failure = error;
+                  finished = true;
+                },
+              );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 31));
+          // Dictionary failure continues normalization outside FakeAsync.
+          if (path.endsWith('_en')) {
+            await tester.runAsync(
+              () => Future<void>.delayed(const Duration(milliseconds: 200)),
+            );
+            await tester.pump();
+          }
+          expect(finished, isTrue);
+          expect(transport.aborts, 1);
+          if (path == 'items') expect(failure, isA<CatalogException>());
+          await fetch;
+          transport.stall = false;
+          final next = await tester.runAsync(() => client.fetch(GameMode.pvp));
+          expect(next!.items, isNotEmpty);
+        },
+      );
+    }
+  }
   for (final mode in [GameMode.pvp, GameMode.pve, GameMode.seasonal]) {
     test(
       'GET-only fixed-host six datasets and four dictionaries for ${mode.name}',

@@ -115,9 +115,10 @@ ImportPreview parseLegacySources(
       final mode = root.containsKey('Mode')
           ? _mode(root['Mode'], allowUnknown: true)
           : GameMode.unknown;
-      final map = root.containsKey('LastSelectedMap')
-          ? _map(root['LastSelectedMap'])
-          : 'shoreline';
+      final map =
+          !root.containsKey('LastSelectedMap') || root['LastSelectedMap'] == ''
+          ? 'shoreline'
+          : _map(root['LastSelectedMap']);
       final filters = <String, bool>{};
       if (root.containsKey('MarkerFilters')) {
         final raw = _object(root['MarkerFilters']);
@@ -171,6 +172,10 @@ ImportPreview parseLegacySources(
       final groups = root.containsKey('CustomPinsByMap')
           ? _object(root['CustomPinsByMap'])
           : <String, dynamic>{};
+      final destinationPinKeys = {
+        if (groups.isNotEmpty)
+          for (final pin in destinationPins) (pin.mapId, pin.id),
+      };
       final seen = <String>{};
       for (final entry in groups.entries) {
         final mapId = _map(entry.key);
@@ -203,9 +208,7 @@ ImportPreview parseLegacySources(
           );
           pin.validate();
           pins.add(pin);
-          final existing = destinationPins.any(
-            (p) => p.id == id && p.mapId == mapId,
-          );
+          final existing = destinationPinKeys.contains((mapId, id));
           accounting.add(
             ImportAccounting(
               kind: 'pin',
@@ -270,8 +273,8 @@ ImportPreview parseLegacySources(
         final revision = row.containsKey('ActivityRevision')
             ? _integer(row['ActivityRevision'])
             : index + 1;
-        if (revision < 0) {
-          throw const FormatException('Negative activity revision.');
+        if (revision <= 0) {
+          throw const FormatException('Activity revision must be positive.');
         }
         activity.add(
           ItemActivity(
@@ -279,7 +282,7 @@ ImportPreview parseLegacySources(
             mode: mode,
             source: source,
             observedAt: time,
-            revision: revision == 0 ? index + 1 : revision,
+            revision: revision,
           ),
         );
         for (final key in row.keys) {
@@ -307,13 +310,17 @@ ImportPreview parseLegacySources(
         winners[row.key] = i;
       }
     }
+    final destinationByKey = <String, ItemActivity>{};
+    if (activity.isNotEmpty) {
+      for (final row in destinationActivity) {
+        destinationByKey.putIfAbsent(row.key, () => row);
+      }
+    }
     for (var i = 0; i < activity.length; i++) {
       final row = activity[i];
       final winner = winners[row.key]!;
       final selected = activity[winner];
-      final destination = destinationActivity
-          .where((r) => r.key == row.key)
-          .firstOrNull;
+      final destination = destinationByKey[row.key];
       final sourceReason = row.revision != selected.revision
           ? 'Input $winner wins: revision ${selected.revision} exceeds ${row.revision}.'
           : row.observedAt != selected.observedAt

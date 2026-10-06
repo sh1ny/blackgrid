@@ -53,6 +53,7 @@ class AppServices {
   late final LegacyImport importer;
   final scans = const SessionScanState();
   bool _disposed = false;
+  int _modeTransition = 0;
   static Future<AppServices> open() async {
     final paths = await LocalPaths.resolve();
     final result = AppServices(
@@ -77,17 +78,17 @@ class AppServices {
   }
 
   Future<bool> setMode(GameMode mode) async {
-    if (!await settings.setMode(mode)) return false;
-    await progress.setMode(mode);
-    await catalog.setMode(mode);
-    return true;
+    if (!await settings.setMode(mode) || _disposed) return false;
+    final transition = ++_modeTransition;
+    // Both controllers invalidate synchronously before either async read ends.
+    final progressChange = progress.setMode(mode);
+    final catalogChange = catalog.setMode(mode);
+    await Future.wait([progressChange, catalogChange]);
+    return !_disposed && transition == _modeTransition;
   }
 
   Future<void> reloadAfterImport() async {
-    await settings.load();
-    await history.load();
-    await progress.setMode(settings.settings.mode);
-    await catalog.setMode(settings.settings.mode);
+    await initialize();
     selection.closeHistory();
   }
 

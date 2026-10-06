@@ -9,6 +9,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/stalling_http_client.dart';
 
 class MemoryCatalogStore implements CatalogStore {
   final Map<GameMode, CatalogSnapshot> catalogs = {};
@@ -45,6 +46,38 @@ class ControlledCatalogClient extends CatalogClient {
 }
 
 void main() {
+  testWidgets(
+    'review 2 deadline preserves last-good and releases coalesced next refresh',
+    (tester) async {
+      final old = fixtureCatalog();
+      final transport = StallingHttpClient(
+        stallPath: 'items',
+        body: true,
+        responses: wireFixture(),
+      );
+      addTearDown(transport.close);
+      final store = MemoryCatalogStore()..catalogs[GameMode.pvp] = old;
+      final c = CatalogController(
+        store: store,
+        client: CatalogClient(client: transport, clock: () => fixtureNow),
+        clock: () => fixtureNow,
+      );
+      addTearDown(c.dispose);
+      await c.setMode(GameMode.pvp);
+      final pending = c.refresh();
+      final coalesced = c.refresh();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 31));
+      await Future.wait([pending, coalesced]);
+      expect(c.snapshot, same(old));
+      expect(c.status, CatalogStatus.stale);
+      expect(store.commits, 0);
+      transport.stall = false;
+      await tester.runAsync(c.refresh);
+      expect(c.status, CatalogStatus.current);
+      expect(store.commits, 1);
+    },
+  );
   test('unknown cold startup has no fabricated items and sends no requests/store reads', () async {
     final store = MemoryCatalogStore();
     final client = ControlledCatalogClient(
@@ -217,6 +250,32 @@ void main() {
     expect(c.status, CatalogStatus.failed);
     expect(c.snapshot, isNull);
   });
+  test(
+    'review 7 returning mode rebinds coalesced refresh publication',
+    () async {
+      final response = Completer<CatalogSnapshot>();
+      final store = MemoryCatalogStore();
+      final client = ControlledCatalogClient((m) => response.future);
+      final c = CatalogController(
+        store: store,
+        client: client,
+        clock: () => fixtureNow,
+      );
+      addTearDown(c.dispose);
+      await c.setMode(GameMode.pvp);
+      final first = c.refresh();
+      await c.setMode(GameMode.pve);
+      await c.setMode(GameMode.pvp);
+      final rebound = c.refresh();
+      final candidate = decisionCatalog();
+      response.complete(candidate);
+      await Future.wait([first, rebound]);
+      expect(c.snapshot, same(candidate));
+      expect(c.status, CatalogStatus.current);
+      expect(client.calls, 1);
+      expect(store.commits, 1);
+    },
+  );
   test('same-key duplicate refreshes coalesce commit exactly once', () async {
     final response = Completer<CatalogSnapshot>();
     final store = MemoryCatalogStore();
