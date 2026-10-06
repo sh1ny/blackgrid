@@ -7,7 +7,15 @@ description = "Run Flutter static analysis"
 run = "flutter analyze"
 
 [tasks.test]
-description = "Run Flutter tests"
+description = "Run fast development tests"
+run = "flutter test --exclude-tags qualification"
+
+[tasks."test:qualification"]
+description = "Run expensive offline qualification tests"
+run = "flutter test --tags qualification"
+
+[tasks."test:all"]
+description = "Run the complete test suite"
 run = "flutter test"
 
 [tasks.format]
