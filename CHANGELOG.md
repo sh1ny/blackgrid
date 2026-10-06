@@ -22,6 +22,8 @@
 
 - *(map)* preserve overflowing pins and consume navigation keys
 
+- *(map)* align marker browser with filtered pins
+
 ### Performance
 
 - *(ui)* reuse manual search results per build (U6)

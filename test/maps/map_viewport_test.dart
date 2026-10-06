@@ -37,6 +37,100 @@ Future<void> _wheel(
 }
 
 void main() {
+  for (final markers in ['filtered', 'offscreen']) {
+    testWidgets('browser disables hidden pins with $markers markers', (
+      tester,
+    ) async {
+      final h = await pumpMapFixture(tester);
+      final pin = CustomPin(
+        id: 'browser-pin',
+        mapId: 'shoreline',
+        x: .5,
+        y: .5,
+        frame: 'legacy-normalized',
+        frameRevision: 0,
+        label: 'Browser pin',
+        updatedAt: DateTime.utc(2026),
+      );
+      expect(
+        await tester.runAsync(() => h.services.settings.savePin(pin)),
+        isTrue,
+      );
+      if (markers == 'filtered') {
+        final keys = h.services.maps
+            .visibleMarkers()
+            .map((marker) => marker.marker.filterKey)
+            .toSet();
+        for (final key in keys) {
+          expect(
+            await tester.runAsync(
+              () => h.services.settings.setMarker(key, false),
+            ),
+            isTrue,
+          );
+        }
+      } else {
+        h.services.maps.panBy(10000, 10000);
+      }
+      await settleMapFixture(tester, h);
+      expect(h.services.maps.visibleMarkers(), isEmpty);
+      expect(
+        tester.widget<OutlinedButton>(_markerBrowser).onPressed,
+        isNotNull,
+      );
+      expect(
+        await tester.runAsync(
+          () => h.services.settings.setMarker('CustomPins', false),
+        ),
+        isTrue,
+      );
+      await settleMapFixture(tester, h);
+      expect(h.services.settings.pins.single.id, pin.id);
+      expect(tester.widget<OutlinedButton>(_markerBrowser).onPressed, isNull);
+      await tester.tap(_markerBrowser);
+      await tester.pumpAndSettle();
+      expect(find.text('Visible map markers and pins'), findsNothing);
+      expect(
+        await tester.runAsync(
+          () => h.services.settings.setMarker('CustomPins', true),
+        ),
+        isTrue,
+      );
+      await settleMapFixture(tester, h);
+      expect(
+        tester.widget<OutlinedButton>(_markerBrowser).onPressed,
+        isNotNull,
+      );
+      await tester.tap(_markerBrowser);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ListTile, 'Browser pin'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ListTile, 'Browser pin'));
+      await settleMapFixture(tester, h);
+      await tester.tap(find.text('Edit pin'));
+      await tester.pumpAndSettle();
+      expect(
+        double.parse(
+          tester
+              .widget<TextField>(find.widgetWithText(TextField, 'Normalized X'))
+              .controller!
+              .text,
+        ),
+        pin.x,
+      );
+      expect(
+        double.parse(
+          tester
+              .widget<TextField>(find.widgetWithText(TextField, 'Normalized Y'))
+              .controller!
+              .text,
+        ),
+        pin.y,
+      );
+      expect(h.services.scans.hasAcceptedScan, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('map navigation keys stop at the focused viewport', (
     tester,
   ) async {

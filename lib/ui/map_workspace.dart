@@ -35,6 +35,10 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       .where((pin) => pin.mapId == maps.selectedMapId)
       .toList();
 
+  bool _isVisiblePin(CustomPin pin) =>
+      pin.mapId == maps.selectedMapId &&
+      widget.services.settings.settings.markerFilters['CustomPins'] != false;
+
   void _select(ViewportPoint point) {
     _focus.requestFocus();
     final marker = maps.hitTestMarker(point, radius: 22);
@@ -61,10 +65,9 @@ class _MapWorkspaceState extends State<MapWorkspace> {
 
   Future<void> _browse() async {
     final visible = maps.visibleMarkers();
-    final visiblePins =
-        widget.services.settings.settings.markerFilters['CustomPins'] == false
-        ? <CustomPin>[]
-        : pins;
+    final visiblePins = widget.services.settings.pins
+        .where(_isVisiblePin)
+        .toList();
     final mapId = maps.selectedMapId;
     final id = await showModalBottomSheet<String>(
       context: context,
@@ -181,7 +184,11 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                 icon: const Icon(Icons.remove),
               ),
               OutlinedButton.icon(
-                onPressed: visible.isEmpty && pins.isEmpty ? null : _browse,
+                onPressed:
+                    visible.isEmpty &&
+                        !widget.services.settings.pins.any(_isVisiblePin)
+                    ? null
+                    : _browse,
                 icon: const Icon(Icons.list, size: 18),
                 label: Text('Markers (${visible.length})'),
               ),
