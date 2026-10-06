@@ -1,24 +1,22 @@
-import 'package:blackgrid/main.dart';
+import 'package:blackgrid/domain/catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/m1_widget_harness.dart';
+
 void main() {
-  testWidgets('Keeps content visible in a compact window with large text', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 240);
-    tester.view.devicePixelRatio = 1;
-    tester.platformDispatcher.textScaleFactorTestValue = 3;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-
-    await tester.pumpWidget(const MainApp());
-
-    final content = tester.getRect(find.text('blackgrid'));
-    expect(content.left, greaterThanOrEqualTo(0));
-    expect(content.top, greaterThanOrEqualTo(0));
-    expect(content.right, lessThanOrEqualTo(320));
-    expect(content.bottom, lessThanOrEqualTo(240));
-  });
+  testWidgets(
+    'Unknown first run is honest and has exactly two primary surfaces',
+    (tester) async {
+      final h = await pumpM1(tester, mode: GameMode.unknown);
+      expect(find.byKey(const Key('nav-map')), findsOneWidget);
+      expect(find.byKey(const Key('nav-scanner')), findsOneWidget);
+      expect(find.text('Database'), findsNothing);
+      expect(find.text('Progression'), findsNothing);
+      expect(find.text('Tools'), findsNothing);
+      expect(find.text('No accepted scan this session'), findsOneWidget);
+      expect(h.requests, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
