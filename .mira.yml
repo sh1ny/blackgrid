@@ -1,0 +1,171 @@
+# .mira.yaml
+#
+# Blackgrid-specific Mira review configuration.
+#
+# Goals:
+# - Review Dart/Flutter application, tooling, tests, and meaningful fixtures.
+# - Ignore generated/bundled map packs and other machine-generated noise.
+# - Allow large feature PRs (~8-10k real LOC) to be reviewed in one pass.
+# - Prefer useful findings over nitpicks without becoming bug-only.
+
+filter:
+  confidence_threshold: 0.72
+
+  # Security findings from a secondary pass are somewhat easier to hallucinate.
+  category_confidence_thresholds:
+    security: 0.82
+
+  # Default is 5. Large Blackgrid feature PRs can legitimately contain
+  # more independent findings.
+  max_comments: 12
+
+  # Don't waste review bandwidth on spelling/style nitpicks.
+  # Keep suggestions, warnings and blockers.
+  min_severity: "suggestion"
+
+  exclude_deleted: true
+
+  # Default is 50. After generated assets are removed Blackgrid is normally
+  # well below this, but don't arbitrarily truncate larger implementation PRs.
+  max_files: 100
+
+  # This list replaces the inherited exclude_patterns key, so retain Mira's
+  # normal exclusions and add Blackgrid-specific generated content.
+  exclude_patterns:
+    # Mira defaults / generic generated content
+    - "*.lock"
+    - "*.lockb"
+    - "package-lock.json"
+    - "yarn.lock"
+    - "pnpm-lock.yaml"
+    - "Pipfile.lock"
+    - "poetry.lock"
+    - "go.sum"
+
+    - "*.min.js"
+    - "*.min.css"
+    - "*.map"
+
+    - "*.svg"
+    - "*.png"
+    - "*.jpg"
+    - "*.jpeg"
+    - "*.gif"
+    - "*.ico"
+    - "*.webp"
+
+    - "*.woff"
+    - "*.woff2"
+    - "*.ttf"
+    - "*.eot"
+
+    - "*.pdf"
+    - "*.zip"
+    - "*.tar.gz"
+
+    # Flutter/Dart generated output
+    - "build/**"
+    - ".dart_tool/**"
+    - "coverage/**"
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+
+    # Drift-generated schema snapshots.
+    # Review the migration/source code instead.
+    - "drift_schemas/**"
+
+    # Flutter-generated platform glue
+    - "windows/flutter/ephemeral/**"
+    - "windows/flutter/generated_plugin_registrant.*"
+    - "windows/flutter/generated_plugins.cmake"
+
+    # Blackgrid map packs.
+    #
+    # THIS is the big one. PR #4 has 721 changed files under assets/,
+    # overwhelmingly generated/prepared map payloads. Keep active.json
+    # reviewable, but don't review/index immutable prepared generations.
+    - "assets/maps/versions/**"
+
+    # Legal/release bookkeeping isn't useful code-review context.
+    - "THIRD_PARTY_NOTICES.md"
+    - "CHANGELOG.md"
+
+
+review:
+  # Default is only 250k characters. That's why a legitimate ~8-10k LOC
+  # Blackgrid change gets priority-truncated even after binary/image filtering.
+  #
+  # Mira still chunks the selected diff; this isn't one giant model prompt.
+  max_diff_size: 1000000
+
+  # Default is 50k chars. Blackgrid has substantial map preparation/controller
+  # files that we do want reviewed.
+  max_file_size: 150000
+
+  # Default is 5. Allow a sizeable feature PR to process substantially more
+  # of its selected code in the initial review instead of immediately requiring
+  # review-rest.
+  max_chunks_per_review: 12
+
+  context_lines: 4
+
+  include_summary: true
+  focus_only_on_problems: false
+
+  walkthrough: true
+
+  # Nice-looking but not particularly valuable for us, and it adds work/noise.
+  walkthrough_sequence_diagram: false
+
+  pr_summary: "disable"
+
+  # Important for Flutter architecture: controller -> domain -> persistence ->
+  # widgets often requires looking outside the immediate diff hunk.
+  code_context: true
+  context_token_budget: 12000
+
+  # Five is already reasonably aggressive. Increasing this can hurt providers
+  # with concurrency/rate limits more than it helps.
+  max_concurrent_chunks: 5
+
+  # Keep the quality-control pass. I'd rather Mira be a little slower than
+  # dump dubious comments into every PR.
+  self_critique: true
+
+  security_pass: true
+  security_agentic: true
+  osv_scan: true
+  secrets_scan: true
+
+  # Useful for Dart because static import resolution support isn't as mature
+  # as Mira's Python/TS paths; let the reviewer inspect related files itself.
+  agentic_tools: true
+
+  # Blackgrid is Dart/Flutter. Don't spend effort on Java/Go JIT resolution.
+  jit_java_go: false
+
+  blast_radius: true
+
+  # Don't multiply review cost. One strong pass + self-critique is enough.
+  ensemble_runs: 1
+
+  auto_resolve_conversations: true
+
+  # Keep reviewing new pushes automatically.
+  # Note: Mira currently drops synchronize events if another review of the
+  # same PR is already in progress; this config cannot fix that behaviour.
+  review_on_synchronize: true
+
+  dependency_overlap: true
+
+  # Blackgrid is currently one project/one primary implementation stream.
+  # Cross-PR semantic overlap detection isn't worth an extra LLM path here.
+  overlap:
+    enabled: false
+
+
+index:
+  # Enough for real Dart source while preventing accidentally committed
+  # giant generated/text assets from consuming indexing tokens.
+  max_file_size: 262144
