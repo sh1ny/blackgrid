@@ -6,12 +6,75 @@ import '../application/app_services.dart';
 import '../domain/settings.dart';
 import 'item_decision_card.dart';
 import 'manual_controls.dart';
+import 'map_workspace.dart';
 import 'pin_editor.dart';
 import 'theme.dart';
 
 class MapScreen extends StatelessWidget {
   const MapScreen({super.key, required this.services});
   final AppServices services;
+
+  Future<void> _showPins(BuildContext context) => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => ListenableBuilder(
+      listenable: services.settings,
+      builder: (context, _) {
+        final map = services.settings.settings.selectedMap;
+        final records = services.settings.pins
+            .where((p) => p.mapId == map)
+            .toList();
+        return SizedBox(
+          height: 450,
+          child: records.isEmpty
+              ? const Center(child: Text('No saved pins for this map'))
+              : ListView.builder(
+                  itemCount: records.length,
+                  itemBuilder: (context, index) {
+                    final pin = records[index];
+                    return ListTile(
+                      title: Text(pin.label),
+                      subtitle: Text(
+                        'X ${pin.x} • Y ${pin.y}\n${pin.frame} • revision ${pin.frameRevision}',
+                      ),
+                      onTap: () => showPinEditor(context, services, pin: pin),
+                      trailing: IconButton(
+                        tooltip: 'Remove pin ${pin.label}',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () async {
+                          final remove = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Remove pin record?'),
+                              content: Text(
+                                '${pin.label} • ${mapLabel(pin.mapId)}',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Remove'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (remove == true) {
+                            await services.settings.removePin(pin);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+        );
+      },
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: services.settings,
@@ -25,140 +88,28 @@ class MapScreen extends StatelessWidget {
         final workspace = GridPanel(
           title: mapLabel(map).toUpperCase(),
           icon: Icons.map_outlined,
-          subtitle: 'Durable pin workspace • native artwork is outside M1',
+          subtitle:
+              'Native local artwork • durable pins • offline map capability',
           trailing: OutlinedButton.icon(
             onPressed: () => showPinEditor(context, services),
             icon: const Icon(Icons.add_location_alt_outlined, size: 18),
             label: const Text('Add pin'),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Divider(height: 1),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: GridColors.inset,
-                  border: Border.all(color: GridColors.quietBorder),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.layers_outlined,
-                      size: 36,
-                      color: GridColors.gold,
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'Map identities, marker preferences and supported pin frames are available as data. No unqualified map artwork, player location or game listener is rendered.',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                '${pins.length} saved pin records',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
               const SizedBox(height: 10),
-              Expanded(
-                child: pins.isEmpty
-                    ? const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 70,
-                              color: GridColors.muted,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Your map records start here',
-                              style: TextStyle(fontSize: 22),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Add a pin with explicit normalized coordinates. No map-position claim is made.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: GridColors.muted),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        key: const PageStorageKey('map-pin-scroll'),
-                        itemCount: pins.length,
-                        itemBuilder: (context, index) {
-                          final pin = pins[index];
-                          return Card(
-                            color: GridColors.inset,
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                              side: const BorderSide(
-                                color: GridColors.quietBorder,
-                              ),
-                            ),
-                            child: ListTile(
-                              leading: const Icon(
-                                Icons.location_on_outlined,
-                                color: GridColors.gold,
-                              ),
-                              title: Text(pin.label),
-                              subtitle: Text(
-                                'X ${pin.x} • Y ${pin.y}\n${pin.frame} • revision ${pin.frameRevision}',
-                              ),
-                              onTap: () =>
-                                  showPinEditor(context, services, pin: pin),
-                              trailing: IconButton(
-                                tooltip: 'Remove pin ${pin.label}',
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () async {
-                                  final remove = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Remove pin record?'),
-                                      content: Text(
-                                        '${pin.label} • ${mapLabel(pin.mapId)}',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text('Remove'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (remove == true) {
-                                    await services.settings.removePin(pin);
-                                  }
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
+              Expanded(child: MapWorkspace(services: services)),
               if (services.settings.error != null)
                 Text(
                   services.settings.error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
-              const Divider(height: 24),
-              const Text(
-                'Pin frames are retained, not geometry-qualified • no capture or game interaction',
-                style: TextStyle(color: GridColors.muted, fontSize: 12),
+              TextButton.icon(
+                icon: const Icon(Icons.location_on_outlined),
+                label: Text('${pins.length} saved pin records'),
+                onPressed: () => _showPins(context),
               ),
             ],
           ),
@@ -217,7 +168,7 @@ class MapScreen extends StatelessWidget {
               child: GridPanel(
                 title: 'Marker preferences',
                 icon: Icons.filter_alt_outlined,
-                subtitle: 'Saved preferences • no native markers rendered',
+                subtitle: 'Shared drawing and selection visibility',
                 child: ListView(
                   children: [
                     SwitchListTile(
@@ -243,7 +194,7 @@ class MapScreen extends StatelessWidget {
                                       .settings
                                       .settings
                                       .markerFilters[key] ??
-                                  false,
+                                  true,
                               onSelected: (value) =>
                                   services.settings.setMarker(key, value),
                             ),

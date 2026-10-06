@@ -10,21 +10,19 @@
 
 - *(m1)* implement safe manual decisions and durable desktop shell
 
+- *(m3)* enable native offline maps and prepared asset packs
+
 ### Fixes
-
-- *(m1)* fence overlapping mode changes and returning-mode refresh publication
-
-- *(m1)* bound read-only requests and recover finite Tracker cooldowns without retries
-
-- *(m1)* preserve refreshed catalog observations and correct v1 migration coverage
-
-- *(m1)* retain unknown hideout gates and stored-mode history source evidence
-
-- *(m1)* validate positive import revisions and accept the legacy unset map preference
 
 - *(qualification)* Preserve collector source and snapshot boundaries (#1)
 
 - *(qualification)* Preserve collector input recipes (#1)
+
+- *(review)* apply review findings
+
+### Performance
+
+- *(ui)* reuse manual search results per build (U6)
 
 ### Documentation
 
@@ -37,6 +35,8 @@
 - record manual item decision implementation contract
 
 - *(m1)* document authority boundaries and dependency notices
+
+- *(m3)* define native map proof implementation contract
 
 ### Build, CI, and tooling
 

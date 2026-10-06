@@ -1,6 +1,19 @@
 # Third-party notices
 
-This records inputs actually selected for the independently authored M1 implementation, not a blanket clearance of the reference inventory. Blackgrid's project license remains unselected; the repository is private and this document does not authorize publication. No reference runtime/source, map artwork, screenshots, OCR models, or downloaded catalog payloads are shipped. Synthetic test fixtures were independently authored.
+This records inputs selected for the independently authored Blackgrid implementation, not a blanket clearance of the reference inventory. Blackgrid's project license remains unselected; the repository is private and this document does not authorize publication. No reference runtime/source, screenshots or OCR models are shipped. Synthetic test fixtures were independently authored. M3 map artwork is independently acquired and bundled with the source-specific notices below; Blackgrid claims no ownership of that artwork.
+
+## M3 map artwork and preparation
+
+- **Interchange — Shebuka / Escape from Tarkov SVG Maps Project**: [served artwork](https://assets.tarkov.dev/maps/svg/Interchange.svg), SHA-256 `31a44112cd5fe33484ce6be7b7dc80d13db6077cba2583a4425ed94c665f47c4`, byte-identical to [repository source at revision `5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178`](https://github.com/the-hideout/tarkov-dev-svg-maps/blob/5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178/Interchange.svg). Its shared source viewBox is `0 0 1127.6852 947.02582`; this is not the older `b4c556ffcf85f9ef61a6b1b10c42f6339acd5d5e` 977.09998-square artwork. Artwork is published under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). The revision-matched source `README.md` also explicitly prohibits cheating/unfair-advantage software, radar/ESP, cheat-client maps and automation/pixel-bots, and contains revocation wording. Both README and LICENSE.md are retained verbatim as prepared-pack `evidence/terms/svg-maps-README.md` and `evidence/terms/svg-maps-LICENSE.md`. Preserve attribution, noncommercial/share-alike conditions and published additional restrictions separately from the code licence. Preparation changes: dependency-closed source-ordered components with inherited floor context, CSS normalization, retained chained gradient references, native vector compilation and exact Structure-1/Structure-2 native drop-shadow effects; original source remains bundled as `evidence/interchange/Interchange.svg`.
+- **Labs interactive — Tarkov.dev**: [creator/source](https://tarkov.dev/), tiles at `https://assets.tarkov.dev/maps/labs_v4/`. Preparation changes: decoded z4 tile validation and one shared display crop; original 2800-unit artwork frame and persisted pin revision are unchanged.
+- **Icebreaker interactive — TarkovBOT.eu**: [creator](https://tarkovbot.eu/), tiles at `https://assets.tarkov.dev/maps/icebreaker/`. Attribution follows the interactive primary metadata, not its separate re3mr 2D map. Preparation changes: all 16 decoded tile families and shared display crop; source spelling `05_storage_ecurity` is retained.
+- **Metadata and markers — Tarkov.dev**: [primary map metadata](https://raw.githubusercontent.com/the-hideout/tarkov-dev/main/src/data/maps.json), [source-position dataset](https://json.tarkov.dev/regular/maps). Independently frozen source URLs, bytes and SHA-256 hashes accompany the pack.
+
+The representative vector's technical selection was corrected from Streets to Interchange because the frozen/current Streets source contains undefined `stairs-85`, `stairs-86` and `stairs-87` references. No missing artwork was repaired, stripped or fabricated. Static parsing of the current Interchange source found 70 unique IDs and 64 local-reference edges, with no missing targets. This establishes source dependency closure only, not successful compiler or Windows native-renderer qualification. Current authoritative metadata (SHA-256 `c53a327dcdcff67a49b9fe2d150731edb4c1611dfc2f75db2ce97444dee2ef77`, repository revision `ef62766bbd7ffb294c7184f9b8bfe8ed0f18320e`) supplies transform `[0.265,150.6,0.265,134.6]`, rotation 180 and bounds `[[598,-442],[-433,426]]`; source `First_Floor` is displayed as 2nd Floor, and `Second_Floor` as 3rd Floor.
+
+The SVG repository licence is not a blanket licence for Labs/Icebreaker raster artwork. Published source and creator evidence is retained; a website software licence does not establish artwork permission. No separate owner-cleared permission is asserted. Inclusion follows the user's direction for this private implementation, not permission for a public release or a visibility change.
+
+Preparation-only dependencies are pinned to `xml 6.6.1` ([MIT](https://github.com/renggli/dart-xml)), `image 4.8.0` ([MIT](https://github.com/brendan-duncan/image)) and `vector_graphics_compiler 1.3.0` ([BSD-3-Clause](https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler)); none requires a Flutter engine. Native runtime `vector_graphics 1.2.3` is qualified separately before its runtime commitment. Resolved transitive notices/lock are integrated by the parent after package resolution.
 
 ## Resolved selection
 
@@ -37,6 +50,14 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.6 / 
 | string_scanner | 1.4.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/string_scanner/versions/1.4.1) |
 | term_glyph | 1.2.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/term_glyph/versions/1.2.2) |
 | typed_data | 1.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/typed_data/versions/1.4.0) |
+| vector_graphics | 1.2.3 | Native compiled-vector rendering | [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.3) |
+| vector_graphics_codec | 1.1.13 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.1.13) |
+| vector_graphics_compiler | 1.3.0 | Offline map preparation | [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.0) |
+| xml | 6.6.1 | Offline SVG dependency/style preparation | [pub.dev](https://pub.dev/packages/xml/versions/6.6.1) |
+| image | 4.8.0 | Offline PNG validation | [pub.dev](https://pub.dev/packages/image/versions/4.8.0) |
+| petitparser | 7.0.2 | Preparation parser dependency | [pub.dev](https://pub.dev/packages/petitparser/versions/7.0.2) |
+| archive | 4.3.0 | Preparation image dependency | [pub.dev](https://pub.dev/packages/archive/versions/4.3.0) |
+| posix | 6.5.2 | Preparation image dependency | [pub.dev](https://pub.dev/packages/posix/versions/6.5.2) |
 | vector_math | 2.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/vector_math/versions/2.4.0) |
 | web | 1.1.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/web/versions/1.1.1) |
 | yaml | 3.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/yaml/versions/3.1.4) |
@@ -54,6 +75,128 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.6 / 
 **Remote data:** production GETs use [json.tarkov.dev](https://json.tarkov.dev/endpoints) and the read-only [Tracker API](https://api.tarkovtracker.org/openapi.json). Hosting and API availability are not blanket redistribution licenses for game data, artwork or private progress. Credentials and personal progress are not included in repository fixtures, local history, notices or diagnostics. Future asset selection and public distribution retain their own rights gates.
 
 ## Verbatim selected package licenses
+
+### Map vector packages: vector_graphics and vector_graphics_compiler
+
+The resolved `package-root:vector_graphics/LICENSE` and
+`package-root:vector_graphics_compiler/LICENSE` contain the same notice:
+
+```text
+Copyright 2013 The Flutter Authors
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+### File "package-root:vector_graphics_codec/LICENSE"
+
+```text
+Copyright 2013 The Flutter Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+### Map preparation MIT packages
+
+The resolved XML, image, parser and archive notices carry these exact
+copyright lines:
+
+- `package-root:xml/LICENSE`: `Copyright (c) 2006-2025 Lukas Renggli.`
+- `package-root:image/LICENSE`: `Copyright (c) 2013-2022 Brendan Duncan.`
+- `package-root:petitparser/LICENSE`: `Copyright (c) 2006-2024 Lukas Renggli.`
+- `package-root:archive/LICENSE`: `Copyright (c) 2013-2021 Brendan Duncan.`
+
+Each of those four notices is headed `The MIT License`, follows its copyright
+with `All rights reserved.`, and includes this identical permission and disclaimer:
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+### File "package-root:posix/LICENSE"
+
+```text
+MIT License
+
+Copyright (c) 2020 Brett Sutton
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## File "package-root:async/LICENSE":
 

@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>TarkovBOT - Escape from Tarkov Discord, Twitch Bots & Tools</title>
+	<meta name="description" content="Enhance your Escape from Tarkov experience with our Discord and Twitch bot. Get real-time game information, Goons locations, and more." />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#9a8866">
+	<link rel="icon" href="/main/img/favicon.ico" type="image/x-icon">
+	<link rel="icon" href="/main/img/favicon.png" type="image/png">
+	<meta name="keywords" content="Escape from Tarkov, TarkovBOT, Discord bot, Twitch bot, Goons tracker, game time, prices, weather, traders, restocks, ammo, info, round, map, maps, wiki, location, bans, tools, tool, tracker, location, eft, tarkov">
+	<link rel="stylesheet" href="/main/css/main.css?v=07082026">
+	<meta name="subject" content="TarkovBOT.eu Tracker, Overlays and Tools">
+	<meta name='coverage' content='Worldwide'>
+	<meta name='distribution' content='Global'>
+	<meta name='rating' content='General'>
+	<meta name='target' content='all'>
+	<meta name="audience" content="all"/>
+	<meta name="topic" content="Tarkov Goons Tracker, Bots and Tools.">
+    <meta name="summary" content="Get Tarkov Goons Tracker, Discord/Twitch Bots and Tools">
+	<meta property="og:image" content="https://tarkovbot.eu/main/img/goldlogo.webp">
+	<meta property="og:title" content="TarkovBOT - Escape from Tarkov Discord, Twitch Bots & Tools">
+	<meta property="og:description" content="Enhance your Escape from Tarkov experience with our Discord and Twitch bot. Get real-time game information, Goons locations, and more.">
+	<meta name="twitter:image" content="https://tarkovbot.eu/main/img/goldlogo.webp">
+	<meta name="twitter:title" content="TarkovBOT - Escape from Tarkov Discord, Twitch Bots & Tools">
+	<meta name="twitter:description" content="Enhance your Escape from Tarkov experience with our Discord and Twitch bot. Get real-time game information, Goons locations, and more.">
+	<div id="suggestions-widget" class="suggestions-widget">
+
+  <button id="suggestions-toggle" class="suggestions-toggle" aria-label="Open suggestions">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    Feedback / Bug report
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <div class="suggestions-content" id="suggestions-content">
+    <div class="suggestions-header">
+      <h3 class="suggestions-title">Feedback</h3>
+      <button class="suggestions-close" id="suggestions-close" aria-label="Minimize suggestions">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <form id="suggestions-form" class="suggestions-form">
+      <textarea id="suggestion-input" name="suggestion" placeholder="Share your ideas to improve our site or report a bug..." maxlength="2500" required></textarea>
+
+      <div class="suggestions-footer">
+        <span class="char-count">0/2500</span>
+        <button type="submit" class="suggestions-submit">Send</button>
+      </div>
+    </form>
+
+    <p class="suggestions-note">
+      Complex requests or bug reports? Join our <a href="https://discord.gg/SxQ7rdzPHp" target="_blank" rel="noopener">Discord</a>
+    </p>
+
+    <div class="suggestions-status" id="suggestions-status"></div>
+  </div>
+</div>
+
+<style>
+  /* Container positioning */
+  .suggestions-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 99999999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  /* Toggle Button (Collapsed State) */
+  .suggestions-toggle {
+        display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1a1a1d;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .75), 0 0 12px rgba(255, 215, 0, .08);
+    border: 1px solid hsla(0, 0%, 100%, .1);
+  }
+
+  .suggestions-toggle:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Hide toggle when expanded */
+  .suggestions-widget.expanded .suggestions-toggle {
+    display: none;
+  }
+
+  /* Expanded Content Area */
+  .suggestions-content {
+    display: none;
+    /* Hidden by default */
+    width: 500px;
+    max-width: calc(100vw - 40px);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .75), 0 0 12px rgba(255, 215, 0, .08);
+    border: 1px solid hsla(0, 0%, 100%, .1);
+    background: #141414;
+  }
+
+  /* Show content when expanded */
+  .suggestions-widget.expanded .suggestions-content {
+    display: block;
+    animation: slideUpFade 0.3s ease;
+  }
+
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Header with Flexbox fixes the overlap issue */
+  .suggestions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .suggestions-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0;
+  }
+
+  .suggestions-close {
+    background: none;
+    border: none;
+    color: #c8c8c8;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+  }
+
+  .suggestions-close:hover {
+    color: #fff;
+  }
+
+  .suggestions-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Input fixes */
+  #suggestion-input {
+    width: 100%;
+    min-height: 220px;
+    padding: 12px;
+    background: #141414;
+    border: 1px solid rgba(154, 136, 102, 0.2);
+    border-radius: 6px;
+    color: #c8c8c8;
+    font-family: inherit;
+    font-size: 16px !important;
+    /* 16px stops iOS zoom and looks cleaner */
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  #suggestion-input:focus {
+    outline: none;
+    border-color: #9a8866;
+  }
+
+  #suggestion-input::placeholder {
+    color: rgba(200, 200, 200, 0.5);
+  }
+
+  .suggestions-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .char-count {
+    font-size: 12px;
+    color: rgba(200, 200, 200, 0.6);
+  }
+
+  .suggestions-submit {
+    padding: 6px 20px;
+    background: white;
+    border: none;
+    text-shadow: none;
+    text-transform: uppercase;
+    border-radius: 6px;
+    color: #000;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+
+  .suggestions-submit:hover {
+    opacity: 0.85;
+  }
+
+  .suggestions-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Discord link alignment fixed */
+  .suggestions-note {
+    margin: 16px 0 0 0;
+    font-size: 15px;
+    color: #c8c8c8;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .suggestions-note a {
+    color: #5865F2;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.2s ease;
+  }
+
+  .suggestions-note a:hover {
+    opacity: 1;
+  }
+
+  .suggestions-status {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-align: center;
+    display: none;
+  }
+
+  .suggestions-status.success {
+    background: rgba(40, 167, 69, 0.15);
+    color: #5fd68a;
+    border: 1px solid rgba(95, 214, 138, 0.3);
+    display: block;
+  }
+
+  .suggestions-status.error {
+    background: rgba(220, 53, 69, 0.15);
+    color: #ff6b7a;
+    border: 1px solid rgba(255, 107, 122, 0.3);
+    display: block;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 480px) {
+    .suggestions-widget {
+      bottom: 10px;
+      right: 10px;
+    }
+
+    .suggestions-content {
+      width: calc(100vw - 20px);
+      padding: 16px;
+      background: #1a1a1d;
+    }
+  }
+
+  .suggestions-widget {
+    transition: bottom 0.3s ease;
+  }
+</style>
+
+<script>
+  (function() {
+    const widget = document.getElementById('suggestions-widget');
+    const toggleBtn = document.getElementById('suggestions-toggle');
+    const closeBtn = document.getElementById('suggestions-close');
+    const form = document.getElementById('suggestions-form');
+    const textarea = document.getElementById('suggestion-input');
+    const charCount = document.querySelector('.char-count');
+    const submitBtn = document.querySelector('.suggestions-submit');
+    const status = document.getElementById('suggestions-status');
+
+    function expandWidget() {
+      widget.classList.add('expanded');
+      setTimeout(() => textarea.focus(), 100);
+    }
+
+    function collapseWidget() {
+      widget.classList.remove('expanded');
+    }
+
+    toggleBtn.addEventListener('click', expandWidget);
+    closeBtn.addEventListener('click', collapseWidget);
+
+    textarea.addEventListener('input', function() {
+      charCount.textContent = `${this.value.length}/2500`;
+    });
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const suggestion = textarea.value.trim();
+      if (!suggestion) return;
+
+      submitBtn.disabled = true;
+      status.className = 'suggestions-status';
+      status.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/suggestions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            suggestion
+          })
+        });
+
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error('Invalid server response');
+        }
+
+        if (response.ok) {
+          status.className = 'suggestions-status success';
+          status.textContent = data.message || 'Thanks for your suggestion!';
+          status.style.display = 'block';
+
+          textarea.value = '';
+          charCount.textContent = '0/2500';
+
+          setTimeout(() => {
+            collapseWidget();
+            status.style.display = 'none';
+          }, 3000);
+
+        } else {
+          let message = data.error || 'Request failed';
+
+          if (response.status === 429 && data.retryAfter) {
+            const minutes = Math.ceil(data.retryAfter / 60);
+            message += ` Try again in ${minutes} min.`;
+          }
+
+          throw new Error(message);
+        }
+
+      } catch (error) {
+        status.className = 'suggestions-status error';
+        status.textContent = error.message || 'Something went wrong.';
+        status.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+
+    let ticking = false;
+
+    // Position it also on initial page load
+    window.addEventListener('load', () => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+
+    window.addEventListener('scroll', () => {
+      const footer = document.getElementById('about');
+      if (!footer) return;
+
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const footerRect = footer.getBoundingClientRect();
+          const overlap = Math.max(0, window.innerHeight - footerRect.top);
+
+          widget.style.bottom = overlap > 0 ?
+            (20 + overlap) + 'px' :
+            '20px';
+
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  })();
+</script>  </head>
+
+  <body id="coeeee" class="indbg">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="/main/css/header.css?v=07082026">
+
+<header class="header">
+  <div class="header__container">
+    <!-- Mobile Action Group (Discord - visible only on mobile) -->
+    <div class="header__actions header__actions--mobile">
+      <a 
+        target="_blank" 
+        href="https://discord.gg/SxQ7rdzPHp" 
+        class="header__action-btn header__action-btn--discord" 
+        aria-label="Join our Discord Server"
+      >
+        <i class="fa-brands fa-discord"></i>
+      </a>
+    </div>
+
+    <!-- Logo -->
+    <a href="/" class="header__logo" aria-label="Home">
+  <picture>
+    <source srcset="/main/img/ratlogo.webp" media="(max-width: 1640px)">
+    <img 
+      class="header__logo-img" 
+      src="/main/img/logo1.webp" 
+      alt="Site Logo"
+      width="192"
+      height="24"
+    >
+  </picture>
+</a>
+
+    <!-- Mobile Menu Toggle -->
+    <button 
+      class="header__toggle" 
+      aria-label="Toggle navigation menu" 
+      aria-expanded="false"
+      aria-controls="main-nav"
+      id="menuToggle"
+    >
+      <span class="header__toggle-icon"></span>
+      <span class="header__toggle-icon"></span>
+      <span class="header__toggle-icon"></span>
+    </button>
+
+    <!-- Main Navigation -->
+    <nav class="header__nav" id="mainNav" aria-label="Main navigation">
+      <ul class="header__nav-list">
+        <li class="header__nav-item">
+          <a class="header__nav-link" href="/">
+            <i class="fas fa-home" aria-hidden="true"></i>
+            <span>Home</span>
+          </a>
+        </li>
+        <li class="header__nav-item">
+          <a class="header__nav-link" href="/goonstracker">
+            <img 
+              src="/main/img/goonsMenuIcon.webp" 
+              alt="" 
+              class="header__nav-icon"
+              width="32"
+              height="32"
+            >
+            <span>GoonsTracker</span>
+          </a>
+        </li>
+        <li class="header__nav-item">
+          <a class="header__nav-link" href="/weapon-modding">
+            <img 
+              src="/main/img/weaponModdingMenuIcon.webp" 
+              alt="" 
+              class="header__nav-icon"
+              width="32"
+              height="32"
+            >
+            <span>3D Weapon Builder</span>
+          </a>
+        </li>
+        <li class="header__nav-item header__nav-item--dropdown">
+          <button 
+            class="header__nav-link header__nav-link--dropdown"
+            aria-expanded="false"
+            aria-haspopup="true"
+          >
+            <i class="fas fa-robot" aria-hidden="true"></i>
+            <span>Tarkov Bots</span>
+            <i class="fas fa-chevron-down header__dropdown-arrow" aria-hidden="true"></i>
+          </button>
+          <ul class="header__dropdown-menu" role="menu">
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/bot/twitch" role="menuitem">
+                <i class="fa-brands fa-twitch" aria-hidden="true"></i>
+                <span>Twitch Bot</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/bot/discord" role="menuitem">
+                <i class="fa-brands fa-discord" aria-hidden="true"></i>
+                <span>Discord Bot</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/bot/kick" role="menuitem">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 512 512"
+                  class="header__dropdown-icon"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M37 .036h164.448v113.621h54.71v-56.82h54.731V.036h164.448v170.777h-54.73v56.82h-54.711v56.8h54.71v56.82h54.73V512.03H310.89v-56.82h-54.73v-56.8h-54.711v113.62H37V.036z"
+                    fill="#d1d1d1"
+                  />
+                </svg>
+                <span>Kick Bot</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="header__nav-item header__nav-item--dropdown">
+          <button 
+            class="header__nav-link header__nav-link--dropdown"
+            aria-expanded="false"
+            aria-haspopup="true"
+          >
+            <i class="fas fa-tools" aria-hidden="true"></i>
+            <span>Tools</span>
+            <i class="fas fa-chevron-down header__dropdown-arrow" aria-hidden="true"></i>
+          </button>
+          <ul class="header__dropdown-menu" role="menu">
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="https://dashboard.twitch.tv/extensions/lhm9rxu2697a5rkhi71k4pqbou2w5s" target="_blank" role="menuitem">
+                <i class="fa-brands fa-twitch" aria-hidden="true"></i>
+                <span>Twitch Extension Panel</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/interactive-maps/icebreaker" role="menuitem">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+	<path d="M0 0h24v24H0z" fill="none" />
+	<path fill="currentColor" d="M3.62 17.28a1 1 0 0 0 1.86-.74l-1.12-2.82L11 12.25V17a1 1 0 0 0 2 0v-4.75l6.64 1.47l-1.12 2.82a1 1 0 0 0 .56 1.3a1 1 0 0 0 .37.07a1 1 0 0 0 .93-.63l1.55-3.91a1 1 0 0 0-.05-.84a1 1 0 0 0-.66-.51L18 11.31V7a1 1 0 0 0-1-1h-2V3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3H7a1 1 0 0 0-1 1v4.31L2.78 12a1 1 0 0 0-.66.51a1 1 0 0 0-.05.84ZM11 4h2v2h-2ZM8 8h8v2.86L12.22 10h-.44L8 10.86Zm12.71 11.28a4.4 4.4 0 0 0-1 .45a2.08 2.08 0 0 1-2.1 0a4.62 4.62 0 0 0-4.54 0a2.14 2.14 0 0 1-2.12 0a4.64 4.64 0 0 0-4.54 0a2.08 2.08 0 0 1-2.1 0a4.4 4.4 0 0 0-1-.45A1 1 0 0 0 2 20a1 1 0 0 0 .67 1.24a2.1 2.1 0 0 1 .57.25a4 4 0 0 0 2 .55a4.14 4.14 0 0 0 2.08-.56a2.65 2.65 0 0 1 2.56 0a4.15 4.15 0 0 0 4.12 0a2.65 2.65 0 0 1 2.56 0a4 4 0 0 0 4.1 0a2.1 2.1 0 0 1 .57-.25A1 1 0 0 0 22 20a1 1 0 0 0-1.29-.72" />
+</svg>
+
+                <span>Icebreaker Interactive Map</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/stream-deck" role="menuitem">
+                <i class="fas fa-gamepad" aria-hidden="true"></i>
+                <span>Stream Deck Plugin</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/overlays" role="menuitem">
+                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                <span>EFT Overlays</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/bantracker" role="menuitem">
+                <i class="fas fa-ban" aria-hidden="true"></i>
+                <span>Ban Tracker</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/trader-resets" role="menuitem">
+                <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                <span>Trader Restocks</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/currency-converter" role="menuitem">
+                <i class="fas fa-money-bill-transfer" aria-hidden="true"></i>
+                <span>Currency Converter</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/market" role="menuitem">
+                <i class="fas fa-store" aria-hidden="true"></i>
+                <span>Flea Market</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/bossinfo" role="menuitem">
+                <i class="fas fa-skull" aria-hidden="true"></i>
+                <span>Boss Info</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/barters" role="menuitem">
+                <i class="fas fa-handshake-angle" aria-hidden="true"></i>
+                <span>Item Barters</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/flea-revenue-checker" role="menuitem">
+                <i class="fas fa-sack-dollar" aria-hidden="true"></i>
+                <span>Flea Revenue Checker</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/games" role="menuitem">
+                <i class="fas fa-dice" aria-hidden="true"></i>
+                <span>Games</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/events" role="menuitem">
+                <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                <span>Global Event Stats</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/ammo-info" role="menuitem">
+                <i class="fas fa-flask" aria-hidden="true"></i>
+                <span>Ammo Info</span>
+              </a>
+            </li>
+            <li class="header__dropdown-item">
+              <a class="header__dropdown-link" href="/tools/quests" role="menuitem">
+                <i class="fas fa-scroll" aria-hidden="true"></i>
+                <span>List of Quests</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="header__nav-item">
+          <a class="header__nav-link header__nav-link--arena" href="/arena">
+            <span>Arena Tools</span>
+          </a>
+        </li>
+        <li class="header__nav-item">
+          <a 
+            target="_blank" 
+            href="https://discord.gg/SxQ7rdzPHp" 
+            class="header__nav-link header__nav-link--discord"
+            aria-label="Join our Discord Server"
+            role="menuitem"
+          >
+            <i class="fa-brands fa-discord" aria-hidden="true"></i>
+          </a>
+        </li>
+
+        <!-- Mobile-only items (inside nav for mobile menu) -->
+        <li class="header__nav-item header__nav-item--mobile-only">
+          <div class="header__lang-mobile">
+            <span class="header__lang-label">LABEL_Language</span>
+            <div class="header__lang-selector" id="langSelectorMobile">
+              <button class="header__lang-btn" aria-expanded="false" aria-haspopup="listbox">
+                <img class="header__lang-flag" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAMCAMAAAC+5dbKAAAAwFBMVEXJEjEAH2jPGzcRM3frvsjcY3bfucXYUWf3xcpqfKbYXHHwytLwt78mQHXbtLtFVnoeOHn87e/y4OTc1+Hx2t+dqcTsrbd6jLFqdqGBcZd7bJTIdovfdYbMZHssPXoiN27S3urj3ue0vtKprMWDkKu/kqicgqDIip90fJzpjJlLZ5nTbILBanrIWXKtUmDy6/DCyNmvtcyWocDIrrLqn6u1n6W0jKOad5doZJBQXI/mf45JVosyT4msfIQoSIS+NkrVIbP2AAAA1ElEQVQY00WPha7DMAxF3dppsjYpM455e8z0/3/1XE3armTLOromkOouQ4s1EeBOxgKrg/sE607QrEDmLgjmYd26ebwEK6y6ViUFsl+U+N7I5zj7DgAx/HoVu3Q6Z/9i4+bR/R4xAPIdh7RWiiRIUlp55Dj+CsC2OeCmkdhnTqyxvkG2nYG7HPI8usxJFWli9AIW4n4eabl54PsX02gnVh/jXuv3Mc1lU+P2xPdjmXifp7c+gCwmcajx+m9YzLxWrsE/NlVvzGC2x7+uNMNg+mXi//wDDkAQBB2ZMggAAAAASUVORK5CYII=">
+                <span class="header__lang-code">en</span>
+                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+              </button>
+              <ul class="header__lang-list" role="listbox" id="languagesContainerMobile"></ul>
+            </div>
+          </div>
+        </li>
+        <li class="header__nav-item header__nav-item--mobile-only">
+          <div class="header__profile-mobile">
+            
+              <a href="/login" class="header__nav-link header__nav-link--login">
+                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                <span>Log in</span>
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Desktop Actions (Right side) -->
+    <div class="header__actions header__actions--desktop">
+      <!-- Language Selector -->
+      <div class="header__lang-selector header__lang-selector--desktop" id="langSelectorDesktop">
+        <button 
+          class="header__lang-btn" 
+          aria-expanded="false" 
+          aria-haspopup="listbox"
+          aria-label="Select language"
+        >
+          <img class="header__lang-flag" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAMCAMAAAC+5dbKAAAAwFBMVEXJEjEAH2jPGzcRM3frvsjcY3bfucXYUWf3xcpqfKbYXHHwytLwt78mQHXbtLtFVnoeOHn87e/y4OTc1+Hx2t+dqcTsrbd6jLFqdqGBcZd7bJTIdovfdYbMZHssPXoiN27S3urj3ue0vtKprMWDkKu/kqicgqDIip90fJzpjJlLZ5nTbILBanrIWXKtUmDy6/DCyNmvtcyWocDIrrLqn6u1n6W0jKOad5doZJBQXI/mf45JVosyT4msfIQoSIS+NkrVIbP2AAAA1ElEQVQY00WPha7DMAxF3dppsjYpM455e8z0/3/1XE3armTLOromkOouQ4s1EeBOxgKrg/sE607QrEDmLgjmYd26ebwEK6y6ViUFsl+U+N7I5zj7DgAx/HoVu3Q6Z/9i4+bR/R4xAPIdh7RWiiRIUlp55Dj+CsC2OeCmkdhnTqyxvkG2nYG7HPI8usxJFWli9AIW4n4eabl54PsX02gnVh/jXuv3Mc1lU+P2xPdjmXifp7c+gCwmcajx+m9YzLxWrsE/NlVvzGC2x7+uNMNg+mXi//wDDkAQBB2ZMggAAAAASUVORK5CYII=">
+          <span class="header__lang-code">en</span>
+          <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        </button>
+        <ul class="header__lang-list" role="listbox" id="languagesContainerDesktop"></ul>
+      </div>
+
+      <!-- User Profile -->
+      <div class="header__profile header__profile--desktop" id="profileDropdown">
+        
+          <a href="/login" class="header__btn header__btn--login">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            <span>Log in</span>
+          </a>
+        
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const menuToggle = document.getElementById('menuToggle');
+  const mainNav = document.getElementById('mainNav');
+  const dropdowns = document.querySelectorAll('.header__nav-item--dropdown');
+  const langSelectors = document.querySelectorAll('.header__lang-selector');
+  const profileDropdown = document.getElementById('profileDropdown');
+  const profileBtn = profileDropdown?.querySelector('.header__profile-btn');
+  const profileMenu = profileDropdown?.querySelector('.header__profile-menu');
+
+  const MOBILE_BREAKPOINT = 1024;
+
+  // ========== Mobile Menu Toggle ==========
+  if (menuToggle && mainNav) {
+    menuToggle.addEventListener('click', () => {
+      const isOpen = mainNav.classList.toggle('header__nav--active');
+      menuToggle.setAttribute('aria-expanded', isOpen);
+      document.body.classList.toggle('no-scroll', isOpen);
+    });
+
+    // Close mobile menu on outside click
+    document.addEventListener('click', (e) => {
+      if (mainNav.classList.contains('header__nav--active') &&
+          !mainNav.contains(e.target) && 
+          !menuToggle.contains(e.target)) {
+        mainNav.classList.remove('header__nav--active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('no-scroll');
+      }
+    });
+
+    // Close mobile menu on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mainNav.classList.contains('header__nav--active')) {
+        mainNav.classList.remove('header__nav--active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('no-scroll');
+      }
+    });
+  }
+
+  // ========== Dropdown Menus (Desktop Hover + Mobile Click) ==========
+  dropdowns.forEach(dropdown => {
+    const trigger = dropdown.querySelector('.header__nav-link--dropdown');
+    const menu = dropdown.querySelector('.header__dropdown-menu');
+
+    if (!trigger || !menu) return;
+
+    // Desktop: hover behavior
+    dropdown.addEventListener('mouseenter', () => {
+      if (window.innerWidth > MOBILE_BREAKPOINT) {
+        trigger.setAttribute('aria-expanded', 'true');
+        menu.classList.add('header__dropdown-menu--active');
+      }
+    });
+
+    dropdown.addEventListener('mouseleave', () => {
+      if (window.innerWidth > MOBILE_BREAKPOINT) {
+        trigger.setAttribute('aria-expanded', 'false');
+        menu.classList.remove('header__dropdown-menu--active');
+      }
+    });
+
+    // Mobile: click behavior
+    trigger.addEventListener('click', (e) => {
+      if (window.innerWidth <= MOBILE_BREAKPOINT) {
+        e.preventDefault();
+        const isOpen = menu.classList.toggle('header__dropdown-menu--active');
+        trigger.setAttribute('aria-expanded', isOpen);
+
+        // Close other open dropdowns
+        dropdowns.forEach(other => {
+          if (other !== dropdown) {
+            other.querySelector('.header__dropdown-menu')?.classList.remove('header__dropdown-menu--active');
+            other.querySelector('.header__nav-link--dropdown')?.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+    });
+  });
+
+  // ========== Language Selectors ==========
+  langSelectors.forEach(selector => {
+    const btn = selector.querySelector('.header__lang-btn');
+    const list = selector.querySelector('.header__lang-list');
+
+    if (!btn || !list) return;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      
+      // Close all other language selectors
+      langSelectors.forEach(other => {
+        if (other !== selector) {
+          other.querySelector('.header__lang-btn')?.setAttribute('aria-expanded', 'false');
+          other.querySelector('.header__lang-list')?.classList.remove('header__lang-list--active');
+        }
+      });
+
+      btn.setAttribute('aria-expanded', !isOpen);
+      list.classList.toggle('header__lang-list--active', !isOpen);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!selector.contains(e.target)) {
+        btn.setAttribute('aria-expanded', 'false');
+        list.classList.remove('header__lang-list--active');
+      }
+    });
+
+    // Close on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+        btn.setAttribute('aria-expanded', 'false');
+        list.classList.remove('header__lang-list--active');
+        btn.focus();
+      }
+    });
+  });
+
+  // ========== Profile Dropdown ==========
+  if (profileBtn && profileMenu) {
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = profileBtn.getAttribute('aria-expanded') === 'true';
+      profileBtn.setAttribute('aria-expanded', !isOpen);
+      profileMenu.classList.toggle('header__profile-menu--active', !isOpen);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!profileDropdown.contains(e.target)) {
+        profileBtn.setAttribute('aria-expanded', 'false');
+        profileMenu.classList.remove('header__profile-menu--active');
+      }
+    });
+
+    // Close on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && profileBtn.getAttribute('aria-expanded') === 'true') {
+        profileBtn.setAttribute('aria-expanded', 'false');
+        profileMenu.classList.remove('header__profile-menu--active');
+        profileBtn.focus();
+      }
+    });
+  }
+
+  // ========== Close all dropdowns on mobile menu close ==========
+  if (mainNav && menuToggle) {
+    const observer = new MutationObserver(() => {
+      if (!mainNav.classList.contains('header__nav--active')) {
+        dropdowns.forEach(d => {
+          d.querySelector('.header__dropdown-menu')?.classList.remove('header__dropdown-menu--active');
+          d.querySelector('.header__nav-link--dropdown')?.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+    observer.observe(mainNav, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // ========== Handle Resize ==========
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (window.innerWidth > MOBILE_BREAKPOINT) {
+        mainNav?.classList.remove('header__nav--active');
+        menuToggle?.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('no-scroll');
+        document.querySelectorAll('.header__dropdown-menu--active').forEach(menu => {
+          menu.classList.remove('header__dropdown-menu--active');
+        });
+      }
+    }, 150);
+  });
+});
+
+// ========== Language Selector Data Loading ==========
+document.addEventListener('DOMContentLoaded', function() {
+  const loadLanguages = (containerId, selectorId) => {
+    const container = document.getElementById(containerId);
+    const selector = document.getElementById(selectorId);
+    const btn = selector?.querySelector('.header__lang-btn');
+    const codeSpan = btn?.querySelector('.header__lang-code');
+    const flagImg = btn?.querySelector('.header__lang-flag');
+
+    if (!container || !selector) return;
+
+    fetch('/main/languages.json')
+      .then(response => response.json())
+      .then(languages => {
+        const currentCode = 'en';
+        const selected = languages.find(lang => lang.code === currentCode);
+
+        if (selected && codeSpan && flagImg) {
+          codeSpan.textContent = selected.code;
+          flagImg.src = selected.flag;
+        }
+
+        languages.forEach(language => {
+          const li = document.createElement('li');
+          li.className = 'header__lang-item';
+          li.setAttribute('role', 'option');
+
+          const button = document.createElement('button');
+          button.className = 'header__lang-option';
+          button.setAttribute('type', 'button');
+          button.innerHTML = `
+            <img class="header__lang-flag" alt="" src="${language.flag}">
+            <span class="header__lang-title">${language.title}</span>
+            <span class="header__lang-code-small">[${language.code}]</span>
+          `;
+
+          button.addEventListener('click', () => {
+            if (codeSpan) codeSpan.textContent = language.code;
+            if (flagImg) flagImg.src = language.flag;
+            
+            // Close dropdown
+            btn?.setAttribute('aria-expanded', 'false');
+            container.classList.remove('header__lang-list--active');
+
+            // Update server-side selection
+            if (language.code !== currentCode) {
+              fetch(`/select-language?language=${language.code}`)
+                .then(res => {
+                  if (res.ok) location.reload();
+                })
+                .catch(err => console.error('Language update failed:', err));
+            }
+          });
+
+          li.appendChild(button);
+          container.appendChild(li);
+        });
+      })
+      .catch(error => console.error('Error loading languages:', error));
+  };
+
+  loadLanguages('languagesContainerDesktop', 'langSelectorDesktop');
+  loadLanguages('languagesContainerMobile', 'langSelectorMobile');
+});
+</script>
+	<main class="main">
+		<h1>Welcome to TarkovBOT</h1>
+		
+		<section class="card-container">
+			<div class="card discordcard">
+				<h3>Discord Bot</h3>
+				<p>Our Discord bot offers a wealth of information to your server, including current item prices, the real-time status of EFT servers, the current Tarkov time, and traders&#39; restock times. You can even use the bot to locate the probable location of the Goons thanks to our tracker. And when you&#39;re feeling bored, generate some excitement by using the &#39;randomgear&#39; command to create unique gear combinations.</p>
+				<div class="button-container">
+					<a href="/bot/discord" class="btn more-info-btn">More Info</a>
+					<a target="_blank"
+						href="https://discord.com/oauth2/authorize?client_id=929382392739799132"
+						class="btn invite-to-discord-btn">
+						Invite to Discord
+					</a>
+				</div>
+			</div>
+
+			<div class="card twitchcard">
+				<h3>Twitch Bot</h3>
+				<p>Our Twitch bot offers a range of helpful commands to enhance your streaming experience. E.g &#39;price&#39; command allows you to check prices on the fly, just like our Discord bot or you can search for things on the wiki without having to search the wiki manually, you get a link straight from the bot. There is also &#39;randomgear&#39; command to generate unique gear combinations. It&#39;s a great tool to engage your audience and create interactive streams.</p>
+				<div class="button-container">
+					<a href="/bot/twitch" class="btn more-info-btn">More Info</a>
+					<a href="/bot/twitch" class="btn invite-to-discord-btn">Invite to Channel</a>
+				</div>
+			</div>
+
+			<div class="card trackercard">
+				<h3>Goons Tracker</h3>
+				<p>Introducing our Goons Tracker! With our tracker, you and your fellow mates can easily report the Goons or get their location through community reports. By leveraging these reports, you can swiftly check the current location. Enhance your hunting experience and save your time. You can also use our overlays, twitch bot or discord bot to report The Goons location as well. We would be happy if you would help us and the community by reporting their location.</p>
+				<div class="button-container">
+					<a href="/goonstracker" class="btn tracker-btn">Visit GoonsTracker</a>
+				</div>
+			</div>
+
+		</section>
+	</main>
+
+	
+
+	
+
+
+
+
+<div class="cookieAcceptWindow" style="z-index: 999999999;">
+  <div class="text">By continuing to use this site, you agree to the use of cookies, which store some of your data
+    for a better experience.</div>
+  <div class="btn">Ok</div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const cookieAcceptBtn = document.querySelector('.cookieAcceptWindow .btn');
+      cookieAcceptBtn.addEventListener('click', () => {
+        fetch('/accept-cookies', {
+            method: 'POST'
+          })
+          .then(response => {
+            if (response.ok) {
+              const cookieAcceptWindow = document.querySelector('.cookieAcceptWindow');
+              cookieAcceptWindow.parentNode.removeChild(cookieAcceptWindow);
+            } else {
+              console.error('Failed to accept cookies:', response.statusText);
+            }
+          })
+          .catch(error => {
+            console.error('Error accepting cookies:', error);
+          });
+      });
+    });
+  </script>
+</div>
+
+
+
+
+<footer id="about">
+  <div class="container">
+    <div class="column1">
+      <h2><i class="fa-solid fa-envelope"></i></h2>
+      <div class="footer-text">If you have any questions or issues with our project, please contact us</div>
+      <a href="mailto:info@tarkovbot.eu" class="mail">info@tarkovbot.eu</a>
+    </div>
+
+    <div class="column2">
+      <h2><i class="fa-solid fa-circle-question"></i></h2>
+      <div class="footer-text" style="
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+">
+        <a target="_blank" style="width:50%;margin-left: auto;margin-right: auto;display: flex;align-items: center;background: #FFDD00;padding: 3px 10px;margin-bottom:6px" href="https://buymeacoffee.com/tarkovbot" class="btn donate-btn"><img src="https://i.giphy.com/TDQOtnWgsBx99cNoyH.webp" style="
+          height: 33px;
+      "> Support project</a>
+        <a target="_blank" style="width:50%;margin-left: auto;margin-right: auto" href="/privacypolicy" class="btn donate-btn">Privacy Policy</a>
+      </div>
+    </div>
+
+    <div class="column3">
+      <h2><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></h2>
+      <div class="footer-text">Give us rating<br><br>
+        <a target="_blank" style="width:50%;margin-left: auto;margin-right: auto" href="/project-rating" class="btn donate-btn">RATE</a>
+      </div>
+    </div>
+
+    <div class="column4">
+      <h2><i class="fas fa-language" aria-hidden="true"></i></i></h2>
+      <div class="footer-text">Public translation of the project<br><br>
+        <a target="_blank" style="width:50%;margin-left: auto;margin-right: auto" href="https://crowdin.com/project/tarkovbotxyz" class="btn donate-btn">Translate</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+  (function(d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+      try {
+        w.yaCounter95689993 = new Ya.Metrika({
+          id: 95689993,
+          clickmap: false,
+          trackLinks: true,
+          accurateTrackBounce: true
+        });
+      } catch (e) {}
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+      x = "https://mc.yandex.ru/metrika/watch.js",
+      s = d.createElement("script"),
+      f = function() {
+        n.parentNode.insertBefore(s, n);
+      };
+    for (var i = 0; i < document.scripts.length; i++) {
+      if (document.scripts[i].src === x) {
+        return;
+      }
+    }
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = x;
+
+    if (w.opera == "[object Opera]") {
+      d.addEventListener("DOMContentLoaded", f, false);
+    } else {
+      f();
+    }
+  })(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript>
+  <div><img src="https://mc.yandex.ru/watch/95689993" style="position:absolute; left:-9999px;" alt="" /></div>
+</noscript>
+<!-- /Yandex.Metrika counter -->
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QHF6XEC9QB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag('js', new Date());
+
+  gtag('config', 'G-QHF6XEC9QB');
+</script>
+
+<script>
+  const lock = document.createElement('meta');
+  lock.name = 'darkreader-lock';
+  document.head.appendChild(lock);
+</script>
+
+
+<!-- Clarity -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "oabopschuh");
+</script>
+
+</body>
+</html>

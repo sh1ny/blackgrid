@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import '../domain/map_coordinates.dart';
 import '../domain/settings.dart';
 import 'theme.dart';
 
@@ -8,15 +9,23 @@ Future<void> showPinEditor(
   BuildContext context,
   AppServices services, {
   CustomPin? pin,
+  MapPinCoordinates? coordinates,
 }) => showDialog<void>(
   context: context,
-  builder: (context) => PinEditor(services: services, pin: pin),
+  builder: (context) =>
+      PinEditor(services: services, pin: pin, coordinates: coordinates),
 );
 
 class PinEditor extends StatefulWidget {
-  const PinEditor({super.key, required this.services, this.pin});
+  const PinEditor({
+    super.key,
+    required this.services,
+    this.pin,
+    this.coordinates,
+  });
   final AppServices services;
   final CustomPin? pin;
+  final MapPinCoordinates? coordinates;
   @override
   State<PinEditor> createState() => _PinEditorState();
 }
@@ -26,10 +35,10 @@ class _PinEditorState extends State<PinEditor> {
     text: widget.pin?.label ?? '',
   );
   late final TextEditingController x = TextEditingController(
-    text: widget.pin?.x.toString() ?? '',
+    text: (widget.pin?.x ?? widget.coordinates?.point.x)?.toString() ?? '',
   );
   late final TextEditingController y = TextEditingController(
-    text: widget.pin?.y.toString() ?? '',
+    text: (widget.pin?.y ?? widget.coordinates?.point.y)?.toString() ?? '',
   );
   String? error;
   bool saving = false;
@@ -58,14 +67,22 @@ class _PinEditorState extends State<PinEditor> {
       error = null;
     });
     final map =
-        widget.pin?.mapId ?? widget.services.settings.settings.selectedMap;
+        widget.pin?.mapId ??
+        widget.coordinates?.mapId ??
+        widget.services.settings.settings.selectedMap;
     final pin = CustomPin(
       id: widget.pin?.id ?? 'pin-${DateTime.now().microsecondsSinceEpoch}',
       mapId: map,
       x: nx,
       y: ny,
-      frame: map == 'thelab' ? 'labs-native-normalized' : 'legacy-normalized',
-      frameRevision: map == 'thelab' ? 1 : 0,
+      frame:
+          widget.pin?.frame ??
+          widget.coordinates?.frame.wireName ??
+          (map == 'thelab' ? 'labs-native-normalized' : 'legacy-normalized'),
+      frameRevision:
+          widget.pin?.frameRevision ??
+          widget.coordinates?.frame.revision ??
+          (map == 'thelab' ? 1 : 0),
       label: label.text.trim(),
       updatedAt: DateTime.now().toUtc(),
     );
@@ -94,11 +111,11 @@ class _PinEditorState extends State<PinEditor> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Map: ${mapLabel(widget.pin?.mapId ?? widget.services.settings.settings.selectedMap)}',
+              'Map: ${mapLabel(widget.pin?.mapId ?? widget.coordinates?.mapId ?? widget.services.settings.settings.selectedMap)}',
             ),
             const SizedBox(height: 8),
             const Text(
-              'Coordinates are stored data. Native map artwork and geometry qualification are outside M1.',
+              'Coordinates use the retained pin frame, not cropped scene pixels. Finite off-map positions are allowed.',
               style: TextStyle(color: GridColors.muted),
             ),
             const SizedBox(height: 16),

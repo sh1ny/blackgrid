@@ -23,7 +23,7 @@ Execution profile: at most two authoring/test workers; expensive checks sequenti
 
 ### Summary
 
-Replace the Map artwork placeholder with a native interactive workspace for Streets of Tarkov, Labs and Icebreaker. Deliver a separate Dart acquisition/preparation command and a portable offline asset pack. Preserve M1 state and its distinction between item history and accepted scans.
+Replace the Map artwork placeholder with a native interactive workspace for Interchange, Labs and Icebreaker. Deliver a separate Dart acquisition/preparation command and a portable offline asset pack. Preserve M1 state and its distinction between item history and accepted scans.
 
 ### Problem Frame
 
@@ -38,7 +38,7 @@ M1 stores map preferences and pins but has no artwork viewport. The references a
 
 #### Artwork and preparation
 
-- R1. Qualify and ship one real multilevel vector map, Streets of Tarkov, together with Labs tiled artwork and all 16 Icebreaker raster floors.
+- R1. Qualify and ship one real multilevel vector map, Interchange, together with Labs tiled artwork and all 16 Icebreaker raster floors.
 - R2. Independently acquire source inputs from tarkov.dev and prepare them with a small Dart command under `tool/maps/`; never execute, wrap or modify reference scripts/checkouts.
 - R3. Freeze source URLs, metadata/terms versions, authors, source spelling, input/output hashes and preparation parameters in a portable manifest; state unresolved permission evidence accurately rather than marking it cleared.
 - R4. Rebuild deterministically offline from frozen source bytes, rejecting missing dependencies, invalid PNGs, inconsistent dimensions and unexplained missing tiles; HTTP size alone is not content validation.
@@ -70,7 +70,7 @@ M1 stores map preferences and pins but has no artwork viewport. The references a
 - AE1. Covers R5: candidate B has a corrupt required image while A is active; validation fails and cold/runtime readers still resolve coherent A.
 - AE2. Covers R7–R8: a finite pin at (-0.2, 1.5) survives rebuild, pan, zoom and restart without clamping or frame revision change.
 - AE3. Covers R10–R11: Icebreaker height selects Bridge at its lower boundary, never selects it at its upper boundary, and restores Infirmary when no overlay matches; null height is not a Control_Room position.
-- AE4. Covers R9–R12: hiding a floor removes its art, marker hits and keyboard targets; Streets First_Floor remains attached to Ground_Level rather than becoming an invented selectable floor.
+- AE4. Covers R9–R12: hiding a floor removes its art, marker hits and keyboard targets; Interchange's First_Floor is the displayed second floor, not Ground_Level or an invented group ID.
 - AE5. Covers R13: switching Scanner → Map → Scanner retains the item result/history context; loading a map or offline position fixture leaves `SessionScanState.hasAcceptedScan` false.
 
 ### Scope Boundaries
@@ -112,6 +112,7 @@ Mode combinations: vector/Labs use base-plus-optional overlays; Icebreaker uses 
 - Both reference pipelines were inspected; their old size/error-swallowing/in-place output behavior is not a correctness model. The newer candidate pipeline still needs coherent config+asset promotion.
 - `flutter_svg` documents incomplete CSS support; compiler documentation excludes filters and some text attributes. Qualification is an execution-time gate, not an assumed pass.
 - Raster credits currently differ from old local re3mr attribution: interactive Icebreaker is credited to TarkovBOT.eu, Labs to Tarkov.dev. Record the discrepancy and published evidence under R3; do not invent a grant or broaden the user's instruction into public release/visibility permission.
+- Execution-time vector selection: the originally recommended Streets source fails dependency closure (`stairs-85`, `stairs-86`, `stairs-87` have no definitions). The user required a representative inspected multilevel vector map, not Streets specifically. Select the inspected current Interchange source instead; do not repair, strip or substitute missing Streets artwork. Interchange's served SVG matches authoritative repository revision `5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178`, SHA-256 `31a44112cd5fe33484ce6be7b7dc80d13db6077cba2583a4425ed94c665f47c4`, and viewBox `0 0 1127.6852 947.02582`. This changes a technical recommendation, not the settled three-family scope. Native fidelity qualification remains mandatory.
 
 ### Assumptions
 
@@ -131,7 +132,7 @@ Requirements: R1–R6, R14, R20; KTD2, KTD5–KTD6. Dependencies: none.
 
 Files: new `tool/maps/` command/helpers, portable manifests under `assets/maps/`, `pubspec.yaml`/lock, selected-input notices in `THIRD_PARTY_NOTICES.md`.
 
-Approach: freeze real Streets SVG and dependencies, Labs tile families and Icebreaker16 floors plus their metadata/marker inputs. Validate decoded alpha/content and required tile closure; retain one frame across floors and preserve local layer metadata. Make acquisition, offline rebuild, validation and promotion explicit operations.
+Approach: freeze real Interchange SVG and dependencies, Labs tile families and Icebreaker16 floors plus their metadata/marker inputs. Validate decoded alpha/content and required tile closure; retain one frame across floors and preserve local layer metadata. Make acquisition, offline rebuild, validation and promotion explicit operations.
 
 Test scenarios (`test/maps/map_preparation_test.dart`): identical frozen inputs produce identical outputs; changed hash, absent tile, invalid PNG, dimension mismatch, unsafe href and excluded content fail without modifying A; changed upstream metadata retains local bands/exclusivity and refuses silent layer loss; promotion interruption never exposes mixed versions. Use isolated temporary directories and small independently authored images for permanent tests.
 
@@ -145,7 +146,7 @@ Requirements: R1, R9, R14, R16; KTD1–KTD2. Dependencies: U1.
 
 Files: new `lib/maps/` scene loader/prepared-layer support, `test/maps/map_scene_test.dart`, qualification evidence under `docs/qualification/m3/`.
 
-Approach: inspect exact source features, normalize CSS and preserve defs/use/ancestor transforms/clip/mask dependencies and attached-base groups. Render the complete Streets scene and every Labs/Icebreaker floor on Windows. Compare independently labelled visual controls, not merely decoded nonempty pictures.
+Approach: inspect exact source features, normalize CSS and preserve defs/use/ancestor transforms/clip/mask dependencies and legal floor composition. Render the complete Interchange scene and every Labs/Icebreaker floor on Windows. Compare independently labelled visual controls, not merely decoded nonempty pictures.
 
 Test scenarios: unresolved referenced definition or image fails; inherited transform/order/opacity remains correct in an independently authored nested SVG fixture; floor extraction retains a shared gradient/clip definition and attached-base content. Never assert source-text wiring or implementation defaults.
 
@@ -226,6 +227,14 @@ Use pinned Flutter 3.47.6/Dart 3.13.5 and project-local `DART_DATA_HOME`. Run te
 Qualification order: isolated preparation/math/controller/widget checks → real offline rebuild/candidate-failure proof → actual Windows native interactions/profile measurement → standalone release cold start → sequential M1 regressions and whole-project analysis → review/shipping. Record actual commands/tool arguments, source/output hashes, renderer versions, Windows size/DPI, measurements and observations in portable qualification evidence. Hot reload/restart only a Blackgrid session that meets R18.
 
 Before shipping, inspect the complete diff, remove experimental paths, update notices/docs/changelog, commit only run-owned explicit paths with repository identity/trailer policy, and request Codex review using the required account exception. Decide CI from the existing workflows and captured local evidence; never call an absent workflow a passed check. No public release, raw private evidence publication or merge is authorized.
+
+## User-approved verification exception (2026-10-06)
+
+After reviewing the native interactions, the user instructed: "Pass on all the gates and move on. I can't test, until we have map tracking capabilities. My interactions were good."
+
+This explicitly waives the remaining M3 qualification prerequisites for review and delivery: independent numeric Icebreaker placement/pixel-fidelity evidence, the remaining native resolution/DPI interaction matrix, stable multi-run performance and retained-memory qualification, and outside-checkout offline launch/cold-restart/import verification. Record these as waived and unverified, never as passed. Existing successful tests, analysis, native observations and Release/output-integrity checks retain their own evidence; historical failures remain recorded.
+
+The exception changes the verification completion requirement, not implemented scope or safety. Preserve the three real artwork families, original Icebreaker coordinates/shared transform, additive Interchange/Labs floors, exclusive Icebreaker floors and M1 contracts. Map tracking remains a separate future capability; do not add it to M3. Continue simplification, review/fixes, accurate documentation/notices, attributed commits, feature-branch push and a private open PR against main. No merge or visibility change is authorized. New defects and pre-publication security checks are not waived.
 
 ## Definition of Done
 

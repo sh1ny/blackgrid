@@ -12,6 +12,7 @@ dependencies:
   drift: 2.35.1
   http: 1.6.0
   crypto: ^3.0.7
+  vector_graphics: 1.2.3
 
 dev_dependencies:
   flutter_test:
@@ -19,6 +20,9 @@ dev_dependencies:
   flutter_lints: 6.0.0
   drift_dev: 2.35.1
   build_runner: ^2.16.1
+  xml: 6.6.1
+  image: 4.8.0
+  vector_graphics_compiler: 1.3.0
   sqlite3: ^3.1.6
   test: ^1.31.0
   integration_test:
@@ -26,3 +30,109 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/maps/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Lower/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Lower/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Lower/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Lower/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Mid/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Mid/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Mid/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Mid/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Upper/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Upper/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Upper/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Accommodation_Upper/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge_Roof/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge_Roof/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge_Roof/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Bridge_Roof/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Control_Room/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Control_Room/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Engine_Room/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Engine_Room/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Engine_Room_Upper/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Engine_Room_Upper/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Engine_Room_Upper/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Engine_Room_Upper/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps_Lower/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps_Lower/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps_Lower/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Fuel_Pumps_Lower/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Gym_Canteen/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Gym_Canteen/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Gym_Canteen/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Gym_Canteen/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Helipad/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Helipad/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Helipad/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Helipad/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Infirmary/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Infirmary/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Infirmary/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Infirmary/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Officers_Deck/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Officers_Deck/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Officers_Deck/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Officers_Deck/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Stairs_Blocked/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Stairs_Blocked/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Stairs_Blocked/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Stairs_Blocked/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Storage_Security/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Storage_Security/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Storage_Security/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/icebreaker/Storage_Security/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/interchange/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/0/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/1/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/10/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/11/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/12/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/13/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/14/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/15/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/2/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/3/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/4/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/5/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/First_Level/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/10/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/11/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/2/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/3/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/4/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/5/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Second_Level/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/10/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/11/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/12/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/3/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/4/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/5/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/6/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/7/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/8/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/artwork/thelab/Technical_Level/9/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/evidence/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/evidence/interchange/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/evidence/markers/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/evidence/metadata/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/evidence/terms/
+    - assets/maps/versions/0e059640559729fcdb8ebac330688d6f40c53a319d02220a5fcfb3b7855fcabf/evidence/tile-alpha/
