@@ -410,14 +410,21 @@ class MapController extends ChangeNotifier {
     return null;
   }
 
-  /// Projects an unchanged persisted frame, including finite off-map pins.
+  /// Projects an unchanged persisted frame, or null if projection overflows.
   ViewportPoint? projectPin(CustomPin pin) {
     final map = _preparedMap;
     if (_disposed || map == null || pin.mapId != map.id) return null;
-    final artwork = map.pinProjector.pinToArtwork(
-      MapPinCoordinates.fromPin(pin),
-    );
-    return _transform.sceneToViewport(map.displayFrame.artworkToScene(artwork));
+    final coordinates = MapPinCoordinates.fromPin(pin);
+    try {
+      final artwork = map.pinProjector.pinToArtwork(coordinates);
+      return _transform.sceneToViewport(
+        map.displayFrame.artworkToScene(artwork),
+      );
+    } on ArgumentError catch (error) {
+      final value = error.invalidValue;
+      if (value is double && !value.isFinite) return null;
+      rethrow;
+    }
   }
 
   /// Interprets a viewport location in the selected map's persisted pin frame.

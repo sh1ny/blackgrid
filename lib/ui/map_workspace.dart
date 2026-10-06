@@ -110,20 +110,30 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     });
   }
 
-  void _key(KeyEvent event) {
-    if (event is! KeyDownEvent && event is! KeyRepeatEvent) return;
+  KeyEventResult _key(KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
     final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.arrowLeft) maps.panBy(40, 0);
-    if (key == LogicalKeyboardKey.arrowRight) maps.panBy(-40, 0);
-    if (key == LogicalKeyboardKey.arrowUp) maps.panBy(0, 40);
-    if (key == LogicalKeyboardKey.arrowDown) maps.panBy(0, -40);
-    if (key == LogicalKeyboardKey.home) maps.fit();
-    if (key == LogicalKeyboardKey.escape) {
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      maps.panBy(40, 0);
+    } else if (key == LogicalKeyboardKey.arrowRight) {
+      maps.panBy(-40, 0);
+    } else if (key == LogicalKeyboardKey.arrowUp) {
+      maps.panBy(0, 40);
+    } else if (key == LogicalKeyboardKey.arrowDown) {
+      maps.panBy(0, -40);
+    } else if (key == LogicalKeyboardKey.home) {
+      maps.fit();
+    } else if (key == LogicalKeyboardKey.escape) {
       setState(() {
         _selectedMarker = null;
         _selectedPin = null;
       });
+    } else {
+      return KeyEventResult.ignored;
     }
+    return KeyEventResult.handled;
   }
 
   @override
@@ -202,10 +212,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                   child: ClipRect(
                     child: Focus(
                       focusNode: _focus,
-                      onKeyEvent: (_, event) {
-                        _key(event);
-                        return KeyEventResult.ignored;
-                      },
+                      onKeyEvent: (_, event) => _key(event),
                       child: Listener(
                         onPointerSignal: (event) {
                           if (event is PointerScrollEvent && map != null) {

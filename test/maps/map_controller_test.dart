@@ -301,6 +301,39 @@ void main() {
   );
 
   test(
+    'finite pins with overflowing projections are skipped unchanged',
+    () async {
+      final controller = _controller();
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      // 1e308 overflows the legacy inverse; 1e306 reaches viewport scaling.
+      for (final magnitude in [1e308, 1e306]) {
+        for (final coordinate in [magnitude, -magnitude]) {
+          for (final xAxis in [true, false]) {
+            final pin = CustomPin(
+              id: 'overflow',
+              mapId: 'interchange',
+              x: xAxis ? coordinate : .5,
+              y: xAxis ? .5 : coordinate,
+              frame: 'legacy-normalized',
+              frameRevision: 0,
+              label: 'Still editable',
+              updatedAt: DateTime.utc(2026),
+            );
+            pin.validate();
+            expect(controller.projectPin(pin), isNull);
+            expect(pin.x, xAxis ? coordinate : .5);
+            expect(pin.y, xAxis ? .5 : coordinate);
+            expect(pin.frame, 'legacy-normalized');
+            expect(pin.frameRevision, 0);
+          }
+        }
+      }
+    },
+  );
+
+  test(
     'legacy off-map pins round trip without frame conversion or clamping',
     () async {
       final controller = _controller();

@@ -10,8 +10,6 @@
 
 - *(m1)* implement safe manual decisions and durable desktop shell
 
-- *(m3)* enable native offline maps and prepared asset packs
-
 ### Fixes
 
 - *(qualification)* Preserve collector source and snapshot boundaries (#1)
@@ -19,6 +17,10 @@
 - *(qualification)* Preserve collector input recipes (#1)
 
 - *(review)* apply review findings
+
+- *(review)* apply review findings
+
+- *(map)* preserve overflowing pins and consume navigation keys
 
 ### Performance
 

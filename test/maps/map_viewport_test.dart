@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/ui/app.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +37,155 @@ Future<void> _wheel(
 }
 
 void main() {
+  testWidgets('map navigation keys stop at the focused viewport', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    final app = tester.widget<BlackgridApp>(find.byType(BlackgridApp));
+    final bubbled = <KeyEvent>[];
+    await tester.pumpWidget(
+      Focus(
+        onKeyEvent: (_, event) {
+          bubbled.add(event);
+          return KeyEventResult.ignored;
+        },
+        child: app,
+      ),
+    );
+    await settleMapFixture(tester, h);
+    await tester.tapAt(_project(tester, h, ScenePoint(128, 128)));
+    await settleMapFixture(tester, h);
+    expect(find.text('Ground exit'), findsOneWidget);
+    final maps = h.services.maps;
+    final before = maps.transform;
+    for (final navigation in [
+      (LogicalKeyboardKey.arrowLeft, 40.0, 0.0),
+      (LogicalKeyboardKey.arrowRight, -40.0, 0.0),
+      (LogicalKeyboardKey.arrowUp, 0.0, 40.0),
+      (LogicalKeyboardKey.arrowDown, 0.0, -40.0),
+    ]) {
+      final transform = maps.transform;
+      bubbled.clear();
+      await tester.sendKeyDownEvent(navigation.$1);
+      await settleMapFixture(tester, h);
+      expect(
+        maps.transform.translationX,
+        transform.translationX + navigation.$2,
+      );
+      expect(
+        maps.transform.translationY,
+        transform.translationY + navigation.$3,
+      );
+      expect(bubbled, isEmpty);
+      await tester.sendKeyRepeatEvent(navigation.$1);
+      await settleMapFixture(tester, h);
+      expect(
+        maps.transform.translationX,
+        transform.translationX + 2 * navigation.$2,
+      );
+      expect(
+        maps.transform.translationY,
+        transform.translationY + 2 * navigation.$3,
+      );
+      expect(bubbled, isEmpty);
+      await tester.sendKeyUpEvent(navigation.$1);
+    }
+    maps.panBy(70, 20);
+    bubbled.clear();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.home);
+    await settleMapFixture(tester, h);
+    expect(maps.transform.translationX, closeTo(before.translationX, 1e-9));
+    expect(maps.transform.translationY, closeTo(before.translationY, 1e-9));
+    expect(bubbled, isEmpty);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.home);
+    bubbled.clear();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
+    await settleMapFixture(tester, h);
+    expect(find.text('Ground exit'), findsNothing);
+    expect(bubbled, isEmpty);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
+    bubbled.clear();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.keyQ);
+    expect(bubbled.single.logicalKey, LogicalKeyboardKey.keyQ);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.keyQ);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final map in ['shoreline', 'thelab']) {
+    testWidgets(
+      '$map overflowing saved pin stays editable without paint errors',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          final h = await pumpMapFixture(tester);
+          if (map != 'shoreline') {
+            await tester.runAsync(() => h.services.settings.setMap(map));
+            await settleMapFixture(tester, h);
+          }
+          final pin = CustomPin(
+            id: 'extreme-pin',
+            mapId: map,
+            x: 1e308,
+            y: -1e308,
+            frame: map == 'thelab'
+                ? 'labs-native-normalized'
+                : 'legacy-normalized',
+            frameRevision: map == 'thelab' ? 1 : 0,
+            label: 'Extreme saved pin',
+            updatedAt: DateTime.utc(2026),
+          );
+          expect(
+            await tester.runAsync(() => h.services.settings.savePin(pin)),
+            isTrue,
+          );
+          await settleMapFixture(tester, h);
+          final stored = (await tester.runAsync(
+            () => h.services.database.readPins(),
+          ))!.single;
+          expect(stored.x, 1e308);
+          expect(stored.y, -1e308);
+          expect(h.services.maps.projectPin(stored), isNull);
+          expect(
+            find.semantics.byLabel('Extreme saved pin, saved pin').evaluate(),
+            isEmpty,
+          );
+          expect(tester.takeException(), isNull);
+          await tester.tap(_markerBrowser);
+          await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(ListTile, 'Extreme saved pin'));
+          await settleMapFixture(tester, h);
+          await tester.tap(find.text('Edit pin'));
+          await tester.pumpAndSettle();
+          final x = find.widgetWithText(TextField, 'Normalized X');
+          final y = find.widgetWithText(TextField, 'Normalized Y');
+          expect(
+            double.parse(tester.widget<TextField>(x).controller!.text),
+            1e308,
+          );
+          expect(
+            double.parse(tester.widget<TextField>(y).controller!.text),
+            -1e308,
+          );
+          await tester.enterText(x, '.5');
+          await tester.enterText(y, '.5');
+          await tapM1Async(
+            tester,
+            find.text('Save pin'),
+            () => h.services.settings.pins.single.x == .5,
+          );
+          expect(
+            h.services.maps.projectPin(h.services.settings.pins.single),
+            isNotNull,
+          );
+          expect(h.services.scans.hasAcceptedScan, isFalse);
+          expect(tester.takeException(), isNull);
+        } finally {
+          semantics.dispose();
+        }
+      },
+    );
+  }
+
   testWidgets('intersecting hazard remains painted with its anchor offscreen', (
     tester,
   ) async {
