@@ -53,8 +53,8 @@
 | vision-runtime → OCR reads text from a caller-owned image | Recognition after disposal | test/data/vision/vision_runtime_test.dart | `recognise after dispose returns disposed without native call` | green |
 | vision-runtime → Disposal releases native resources once | Dispose after ready | test/data/vision/vision_runtime_test.dart | `dispose deletes engine and later calls return disposed` | green |
 | vision-runtime → Disposal releases native resources once | Double dispose | test/data/vision/vision_runtime_test.dart | `second dispose is a no-op and delete ran once` | green |
-| vision-runtime → Normal app launch does not load the runtime | Normal launch | test/app/launch_mode_test.dart | `no arguments selects UI mode and never constructs runtime` | red |
-| vision-runtime → Normal app launch does not load the runtime | Unknown argument | test/app/launch_mode_test.dart | `unknown argument selects UI mode and never constructs runtime` | red |
+| vision-runtime → Normal app launch does not load the runtime | Normal launch | test/app/launch_mode_test.dart | `no arguments selects UI mode and never constructs runtime` | green |
+| vision-runtime → Normal app launch does not load the runtime | Unknown argument | test/app/launch_mode_test.dart | `unknown argument selects UI mode and never constructs runtime` | green |
 | vision-runtime → Self-check mode reports readiness | Clean bundle passes | test/qualification/m2_vision_self_check_test.dart | `blackgrid.exe self-check on Release bundle exits 0 with pass report` | red |
 | vision-runtime → Self-check mode reports readiness | Broken bundle fails visibly | test/qualification/m2_vision_self_check_test.dart | `self-check on bundle copy without model exits 1 naming model` | red |
 | vision-runtime → Self-check mode reports readiness | Native step does not return | test/application/vision_self_check_test.dart | `blocking stub step yields timeout report and code 3` | green |
@@ -150,7 +150,7 @@
 
   Verify: they fail first.
 - [x] 5.3 Implement `lib/application/vision_self_check.dart` with `runVisionSelfCheck(args)` returning the exit code. It validates usage, then runs verify, load, match, OCR and dispose in `Isolate.spawn` with progress messages, a 60 s watchdog, report format 1 written to tmp and renamed, and the datapath named on `engineInitFailed`. Its help text documents the `Start-Process -Wait -PassThru` and `start /wait` invocations. Verify: the task 5.2 tests pass and the rows go green.
-- [ ] 5.4 Write failing tests in `test/app/launch_mode_test.dart` (`no arguments selects UI mode and never constructs runtime`, `unknown argument selects UI mode and never constructs runtime`, plus a self-check selection test). Then change `lib/main.dart` to `main(List<String> args)`, which resolves the launch mode before `WidgetsFlutterBinding.ensureInitialized()`. In self-check mode it calls `exit(await runVisionSelfCheck(...))`; otherwise the existing `runApp` path stays unchanged. Verify: the tests pass, the rows go green, and `mise run test` passes.
+- [x] 5.4 Write failing tests in `test/app/launch_mode_test.dart` (`no arguments selects UI mode and never constructs runtime`, `unknown argument selects UI mode and never constructs runtime`, plus a self-check selection test). Then change `lib/main.dart` to `main(List<String> args)`, which resolves the launch mode before `WidgetsFlutterBinding.ensureInitialized()`. In self-check mode it calls `exit(await runVisionSelfCheck(...))`; otherwise the existing `runApp` path stays unchanged. Verify: the tests pass, the rows go green, and `mise run test` passes.
 - [ ] 5.5 Write `test/qualification/m2_vision_self_check_test.dart`, gated on `BLACKGRID_RELEASE_BUNDLE` and on the game-not-running confirmation above. It starts `blackgrid.exe --vision-self-check <tmp>` with a wait and covers:
   - `blackgrid.exe self-check on Release bundle exits 0 with pass report`;
   - `self-check on bundle copy without model exits 1 naming model`;
