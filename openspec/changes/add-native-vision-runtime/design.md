@@ -108,7 +108,7 @@ Current state this design builds on:
 
 - **Choice:**
   - `VisionRuntime.open({required String runtimeDirectory})` returns a `VisionRuntimeStatus`. The status is sealed: `VisionReady(identity)`, `VisionUnavailable(VisionFailure)`, or `VisionDisposed`.
-  - `VisionFailure` is a sealed set: `invalidPath`, `missingFile(path)`, `hashMismatch(path, expected, actual)`, `abiMismatch(component, expected, actual)`, `loadFailed(path, osError)`, `engineInitFailed`, `invalidImage(reason)`, `disposed` and `timeout(step)`.
+  - `VisionFailure` is a sealed set: `invalidPath`, `missingFile(path)`, `hashMismatch(path, expected, actual)`, `abiMismatch(component, expected, actual)`, `loadFailed(path, osError)`, `engineInitFailed`, `invalidImage(reason)`, `nativeFailure(status, detail)`, `disposed` and `timeout(step)`. `invalidImage` is reserved for inputs Dart rejects before any native call; a non-success status returned by a native primitive (for example `BGV_ERR_IMAGE` for a uniform template, or a caught OpenCV exception) is `nativeFailure` carrying that status, so the two causes stay distinguishable.
   - Order:
     1. absolute-path check;
     2. read the manifest;

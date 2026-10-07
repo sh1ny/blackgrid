@@ -169,3 +169,19 @@ CHANGES_APPLIED: yes
 - **Nit (not required):** `design.md:63` still names the prefixes `opencv-install/Release` and `opencv-install/Debug`; the actual paths are now `opencv-install-<sha16>/Release` and `opencv-install-<sha16>/Debug`. The configuration mapping it describes is still correct.
 
 The Round 2 verdict stays APPROVE_WITH_CHANGES. The required changes are applied and re-checked: CHANGES_APPLIED for Round 2 is set to yes above.
+
+## Round 3 (PR #9 feedback amendment)
+
+Scope: the uncommitted amendment to design D5 (`nativeFailure(status, detail)` added to the sealed `VisionFailure` set), the new spec scenario "Uniform template rejected", and its test-map row, checked against `lib/data/vision/vision_failure.dart`, `vision_runtime.dart` (`_run`), `lib/application/vision_self_check.dart` (`_failureKind`), and `windows/vision/vision.cpp` / `vision.h`.
+
+- **Consistent with the design.** The Resource Bounds rows at `design.md:319-320` still say `invalidImage` with no native call. That matches the narrowed meaning: every `VisionInvalidImage` in `vision_image.dart` and `vision_runtime.dart` is built before any native call, and `_run` (`vision_runtime.dart:360-363`) now maps `VisionNativeError` to `VisionNativeFailure(status, detail)` and other thrown errors to status -5. The Failure Modes row at `design.md:308` ("Caller: typed failure") stays accurate. D4 gives no per-function code table, so nothing there conflicts. `BGV_ERR_IMAGE` is -2 in `vision.h:22`, which matches the scenario.
+- **Consistent with the specs.** "Malformed buffer rejected" (`spec.md:82`) and "Template larger than image" (`spec.md:86`) are both still Dart-side checks (`validate` / `validateTemplate`), so they correctly keep `invalidImage`. No self-check scenario lists failure kinds, and `_failureKind` handles the new case. The switch is exhaustive over the sealed type.
+- **The code matches the new scenario.** `vision.cpp` returns `BGV_ERR_IMAGE` when the template's `meanStdDev` is 0 before calling `matchTemplate`. A uint8 uniform template gives exactly 0, so the exact comparison is sound. The test named in the map row exists at `test/qualification/m2_vision_runtime_test.dart:309` and asserts `VisionNativeFailure` with status -2. A unit test at `test/data/vision/vision_runtime_test.dart:397` covers the -3 mapping.
+- **Nit (not required):** the comment on `BGV_ERR_IMAGE` at `vision.h:22` still reads "size, channel or stride cap violated". The code now also returns it for a zero-variance template or a non-finite score, as the comment at `vision.h:56-57` says. Widening the line-22 comment would keep the header self-consistent.
+
+### Verdict (Round 3)
+
+VERDICT: APPROVE
+
+<!-- yes (applied, and re-checked by the reviewer - only the reviewer sets it) | no (outstanding) | n/a (any other verdict) -->
+CHANGES_APPLIED: n/a
