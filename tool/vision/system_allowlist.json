@@ -20,6 +20,8 @@
     "DXGI.dll",
     "d3d9.dll",
     "dbghelp.dll",
+    "OLEACC.dll",
+    "UIAutomationCore.dll",
     "CRYPT32.dll",
     "bcrypt.dll",
     "ntdll.dll",

@@ -29,7 +29,7 @@
 | release-bundle-integrity → App-local VC++ runtime minimum version | Version resource missing | test/tool/vision/pe_version_test.dart | `missing version resource fails as unreadable version` | green |
 | release-bundle-integrity → Third-party native files are covered by notices | Notices complete | test/tool/vision/check_bundle_test.dart | `notices step passes with version url and sha per lock entry` | green |
 | release-bundle-integrity → Third-party native files are covered by notices | Notice missing or stale | test/tool/vision/check_bundle_test.dart | `notices step fails naming component with stale sha` | green |
-| release-bundle-integrity → Check is offline and reports results | Passing run | test/qualification/m2_bundle_integrity_test.dart | `real Release bundle passes every integrity step` | red |
+| release-bundle-integrity → Check is offline and reports results | Passing run | test/qualification/m2_bundle_integrity_test.dart | `real Release bundle passes every integrity step` | green |
 | release-bundle-integrity → Check is offline and reports results | Bundle directory absent | test/tool/vision/check_bundle_test.dart | `absent bundle dir exits non-zero without pass report` | green |
 | vision-runtime → Runtime files are verified before load | Intact bundle becomes ready | test/qualification/m2_vision_runtime_test.dart | `intact bundle opens ready with file identities` | green |
 | vision-runtime → Runtime files are verified before load | Tampered library is refused before load | test/data/vision/vision_runtime_test.dart | `hash mismatch reports hashMismatch and never opens a library` | green |
@@ -182,7 +182,7 @@
   - `absent bundle dir exits non-zero without pass report`.
 
   Then implement `tool/vision/check_bundle.dart` and `tool/vision/bundle_inventory.json` (the expected files, plus the Visual C++ runtime names with committed minimum versions), with steps inventory, bindings, pins, imports, runtime versions and notices, a JSON report, and no network. Add the mise task `bundle:check`. Verify: the tests pass and the rows go green.
-- [ ] 6.4 Write `test/qualification/m2_bundle_integrity_test.dart` (gated on `BLACKGRID_RELEASE_BUNDLE`): `real Release bundle passes every integrity step`. Verify: after a fresh `flutter build windows --release`, the test and `mise run bundle:check -- build/windows/x64/runner/Release` both pass with network disabled or unused, and the row goes green. If imports reveal another needed runtime DLL, extend the D7 name list and the inventory, then re-run.
+- [x] 6.4 Write `test/qualification/m2_bundle_integrity_test.dart` (gated on `BLACKGRID_RELEASE_BUNDLE`): `real Release bundle passes every integrity step`. Verify: after a fresh `flutter build windows --release`, the test and `mise run bundle:check -- build/windows/x64/runner/Release` both pass with network disabled or unused, and the row goes green. If imports reveal another needed runtime DLL, extend the D7 name list and the inventory, then re-run.
 
 ## 7. Integration and exit-criteria evidence
 
