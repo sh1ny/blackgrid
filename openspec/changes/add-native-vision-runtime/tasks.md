@@ -79,7 +79,7 @@
 
 ## 2. Pinned fetch tool
 
-- [ ] 2.1 Write failing tests in `test/tool/vision/fetch_runtime_test.dart` against a loopback `HttpServer` serving fixture bytes: `fetch places verified input in content-addressed cache` and `fetch refuses hash mismatch and leaves no cache file`. Also add an extra test for the size cap and timeout abort, and one for nupkg member extraction with per-member pin checks. Verify: they fail because the tool does not exist.
+- [x] 2.1 Write failing tests in `test/tool/vision/fetch_runtime_test.dart` against a loopback `HttpServer` serving fixture bytes: `fetch places verified input in content-addressed cache` and `fetch refuses hash mismatch and leaves no cache file`. Also add an extra test for the size cap and timeout abort, and one for nupkg member extraction with per-member pin checks. Verify: they fail because the tool does not exist.
 - [ ] 2.2 Implement `tool/vision/fetch_runtime.dart`: read the lock, download over HTTPS with a 120 s timeout and the size cap, check the SHA-256, write a temp file and rename it into `.dart_tool/blackgrid_vision_inputs/<sha256>/<name>`, and extract nupkg members with `package:archive` (add it as a pinned dev dependency). Add the mise task `vision:fetch`. Verify: the task 2.1 tests pass and their test-map rows go green; `mise run vision:fetch` populates the cache with every lock entry.
 
 ## 3. Native build: inputs, OpenCV, vision DLL, install, runtime libraries
