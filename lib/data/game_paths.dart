@@ -112,8 +112,14 @@ class GamePathDiscovery {
         r'"installdir"\s+"([^"]+)"',
         caseSensitive: false,
       ).firstMatch(manifest);
-      if (directory != null) {
-        candidates.add(_join(_join(apps, 'common'), directory[1]!));
+      final name = directory?[1];
+      if (name != null &&
+          !name.contains(r'\') &&
+          !name.contains('/') &&
+          !name.contains(':') &&
+          !name.endsWith('.') &&
+          !name.endsWith(' ')) {
+        candidates.add(_join(_join(apps, 'common'), name));
       }
     } on FileSystemException {
       // Fall back to the default install folder name.

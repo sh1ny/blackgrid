@@ -82,6 +82,29 @@ void main() {
     },
   );
 
+  test(
+    'finite overlay inputs cannot publish an overflowing tile rectangle',
+    () {
+      final json = _mapJsonWithTile(0, 0);
+      (json['artworkFrame'] as Map)['width'] = 1e200;
+      (json['artworkFrame'] as Map)['height'] = 1.0;
+      (json['displayCrop'] as Map)['right'] = 1e200;
+      (json['displayCrop'] as Map)['bottom'] = 1.0;
+      json['rasterOverlayFrame'] = {
+        'nativeZoom': 0,
+        'width': 256.0,
+        'height': 1e-100,
+        'tileStride': 256.0,
+        'tileImageExtent': 256.0,
+        'nativeTilePixels': 1e200,
+      };
+      expect(
+        () => PreparedMap.fromJson(json, assetRoot: 'assets/'),
+        throwsFormatException,
+      );
+    },
+  );
+
   test('a tile floor without an overlay frame is rejected', () {
     final json = _mapJsonWithTile(1, 1)..remove('rasterOverlayFrame');
     expect(

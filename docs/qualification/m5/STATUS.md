@@ -60,6 +60,20 @@ Code changed for canonical bulk-filter persistence and screenshot-disagreement a
 
 Debug/Profile clean builds and the user live check above predate these follow-up changes; they were not rerun.
 
+### PR #7 second-round verification (2026-10-07)
+
+Steam manifest path containment and the final overlay-rectangle finite boundary changed code, so the integration owner verified the settled second-round tree. Frozen map assets were not regenerated, and no app, reference companion or game was launched.
+
+| Check | Second-round result |
+| --- | --- |
+| Full offline suite, including qualification | 700 passed, 0 failed, 4 native/private-image skips, 0 errors; durable JSON reporter ended with `success: true` at 128.988 s after the 30 s MCP receive timeout. Includes eleven Steam-path cases and the finite-input overlay overflow regression. |
+| Whole-project analysis | Dart MCP `analyze_files`: no errors. |
+| Changed Dart files | Dart MCP formatter processed four files and formatted the two modified test files. |
+| Release rebuild and package | `mise exec -- flutter build windows --release` succeeded. Only pack `6a2868b8…` is bundled; all 1,322 packaged pack files match the source bytes; OCR DLL SHA-256 binding matches. |
+| Final Release payload hashes | `blackgrid.exe`: `56c7d4c83128f01ab2a6176c7823206b37a555cc62fb6df93b470c351bc12bad`; `data/app.so`: `c35b3e4e95c3af72ce83c760ed77d790662da235fe972b8fc0732cfafc8add7b`; `blackgrid_panel_ocr.dll`: `90752805a7d83481f23479318e0ccacd8ecc4e750f3a295f4473580cfe68b1c8`. |
+
+Debug/Profile and live results remain historical, as noted above.
+
 **Unverified offline/native gates:** independent numeric placement controls for the ten new families and Icebreaker (also absent in the reference fork); complete all-map pointer/keyboard/semantic checks at resize and DPI contexts; fixed rendering/resource budgets; outside-checkout Release startup and restart; durable pin and import outcomes in the packaged app.
 
 ## Review fixes (2026-10-07)
@@ -74,6 +88,8 @@ Applied from a read-only review of the full diff.
 - PR #7 marker-filter follow-up: Show all and Hide all write only canonical filter keys, not raw marker-category aliases rejected by saved-settings validation. The existing widget regression now reads the database and reloads settings after both actions with filter persistence enabled. Verified by the follow-up offline suite above.
 - PR #7 screenshot-association follow-up: a known detected/manual map disagreement blocks watched screenshot admission, so it cannot publish position, automatic floors or raid highlights onto the manual map. Explicit Read Latest remains visibly assumed, and missing log context retains assumed watched samples. The disagreement regression now follows plan KTD5/U7 rather than the former reference-parity comment. Verified by the follow-up offline suite above.
 - The missing-target `<use>` drop is limited to known publisher-deleted ids (see above); `prepare` usage text and the pack's `NOTICE.txt` describe it.
+- PR #7 Steam-path follow-up: manifest `installdir` must be a single relative Windows folder name, without separators, drive syntax or trailing dot/space aliases. Rejected names retain the existing default-install fallback. Temporary-directory regressions cover redirected log discovery and that fallback.
+- PR #7 overlay-arithmetic follow-up: existing coordinate/extent constructors already reject nonfinite intermediate values; the remaining tile-rectangle output now rejects nonfinite origin or dimensions before it enters prepared tiles. A finite-input overflow regression covers this final boundary. Both second-round follow-ups are verified by the second-round offline suite above.
 
 **Left as is:** the raw-text matcher checks the whole panel text as well as the extract/transit section, matching the reference fork.
 

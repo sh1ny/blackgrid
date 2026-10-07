@@ -460,7 +460,15 @@ class _RasterOverlay {
       minY = math.min(minY, py);
       maxY = math.max(maxY, py);
     }
-    return (minX, minY, maxX - minX, maxY - minY);
+    final width = maxX - minX;
+    final height = maxY - minY;
+    if (!minX.isFinite ||
+        !minY.isFinite ||
+        !width.isFinite ||
+        !height.isFinite) {
+      throw const FormatException('Overlay tile rectangle overflows.');
+    }
+    return (minX, minY, width, height);
   }
 }
 

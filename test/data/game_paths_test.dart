@@ -50,6 +50,41 @@ void main() {
     );
   });
 
+  for (final directory in [
+    '../Unexpected',
+    r'..\Unexpected',
+    '.',
+    '..',
+    '. ',
+    '.. ',
+    'Unexpected/nested',
+    r'Unexpected\nested',
+    r'C:\Unexpected',
+    r'C:Unexpected',
+    r'\Unexpected',
+  ]) {
+    test(
+      'Steam install name "$directory" cannot redirect log discovery',
+      () async {
+        await folder('Steam/steamapps/common/Logs');
+        await folder('Steam/steamapps/Logs');
+        await folder('Steam/steamapps/Unexpected/Logs');
+        await folder('Steam/steamapps/common/Unexpected/nested/Logs');
+        await File(path('Steam/steamapps/appmanifest_3932890.acf'))
+            .writeAsString('"installdir" "$directory"');
+        final paths = discovery({
+          r'HKCU\SOFTWARE\Valve\Steam|SteamPath': path('Steam'),
+        });
+        expect(await paths.logs(), '');
+        await folder('Steam/steamapps/common/Escape from Tarkov/Logs');
+        expect(
+          await paths.logs(),
+          path('Steam/steamapps/common/Escape from Tarkov/Logs'),
+        );
+      },
+    );
+  }
+
   test('missing installs report no logs folder', () async {
     expect(await discovery({}).logs(), '');
     expect(
