@@ -187,7 +187,7 @@
 ## 7. Integration and exit-criteria evidence
 
 - [x] 7.1 From a clean tree, run `mise run vision:fetch`, `flutter build windows --release`, `mise run bundle:check -- build/windows/x64/runner/Release`, `mise run analyze`, `mise run test`, and `mise run test:qualification` with `BLACKGRID_RELEASE_BUNDLE`, `BLACKGRID_CMAKE` and `BLACKGRID_PANEL_OCR_RUNTIME` set. The app-launching tests run only after the game-not-running confirmation. Verify: every command exits 0 and every test-map row is green; record the outputs and the bundle size delta in the PR.
-- [ ] 7.2 Record the M2 exit-criteria evidence in the PR description:
+- [x] 7.2 Record the M2 exit-criteria evidence in the PR description:
   - notices recorded before binaries enter the build (agent, tasks 1.4 and 6.3);
   - the bundle integrity check passes (agent, task 7.1).
 
