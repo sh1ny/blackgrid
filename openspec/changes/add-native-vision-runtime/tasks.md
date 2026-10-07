@@ -45,8 +45,8 @@
 | vision-runtime → OCR engine initialises with reference settings | Bundle under a non-ASCII path | test/qualification/m2_vision_runtime_test.dart | `bundle copied under Cyrillic path opens ready` | red |
 | vision-runtime → OCR engine initialises with reference settings | Corrupt model fails initialisation | test/qualification/m2_vision_runtime_test.dart | `bound truncated model reports engineInitFailed` | red |
 | vision-runtime → Image primitives operate on caller-owned buffers | Template found in sample | test/qualification/m2_vision_runtime_test.dart | `template crop matches at its location with score >= 0.99` | red |
-| vision-runtime → Image primitives operate on caller-owned buffers | Malformed buffer rejected | test/data/vision/vision_image_test.dart | `short stride or buffer is invalidImage before native call` | red |
-| vision-runtime → Image primitives operate on caller-owned buffers | Template larger than image | test/data/vision/vision_image_test.dart | `template larger than image is invalidImage` | red |
+| vision-runtime → Image primitives operate on caller-owned buffers | Malformed buffer rejected | test/data/vision/vision_image_test.dart | `short stride or buffer is invalidImage before native call` | green |
+| vision-runtime → Image primitives operate on caller-owned buffers | Template larger than image | test/data/vision/vision_image_test.dart | `template larger than image is invalidImage` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Colour scan with no match | test/qualification/m2_vision_runtime_test.dart | `row scan without match returns none` | red |
 | vision-runtime → OCR reads text from a caller-owned image | Sample title recognised | test/qualification/m2_vision_runtime_test.dart | `self-check title OCR equals expected text` | red |
 | vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR is empty without failure` | red |
@@ -105,7 +105,7 @@
 
 ## 4. Dart vision runtime and bindings
 
-- [ ] 4.1 Write failing fast tests in `test/data/vision/vision_image_test.dart` (`short stride or buffer is invalidImage before native call`, `template larger than image is invalidImage`, plus the 8192 px and 24 MPix caps). Then implement `lib/data/vision/vision_image.dart` (a caller-owned image descriptor with validation). Verify: the tests pass and the rows go green.
+- [x] 4.1 Write failing fast tests in `test/data/vision/vision_image_test.dart` (`short stride or buffer is invalidImage before native call`, `template larger than image is invalidImage`, plus the 8192 px and 24 MPix caps). Then implement `lib/data/vision/vision_image.dart` (a caller-owned image descriptor with validation). Verify: the tests pass and the rows go green.
 - [ ] 4.2 Write failing fast tests in `test/data/vision/vision_runtime_test.dart` against a temp runtime directory with fake files and an injected native-open seam that records calls:
   - `hash mismatch reports hashMismatch and never opens a library`;
   - `missing model reports missingFile`;
