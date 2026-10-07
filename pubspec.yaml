@@ -12,6 +12,7 @@ dependencies:
   drift: 2.35.1
   http: 1.6.0
   crypto: ^3.0.7
+  ffi: 2.2.0
   vector_graphics: 1.2.3
 
 dev_dependencies:

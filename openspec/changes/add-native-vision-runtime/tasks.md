@@ -32,15 +32,15 @@
 | release-bundle-integrity → Check is offline and reports results | Passing run | test/qualification/m2_bundle_integrity_test.dart | `real Release bundle passes every integrity step` | red |
 | release-bundle-integrity → Check is offline and reports results | Bundle directory absent | test/tool/vision/check_bundle_test.dart | `absent bundle dir exits non-zero without pass report` | red |
 | vision-runtime → Runtime files are verified before load | Intact bundle becomes ready | test/qualification/m2_vision_runtime_test.dart | `intact bundle opens ready with file identities` | red |
-| vision-runtime → Runtime files are verified before load | Tampered library is refused before load | test/data/vision/vision_runtime_test.dart | `hash mismatch reports hashMismatch and never opens a library` | red |
-| vision-runtime → Runtime files are verified before load | Missing model is refused | test/data/vision/vision_runtime_test.dart | `missing model reports missingFile` | red |
-| vision-runtime → Runtime files are verified before load | Missing binding is refused | test/data/vision/vision_runtime_test.dart | `missing manifest reports missingFile naming binding` | red |
+| vision-runtime → Runtime files are verified before load | Tampered library is refused before load | test/data/vision/vision_runtime_test.dart | `hash mismatch reports hashMismatch and never opens a library` | green |
+| vision-runtime → Runtime files are verified before load | Missing model is refused | test/data/vision/vision_runtime_test.dart | `missing model reports missingFile` | green |
+| vision-runtime → Runtime files are verified before load | Missing binding is refused | test/data/vision/vision_runtime_test.dart | `missing manifest reports missingFile naming binding` | green |
 | vision-runtime → Runtime loads only from the bundle | Bundle path is used | test/qualification/m2_vision_runtime_test.dart | `loaded module paths are inside the bundle` | red |
 | vision-runtime → Runtime loads only from the bundle | System installation is ignored | test/qualification/m2_vision_runtime_test.dart | `TESSDATA_PREFIX model is ignored when bundle model missing` | red |
-| vision-runtime → Runtime loads only from the bundle | Relative path override is rejected | test/data/vision/vision_runtime_test.dart | `relative runtime directory reports invalidPath` | red |
+| vision-runtime → Runtime loads only from the bundle | Relative path override is rejected | test/data/vision/vision_runtime_test.dart | `relative runtime directory reports invalidPath` | green |
 | vision-runtime → Vision ABI version is checked | Matching ABI | test/qualification/m2_vision_runtime_test.dart | `identity reports vision abi and pinned engine version` | red |
-| vision-runtime → Vision ABI version is checked | ABI mismatch | test/data/vision/vision_runtime_test.dart | `abi mismatch reports expected and actual and closes libraries` | red |
-| vision-runtime → Vision ABI version is checked | Engine version differs from pin | test/data/vision/vision_runtime_test.dart | `engine version mismatch reports abiMismatch for OCR engine` | red |
+| vision-runtime → Vision ABI version is checked | ABI mismatch | test/data/vision/vision_runtime_test.dart | `abi mismatch reports expected and actual and closes libraries` | green |
+| vision-runtime → Vision ABI version is checked | Engine version differs from pin | test/data/vision/vision_runtime_test.dart | `engine version mismatch reports abiMismatch for OCR engine` | green |
 | vision-runtime → OCR engine initialises with reference settings | Engine initialises | test/qualification/m2_vision_runtime_test.dart | `engine reports eng, LSTM-only and raw-line` | red |
 | vision-runtime → OCR engine initialises with reference settings | Bundle under a non-ASCII path | test/qualification/m2_vision_runtime_test.dart | `bundle copied under Cyrillic path opens ready` | red |
 | vision-runtime → OCR engine initialises with reference settings | Corrupt model fails initialisation | test/qualification/m2_vision_runtime_test.dart | `bound truncated model reports engineInitFailed` | red |
@@ -50,9 +50,9 @@
 | vision-runtime → Image primitives operate on caller-owned buffers | Colour scan with no match | test/qualification/m2_vision_runtime_test.dart | `row scan without match returns none` | red |
 | vision-runtime → OCR reads text from a caller-owned image | Sample title recognised | test/qualification/m2_vision_runtime_test.dart | `self-check title OCR equals expected text` | red |
 | vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR is empty without failure` | red |
-| vision-runtime → OCR reads text from a caller-owned image | Recognition after disposal | test/data/vision/vision_runtime_test.dart | `recognise after dispose returns disposed without native call` | red |
-| vision-runtime → Disposal releases native resources once | Dispose after ready | test/data/vision/vision_runtime_test.dart | `dispose deletes engine and later calls return disposed` | red |
-| vision-runtime → Disposal releases native resources once | Double dispose | test/data/vision/vision_runtime_test.dart | `second dispose is a no-op and delete ran once` | red |
+| vision-runtime → OCR reads text from a caller-owned image | Recognition after disposal | test/data/vision/vision_runtime_test.dart | `recognise after dispose returns disposed without native call` | green |
+| vision-runtime → Disposal releases native resources once | Dispose after ready | test/data/vision/vision_runtime_test.dart | `dispose deletes engine and later calls return disposed` | green |
+| vision-runtime → Disposal releases native resources once | Double dispose | test/data/vision/vision_runtime_test.dart | `second dispose is a no-op and delete ran once` | green |
 | vision-runtime → Normal app launch does not load the runtime | Normal launch | test/app/launch_mode_test.dart | `no arguments selects UI mode and never constructs runtime` | red |
 | vision-runtime → Normal app launch does not load the runtime | Unknown argument | test/app/launch_mode_test.dart | `unknown argument selects UI mode and never constructs runtime` | red |
 | vision-runtime → Self-check mode reports readiness | Clean bundle passes | test/qualification/m2_vision_self_check_test.dart | `blackgrid.exe self-check on Release bundle exits 0 with pass report` | red |
@@ -118,7 +118,7 @@
   - `second dispose is a no-op and delete ran once`.
 
   Verify: they fail because the runtime does not exist.
-- [ ] 4.3 Implement `lib/data/vision/`:
+- [x] 4.3 Implement `lib/data/vision/`:
   - `vision_runtime.dart`: sealed `VisionRuntimeStatus` and `VisionFailure`, and the load order from design D5/D6 (manifest, hashes, leptonica → tesseract → vision by absolute path, ABI and engine version from the manifest, engine init with an explicit UTF-8 datapath, LSTM-only and raw line, close in reverse order on failure and on dispose);
   - `tesseract_binding.dart`: the function set from design D2, with `TessDeleteText` and `Clear` always run, and the 64 KiB text cap;
   - `vision_primitives.dart`: `bgv_*` lookups with Dart-allocated output buffers.
