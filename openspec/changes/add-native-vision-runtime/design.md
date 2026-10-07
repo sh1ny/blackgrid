@@ -54,7 +54,7 @@ Current state this design builds on:
 ### D1: Owned `blackgrid_vision.dll` that statically links OpenCV `core` and `imgproc`
 
 - **Choice:**
-  - A new CMake subproject, `windows/vision/`, builds OpenCV 4.13.0 with `ExternalProject_Add`. The source archive comes from the verified input cache, with `URL_HASH SHA256=<lock value>`.
+  - A new CMake subproject, `windows/vision/`, builds OpenCV 4.13.0 with `ExternalProject_Add`. The source archive comes from the verified input cache. Its download step (`windows/vision/extract_source.cmake`) re-checks the archive against the lock SHA-256 (the `URL_HASH` equivalent), then extracts it once into a content-addressed source directory shared by every configuration. ExternalProject's own `URL` step runs once per configuration in a multi-config build, re-extracting and renaming over the source tree; on Windows that rename failed with "Access is denied" during apply.
   - OpenCV is built as static libraries (`BUILD_SHARED_LIBS=OFF`, `BUILD_LIST=core,imgproc`, `BUILD_WITH_STATIC_CRT=ON`). Everything that downloads or adds unneeded third-party code is off: `WITH_IPP`, `WITH_OPENCL`, `WITH_ADE`, `WITH_EIGEN`, `WITH_ITT`, `WITH_PROTOBUF`, `WITH_JPEG/PNG/TIFF/WEBP/OPENEXR/OPENJPEG/IMGCODEC_*` (no `imgcodecs` module), tests, apps, docs and Java/Python.
   - The vision DLL is C++20 with static CRT, links those libraries, and exports a small C ABI (D4).
 - **Configuration mapping:**
