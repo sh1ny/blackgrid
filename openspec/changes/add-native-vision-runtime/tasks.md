@@ -31,25 +31,25 @@
 | release-bundle-integrity → Third-party native files are covered by notices | Notice missing or stale | test/tool/vision/check_bundle_test.dart | `notices step fails naming component with stale sha` | green |
 | release-bundle-integrity → Check is offline and reports results | Passing run | test/qualification/m2_bundle_integrity_test.dart | `real Release bundle passes every integrity step` | red |
 | release-bundle-integrity → Check is offline and reports results | Bundle directory absent | test/tool/vision/check_bundle_test.dart | `absent bundle dir exits non-zero without pass report` | green |
-| vision-runtime → Runtime files are verified before load | Intact bundle becomes ready | test/qualification/m2_vision_runtime_test.dart | `intact bundle opens ready with file identities` | red |
+| vision-runtime → Runtime files are verified before load | Intact bundle becomes ready | test/qualification/m2_vision_runtime_test.dart | `intact bundle opens ready with file identities` | green |
 | vision-runtime → Runtime files are verified before load | Tampered library is refused before load | test/data/vision/vision_runtime_test.dart | `hash mismatch reports hashMismatch and never opens a library` | green |
 | vision-runtime → Runtime files are verified before load | Missing model is refused | test/data/vision/vision_runtime_test.dart | `missing model reports missingFile` | green |
 | vision-runtime → Runtime files are verified before load | Missing binding is refused | test/data/vision/vision_runtime_test.dart | `missing manifest reports missingFile naming binding` | green |
-| vision-runtime → Runtime loads only from the bundle | Bundle path is used | test/qualification/m2_vision_runtime_test.dart | `loaded module paths are inside the bundle` | red |
-| vision-runtime → Runtime loads only from the bundle | System installation is ignored | test/qualification/m2_vision_runtime_test.dart | `TESSDATA_PREFIX model is ignored when bundle model missing` | red |
+| vision-runtime → Runtime loads only from the bundle | Bundle path is used | test/qualification/m2_vision_runtime_test.dart | `loaded module paths are inside the bundle` | green |
+| vision-runtime → Runtime loads only from the bundle | System installation is ignored | test/qualification/m2_vision_runtime_test.dart | `TESSDATA_PREFIX model is ignored when bundle model missing` | green |
 | vision-runtime → Runtime loads only from the bundle | Relative path override is rejected | test/data/vision/vision_runtime_test.dart | `relative runtime directory reports invalidPath` | green |
-| vision-runtime → Vision ABI version is checked | Matching ABI | test/qualification/m2_vision_runtime_test.dart | `identity reports vision abi and pinned engine version` | red |
+| vision-runtime → Vision ABI version is checked | Matching ABI | test/qualification/m2_vision_runtime_test.dart | `identity reports vision abi and pinned engine version` | green |
 | vision-runtime → Vision ABI version is checked | ABI mismatch | test/data/vision/vision_runtime_test.dart | `abi mismatch reports expected and actual and closes libraries` | green |
 | vision-runtime → Vision ABI version is checked | Engine version differs from pin | test/data/vision/vision_runtime_test.dart | `engine version mismatch reports abiMismatch for OCR engine` | green |
-| vision-runtime → OCR engine initialises with reference settings | Engine initialises | test/qualification/m2_vision_runtime_test.dart | `engine reports eng, LSTM-only and raw-line` | red |
+| vision-runtime → OCR engine initialises with reference settings | Engine initialises | test/qualification/m2_vision_runtime_test.dart | `engine reports eng, LSTM-only and raw-line` | green |
 | vision-runtime → OCR engine initialises with reference settings | Bundle under a non-ASCII path | test/qualification/m2_vision_runtime_test.dart | `bundle copied under Cyrillic path opens ready` | red |
-| vision-runtime → OCR engine initialises with reference settings | Corrupt model fails initialisation | test/qualification/m2_vision_runtime_test.dart | `bound truncated model reports engineInitFailed` | red |
-| vision-runtime → Image primitives operate on caller-owned buffers | Template found in sample | test/qualification/m2_vision_runtime_test.dart | `template crop matches at its location with score >= 0.99` | red |
+| vision-runtime → OCR engine initialises with reference settings | Corrupt model fails initialisation | test/qualification/m2_vision_runtime_test.dart | `bound truncated model reports engineInitFailed` | green |
+| vision-runtime → Image primitives operate on caller-owned buffers | Template found in sample | test/qualification/m2_vision_runtime_test.dart | `template crop matches at its location with score >= 0.99` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Malformed buffer rejected | test/data/vision/vision_image_test.dart | `short stride or buffer is invalidImage before native call` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Template larger than image | test/data/vision/vision_image_test.dart | `template larger than image is invalidImage` | green |
-| vision-runtime → Image primitives operate on caller-owned buffers | Colour scan with no match | test/qualification/m2_vision_runtime_test.dart | `row scan without match returns none` | red |
-| vision-runtime → OCR reads text from a caller-owned image | Sample title recognised | test/qualification/m2_vision_runtime_test.dart | `self-check title OCR equals expected text` | red |
-| vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR returns without failure` | red |
+| vision-runtime → Image primitives operate on caller-owned buffers | Colour scan with no match | test/qualification/m2_vision_runtime_test.dart | `row scan without match returns none` | green |
+| vision-runtime → OCR reads text from a caller-owned image | Sample title recognised | test/qualification/m2_vision_runtime_test.dart | `self-check title OCR equals expected text` | green |
+| vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR returns without failure` | green |
 | vision-runtime → OCR reads text from a caller-owned image | Recognition after disposal | test/data/vision/vision_runtime_test.dart | `recognise after dispose returns disposed without native call` | green |
 | vision-runtime → Disposal releases native resources once | Dispose after ready | test/data/vision/vision_runtime_test.dart | `dispose deletes engine and later calls return disposed` | green |
 | vision-runtime → Disposal releases native resources once | Double dispose | test/data/vision/vision_runtime_test.dart | `second dispose is a no-op and delete ran once` | green |
@@ -124,7 +124,7 @@
   - `vision_primitives.dart`: `bgv_*` lookups with Dart-allocated output buffers.
 
   Verify: the task 4.2 tests pass and their rows go green, and `mise run analyze` is clean.
-- [ ] 4.4 Write `test/qualification/m2_vision_runtime_test.dart` (gated on `BLACKGRID_RELEASE_BUNDLE`, loading in the test process; no app launch) with:
+- [x] 4.4 Write `test/qualification/m2_vision_runtime_test.dart` (gated on `BLACKGRID_RELEASE_BUNDLE`, loading in the test process; no app launch) with:
   - `intact bundle opens ready with file identities`;
   - `loaded module paths are inside the bundle` (through `GetModuleFileNameW`);
   - `TESSDATA_PREFIX model is ignored when bundle model missing` (on a temp bundle copy);
