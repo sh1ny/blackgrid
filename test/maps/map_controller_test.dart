@@ -62,6 +62,61 @@ void main() {
   );
 
   test(
+    'scav, PMC, boss, and cultist spawn toggles hide only their own markers',
+    () async {
+      final controller = _controller(
+        markers: [
+          _marker(
+            'scav',
+            'spawns',
+            8,
+            8,
+            details: {
+              'sides': ['scav'],
+            },
+          ),
+          _marker(
+            'pmc',
+            'spawns',
+            12,
+            8,
+            details: {
+              'sides': ['pmc'],
+            },
+          ),
+          _marker('boss', 'bosses', 16, 8, details: {'mob': 'bossTagilla'}),
+          _marker(
+            'cultist',
+            'bosses',
+            20,
+            8,
+            details: {'mob': 'sectantPriest'},
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      List<String> visible() => [
+        for (final m in controller.visibleMarkers()) m.marker.id,
+      ];
+      expect(visible(), ['scav', 'pmc', 'boss', 'cultist']);
+      for (final (key, hidden) in [
+        ('ScavSpawns', 'scav'),
+        ('PmcSpawns', 'pmc'),
+        ('BossSpawns', 'boss'),
+        ('CultistSpawns', 'cultist'),
+      ]) {
+        controller.setCategoryVisibility({key: false});
+        expect(visible(), [
+          for (final id in ['scav', 'pmc', 'boss', 'cultist'])
+            if (id != hidden) id,
+        ], reason: key);
+      }
+    },
+  );
+
+  test(
     'quest filters AND exact trader are independent of category toggles',
     () async {
       final controller = _controller(

@@ -194,6 +194,64 @@ void main() {
     expect(explicit.filterKey, 'QuestItems');
   });
 
+  test('production-shaped spawns and bosses classify by sides and mob', () {
+    String key(String category, Map<String, dynamic> details) =>
+        PreparedMarker.fromJson(_marker('m', category, details: details))
+            .filterKey;
+    expect(
+      key('spawns', {
+        'sides': ['scav'],
+        'categories': ['bot'],
+      }),
+      'ScavSpawns',
+    );
+    expect(
+      key('spawns', {
+        'sides': ['pmc'],
+        'categories': ['player'],
+      }),
+      'PmcSpawns',
+    );
+    expect(
+      key('spawns', {
+        'sides': ['all'],
+        'categories': ['player'],
+      }),
+      'PmcSpawns',
+    );
+    expect(
+      key('spawns', {
+        'sides': ['none'],
+      }),
+      'PmcSpawns',
+    );
+    expect(key('spawns', {'sides': <Object>[]}), 'PmcSpawns');
+    expect(key('spawns', {'side': 'scav'}), 'ScavSpawns');
+    expect(key('spawns', const {}), 'PmcSpawns');
+    expect(
+      PreparedMarker.fromJson({
+        ..._marker(
+          'authored',
+          'spawns',
+          details: {
+            'sides': ['scav'],
+          },
+        ),
+        'filterKey': 'PmcSpawns',
+      }).filterKey,
+      'PmcSpawns',
+    );
+    expect(
+      key('bosses', {'mob': 'sectantPriest', 'spawnChance': 0.1}),
+      'CultistSpawns',
+    );
+    expect(key('bosses', {'mob': 'sectantWarrior'}), 'CultistSpawns');
+    expect(
+      key('bosses', {'mob': 'bossTagilla', 'spawnChance': 0.35}),
+      'BossSpawns',
+    );
+  });
+
   for (final source in [
     'shoreline',
     'streets-of-tarkov',

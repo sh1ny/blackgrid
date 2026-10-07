@@ -691,9 +691,10 @@ String _markerFilterKey(String category, Map<String, dynamic> details) {
     'transits' => 'Transits',
     'hazards' => details['outline'] is List ? 'HazardZones' : 'Hazards',
     'switches' => 'Switches',
-    'bosses' => 'BossSpawns',
+    'bosses' =>
+      _cultistMobs.contains(details['mob']) ? 'CultistSpawns' : 'BossSpawns',
     'btrStops' => 'BtrStops',
-    'spawns' => details['side'] == 'scav' ? 'ScavSpawns' : 'PmcSpawns',
+    'spawns' => _isScavSpawn(details) ? 'ScavSpawns' : 'PmcSpawns',
     'extracts' => switch (details['faction']) {
       'Scav' || 'scav' => 'ScavExtracts',
       'PMC' || 'pmc' => 'PmcExtracts',
@@ -701,6 +702,18 @@ String _markerFilterKey(String category, Map<String, dynamic> details) {
     },
     _ => category,
   };
+}
+
+/// Source mob identities that tarkov.dev lists under bosses but are cultists.
+const _cultistMobs = {'sectantPriest', 'sectantWarrior'};
+
+/// Production data lists `sides`; the singular `side` is the legacy shape.
+bool _isScavSpawn(Map<String, dynamic> details) {
+  final sides = details['sides'];
+  if (sides is List && sides.isNotEmpty) {
+    return sides.every((side) => side == 'scav');
+  }
+  return details['side'] == 'scav';
 }
 
 /// Resolves a safe pack-relative path without allowing a version escape.
