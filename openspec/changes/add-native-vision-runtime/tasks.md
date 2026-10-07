@@ -106,7 +106,7 @@
 ## 4. Dart vision runtime and bindings
 
 - [x] 4.1 Write failing fast tests in `test/data/vision/vision_image_test.dart` (`short stride or buffer is invalidImage before native call`, `template larger than image is invalidImage`, plus the 8192 px and 24 MPix caps). Then implement `lib/data/vision/vision_image.dart` (a caller-owned image descriptor with validation). Verify: the tests pass and the rows go green.
-- [ ] 4.2 Write failing fast tests in `test/data/vision/vision_runtime_test.dart` against a temp runtime directory with fake files and an injected native-open seam that records calls:
+- [x] 4.2 Write failing fast tests in `test/data/vision/vision_runtime_test.dart` against a temp runtime directory with fake files and an injected native-open seam that records calls:
   - `hash mismatch reports hashMismatch and never opens a library`;
   - `missing model reports missingFile`;
   - `missing manifest reports missingFile naming binding`;
