@@ -24,6 +24,67 @@ Offset _project(WidgetTester tester, MapWidgetHarness h, ScenePoint point) {
   return tester.getTopLeft(_viewport) + Offset(projected.x, projected.y);
 }
 
+Future<(int, int, int)> _paintPixel(
+  WidgetTester tester,
+  ViewportPoint point,
+) async {
+  final painter = tester
+      .widget<CustomPaint>(
+        find
+            .descendant(of: _viewport, matching: find.byType(CustomPaint))
+            .first,
+      )
+      .painter!;
+  final size = tester.getSize(_viewport);
+  return (await tester.runAsync(() async {
+    final recorder = ui.PictureRecorder();
+    painter.paint(Canvas(recorder), size);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.width.ceil(), size.height.ceil());
+    final rgba = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    image.dispose();
+    picture.dispose();
+    final offset = (point.y.floor() * size.width.ceil() + point.x.floor()) * 4;
+    return (
+      rgba.getUint8(offset),
+      rgba.getUint8(offset + 1),
+      rgba.getUint8(offset + 2),
+    );
+  }))!;
+}
+
+Future<Finder> _showMarkerFilter(WidgetTester tester, String filterKey) async {
+  final search = find.byKey(const ValueKey('marker-search'));
+  // The outer rail lazily builds the preferences panel too. Materialize its
+  // search control before using that control to identify the inner list.
+  await tester.scrollUntilVisible(
+    search,
+    160,
+    scrollable: find
+        .descendant(
+          of: find.byKey(const PageStorageKey('map-rail-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+  final filter = find.widgetWithText(FilterChip, filterKey);
+  // The chips are a lazy child below the search/quest controls. Scroll the
+  // inner preferences list to build them before ensuring outer-rail visibility.
+  await tester.scrollUntilVisible(
+    filter,
+    160,
+    scrollable: find
+        .ancestor(of: search, matching: find.byType(Scrollable))
+        .first,
+  );
+  await tester.pumpAndSettle();
+  await Scrollable.ensureVisible(tester.element(filter), alignment: .5);
+  await tester.pumpAndSettle();
+  expect(filter.hitTestable(), findsOneWidget);
+  return filter;
+}
+
 Future<void> _wheel(
   WidgetTester tester,
   MapWidgetHarness h,
@@ -37,6 +98,168 @@ Future<void> _wheel(
 }
 
 void main() {
+  testWidgets(
+    'search dims hazard fill without losing pointer, browser or AX eligibility',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        final h = await pumpMapFixture(
+          tester,
+          hazardOutline: [
+            {'x': 32, 'z': 224},
+            {'x': 96, 'z': 224},
+            {'x': 96, 'z': 160},
+            {'x': 32, 'z': 160},
+          ],
+        );
+        final point = h.services.maps.transform.sceneToViewport(
+          ScenePoint(80, 80),
+        );
+        final before = await _paintPixel(tester, point);
+        h.services.maps.setSearch('exit, tunnel');
+        await settleMapFixture(tester, h);
+        final after = await _paintPixel(tester, point);
+        expect(
+          after.$1,
+          lessThan(before.$1),
+          reason: 'Nonmatching hazard fill must dim.',
+        );
+        expect(
+          find.semantics.byLabel('Ground hazard, Hazards').evaluate(),
+          hasLength(1),
+        );
+        await tester.tapAt(
+          tester.getTopLeft(_viewport) + Offset(point.x, point.y),
+        );
+        await settleMapFixture(tester, h);
+        expect(find.text('Ground hazard'), findsOneWidget);
+        await tester.tap(_markerBrowser);
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(ListTile, 'Ground hazard'), findsOneWidget);
+        await tester.tap(find.widgetWithText(ListTile, 'Ground exit'));
+        await settleMapFixture(tester, h);
+        expect(find.text('Ground exit'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'keyboard zoom, fit, center and pin creation preserve pointer-equivalent geometry',
+    (tester) async {
+      final h = await pumpMapFixture(tester);
+      final maps = h.services.maps;
+      await tester.tapAt(_project(tester, h, ScenePoint(128, 128)));
+      await settleMapFixture(tester, h);
+      final fitScale = maps.transform.scale;
+      await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+      await settleMapFixture(tester, h);
+      expect(maps.transform.scale, closeTo(fitScale * 1.25, 1e-9));
+      await tester.sendKeyEvent(LogicalKeyboardKey.minus);
+      await settleMapFixture(tester, h);
+      expect(maps.transform.scale, closeTo(fitScale, 1e-9));
+      maps.setPlayerSample(GamePoint(64, 192), forwardX: 1, forwardZ: 0);
+      final scale = maps.transform.scale;
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+      await settleMapFixture(tester, h);
+      expect(maps.transform.scale, scale);
+      expect(
+        maps.playerViewportPoint!.x,
+        closeTo(maps.viewportSize.width / 2, 1e-9),
+      );
+      expect(
+        maps.playerViewportPoint!.y,
+        closeTo(maps.viewportSize.height / 2, 1e-9),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.home);
+      await settleMapFixture(tester, h);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
+      await tester.pumpAndSettle();
+      expect(find.text('Add durable pin record'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, 'Normalized X'))
+            .controller!
+            .text,
+        '0.5',
+      );
+      expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, 'Normalized Y'))
+            .controller!
+            .text,
+        '0.5',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Pin label'),
+        'Keyboard pin',
+      );
+      await tapM1Async(
+        tester,
+        find.text('Save pin'),
+        () => h.services.settings.pins.isNotEmpty,
+      );
+      final persisted = (await tester.runAsync(
+        () => h.services.database.readPins(),
+      ))!.single;
+      expect(persisted.mapId, 'shoreline');
+      expect(persisted.x, closeTo(.5, 1e-9));
+      expect(persisted.y, closeTo(.5, 1e-9));
+      await tester.tapAt(_project(tester, h, ScenePoint(128, 128)));
+      await settleMapFixture(tester, h);
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pumpAndSettle();
+      expect(find.text('Remove pin record?'), findsOneWidget);
+      await tapM1Async(
+        tester,
+        find.widgetWithText(FilledButton, 'Remove'),
+        () => h.services.settings.pins.isEmpty,
+      );
+      expect(
+        (await tester.runAsync(() => h.services.database.readPins()))!,
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'an old marker browser cannot select the same marker id after map replacement',
+    (tester) async {
+      final h = await pumpMapFixture(tester);
+      await tester.tap(_markerBrowser);
+      await tester.pumpAndSettle();
+      final generation = h.services.maps.contentGeneration;
+      await tester.runAsync(() => h.services.settings.setMap('thelab'));
+      await settleMapFixture(tester, h);
+      expect(h.services.maps.contentGeneration, generation + 1);
+      await tester.tap(find.widgetWithText(ListTile, 'Ground exit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Visible map markers and pins'), findsNothing);
+      expect(find.text('Ground exit'), findsNothing);
+      expect(find.byTooltip('Close marker details'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('right-click outside artwork cannot create a new pin', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    final pointer = await tester.startGesture(
+      tester.getTopLeft(_viewport) + const Offset(1, 1),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await pointer.up();
+    await tester.pumpAndSettle();
+    expect(find.text('Add durable pin record'), findsNothing);
+    expect(find.text('Choose a point inside the map artwork.'), findsOneWidget);
+    expect(h.services.settings.pins, isEmpty);
+  });
+
   for (final selection in ['canvas', 'browser', 'semantics']) {
     testWidgets('$selection pin selection is scoped to its map', (
       tester,
@@ -108,6 +331,13 @@ void main() {
         expect(h.services.maps.selectedMapId, 'thelab');
         expect(find.textContaining('Source pin ·'), findsNothing);
         expect(find.textContaining('Other map pin ·'), findsNothing);
+        // A previously selected duplicate id must not authorize deletion in B.
+        await tester.tapAt(_project(tester, h, ScenePoint(128, 128)));
+        await settleMapFixture(tester, h);
+        await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+        await tester.pumpAndSettle();
+        expect(find.text('Remove pin record?'), findsNothing);
+        expect(h.services.settings.pins, hasLength(2));
         expect(find.text('Edit pin'), findsNothing);
         final painter = tester
             .widget<CustomPaint>(
@@ -151,6 +381,21 @@ void main() {
           otherPin.y,
         );
         expect(h.services.settings.pins, hasLength(2));
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Remove selected pin'));
+        await tester.pumpAndSettle();
+        await tapM1Async(
+          tester,
+          find.widgetWithText(FilledButton, 'Remove'),
+          () => h.services.settings.pins.length == 1,
+        );
+        final remaining = (await tester.runAsync(
+          () => h.services.database.readPins(),
+        ))!.single;
+        expect(remaining.mapId, 'shoreline');
+        expect(remaining.id, sourcePin.id);
+        expect(remaining.label, sourcePin.label);
         expect(h.services.scans.hasAcceptedScan, isFalse);
         expect(tester.takeException(), isNull);
       } finally {
@@ -508,11 +753,29 @@ void main() {
   );
 
   testWidgets(
-    'hidden floors and categories cannot expose details or accessible targets',
+    'hidden floors and categories remove paint, details and accessible targets',
     (tester) async {
       final semantics = tester.ensureSemantics();
       try {
-        final h = await pumpMapFixture(tester);
+        final h = await pumpMapFixture(
+          tester,
+          hazardOutline: [
+            {'x': 32, 'z': 224},
+            {'x': 96, 'z': 224},
+            {'x': 96, 'z': 160},
+            {'x': 32, 'z': 160},
+          ],
+        );
+        final maps = h.services.maps;
+        final hazard = maps.preparedMap!.markers.singleWhere(
+          (marker) => marker.id == 'ground-hazard',
+        );
+        final hazardLabel = '${hazard.name}, ${hazard.filterKey}';
+        final upperPoint = ScenePoint(192, 64);
+        final hiddenFloorPixel = await _paintPixel(
+          tester,
+          maps.transform.sceneToViewport(upperPoint),
+        );
         expect(
           find.semantics.byLabel('Upper exit, PmcExtracts').evaluate(),
           isEmpty,
@@ -525,6 +788,11 @@ void main() {
         expect(
           find.semantics.byLabel('Upper exit, PmcExtracts').evaluate(),
           hasLength(1),
+        );
+        expect(
+          await _paintPixel(tester, maps.transform.sceneToViewport(upperPoint)),
+          isNot(hiddenFloorPixel),
+          reason: 'Enabling the floor must paint its marker over the artwork.',
         );
         await tester.tapAt(_project(tester, h, ScenePoint(192, 64)));
         await settleMapFixture(tester, h);
@@ -536,34 +804,55 @@ void main() {
           find.semantics.byLabel('Upper exit, PmcExtracts').evaluate(),
           isEmpty,
         );
+        expect(
+          await _paintPixel(tester, maps.transform.sceneToViewport(upperPoint)),
+          hiddenFloorPixel,
+          reason: 'Hiding the floor must restore marker-free artwork.',
+        );
+        await tester.tapAt(_project(tester, h, ScenePoint(192, 64)));
+        await settleMapFixture(tester, h);
+        expect(find.text('Upper exit'), findsNothing);
+        final hazardPoint = ScenePoint(64, 64);
+        final hazardFillPoint = ScenePoint(80, 80);
+        expect(
+          await _paintPixel(
+            tester,
+            maps.transform.sceneToViewport(hazardPoint),
+          ),
+          isNot(hiddenFloorPixel),
+          reason: 'The visible hazard glyph must be painted.',
+        );
+        final visibleFill = await _paintPixel(
+          tester,
+          maps.transform.sceneToViewport(hazardFillPoint),
+        );
+        expect(
+          visibleFill.$1,
+          greaterThan(hiddenFloorPixel.$1),
+          reason: 'The visible hazard outline must tint the artwork red.',
+        );
         await tester.tapAt(_project(tester, h, ScenePoint(64, 64)));
         await settleMapFixture(tester, h);
         expect(find.text('Ground hazard'), findsOneWidget);
-        expect(
-          find.semantics.byLabel('Ground hazard, Hazards').evaluate(),
-          hasLength(1),
-        );
-        final hazardFilter = find.widgetWithText(FilterChip, 'Hazards');
-        await tester.ensureVisible(hazardFilter);
-        await tester.pumpAndSettle();
-        // Inner-filter scrolling changes its bounds in the independently
-        // scrollable rail. Recompute the outer position after that layout.
-        await Scrollable.ensureVisible(
-          tester.element(hazardFilter),
-          alignment: .5,
-        );
-        await tester.pumpAndSettle();
-        expect(hazardFilter.hitTestable(), findsOneWidget);
+        expect(find.semantics.byLabel(hazardLabel).evaluate(), hasLength(1));
+        final hazardFilter = await _showMarkerFilter(tester, hazard.filterKey);
         await tapM1Async(
           tester,
           hazardFilter,
-          () => h.services.settings.settings.markerFilters['Hazards'] == false,
+          () =>
+              h.services.settings.settings.markerFilters[hazard.filterKey] ==
+              false,
         );
         expect(find.text('Ground hazard'), findsNothing);
-        expect(
-          find.semantics.byLabel('Ground hazard, Hazards').evaluate(),
-          isEmpty,
-        );
+        expect(find.semantics.byLabel(hazardLabel).evaluate(), isEmpty);
+        for (final point in [hazardPoint, hazardFillPoint]) {
+          expect(
+            await _paintPixel(tester, maps.transform.sceneToViewport(point)),
+            hiddenFloorPixel,
+            reason:
+                'Hiding the category must remove both glyph and outline fill.',
+          );
+        }
         await tester.tapAt(_project(tester, h, ScenePoint(64, 64)));
         await settleMapFixture(tester, h);
         expect(find.text('Ground hazard'), findsNothing);
@@ -621,12 +910,7 @@ void main() {
           find.semantics.byLabel('Ground hazard, $category').evaluate(),
           hasLength(1),
         );
-        final filter = find.widgetWithText(FilterChip, category);
-        await tester.ensureVisible(filter);
-        await tester.pumpAndSettle();
-        await Scrollable.ensureVisible(tester.element(filter), alignment: .5);
-        await tester.pumpAndSettle();
-        expect(filter.hitTestable(), findsOneWidget);
+        final filter = await _showMarkerFilter(tester, category);
         await tapM1Async(
           tester,
           filter,

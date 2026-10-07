@@ -139,6 +139,11 @@ ImportPreview parseLegacySources(
         trackerEnabled: scanner.containsKey('TrackerProgressEnabled')
             ? _boolean(scanner['TrackerProgressEnabled'])
             : false,
+        // Input paths and following authority are local configuration, never
+        // imported from a reference profile or reset by preference replacement.
+        gameLogDirectory: destinationSettings?.gameLogDirectory ?? '',
+        screenshotDirectory: destinationSettings?.screenshotDirectory ?? '',
+        followGameLogs: destinationSettings?.followGameLogs ?? true,
       );
       accounting.add(
         ImportAccounting(

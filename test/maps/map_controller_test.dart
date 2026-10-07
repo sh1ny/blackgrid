@@ -16,6 +16,270 @@ import 'package:blackgrid/maps/prepared_map_loader.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test(
+    'OR search dims hazards and keeps their outline hits; category hides both',
+    () async {
+      final controller = _controller(
+        markers: [
+          _marker('door', 'extracts', 8, 24, name: 'North Door'),
+          _marker('tunnel', 'transits', 24, 24, name: 'Tunnel'),
+          _marker(
+            'hazard',
+            'hazards',
+            16,
+            8,
+            name: 'Minefield',
+            outline: [
+              {'x': 12, 'z': 4, 'height': null},
+              {'x': 20, 'z': 4, 'height': null},
+              {'x': 20, 'z': 12, 'height': null},
+              {'x': 12, 'z': 12, 'height': null},
+            ],
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      controller.setSearch(' DOOR, tunnel ');
+      final visible = controller.visibleMarkers();
+      expect(visible.where((m) => !m.dimmed).map((m) => m.marker.id), [
+        'door',
+        'tunnel',
+      ]);
+      final hazard = visible.singleWhere((m) => m.marker.id == 'hazard');
+      expect(hazard.dimmed, isTrue);
+      final inside = controller.transform.sceneToViewport(ScenePoint(13, 25));
+      expect(controller.hitTestMarker(inside, radius: 1)!.marker.id, 'hazard');
+      controller.setCategoryVisibility({'HazardZones': false});
+      expect(controller.visibleMarkers().map((m) => m.marker.id), [
+        'door',
+        'tunnel',
+      ]);
+      expect(controller.hitTestMarker(inside, radius: 1), isNull);
+      expect(controller.search, ' DOOR, tunnel ');
+    },
+  );
+
+  test(
+    'quest filters AND exact trader are independent of category toggles',
+    () async {
+      final controller = _controller(
+        markers: [
+          _marker(
+            'letter',
+            'questItems',
+            8,
+            24,
+            filterKey: 'QuestItems',
+            details: {
+              'quest': {
+                'name': 'Delivery from the Past',
+                'trader': {'name': 'Prapor'},
+              },
+            },
+          ),
+          _marker(
+            'zone',
+            'questObjectives',
+            24,
+            24,
+            filterKey: 'QuestObjectives',
+            details: {
+              'quest': {
+                'name': 'Delivery from the Past',
+                'trader': {'name': 'Therapist'},
+              },
+            },
+          ),
+          _marker('exit', 'extracts', 16, 8),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      final questPoint = controller.visibleMarkers().first.viewportPoint;
+      controller.setQuestFilters(name: 'FROM THE', trader: 'PRAPOR');
+      expect(controller.visibleMarkers().map((m) => m.marker.id), [
+        'letter',
+        'exit',
+      ]);
+      controller.setCategoryVisibility({'QuestItems': false});
+      expect(controller.visibleMarkers().map((m) => m.marker.id), ['exit']);
+      expect(controller.hitTestMarker(questPoint), isNull);
+      controller.setCategoryVisibility({});
+      controller.setQuestFilters(trader: 'Prap');
+      expect(controller.visibleMarkers().map((m) => m.marker.id), ['exit']);
+      controller.setQuestFilters(trader: ' all ');
+      expect(controller.visibleMarkers().map((m) => m.marker.id), [
+        'letter',
+        'zone',
+        'exit',
+      ]);
+      controller.setQuestFilters(name: 'missing');
+      expect(controller.visibleMarkers().map((m) => m.marker.id), ['exit']);
+    },
+  );
+
+  test(
+    'selection links only source switches and never moves the view',
+    () async {
+      final controller = _controller(
+        markers: [
+          _marker(
+            'exit',
+            'extracts',
+            8,
+            24,
+            details: {
+              'id': 'source-exit',
+              'switches': ['source-switch'],
+            },
+          ),
+          _marker(
+            'linked',
+            'switches',
+            24,
+            24,
+            details: {'id': 'source-switch'},
+          ),
+          _marker(
+            'reverse',
+            'switches',
+            24,
+            8,
+            details: {
+              'id': 'other',
+              'activates': [
+                {'id': 'source-exit'},
+              ],
+            },
+          ),
+          _marker(
+            'unlinked',
+            'switches',
+            8,
+            8,
+            name: 'Same exit name',
+            details: {'id': 'different'},
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      final before = controller.transform;
+      controller.setSelectedMarker('exit');
+      expect(identical(controller.transform, before), isTrue);
+      expect(
+        controller
+            .visibleMarkers()
+            .where((m) => m.linkedHighlighted)
+            .map((m) => m.marker.id),
+        ['linked', 'reverse'],
+      );
+      controller.setCategoryVisibility({'extracts': false});
+      expect(
+        controller.visibleMarkers().any((m) => m.linkedHighlighted),
+        isFalse,
+      );
+      controller.setRaidHighlights({'unlinked', 'other-map-id'});
+      expect(
+        controller
+            .visibleMarkers()
+            .where((m) => m.raidHighlighted)
+            .map((m) => m.marker.id),
+        ['unlinked'],
+      );
+    },
+  );
+
+  test(
+    'player center preserves scale and world heading uses existing geometry',
+    () async {
+      final controller = _controller();
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      final generation = controller.contentGeneration;
+      controller.zoomAt(ViewportPoint(100, 100), 2);
+      controller.panBy(20, 40);
+      controller.setPlayerSample(GamePoint(8, 24), forwardX: 1, forwardZ: 1);
+      expect(controller.playerSceneDirection!.x, closeTo(1, 1e-9));
+      expect(controller.playerSceneDirection!.y, closeTo(-1, 1e-9));
+      final scale = controller.transform.scale;
+      controller.centerOnPlayer();
+      expect(controller.transform.scale, scale);
+      expect(controller.playerViewportPoint!.x, closeTo(160, 1e-9));
+      expect(controller.playerViewportPoint!.y, closeTo(160, 1e-9));
+      controller.toggleFloor('Upper');
+      controller.setSearch('test');
+      controller.setCategoryVisibility({'Switches': false});
+      controller.updateViewport(const Size(400, 300));
+      expect(controller.contentGeneration, generation);
+      await _settled(controller);
+      var changes = 0;
+      controller.addListener(() => changes++);
+      controller.setPlayerSample(GamePoint(8, 24), forwardX: 1, forwardZ: 1);
+      controller.setRaidHighlights({});
+      expect(changes, 0);
+      await controller.selectPersistedMap('icebreaker');
+      expect(controller.contentGeneration, generation + 1);
+      expect(controller.playerPosition, isNull);
+    },
+  );
+
+  test(
+    'quarter-turn map projects game forward X upward without glyph offsets',
+    () async {
+      final controller = _controller(rotation: 90);
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      controller.setPlayerSample(GamePoint(16, 16), forwardX: 1, forwardZ: 0);
+      expect(controller.playerSceneDirection!.x, closeTo(0, 1e-9));
+      expect(controller.playerSceneDirection!.y, closeTo(-1, 1e-9));
+    },
+  );
+
+  test(
+    'manual floors disable follow until explicit reenable; unknown is not zero',
+    () async {
+      final controller = _controller();
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'icebreaker');
+      controller.setPlayerSample(GamePoint(8, 24, height: 3));
+      expect(controller.floorSelection!.selectedOverlayIds, {'Upper'});
+      controller.toggleFloor('Upper');
+      expect(controller.automaticFloorFollowing, isFalse);
+      controller.setPlayerSample(GamePoint(9, 24, height: 4));
+      expect(controller.floorSelection!.selectedOverlayIds, isEmpty);
+      controller.setAutomaticFloorFollowing(true);
+      expect(controller.floorSelection!.selectedOverlayIds, {'Upper'});
+      controller.setPlayerSample(GamePoint(10, 24));
+      expect(controller.floorSelection!.selectedOverlayIds, {'Upper'});
+      controller.setPlayerSample(GamePoint(10, 24, height: 0));
+      expect(controller.floorSelection!.selectedOverlayIds, isEmpty);
+      await controller.selectPersistedMap('interchange');
+      expect(controller.automaticFloorSupported, isFalse);
+    },
+  );
+
+  test('new pin intents reject artwork padding without altering old pin projection', () async {
+    final controller = _controller();
+    addTearDown(controller.dispose);
+    controller.updateViewport(const Size(320, 320));
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.pinCreationAt(ViewportPoint(0, 0)), isNull);
+    final pin = controller.pinCreationAt(ViewportPoint(160, 160))!;
+    expect(pin.mapId, 'interchange');
+    expect(pin.point.x, closeTo(.5, 1e-9));
+    expect(pin.point.y, closeTo(.5, 1e-9));
+    expect(pin.frame.revision, 0);
+    expect(controller.pinAt(ViewportPoint(0, 0)), isNotNull);
+  });
+
   test('viewport framing: untouched maps refit after resize', () async {
     final controller = _controller();
     addTearDown(controller.dispose);
@@ -368,7 +632,11 @@ void main() {
   );
 }
 
-MapController _controller({Future<ByteData> Function(String)? artwork}) {
+MapController _controller({
+  Future<ByteData> Function(String)? artwork,
+  List<Map<String, dynamic>>? markers,
+  int rotation = 0,
+}) {
   final loader = PreparedMapPackLoader(
     loadBytes: (path) async {
       if (path.endsWith('active.json')) {
@@ -383,7 +651,10 @@ MapController _controller({Future<ByteData> Function(String)? artwork}) {
           'schemaVersion': 1,
           'vectorsCompiled': true,
           'runtimeVectorVersion': '1.2.3',
-          'maps': [_map('interchange'), _map('icebreaker', exclusive: true)],
+          'maps': [
+            _map('interchange', markers: markers, rotation: rotation),
+            _map('icebreaker', exclusive: true),
+          ],
         });
       }
       return artwork == null ? _picture() : artwork(path);
@@ -395,12 +666,17 @@ MapController _controller({Future<ByteData> Function(String)? artwork}) {
   );
 }
 
-Map<String, dynamic> _map(String id, {bool exclusive = false}) => {
+Map<String, dynamic> _map(
+  String id, {
+  bool exclusive = false,
+  List<Map<String, dynamic>>? markers,
+  int rotation = 0,
+}) => {
   'id': id,
   'name': '$id fixture',
   'kind': 'vector',
   'geometry': {
-    'rotation': 0,
+    'rotation': rotation,
     'affine': [1, 0, 1, 32],
     'bounds': [
       [0, 0],
@@ -451,27 +727,49 @@ Map<String, dynamic> _map(String id, {bool exclusive = false}) => {
       },
     },
   ],
-  'markers': [
-    {
-      'id': 'unknown',
-      'category': 'switches',
-      'name': 'Unknown height',
-      'position': {'x': 8, 'z': 24, 'height': null},
-      'details': {},
-      'source': {'url': 'fixture'},
-    },
-    {
-      'id': 'upper',
-      'category': 'switches',
-      'name': 'Explicit upper',
-      'floorId': 'Upper',
-      'position': {'x': 24, 'z': 8, 'height': 0},
-      'details': {},
-      'source': {'url': 'fixture'},
-    },
-  ],
+  'markers':
+      markers ??
+      [
+        {
+          'id': 'unknown',
+          'category': 'switches',
+          'name': 'Unknown height',
+          'position': {'x': 8, 'z': 24, 'height': null},
+          'details': {},
+          'source': {'url': 'fixture'},
+        },
+        {
+          'id': 'upper',
+          'category': 'switches',
+          'name': 'Explicit upper',
+          'floorId': 'Upper',
+          'position': {'x': 24, 'z': 8, 'height': 0},
+          'details': {},
+          'source': {'url': 'fixture'},
+        },
+      ],
   'attribution': {'author': 'Independent fixture'},
 };
+Map<String, dynamic> _marker(
+  String id,
+  String category,
+  double x,
+  double z, {
+  String? name,
+  String? filterKey,
+  Map<String, dynamic> details = const {},
+  List<Map<String, dynamic>> outline = const [],
+}) => {
+  'id': id,
+  'category': category,
+  'name': name ?? id,
+  'filterKey': ?filterKey,
+  'position': {'x': x, 'z': z, 'height': null},
+  'details': {...details, if (outline.isNotEmpty) 'outline': outline},
+  'outline': outline,
+  'source': {'url': 'fixture'},
+};
+
 ByteData _json(Object value) =>
     ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(value))));
 ByteData _picture() => ByteData.sublistView(

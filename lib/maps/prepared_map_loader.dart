@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
+import '../domain/settings.dart' show supportedMaps;
 import 'prepared_map.dart';
 
 /// Loads one coherent immutable version from a local active pointer.
@@ -76,6 +77,49 @@ class PreparedMapPackLoader {
       maps.add(PreparedMap.fromJson(value, assetRoot: root));
     }
     if (maps.isEmpty) throw const FormatException('Prepared pack has no maps.');
+    if (manifest['preparationVersion'] == 3) {
+      final supported = manifest['supportedMapIds'];
+      if (supported is! List ||
+          supported.length != supportedMaps.length ||
+          supported.any((id) => id is! String || id.isEmpty) ||
+          supported.toSet().length != supported.length ||
+          !supported.toSet().containsAll(supportedMaps) ||
+          maps.length != supported.length ||
+          maps.map((map) => map.id).toSet().length != maps.length ||
+          !supported.toSet().containsAll(maps.map((map) => map.id))) {
+        throw const FormatException(
+          'Incomplete prepared supported-map closure.',
+        );
+      }
+      final outputEntries = manifest['outputs'];
+      if (outputEntries is! List) {
+        throw const FormatException('Missing prepared output closure.');
+      }
+      final outputs = <String>{};
+      for (final value in outputEntries) {
+        if (value is! Map<String, dynamic> || value['path'] is! String) {
+          throw const FormatException('Invalid prepared output identity.');
+        }
+        final path = preparedAssetPath(root, value['path'] as String);
+        if (!outputs.add(path)) {
+          throw const FormatException('Duplicate prepared output identity.');
+        }
+      }
+      for (final map in maps) {
+        for (final path in [
+          for (final component in map.components) component.path,
+          for (final tile in map.tiles) tile.path,
+          for (final dependency in map.rasterDependencies)
+            ...dependency.assetPaths,
+        ]) {
+          if (!outputs.contains(path)) {
+            throw const FormatException(
+              'Prepared scene escapes output closure.',
+            );
+          }
+        }
+      }
+    }
     return PreparedMapPack(version: version, assetRoot: root, maps: maps);
   }
 }

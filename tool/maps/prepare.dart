@@ -11,10 +11,35 @@ const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart promote --candidate <compiled-directory> --packs <pack-root>
   dart run tool/maps/prepare.dart assets --packs <repo-relative-pack-root>
 
-The locked families are current Interchange SVG, Labs z4 tiles and all 16
-Icebreaker z4 floors. Interchange uses the 1127.6852 x 947.02582 source frame,
-not the older 977.09998-square artwork. acquire requires a new raw generation;
-existing Streets raw/candidate directories are not inputs for this selection.
+Preparation v3 requires the complete canonical inventory:
+factory, customs, woods, shoreline, interchange, thelab, reserve, lighthouse,
+streetsoftarkov, groundzero, terminal, icebreaker and labyrinth.
+Artwork, metadata, marker/task/trader dictionaries, translations and published
+terms are acquired into a fresh hash-locked raw generation. Source IDs are not
+selector aliases: Labs uses the-lab, Streets streets-of-tarkov, Ground Zero
+ground-zero and Labyrinth the-labyrinth upstream.
+
+The selected SVGs use their original source viewBox, ordered floor groups and
+publisher-declared attachments. Labs retains the original 2800-square display
+frame, revision-one pins and the 256/175 display-to-native pixel conversion.
+Icebreaker retains its original 4096-square frame and all 16 floor grids.
+Customs and Reserve use tarkov.dev's default Abstract rendition: the publisher
+SVG, with the tile-only floors (Customs fourth, Reserve second-through-fifth)
+packaged as raster overlays in their own z4 tile frame and placed over the SVG
+through the shared metadata transform. The SVG frame is the original
+revision-zero pin basis, so stored pin coordinates are unchanged.
+Ground Zero packages all four metadata-declared alternative raster grids; they
+are not embedded SVG overlays and are not painted twice. Labyrinth uses the
+actual interactive tiled backing; its selected metadata declares no SVG wrapper.
+
+Unknown floors, source/frame/calibration changes, unsafe or non-local
+references, missing paint targets and missing or malformed raster dependencies
+fail explicitly. A <use> whose target is one of the known publisher-deleted
+symbols (Customs path493, Streets stairs) is dropped, matching browser
+rendering; any other missing symbol fails and none is synthesized. No partial
+inventory or uncompiled-vector promotion is supported. Acquisition alone is
+not evidence of source closure or independent placement/redistribution
+qualification.
 
 acquire is the only network operation. normalize preserves dependency-closed
 source SVG and native effect metadata without compiler execution. compile is a
@@ -22,12 +47,16 @@ separate pinned pure-Dart adapter. rebuild performs normalize+compile offline.
 validate/promote bind canonical vector component paths and actual compiled
 payloads to dependency-closed source SVGs. Reviewed Interchange compiler/payload
 identities avoid recompilation during validation; a new source is compiled once
-per input identity and process with the pinned adapter flags. Preparation v2
-bundles content-addressed original PNG witnesses for transparent source tiles;
+per input identity and process with the pinned adapter flags. Preparation v3
+preserves v2's content-addressed original PNG witnesses for transparent tiles;
 empty records are decoded and hash-bound just like visible tiles, not inferred
 from byte size or trusted from the manifest. Crops must remain wholly inside
 the unchanged original artwork frame. Existing v1 packs lacking empty witnesses
 must be rebuilt offline before this validator can promote them.
+Existing published preparation-v2 three-map packs remain readable and validate
+against their own frozen calibration/source evidence, not newer calibrations.
+New rebuilds require v3's complete inventory; old raw partial inputs do not
+silently become complete candidates.
 promote retains prior versions and atomically replaces only active.json.
 No command mutates an active version.
 assets prints the complete pubspec assets section for the promoted generation;

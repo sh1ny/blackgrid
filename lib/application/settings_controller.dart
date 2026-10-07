@@ -42,11 +42,28 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<bool> setMode(GameMode mode) => save(_settings.copyWith(mode: mode));
-  Future<bool> setMap(String map) => save(_settings.copyWith(selectedMap: map));
+  Future<bool> setMap(String map) =>
+      save(_settings.copyWith(selectedMap: map, followGameLogs: false));
+
+  Future<bool> setMapInputs({
+    String? gameLogDirectory,
+    String? screenshotDirectory,
+    bool? followGameLogs,
+  }) => save(
+    _settings.copyWith(
+      gameLogDirectory: gameLogDirectory,
+      screenshotDirectory: screenshotDirectory,
+      followGameLogs: followGameLogs,
+    ),
+  );
   Future<bool> setMarker(String key, bool value) => save(
     _settings.copyWith(markerFilters: {..._settings.markerFilters, key: value}),
   );
   Future<bool> savePin(CustomPin pin) async {
+    if (busy) return false;
+    busy = true;
+    error = null;
+    notifyListeners();
     try {
       pin.validate();
       await database.savePin(pin);
@@ -57,12 +74,18 @@ class SettingsController extends ChangeNotifier {
     } catch (_) {
       error =
           'Pin could not be saved. Check its coordinates and supported frame.';
-      notifyListeners();
       return false;
+    } finally {
+      busy = false;
+      notifyListeners();
     }
   }
 
   Future<bool> removePin(CustomPin pin) async {
+    if (busy) return false;
+    busy = true;
+    error = null;
+    notifyListeners();
     try {
       await database.removePin(pin);
       _pins = List.unmodifiable(await database.readPins());
@@ -71,8 +94,10 @@ class SettingsController extends ChangeNotifier {
       return true;
     } catch (_) {
       error = 'Pin removal failed; the durable record remains.';
-      notifyListeners();
       return false;
+    } finally {
+      busy = false;
+      notifyListeners();
     }
   }
 }

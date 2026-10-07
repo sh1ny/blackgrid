@@ -6,6 +6,8 @@ import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
 import 'package:xml/xml.dart';
 
+import 'package:blackgrid/domain/settings.dart' show supportedMaps;
+
 import '../../tool/maps/pack.dart';
 import '../../tool/maps/svg.dart';
 import '../../tool/maps/calibration.dart';
@@ -19,6 +21,221 @@ void main() {
   tearDown(() async {
     await temporary.delete(recursive: true);
   });
+
+  test(
+    'preparation source identities cover every unchanged selector exactly once',
+    () {
+      expect(supportedMapSources.keys, supportedMaps);
+      expect(supportedMapSources.values.toSet(), hasLength(13));
+      for (final entry in supportedMapSources.entries) {
+        final local = calibrationFor(entry.value);
+        expect(local['id'], entry.key);
+        expect(local['sourceKey'], entry.value);
+      }
+      expect(supportedMapSources['thelab'], 'the-lab');
+      expect(supportedMapSources['streetsoftarkov'], 'streets-of-tarkov');
+      expect(supportedMapSources['groundzero'], 'ground-zero');
+      expect(supportedMapSources['labyrinth'], 'the-labyrinth');
+      for (final alias in [
+        'lab',
+        'labs',
+        'thelab',
+        'streetsoftarkov',
+        'groundzero',
+      ]) {
+        expect(() => calibrationFor(alias), throwsFormatException);
+      }
+    },
+  );
+
+  for (final entry in <String, (List<String>, Set<String>, num)>{
+    'customs': (
+      [
+        'Ground_Level',
+        'Second_Floor',
+        'Third_Floor',
+        'Fourth_Floor',
+        'Underground_Level',
+      ],
+      {'Fourth_Floor'},
+      1062.4827,
+    ),
+    'reserve': (
+      [
+        'Ground_Level',
+        'Second_Floor',
+        'Third_Floor',
+        'Fourth_Floor',
+        'Fifth_Floor',
+        'Bunkers',
+      ],
+      {'Second_Floor', 'Third_Floor', 'Fourth_Floor', 'Fifth_Floor'},
+      827.28742,
+    ),
+  }.entries) {
+    final (ids, tileOnly, width) = entry.value;
+    test(
+      '${entry.key} abstract SVG keeps every declared tile-only floor as an overlay',
+      () {
+        final local = calibrationFor(entry.key);
+        final floors = (local['floors'] as List).cast<Map<String, Object?>>();
+        expect(local['kind'], 'vector');
+        expect(floors.map((floor) => floor['id']), ids);
+        expect(
+          floors.where((f) => f['sourceTileUrl'] != null).map((f) => f['id']),
+          tileOnly,
+        );
+        expect((local['artworkFrame'] as Map)['width'], width);
+        expect((local['geometry'] as Map)['projection'], 'bounds-normalized');
+        expect((local['rasterOverlayFrame'] as Map)['nativeZoom'], 4);
+        // The SVG frame is the original revision-0 pin basis again.
+        expect((local['geometry'] as Map)['legacyPinBounds'], isNull);
+        expect(
+          (local['geometry'] as Map)['bounds'],
+          entry.key == 'customs'
+              ? [
+                  [698, -307],
+                  [-372, 237],
+                ]
+              : [
+                  [289, -274],
+                  [-303, 272],
+                ],
+        );
+        final upstream = <String, dynamic>{
+          'svgLayer': 'Ground_Level',
+          'tilePath': 'https://example.invalid/main/{z}/{x}/{y}.png',
+          'layers': [
+            for (final floor in floors.skip(1))
+              {
+                'name': floor['id'],
+                // Actual publisher has no svgLayer for the tile-only floors;
+                // binding must not depend on inventing those groups.
+                if (floor['sourceTileUrl'] != null)
+                  'tilePath': floor['sourceTileUrl']
+                else ...{
+                  'svgLayer': floor['id'],
+                  'tilePath': 'https://example.invalid/${floor['id']}.png',
+                },
+              },
+          ],
+        };
+        expect(
+          reconcileFloors(local, upstream).map((floor) => floor['id']),
+          ids,
+        );
+        for (var index = 0; index < ids.length - 1; index++) {
+          final changed = {
+            ...upstream,
+            'layers': [
+              for (var i = 0; i < (upstream['layers'] as List).length; i++)
+                if (i != index) (upstream['layers'] as List)[i],
+            ],
+          };
+          expect(() => reconcileFloors(local, changed), throwsFormatException);
+        }
+        expect(
+          () => reconcileFloors(local, {
+            ...upstream,
+            'layers': [
+              ...(upstream['layers'] as List),
+              {'tilePath': 'https://example.invalid/added/{z}/{x}/{y}.png'},
+            ],
+          }),
+          throwsFormatException,
+        );
+      },
+    );
+  }
+
+  test('SVG root floor closure and publisher attachments reject lost unowned or renamed groups', () {
+    const source =
+        '<svg viewBox="0 0 10 10">'
+        '<g id="Ground_Level"/><g id="First_Floor" data-keep-with-group="Ground_Level"/>'
+        '<g id="Second_Floor"/></svg>';
+    final floors = <Map<String, Object?>>[
+      {
+        'id': 'Ground_Level',
+        'attachedIds': ['First_Floor'],
+      },
+      {'id': 'Second_Floor', 'attachedIds': <String>[]},
+    ];
+    validateSvgFloorInventory(source, floors);
+    expect(
+      svgLayerOrder(source, {'Ground_Level', 'First_Floor', 'Second_Floor'}),
+      ['Ground_Level', 'First_Floor', 'Second_Floor'],
+    );
+    for (final changed in [
+      source.replaceFirst('<g id="Second_Floor"/>', ''),
+      source.replaceFirst('</svg>', '<g id="Uncalibrated_Level"/></svg>'),
+      source.replaceFirst('data-keep-with-group="Ground_Level"', ''),
+      source.replaceFirst(
+        'data-keep-with-group="Ground_Level"',
+        'data-keep-with-group="Second_Floor"',
+      ),
+      source.replaceFirst('id="First_Floor"', 'id="Different_Floor"'),
+      source.replaceFirst('<g id="Second_Floor"/>', '<g/>'),
+      source.replaceFirst(
+        '</svg>',
+        '<defs><g data-keep-with-group="Ground_Level"/></defs></svg>',
+      ),
+      source.replaceFirst(
+        '</svg>',
+        '<defs><g id="First_Floor" data-keep-with-group="Ground_Level"/></defs></svg>',
+      ),
+    ]) {
+      expect(
+        () => validateSvgFloorInventory(changed, floors),
+        throwsFormatException,
+      );
+    }
+  });
+
+  test(
+    'Ground Zero requires exactly every metadata-declared raster alternative',
+    () {
+      final local = calibrationFor('ground-zero');
+      final dependencies = (local['rasterDependencies'] as List).cast<Map>();
+      final upstream = <String, dynamic>{
+        'svgLayer': 'Ground_Level',
+        'tilePath': dependencies.first['sourceTileUrl'],
+        'layers': [
+          for (final dependency in dependencies.skip(1))
+            {
+              'svgLayer': dependency['id'],
+              'tilePath': dependency['sourceTileUrl'],
+            },
+        ],
+      };
+      final floors = reconcileFloors(local, upstream);
+      expect(floors.map((floor) => floor['id']), [
+        'Ground_Level',
+        'Second_Floor',
+        'Third_Floor',
+        'Underground_Level',
+      ]);
+      expect(floors.first['attachedIds'], ['First_Floor']);
+      for (final changed in [
+        {...upstream, 'tilePath': null},
+        {
+          ...upstream,
+          'layers': [
+            ...(upstream['layers'] as List).skip(1),
+            {'svgLayer': 'Second_Floor'},
+          ],
+        },
+        {
+          ...upstream,
+          'layers': [
+            ...(upstream['layers'] as List),
+            {'tilePath': 'https://example.invalid/unknown/{z}/{x}/{y}.png'},
+          ],
+        },
+      ]) {
+        expect(() => reconcileFloors(local, changed), throwsFormatException);
+      }
+    },
+  );
 
   test('decoded alpha, not HTTP length, identifies empty tiles', () {
     expect(inspectPng(png(2, 2, empty: true), expectedSize: 2).empty, isTrue);
@@ -327,24 +544,45 @@ void main() {
     ]);
   });
 
-  test('unsafe href, missing use target and excluded content fail closure', () {
-    for (final source in [
-      '<svg><g id="Ground_Level"><use href="https://bad.invalid/x.svg#x"/></g></svg>',
-      '<svg><g id="Ground_Level"><use href="#missing"/></g></svg>',
-      '<svg><g id="Second_Floor"/></svg>',
-      '<svg><g id="Ground_Level"><image href="data:image/png;base64,AA=="/></g></svg>',
-      '<svg><style>.floor {fill:url(https://bad.invalid/paint)}</style><g id="Ground_Level" class="floor"/></svg>',
-    ]) {
-      expect(
-        () => normalizeSvgFloor(
-          source,
-          {'Ground_Level'},
-          {'Ground_Level', 'Second_Floor'},
-        ),
-        throwsFormatException,
-      );
-    }
+  test('use with a missing local target renders nothing, like a browser', () {
+    const source =
+        '<svg viewBox="0 0 10 10"><defs><path id="kept" d="M0 0L1 1"/></defs><g id="Ground_Level"><use xlink:href="#kept" xmlns:xlink="http://www.w3.org/1999/xlink"/><use xlink:href="#stairs-86" xmlns:xlink="http://www.w3.org/1999/xlink"/></g></svg>';
+    final uses = XmlDocument.parse(
+      normalizeSvgFloor(source, {'Ground_Level'}, {'Ground_Level'}),
+    ).findAllElements('use').toList();
+    expect(uses.map((e) => e.getAttribute('href', namespace: '*')), ['#kept']);
+    expect(
+      () => normalizeSvgFloor(
+        source.replaceAll('#stairs-86', '#stairs-1'),
+        {'Ground_Level'},
+        {'Ground_Level'},
+      ),
+      throwsFormatException,
+      reason: 'only the known deleted Streets stair symbols are dropped',
+    );
   });
+
+  test(
+    'unsafe href, missing paint target and excluded content fail closure',
+    () {
+      for (final source in [
+        '<svg><g id="Ground_Level"><use href="https://bad.invalid/x.svg#x"/></g></svg>',
+        '<svg><g id="Ground_Level"><path fill="url(#missing)"/></g></svg>',
+        '<svg><g id="Second_Floor"/></svg>',
+        '<svg><g id="Ground_Level"><image href="data:image/png;base64,AA=="/></g></svg>',
+        '<svg><style>.floor {fill:url(https://bad.invalid/paint)}</style><g id="Ground_Level" class="floor"/></svg>',
+      ]) {
+        expect(
+          () => normalizeSvgFloor(
+            source,
+            {'Ground_Level'},
+            {'Ground_Level', 'Second_Floor'},
+          ),
+          throwsFormatException,
+        );
+      }
+    },
+  );
 
   test('invalid candidate preserves active pointer and prior pack', () async {
     final packs = Directory('${temporary.path}/packs');

@@ -10,6 +10,7 @@ import 'package:vector_graphics_compiler/vector_graphics_compiler.dart'
     as vector;
 
 import 'calibration.dart';
+import 'quest_markers.dart';
 import 'svg.dart';
 
 String canonicalJson(Object? value) {
@@ -205,6 +206,14 @@ Future<void> acquireInputs(Directory root) async {
       utf8.decode(await fetch('metadata/maps.json', metadataUrl)),
     ) as List;
     await fetch('markers/maps.json', markerUrl);
+    for (final resource in const {
+      'quests/tasks.json': 'https://json.tarkov.dev/regular/tasks',
+      'quests/tasks_en.json': 'https://json.tarkov.dev/regular/tasks_en',
+      'quests/traders.json': 'https://json.tarkov.dev/regular/traders',
+      'quests/traders_en.json': 'https://json.tarkov.dev/regular/traders_en',
+    }.entries) {
+      await fetch(resource.key, resource.value);
+    }
     await fetch('markers/maps_en.json', '${markerUrl}_en');
     await fetch(vectorSourcePath, vectorSourceUrl);
     sources.last.addAll({
@@ -212,6 +221,20 @@ Future<void> acquireInputs(Directory root) async {
       'repositoryRevision': vectorSourceRevision,
       'gitBlobSha1': vectorSourceBlob,
     });
+    for (final entry in additionalVectorSources.entries) {
+      final filename = entry.value['file']!;
+      final path = '${entry.key}/$filename';
+      // Pin immutable publisher bytes rather than relying on mutable CDN
+      // caching. The selected served rendition was independently observed.
+      await fetch(path, '$vectorSourceRoot/$filename');
+      sources.last.addAll({
+        'servedUrl': 'https://assets.tarkov.dev/maps/svg/$filename',
+        'repositoryRevision': vectorSourceRevision,
+        'termsPaths': ['terms/svg-maps-README.md', 'terms/svg-maps-LICENSE.md'],
+        'privateUse': 'user-directed-private-implementation',
+        'publicRedistribution': 'not-owner-cleared',
+      });
+    }
     await fetch('terms/svg-maps-README.md', '$vectorSourceRoot/README.md');
     await fetch('terms/svg-maps-LICENSE.md', '$vectorSourceRoot/LICENSE.md');
     await fetch(
@@ -224,8 +247,7 @@ Future<void> acquireInputs(Directory root) async {
     );
     await fetch('terms/tarkovbot-creator.html', 'https://tarkovbot.eu/');
     final calibration = [
-      for (final key in ['interchange', 'the-lab', 'icebreaker'])
-        calibrationFor(key),
+      for (final key in supportedMapSources.values) calibrationFor(key),
     ];
     final calibrationBytes = utf8.encode(
       canonicalJson({'schemaVersion': 1, 'maps': calibration}),
@@ -243,8 +265,16 @@ Future<void> acquireInputs(Directory root) async {
         local['sourceKey'] as String,
       );
       final floors = reconcileFloors(local, upstream);
-      for (final floor in floors) {
-        if (floor['sourceTileUrl'] == null) continue;
+      final resources = [
+        for (final floor in floors)
+          if (floor['sourceTileUrl'] != null) floor,
+        for (final dependency in (local['rasterDependencies'] as List? ?? []))
+          {
+            ...Map<String, Object?>.from(dependency as Map),
+            'id': 'dependency-${dependency['id']}',
+          },
+      ];
+      for (final floor in resources) {
         for (var x = 0; x < 16; x++) {
           for (var y = 0; y < 16; y++) {
             jobs.add((
@@ -307,6 +337,19 @@ Future<Map<String, dynamic>> rebuildCandidate(
       (jsonDecode(await frozen.text('markers/maps_en.json'))
               as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
+  final questSources = <String, Map<String, dynamic>>{
+    for (final path in const [
+      'quests/tasks.json',
+      'quests/tasks_en.json',
+      'quests/traders.json',
+      'quests/traders_en.json',
+    ])
+      path: jsonDecode(await frozen.text(path)) as Map<String, dynamic>,
+  };
+  _requireMapInventory(
+    (calibration['maps'] as List).cast<Map>(),
+    supportedMapSources.keys.toSet(),
+  );
   final maps = <Map<String, Object?>>[];
   final emptyTileWitnesses = <String>{};
   final decodedTiles = <String, PngInspection>{};
@@ -316,6 +359,7 @@ Future<Map<String, dynamic>> rebuildCandidate(
     final sourceKey = local['sourceKey'] as String;
     _validateCalibration(local);
     final upstream = interactiveMetadata(metadata, sourceKey);
+    _validateMetadataCalibration(local, upstream);
     final floors = reconcileFloors(local, upstream);
     final mapId = local['id'] as String;
     var crop = <num>[
@@ -325,22 +369,43 @@ Future<Map<String, dynamic>> rebuildCandidate(
       double.negativeInfinity,
     ];
     if (local['kind'] == 'vector') {
-      final source = await frozen.text(vectorSourcePath);
+      final source = await frozen.text(
+        local['sourceSvgPath'] as String? ?? vectorSourcePath,
+      );
       if (canonicalJson(svgFrame(source)) !=
           canonicalJson(local['artworkFrame'])) {
         throw const FormatException(
           'Vector source frame differs from locked calibration',
         );
       }
-      final allFloors = _vectorSelectionIds(floors);
+      final svgFloors = _svgFloors(floors);
+      validateSvgFloorInventory(source, svgFloors);
+      final allFloors = _vectorSelectionIds(svgFloors);
       final componentIds = {
-        for (final floor in floors) ..._floorComponents(floor),
+        for (final floor in svgFloors) ..._floorComponents(floor),
       };
       final sourceOrder = svgLayerOrder(source, componentIds);
       // Attached base content can interleave with selectable overlays.
       // Preserve the global DOM order, not just the order inside each floor.
       local['layerOrder'] = sourceOrder;
       for (final floor in floors) {
+        if (_isRasterOverlay(floor)) {
+          // A tile-only floor drawn over the SVG, as tarkov.dev's Abstract
+          // view does. Its tiles keep their own frame; the runtime places
+          // them through the shared game-coordinate transform.
+          floor['artwork'] = {
+            'tiles': await _prepareFloorTiles(
+              frozen,
+              candidate,
+              mapId,
+              floor['id'] as String,
+              emptyTileWitnesses,
+              decodedTiles,
+              (x, y, decoded) {},
+            ),
+          };
+          continue;
+        }
         final components = <Map<String, Object?>>[];
         final ids = _floorComponents(floor).toSet();
         for (final id in sourceOrder.where(ids.contains)) {
@@ -377,56 +442,24 @@ Future<Map<String, dynamic>> rebuildCandidate(
       final stride = frame['tileStride'] as num;
       final extent = frame['tileImageExtent'] as num;
       for (final floor in floors) {
-        final inventory = <Map<String, Object?>>[];
-        for (var x = 0; x < 16; x++) {
-          for (var y = 0; y < 16; y++) {
-            final path = rawTilePath(mapId, floor['id'] as String, x, y);
-            final bytes = await frozen.bytes(path);
-            final sourceHash = _hash(bytes);
-            var decoded = decodedTiles[sourceHash];
-            if (decoded == null) {
-              decoded = inspectPng(bytes);
-              decodedTiles[sourceHash] = decoded;
-            }
-            if (decoded.empty && emptyTileWitnesses.add(sourceHash)) {
-              // Deduplicate by frozen source identity, not byte length or a
-              // manifest assertion. Promotion can decode this original PNG
-              // without the external raw cache even for omitted empty tiles.
-              await _write(candidate, _emptyTileWitnessPath(sourceHash), bytes);
-            }
-            final tile = <String, Object?>{
-              'x': x,
-              'y': y,
-              'empty': decoded.empty,
-              'sourcePath': path,
-              'sourceSha256': sourceHash,
-            };
-            if (!decoded.empty) {
-              final output = 'artwork/$mapId/${floor['id']}/$x/$y.png';
-              await _write(candidate, output, bytes);
-              tile['path'] = output;
-              tile['alphaBounds'] = [
-                decoded.left,
-                decoded.top,
-                decoded.right,
-                decoded.bottom,
-              ];
+        floor['artwork'] = {
+          'tiles': await _prepareFloorTiles(
+            frozen,
+            candidate,
+            mapId,
+            floor['id'] as String,
+            emptyTileWitnesses,
+            decodedTiles,
+            (x, y, decoded) {
               crop = [
                 math.min(crop[0], x * stride + decoded.left / 256 * extent),
                 math.min(crop[1], y * stride + decoded.top / 256 * extent),
                 math.max(crop[2], x * stride + decoded.right / 256 * extent),
                 math.max(crop[3], y * stride + decoded.bottom / 256 * extent),
               ];
-            }
-            inventory.add(tile);
-          }
-        }
-        if (inventory.every((t) => t['empty'] == true)) {
-          throw FormatException(
-            'Required floor ${floor['id']} has no decoded artwork',
-          );
-        }
-        floor['artwork'] = {'tiles': inventory};
+            },
+          ),
+        };
       }
       // A union crop is display-only. Pins continue using original frame units.
       crop = [crop[0].floor(), crop[1].floor(), crop[2].ceil(), crop[3].ceil()];
@@ -437,20 +470,44 @@ Future<Map<String, dynamic>> rebuildCandidate(
       'right': crop[2],
       'bottom': crop[3],
     };
+    final dependencies = <Map<String, Object?>>[];
+    for (final rawDependency in (local['rasterDependencies'] as List? ?? [])) {
+      final dependency = Map<String, Object?>.from(rawDependency as Map);
+      dependency['artwork'] = await _prepareDependencyGrid(
+        frozen,
+        candidate,
+        mapId,
+        dependency['id'] as String,
+        emptyTileWitnesses,
+        decodedTiles,
+      );
+      dependencies.add(dependency);
+    }
+    if (local.containsKey('rasterDependencies')) {
+      local['rasterDependencies'] = dependencies;
+    }
     local['floors'] = floors;
-    local['markers'] = prepareMarkers(markerSnapshot, translations, local);
+    local['markers'] = [
+      ...prepareMarkers(markerSnapshot, translations, local),
+      ..._prepareFrozenQuests(questSources, markerSnapshot, local),
+    ];
     local['attribution'] = {
       'author': upstream['author'],
       'authorLink': upstream['authorLink'],
       'sourceKey': sourceKey,
-      'termsStatus': sourceKey == 'interchange'
+      'termsStatus': local['kind'] == 'vector'
           ? 'CC-BY-NC-SA-4.0-with-published-README-restrictions'
           : 'published-credit-evidence-no-owner-clearance-asserted',
+      if (local['kind'] == 'vector' && floors.any(_isRasterOverlay))
+        'rasterOverlayTermsStatus':
+            'published-credit-evidence-no-owner-clearance-asserted',
       if (local['kind'] == 'vector')
         'artworkSource': {
           ...Map<String, Object?>.from(
             (frozen.index['sources'] as List).singleWhere(
-              (s) => s['path'] == vectorSourcePath,
+              (s) =>
+                  s['path'] ==
+                  (local['sourceSvgPath'] as String? ?? vectorSourcePath),
             ) as Map,
           ),
           'termsPaths': [
@@ -476,7 +533,8 @@ Future<Map<String, dynamic>> rebuildCandidate(
   await _write(candidate, 'NOTICE.txt', utf8.encode(artworkNotices));
   final manifest = <String, dynamic>{
     'schemaVersion': 1,
-    'preparationVersion': 2,
+    'preparationVersion': 3,
+    'supportedMapIds': supportedMapSources.keys.toList(),
     'sourceGeneration': _hash(utf8.encode(canonicalJson(frozen.index))),
     'sourceLock': {
       'vectorSourceRevision': vectorSourceRevision,
@@ -507,6 +565,155 @@ Future<Map<String, dynamic>> rebuildCandidate(
   return manifest;
 }
 
+void _requireMapInventory(List<Map> maps, Set<String> expected) {
+  final ids = maps.map((map) => map['id']).toSet();
+  if (maps.length != expected.length ||
+      ids.length != expected.length ||
+      !ids.containsAll(expected)) {
+    throw FormatException(
+      'Candidate requires exact supported map inventory; '
+      'missing ${expected.difference(ids)}, unexpected ${ids.difference(expected)}',
+    );
+  }
+}
+
+List<Map<String, Object?>> _prepareFrozenQuests(
+  Map<String, Map<String, dynamic>> sources,
+  Map<String, dynamic> markerSnapshot,
+  Map<String, Object?> local,
+) {
+  final maps = (markerSnapshot['data'] as Map)['maps'] as Map;
+  final source = maps.values.cast<Map>().singleWhere(
+    (map) => map['normalizedName'] == local['sourceKey'],
+  );
+  final taskData = sources['quests/tasks.json']!['data'] as Map;
+  return prepareQuestMarkers(
+    mapId: source['id'] as String,
+    tasks: Map<String, dynamic>.from(taskData['tasks'] as Map),
+    questItems: Map<String, dynamic>.from(taskData['questItems'] as Map),
+    translations: Map<String, dynamic>.from(
+      sources['quests/tasks_en.json']!['data'] as Map,
+    ),
+    questItemTranslations: Map<String, dynamic>.from(
+      sources['quests/tasks_en.json']!['data'] as Map,
+    ),
+    traders: Map<String, dynamic>.from(
+      sources['quests/traders.json']!['data'] as Map,
+    ),
+    traderTranslations: Map<String, dynamic>.from(
+      sources['quests/traders_en.json']!['data'] as Map,
+    ),
+  );
+}
+
+Future<List<Map<String, Object?>>> _prepareFloorTiles(
+  FrozenInputs frozen,
+  Directory candidate,
+  String mapId,
+  String floorId,
+  Set<String> emptyTileWitnesses,
+  Map<String, PngInspection> decodedTiles,
+  void Function(int x, int y, PngInspection decoded) onVisible,
+) async {
+  final inventory = <Map<String, Object?>>[];
+  for (var x = 0; x < 16; x++) {
+    for (var y = 0; y < 16; y++) {
+      final path = rawTilePath(mapId, floorId, x, y);
+      final bytes = await frozen.bytes(path);
+      final sourceHash = _hash(bytes);
+      final decoded = decodedTiles.putIfAbsent(
+        sourceHash,
+        () => inspectPng(bytes),
+      );
+      if (decoded.empty && emptyTileWitnesses.add(sourceHash)) {
+        // Deduplicate by frozen source identity, not byte length or a
+        // manifest assertion. Promotion can decode this original PNG
+        // without the external raw cache even for omitted empty tiles.
+        await _write(candidate, _emptyTileWitnessPath(sourceHash), bytes);
+      }
+      final tile = <String, Object?>{
+        'x': x,
+        'y': y,
+        'empty': decoded.empty,
+        'sourcePath': path,
+        'sourceSha256': sourceHash,
+      };
+      if (!decoded.empty) {
+        final output = 'artwork/$mapId/$floorId/$x/$y.png';
+        await _write(candidate, output, bytes);
+        tile['path'] = output;
+        tile['alphaBounds'] = [
+          decoded.left,
+          decoded.top,
+          decoded.right,
+          decoded.bottom,
+        ];
+        onVisible(x, y, decoded);
+      }
+      inventory.add(tile);
+    }
+  }
+  if (inventory.every((t) => t['empty'] == true)) {
+    throw FormatException('Required floor $floorId has no decoded artwork');
+  }
+  return inventory;
+}
+
+/// A vector map's floor that exists only as published tiles.
+bool _isRasterOverlay(Map floor) => floor['sourceTileUrl'] != null;
+
+List<Map<String, Object?>> _svgFloors(List<Map<String, Object?>> floors) => [
+  for (final floor in floors)
+    if (!_isRasterOverlay(floor)) floor,
+];
+
+Future<Map<String, Object?>> _prepareDependencyGrid(
+  FrozenInputs frozen,
+  Directory candidate,
+  String mapId,
+  String dependencyId,
+  Set<String> emptyWitnesses,
+  Map<String, PngInspection> decodedTiles,
+) async {
+  final inventory = <Map<String, Object?>>[];
+  for (var x = 0; x < 16; x++) {
+    for (var y = 0; y < 16; y++) {
+      final path = rawTilePath(mapId, 'dependency-$dependencyId', x, y);
+      final bytes = await frozen.bytes(path);
+      final hash = _hash(bytes);
+      final decoded = decodedTiles.putIfAbsent(hash, () => inspectPng(bytes));
+      if (decoded.empty && emptyWitnesses.add(hash)) {
+        await _write(candidate, _emptyTileWitnessPath(hash), bytes);
+      }
+      final tile = <String, Object?>{
+        'x': x,
+        'y': y,
+        'empty': decoded.empty,
+        'sourcePath': path,
+        'sourceSha256': hash,
+      };
+      if (!decoded.empty) {
+        final output = 'artwork/dependencies/$mapId/$dependencyId/$x/$y.png';
+        await _write(candidate, output, bytes);
+        tile['path'] = output;
+        tile['alphaBounds'] = [
+          decoded.left,
+          decoded.top,
+          decoded.right,
+          decoded.bottom,
+        ];
+      }
+      inventory.add(tile);
+    }
+  }
+  if (inventory.every((tile) => tile['empty'] == true)) {
+    throw FormatException(
+      'Required raster dependency $mapId/$dependencyId has no artwork',
+    );
+  }
+  return {'tiles': inventory};
+}
+
 List<String> _floorComponents(Map<String, Object?> floor) => [
   ...(floor['componentIds'] as List? ?? [floor['id']]).cast<String>(),
   ...(floor['attachedIds'] as List).cast<String>(),
@@ -524,6 +731,40 @@ void _validateCalibration(Map<String, Object?> local) {
   if (canonicalJson(local) != canonicalJson(expected)) {
     throw FormatException(
       'Calibration revision mismatch for ${local['sourceKey']}; changes require a new preparation revision',
+    );
+  }
+}
+
+void _validateMetadataCalibration(
+  Map<String, Object?> local,
+  Map<String, dynamic> upstream,
+) {
+  final geometry = local['geometry'] as Map;
+  final evidence = local['calibrationEvidence'] as Map?;
+  String numbers(Object? value) {
+    if (value is List) return '[${value.map(numbers).join(',')}]';
+    if (value is! num || !value.isFinite) {
+      throw const FormatException('Missing finite source calibration numbers');
+    }
+    return value.toDouble().toString();
+  }
+
+  final bounds = local['kind'] == 'vector'
+      ? upstream['svgBounds'] ?? upstream['bounds']
+      : upstream['bounds'];
+  if (geometry['legacyPinBounds'] != null &&
+      numbers(geometry['legacyPinBounds']) !=
+          numbers(upstream['svgBounds'] ?? upstream['bounds'])) {
+    throw FormatException(
+      'Frozen original legacy pin basis changed for ${local['id']}',
+    );
+  }
+  if (upstream['coordinateRotation'] != geometry['rotation'] ||
+      numbers(upstream['transform']) !=
+          numbers(evidence?['sourceAffine'] ?? geometry['affine']) ||
+      numbers(bounds) != numbers(geometry['bounds'])) {
+    throw FormatException(
+      'Frozen metadata calibration changed for ${local['id']}',
     );
   }
 }
@@ -548,6 +789,7 @@ Future<void> compileCandidate(Directory candidate) async {
   for (final map in manifest['maps'] as List) {
     if (map['kind'] != 'vector') continue;
     for (final floor in map['floors'] as List) {
+      if (_isRasterOverlay(floor as Map)) continue;
       for (final component in floor['artwork']['components'] as List) {
         await _compile(
           candidate,
@@ -656,14 +898,32 @@ Future<Map<String, dynamic>> validateCandidate(
   required('evidence/terms/svg-maps-README.md');
   required('evidence/terms/svg-maps-LICENSE.md');
   final maps = (manifest['maps'] as List).cast<Map<String, dynamic>>();
-  if (maps.length != 3 ||
-      maps.map((m) => m['id']).toSet().length != 3 ||
-      maps.map((m) => m['id']).toSet().difference({
-        'interchange',
-        'thelab',
-        'icebreaker',
-      }).isNotEmpty) {
-    throw const FormatException('Candidate requires exactly all three maps');
+  final version = manifest['preparationVersion'];
+  if (version != 2 && version != 3) {
+    throw const FormatException('Unsupported preparation version');
+  }
+  final expectedIds = version == 2
+      ? const {'interchange', 'thelab', 'icebreaker'}
+      : supportedMapSources.keys.toSet();
+  _requireMapInventory(maps, expectedIds);
+  if (version == 3) {
+    if (maps.any((map) => map['sourceKey'] != supportedMapSources[map['id']])) {
+      throw const FormatException('Candidate source identity contract changed');
+    }
+    if (canonicalJson(manifest['supportedMapIds']) !=
+        canonicalJson(supportedMapSources.keys.toList())) {
+      throw const FormatException(
+        'Candidate supported identity contract changed',
+      );
+    }
+    for (final path in const [
+      'quests/tasks.json',
+      'quests/tasks_en.json',
+      'quests/traders.json',
+      'quests/traders_en.json',
+    ]) {
+      required('evidence/$path');
+    }
   }
   final sourceIndex = await _readJson(candidate, 'evidence/sources.json');
   if (manifest['sourceGeneration'] !=
@@ -716,11 +976,22 @@ Future<Map<String, dynamic>> validateCandidate(
   final translations =
       (await _readJson(candidate, 'evidence/markers/maps_en.json'))['data']
           as Map<String, dynamic>;
+  final questSources = <String, Map<String, dynamic>>{
+    if (version == 3)
+      for (final path in const [
+        'quests/tasks.json',
+        'quests/tasks_en.json',
+        'quests/traders.json',
+        'quests/traders_en.json',
+      ])
+        path: await _readJson(candidate, 'evidence/$path'),
+  };
   for (final map in maps) {
     final expected = calibrationsBySource[map['sourceKey']];
     if (expected == null ||
         map['id'] != expected['id'] ||
         map['kind'] != expected['kind'] ||
+        map['sourceSvgPath'] != expected['sourceSvgPath'] ||
         canonicalJson(map['geometry']) != canonicalJson(expected['geometry']) ||
         canonicalJson(map['artworkFrame']) !=
             canonicalJson(expected['artworkFrame'])) {
@@ -729,21 +1000,28 @@ Future<Map<String, dynamic>> validateCandidate(
       );
     }
     if (canonicalJson(map['markers']) !=
-        canonicalJson(prepareMarkers(sourceMarkers, translations, expected))) {
+        canonicalJson([
+          ...prepareMarkers(sourceMarkers, translations, expected),
+          if (version == 3)
+            ..._prepareFrozenQuests(questSources, sourceMarkers, expected),
+        ])) {
       throw const FormatException(
         'Markers differ from independently frozen source',
       );
     }
     final floors = (map['floors'] as List).cast<Map<String, dynamic>>();
-    final expectedFloors = reconcileFloors(
-      expected,
-      interactiveMetadata(sourceMetadata, map['sourceKey'] as String),
+    final upstream = interactiveMetadata(
+      sourceMetadata,
+      map['sourceKey'] as String,
     );
+    if (version == 3) _validateMetadataCalibration(expected, upstream);
+    final expectedFloors = reconcileFloors(expected, upstream);
     if (floors.length != expectedFloors.length) {
       throw const FormatException('Candidate lost floor families');
     }
     if (map['kind'] == 'vector') {
-      const sourcePath = 'evidence/$vectorSourcePath';
+      final sourcePath =
+          'evidence/${expected['sourceSvgPath'] as String? ?? vectorSourcePath}';
       required(sourcePath);
       final source = await packFile(candidate, sourcePath).readAsString();
       if (canonicalJson(map['artworkFrame']) !=
@@ -754,8 +1032,10 @@ Future<Map<String, dynamic>> validateCandidate(
           'Vector artwork frame differs from frozen source/calibration',
         );
       }
+      validateSvgFloorInventory(source, _svgFloors(expectedFloors));
       final layerIds = {
-        for (final floor in expectedFloors) ..._floorComponents(floor),
+        for (final floor in _svgFloors(expectedFloors))
+          ..._floorComponents(floor),
       };
       final sourceOrder = svgLayerOrder(source, layerIds);
       if (canonicalJson(map['layerOrder']) != canonicalJson(sourceOrder)) {
@@ -771,10 +1051,12 @@ Future<Map<String, dynamic>> validateCandidate(
         throw const FormatException('Candidate changed local floor metadata');
       }
       final art = floor['artwork'] as Map<String, dynamic>;
-      if (map['kind'] == 'vector') {
+      if (map['kind'] == 'vector' && !_isRasterOverlay(expectedFloors[i])) {
         final components = (art['components'] as List)
             .cast<Map<String, dynamic>>();
-        final ids = _floorComponents(expectedFloors[i]);
+        final ids = (map['layerOrder'] as List)
+            .where(_floorComponents(expectedFloors[i]).contains)
+            .toList();
         if (canonicalJson(components.map((c) => c['id']).toList()) !=
             canonicalJson(ids)) {
           throw const FormatException(
@@ -799,12 +1081,12 @@ Future<Map<String, dynamic>> validateCandidate(
           ).readAsString();
           final source = await packFile(
             candidate,
-            'evidence/$vectorSourcePath',
+            'evidence/${expected['sourceSvgPath'] as String? ?? vectorSourcePath}',
           ).readAsString();
           if (normalized !=
               normalizeSvgFloor(source, {
                 component['id'] as String,
-              }, _vectorSelectionIds(expectedFloors))) {
+              }, _vectorSelectionIds(_svgFloors(expectedFloors)))) {
             throw const FormatException(
               'Vector component differs from dependency-closed frozen source',
             );
@@ -840,71 +1122,42 @@ Future<Map<String, dynamic>> validateCandidate(
           }
         }
       } else {
-        final inventory = art['tiles'] as List;
-        if (inventory.length != 256) {
-          throw const FormatException('Raster floor requires full z4 grid');
-        }
-        final coordinates = <String>{};
-        var visible = false;
-        for (final tile in inventory) {
-          final x = tile['x'] as int, y = tile['y'] as int;
-          if (x < 0 || x > 15 || y < 0 || y > 15 || !coordinates.add('$x/$y')) {
-            throw const FormatException('Invalid raster tile closure');
-          }
-          final rawPath = rawTilePath(
-            map['id'] as String,
-            floor['id'] as String,
-            x,
-            y,
-          );
-          final sourceHash = frozenHashes[rawPath];
-          if (sourceHash == null ||
-              tile['sourcePath'] != rawPath ||
-              tile['sourceSha256'] != sourceHash) {
-            throw const FormatException(
-              'Raster tile differs from frozen source inventory',
-            );
-          }
-          if (tile['empty'] is! bool) {
-            throw const FormatException('Invalid alpha-empty tile record');
-          }
-          final empty = tile['empty'] as bool;
-          if (empty && (tile['path'] != null || tile['alphaBounds'] != null)) {
-            throw const FormatException('Invalid alpha-empty tile record');
-          }
-          final path = empty
-              ? _emptyTileWitnessPath(sourceHash)
-              : tile['path'] as String;
-          required(path);
-          if (outputs[path] != sourceHash) {
-            throw const FormatException(
-              'Raster witness differs from frozen source identity',
-            );
-          }
-          var decoded = decodedTiles[sourceHash];
-          if (decoded == null) {
-            decoded = inspectPng(await packFile(candidate, path).readAsBytes());
-            decodedTiles[sourceHash] = decoded;
-          }
-          if (decoded.empty != empty ||
-              (!empty &&
-                  canonicalJson(tile['alphaBounds']) !=
-                      canonicalJson([
-                        decoded.left,
-                        decoded.top,
-                        decoded.right,
-                        decoded.bottom,
-                      ]))) {
-            throw const FormatException(
-              'Raster decoded/source closure mismatch',
-            );
-          }
-          if (!empty) visible = true;
-        }
-        if (!visible) {
-          throw const FormatException('Raster floor has no artwork');
-        }
+        await _validateRasterGrid(
+          candidate,
+          map['id'] as String,
+          floor['id'] as String,
+          art,
+          frozenHashes,
+          outputs,
+          decodedTiles,
+          required,
+          outputRoot: 'artwork/${map['id']}/${floor['id']}',
+        );
       }
+    }
+    final expectedDependencies = (expected['rasterDependencies'] as List? ?? [])
+        .cast<Map>();
+    final dependencies = (map['rasterDependencies'] as List? ?? []).cast<Map>();
+    if (dependencies.length != expectedDependencies.length) {
+      throw const FormatException('Candidate lost raster dependencies');
+    }
+    for (var i = 0; i < dependencies.length; i++) {
+      final dependency = dependencies[i];
+      final metadata = Map<String, dynamic>.from(dependency)..remove('artwork');
+      if (canonicalJson(metadata) != canonicalJson(expectedDependencies[i])) {
+        throw const FormatException('Raster dependency metadata changed');
+      }
+      await _validateRasterGrid(
+        candidate,
+        map['id'] as String,
+        'dependency-${dependency['id']}',
+        Map<String, dynamic>.from(dependency['artwork'] as Map),
+        frozenHashes,
+        outputs,
+        decodedTiles,
+        required,
+        outputRoot: 'artwork/dependencies/${map['id']}/${dependency['id']}',
+      );
     }
     final markers = map['markers'] as List;
     if (markers.isEmpty) {
@@ -947,6 +1200,79 @@ Future<Map<String, dynamic>> validateCandidate(
     }
   }
   return manifest;
+}
+
+Future<void> _validateRasterGrid(
+  Directory candidate,
+  String mapId,
+  String sourceFloorId,
+  Map<String, dynamic> art,
+  Map<String, String> frozenHashes,
+  Map<String, String> outputs,
+  Map<String, PngInspection> decodedTiles,
+  void Function(String) required, {
+  required String outputRoot,
+}) async {
+  final inventory = art['tiles'] as List;
+  if (inventory.length != 256) {
+    throw const FormatException('Raster floor requires full z4 grid');
+  }
+  final coordinates = <String>{};
+  var visible = false;
+  for (final tile in inventory) {
+    final x = tile['x'] as int, y = tile['y'] as int;
+    if (x < 0 || x > 15 || y < 0 || y > 15 || !coordinates.add('$x/$y')) {
+      throw const FormatException('Invalid raster tile closure');
+    }
+    final rawPath = rawTilePath(mapId, sourceFloorId, x, y);
+    final sourceHash = frozenHashes[rawPath];
+    if (sourceHash == null ||
+        tile['sourcePath'] != rawPath ||
+        tile['sourceSha256'] != sourceHash) {
+      throw const FormatException(
+        'Raster tile differs from frozen source inventory',
+      );
+    }
+    if (tile['empty'] is! bool) {
+      throw const FormatException('Invalid alpha-empty tile record');
+    }
+    final empty = tile['empty'] as bool;
+    if (empty && (tile['path'] != null || tile['alphaBounds'] != null)) {
+      throw const FormatException('Invalid alpha-empty tile record');
+    }
+    if (!empty && tile['path'] != '$outputRoot/$x/$y.png') {
+      throw const FormatException(
+        'Raster path differs from canonical identity',
+      );
+    }
+    final path = empty
+        ? _emptyTileWitnessPath(sourceHash)
+        : tile['path'] as String;
+    required(path);
+    if (outputs[path] != sourceHash) {
+      throw const FormatException(
+        'Raster witness differs from frozen source identity',
+      );
+    }
+    var inspection = decodedTiles[sourceHash];
+    if (inspection == null) {
+      inspection = inspectPng(await packFile(candidate, path).readAsBytes());
+      decodedTiles[sourceHash] = inspection;
+    }
+    if (inspection.empty != empty ||
+        (!empty &&
+            canonicalJson(tile['alphaBounds']) !=
+                canonicalJson([
+                  inspection.left,
+                  inspection.top,
+                  inspection.right,
+                  inspection.bottom,
+                ]))) {
+      throw const FormatException('Raster decoded/source closure mismatch');
+    }
+    if (!empty) visible = true;
+  }
+  if (!visible) throw const FormatException('Raster floor has no artwork');
 }
 
 List<Map<String, Object?>> prepareMarkers(

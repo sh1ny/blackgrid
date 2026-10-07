@@ -12,6 +12,7 @@ import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/app.dart';
 
 // Run explicitly with Flutter --profile or --release. This exercises the real
@@ -81,7 +82,18 @@ Future<void> main() async {
     credentials: _NoCredentials(),
     client: _NoRequests(),
   );
+  final expectedMapIds = supportedMaps.toSet();
   await services.initialize();
+  final actualMapIds = services.maps.maps.map((map) => map.id).toSet();
+  if (actualMapIds.length != expectedMapIds.length ||
+      !actualMapIds.containsAll(expectedMapIds)) {
+    await services.dispose();
+    throw StateError(
+      'All-map qualification requires exactly the supported inventory; '
+      'missing: ${expectedMapIds.difference(actualMapIds)}, '
+      'unexpected: ${actualMapIds.difference(expectedMapIds)}',
+    );
+  }
   final initialMapClock = Stopwatch()..start();
   await services.settings.setMap('interchange');
   runApp(BlackgridApp(services: services));
@@ -107,7 +119,7 @@ Future<void> main() async {
   try {
     for (var cycle = 0; cycle < 5; cycle++) {
       await _requireGameClosed();
-      for (final mapId in ['interchange', 'thelab', 'icebreaker']) {
+      for (final mapId in supportedMaps) {
         final clock = Stopwatch()..start();
         await services.settings.setMap(mapId);
         services.maps.fit();
@@ -168,7 +180,7 @@ Future<void> main() async {
         rasterP95 = _p95(raster),
         floorP95 = _p95(warmFloors);
     stdout.writeln(
-      'BLACKGRID_M3_NATIVE_METRICS ${jsonEncode({
+      'BLACKGRID_M5_NATIVE_METRICS ${jsonEncode({
         'network': 'HttpClient creation forbidden',
         'packVersion': (await services.maps.loader.load()).version,
         'viewport': {'width': services.maps.viewportSize.width, 'height': services.maps.viewportSize.height},
@@ -196,7 +208,7 @@ Future<void> main() async {
     services.maps.fit();
     await _ready(services);
     stdout.writeln(
-      'BLACKGRID_M3_NATIVE_READY — actual Map shell remains open for UI inspection',
+      'BLACKGRID_M5_NATIVE_READY — actual Map shell remains open for UI inspection',
     );
   } finally {
     SchedulerBinding.instance.removeTimingsCallback(record);

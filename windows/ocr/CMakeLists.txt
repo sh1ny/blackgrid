@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.18)
+project(blackgrid_panel_ocr LANGUAGES CXX)
+if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message(FATAL_ERROR "Map OCR requires Windows x64")
+endif()
+# Windows.Media.Ocr and WIC are OS components; nothing is redistributed.
+add_library(blackgrid_panel_ocr SHARED panel_ocr.cpp)
+target_compile_features(blackgrid_panel_ocr PRIVATE cxx_std_20)
+target_compile_options(blackgrid_panel_ocr PRIVATE /W4 /EHsc /permissive-)
+set_property(TARGET blackgrid_panel_ocr PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_link_libraries(blackgrid_panel_ocr PRIVATE windowsapp windowscodecs ole32)

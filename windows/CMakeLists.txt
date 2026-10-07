@@ -87,6 +87,17 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
+# Map-owned saved-panel OCR over the OS Windows.Media.Ocr engine, loaded
+# app-local beside the executable.
+add_subdirectory("ocr")
+install(FILES "$<TARGET_FILE:blackgrid_panel_ocr>"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+# Bind the installed DLL to its exact build; runtime refuses any mismatch.
+install(CODE "
+  file(SHA256 \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_panel_ocr.dll\" OCR_DLL_HASH)
+  file(WRITE \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_panel_ocr.dll.sha256\" \"\${OCR_DLL_HASH}\")
+  " COMPONENT Runtime)
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

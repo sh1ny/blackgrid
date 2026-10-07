@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_floors.dart';
 import '../domain/map_geometry.dart';
+import '../domain/map_marker_query.dart';
 import '../domain/settings.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map.dart';
@@ -43,6 +44,17 @@ class MapController extends ChangeNotifier {
   MapViewTransform _transform = MapViewTransform();
   int _generation = 0;
   int _inventoryGeneration = 0;
+  int _contentGeneration = 0;
+  String _search = '';
+  List<String> _searchTerms = const [];
+  String _questName = '';
+  String _questTrader = '';
+  String? _selectedMarkerId;
+  Set<String> _raidHighlights = const {};
+  GamePoint? _playerPosition;
+  double? _forwardX;
+  double? _forwardZ;
+  final Map<String, bool> _automaticFloors = {};
   bool _disposed = false;
   bool _loading = false;
   bool _inventoryLoading = false;
@@ -50,6 +62,21 @@ class MapController extends ChangeNotifier {
 
   List<PreparedMap> get maps => _pack?.maps ?? const [];
   String? get selectedMapId => _selectedMapId;
+
+  /// Changes only when selected map or prepared content authority changes.
+  int get contentGeneration => _contentGeneration;
+  String get search => _search;
+  String get questName => _questName;
+  String get questTrader => _questTrader;
+  GamePoint? get playerPosition => _playerPosition;
+  bool get automaticFloorSupported =>
+      _floorSelection?.policy.supportsAutomaticHeight ?? false;
+  bool get automaticFloorFollowing =>
+      automaticFloorSupported && (_automaticFloors[_selectedMapId] ?? true);
+  Set<String> get applicableCategories => {
+    ...?_preparedMap?.categories,
+    'CustomPins',
+  };
   PreparedMap? get preparedMap => _preparedMap;
   NativeMapScene? get scene => _scene;
   MapFloorSelection? get floorSelection => _floorSelection;
@@ -68,6 +95,11 @@ class MapController extends ChangeNotifier {
   }) async {
     if (_disposed) return;
     final inventoryGeneration = ++_inventoryGeneration;
+    ++_contentGeneration;
+    _markerPositions.clear();
+    _floors.clear();
+    _views.clear();
+    _clearEvidence();
     ++_generation;
     _selectedMapId = selectedMapId;
     _categoryVisibility = Map.unmodifiable(categoryVisibility);
@@ -95,13 +127,16 @@ class MapController extends ChangeNotifier {
     }
   }
 
-  /// Applies a map identity only after the caller's settings save succeeds.
+  /// Applies the caller's effective selection authority: a durable manual
+  /// identity or the Map session's detected saved-log identity.
   ///
   /// Unsupported/unbundled identities remain authoritative but expose an
   /// unavailable state. A prior map's scene is cleared before any await.
   Future<void> selectPersistedMap(String id) async {
     if (_disposed || id == _selectedMapId) return;
     ++_generation;
+    ++_contentGeneration;
+    _clearEvidence();
     _selectedMapId = id;
     _invalidateMarkers();
     _clearScene();
@@ -156,6 +191,119 @@ class MapController extends ChangeNotifier {
     if (_disposed || mapEquals(_categoryVisibility, values)) return;
     _categoryVisibility = Map.unmodifiable(values);
     _invalidateMarkers();
+    notifyListeners();
+  }
+
+  void setSearch(String value) {
+    if (_disposed || value == _search) return;
+    _search = value;
+    _searchTerms = mapSearchTerms(value);
+    _invalidateMarkers();
+    notifyListeners();
+  }
+
+  void setQuestFilters({String? name, String? trader}) {
+    if (_disposed) return;
+    final nextName = name ?? _questName;
+    final nextTrader = trader ?? _questTrader;
+    if (nextName == _questName && nextTrader == _questTrader) return;
+    _questName = nextName;
+    _questTrader = nextTrader;
+    _invalidateMarkers();
+    notifyListeners();
+  }
+
+  MapMarkerMetadata metadataFor(PreparedMarker marker) {
+    for (final position
+        in _markerPositions[_selectedMapId] ?? const <_MarkerScenePosition>[]) {
+      if (identical(position.marker, marker)) return position.metadata;
+    }
+    throw ArgumentError('Marker is not in the current prepared map.');
+  }
+
+  /// Selection never changes the view; only explicitly source-linked switches
+  /// receive a linked highlight.
+  void setSelectedMarker(String? id) {
+    if (_disposed || id == _selectedMarkerId) return;
+    _selectedMarkerId = id;
+    _invalidateMarkers();
+    notifyListeners();
+  }
+
+  void setRaidHighlights(Set<String> ids) {
+    if (_disposed || setEquals(ids, _raidHighlights)) return;
+    _raidHighlights = Set.unmodifiable(ids);
+    _invalidateMarkers();
+    notifyListeners();
+  }
+
+  void _clearEvidence() {
+    _playerPosition = null;
+    _forwardX = null;
+    _forwardZ = null;
+    _raidHighlights = const {};
+    _selectedMarkerId = null;
+  }
+
+  /// Heading is a game-world X/Z vector, projected by the map's geometry.
+  void setPlayerSample(
+    GamePoint? position, {
+    double? forwardX,
+    double? forwardZ,
+  }) {
+    if (_disposed) return;
+    if ((forwardX == null) != (forwardZ == null)) {
+      throw ArgumentError('A heading requires both X and Z components.');
+    }
+    if (forwardX != null) {
+      requireFinite(forwardX, 'forwardX');
+      requireFinite(forwardZ!, 'forwardZ');
+      if (forwardX == 0 && forwardZ == 0) {
+        throw ArgumentError('A heading must be nonzero.');
+      }
+    }
+    if (_playerPosition?.x == position?.x &&
+        _playerPosition?.z == position?.z &&
+        _playerPosition?.height == position?.height &&
+        _forwardX == forwardX &&
+        _forwardZ == forwardZ) {
+      return;
+    }
+    _playerPosition = position;
+    _forwardX = forwardX;
+    _forwardZ = forwardZ;
+    if (automaticFloorFollowing) applyOfflineHeight(position?.height);
+    notifyListeners();
+  }
+
+  ViewportPoint? get playerViewportPoint {
+    final map = _preparedMap;
+    final player = _playerPosition;
+    if (map == null || player == null) return null;
+    return _transform.sceneToViewport(map.gameToScene(player));
+  }
+
+  /// A projected direction, not an arbitrary glyph-angle convention.
+  ScenePoint? get playerSceneDirection {
+    final map = _preparedMap;
+    final x = _forwardX;
+    final z = _forwardZ;
+    if (map == null || x == null || z == null) return null;
+    final origin = map.gameToScene(GamePoint(0, 0));
+    final forward = map.gameToScene(GamePoint(x, z));
+    return ScenePoint(forward.x - origin.x, forward.y - origin.y);
+  }
+
+  void centerOnPlayer() {
+    final point = playerViewportPoint;
+    if (_disposed || point == null || !_hasViewport) return;
+    panBy(_viewport.width / 2 - point.x, _viewport.height / 2 - point.y);
+  }
+
+  void setAutomaticFloorFollowing(bool value) {
+    if (_disposed || !automaticFloorSupported) return;
+    _automaticFloors[_selectedMapId!] = value;
+    if (value) applyOfflineHeight(_playerPosition?.height);
     notifyListeners();
   }
 
@@ -220,7 +368,10 @@ class MapController extends ChangeNotifier {
 
   void toggleFloor(String floorId) {
     if (_disposed || _floorSelection == null) return;
-    _setFloors(_floorSelection!.toggle(floorId));
+    final next = _floorSelection!.toggle(floorId);
+    _automaticFloors[_selectedMapId!] = false;
+    _setFloors(next);
+    notifyListeners();
   }
 
   /// Applies a known offline height only to height-capable maps.
@@ -229,7 +380,12 @@ class MapController extends ChangeNotifier {
   /// Conventional vector maps never acquire automatic height behavior from
   /// upstream bands alone. Returns whether a known height was applied.
   bool applyOfflineHeight(double? height) {
-    if (_disposed || _floorSelection == null || height == null) return false;
+    if (_disposed ||
+        _floorSelection == null ||
+        height == null ||
+        !automaticFloorFollowing) {
+      return false;
+    }
     requireFinite(height, 'height');
     final policy = _floorSelection!.policy;
     if (!policy.supportsAutomaticHeight) return false;
@@ -344,16 +500,19 @@ class MapController extends ChangeNotifier {
     MapFloorSelection floors,
   ) {
     final result = <_MarkerProjection>[];
+    MapMarkerMetadata? selected;
+    for (final position
+        in _markerPositions[map.id] ?? const <_MarkerScenePosition>[]) {
+      if (position.marker.id == _selectedMarkerId &&
+          position.marker.category == 'extracts' &&
+          _markerEligible(position, floors)) {
+        selected = position.metadata;
+      }
+    }
     for (final position
         in _markerPositions[map.id] ?? const <_MarkerScenePosition>[]) {
       final marker = position.marker;
-      if (_categoryVisibility[marker.filterKey] == false ||
-          _categoryVisibility[marker.category] == false ||
-          !floors.isVisible(
-            floorId: marker.floorId,
-            height: marker.position.height,
-            unknownHeight: unknownHeightVisibility,
-          )) {
+      if (!_markerEligible(position, floors)) {
         continue;
       }
       final point = _transform.sceneToViewport(position.point);
@@ -377,6 +536,19 @@ class MapController extends ChangeNotifier {
             scenePoint: position.point,
             viewportPoint: point,
             outline: outline,
+            dimmed: !position.metadata.matchesSearch(_searchTerms),
+            raidHighlighted: _raidHighlights.contains(marker.id),
+            linkedHighlighted:
+                marker.category == 'switches' &&
+                selected != null &&
+                ((position.metadata.sourceId != null &&
+                        selected.linkedSwitchIds.contains(
+                          position.metadata.sourceId,
+                        )) ||
+                    (selected.sourceId != null &&
+                        position.metadata.activatedIds.contains(
+                          selected.sourceId,
+                        ))),
           ),
           left,
           top,
@@ -387,6 +559,19 @@ class MapController extends ChangeNotifier {
     }
     return List.unmodifiable(result);
   }
+
+  bool _markerEligible(
+    _MarkerScenePosition position,
+    MapFloorSelection floors,
+  ) =>
+      _categoryVisibility[position.marker.filterKey] != false &&
+      _categoryVisibility[position.marker.category] != false &&
+      position.metadata.matchesQuest(name: _questName, trader: _questTrader) &&
+      floors.isVisible(
+        floorId: position.marker.floorId,
+        height: position.marker.position.height,
+        unknownHeight: unknownHeightVisibility,
+      );
 
   /// Selects a visible marker with a fixed logical-pixel hit radius.
   ProjectedMapMarker? hitTestMarker(ViewportPoint point, {double radius = 18}) {
@@ -436,6 +621,22 @@ class MapController extends ChangeNotifier {
     );
   }
 
+  /// New pointer/keyboard pins must be inside displayed original artwork.
+  /// Existing finite off-artwork records still use [pinAt] without clamping.
+  MapPinCoordinates? pinCreationAt(ViewportPoint point) {
+    final map = _preparedMap;
+    if (_disposed || map == null) return null;
+    final scenePoint = _transform.viewportToScene(point);
+    final extent = map.displayFrame.sceneExtent;
+    if (scenePoint.x < 0 ||
+        scenePoint.y < 0 ||
+        scenePoint.x > extent.width ||
+        scenePoint.y > extent.height) {
+      return null;
+    }
+    return pinAt(point);
+  }
+
   void _clearScene() {
     _scene?.dispose();
     _scene = null;
@@ -461,7 +662,13 @@ class ProjectedMapMarker {
     required this.scenePoint,
     required this.viewportPoint,
     required this.outline,
+    this.dimmed = false,
+    this.linkedHighlighted = false,
+    this.raidHighlighted = false,
   });
+  final bool dimmed;
+  final bool linkedHighlighted;
+  final bool raidHighlighted;
   final PreparedMarker marker;
   final ScenePoint scenePoint;
   final ViewportPoint viewportPoint;
@@ -484,7 +691,15 @@ class _MarkerProjection {
 }
 
 class _MarkerScenePosition {
-  const _MarkerScenePosition(this.marker, this.point, this.outline);
+  _MarkerScenePosition(this.marker, this.point, this.outline)
+    : metadata = MapMarkerMetadata(
+        name: marker.name,
+        type: marker.filterKey,
+        category: marker.category,
+        details: marker.details,
+        source: marker.source,
+      );
+  final MapMarkerMetadata metadata;
   final PreparedMarker marker;
   final ScenePoint point;
   final List<ScenePoint> outline;
