@@ -128,3 +128,44 @@ CHANGES_APPLIED: yes
   - proposal: a new UTF-8 bullet. ADR-0008 records it.
 - **S1 fixed.** D2's function list now includes `GetInitLanguagesAsString`, `Oem` and `GetPageSegMode`.
 - **S4 and S5** are not changed. Install verifies installed bytes through the manifest on every install, and the integrity check covers pins. The archive-checksum risk is already in Risks.
+
+## Round 2 (amendment re-check)
+
+Scope: the D1 amendment in commit 8345f6d (OpenCV source taken through a custom ExternalProject `DOWNLOAD_COMMAND` running `windows/vision/extract_source.cmake` instead of `URL` + `URL_HASH`). Evidence read: `windows/vision/CMakeLists.txt`, `windows/vision/extract_source.cmake`, `windows/vision/verify_inputs.cmake`, `windows/CMakeLists.txt:104-105`, design D1/D8/Mechanism Ledger, and `specs/release-bundle-integrity/spec.md` "Third-party inputs are pinned before they enter a build".
+
+### Guarantees preserved
+
+- **Input pinned, altered/missing input refused.** `bgv_verify_inputs` still runs at configure time, before any target exists (`CMakeLists.txt:16`). It fails on a missing archive (naming `mise run vision:fetch`) or a hash mismatch (naming both hashes), so the spec's "Altered input refused" and "Input missing from the cache" scenarios still hold. `extract_source.cmake` hashes the archive again before every extraction and fails with both hashes. The archive path it receives is `BGV_INPUT_OPENCV_SOURCE`, which `bgv_verify_inputs` has just verified. `inputs[0]` is asserted to be `opencv-source`, so the SHA used for the directory key and the archive path come from the same lock entry.
+- **No network.** No `URL` is set. The download step is a local `cmake -P`, and `UPDATE_COMMAND`/`PATCH_COMMAND` are empty. D8's "no CMake download" rejection still holds.
+- **Partial extraction is not reused.** The stamp `.bgv-extracted-sha256` is written only after `file(ARCHIVE_EXTRACT)` succeeds, and any non-matching or missing stamp causes `REMOVE_RECURSE` of the whole destination before re-extraction. An interrupted extraction, or a truncated stamp, leads to a clean re-extract, not reuse.
+- **No stale tree across pins.** The destination is keyed by the lock SHA (`src-<first 16 hex>`) and the stamp holds the full SHA, so a pin change can never reuse an extraction of different bytes. A prefix collision would only cause a re-extract.
+- **Reuse without re-hashing is within the threat model.** On a stamp hit the step returns without hashing the archive. That is equivalent to the `URL_HASH` design, where ExternalProject never re-verifies the extracted tree once its download stamp exists. The reused tree was produced from verified bytes, and every configure re-hashes the cache. Editing the extracted tree or forging the stamp needs write access to the build directory, which is the same capability as forging ExternalProject's own stamps. That falls under "not tamper-proof" (`architecture.md:85`) and the Ledger's "Signature or Authenticode verification: No" row. The Ledger's "CMake configure re-check" row is unchanged and still accurate.
+- **Configuration mapping.** The install prefix (`opencv-install/$<IF:$<CONFIG:Debug>,Debug,Release>`) and the `--config` mapping are unchanged and match D1's "Configuration mapping". Sharing one source tree across configurations is correct, because the source is configuration-independent.
+
+### Findings
+
+**R2-M1 (Moderate): Changing the pin breaks the build until someone deletes the OpenCV build tree by hand.** The amendment moves `SOURCE_DIR` to `${CMAKE_BINARY_DIR}/opencv/src-<sha16>/opencv-4.13.0`. `BINARY_DIR` is still the default `${CMAKE_BINARY_DIR}/opencv/src/bgv_opencv-build`, which does not depend on the SHA. ExternalProject records the source directory in the configure command (`tmp/bgv_opencv-cfgcmd.txt`), so the first build after a lock change re-runs the OpenCV configure. That configure then runs against a `CMakeCache.txt` generated from the old source directory, and CMake stops with "The source ... does not match the source ... used to generate cache".
+
+This failure is fail-closed, but every developer hits it after the expected pin events, such as an OpenCV bump or the S5 archive re-derivation. The error does not name the fix, which is to delete `build/windows/x64/opencv`. With the original `URL` design, `SOURCE_DIR` was fixed, so this did not happen; the amendment introduced it. The install prefix has a smaller form of the same problem: files from an earlier pin that the new install does not overwrite stay in `opencv-install/<cfg>`.
+
+**R2-m1 (Minor, wording): D1 says the download step "re-checks the archive against the lock SHA-256 (the URL_HASH equivalent)".** It re-checks only when it extracts. A completed extraction of the same SHA is reused without hashing; that is the intended behaviour, and the configure-time check covers the cache. D1 should say so, so that a later reader does not count on a per-configuration re-hash that does not happen.
+
+### Verdict (Round 2)
+
+VERDICT: APPROVE_WITH_CHANGES
+
+### Required Changes (Round 2)
+
+1. **(R2-M1)** In `windows/vision/CMakeLists.txt`, key the OpenCV build tree and the install root by the same SHA prefix as the source. For example, set `BINARY_DIR "${CMAKE_BINARY_DIR}/opencv/build-${BGV_OPENCV_SHORT}"` and `BGV_OPENCV_ROOT "${CMAKE_BINARY_DIR}/opencv-install-${BGV_OPENCV_SHORT}"`; alternatively put source, build and install under one `opencv-${BGV_OPENCV_SHORT}` directory. Then a pin change gets a fresh configure and install with no cache conflict and no leftover files from the earlier pin. Add one sentence about this to D1. The Ledger's "Removing old cache directories: No" row already covers the old directories that accumulate.
+2. **(R2-m1)** In design D1, reword the amendment sentence: the download step hashes the archive against the lock before extracting, and reuses a completed extraction of the same SHA, identified by a stamp written after extraction. The configure-time `bgv_verify_inputs` check still re-hashes the cached archive on every configure.
+
+<!-- yes (applied, and re-checked by the reviewer - only the reviewer sets it) | no (outstanding) | n/a (any other verdict) -->
+CHANGES_APPLIED: yes
+
+### Round 2 re-check (applied changes)
+
+- **R2-M1 resolved.** In `windows/vision/CMakeLists.txt` the source (`opencv/src-<sha16>`), build (`BINARY_DIR opencv/build-<sha16>`) and install root (`opencv-install-<sha16>`) are now all keyed by the pinned hash, so a pin change starts a fresh configure and install. The link inputs (`BGV_OPENCV_PREFIX/lib/...`, lines 160-164) follow the keyed prefix. The coordinator reports that the Release build rebuilt cleanly from these directories; I did not run this re-check myself.
+- **R2-m1 resolved.** D1 (`design.md:57`) now says that configure verifies the archive, that the download step re-hashes only when it extracts, that a completed extraction of the same SHA is reused, and that the build and install trees carry the hash prefix. Task 3.3 (`tasks.md:90`) matches.
+- **Nit (not required):** `design.md:63` still names the prefixes `opencv-install/Release` and `opencv-install/Debug`; the actual paths are now `opencv-install-<sha16>/Release` and `opencv-install-<sha16>/Debug`. The configuration mapping it describes is still correct.
+
+The Round 2 verdict stays APPROVE_WITH_CHANGES. The required changes are applied and re-checked: CHANGES_APPLIED for Round 2 is set to yes above.

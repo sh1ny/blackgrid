@@ -54,13 +54,13 @@ Current state this design builds on:
 ### D1: Owned `blackgrid_vision.dll` that statically links OpenCV `core` and `imgproc`
 
 - **Choice:**
-  - A new CMake subproject, `windows/vision/`, builds OpenCV 4.13.0 with `ExternalProject_Add`. The source archive comes from the verified input cache. Its download step (`windows/vision/extract_source.cmake`) re-checks the archive against the lock SHA-256 (the `URL_HASH` equivalent), then extracts it once into a content-addressed source directory shared by every configuration. ExternalProject's own `URL` step runs once per configuration in a multi-config build, re-extracting and renaming over the source tree; on Windows that rename failed with "Access is denied" during apply.
+  - A new CMake subproject, `windows/vision/`, builds OpenCV 4.13.0 with `ExternalProject_Add`. The source archive comes from the verified input cache. Configure verifies the cached archive against the lock SHA-256 before anything builds. The download step (`windows/vision/extract_source.cmake`) re-checks that hash whenever it extracts, and extracts once into a content-addressed source directory shared by every configuration; a completed extraction of the same SHA-256 is reused without re-hashing. The OpenCV build and install directories carry the same hash prefix, so a pin change starts fresh trees instead of reusing a CMake cache made from the earlier source. ExternalProject's own `URL` step runs once per configuration in a multi-config build, re-extracting and renaming over the source tree; on Windows that rename failed with "Access is denied" during apply.
   - OpenCV is built as static libraries (`BUILD_SHARED_LIBS=OFF`, `BUILD_LIST=core,imgproc`, `BUILD_WITH_STATIC_CRT=ON`). Everything that downloads or adds unneeded third-party code is off: `WITH_IPP`, `WITH_OPENCL`, `WITH_ADE`, `WITH_EIGEN`, `WITH_ITT`, `WITH_PROTOBUF`, `WITH_JPEG/PNG/TIFF/WEBP/OPENEXR/OPENJPEG/IMGCODEC_*` (no `imgcodecs` module), tests, apps, docs and Java/Python.
   - The vision DLL is C++20 with static CRT, links those libraries, and exports a small C ABI (D4).
 - **Configuration mapping:**
   - Flutter's `Release` and `Profile` configurations link an OpenCV build made in `Release` (`/MT`).
   - `Debug` links a separate OpenCV build made in `Debug` (`/MTd`), so `flutter run` keeps working and avoids LNK2038 runtime mismatches.
-  - Each OpenCV configuration is a separate ExternalProject install prefix (`opencv-install/Release`, `opencv-install/Debug`), built once and reused by later builds of that configuration. `Profile` maps to the Release prefix through `$<IF:$<CONFIG:Debug>,Debug,Release>`.
+  - Each OpenCV configuration is a separate ExternalProject install prefix (`opencv-install-<sha16>/Release`, `opencv-install-<sha16>/Debug`), built once and reused by later builds of that configuration. `Profile` maps to the Release prefix through `$<IF:$<CONFIG:Debug>,Debug,Release>`.
 - **Rejected:** the `dartcv4` 2.3.x native-assets hook package, because:
   - it brings a large, version-churning Dart API surface for 5 calls;
   - its hook fetches and builds OpenCV outside our lock and hash pinning;
