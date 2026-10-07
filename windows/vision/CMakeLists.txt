@@ -26,17 +26,20 @@ if(NOT BGV_OPENCV_ID STREQUAL "opencv-source")
   message(FATAL_ERROR "third_party.lock.json: inputs[0] must be opencv-source")
 endif()
 set(BGV_OPENCV_CONFIG "$<IF:$<CONFIG:Debug>,Debug,Release>")
-set(BGV_OPENCV_ROOT "${CMAKE_BINARY_DIR}/opencv-install")
-set(BGV_OPENCV_PREFIX "${BGV_OPENCV_ROOT}/${BGV_OPENCV_CONFIG}")
-# Content-addressed source tree, extracted once and shared by every
-# configuration. ExternalProject's own URL step would re-extract and rename
-# over it for each configuration.
+# Source, build and install trees are all keyed by the pinned archive hash, so
+# a pin change starts fresh trees instead of meeting a CMake cache or leftover
+# files from the earlier source. The source tree is extracted once and shared
+# by every configuration; ExternalProject's own URL step would re-extract and
+# rename over it for each configuration.
 string(SUBSTRING "${BGV_OPENCV_SHA256}" 0 16 BGV_OPENCV_SHORT)
 set(BGV_OPENCV_EXTRACT "${CMAKE_BINARY_DIR}/opencv/src-${BGV_OPENCV_SHORT}")
+set(BGV_OPENCV_ROOT "${CMAKE_BINARY_DIR}/opencv-install-${BGV_OPENCV_SHORT}")
+set(BGV_OPENCV_PREFIX "${BGV_OPENCV_ROOT}/${BGV_OPENCV_CONFIG}")
 
 ExternalProject_Add(bgv_opencv
   PREFIX "${CMAKE_BINARY_DIR}/opencv"
   SOURCE_DIR "${BGV_OPENCV_EXTRACT}/opencv-4.13.0"
+  BINARY_DIR "${CMAKE_BINARY_DIR}/opencv/build-${BGV_OPENCV_SHORT}"
   DOWNLOAD_COMMAND
     ${CMAKE_COMMAND} "-DARCHIVE=${BGV_INPUT_OPENCV_SOURCE}"
       "-DSHA256=${BGV_OPENCV_SHA256}" "-DDEST=${BGV_OPENCV_EXTRACT}"
@@ -120,6 +123,9 @@ ExternalProject_Add(bgv_opencv
     -DWITH_IMGCODEC_PXM=OFF
     -DWITH_IMGCODEC_PFM=OFF
     -DWITH_QUIRC=OFF
+    # Serial code only: no ConcRT scheduler threads alive inside a DLL that
+    # Dart unloads with DynamicLibrary.close(). Callers serialise bgv_* calls.
+    -DOPENCV_DISABLE_THREAD_SUPPORT=ON
     -DCV_TRACE=OFF
     -DOPENCV_GENERATE_PKGCONFIG=OFF
     -DOPENCV_LIB_INSTALL_PATH=lib
@@ -135,3 +141,24 @@ ExternalProject_Add(bgv_opencv
     ${CMAKE_COMMAND} --install <BINARY_DIR> --config ${BGV_OPENCV_CONFIG}
       --prefix ${BGV_OPENCV_PREFIX}
 )
+
+# --- blackgrid_vision.dll: the owned bgv_* C ABI (design D4) -----------------
+# The OpenCV libraries come from the prefix of the matching configuration.
+set(BGV_OPENCV_SUFFIX "$<$<CONFIG:Debug>:d>")
+add_library(blackgrid_vision SHARED "vision.cpp" "vision.h")
+add_dependencies(blackgrid_vision bgv_opencv)
+set_target_properties(blackgrid_vision PROPERTIES
+  CXX_STANDARD 20
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_compile_options(blackgrid_vision PRIVATE /W4 /WX /EHsc /permissive-)
+target_compile_definitions(blackgrid_vision PRIVATE
+  BLACKGRID_VISION_EXPORTS NOMINMAX WIN32_LEAN_AND_MEAN)
+# SYSTEM: OpenCV's own headers are outside /W4 /WX (they trip C4864).
+target_include_directories(blackgrid_vision SYSTEM PRIVATE
+  "${BGV_OPENCV_PREFIX}/include")
+target_link_libraries(blackgrid_vision PRIVATE
+  "${BGV_OPENCV_PREFIX}/lib/opencv_imgproc4130${BGV_OPENCV_SUFFIX}.lib"
+  "${BGV_OPENCV_PREFIX}/lib/opencv_core4130${BGV_OPENCV_SUFFIX}.lib"
+  "${BGV_OPENCV_PREFIX}/lib/3rdparty/zlib${BGV_OPENCV_SUFFIX}.lib")
