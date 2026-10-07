@@ -13,8 +13,8 @@
 |---|---|---|---|---|
 | release-bundle-integrity → Third-party inputs are pinned | Verified input accepted | test/tool/vision/fetch_runtime_test.dart | `fetch places verified input in content-addressed cache` | red |
 | release-bundle-integrity → Third-party inputs are pinned | Altered input refused | test/tool/vision/fetch_runtime_test.dart | `fetch refuses hash mismatch and leaves no cache file` | red |
-| release-bundle-integrity → Third-party inputs are pinned | Altered input refused (build) | test/qualification/m2_vision_cmake_test.dart | `verify_inputs.cmake fails on altered cached input naming both hashes` | red |
-| release-bundle-integrity → Third-party inputs are pinned | Input missing from the cache | test/qualification/m2_vision_cmake_test.dart | `verify_inputs.cmake fails on missing input naming mise run vision:fetch` | red |
+| release-bundle-integrity → Third-party inputs are pinned | Altered input refused (build) | test/qualification/m2_vision_cmake_test.dart | `verify_inputs.cmake fails on altered cached input naming both hashes` | green |
+| release-bundle-integrity → Third-party inputs are pinned | Input missing from the cache | test/qualification/m2_vision_cmake_test.dart | `verify_inputs.cmake fails on missing input naming mise run vision:fetch` | green |
 | release-bundle-integrity → Bundle inventory is exact | Complete bundle passes inventory | test/tool/vision/check_bundle_test.dart | `inventory passes on synthetic complete bundle` | red |
 | release-bundle-integrity → Bundle inventory is exact | Unexpected DLL | test/tool/vision/check_bundle_test.dart | `inventory fails naming unexpected dll` | red |
 | release-bundle-integrity → Bundle inventory is exact | Missing expected file | test/tool/vision/check_bundle_test.dart | `inventory fails naming missing model` | red |
@@ -84,7 +84,7 @@
 
 ## 3. Native build: inputs, OpenCV, vision DLL, install, runtime libraries
 
-- [ ] 3.1 Write `windows/vision/verify_inputs.cmake`, a script usable by `include()` and by `cmake -P`, which reads the lock with `string(JSON)` and `file(SHA256)`-checks each cached input. Write failing tests in `test/qualification/m2_vision_cmake_test.dart` (gated on `BLACKGRID_CMAKE`): `verify_inputs.cmake fails on altered cached input naming both hashes` and `verify_inputs.cmake fails on missing input naming mise run vision:fetch`, plus a passing-case test. Verify: they fail first, then pass after the script is completed; the rows go green.
+- [x] 3.1 Write `windows/vision/verify_inputs.cmake`, a script usable by `include()` and by `cmake -P`, which reads the lock with `string(JSON)` and `file(SHA256)`-checks each cached input. Write failing tests in `test/qualification/m2_vision_cmake_test.dart` (gated on `BLACKGRID_CMAKE`): `verify_inputs.cmake fails on altered cached input naming both hashes` and `verify_inputs.cmake fails on missing input naming mise run vision:fetch`, plus a passing-case test. Verify: they fail first, then pass after the script is completed; the rows go green.
 - [ ] 3.2 Set `cmake_policy(SET CMP0091 NEW)` before `project()` in `windows/CMakeLists.txt`. Verify: after a Release build, the PE imports of `blackgrid_panel_ocr.dll` no longer include `MSVCP140`, `VCRUNTIME140` or `VCRUNTIME140_1`, and the M5 qualification test `test/qualification/m5_panel_ocr_test.dart` still passes with `BLACKGRID_PANEL_OCR_RUNTIME` set.
 - [ ] 3.3 Add `windows/vision/CMakeLists.txt` with the OpenCV 4.13.0 `ExternalProject_Add`:
   - source: the verified cached archive, with `URL_HASH`;
