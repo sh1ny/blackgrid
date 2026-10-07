@@ -98,7 +98,7 @@ The runtime SHALL recognise text from a caller-owned 8-bit image. It SHALL retur
 
 #### Scenario: Blank image
 - **WHEN** a uniformly white image is recognised
-- **THEN** the returned text, trimmed, is empty and no failure is reported
+- **THEN** recognition returns text without failure or truncation. The text is not required to be empty: in raw-line mode the pinned engine, like the reference, can emit short noise for a blank line (amended 2026-10-08 to match the reference)
 
 #### Scenario: Recognition after disposal
 - **WHEN** recognition is requested after the runtime has been disposed

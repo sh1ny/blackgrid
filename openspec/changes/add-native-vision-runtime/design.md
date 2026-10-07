@@ -41,6 +41,7 @@ Current state this design builds on:
   - Native files: OpenCvSharp 4.13.0.20260627, charlesw `Tesseract` NuGet 5.2.0, whose `tesseract50.dll` embeds Tesseract engine 5.0.0 (`tesseract 5.0.0` version string in the fork's binary, per review), plus `leptonica-1.82.0.dll`, and tessdata_fast 4.1.0 `eng.traineddata`.
   - The traineddata SHA-256 is `7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2`, 4,113,088 bytes. It is recorded in `docs/qualification/m0/u2-rights-decision-packet.md:72-74`, and the fork's `Assets\Scanner\rat-eye-integrity.json` holds the DLL hashes.
   - Engine settings: `EngineMode.LstmOnly` and `PageSegMode.RawLine`, with no whitelist (fork `RatEye/Processing/Inspection.cs:360-403`).
+  - Amendment 2026-10-08: on a uniformly white image, Tesseract 5.0.0 with tessdata_fast `eng` in raw-line mode returns short noise (`ee` for 320x48, `an` for 64x32; reproduced directly with `TessBaseAPIGetUTF8Text` outside Blackgrid). The reference runs the same engine and settings, so the runtime does not filter it: a blank image must recognise without failure, not to empty text. Rejecting noise belongs to the item pipeline's matching against known names.
   - OpenCV operations used: `CvtColor`, `Resize` (cubic up, area down), `Threshold(120, 255, BinaryInv)`, `MatchTemplate(CCoeffNormed)` plus `MinMaxLoc`, and a BGR range scan along one row.
 - **Strategy constraints.**
   - Dart owns policy; native code supplies primitives (`docs/IMPLEMENTATION_STRATEGY.md:171-173`).

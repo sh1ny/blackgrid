@@ -49,7 +49,7 @@
 | vision-runtime → Image primitives operate on caller-owned buffers | Template larger than image | test/data/vision/vision_image_test.dart | `template larger than image is invalidImage` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Colour scan with no match | test/qualification/m2_vision_runtime_test.dart | `row scan without match returns none` | red |
 | vision-runtime → OCR reads text from a caller-owned image | Sample title recognised | test/qualification/m2_vision_runtime_test.dart | `self-check title OCR equals expected text` | red |
-| vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR is empty without failure` | red |
+| vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR returns without failure` | red |
 | vision-runtime → OCR reads text from a caller-owned image | Recognition after disposal | test/data/vision/vision_runtime_test.dart | `recognise after dispose returns disposed without native call` | green |
 | vision-runtime → Disposal releases native resources once | Dispose after ready | test/data/vision/vision_runtime_test.dart | `dispose deletes engine and later calls return disposed` | green |
 | vision-runtime → Disposal releases native resources once | Double dispose | test/data/vision/vision_runtime_test.dart | `second dispose is a no-op and delete ran once` | green |
@@ -135,7 +135,7 @@
   - `template crop matches at its location with score >= 0.99`;
   - `row scan without match returns none`;
   - `self-check title OCR equals expected text`;
-  - `white image OCR is empty without failure`.
+  - `white image OCR returns without failure`.
 
   The test process is not `blackgrid.exe` and has no UTF-8 manifest. The Cyrillic case therefore runs through the self-check exe in task 5.5 when the test runner cannot show it; record which path covered it. Verify: with the Release bundle from group 3, all tests pass and the rows go green.
 
