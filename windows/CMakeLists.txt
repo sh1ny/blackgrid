@@ -101,6 +101,9 @@ install(CODE "
   file(WRITE \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_panel_ocr.dll.sha256\" \"\${OCR_DLL_HASH}\")
   " COMPONENT Runtime)
 
+# Item vision runtime (ADR-0008): pinned OpenCV, Tesseract and model inputs.
+add_subdirectory("vision")
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

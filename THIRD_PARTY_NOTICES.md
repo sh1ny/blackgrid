@@ -33,7 +33,7 @@ The item vision runtime (ADR-0008) ships third-party native code and an OCR mode
 - **Source:** <https://github.com/opencv/opencv/archive/refs/tags/4.13.0.zip> (byte-identical at <https://codeload.github.com/opencv/opencv/zip/refs/tags/4.13.0>)
 - **SHA-256:** `431cb489d275da26526581c6735d7d7c0b00f190fe940b3217d386b77aef52c7` (100,344,657 bytes, source archive)
 - **License:** Apache-2.0, verbatim in [Apache License 2.0](#apache-license-2-0) below (read from `opencv-4.13.0/LICENSE` in the pinned archive).
-- **Bundled sub-component:** OpenCV `core` statically links its bundled zlib 1.3.1 (`3rdparty/zlib`). Its terms, verbatim from `opencv-4.13.0/3rdparty/zlib/LICENSE`:
+- **Bundled sub-components:** OpenCV `core` statically links its bundled zlib 1.3.1 (`3rdparty/zlib`) and Berkeley SoftFloat Release 3c (`modules/core/src/softfloat.cpp`). These are the licenses OpenCV's own install step records for this configuration (dlpack, also listed there, is used only by the Python bindings, which are not built). zlib terms, verbatim from `opencv-4.13.0/3rdparty/zlib/LICENSE`:
 
 ```text
 Copyright notice:
@@ -58,6 +58,47 @@ Copyright notice:
 
   Jean-loup Gailly        Mark Adler
   jloup@gzip.org          madler@alumni.caltech.edu
+```
+
+  SoftFloat terms, verbatim from the installed `licenses/SoftFloat-COPYING.txt`:
+
+```text
+
+License for Berkeley SoftFloat Release 3c
+
+John R. Hauser
+2017 February 10
+
+The following applies to the whole of SoftFloat Release 3c as well as to
+each source file individually.
+
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions, and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions, and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS", AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE
+DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 <a id="tesseract-5-0-0"></a>

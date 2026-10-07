@@ -86,7 +86,7 @@
 
 - [x] 3.1 Write `windows/vision/verify_inputs.cmake`, a script usable by `include()` and by `cmake -P`, which reads the lock with `string(JSON)` and `file(SHA256)`-checks each cached input. Write failing tests in `test/qualification/m2_vision_cmake_test.dart` (gated on `BLACKGRID_CMAKE`): `verify_inputs.cmake fails on altered cached input naming both hashes` and `verify_inputs.cmake fails on missing input naming mise run vision:fetch`, plus a passing-case test. Verify: they fail first, then pass after the script is completed; the rows go green.
 - [x] 3.2 Set `cmake_policy(SET CMP0091 NEW)` before `project()` in `windows/CMakeLists.txt`. Verify: after a Release build, the PE imports of `blackgrid_panel_ocr.dll` no longer include `MSVCP140`, `VCRUNTIME140` or `VCRUNTIME140_1`, and the M5 qualification test `test/qualification/m5_panel_ocr_test.dart` still passes with `BLACKGRID_PANEL_OCR_RUNTIME` set.
-- [ ] 3.3 Add `windows/vision/CMakeLists.txt` with the OpenCV 4.13.0 `ExternalProject_Add`:
+- [x] 3.3 Add `windows/vision/CMakeLists.txt` with the OpenCV 4.13.0 `ExternalProject_Add`:
   - source: the verified cached archive, re-checked against the lock SHA-256 in the download step (the `URL_HASH` equivalent) and extracted once into a content-addressed directory shared by every configuration (design D1);
   - modules and options: `BUILD_LIST=core,imgproc`, static libraries, `BUILD_WITH_STATIC_CRT=ON`, and IPP, OpenCL, ADE, Eigen, ITT, protobuf, image codecs, tests, apps and bindings all off;
   - configurations: separate Release (`/MT`, used by Release and Profile) and Debug (`/MTd`) install prefixes.
