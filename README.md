@@ -1,86 +1,276 @@
-# blackgrid
+# Blackgrid
 
-Independent **Windows desktop only** tactical companion. M1 provides real mode-scoped catalog search, manual item inspection, conservative Keep/Later/Check/Sell decisions, protected read-only Tracker access, durable identity history and custom pins, and explicit legacy JSON import.
+![version](https://img.shields.io/badge/version-0.1.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.6-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
-Primary navigation is **Map and Scanner only**. The native Map workspace renders all 13 supported maps (Factory, Customs, Woods, Shoreline, Interchange, Labs, Reserve, Lighthouse, Streets of Tarkov, Ground Zero, Terminal, Icebreaker and Labyrinth) from a locally bundled, versioned pack. Map owns its log/session inputs, saved-screenshot player samples, marker queries and saved-panel exfil/transit OCR; it does not use Scanner capture or recognition. Empty or unavailable evidence is shown honestly rather than replaced with demonstration data. There is no overlay, Database browser, continuous position tracking, game-memory inspection or progression-write control.
+A Windows desktop companion for raid-time loot decisions, built in Dart/Flutter. It has two areas, **Map** and **Scanner**. It reads public catalog data from json.tarkov.dev and, if you opt in, read-only progress from tarkovtracker.org. It replaces the older reference companion's WebView2 map with a native Flutter renderer that uses a bundled, hash-addressed map pack. It also adds one conservative decision engine: an unknown or stale input gives **Check / May Need**, never a confident Sell. The game itself is never touched. Blackgrid reads only the game's log files and the screenshots you save.
 
-The visual hierarchy follows [the Map and Scanner references](docs/vision/): compact shared navigation, near-black green surfaces, muted gold panel rules, Scanner's three columns and split lower evidence, and Map's broad workspace with a scrollable right rail. These images are design references, not shipped artwork or capture evidence. Historical native-map evidence remains in [M3 status](docs/qualification/m3/STATUS.md); current independent-Map delivery and verification state is recorded in [M5 status](docs/qualification/m5/STATUS.md). M3 verification waivers do not qualify M5. Implemented rendering and offline package integrity do not establish live-game parity.
+## ✨ What it adds
 
-## Prerequisites
+- 🛡️ **Conservative keep/sell advice.** One pure-Dart [`DecisionEngine`](lib/domain/decision_engine.dart) ranks **Keep → Keep for later → Check / May Need → Flea → Trader → Price unavailable**. Missing catalog or progress authority, unknown FIR, an unresolved requirement or a quote older than one hour all fall to Check.
+- 🗺️ **Native map, no WebView.** All 13 maps render from a prepared pack in [`assets/maps/`](assets/maps/active.json). SVG is compiled to `vector_graphics` at preparation time, and the [scene](lib/maps/native_map_scene.dart) keeps decoded tiles and pictures in a 192 MiB LRU.
+- 📍 **Session evidence from files only.** [`SessionLogReader`](lib/data/session_log_reader.dart) polls the newest game log every 250 ms for map and mode. [Screenshot filenames](lib/domain/screenshot_filename.dart) give position and heading. Saved exit panels are read with Windows `Windows.Media.Ocr` through a hash-bound DLL ([`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp)).
+- 🔐 **Read-only progress with protected tokens.** [`TrackerClient`](lib/data/tracker_client.dart) only sends GET requests to `api.tarkovtracker.org`, with a 30 s timeout. Tokens are mode-scoped (`PVP_`, `PVE_`, `SZN_`) and stored as current-user DPAPI ciphertext by the [Windows runner](windows/runner/credential_protector.cpp), never in SQLite.
+- 💾 **One local store.** A single Drift SQLite file ([`database.dart`](lib/data/database.dart)) holds settings, pins, item history and one catalog snapshot per mode. The schema is versioned in [`drift_schemas/`](drift_schemas/drift_schema_v2.json), and a newer on-disk version is refused, not reset.
+- 📦 **Hash-bound native code.** At install, CMake writes the panel OCR DLL's SHA-256 and a manifest of every vision file; the app refuses to load a mismatch. Third-party vision inputs (OpenCV 4.13, Tesseract engine 5.0.0, Leptonica 1.82.0, `eng.traineddata`) are pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json) and checked offline by [`check_bundle.dart`](tool/vision/check_bundle.dart).
+- 📥 **Explicit legacy import.** [`LegacyImport`](lib/data/legacy_import.dart) reads only the settings and history JSON files you name. It shows a preview with every collision. Accepting it commits everything in one transaction, and the same files cannot be imported twice.
 
-- Windows 11, Git, and [mise](https://mise.jdx.dev/).
-- Visual Studio with **Desktop development with C++**, its CMake tools, and a Windows SDK. See [Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup).
-- Windows Developer Mode when native plugins require build-time symlinks.
+## 🔄 How it fits together
 
-Flutter **3.47.6** (including Dart **3.13.5**) and git-cliff **2.14.2** are pinned in `mise.toml`. No global Flutter installation is required.
+```mermaid
+flowchart LR
+    Cat(["json.tarkov.dev"]) -->|GET| C[CatalogController]
+    Trk(["api.tarkovtracker.org"]) -->|GET| P[ProgressController]
+    C --> S[SelectionController]
+    P --> S
+    S --> E[DecisionEngine] --> UI["Shell<br/>Map | Scanner"]
+    Logs[/"game logs + saved screenshots"/] --> MS[MapSessionController]
+    MS --> OCR["panel OCR worker<br/>Windows.Media.Ocr"]
+    Pack[["prepared map pack"]] --> M[MapController]
+    MS --> UI
+    M --> UI
+    C <--> DB[("SQLite<br/>%LOCALAPPDATA%\Blackgrid")]
+```
 
-## Setup and run
+| Part | Owned by | What happens |
+|---|---|---|
+| Startup | [`AppServices`](lib/application/app_services.dart) | Opens storage, credentials and the HTTP client, builds the controllers, disposes them in order |
+| Catalog | [`CatalogController`](lib/application/catalog_controller.dart) + [`CatalogClient`](lib/data/catalog_client.dart) | Downloads 6 required and 4 optional English datasets for the chosen mode, normalises them off the UI isolate, swaps the snapshot in one transaction |
+| Progress | [`ProgressController`](lib/application/progress_controller.dart) + [`TrackerClient`](lib/data/tracker_client.dart) | Reads `/token` and `/progress`, keeps them in memory only, treats them as current for 15 minutes |
+| Decision | [`SelectionController`](lib/application/selection_controller.dart) + [`DecisionEngine`](lib/domain/decision_engine.dart) | One decision for the selected item, shown in both Map and Scanner |
+| Map | [`MapController`](lib/application/map_controller.dart) + [`lib/maps/`](lib/maps/prepared_map_loader.dart) | Loads the active pack, floors, markers and pins; owns pan/zoom and hit testing |
+| Session | [`MapSessionController`](lib/application/map_session_controller.dart) | Detected map/mode, player samples and exit highlights; one active plus one pending request |
+| Storage | [`BlackgridDatabase`](lib/data/database.dart) | Settings, pins, history, catalog cache and import ledger |
+
+---
+
+## ⚡ Install / Update
+
+> **Prerequisites:** Windows 11 x64, Git, and [mise](https://mise.jdx.dev/). Visual Studio with **Desktop development with C++**, its CMake tools and a Windows SDK ([Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup)). Windows Developer Mode if a native build needs symlinks. Flutter 3.47.6 and git-cliff 2.14.2 come from [`mise.toml`](mise.toml); no global Flutter install is needed.
+
+Install and update use the same commands:
 
 ```text
+git pull
 mise trust mise.toml
 mise install
 mise exec -- flutter pub get
-mise exec -- flutter doctor -v
-# Close Escape from Tarkov before any agent-driven app launch or UI verification.
-mise exec -- flutter run -d windows
+mise run vision:fetch
 ```
 
-Warnings about unselected Android or web tooling do not block Windows development. Do not enable additional platforms just to silence those warnings.
+`vision:fetch` downloads the pinned OpenCV, Tesseract, Leptonica and model inputs into `.dart_tool/blackgrid_vision_inputs/`. The Windows build stops with an error if any input is missing or changed. Run it again after `flutter clean`.
 
-Build the Windows release bundle:
+Check the toolchain with `mise exec -- flutter doctor -v`. Warnings about Android or web tooling do not block a Windows build.
 
-```text
-mise exec -- flutter build windows
+## ⚡ First steps
+
+1. **Close Escape from Tarkov**, then run `mise exec -- flutter run -d windows`.
+2. Open **Settings**, choose the **Live game mode** (PvP, PvE or Seasonal; it starts as Unknown), then **Refresh complete catalog**.
+3. Search items with **Ctrl K**. The Scanner area shows the decision, requirements, sources and history.
+4. Optional: in **Settings**, save a Tracker token for the mode, and set the game log and screenshot directories (empty = auto-detect).
+5. On **Map**, use **Read Latest** after saving a screenshot in game, or **Follow logs** to switch maps automatically. A mode found in the game log replaces the Settings mode while it is detected.
+
+Build a Release bundle with `mise exec -- flutter build windows`. Ship the whole `build/windows/x64/runner/Release/` directory, not just `blackgrid.exe`.
+
+---
+
+## 🧩 What's inside
+
+### Application (`lib/`)
+
+| Layer | Files | Role |
+|---|---|---|
+| Domain | [`decision_engine.dart`](lib/domain/decision_engine.dart), [`catalog.dart`](lib/domain/catalog.dart), [`progress.dart`](lib/domain/progress.dart), [`settings.dart`](lib/domain/settings.dart), [`map_geometry.dart`](lib/domain/map_geometry.dart), [`map_floors.dart`](lib/domain/map_floors.dart), [`raid_panel_text_parser.dart`](lib/domain/raid_panel_text_parser.dart), [`raid_exfil_matcher.dart`](lib/domain/raid_exfil_matcher.dart) | Pure Dart rules: decisions, freshness, settings, map math, panel text matching |
+| Application | [`app_services.dart`](lib/application/app_services.dart), [`catalog_controller.dart`](lib/application/catalog_controller.dart), [`progress_controller.dart`](lib/application/progress_controller.dart), [`selection_controller.dart`](lib/application/selection_controller.dart), [`settings_controller.dart`](lib/application/settings_controller.dart), [`history_controller.dart`](lib/application/history_controller.dart), [`map_controller.dart`](lib/application/map_controller.dart), [`map_session_controller.dart`](lib/application/map_session_controller.dart) | `ChangeNotifier` controllers built by one composition root |
+| Data | [`database.dart`](lib/data/database.dart), [`catalog_client.dart`](lib/data/catalog_client.dart), [`tracker_client.dart`](lib/data/tracker_client.dart), [`credential_store.dart`](lib/data/credential_store.dart), [`session_log_reader.dart`](lib/data/session_log_reader.dart), [`screenshot_directory_watcher.dart`](lib/data/screenshot_directory_watcher.dart), [`game_paths.dart`](lib/data/game_paths.dart), [`raid_panel_ocr.dart`](lib/data/raid_panel_ocr.dart), [`legacy_import.dart`](lib/data/legacy_import.dart) | HTTP, SQLite, DPAPI, game files and OCR adapters |
+| Vision | [`vision_runtime.dart`](lib/data/vision/vision_runtime.dart), [`vision_primitives.dart`](lib/data/vision/vision_primitives.dart), [`tesseract_binding.dart`](lib/data/vision/tesseract_binding.dart), [`vision_self_check.dart`](lib/application/vision_self_check.dart) | Item vision runtime; used only by `--vision-self-check` and tests so far |
+| Maps | [`prepared_map_loader.dart`](lib/maps/prepared_map_loader.dart), [`prepared_map.dart`](lib/maps/prepared_map.dart), [`native_map_scene.dart`](lib/maps/native_map_scene.dart) | Pack loading and native rendering |
+| UI | [`shell.dart`](lib/ui/shell.dart), [`map_screen.dart`](lib/ui/map_screen.dart), [`map_workspace.dart`](lib/ui/map_workspace.dart), [`scanner_screen.dart`](lib/ui/scanner_screen.dart), [`item_decision_card.dart`](lib/ui/item_decision_card.dart), [`settings_dialog.dart`](lib/ui/settings_dialog.dart), [`import_dialog.dart`](lib/ui/import_dialog.dart), [`theme.dart`](lib/ui/theme.dart) | Two-area shell; both areas stay mounted |
+
+Scanner today is manual catalog inspection. Screen capture, mouse and hotkey triggers and item recognition are not built yet; see the [roadmap](openspec/roadmap.md).
+
+### Native Windows code (`windows/`)
+
+| Part | File | Does |
+|---|---|---|
+| Credentials channel | [`credential_protector.cpp`](windows/runner/credential_protector.cpp) | `blackgrid/credentials`: LocalAppData path, atomic replace, DPAPI protect/unprotect |
+| Panel OCR DLL | [`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp) | `blackgrid_panel_ocr.dll` over `Windows.Media.Ocr` |
+| Vision DLL | [`vision.cpp`](windows/vision/vision.cpp), [`vision.h`](windows/vision/vision.h) | `blackgrid_vision.dll`: `bgv_*` C ABI over static OpenCV `core` + `imgproc` |
+| Vision build | [`CMakeLists.txt`](windows/vision/CMakeLists.txt), [`verify_inputs.cmake`](windows/vision/verify_inputs.cmake), [`write_manifest.cmake`](windows/vision/write_manifest.cmake) | Refuses unpinned inputs; writes `data/vision/runtime.manifest.json` at install |
+
+### mise tasks ([`mise.toml`](mise.toml))
+
+| Task | Runs |
+|---|---|
+| `analyze` | `flutter analyze` |
+| `test` | Fast suite, excludes the `qualification` tag |
+| `test:qualification` | Expensive offline qualification tier only |
+| `test:all` | Every test |
+| `format` / `format:check` | `dart format`, or check without writing |
+| `changelog` / `release-notes` | [`tool/changelog.dart`](tool/changelog.dart) over git-cliff ([`cliff.toml`](cliff.toml)) |
+| `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart): download and verify pinned vision inputs |
+| `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart): offline check of a built Release bundle |
+| `qualification:freeze` / `:validate` / `:report` | M0 reference evidence tools in [`tool/qualification/`](tool/qualification/m0.dart) |
+
+### Tools (`tool/`)
+
+| Tool | Does |
+|---|---|
+| [`maps/prepare.dart`](tool/maps/prepare.dart) | Offline map pack pipeline: `acquire`, `rebuild`, `normalize`, `compile`, `validate`, `promote`, `assets` |
+| [`ocr/read_saved_panel.dart`](tool/ocr/read_saved_panel.dart) | Reads one saved screenshot with the built panel OCR DLL |
+| [`m1/catalog_smoke.dart`](tool/m1/catalog_smoke.dart) | Real catalog download for all three modes into a temporary SQLite file, with reopen check |
+| [`vision/make_self_check_sample.dart`](tool/vision/make_self_check_sample.dart) | Regenerates the deterministic [self-check sample](assets/vision/self_check/title.json) |
+
+### Agent tooling
+
+| Path | Holds |
+|---|---|
+| [`.mcp.json`](.mcp.json) | Official Dart MCP server, launched through mise with the pinned SDKs |
+| [`.claude/skills/`](.claude/skills/UPSTREAM.json) | First-party Flutter and Dart skills (sources and hashes in `UPSTREAM.json`), plus OpenSpec and Specwright skills |
+| [`.claude/agents/`](.claude/agents/specwright-implementer.md), [`.omp/agents/`](.omp/agents/specwright-implementer.md) | Specwright implementer and reviewer agents |
+| [`openspec/`](openspec/config.yaml) | Specwright change workflow, [architecture](openspec/architecture.md), [roadmap](openspec/roadmap.md), [ADRs](docs/adr/README.md) |
+
+---
+
+## ⚙️ Settings
+
+There is no config file. The **Settings** dialog and the Map area save one JSON row (`Preferences`, id 1) in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. The fields come from [`AppSettings`](lib/domain/settings.dart):
+
+```jsonc
+{
+  "mode": "unknown",            // unknown | pvp | pve | seasonal; set in Settings. A mode found in the game log wins at runtime
+  "selectedMap": "shoreline",   // one of the 13 supported map IDs
+  "saveMarkerFilters": false,   // true = remember marker category filters
+  "markerFilters": {},          // category -> visible, e.g. "PmcExtracts": true
+  "trackerEnabled": false,      // read-only Tracker progress for the current mode
+  "gameLogDirectory": "",       // empty = detect from the registry or Steam libraries
+  "screenshotDirectory": "",    // empty = Documents\Escape from Tarkov\Screenshots
+  "followGameLogs": true        // switch the map from the logs; selectedMap is kept as the fallback
+}
 ```
 
-The executable is `build/windows/x64/runner/Release/blackgrid.exe`; distribute the complete release directory, not just the executable.
+Tracker tokens are not part of this row. They live in `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi`.
 
-## Development
+---
 
-| Command | Purpose |
-| --- | --- |
-| `mise run analyze` | Flutter static analysis |
-| `mise run test` | Fast development tests; excludes `qualification` |
-| `mise run test:qualification` | Expensive offline map-pack and reference-evidence qualification |
-| `mise run test:all` | Complete Flutter test suite, including qualification |
-| `mise run format` | Format Dart source |
-| `mise run format:check` | Check formatting without modifying files |
-| `mise run changelog` | Regenerate `CHANGELOG.md` from local Git history, offline |
-| `mise run release-notes` | Print changelog entries without the project heading |
+## 📖 Reference
 
-The full offline suite includes independently authored synthetic wire fixtures, real SQLite transactions/reopen/migrations, credential replacement failure injection, authority fencing, conservative decisions, legacy revision/frame validation, and shared UI state/layout checks at both reference sizes and 100/125/150% text scaling. Production composition uses actual HTTP, SQLite and Windows DPAPI boundaries, not these test fixtures.
+<details>
+<summary><b>Decision order</b> — how the recommendation is picked</summary>
 
-During normal implementation, run `mise run analyze`, `mise run test` and directly affected test files. UI-only changes need the relevant widget/UI tests, not artwork-pack rebuilds. Before completing substantial map-pipeline changes, also run `mise run test:qualification`. Final acceptance/before merge uses `mise run test:all`, plus Release/native acceptance gates when the change requires them; do not repeat full qualification after each small edit.
+The first row that matches wins ([`decision_engine.dart`](lib/domain/decision_engine.dart)).
 
-The `qualification` tag isolates filesystem-heavy preparation, determinism, production-grid inventory, corruption and promotion checks in `test/maps/map_preparation_qualification_test.dart`, plus expensive reference-freeze collector and fixture-closure acceptance tests. Ordinary map geometry, floors, controllers, placement controls, widgets and M0 logic tests remain in the fast suite. Both workflows are deterministic and offline. Map qualification reuses read-only inputs and gives mutation cases private small packs bound to their own frozen calibration; current-production rebuilds still require all 19 raster floors and every 16×16 tile grid.
+| Recommendation | When |
+|---|---|
+| Keep | A requirement is actionable now |
+| Keep for later | A requirement is a known future need |
+| Check / May Need | Catalog or progress authority missing or stale, FIR unknown, a requirement unresolved, Flea eligibility unknown, or the Flea quote missing, in the future or older than one hour (unless the item cannot be sold on Flea) |
+| Flea | Eligible, and the gross Flea price is **greater than** the best named-trader RUB cash offer (or there is none) |
+| Trader | A usable trader cash offer exists. Equal Flea and trader prices choose the trader; equal trader offers use trader ID order |
+| Price unavailable | None of the above |
 
-For agents, the equivalent mounted `run_tests` arguments are `exclude-tags: ["qualification"]`, `tags: ["qualification"]`, and no tag filter, respectively.
+Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets when the item, mode or authority context changes.
+</details>
 
-For agent verification, use the mounted official Dart MCP `run_tests`, `analyze_files` and `dart_format` tools; do not substitute shell test commands. Run expensive checks serially after authoring. Before each real Windows launch/restart or UI verification, freshly establish that Escape from Tarkov is closed. Never focus, inspect, capture, hook or read memory from the game or anti-cheat.
+<details>
+<summary><b>Data sources and freshness</b></summary>
 
-### Test runtime and fixture writes
+| Source | Endpoint | Fresh for | On failure |
+|---|---|---|---|
+| Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}` plus optional `*_en` translations | 24 h, only when all six source timestamps are known and agree | Last good snapshot kept, status `stale` or `failed` |
+| Flea quote | Inside the catalog | 1 h | Decision falls to Check |
+| Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
 
-The supplied pre-refactor baseline was 6m55s for the full suite, 60s for two deterministic rebuilds, 43s for generation preservation and roughly 27s per promotion case. It was not rerun.
+Every request is a GET with a 30 s deadline and no redirects. There are no automatic retries; refresh is manual. The public catalog currently has no source timestamps, so a successful refresh is still shown as stale.
+</details>
 
-Observed runner JSON elapsed times on Windows; suite setup is included, and suites run concurrently:
+<details>
+<summary><b>Local files</b></summary>
 
-| Check | Passing tests | Elapsed |
-| --- | ---: | ---: |
-| Development (`--exclude-tags qualification`) | 497 | 13.1s |
-| Dedicated qualification (`--tags qualification`) | 36 | 97.3s |
-| Complete suite | 533 | 99.0s |
-| Map preparation qualification within the complete run | 8 | 22.4s |
-| Focused map preparation qualification after review | 8 | 14.1s |
+| Path | Holds |
+|---|---|
+| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, import ledger |
+| `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi` | Tracker token, current-user DPAPI ciphertext; not portable to another Windows user |
 
-All checks had zero failures or skips. The dedicated qualification run preceded strengthening the normalization test to invoke the real normalize → compile path; the complete run verified that path and every qualification case. After review, additional corrupt-published-version assertions passed in the focused map qualification rerun; no production code changed after the complete run. Final analysis was clean. Test-runner times exclude dependency resolution and MCP transport overhead.
+History stores item ID, mode, source, UTC time and revision only. No telemetry, account or backend exists.
+</details>
 
-The remaining qualification bottleneck is `m0_collector_test.dart`: 96.1s in the final run, including a 14.8s record/sidecar alias-safety case. These real Git/PowerShell/Dart pipeline checks remain intact and opt-in; fixture-closure checks also remain qualification, not normal development work.
+<details>
+<summary><b>Map controls</b></summary>
 
-Map qualification now materializes one 4,864-PNG raw fixture per run instead of eight (38,912 PNGs). Narrow mutation tests copy 38-file prepared packs, not raw tile trees. The two independent complete rebuilds and real normalization reuse the raw fixture read-only; current-production tile requirements and independent promotion validation are unchanged.
+| Input | Action |
+|---|---|
+| Drag / mouse wheel | Pan / zoom at the cursor |
+| Arrow keys | Pan |
+| Home | Fit map |
+| `+` `=` numpad `+` / `-` numpad `-` | Zoom in / out |
+| C | Center on the sampled player |
+| N | Add a pin at the view center |
+| Right-click | Add a pin at the cursor |
+| Enter | Browse visible markers and pins |
+| Delete | Remove the selected pin |
+| Escape | Clear the selection |
 
-### Database generation
+Supported maps, as labelled in the UI: Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker, Labyrinth (IDs in [`settings.dart`](lib/domain/settings.dart), labels in [`theme.dart`](lib/ui/theme.dart)).
+</details>
 
-Regenerate the committed Drift implementation and migration helpers after intentional schema changes:
+<details>
+<summary><b>Session inputs</b></summary>
+
+| Input | Bound | Reads |
+|---|---|---|
+| Game log | 250 ms poll, 64 KiB max line | `scene preset path:` for map, `Session mode:` for mode, in the newest `log_*` folder |
+| Screenshot folder | 1 s poll, 80 ms stability, 64 MiB per file | Position (XYZ) and heading (quaternion) from the filename |
+| Saved panel OCR | 64 MiB, ≤ 8192 px per side, ≤ 24 × 1024² pixels, one request at a time | Exfil and transit names; a busy worker returns `unavailable` |
+
+Evidence without a confirmed raid or map is shown as assumed. Missing or unreadable evidence is never shown as an empty panel. Check one image offline with `mise exec -- dart run tool/ocr/read_saved_panel.dart <image>`.
+</details>
+
+<details>
+<summary><b>Map pack preparation</b></summary>
+
+Runtime only loads the active pack. These commands are maintenance tools ([`prepare.dart`](tool/maps/prepare.dart)); see `--help` for details.
+
+| Command | Does |
+|---|---|
+| `acquire --raw <dir>` | The only network step: freezes artwork, metadata and terms into a fresh hash-locked directory |
+| `rebuild --raw <dir> --candidate <dir>` | `normalize` + `compile`, offline |
+| `validate --candidate <dir>` | Checks every hash, vector payload and tile witness |
+| `promote --candidate <dir> --packs <root>` | Adds an immutable `versions/<sha256>/` and swaps [`active.json`](assets/maps/active.json) atomically |
+| `assets --packs <root>` | Prints the `pubspec.yaml` asset list; Flutter does not include nested tile folders by itself |
+
+`<use>` references to symbols the publisher deleted (Customs `path493`, Streets stairs) are dropped, as a browser does. Any other missing symbol fails preparation.
+</details>
+
+<details>
+<summary><b>Vision self-check</b></summary>
+
+`blackgrid.exe --vision-self-check <report.json>` verifies and loads the bundled vision runtime, runs a template match and OCR on the bundled sample, and writes a JSON report. It shows no window and opens no database. The report directory must exist.
+
+| Exit code | Means |
+|---|---|
+| 0 | Pass |
+| 1 | A step failed, or the report could not be written |
+| 2 | Usage error |
+| 3 | A step did not return within 60 s |
+
+`blackgrid.exe` is a GUI-subsystem app, so wait for it: `start /wait` (cmd) or `Start-Process -Wait -PassThru` (PowerShell). Check a built bundle offline with `mise run bundle:check -- build/windows/x64/runner/Release`.
+</details>
+
+<details>
+<summary><b>Legacy import</b></summary>
+
+| Rule | Detail |
+|---|---|
+| Inputs | Settings and/or history JSON paths you type; no directory scan |
+| Supported revisions | Settings 0–3, scanner preferences 0–1, history 0–1 |
+| Pins | Known map IDs and frame revisions; Labs revision 0 is converted to revision 1 |
+| Never imported | Tracker keys, progress, computed advice, FIR, prices, overlay and old capture settings |
+| Collisions | Source: revision, then latest UTC time, then file order. Existing records win unless you choose to replace |
+| Commit | **Accept preview and import** writes all records and the digest ledger in one transaction; source files are not changed |
+</details>
+
+<details>
+<summary><b>Database schema changes</b></summary>
 
 ```text
 mise exec -- dart run build_runner build
@@ -88,78 +278,13 @@ mise exec -- dart run drift_dev schema dump lib/data/database.dart drift_schemas
 mise exec -- dart run drift_dev schema generate drift_schemas test/data/generated
 ```
 
-`drift_schemas/` freezes schema versions. Version 1 defines initial local settings/pins/activity/catalog tables; version 2 adds the once-only import ledger. A newer database is refused without reset or downgrade.
+Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger.
+</details>
 
-The real unauthenticated catalog qualification uses the same production adapter and a temporary real SQLite database:
+<details>
+<summary><b>Changelog</b></summary>
 
-```text
-mise exec -- dart run tool/m1/catalog_smoke.dart
-```
-
-`integration_test/m1_windows_smoke_test.dart` exercises actual current-user DPAPI and native replacement failure, a real catalog, shared UI decisions and SQLite reopen in a run-owned directory. Run it through the official Dart MCP runner on the Windows device only after the game-closure gate. Its synthetic credential verifies protection only; it is never sent to Tracker. Authenticated Tracker verification requires a user-supplied credential and is not implied by fixture tests or the catalog smoke.
-
-## Data, authority and privacy
-
-- First launch leaves mode **Unknown**. Select PvP, PvE or Seasonal explicitly; refresh loads all six mandatory datasets before committing and publishing one immutable revision. English dictionaries are optional. Failed refresh retains the last complete mode-specific snapshot.
-- Overlapping mode choices invalidate both catalog and progress authority before their asynchronous reads complete. Returning to a mode can join its already-running refresh without downloading or committing twice; only the current requested context publishes the result.
-- Every catalog, dictionary and Tracker GET has a 30-second header-and-body deadline and signals request abortion on expiry. Transport failure releases the manual refresh action and retains last-good data; there are no automatic retries. Tracker `Retry-After` accepts delta seconds and HTTP dates, including zero or past deadlines; missing or malformed values use a finite 60-second cooldown before another explicit refresh is allowed.
-- Recommendations are conservative: **Keep → Keep for later → Check → Flea → Trader → Price unavailable**. Missing/stale relevance, mode/FIR ambiguity and unsupported gates cannot silently become confident Sell. Flea additionally requires eligible fresh positive gross value **greater than** a usable named cash-RUB trader offer (or no usable trader). Equal Flea/trader values choose the trader; equal trader offers use stable canonical trader ID order. Prices are gross RUB, not fee-adjusted net proceeds.
-- Catalog authority is 24 hours only when its six source timestamps are known and coherent; download time is not source freshness. A Flea quote has its own one-hour evidence window. Tracker progression is session-memory only, with a 15-minute authority window. Manual refresh and visible rate-limit cooldown do not schedule automatic requests.
-- The public catalog envelopes observed on 2026-10-06 have no source timestamps. A successful refresh therefore remains labeled stale/Unknown rather than claiming current authority. Shared objective IDs across distinct tasks retain every owner; flat objective progress cannot resolve an ambiguous requirement unless its owning task is authoritatively completed or failed.
-- Missing or null hideout station/trader/skill prerequisite arrays remain unresolved rather than proving an actionable requirement. A successful unchanged-content refresh renews durable observation metadata transactionally without inventing source freshness.
-- `%LOCALAPPDATA%/Blackgrid/blackgrid.sqlite` holds local settings, versioned pins, complete catalog snapshots and identity-only activity. History contains canonical item ID, stored mode, source, UTC observation and revision—not FIR, prices, needs, token, account or progress payloads. Opening history does not switch the live mode.
-- History's Source authority panel uses the inspected mode's snapshot and status only. A stored-mode snapshot is labeled stale until that same mode has live refresh authority; a missing stored snapshot cannot borrow another live mode's records.
-- Per-mode files under `%LOCALAPPDATA%/Blackgrid/credentials/` contain **current-user Windows DPAPI ciphertext**, not plaintext tokens. Replacement is atomic; protection/replacement failure preserves the previous credential and never falls back to plaintext. Removal affects only the selected mode. Backing up the ciphertext does not make it portable to another Windows user.
-- Tracker is opt-in, read-only and GET-only on `api.tarkovtracker.org`; `PVP_`, `PVE_` and `SZN_` credentials are mode-scoped. No credentials, account identities, response bodies or personal progress are logged or persisted. No telemetry, Blackgrid account or backend is present.
-- FIR is a transient manual inspection fact. It resets on a new identity, mode, history inspection or authority context—not merely typing a query or changing Map/Scanner tabs. Restart restores durable data, not a selected item/FIR/progress/accepted scan.
-
-## Native maps
-
-- Drag to pan, use the mouse wheel for cursor-anchored zoom, or use the zoom and **Fit map** controls. The focused viewport also supports arrow-key panning, Home to fit, plus/minus (including numpad) to zoom, C to center on a sampled player without changing zoom, N to add a pin, Enter to browse, Delete to remove the selected pin, and Escape to clear details.
-- Floor controls use source-specific layers. Interchange and Labs retain base-plus-overlay composition; Icebreaker selects one replacement floor and restores Infirmary when that selection is cleared.
-- Select a visible marker for its source details, or open **Markers** and use Tab/Enter to select through the keyboard-accessible list. Drawing and selection share floor/filter visibility. Map interaction never produces an accepted scan.
-- **Add pin** and viewport right-click use the shared inverse geometry. Existing pin frames/revisions and finite off-artwork coordinates remain intact.
-- Runtime artwork uses bundled assets, cached vector components and lazily decoded visible tiles/active raster floors. Navigation does not download artwork or parse SVG on every gesture.
-- Marker search dims nonmatches rather than making visible markers unselectable. Category/floor visibility still controls painting, pointer hits and keyboard-accessible targets; quest filters use prepared quest identities and the shared read-only progression facts.
-- Configure **Game log directory** and **Screenshot directory** in Settings. **Follow game logs** chooses detected map/mode without overwriting the saved manual selection. With follow disabled, watched evidence from a different detected map cannot publish player samples or raid highlights onto the manually selected map.
-- **Read Latest** explicitly reads a stable saved image. Filename metadata supplies position and heading; OCR does not. Saved evidence without a confirmed raid/map association is visibly assumed, and its timestamp is not refreshed merely by rereading it. Automatic floors require supported authoritative height bands.
-- Saved-panel OCR uses Windows `Windows.Media.Ocr`, as the reference companion does, through a hash-bound DLL built with the app. It has its own bounded worker, session/map/evidence fences and shutdown lifecycle. Missing, unreadable or unavailable evidence never becomes an authoritative empty panel. To check a saved screenshot offline, run `mise exec -- dart run tool/ocr/read_saved_panel.dart <image>`.
-- All live-game verification is user-only. Agents must never interact with games or their memory, and must confirm EFT is closed before launching or driving Blackgrid/reference apps.
-
-The current bundled preparation-v3 pack is manifest/version `d5a0f9ae11c0591f1de72efb97b582ff79842594936dc42327a83213ec98d8d2`, with calibration evidence SHA-256 `0eb38479d6aeff22890404685fa1e4e0fbe4881f5ffeeef94abf6f608af91818`. It covers all 13 maps. `<use>` references to symbols the publisher deleted (Customs `path493`, Streets stairs) are dropped, matching browser rendering; any other missing symbol fails preparation. Historical placement/native/performance receipts belong to their recorded generations; this pack has no new native, performance or standalone launch qualification.
-
-Map preparation commands are maintenance-only tooling, separate from runtime rendering. Inspect the command contract with:
-
-```text
-mise exec -- dart run tool/maps/prepare.dart --help
-```
-
-`acquire` freezes the approved inputs into a fresh raw directory and is the only network operation. `rebuild` creates a fresh candidate from frozen inputs offline; `normalize` and `compile` expose its two stages. `validate` checks the complete candidate before `promote` publishes an immutable version and atomically replaces `active.json`. Failed candidates leave the active pack untouched. `assets` prints the promoted pack's complete Flutter asset declarations, including nested tiles and preparation evidence. The current declarations cover 105 active asset directories, including `evidence/tile-alpha/`; update `pubspec.yaml` when promoting another generation.
-
-Preparation-v2 validation binds canonical vector component paths, dependency-closed source SVGs, compiler SVG/native effects and actual `.vec` payload hashes to the pinned compiler output. Raster validation decodes and hash-binds visible tiles and original transparent PNG witnesses; empty tiles are not inferred from byte size or accepted on manifest assertions alone. Witnesses are deduplicated unchanged source bytes, not replacement artwork. Candidate crops must stay wholly inside the original artwork frame; the crop changes display only, not geometry or persisted pin frames.
-
-Existing preparation-v1 packs lacking transparent witnesses must be rebuilt offline from frozen inputs before this validator can promote them. This is a maintenance requirement, not a runtime `preparationVersion` gate. Runtime loads prepared artwork and marker data; it does not run acquisition, normalization, compilation or candidate validation.
-
-Only the exact Interchange console `switches:6b9023f26446d73433823e872e6d69688083beaf:0` gains prepared `Second_Floor` ownership. Its frozen full height volume `[37.187, 37.507]` and outline are contained in the locked metadata's `Second_Floor` band `[34, 1000]` and mall rectangle. The assignment retains `source.floorAssignment` provenance; source position/height/outline, pins and shared geometry are unchanged. Automatic Interchange vector height resolution still returns null. This is not a rule for unknown, out-of-extent or cross-floor records. See [placement controls](docs/qualification/m3/PLACEMENT_CONTROLS.md) for the exact frozen evidence and the retained Icebreaker ownership/source-parity limits.
-
-Selected-source identities, licences, notices and calibration evidence travel with the pack. Review source changes and rights before acquiring or promoting updates; source hosting alone does not grant redistribution permission.
-
-## Legacy import
-
-Use **Import**, explicitly enter the chosen settings and/or history JSON paths, then **Preview** before accepting. There is no automatic directory scan. Supported settings revisions are 0–3, scanner preferences 0–1 and history 0–1. Pins require supported map identities and coordinate-frame revisions; finite off-map coordinates are retained. Labs revision 0 is converted to the revision-1 native normalized frame; revision 1 is preserved.
-An absent or exactly empty legacy selected-map preference uses the existing Shoreline default; explicit null, malformed values and unknown map identities remain invalid. Explicit activity revisions must be positive; only absent revisions receive positive input-order values, before collision resolution.
-
-The preview accounts for every recognized record, source collision, existing destination collision and intentionally excluded field. It never imports Tracker keys, personal progress, computed advice/FIR/prices, overlay state or obsolete capture configuration. Source activity collisions resolve by positive revision, latest UTC observation, then stable source order. Existing destination records win by default; replacement requires an explicit choice. Acceptance commits all supported records and the once-only digest ledger in one transaction. Unsupported revisions or malformed frame metadata fail the complete candidate; source files remain untouched.
-
-## Attribution and distribution
-
-See [third-party notices](THIRD_PARTY_NOTICES.md) for selected dependencies and bundled map artwork, including each source's attribution and published terms. The repository's project license remains unselected; it is private and this implementation does not authorize public publication. No reference implementation or reference runtime is copied or shipped. Third-party artwork remains its creators' property; live source hosting is not a blanket licence to redistribute downloaded datasets or artwork.
-
-## Changelog and release notes
-
-Use conventional commits: `feat`, `fix`, `perf`, `docs`, `refactor`, `test`, `build`, `ci`, `chore`, and `style`. Breaking changes use `!` or a `BREAKING CHANGE:` footer. Merge commits are excluded; other commits remain under **Other**.
-
-Release tags must be strict, `v`-prefixed semantic versions, such as `v1.0.0` or `v1.2.3-beta.1`. These commands generate text only; they do not create tags, releases, or remotes.
+Conventional commits feed git-cliff. Tags are strict `v`-prefixed semver. These commands only print or write text; they never create tags or releases.
 
 ```text
 mise run changelog
@@ -167,13 +292,29 @@ mise run release-notes -- --unreleased
 mise run release-notes -- --latest
 mise run release-notes -- -- v0.1.0..v0.2.0
 ```
+</details>
 
-Use a range only after both tags exist. Before the first commit, the small dependency-free `tool/changelog.dart` runner supplies an empty JSON context because git-cliff cannot traverse an unborn branch. The changelog contains **Unreleased**; release notes are empty until history exists.
+---
 
-## AI tooling
+## 🧪 Tests
 
-- `.mcp.json` at the repository root launches the [official Dart MCP server](https://dart.dev/tools/mcp-server) through mise using the pinned Dart and Flutter SDKs. CLI and Flutter lifecycle capabilities are enabled. The Windows launch command uses built-in PowerShell and isolates the server's tool cache under ignored `.dart_tool/dart-data/`. Claude Code reads it natively and OMP reads it through its root `.mcp.json` fallback, so start OMP from the repository root.
-- `.claude/skills/` contains 10 first-party Flutter skills and 7 first-party Dart skills. Source commits, file hashes, and licenses are recorded alongside them in `UPSTREAM.json`, `LICENSE.flutter`, and `LICENSE.dart`. Claude Code and OMP both discover project skills from this directory.
-- Sources: [flutter/agent-plugins](https://github.com/flutter/agent-plugins) and [dart-lang/skills](https://github.com/dart-lang/skills). These are guidance, not installed application packages or architecture decisions.
-- Restart or reload Claude Code and OMP after setup so they discover the repository-local server and skills. Approve only the tools and project roots needed for your work.
-- The official [`skills` package](https://pub.dev/packages/skills) **1.0.3** was used to inspect `flutter`, `flutter_test`, and `flutter_lints`; none supplied package skills. Its current generic-agent installer targets `.agents/skills/`, not `.claude/skills/`, so discovery was run in a disposable copy of the dependency workspace. No duplicate skill directory or extra project dependency was added.
+| Command | Covers |
+|---|---|
+| `mise run test` | Domain, data, controllers, widgets, map logic and the untagged M0 contract, statistics, comparison, export and CLI tests; offline. Use during development |
+| `mise run test:qualification` | Tag `qualification` ([`dart_test.yaml`](dart_test.yaml)): map pack preparation, M0 collector and fixture integrity, panel OCR, vision runtime, CMake and bundle checks |
+| `mise run test:all` | Both; run before merging |
+| [`m1_windows_smoke_test.dart`](integration_test/m1_windows_smoke_test.dart) | Real DPAPI, real catalog, SQLite reopen on Windows |
+
+Tests live in [`test/`](test/). **Agents and live-game checks:** no agent may launch or drive Blackgrid while Escape from Tarkov is running, and checks that need the game belong to the user. See [AGENTS.md](AGENTS.md).
+
+## 🗑️ Uninstall
+
+1. Delete the Release directory.
+2. Delete `%LOCALAPPDATA%\Blackgrid\` to remove settings, pins, history, the catalog cache and saved tokens.
+
+## 💡 Credits and notices
+
+- Map artwork and metadata: the tarkov-dev SVG maps project, Tarkov.dev and TarkovBOT.eu, under the terms recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and in each pack's evidence.
+- Item vision: OpenCV, Tesseract, Leptonica and tessdata, pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json).
+- Project direction: [STRATEGY.md](STRATEGY.md), [architecture](openspec/architecture.md), [decisions](docs/adr/README.md).
+- No project license has been chosen. The repository is private, and nothing here authorizes publishing it or its bundled artwork.
