@@ -21,12 +21,12 @@
 | release-bundle-integrity → Each runtime-verified file matches its binding and pin | Bindings and pins agree | test/tool/vision/check_bundle_test.dart | `hash step passes when manifest, sidecar and lock agree` | red |
 | release-bundle-integrity → Each runtime-verified file matches its binding and pin | Binding disagrees with file | test/tool/vision/check_bundle_test.dart | `hash step fails naming file and both hashes` | red |
 | release-bundle-integrity → Each runtime-verified file matches its binding and pin | Third-party file differs from pin | test/tool/vision/check_bundle_test.dart | `pin step fails when bound file diverges from lock` | red |
-| release-bundle-integrity → Bundle needs no system installation | All imports resolved | test/tool/vision/pe_imports_test.dart | `imports resolve to bundle or allow-list` | red |
-| release-bundle-integrity → Bundle needs no system installation | Import needs a system install | test/tool/vision/pe_imports_test.dart | `unresolved vcruntime import fails naming dll and import` | red |
-| release-bundle-integrity → Bundle needs no system installation | Unreadable PE file | test/tool/vision/pe_imports_test.dart | `non-PE dll is reported unreadable` | red |
-| release-bundle-integrity → App-local VC++ runtime minimum version | Runtime at or above minimum | test/tool/vision/pe_version_test.dart | `runtime version step passes and reports versions` | red |
-| release-bundle-integrity → App-local VC++ runtime minimum version | Older toolchain runtime shipped | test/tool/vision/pe_version_test.dart | `runtime below minimum fails with actual and minimum` | red |
-| release-bundle-integrity → App-local VC++ runtime minimum version | Version resource missing | test/tool/vision/pe_version_test.dart | `missing version resource fails as unreadable version` | red |
+| release-bundle-integrity → Bundle needs no system installation | All imports resolved | test/tool/vision/pe_imports_test.dart | `imports resolve to bundle or allow-list` | green |
+| release-bundle-integrity → Bundle needs no system installation | Import needs a system install | test/tool/vision/pe_imports_test.dart | `unresolved vcruntime import fails naming dll and import` | green |
+| release-bundle-integrity → Bundle needs no system installation | Unreadable PE file | test/tool/vision/pe_imports_test.dart | `non-PE dll is reported unreadable` | green |
+| release-bundle-integrity → App-local VC++ runtime minimum version | Runtime at or above minimum | test/tool/vision/pe_version_test.dart | `runtime version step passes and reports versions` | green |
+| release-bundle-integrity → App-local VC++ runtime minimum version | Older toolchain runtime shipped | test/tool/vision/pe_version_test.dart | `runtime below minimum fails with actual and minimum` | green |
+| release-bundle-integrity → App-local VC++ runtime minimum version | Version resource missing | test/tool/vision/pe_version_test.dart | `missing version resource fails as unreadable version` | green |
 | release-bundle-integrity → Third-party native files are covered by notices | Notices complete | test/tool/vision/check_bundle_test.dart | `notices step passes with version url and sha per lock entry` | red |
 | release-bundle-integrity → Third-party native files are covered by notices | Notice missing or stale | test/tool/vision/check_bundle_test.dart | `notices step fails naming component with stale sha` | red |
 | release-bundle-integrity → Check is offline and reports results | Passing run | test/qualification/m2_bundle_integrity_test.dart | `real Release bundle passes every integrity step` | red |
@@ -169,7 +169,7 @@
   - `missing version resource fails as unreadable version`.
 
   Verify: they fail first.
-- [ ] 6.2 Implement `tool/vision/pe.dart`, a PE32+ reader for headers, sections, import and delay-import directories, and `VS_FIXEDFILEINFO`. Add `tool/vision/system_allowlist.json` (Windows system DLLs including `KERNEL32`, `USER32`, `GDI32`, `WS2_32`; `api-ms-win-*` and `ext-ms-*` by prefix; no Visual C++ runtime names). Verify: the task 6.1 tests pass and the rows go green.
+- [x] 6.2 Implement `tool/vision/pe.dart`, a PE32+ reader for headers, sections, import and delay-import directories, and `VS_FIXEDFILEINFO`. Add `tool/vision/system_allowlist.json` (Windows system DLLs including `KERNEL32`, `USER32`, `GDI32`, `WS2_32`; `api-ms-win-*` and `ext-ms-*` by prefix; no Visual C++ runtime names). Verify: the task 6.1 tests pass and the rows go green.
 - [ ] 6.3 Write failing tests in `test/tool/vision/check_bundle_test.dart` over synthetic bundle directories:
   - `inventory passes on synthetic complete bundle`;
   - `inventory fails naming unexpected dll`;
