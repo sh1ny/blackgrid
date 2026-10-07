@@ -73,3 +73,19 @@ String _canonical(String path) {
   }
   return Platform.isWindows ? result.toLowerCase() : result;
 }
+
+/// Writes [contents] to `<path>.tmp`, then renames it over [path].
+///
+/// A leftover `<path>.tmp` is removed first and the temp file is created
+/// exclusively, so a planted hard link at the temp path is unlinked rather
+/// than written through to the file it shares.
+void writeViaTemp(String path, String contents) {
+  final temp = File('$path.tmp');
+  if (FileSystemEntity.typeSync(temp.path, followLinks: false) ==
+      FileSystemEntityType.file) {
+    temp.deleteSync();
+  }
+  temp.createSync(exclusive: true);
+  temp.writeAsStringSync(contents, flush: true);
+  temp.renameSync(path);
+}

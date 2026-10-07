@@ -54,6 +54,22 @@ void blockingWorker(SelfCheckRequest request) {
   sleep(const Duration(seconds: 3));
 }
 
+// Sends bulky messages, then done, then returns at once: done must still win
+// over the exit notification.
+void chattyPassingWorker(SelfCheckRequest request) {
+  for (var i = 0; i < 50; i++) {
+    request.sendProgress('verify $i ${'x' * 20000}');
+  }
+  request.sendStep(
+    const SelfCheckStepResult(name: 'verify', ok: true, ms: 1, detail: ''),
+  );
+  request.sendDone();
+}
+
+void silentWorker(SelfCheckRequest request) {
+  request.sendProgress('verify');
+}
+
 void neverCalledWorker(SelfCheckRequest request) {
   File('${request.runtimeDirectory}/worker-ran').writeAsStringSync('x');
 }
@@ -128,6 +144,34 @@ void main() {
     expect(usage.single, contains('Refusing report path'));
     expect(manifest.readAsStringSync(), '{"keep":true}');
     expect(File('${dir.path}/worker-ran').existsSync(), isFalse);
+  });
+
+  test('done sent just before the worker exits is never lost', () async {
+    for (var run = 0; run < 20; run++) {
+      final code = await runVisionSelfCheck(
+        ['--vision-self-check', reportPath],
+        runtimeDirectory: dir.path,
+        worker: chattyPassingWorker,
+      );
+      expect(
+        code,
+        0,
+        reason: 'run $run: ${File(reportPath).readAsStringSync()}',
+      );
+    }
+  });
+
+  test('worker that exits without done fails with code 1', () async {
+    final code = await runVisionSelfCheck(
+      ['--vision-self-check', reportPath],
+      runtimeDirectory: dir.path,
+      worker: silentWorker,
+    );
+    expect(code, 1);
+    expect(
+      File(reportPath).readAsStringSync(),
+      contains('helper isolate exited without a result'),
+    );
   });
 
   test('report has format identity steps and result mirroring code', () async {

@@ -466,8 +466,7 @@ Future<int> runCli(
       return 2;
     }
     final json = const JsonEncoder.withIndent('  ').convert(result.toJson());
-    final tmp = File('$report.tmp')..writeAsStringSync('$json\n');
-    tmp.renameSync(report);
+    writeViaTemp(report, '$json\n');
   }
   stdoutSink.writeln(
     result.passed ? 'bundle check: all steps passed' : 'bundle check: FAILED',

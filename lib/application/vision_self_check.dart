@@ -206,8 +206,13 @@ Future<int> runVisionSelfCheck(
 
   final messages = ReceivePort();
   final errors = ReceivePort();
-  final exits = ReceivePort();
+  // The exit notification (null) arrives on the same port as the worker's
+  // messages: one port is FIFO, so a done sent before exiting always wins.
   messages.listen((Object? message) {
+    if (message == null) {
+      finish('helper isolate exited without a result');
+      return;
+    }
     if (message is! List || message.isEmpty) return;
     switch (message[0]) {
       case 'progress':
@@ -224,7 +229,6 @@ Future<int> runVisionSelfCheck(
     }
   });
   errors.listen((Object? error) => finish('helper isolate error: $error'));
-  exits.listen((_) => finish('helper isolate exited without a result'));
 
   Isolate? helper;
   var timedOut = false;
@@ -234,7 +238,7 @@ Future<int> runVisionSelfCheck(
       worker,
       SelfCheckRequest(messages.sendPort, runtimeRoot),
       onError: errors.sendPort,
-      onExit: exits.sendPort,
+      onExit: messages.sendPort,
       errorsAreFatal: true,
     );
     error = await finished.future.timeout(watchdog);
@@ -246,7 +250,6 @@ Future<int> runVisionSelfCheck(
     helper?.kill(priority: Isolate.immediate);
     messages.close();
     errors.close();
-    exits.close();
   }
 
   if (timedOut) {
@@ -297,11 +300,7 @@ Future<int> runVisionSelfCheck(
 bool _writeReport(String path, Map<String, Object?> report) {
   final temp = File('$path.tmp');
   try {
-    temp.writeAsStringSync(
-      const JsonEncoder.withIndent('  ').convert(report),
-      flush: true,
-    );
-    temp.renameSync(path);
+    writeViaTemp(path, const JsonEncoder.withIndent('  ').convert(report));
     return true;
   } catch (e) {
     try {

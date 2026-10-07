@@ -400,4 +400,24 @@ void main() {
     expect(r.err, contains('symbolic link or junction'));
     expect(File('${target.path}/report.json').existsSync(), isFalse);
   });
+
+  test(
+    'stale report temp hard-linked to the lock is not written through',
+    () async {
+      final before = File(fx.lockPath).readAsStringSync();
+      final temp = '${fx.reportPath}.tmp';
+      final made = Platform.isWindows
+          ? Process.runSync('fsutil', [
+              'hardlink',
+              'create',
+              File(temp).absolute.path.replaceAll('/', r'\'),
+              File(fx.lockPath).absolute.path.replaceAll('/', r'\'),
+            ])
+          : Process.runSync('ln', [fx.lockPath, temp]);
+      expect(made.exitCode, 0, reason: '${made.stdout}${made.stderr}');
+      await fx.run();
+      expect(File(fx.lockPath).readAsStringSync(), before);
+      expect(File(fx.reportPath).existsSync(), isTrue);
+    },
+  );
 }
