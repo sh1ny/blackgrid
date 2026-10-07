@@ -145,6 +145,12 @@ BGV_API int32_t bgv_match_template_best(const uint8_t* img, int32_t iw,
   return Guard([&] {
     const cv::Mat image = Wrap(img, iw, ih, istride, 1);
     const cv::Mat templ = Wrap(tpl, tw, th, tstride, 1);
+    // A uniform template has no defined normalised correlation; OpenCV
+    // special-cases it to finite scores that would read as a match.
+    cv::Scalar mean;
+    cv::Scalar stddev;
+    cv::meanStdDev(templ, mean, stddev);
+    if (stddev[0] == 0.0) return BGV_ERR_IMAGE;
     cv::Mat result;
     cv::matchTemplate(image, templ, result, cv::TM_CCOEFF_NORMED);
     double max_score = 0;

@@ -67,6 +67,9 @@ class FakeEngine implements VisionEngine {
 class FakePrimitives implements VisionPrimitives {
   int calls = 0;
 
+  /// When set, matchTemplateBest fails with this native status.
+  int? matchStatus;
+
   @override
   Uint8List toGray(VisionImage src, {required bool rgbOrder}) {
     calls++;
@@ -88,6 +91,8 @@ class FakePrimitives implements VisionPrimitives {
   @override
   TemplateMatch matchTemplateBest(VisionImage image, VisionImage template) {
     calls++;
+    final status = matchStatus;
+    if (status != null) throw VisionNativeError(status);
     return const TemplateMatch(0.5, 1, 2);
   }
 
@@ -385,6 +390,18 @@ void main() {
     expect((text as VisionOk<OcrText>).value.text, 'hello');
     final match = runtime.matchTemplate(gray(4, 4), gray(2, 2));
     expect((match as VisionOk<TemplateMatch>).value.x, 1);
+    expect(fixture.native.primitivesFake.calls, 1);
+    runtime.dispose();
+  });
+
+  test('native error status is nativeFailure, not invalidImage', () {
+    fixture.writeManifest();
+    final runtime = fixture.open();
+    fixture.native.primitivesFake.matchStatus = -3;
+    final match = runtime.matchTemplate(gray(4, 4), gray(2, 2));
+    final failure = (match as VisionFailed<TemplateMatch>).failure;
+    expect(failure, isA<VisionNativeFailure>());
+    expect((failure as VisionNativeFailure).status, -3);
     expect(fixture.native.primitivesFake.calls, 1);
     runtime.dispose();
   });

@@ -8,6 +8,8 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
+import 'package:blackgrid/application/output_path_guard.dart';
+
 import 'pe.dart';
 
 const defaultInventoryPath = 'tool/vision/bundle_inventory.json';
@@ -453,6 +455,16 @@ Future<int> runCli(
     }
   }
   if (report != null) {
+    // The check is read-only over the bundle and its committed inputs.
+    final unsafe = unsafeOutputReason(
+      report,
+      protectedFiles: [inventory, lock, notices, allow],
+      protectedDirectories: [dir.path],
+    );
+    if (unsafe != null) {
+      stderrSink.writeln('error: refusing report path: $unsafe');
+      return 2;
+    }
     final json = const JsonEncoder.withIndent('  ').convert(result.toJson());
     final tmp = File('$report.tmp')..writeAsStringSync('$json\n');
     tmp.renameSync(report);

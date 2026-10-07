@@ -192,13 +192,25 @@ Future<void> _downloadOne(
   final expired = Completer<void>();
   var tempCreated = false;
   var placed = false;
+  // Every await races the timer: before a request exists (DNS, TCP or TLS
+  // still connecting) there is nothing for the timer to abort.
+  Future<T> bounded<T>(Future<T> work) => Future.any([
+    work,
+    expired.future.then<T>(
+      (_) => throw FetchException(input.id, 'timed out after $timeout'),
+    ),
+  ]);
   Future<String> transfer() async {
     var uri = start;
     for (var hop = 0; ; hop++) {
-      final request = await client.getUrl(uri);
+      final request = await bounded(client.getUrl(uri));
       active = request;
+      if (expired.isCompleted) {
+        request.abort();
+        throw FetchException(input.id, 'timed out after $timeout');
+      }
       request.followRedirects = false;
-      final response = await request.close();
+      final response = await bounded(request.close());
       if (response.isRedirect) {
         await response.drain<void>();
         if (hop >= _maxRedirects) {

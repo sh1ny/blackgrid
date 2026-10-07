@@ -5,6 +5,7 @@
 #   BGV_MANIFEST_FILES  list of bundle paths, relative to BGV_BUNDLE
 #   BGV_ABI_VERSION     vision ABI the DLL was compiled with
 #   BGV_ENGINE_VERSION  Tesseract engine version from the lock
+#   BGV_PROTECTED_DIRS  input directories the manifest must not land in
 # Third-party files are re-checked against the lock on their installed bytes,
 # so a cache altered after configure cannot enter the bundle. Then every
 # vision file is hashed into data/vision/runtime.manifest.json, written to a
@@ -46,5 +47,27 @@ foreach(path IN LISTS BGV_MANIFEST_FILES)
 endforeach()
 
 set(manifest "${BGV_BUNDLE}/data/vision/runtime.manifest.json")
+# The manifest and its temp file must not replace a link or land in the
+# verified input cache or beside the lock, whatever links the paths go through.
+foreach(target "${manifest}" "${manifest}.tmp")
+  if(IS_SYMLINK "${target}")
+    message(FATAL_ERROR "Refusing to write the manifest through link ${target}")
+  endif()
+endforeach()
+file(REAL_PATH "${BGV_BUNDLE}/data/vision" manifest_dir)
+string(TOLOWER "${manifest_dir}/" manifest_dir_key)
+foreach(dir IN LISTS BGV_PROTECTED_DIRS)
+  if(NOT EXISTS "${dir}")
+    continue()
+  endif()
+  file(REAL_PATH "${dir}" protected)
+  string(TOLOWER "${protected}/" protected_key)
+  string(FIND "${manifest_dir_key}" "${protected_key}" at)
+  if(at EQUAL 0)
+    message(FATAL_ERROR
+      "Refusing to write the manifest into ${manifest_dir}: it resolves inside "
+      "the input directory ${protected}. Install the bundle elsewhere.")
+  endif()
+endforeach()
 file(WRITE "${manifest}.tmp" "${json}\n")
 file(RENAME "${manifest}.tmp" "${manifest}")

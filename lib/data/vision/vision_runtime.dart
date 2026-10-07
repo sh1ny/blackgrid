@@ -358,9 +358,9 @@ final class VisionRuntime {
     try {
       return body(native, engine);
     } on VisionNativeError catch (error) {
-      return VisionFailed(VisionInvalidImage('$error'));
+      return VisionFailed(VisionNativeFailure(error.status, error.detail));
     } catch (error) {
-      return VisionFailed(VisionInvalidImage('native call failed: $error'));
+      return VisionFailed(VisionNativeFailure(-5, '$error'));
     }
   }
 

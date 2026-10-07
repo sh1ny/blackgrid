@@ -306,6 +306,21 @@ void main() {
     });
   }, skip: skip);
 
+  test('uniform template is rejected rather than matched', () {
+    final (:image, sample: _) = selfCheckSample();
+    final flat = Uint8List(16 * 16)..fillRange(0, 16 * 16, 235);
+    withRuntime(bundle, (runtime) {
+      readyIdentity(runtime);
+      final result = runtime.matchTemplate(
+        image,
+        VisionImage(flat, width: 16, height: 16, stride: 16, channels: 1),
+      );
+      final failure = (result as VisionFailed<TemplateMatch>).failure;
+      expect(failure, isA<VisionNativeFailure>());
+      expect((failure as VisionNativeFailure).status, -2); // BGV_ERR_IMAGE
+    });
+  }, skip: skip);
+
   test('row scan without match returns none', () {
     const width = 64;
     final black = Uint8List(width * 4 * 2);

@@ -101,6 +101,19 @@ final class VisionDisposedFailure extends VisionFailure {
   String get message => 'Vision runtime is disposed.';
 }
 
+/// A native operation ran and reported a non-success status (OpenCV error,
+/// out of memory, an input the native side rejected, or no OCR text).
+final class VisionNativeFailure extends VisionFailure {
+  const VisionNativeFailure(this.status, this.detail);
+
+  /// The native `bgv_*` status, or -5 (internal) for a thrown error.
+  final int status;
+  final String detail;
+
+  @override
+  String get message => 'Native vision call failed (status $status): $detail';
+}
+
 /// A bounded step did not finish in time.
 final class VisionTimeout extends VisionFailure {
   const VisionTimeout(this.step);

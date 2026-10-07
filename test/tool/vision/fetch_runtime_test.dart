@@ -140,6 +140,29 @@ void main() {
     expect(cacheFiles(), isEmpty);
   });
 
+  test('fetch times out while the connection never establishes', () async {
+    final bytes = utf8.encode('never connects');
+    final watch = Stopwatch()..start();
+    await expectLater(
+      fetchInputs(
+        lockFile: writeLock([entry('a', bytes)]),
+        cacheDir: cacheDir(),
+        client: _NeverConnectingClient(),
+        timeout: const Duration(milliseconds: 300),
+        allowLoopbackHttp: true,
+      ).timeout(const Duration(seconds: 5)),
+      throwsA(
+        isA<FetchException>().having(
+          (e) => e.message,
+          'message',
+          contains('timed out'),
+        ),
+      ),
+    );
+    expect(watch.elapsed, lessThan(const Duration(seconds: 5)));
+    expect(cacheFiles(), isEmpty);
+  });
+
   test('fetch rejects non-https URLs unless loopback is allowed', () async {
     final bytes = utf8.encode('x');
     routes['/a.bin'] = serve(bytes);
@@ -243,4 +266,17 @@ void main() {
       );
     });
   });
+}
+
+/// Connection establishment (DNS, TCP or TLS) that never completes.
+final class _NeverConnectingClient implements HttpClient {
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) =>
+      Completer<HttpClientRequest>().future;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

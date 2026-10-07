@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/application/vision_self_check.dart';
+import 'package:blackgrid/data/vision/vision_runtime.dart'
+    show visionManifestPath;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../data/vision/vision_runtime_test.dart' show Fixture;
@@ -109,6 +111,23 @@ void main() {
     expect(usage, hasLength(3));
     expect(usage.first, contains('Start-Process -Wait -PassThru'));
     expect(usage.first, contains('start /wait'));
+  });
+
+  test('report path that would overwrite a runtime input is refused', () async {
+    final usage = <String>[];
+    final manifest = File('${dir.path}/$visionManifestPath')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{"keep":true}');
+    final code = await runVisionSelfCheck(
+      ['--vision-self-check', manifest.path],
+      runtimeDirectory: dir.path,
+      worker: neverCalledWorker,
+      writeUsage: usage.add,
+    );
+    expect(code, 2);
+    expect(usage.single, contains('Refusing report path'));
+    expect(manifest.readAsStringSync(), '{"keep":true}');
+    expect(File('${dir.path}/worker-ran').existsSync(), isFalse);
   });
 
   test('report has format identity steps and result mirroring code', () async {

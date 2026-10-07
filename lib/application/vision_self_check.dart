@@ -10,6 +10,7 @@ import 'package:ffi/ffi.dart';
 import '../data/vision/vision_native.dart' show openVisionNative;
 import '../data/vision/vision_runtime.dart';
 import 'launch_mode.dart';
+import 'output_path_guard.dart';
 
 /// Overall time allowed for the native steps.
 const Duration visionSelfCheckWatchdog = Duration(seconds: 60);
@@ -171,6 +172,22 @@ Future<int> runVisionSelfCheck(
 
   final runtimeRoot =
       runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path;
+  final unsafe = unsafeOutputReason(
+    reportPath,
+    protectedFiles: [
+      for (final path in [
+        visionManifestPath,
+        ...visionCoreFiles,
+        'data/vision/self_check/title.gray',
+        'data/vision/self_check/title.json',
+      ])
+        '$runtimeRoot/$path',
+    ],
+  );
+  if (unsafe != null) {
+    usage('Refusing report path: $unsafe');
+    return 2;
+  }
   final startedAt = DateTime.now().toUtc();
   final clock = Stopwatch()..start();
 
@@ -578,6 +595,7 @@ String _failureKind(VisionFailure failure) => switch (failure) {
   VisionLoadFailed() => 'loadFailed',
   VisionEngineInitFailed() => 'engineInitFailed',
   VisionInvalidImage() => 'invalidImage',
+  VisionNativeFailure() => 'nativeFailure',
   VisionDisposedFailure() => 'disposed',
   VisionTimeout() => 'timeout',
 };

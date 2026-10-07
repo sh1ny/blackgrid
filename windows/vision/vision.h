@@ -19,7 +19,7 @@
 #define BGV_OK 0
 #define BGV_NOT_FOUND 1          // bgv_find_in_range_row: no pixel in range
 #define BGV_ERR_ARGUMENT (-1)    // null pointer or out-of-range scalar
-#define BGV_ERR_IMAGE (-2)       // size, channel or stride cap violated
+#define BGV_ERR_IMAGE (-2)       // cap violated, uniform template, bad score
 #define BGV_ERR_OPENCV (-3)      // cv::Exception caught at the boundary
 #define BGV_ERR_NO_MEMORY (-4)   // std::bad_alloc caught at the boundary
 #define BGV_ERR_INTERNAL (-5)    // any other exception caught at the boundary
@@ -53,8 +53,8 @@ BGV_API int32_t bgv_threshold_binary_inv(const uint8_t* src, int32_t w,
                                          uint8_t* dst, int32_t dst_stride);
 
 // 1-channel image and template; TM_CCOEFF_NORMED best (maximum) score and
-// its top-left location. The template must fit inside the image; a
-// non-finite best score is reported as BGV_ERR_IMAGE.
+// its top-left location. The template must fit inside the image. A uniform
+// (zero-variance) template or a non-finite best score is BGV_ERR_IMAGE.
 BGV_API int32_t bgv_match_template_best(const uint8_t* img, int32_t iw,
                                         int32_t ih, int32_t istride,
                                         const uint8_t* tpl, int32_t tw,

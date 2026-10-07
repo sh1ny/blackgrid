@@ -260,11 +260,13 @@ endforeach()
 
 # Last: re-check third-party pins on the installed bytes, then bind every
 # vision file into data/vision/runtime.manifest.json (write_manifest.cmake).
+get_filename_component(BGV_LOCK_DIR "${BGV_LOCK_FILE}" DIRECTORY)
 install(CODE "
   set(BGV_BUNDLE \"${INSTALL_BUNDLE_LIB_DIR}\")
   set(BGV_PIN_CHECKS \"${BGV_PIN_CHECKS}\")
   set(BGV_MANIFEST_FILES \"${BGV_MANIFEST_FILES}\")
   set(BGV_ABI_VERSION \"${BGV_ABI_VERSION}\")
   set(BGV_ENGINE_VERSION \"${BGV_ENGINE_VERSION}\")
+  set(BGV_PROTECTED_DIRS \"${BGV_INPUT_CACHE};${BGV_LOCK_DIR}\")
   include(\"${CMAKE_CURRENT_LIST_DIR}/write_manifest.cmake\")
   " COMPONENT Runtime)

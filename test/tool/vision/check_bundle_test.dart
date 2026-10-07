@@ -354,4 +354,49 @@ void main() {
     expect(out.toString(), isNot(contains('pass')));
     expect(File(fx.reportPath).existsSync(), isFalse);
   });
+
+  Future<({int code, String err})> runWithReport(String report) async {
+    final out = StringBuffer();
+    final err = StringBuffer();
+    final code = await runCli(
+      [
+        fx.bundle.path,
+        '--report',
+        report,
+        '--lock',
+        fx.lockPath,
+        '--notices',
+        fx.noticesPath,
+      ],
+      out: out,
+      err: err,
+    );
+    return (code: code, err: err.toString());
+  }
+
+  test('report path equal to the lock is refused unchanged', () async {
+    final before = File(fx.lockPath).readAsStringSync();
+    final r = await runWithReport(fx.lockPath);
+    expect(r.code, 2);
+    expect(r.err, contains('refusing report path'));
+    expect(File(fx.lockPath).readAsStringSync(), before);
+  });
+
+  test('report path inside the bundle is refused', () async {
+    final inside = '${fx.bundle.path}/data/report.json';
+    final r = await runWithReport(inside);
+    expect(r.code, 2);
+    expect(r.err, contains('refusing report path'));
+    expect(File(inside).existsSync(), isFalse);
+  });
+
+  test('report path under a junction is refused', () async {
+    final target = Directory('${fx.root.path}/real')..createSync();
+    final link = '${fx.root.path}/linked';
+    Link(link).createSync(target.path);
+    final r = await runWithReport('$link/report.json');
+    expect(r.code, 2);
+    expect(r.err, contains('symbolic link or junction'));
+    expect(File('${target.path}/report.json').existsSync(), isFalse);
+  }, skip: Platform.isWindows ? false : 'junctions are Windows-only');
 }
