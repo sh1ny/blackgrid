@@ -46,6 +46,20 @@ It supersedes `5320e515…`, differing only in `NOTICE.txt` (the corrected `<use
 | Real Shoreline saved panel | Pending, user | Not available to the agent. Run `dart run tool/ocr/read_saved_panel.dart <image>` or Read Latest. |
 | Extract/transit highlights, automatic floors | User-only | Not separately reported. |
 
+### PR #7 follow-up verification (2026-10-07)
+
+Code changed for canonical bulk-filter persistence and screenshot-disagreement admission, so the integration owner reran offline checks before publishing the fixes. No app, reference companion or game was launched.
+
+| Check | Follow-up result |
+| --- | --- |
+| Full offline suite, including qualification | 688 passed, 0 failed, 4 native/private-image skips, 0 errors; durable JSON reporter ended with `success: true` at 115.912 s. The MCP receive timed out after 30 s; the terminal reporter, not the timeout, establishes the result. An earlier timed-out attempt had no durable reporter and remains outcome-unknown. |
+| Whole-project analysis | Dart MCP `analyze_files`: no errors. |
+| Changed Dart files | Dart MCP formatter processed four files and formatted the disagreement test. |
+| Release rebuild | `mise exec -- flutter build windows --release` succeeded. The only bundled pack is `6a2868b8…`; all 1,322 packaged pack files match the source bytes, and the OCR DLL matches its SHA-256 binding. |
+| Updated Release payload hashes | `blackgrid.exe`: `56c7d4c83128f01ab2a6176c7823206b37a555cc62fb6df93b470c351bc12bad`; `data/app.so`: `969339685fe758f5666dbee767ddf64ad3fa0d8549b4712389a6f7501de0b155`; `blackgrid_panel_ocr.dll`: `90752805a7d83481f23479318e0ccacd8ecc4e750f3a295f4473580cfe68b1c8`. |
+
+Debug/Profile clean builds and the user live check above predate these follow-up changes; they were not rerun.
+
 **Unverified offline/native gates:** independent numeric placement controls for the ten new families and Icebreaker (also absent in the reference fork); complete all-map pointer/keyboard/semantic checks at resize and DPI contexts; fixed rendering/resource budgets; outside-checkout Release startup and restart; durable pin and import outcomes in the packaged app.
 
 ## Review fixes (2026-10-07)
@@ -57,6 +71,8 @@ Applied from a read-only review of the full diff.
 - A failed log/screenshot bind is reported as that input's error instead of breaking every later bind and shutdown. `MapSessionController.close` always disposes, and `AppServices.dispose` closes the database even if Map session shutdown throws.
 - Matched panel evidence keeps its merged OCR `rawText`.
 - Quest name/trader fields restore their text after rebuilds, so hidden quests are never unexplained. Pin search matches pin labels only, not frame names.
+- PR #7 marker-filter follow-up: Show all and Hide all write only canonical filter keys, not raw marker-category aliases rejected by saved-settings validation. The existing widget regression now reads the database and reloads settings after both actions with filter persistence enabled. Verified by the follow-up offline suite above.
+- PR #7 screenshot-association follow-up: a known detected/manual map disagreement blocks watched screenshot admission, so it cannot publish position, automatic floors or raid highlights onto the manual map. Explicit Read Latest remains visibly assumed, and missing log context retains assumed watched samples. The disagreement regression now follows plan KTD5/U7 rather than the former reference-parity comment. Verified by the follow-up offline suite above.
 - The missing-target `<use>` drop is limited to known publisher-deleted ids (see above); `prepare` usage text and the pack's `NOTICE.txt` describe it.
 
 **Left as is:** the raw-text matcher checks the whole panel text as well as the extract/transit section, matching the reference fork.

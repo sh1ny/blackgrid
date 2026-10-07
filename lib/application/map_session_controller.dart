@@ -102,7 +102,7 @@ class MapSessionController extends ChangeNotifier {
     screenshotStatus: _screenshotStatus,
     logMessage: _log.message,
     screenshotMessage: _disagreement
-        ? '${_screenshotMessage == null ? '' : '$_screenshotMessage '}Detected map differs from the selected map; saved screenshots apply to the selected map.'
+        ? '${_screenshotMessage == null ? '' : '$_screenshotMessage '}Detected map differs from the selected map; watched screenshots are ignored. Read Latest can apply a saved sample to the selected map as assumed evidence.'
         : _screenshotMessage,
     playerSample: _sample,
     raidEvidence: _evidence,
@@ -122,10 +122,11 @@ class MapSessionController extends ChangeNotifier {
     if (_closed || _initialized) return;
     _initialized = true;
     _logSubscription = _logs.states.listen(_onLog);
-    // As in the reference tracker, every new saved screenshot applies to the
-    // displayed map. Without an agreeing log session it is labeled assumed.
+    // Without log context, watched samples are labeled assumed. A known map
+    // disagreement requires the explicit Read Latest association instead.
     _screenshotSubscription = _screenshots.screenshots.listen((saved) {
       if (_closed ||
+          _disagreement ||
           (_contextStarted != null &&
               !saved.modifiedAt.isAfter(_contextStarted!))) {
         return;
@@ -133,7 +134,7 @@ class MapSessionController extends ChangeNotifier {
       _readingLatest = false;
       _enqueue(
         saved,
-        assumed: _waitingForLogContext || _disagreement,
+        assumed: _waitingForLogContext,
         order: ++_order,
         context: _context,
       );

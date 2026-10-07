@@ -9,7 +9,6 @@ import '../domain/map_coordinates.dart';
 import '../domain/map_session.dart';
 import '../domain/raid_panel_text_parser.dart';
 import '../domain/settings.dart';
-import '../maps/prepared_map.dart';
 import 'item_decision_card.dart';
 import 'manual_controls.dart';
 import 'map_workspace.dart';
@@ -431,17 +430,6 @@ class MapScreen extends StatelessWidget {
                                             .markerFilters,
                                         for (final key in categories)
                                           key: action.value,
-                                        // Group aliases must not prevent individual chips
-                                        // from restoring a category after Hide all.
-                                        for (final marker
-                                            in services
-                                                    .maps
-                                                    .preparedMap
-                                                    ?.markers ??
-                                                const <PreparedMarker>[])
-                                          if (marker.category !=
-                                              marker.filterKey)
-                                            marker.category: true,
                                       },
                                     ),
                                   ),

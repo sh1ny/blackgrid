@@ -175,49 +175,57 @@ void main() {
     expect(session.state.assumedAssociation, isTrue);
   });
 
-  test('disagreement applies watched samples to the selected map as assumed; Read Latest is visibly assumed', () async {
-    await log('laboratory');
-    await settings.setMap('woods');
-    await session.initialize();
-    session.updateMapContext(_map('woods'), 1);
-    final first = await screenshot(1);
-    await watcher.rescan();
-    await _until(
-      session,
-      () => session.state.raidHighlightIds.contains('woods-exit'),
-    );
-    expect(session.state.mapDisagreement, isTrue);
-    expect(session.state.assumedAssociation, isTrue);
-    expect(session.state.screenshotMessage, contains('selected map'));
-    await session.readLatest();
-    expect(session.state.playerSample!.metadata.position.x, 1);
-    expect(session.state.assumedAssociation, isTrue);
-    expect(session.state.raidHighlightIds, {'woods-exit'});
-    expect(session.state.savedScreenshotPath, first.path);
-    await settings.setMapInputs(followGameLogs: true);
-    session.updateMapContext(_map('thelab'), 2);
-    await watcher.rescan();
-    expect(session.state.playerSample, isNull);
-    expect(session.state.raidHighlightIds, isEmpty);
-    await screenshot(2);
-    await watcher.rescan();
-    await _until(
-      session,
-      () => session.state.raidHighlightIds.contains('thelab-exit'),
-    );
-    expect(session.state.assumedAssociation, isFalse);
-    expect(session.state.playerSample!.metadata.position.height, 0);
-    final sample = session.state.playerSample;
-    await log('not_supported');
-    await logs.rescan();
-    expect(session.state.detectedMapId, isNull);
-    expect(session.state.playerSample, isNull);
-    expect(session.state.raidHighlightIds, isEmpty);
-    expect(
-      sample!.ageAt(now.add(const Duration(minutes: 5))),
-      const Duration(minutes: 3),
-    );
-  });
+  test(
+    'disagreement blocks watched evidence; Read Latest remains visibly assumed',
+    () async {
+      await log('laboratory');
+      await settings.setMap('woods');
+      await session.initialize();
+      session.updateMapContext(_map('woods'), 1);
+      final first = await screenshot(1);
+      await watcher.rescan();
+      expect(session.state.mapDisagreement, isTrue);
+      expect(session.state.playerSample, isNull);
+      expect(session.state.raidEvidence, isNull);
+      expect(session.state.raidHighlightIds, isEmpty);
+      expect(session.state.savedScreenshotPath, isNull);
+      expect(session.state.processingScreenshot, isFalse);
+      expect(session.state.pendingScreenshotPath, isNull);
+      expect(session.state.assumedAssociation, isFalse);
+      expect(
+        session.state.screenshotMessage,
+        contains('watched screenshots are ignored'),
+      );
+      await session.readLatest();
+      expect(session.state.playerSample!.metadata.position.x, 1);
+      expect(session.state.assumedAssociation, isTrue);
+      expect(session.state.raidHighlightIds, {'woods-exit'});
+      expect(session.state.savedScreenshotPath, first.path);
+      await settings.setMapInputs(followGameLogs: true);
+      session.updateMapContext(_map('thelab'), 2);
+      await watcher.rescan();
+      expect(session.state.playerSample, isNull);
+      expect(session.state.raidHighlightIds, isEmpty);
+      await screenshot(2);
+      await watcher.rescan();
+      await _until(
+        session,
+        () => session.state.raidHighlightIds.contains('thelab-exit'),
+      );
+      expect(session.state.assumedAssociation, isFalse);
+      expect(session.state.playerSample!.metadata.position.height, 0);
+      final sample = session.state.playerSample;
+      await log('not_supported');
+      await logs.rescan();
+      expect(session.state.detectedMapId, isNull);
+      expect(session.state.playerSample, isNull);
+      expect(session.state.raidHighlightIds, isEmpty);
+      expect(
+        sample!.ageAt(now.add(const Duration(minutes: 5))),
+        const Duration(minutes: 3),
+      );
+    },
+  );
 
   test('Read Latest old manual source preserves timestamp and absent metadata remains assumed', () async {
     final old = await screenshot(1, name: 'old.png');

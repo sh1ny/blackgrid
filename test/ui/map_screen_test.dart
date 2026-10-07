@@ -121,6 +121,11 @@ void main() {
     'marker search survives show/hide-all and dimmed targets remain eligible',
     (tester) async {
       final h = await pumpMapFixture(tester);
+      await tester.runAsync(
+        () => h.services.settings.save(
+          h.services.settings.settings.copyWith(saveMarkerFilters: true),
+        ),
+      );
       final search = find.byKey(const ValueKey('marker-search'));
       await tester.scrollUntilVisible(
         search,
@@ -154,6 +159,15 @@ void main() {
         () => h.services.maps.visibleMarkers().isEmpty,
       );
       expect(h.services.maps.search, 'exit, tunnel');
+      final hidden = (await tester.runAsync(
+        () => h.services.database.readSettings(),
+      ))!;
+      expect(hidden.markerFilters['PmcExtracts'], isFalse);
+      expect(hidden.markerFilters, isNot(contains('extracts')));
+      expect(hidden.markerFilters, isNot(contains('hazards')));
+      await tester.runAsync(h.services.settings.load);
+      await tester.pumpAndSettle();
+      expect(h.services.maps.visibleMarkers(), isEmpty);
       final extracts = find.widgetWithText(FilterChip, 'PmcExtracts');
       await Scrollable.ensureVisible(tester.element(extracts), alignment: .5);
       await tester.pumpAndSettle();
@@ -177,6 +191,15 @@ void main() {
         h.services.maps.visibleMarkers().map((marker) => marker.marker.id),
         ['ground-exit', 'ground-hazard'],
       );
+      final shown = (await tester.runAsync(
+        () => h.services.database.readSettings(),
+      ))!;
+      expect(shown.markerFilters['PmcExtracts'], isTrue);
+      expect(shown.markerFilters, isNot(contains('extracts')));
+      expect(shown.markerFilters, isNot(contains('hazards')));
+      await tester.runAsync(h.services.settings.load);
+      await tester.pumpAndSettle();
+      expect(h.services.maps.visibleMarkers(), hasLength(2));
       expect(h.services.maps.visibleMarkers().last.dimmed, isTrue);
       expect(
         h.services.maps
