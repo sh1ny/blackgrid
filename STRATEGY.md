@@ -25,8 +25,8 @@ Stash management is secondary.
 - Map and Scanner only as initial primary areas; configuration through supporting controls, no Database browsing or full Progression area yet
 - Read-only tarkovtracker.org progression integration retained; quest/progression updates deferred
 - No overlay, WebView/WebView2 map renderer, or runtime/architectural dependency on the old application
-- Independently recreate useful behavior in Dart/Flutter; no copied reference code or old runtime shipped. The user maintains a modified TarkovTracker fork under their account and owns their contributions, not all upstream or third-party contents
-- Repository work targets `sh1ny/blackgrid` or `sh1ny/TarkovTracker`, never the historical upstream. TarkovTracker was intentionally detached from its upstream fork relationship; do not restore it
+- Independently recreate useful behavior in Dart/Flutter; no copied reference code or old runtime shipped. The user maintains a private reference companion (a modified fork of a C# desktop program) and owns their contributions, not all upstream or third-party contents
+- Repository work targets only the user's own repositories, never the reference companion's original upstream project. The user's fork was intentionally detached from that upstream; do not restore the fork relationship or open PRs there
 - The user's intent is for Blackgrid to be open source when functional. No license has been selected and this intent does not authorize making the current private repository public now
 - No Blackgrid backend, cloud sync, account system, or telemetry; existing third-party data/progression access is not a Blackgrid account system
 - Proven OpenCV/Tesseract item-recognition approach retained until parity; no novelty-driven engine substitution

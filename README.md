@@ -2,7 +2,7 @@
 
 ![version](https://img.shields.io/badge/version-0.1.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.6-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
-A Windows desktop companion for raid-time loot decisions, built in Dart/Flutter. It has two areas, **Map** and **Scanner**. It reads public catalog data from json.tarkov.dev and, if you opt in, read-only progress from tarkovtracker.org. It replaces the older reference companion's WebView2 map with a native Flutter renderer that uses a bundled, hash-addressed map pack. It also adds one conservative decision engine: an unknown or stale input gives **Check / May Need**, never a confident Sell. The game itself is never touched. Blackgrid reads only the game's log files and the screenshots you save.
+A Windows desktop companion for raid-time loot decisions, built in Dart/Flutter. It has two areas, **Map** and **Scanner**. It reads public catalog data from json.tarkov.dev and, if you opt in, read-only progress from tarkovtracker.org. Maps render natively from a bundled, hash-addressed pack. One conservative decision engine drives every recommendation: an unknown or stale input gives **Check / May Need**, never a confident Sell. The game itself is never touched. Blackgrid reads only the game's log files and the screenshots you save.
 
 ## ✨ What it adds
 
@@ -314,6 +314,7 @@ Tests live in [`test/`](test/). **Agents and live-game checks:** no agent may la
 
 ## 💡 Credits and notices
 
+- Inspired by [TarkovTracker](https://github.com/sayser/TarkovTracker), a C# desktop companion. Blackgrid is an independent Dart/Flutter implementation and contains no code from it.
 - Map artwork and metadata: the tarkov-dev SVG maps project, Tarkov.dev and TarkovBOT.eu, under the terms recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and in each pack's evidence.
 - Item vision: OpenCV, Tesseract, Leptonica and tessdata, pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json).
 - Project direction: [STRATEGY.md](STRATEGY.md), [architecture](openspec/architecture.md), [decisions](docs/adr/README.md).
