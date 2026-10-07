@@ -76,4 +76,64 @@ void main() {
       isTrue,
     );
   });
+
+  group('competing exit names', () {
+    // Factory's exits share "Gate"; Gate 3 has two spatial marker copies.
+    final factory = RaidExfilMatcher([
+      RaidExitIdentity(id: 'med', name: 'Med Tent Gate', transit: false),
+      RaidExitIdentity(id: 'g3a', name: 'Gate 3', transit: false),
+      RaidExitIdentity(id: 'g3b', name: 'Gate 3', transit: false),
+      RaidExitIdentity(id: 'court', name: 'Courtyard Gate', transit: false),
+      RaidExitIdentity(id: 'g2', name: 'Gate 2', transit: false),
+      RaidExitIdentity(id: 'g0', name: 'Gate 0', transit: false),
+    ]);
+
+    test('a fragment shared by several exits authorizes none', () {
+      for (final evidence in [
+        _recognized(extracts: ['Gate']),
+        _recognized(raw: 'Find an extraction point\nGate 10:00'),
+      ]) {
+        final result = factory.match(evidence);
+        expect(result.state, RaidPanelState.ambiguous);
+        expect(result.ids, isEmpty);
+      }
+    });
+
+    test('one ambiguous row withholds the whole panel', () {
+      final result = factory.match(_recognized(extracts: ['Gate 0', 'Gate']));
+      expect(result.state, RaidPanelState.ambiguous);
+      expect(result.ids, isEmpty);
+    });
+
+    test('a specific name authorizes every spatial copy of only that exit', () {
+      for (final evidence in [
+        _recognized(extracts: ['Gate 3']),
+        _recognized(extracts: ['Gate 3 10:00']),
+        _recognized(raw: 'Find an extraction point\nGate 3 10:00'),
+      ]) {
+        final result = factory.match(evidence);
+        expect(result.state, RaidPanelState.recognized);
+        expect(result.ids, {'g3a', 'g3b'});
+      }
+      expect(factory.match(_recognized(extracts: ['Med Tent Gate'])).ids, {
+        'med',
+      });
+    });
+
+    test('fuzzy rows resolve to the uniquely closest exit', () {
+      expect(factory.match(_recognized(extracts: ['Courtyard Gatc'])).ids, {
+        'court',
+      });
+    });
+
+    test('shared words do not cancel a distinctive raw hit', () {
+      final matcher = RaidExfilMatcher([
+        RaidExitIdentity(id: 'rail', name: 'Railway Exfil', transit: false),
+        RaidExitIdentity(id: 'boat', name: 'Boat Exfil', transit: false),
+      ]);
+      final result = matcher.match(_recognized(raw: 'Railway 10:00 Exfil'));
+      expect(result.state, RaidPanelState.recognized);
+      expect(result.ids, {'rail'});
+    });
+  });
 }
