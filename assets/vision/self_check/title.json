@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "width": 336,
+  "height": 48,
+  "stride": 336,
+  "text": "SALEWA FIRST AID KIT",
+  "template": {
+    "x": 8,
+    "y": 8,
+    "width": 96,
+    "height": 32
+  }
+}

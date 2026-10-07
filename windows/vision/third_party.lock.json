@@ -1,0 +1,76 @@
+{
+  "format": 1,
+  "inputs": [
+    {
+      "id": "opencv-source",
+      "name": "opencv-4.13.0.zip",
+      "version": "4.13.0",
+      "urls": [
+        "https://github.com/opencv/opencv/archive/refs/tags/4.13.0.zip",
+        "https://codeload.github.com/opencv/opencv/zip/refs/tags/4.13.0"
+      ],
+      "authoritativeUrl": "https://github.com/opencv/opencv/archive/refs/tags/4.13.0.zip",
+      "sourceCommit": "fe38fc608f6acb8b68953438a62305d8318f4fcd",
+      "sha256": "431cb489d275da26526581c6735d7d7c0b00f190fe940b3217d386b77aef52c7",
+      "size": 100344657,
+      "license": "Apache-2.0",
+      "noticeAnchor": "opencv-4-13-0"
+    },
+    {
+      "id": "tesseract-nupkg",
+      "name": "tesseract.5.2.0.nupkg",
+      "version": "5.2.0",
+      "packageVersion": "5.2.0",
+      "engineVersion": "5.0.0",
+      "urls": [
+        "https://www.nuget.org/api/v2/package/Tesseract/5.2.0"
+      ],
+      "authoritativeUrl": "https://www.nuget.org/api/v2/package/Tesseract/5.2.0",
+      "sha256": "202d82fc7c7d8384df7da57206d5e1f456ccdabd648c46e67cdfaa3a911d4795",
+      "size": 5697774,
+      "license": "Apache-2.0",
+      "noticeAnchor": "tesseract-5-0-0"
+    },
+    {
+      "id": "tesseract-dll",
+      "name": "tesseract50.dll",
+      "version": "5.0.0",
+      "packageVersion": "5.2.0",
+      "engineVersion": "5.0.0",
+      "extractFrom": "tesseract-nupkg",
+      "path": "x64/tesseract50.dll",
+      "bundlePath": "tesseract50.dll",
+      "sha256": "de4d04ec75095374d98f5dd7a60d14d7e2e0f76589db693eccf7ae658be8cb2b",
+      "size": 2788352,
+      "license": "Apache-2.0",
+      "noticeAnchor": "tesseract-5-0-0"
+    },
+    {
+      "id": "leptonica-dll",
+      "name": "leptonica-1.82.0.dll",
+      "version": "1.82.0",
+      "extractFrom": "tesseract-nupkg",
+      "path": "x64/leptonica-1.82.0.dll",
+      "bundlePath": "leptonica-1.82.0.dll",
+      "sha256": "dfcb3e6ed0b16bc55bfdbcf53543cfe42a354b87c3e35bd3a95eebf005d73e76",
+      "size": 4168192,
+      "license": "BSD-2-Clause",
+      "noticeAnchor": "leptonica-1-82-0"
+    },
+    {
+      "id": "eng-traineddata",
+      "name": "eng.traineddata",
+      "version": "4.1.0",
+      "urls": [
+        "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/4.1.0/eng.traineddata"
+      ],
+      "authoritativeUrl": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/4.1.0/eng.traineddata",
+      "sourceCommit": "65727574dfcd264acbb0c3e07860e4e9e9b22185",
+      "bundlePath": "data/vision/tessdata/eng.traineddata",
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2",
+      "size": 4113088,
+      "license": "Apache-2.0",
+      "noticeAnchor": "tessdata-fast-4-1-0"
+    }
+  ]
+}

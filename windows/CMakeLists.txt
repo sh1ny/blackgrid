@@ -1,5 +1,8 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+# Must precede project(): with CMP0091 OLD, CMake writes /MD into the cache
+# flags and silently ignores per-target MSVC_RUNTIME_LIBRARY (ADR-0008).
+cmake_policy(SET CMP0091 NEW)
 project(blackgrid LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
@@ -97,6 +100,9 @@ install(CODE "
   file(SHA256 \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_panel_ocr.dll\" OCR_DLL_HASH)
   file(WRITE \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_panel_ocr.dll.sha256\" \"\${OCR_DLL_HASH}\")
   " COMPONENT Runtime)
+
+# Item vision runtime (ADR-0008): pinned OpenCV, Tesseract and model inputs.
+add_subdirectory("vision")
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
