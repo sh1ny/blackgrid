@@ -19,12 +19,20 @@ class SettingsDialog extends StatefulWidget {
 
 class _SettingsDialogState extends State<SettingsDialog> {
   final token = TextEditingController();
+  late final gameLogs = TextEditingController(
+    text: widget.services.settings.settings.gameLogDirectory,
+  );
+  late final screenshots = TextEditingController(
+    text: widget.services.settings.settings.screenshotDirectory,
+  );
   bool busy = false;
   String? message;
   @override
   void dispose() {
     token.clear();
     token.dispose();
+    gameLogs.dispose();
+    screenshots.dispose();
     super.dispose();
   }
 
@@ -70,7 +78,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Mode is selected explicitly. Blackgrid does not detect or interact with the game.',
+                  'Manual mode is used when configured Map logs cannot establish a mode. Blackgrid reads saved files only and never interacts with the game.',
                   style: TextStyle(color: GridColors.muted),
                 ),
                 const SizedBox(height: 18),
@@ -105,6 +113,56 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 Text(
                   'Catalog: ${services.catalog.status.name}',
                   style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const Divider(height: 28),
+                Text(
+                  'Map file inputs',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: gameLogs,
+                  enabled: !services.settings.busy,
+                  decoration: const InputDecoration(
+                    labelText: 'Game log directory',
+                    helperText: "Leave empty to auto-detect the game's Logs folder. Monitoring is independent of Follow logs.",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: screenshots,
+                  enabled: !services.settings.busy,
+                  decoration: const InputDecoration(
+                    labelText: 'Screenshot directory',
+                    helperText: r'Leave empty to use Documents\Escape from Tarkov\Screenshots.',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: services.settings.busy
+                      ? null
+                      : () => services.settings.setMapInputs(
+                          gameLogDirectory: gameLogs.text.trim(),
+                          screenshotDirectory: screenshots.text.trim(),
+                        ),
+                  child: Text(
+                    services.settings.busy
+                        ? 'Saving map inputs…'
+                        : 'Save map inputs',
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Follow logs'),
+                  subtitle: const Text(
+                    'Use the detected map when available. Manual map selection turns this off; configured logs continue to be monitored.',
+                  ),
+                  value: services.settings.settings.followGameLogs,
+                  onChanged: services.settings.busy
+                      ? null
+                      : (value) => services.settings.setMapInputs(
+                          followGameLogs: value,
+                        ),
                 ),
                 const Divider(height: 28),
                 SwitchListTile(

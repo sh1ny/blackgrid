@@ -6,6 +6,68 @@ List<String> svgLayerOrder(String source, Set<String> layerIds) => [
       element.getAttribute('id')!,
 ];
 
+/// Binds every direct source floor and publisher-declared attachment to the
+/// authored selection contract before splitting pictures.
+void validateSvgFloorInventory(
+  String source,
+  List<Map<String, Object?>> floors,
+) {
+  final root = XmlDocument.parse(source).rootElement;
+  final expectedRoots = <String>{
+    for (final floor in floors) floor['id'] as String,
+    for (final floor in floors)
+      ...(floor['attachedIds'] as List).cast<String>(),
+  };
+  final actualRoots = <String>{};
+  for (final group in root.childElements.where(
+    (element) => element.name.local == 'g',
+  )) {
+    final id = group.getAttribute('id');
+    if (id == null || !actualRoots.add(id)) {
+      throw const FormatException('Anonymous or duplicated source floor group');
+    }
+  }
+  if (actualRoots.length != expectedRoots.length ||
+      !actualRoots.containsAll(expectedRoots)) {
+    throw FormatException(
+      'SVG floor closure changed; missing ${expectedRoots.difference(actualRoots)}, '
+      'unowned ${actualRoots.difference(expectedRoots)}',
+    );
+  }
+  final expectedAttachments = <String, String>{
+    for (final floor in floors)
+      for (final id in (floor['attachedIds'] as List).cast<String>())
+        id: floor['id'] as String,
+  };
+  final actualAttachments = <String, String>{};
+  for (final element in root.descendantElements) {
+    final owner = element.getAttribute('data-keep-with-group');
+    if (owner == null) continue;
+    final id = element.getAttribute('id');
+    if (id == null || id.isEmpty || actualAttachments.containsKey(id)) {
+      throw const FormatException('Anonymous or duplicated attached layer');
+    }
+    actualAttachments[id] = owner;
+  }
+  if (actualAttachments.length != expectedAttachments.length ||
+      expectedAttachments.entries.any(
+        (entry) => actualAttachments[entry.key] != entry.value,
+      )) {
+    throw const FormatException('SVG attached layer ownership changed');
+  }
+}
+
+/// Deleted publisher symbols whose dangling `<use>` references are dropped:
+/// Customs `path493` (two uses) and Streets stairs (ten uses).
+const droppedStaleSvgUseTargets = {
+  'path493',
+  'stairs-85',
+  'stairs-86',
+  'stairs-87',
+  'stairs-90',
+  'stairs-92',
+};
+
 /// Keeps the original root, defs, styles and ancestor tree. Excluded floors
 /// referenced by a retained `<use>` remain as non-rendering definitions.
 String normalizeSvgFloor(
@@ -51,6 +113,25 @@ String normalizeSvgFloor(
   for (final id in selected) {
     if (!ids.containsKey(id)) {
       throw FormatException('Missing required SVG floor $id');
+    }
+  }
+  // A <use> whose local target is absent renders nothing in browsers. The
+  // publisher's Streets and Customs artwork ship stale references to these
+  // deleted symbols, and the reference WebView rendering omits them. Drop only
+  // these known ids so any other lost symbol still fails dependency closure.
+  for (final element in elements.toList()) {
+    if (element.name.local != 'use') continue;
+    final href = element.attributes
+        .where((attribute) => attribute.name.local == 'href')
+        .map((attribute) => attribute.value)
+        .toList();
+    if (href.length != 1) continue;
+    final target = href.single.substring(1);
+    if (!ids.containsKey(target) &&
+        droppedStaleSvgUseTargets.contains(target)) {
+      element.parent!.children.remove(element);
+      elements.remove(element);
+      ids.remove(element.getAttribute('id'));
     }
   }
   final references = <String>{};

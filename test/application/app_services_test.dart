@@ -1,13 +1,43 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+
+class _EmptyCredentials implements CredentialStore {
+  @override
+  Future<String?> readCredential(GameMode mode) async => null;
+  @override
+  Future<void> writeCredential(GameMode mode, String token) async {}
+  @override
+  Future<void> removeCredential(GameMode mode) async {}
+}
+
+Future<void> _whenMapSession(
+  AppServices services,
+  bool Function() predicate,
+) async {
+  if (predicate()) return;
+  final complete = Completer<void>();
+  void changed() {
+    if (predicate() && !complete.isCompleted) complete.complete();
+  }
+
+  services.mapSession.addListener(changed);
+  try {
+    changed();
+    await complete.future.timeout(const Duration(seconds: 5));
+  } finally {
+    services.mapSession.removeListener(changed);
+  }
+}
 
 class DelayedCredentials implements CredentialStore {
   final reads = <GameMode, Completer<String?>>{};
@@ -21,6 +51,76 @@ class DelayedCredentials implements CredentialStore {
 }
 
 void main() {
+  test(
+    'saved log context outranks fallback without overwriting manual settings',
+    () async {
+      final root = await Directory.systemTemp.createTemp('blackgrid-m5-app-');
+      final first = await Directory('${root.path}/first/log_2026.10.07_0-52-00')
+          .create(recursive: true);
+      await File('${first.path}/2026.10.07 application.log').writeAsString(
+        'Session mode: Pve\r\n'
+        'application|scene preset path:maps/laboratory.bundle\r\n',
+      );
+      final services = AppServices(
+        database: BlackgridDatabase(NativeDatabase.memory()),
+        credentials: _EmptyCredentials(),
+        client: MockClient(
+          (_) async =>
+              throw StateError('Saved Map inputs must not request HTTP'),
+        ),
+      );
+      addTearDown(() async {
+        await services.dispose();
+        await root.delete(recursive: true);
+      });
+      await services.settings.save(
+        AppSettings(
+          mode: GameMode.pvp,
+          selectedMap: 'woods',
+          gameLogDirectory: '${root.path}/first',
+        ),
+      );
+      await services.initialize();
+      expect(services.maps.selectedMapId, 'thelab');
+      expect(services.catalog.mode, GameMode.pve);
+      expect(services.progress.mode, GameMode.pve);
+      expect(services.settings.settings.selectedMap, 'woods');
+      expect(services.settings.settings.mode, GameMode.pvp);
+
+      await services.settings.setMarker('PmcExtracts', false);
+      expect(services.maps.selectedMapId, 'thelab');
+      await services.settings.setMap('shoreline');
+      expect(services.maps.selectedMapId, 'shoreline');
+      expect(services.settings.settings.followGameLogs, isFalse);
+      expect(services.catalog.mode, GameMode.pve);
+
+      await services.settings.setMapInputs(followGameLogs: true);
+      expect(services.maps.selectedMapId, 'thelab');
+      expect(services.settings.settings.selectedMap, 'shoreline');
+      expect(await services.setMode(GameMode.seasonal), isTrue);
+      expect(services.catalog.mode, GameMode.pve);
+      expect(services.settings.settings.mode, GameMode.seasonal);
+
+      final second = await Directory(
+        '${root.path}/second/log_2026.10.07_1-00-00',
+      ).create(recursive: true);
+      await File('${second.path}/2026.10.07 application.log')
+          .writeAsString('application|scene preset path:maps/woods.bundle\n');
+      final rebound = _whenMapSession(
+        services,
+        () => services.mapSession.state.detectedMapId == 'woods',
+      );
+      await services.settings.setMapInputs(
+        gameLogDirectory: '${root.path}/second',
+      );
+      await rebound;
+      expect(services.maps.selectedMapId, 'woods');
+      expect(services.catalog.mode, GameMode.seasonal);
+      expect(services.progress.mode, GameMode.seasonal);
+      expect(services.settings.settings.selectedMap, 'shoreline');
+      expect(services.scans.hasAcceptedScan, isFalse);
+    },
+  );
   test(
     'review 1 rejected busy preference cannot cancel a durable mode transition',
     () async {

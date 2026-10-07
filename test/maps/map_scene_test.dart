@@ -17,6 +17,8 @@ import 'package:blackgrid/maps/prepared_map_loader.dart';
 
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
+import '../support/map_preparation_fixtures.dart'
+    show preparedMapMetadataFixture;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +66,456 @@ void main() {
       await expectLater(invalid.load(), throwsFormatException);
     },
   );
+
+  test('version-three inventory and artwork output closure load all thirteen maps without decoding', () async {
+    final manifest = _completeManifest();
+    final loaded = <String>[];
+    final loader = _manifestLoader(manifest, loaded: loaded);
+    final pack = await loader.load();
+    expect(pack.maps.map((map) => map.id), _canonicalMapIds);
+    expect(pack.byId.keys, _canonicalMapIds);
+    expect(loaded, [
+      'assets/maps/active.json',
+      'assets/maps/versions/fixture/manifest.json',
+    ]);
+    expect(identical(await loader.load(), pack), isTrue);
+    expect(() => pack.maps.clear(), throwsUnsupportedError);
+    expect(() => pack.byId.clear(), throwsUnsupportedError);
+  });
+
+  test('version-three rejects missing duplicate or mismatched inventory and unclosed outputs', () async {
+    final mutations = <void Function(Map<String, dynamic>)>[
+      (manifest) => (manifest['maps'] as List).removeLast(),
+      (manifest) => (manifest['supportedMapIds'] as List).removeLast(),
+      (manifest) => (manifest['supportedMapIds'] as List)[12] = 'factory',
+      (manifest) => (manifest['supportedMapIds'] as List)[12] = 'unprepared',
+      (manifest) {
+        (manifest['supportedMapIds'] as List)[12] = 'unprepared';
+        (manifest['maps'] as List)[12]['id'] = 'unprepared';
+      },
+      (manifest) =>
+          (manifest['maps'] as List)[12] = (manifest['maps'] as List).first,
+      (manifest) => manifest.remove('outputs'),
+      (manifest) => (manifest['outputs'] as List).removeWhere(
+        (entry) => (entry['path'] as String).endsWith('.vec'),
+      ),
+      (manifest) => (manifest['outputs'] as List).removeWhere(
+        (entry) => (entry['path'] as String).startsWith('artwork/labyrinth/'),
+      ),
+      (manifest) => (manifest['outputs'] as List).removeWhere(
+        (entry) =>
+            (entry['path'] as String).startsWith('artwork/dependencies/'),
+      ),
+      (manifest) => (manifest['outputs'] as List).add(
+        (manifest['outputs'] as List).first,
+      ),
+      (manifest) =>
+          (manifest['outputs'] as List).add({'path': '../escape.vec'}),
+    ];
+    for (var index = 0; index < mutations.length; index++) {
+      final manifest = _completeManifest();
+      mutations[index](manifest);
+      await expectLater(
+        _manifestLoader(manifest).load(),
+        throwsFormatException,
+        reason: 'closure mutation $index',
+      );
+    }
+  });
+
+  test('version-two manifests keep the legacy partial-pack contract', () async {
+    final pack = await _manifestLoader({
+      'schemaVersion': 1,
+      'preparationVersion': 2,
+      'vectorsCompiled': true,
+      'runtimeVectorVersion': '1.2.3',
+      'maps': [_vectorMap()],
+    }).load();
+    expect(pack.maps.single.id, 'interchange');
+  });
+
+  test('all-family parser preserves authored frames floors and runtime quest filter identities', () {
+    // Structural/parity coverage only. Authored calibration is not an
+    // independent numeric placement oracle for these map families.
+    for (final entry in supportedMapSources.entries) {
+      final raw = preparedMapMetadataFixture(entry.value);
+      raw['markers'] = [
+        _marker('item', 'questItems', details: {'questId': 'quest'}),
+        _marker('objective', 'questObjectives', details: {'questId': 'quest'}),
+        _marker('transit', 'transits'),
+        _marker('scav', 'extracts', details: {'faction': 'Scav'}),
+        _marker('pmc', 'extracts', details: {'faction': 'PMC'}),
+        _marker('shared', 'extracts'),
+        _marker('spawn', 'spawns', details: {'side': 'scav'}),
+        _marker('hazard', 'hazards', details: {'outline': <Object>[]}),
+      ];
+      final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+      final authored = calibrationFor(entry.value);
+      final frame = authored['artworkFrame'] as Map;
+      expect(map.id, entry.key);
+      expect(map.displayFrame.originalArtwork.width, frame['width']);
+      expect(map.displayFrame.originalArtwork.height, frame['height']);
+      expect(map.displayFrame.sceneExtent.width, frame['width']);
+      expect(map.displayFrame.sceneExtent.height, frame['height']);
+      expect(map.floorPolicy.floors.map((floor) => floor.id), [
+        for (final floor in authored['floors'] as List)
+          if (floor['base'] == true) floor['id'],
+        for (final floor in authored['floors'] as List)
+          if (floor['base'] != true) floor['id'],
+      ]);
+      expect(map.categories, {
+        'QuestItems',
+        'QuestObjectives',
+        'Transits',
+        'ScavExtracts',
+        'PmcExtracts',
+        'SharedExtracts',
+        'ScavSpawns',
+        'HazardZones',
+      });
+      expect(map.markers.take(2).map((marker) => marker.filterKey), [
+        'QuestItems',
+        'QuestObjectives',
+      ]);
+      expect(map.markers.first.details['questId'], 'quest');
+      expect(() => map.categories.clear(), throwsUnsupportedError);
+      expect(() => map.markers.first.details.clear(), throwsUnsupportedError);
+      expect(() => map.components.clear(), throwsUnsupportedError);
+      expect(() => map.tiles.clear(), throwsUnsupportedError);
+      expect(
+        map.floorPolicy.supportsAutomaticHeight,
+        entry.key == 'thelab' || entry.key == 'icebreaker',
+      );
+    }
+    final explicit = PreparedMarker.fromJson({
+      ..._marker('authored-key', 'questItems'),
+      'filterKey': 'QuestItems',
+    });
+    expect(explicit.filterKey, 'QuestItems');
+  });
+
+  test('production-shaped spawns and bosses classify by sides and mob', () {
+    String key(String category, Map<String, dynamic> details) =>
+        PreparedMarker.fromJson(_marker('m', category, details: details))
+            .filterKey;
+    expect(
+      key('spawns', {
+        'sides': ['scav'],
+        'categories': ['bot'],
+      }),
+      'ScavSpawns',
+    );
+    expect(
+      key('spawns', {
+        'sides': ['pmc'],
+        'categories': ['player'],
+      }),
+      'PmcSpawns',
+    );
+    expect(
+      key('spawns', {
+        'sides': ['all'],
+        'categories': ['player'],
+      }),
+      'PmcSpawns',
+    );
+    expect(
+      key('spawns', {
+        'sides': ['none'],
+      }),
+      'PmcSpawns',
+    );
+    expect(key('spawns', {'sides': <Object>[]}), 'PmcSpawns');
+    expect(key('spawns', {'side': 'scav'}), 'ScavSpawns');
+    expect(key('spawns', const {}), 'PmcSpawns');
+    expect(
+      PreparedMarker.fromJson({
+        ..._marker(
+          'authored',
+          'spawns',
+          details: {
+            'sides': ['scav'],
+          },
+        ),
+        'filterKey': 'PmcSpawns',
+      }).filterKey,
+      'PmcSpawns',
+    );
+    expect(
+      key('bosses', {'mob': 'sectantPriest', 'spawnChance': 0.1}),
+      'CultistSpawns',
+    );
+    expect(key('bosses', {'mob': 'sectantWarrior'}), 'CultistSpawns');
+    expect(
+      key('bosses', {'mob': 'bossTagilla', 'spawnChance': 0.35}),
+      'BossSpawns',
+    );
+  });
+
+  for (final source in [
+    'shoreline',
+    'streets-of-tarkov',
+    'ground-zero',
+    'terminal',
+  ]) {
+    test(
+      '$source native ordering paints attached First_Floor with base and manual overlays',
+      () async {
+        final raw = preparedMapMetadataFixture(source);
+        // Synthetic pixels, deliberately independent of actual artwork placement.
+        // First is last in source DOM order even though owned by the base floor.
+        final order = (raw['layerOrder'] as List).cast<String>();
+        order.remove('First_Floor');
+        order.add('First_Floor');
+        final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+        final loaded = <String>[];
+        final owner = NativeMapResourceOwner(
+          PreparedMapPackLoader(
+            loadBytes: (path) async {
+              loaded.add(path);
+              if (path.contains('/dependencies/')) {
+                throw StateError(
+                  'Alternate rendition must not decode or paint',
+                );
+              }
+              final id = path.split('/').last.replaceAll('.vec', '');
+              final fill = id == 'First_Floor' ? '#0000ff' : '#ff0000';
+              final x = id == 'First_Floor' ? 4 : 0;
+              return _vector(
+                '<rect x="$x" y="0" width="16" height="16" fill="$fill"/>',
+              );
+            },
+          ),
+        );
+        addTearDown(owner.dispose);
+        var selected = map.floorPolicy.reset();
+        Future<void> assertScene() async {
+          final scene = (await owner.loadScene(
+            map,
+            selected,
+            MapViewTransform(),
+            const ui.Size(32, 32),
+            isCurrent: () => true,
+          ))!;
+          try {
+            final pixels = await _render(scene, 32);
+            expect(_rgba(pixels, 32, 2, 2), [255, 0, 0, 255]);
+            expect(_rgba(pixels, 32, 8, 8), [0, 0, 255, 255]);
+            expect(_rgba(pixels, 32, 24, 24), [0, 0, 0, 0]);
+          } finally {
+            scene.dispose();
+          }
+        }
+
+        await assertScene();
+        expect(loaded, [
+          for (final component in map.components)
+            if (component.floorId == map.floorPolicy.base.id) component.path,
+        ]);
+        for (final overlay in map.floorPolicy.overlays) {
+          selected = selected.select(overlay.id);
+          await assertScene();
+        }
+        expect(
+          loaded.toSet(),
+          map.components.map((component) => component.path).toSet(),
+        );
+        expect(owner.imageDecodedBytes, 0);
+        expect(owner.reservedImageBytes, 0);
+        selected = selected.select(map.floorPolicy.base.id);
+        await assertScene();
+      },
+    );
+  }
+
+  test('Ground Zero alternate grids are complete original-frame immutable dependencies', () {
+    final raw = preparedMapMetadataFixture('ground-zero');
+    final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+    expect(map.kind, 'vector');
+    expect(map.tiles, isEmpty);
+    expect(map.tileLayout, isNull);
+    expect(map.rasterDependencies.map((dependency) => dependency.id), [
+      'Ground_Level',
+      'Second_Floor',
+      'Third_Floor',
+      'Underground_Level',
+    ]);
+    for (final dependency in map.rasterDependencies) {
+      expect(dependency.frame.width, 4096);
+      expect(dependency.frame.height, 4096);
+      expect(
+        dependency.sourceUrl,
+        startsWith('https://assets.tarkov.dev/maps/groundzero/'),
+      );
+      expect(dependency.assetPaths.length, 256);
+      expect(dependency.assetPaths.toSet().length, 256);
+      expect(
+        dependency.assetPaths.first,
+        'fixture/artwork/dependencies/groundzero/${dependency.id}/0/0.png',
+      );
+      expect(
+        dependency.assetPaths.last,
+        'fixture/artwork/dependencies/groundzero/${dependency.id}/15/15.png',
+      );
+      expect(() => dependency.assetPaths.clear(), throwsUnsupportedError);
+    }
+    expect(() => map.rasterDependencies.clear(), throwsUnsupportedError);
+    (raw['rasterDependencies'] as List).clear();
+    expect(map.rasterDependencies.length, 4);
+  });
+
+  test('Ground Zero rejects malformed dependency grids frames paths and floor ownership', () {
+    final mutations = <void Function(Map<String, dynamic>)>[
+      (dependency) => (dependency['artwork']['tiles'] as List).removeLast(),
+      (dependency) => (dependency['artwork']['tiles'] as List)[255] =
+          (dependency['artwork']['tiles'] as List).first,
+      (dependency) => dependency['artwork']['tiles'][0]['x'] = 16,
+      (dependency) => dependency['artwork']['tiles'][0]['y'] = -1,
+      (dependency) => dependency['artwork']['tiles'][0]['x'] = 0.5,
+      (dependency) => dependency['artwork']['tiles'][0].remove('empty'),
+      (dependency) =>
+          dependency['artwork']['tiles'][0]['path'] = '../escape.png',
+      (dependency) => dependency['displayFrame']['width'] = 2800,
+      (dependency) => dependency['displayFrame']['height'] = 2048,
+      (dependency) => dependency['displayFrame']['tileStride'] = 175,
+      (dependency) => dependency['displayFrame']['tileImageExtent'] = 256.5,
+      (dependency) => dependency['displayFrame']['nativeTilePixels'] = 512,
+      (dependency) => dependency['id'] = 'First_Floor',
+      (dependency) => dependency['sourceTileUrl'] = '',
+      (dependency) {
+        for (final tile in dependency['artwork']['tiles'] as List) {
+          tile['empty'] = true;
+        }
+      },
+    ];
+    for (var index = 0; index < mutations.length; index++) {
+      final raw = preparedMapMetadataFixture('ground-zero');
+      mutations[index]((raw['rasterDependencies'] as List).first);
+      expect(
+        () => PreparedMap.fromJson(raw, assetRoot: 'fixture/'),
+        throwsFormatException,
+        reason: 'dependency mutation $index',
+      );
+    }
+    final duplicate = preparedMapMetadataFixture('ground-zero');
+    (duplicate['rasterDependencies'] as List).add(
+      (duplicate['rasterDependencies'] as List).first,
+    );
+    expect(
+      () => PreparedMap.fromJson(duplicate, assetRoot: 'fixture/'),
+      throwsFormatException,
+    );
+  });
+
+  for (final entry in <String, Set<String>>{
+    'customs': {'Fourth_Floor'},
+    'reserve': {'Second_Floor', 'Third_Floor', 'Fourth_Floor', 'Fifth_Floor'},
+  }.entries) {
+    test('${entry.key} abstract SVG draws tile-only floors over a dimmed base', () async {
+      // Synthetic artwork exercises loading and composition only; overlay
+      // placement is covered against tarkov.dev's CRS in its own test.
+      final raw = preparedMapMetadataFixture(entry.key);
+      final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+      expect(map.kind, 'vector');
+      expect(map.tiles.map((tile) => tile.floorId).toSet(), entry.value);
+      final loaded = <String>[];
+      final owner = NativeMapResourceOwner(
+        PreparedMapPackLoader(
+          loadBytes: (path) async {
+            loaded.add(path);
+            return path.endsWith('.png')
+                ? ByteData.sublistView(
+                    image.encodePng(
+                      image.Image(width: 256, height: 256, numChannels: 4),
+                    ),
+                  )
+                : _vector(
+                    '<rect x="0" y="0" width="32" height="32" fill="#ff0000"/>',
+                  );
+          },
+        ),
+      );
+      addTearDown(owner.dispose);
+      Future<int> baseAlpha(MapFloorSelection selection) async {
+        final scene = (await owner.loadScene(
+          map,
+          selection,
+          MapViewTransform(),
+          const ui.Size(32, 32),
+          isCurrent: () => true,
+        ))!;
+        try {
+          return _rgba(await _render(scene, 32), 32, 16, 16)[3];
+        } finally {
+          scene.dispose();
+        }
+      }
+
+      expect(await baseAlpha(map.floorPolicy.reset()), 255);
+      expect(loaded.where((path) => path.endsWith('.png')), isEmpty);
+      for (final floor in map.floorPolicy.overlays) {
+        loaded.clear();
+        final alpha = await baseAlpha(map.floorPolicy.reset().select(floor.id));
+        if (entry.value.contains(floor.id)) {
+          expect(alpha, inExclusiveRange(0, 128));
+          expect(
+            map.tiles.where((tile) => tile.floorId == floor.id),
+            isNotEmpty,
+          );
+        } else {
+          expect(alpha, 255);
+          expect(loaded.where((path) => path.endsWith('.png')), isEmpty);
+        }
+      }
+    });
+  }
+
+  test('Labyrinth native raster has one scene and no inferred automatic height bands', () async {
+    final raw = preparedMapMetadataFixture('the-labyrinth');
+    final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+    expect(map.components, isEmpty);
+    expect(map.rasterDependencies, isEmpty);
+    expect(map.floorPolicy.floors.map((floor) => floor.id), ['Main_Level']);
+    expect(map.floorPolicy.overlays, isEmpty);
+    expect(map.floorPolicy.base.heightBand, isNull);
+    expect(map.floorPolicy.supportsAutomaticHeight, isFalse);
+    expect(map.displayFrame.originalArtwork.width, 4096);
+    expect(map.displayFrame.originalArtwork.height, 4096);
+    expect(map.tileLayout!.displayStride.width, 256);
+    expect(map.tileLayout!.nativeTilePixels.width, 256);
+    expect((raw['geometry'] as Map)['rotation'], 270);
+    expect((raw['geometry'] as Map)['affine'], [2.115, 85.5, 2.115, 128]);
+    for (final height in [null, -10000.0, 0.0, 10000.0]) {
+      expect(map.floorPolicy.floorForHeight(height), isNull);
+      expect(map.floorPolicy.selectionForHeight(height).visibleLayerIds, [
+        'Main_Level',
+      ]);
+    }
+    final loaded = <String>[];
+    final owner = NativeMapResourceOwner(
+      PreparedMapPackLoader(
+        loadBytes: (path) async {
+          loaded.add(path);
+          return _png();
+        },
+      ),
+    );
+    addTearDown(owner.dispose);
+    final scene = (await owner.loadScene(
+      map,
+      map.floorPolicy.reset(),
+      MapViewTransform(),
+      const ui.Size(32, 32),
+      isCurrent: () => true,
+    ))!;
+    addTearDown(scene.dispose);
+    expect(loaded, ['fixture/artwork/labyrinth/Main_Level/0/0.png']);
+    final pixels = await _render(scene, 32);
+    expect(_rgba(pixels, 32, 0, 0), [255, 0, 0, 255]);
+    expect(_rgba(pixels, 32, 8, 8), [0, 0, 0, 0]);
+    expect(owner.imageDecodedBytes, 256 * 256 * 4);
+    expect(owner.pictureApproximateBytes, 0);
+  });
 
   test('native components retain global ordering and exact zero-blur offset shadow', () async {
     final map = PreparedMap.fromJson(_vectorMap(), assetRoot: 'fixture/');
@@ -407,6 +859,80 @@ void main() {
   );
 }
 
+const _canonicalMapIds = [
+  'factory',
+  'customs',
+  'woods',
+  'shoreline',
+  'interchange',
+  'thelab',
+  'reserve',
+  'lighthouse',
+  'streetsoftarkov',
+  'groundzero',
+  'terminal',
+  'icebreaker',
+  'labyrinth',
+];
+
+Map<String, dynamic> _marker(
+  String id,
+  String category, {
+  Map<String, dynamic> details = const {},
+}) => {
+  'id': id,
+  'category': category,
+  'name': id,
+  'position': {'x': 0, 'z': 0, 'height': null},
+  'details': details,
+  'source': <String, dynamic>{},
+};
+
+Map<String, dynamic> _completeManifest() {
+  final maps = [
+    for (final source in supportedMapSources.values)
+      preparedMapMetadataFixture(source),
+  ];
+  final paths = <String>{};
+  for (final raw in maps) {
+    final map = PreparedMap.fromJson(raw, assetRoot: '');
+    paths.addAll([
+      for (final component in map.components) component.path,
+      for (final tile in map.tiles) tile.path,
+      for (final dependency in map.rasterDependencies) ...dependency.assetPaths,
+    ]);
+  }
+  return {
+    'schemaVersion': 1,
+    'preparationVersion': 3,
+    'vectorsCompiled': true,
+    'runtimeVectorVersion': '1.2.3',
+    'supportedMapIds': [..._canonicalMapIds],
+    'maps': maps,
+    'outputs': [
+      for (final path in paths) {'path': path},
+    ],
+  };
+}
+
+PreparedMapPackLoader _manifestLoader(
+  Map<String, dynamic> manifest, {
+  List<String>? loaded,
+}) => PreparedMapPackLoader(
+  loadBytes: (path) async {
+    loaded?.add(path);
+    if (path.endsWith('active.json')) {
+      return _json({
+        'schemaVersion': 1,
+        'version': 'fixture',
+        'manifest': 'versions/fixture/manifest.json',
+      });
+    }
+    if (path.endsWith('manifest.json')) return _json(manifest);
+    throw StateError('Metadata loading must not decode artwork: $path');
+  },
+);
+
 // These independently authored fixtures exercise the public production loader
 // and real Flutter picture/image decoding; they are not production fallbacks.
 Map<String, dynamic> _vectorMap() => {
@@ -550,7 +1076,7 @@ Map<String, dynamic> _calibratedRasterMap(String sourceKey) {
       },
   ];
   raw['markers'] = <Object>[];
-  raw['attribution'] = {'author': 'Independent placement controls'};
+  raw['attribution'] = {'author': 'Synthetic calibration-parity fixture'};
   return raw;
 }
 
@@ -566,9 +1092,9 @@ ByteData _vector(String content) => ByteData.sublistView(
     enableOverdrawOptimizer: false,
   ),
 );
-ByteData _png({int width = 256}) {
+ByteData _png({int width = 256, int red = 255}) {
   final pixels = image.Image(width: width, height: 256, numChannels: 4);
-  pixels.setPixelRgba(0, 0, 255, 0, 0, 255);
+  pixels.setPixelRgba(0, 0, red, 0, 0, 255);
   return ByteData.sublistView(image.encodePng(pixels));
 }
 

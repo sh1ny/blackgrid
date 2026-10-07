@@ -11,6 +11,54 @@ import 'package:test/test.dart';
 import '../fixtures/m1/legacy/legacy_fixture.dart';
 
 void main() {
+  test(
+    'preference replacement imports preserve local Map input configuration',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-map-import-',
+      );
+      final store = File('${root.path}/store.sqlite');
+      var db = BlackgridDatabase(NativeDatabase(store));
+      addTearDown(() async {
+        await db.close();
+        await root.delete(recursive: true);
+      });
+      await db.saveSettings(
+        AppSettings(
+          mode: GameMode.pvp,
+          selectedMap: 'woods',
+          gameLogDirectory: '${root.path}/local-logs',
+          screenshotDirectory: '${root.path}/local-screenshots',
+          followGameLogs: false,
+        ),
+      );
+      final source = syntheticSettings()
+        ..['GameLogDirectory'] = 'foreign-logs'
+        ..['ScreenshotDirectory'] = 'foreign-screenshots'
+        ..['FollowGameLogs'] = true;
+      final file = File('${root.path}/legacy.json');
+      await file.writeAsBytes(legacyBytes(settings: source)['settings']!);
+      final importer = LegacyImport(db);
+      final preview = await importer.previewFiles(settingsPath: file.path);
+      expect(
+        preview.exclusions,
+        containsAll([
+          'GameLogDirectory',
+          'ScreenshotDirectory',
+          'FollowGameLogs',
+        ]),
+      );
+      await importer.commit(preview, replaceExisting: true);
+      await db.close();
+      db = BlackgridDatabase(NativeDatabase(store));
+      final restored = await db.readSettings();
+      expect(restored.selectedMap, 'customs');
+      expect(restored.mode, GameMode.pve);
+      expect(restored.gameLogDirectory, '${root.path}/local-logs');
+      expect(restored.screenshotDirectory, '${root.path}/local-screenshots');
+      expect(restored.followGameLogs, isFalse);
+    },
+  );
   for (final version in [0, 1, 2, 3]) {
     test(
       'settings schema $version and nested scanner 0/1 preserve valuable fields only',

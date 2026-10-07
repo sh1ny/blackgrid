@@ -47,7 +47,7 @@
     {
       "id": "interchange-railway-corner",
       "mapId": "interchange",
-      "markerId": "extracts:7954d8c2717f9ba217821834ccf3de5d91d628ad:0",
+      "markerId": "extracts:4cf9e8c499daa3f18291b2fce601e6dd0be66882:0",
       "name": "Railway Exfil",
       "sourcePath": "extracts/0",
       "game": [474.57, -433.74, 19.92],
@@ -61,10 +61,10 @@
     {
       "id": "interchange-emercom-corner",
       "mapId": "interchange",
-      "markerId": "extracts:73e006324ece078a5713c7d04557aba5035d7f05:0",
+      "markerId": "extracts:56bd754c4ce1864b212e908114bd6190940e01c2:0",
       "name": "Emercom Checkpoint",
       "sourcePath": "extracts/3",
-      "game": [-321.56, 266.74, 24.18],
+      "game": [-321.56, 266.74, 22.45],
       "artworkUnits": "svg-viewbox",
       "artwork": [1005, 775],
       "tolerance": 35,
@@ -75,9 +75,9 @@
     {
       "id": "interchange-power-station",
       "mapId": "interchange",
-      "markerId": "extracts:f609b359144383c176a96e320b62edd6827d29a0:0",
+      "markerId": "extracts:12448fe61862391cd784b298a6c3081f24de39d6:0",
       "name": "Power Station V-Ex",
-      "sourcePath": "extracts/6",
+      "sourcePath": "extracts/7",
       "game": [-302.89, -367.73, 21.65],
       "artworkUnits": "svg-viewbox",
       "artwork": [985, 82],

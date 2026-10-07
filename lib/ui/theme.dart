@@ -99,6 +99,7 @@ class GridPanel extends StatelessWidget {
     child: Padding(
       padding: EdgeInsets.all(padding),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -123,7 +124,7 @@ class GridPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 15),
-          Expanded(child: child),
+          Flexible(fit: FlexFit.loose, child: child),
         ],
       ),
     ),

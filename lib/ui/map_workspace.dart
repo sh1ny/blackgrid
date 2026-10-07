@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -6,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../application/app_services.dart';
 import '../application/map_controller.dart';
 import '../domain/map_coordinates.dart';
+import '../domain/map_marker_query.dart';
 import '../domain/settings.dart';
 import '../maps/prepared_map.dart';
 import 'pin_editor.dart';
@@ -21,6 +24,7 @@ class MapWorkspace extends StatefulWidget {
 
 class _MapWorkspaceState extends State<MapWorkspace> {
   String? _selectedMarker;
+  int? _selectionGeneration;
   String? _selectedPin;
   String? _selectedPinMapId;
   final _focus = FocusNode(debugLabel: 'Native map workspace');
@@ -40,6 +44,52 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       pin.mapId == maps.selectedMapId &&
       widget.services.settings.settings.markerFilters['CustomPins'] != false;
 
+  ViewportPoint get _viewportCenter =>
+      ViewportPoint(maps.viewportSize.width / 2, maps.viewportSize.height / 2);
+
+  void _selectMarker(String? id) {
+    _focus.requestFocus();
+    maps.setSelectedMarker(id);
+    setState(() {
+      _selectedMarker = id;
+      _selectionGeneration = maps.contentGeneration;
+      _selectedPin = null;
+      _selectedPinMapId = null;
+    });
+  }
+
+  void _createPinAt(ViewportPoint point) {
+    final coordinates = maps.pinCreationAt(point);
+    if (coordinates == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose a point inside the map artwork.')),
+      );
+      return;
+    }
+    showPinEditor(context, widget.services, coordinates: coordinates);
+  }
+
+  Future<void> _removePin(CustomPin pin) async {
+    final remove = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove pin record?'),
+        content: Text('${pin.label} · ${mapLabel(pin.mapId)}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (remove == true) await widget.services.settings.removePin(pin);
+  }
+
   void _select(ViewportPoint point) {
     _focus.requestFocus();
     final marker = maps.hitTestMarker(point, radius: 22);
@@ -58,10 +108,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         }
       }
     }
+    maps.setSelectedMarker(pinId == null ? marker?.marker.id : null);
     setState(() {
       _selectedPin = pinId;
       _selectedPinMapId = pinId == null ? null : maps.selectedMapId;
       _selectedMarker = pinId == null ? marker?.marker.id : null;
+      _selectionGeneration = maps.contentGeneration;
     });
   }
 
@@ -70,7 +122,9 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     final visiblePins = widget.services.settings.pins
         .where(_isVisiblePin)
         .toList();
+    if (visible.isEmpty && visiblePins.isEmpty) return;
     final mapId = maps.selectedMapId;
+    final generation = maps.contentGeneration;
     final id = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -108,11 +162,29 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         ),
       ),
     );
-    if (!mounted || mapId != maps.selectedMapId || id == null) return;
+    if (!mounted ||
+        mapId != maps.selectedMapId ||
+        generation != maps.contentGeneration ||
+        id == null) {
+      return;
+    }
+    if (id.startsWith('marker:') &&
+        !maps.visibleMarkers().any(
+          (marker) => marker.marker.id == id.substring(7),
+        )) {
+      return;
+    }
+    if (id.startsWith('pin:') &&
+        !pins.any((pin) => pin.id == id.substring(4) && _isVisiblePin(pin))) {
+      return;
+    }
+    _focus.requestFocus();
+    maps.setSelectedMarker(id.startsWith('marker:') ? id.substring(7) : null);
     setState(() {
       _selectedPin = id.startsWith('pin:') ? id.substring(4) : null;
       _selectedPinMapId = _selectedPin == null ? null : mapId;
       _selectedMarker = id.startsWith('marker:') ? id.substring(7) : null;
+      _selectionGeneration = maps.contentGeneration;
     });
   }
 
@@ -131,7 +203,33 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       maps.panBy(0, -40);
     } else if (key == LogicalKeyboardKey.home) {
       maps.fit();
+    } else if (key == LogicalKeyboardKey.add ||
+        key == LogicalKeyboardKey.equal ||
+        key == LogicalKeyboardKey.numpadAdd) {
+      maps.zoomAt(_viewportCenter, 1.25);
+    } else if (key == LogicalKeyboardKey.minus ||
+        key == LogicalKeyboardKey.numpadSubtract) {
+      maps.zoomAt(_viewportCenter, .8);
+    } else if (key == LogicalKeyboardKey.keyC) {
+      maps.centerOnPlayer();
+    } else if (key == LogicalKeyboardKey.keyN) {
+      if (!widget.services.settings.busy) {
+        _createPinAt(_viewportCenter);
+      }
+    } else if (key == LogicalKeyboardKey.enter) {
+      _browse();
+    } else if (key == LogicalKeyboardKey.delete) {
+      if (_selectedPinMapId == maps.selectedMapId &&
+          !widget.services.settings.busy) {
+        for (final pin in pins) {
+          if (pin.id == _selectedPin && _isVisiblePin(pin)) {
+            _removePin(pin);
+            break;
+          }
+        }
+      }
     } else if (key == LogicalKeyboardKey.escape) {
+      maps.setSelectedMarker(null);
       setState(() {
         _selectedMarker = null;
         _selectedPin = null;
@@ -145,13 +243,16 @@ class _MapWorkspaceState extends State<MapWorkspace> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: maps,
+    listenable: Listenable.merge([maps, widget.services.settings]),
     builder: (context, _) {
       final map = maps.preparedMap;
       final visible = maps.visibleMarkers();
       PreparedMarker? selected;
       for (final marker in visible) {
-        if (marker.marker.id == _selectedMarker) selected = marker.marker;
+        if (_selectionGeneration == maps.contentGeneration &&
+            marker.marker.id == _selectedMarker) {
+          selected = marker.marker;
+        }
       }
       CustomPin? selectedPin;
       if (_selectedPinMapId == maps.selectedMapId &&
@@ -178,14 +279,14 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                 tooltip: 'Zoom in',
                 onPressed: map == null
                     ? null
-                    : () => maps.zoomAt(ViewportPoint(0, 0), 1.25),
+                    : () => maps.zoomAt(_viewportCenter, 1.25),
                 icon: const Icon(Icons.add),
               ),
               IconButton(
                 tooltip: 'Zoom out',
                 onPressed: map == null
                     ? null
-                    : () => maps.zoomAt(ViewportPoint(0, 0), .8),
+                    : () => maps.zoomAt(_viewportCenter, .8),
                 icon: const Icon(Icons.remove),
               ),
               OutlinedButton.icon(
@@ -197,6 +298,26 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                 icon: const Icon(Icons.list, size: 18),
                 label: Text('Markers (${visible.length})'),
               ),
+              OutlinedButton.icon(
+                onPressed: maps.playerPosition == null
+                    ? null
+                    : maps.centerOnPlayer,
+                icon: const Icon(Icons.my_location, size: 18),
+                label: const Text('Center on player'),
+              ),
+              OutlinedButton.icon(
+                onPressed: map == null || widget.services.settings.busy
+                    ? null
+                    : () => _createPinAt(_viewportCenter),
+                icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                label: const Text('Pin at view center'),
+              ),
+              if (maps.automaticFloorSupported)
+                FilterChip(
+                  label: const Text('Automatic floor'),
+                  selected: maps.automaticFloorFollowing,
+                  onSelected: maps.setAutomaticFloorFollowing,
+                ),
               if (map != null)
                 for (final floor in map.floorPolicy.floors)
                   FilterChip(
@@ -256,17 +377,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                           onSecondaryTapUp: map == null
                               ? null
                               : (event) {
-                                  final coordinates = maps.pinAt(
-                                    ViewportPoint(
-                                      event.localPosition.dx,
-                                      event.localPosition.dy,
-                                    ),
-                                  );
-                                  if (coordinates != null) {
-                                    showPinEditor(
-                                      context,
-                                      widget.services,
-                                      coordinates: coordinates,
+                                  if (!widget.services.settings.busy) {
+                                    _createPinAt(
+                                      ViewportPoint(
+                                        event.localPosition.dx,
+                                        event.localPosition.dy,
+                                      ),
                                     );
                                   }
                                 },
@@ -286,16 +402,16 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                       false,
                                   selectedMarker: selected?.id,
                                   selectedPin: selectedPin?.id,
-                                  selectMarker: (id) => setState(() {
-                                    _selectedMarker = id;
-                                    _selectedPin = null;
-                                    _selectedPinMapId = null;
-                                  }),
-                                  selectPin: (id) => setState(() {
-                                    _selectedPin = id;
-                                    _selectedPinMapId = maps.selectedMapId;
-                                    _selectedMarker = null;
-                                  }),
+                                  selectMarker: _selectMarker,
+                                  selectPin: (id) {
+                                    _focus.requestFocus();
+                                    maps.setSelectedMarker(null);
+                                    setState(() {
+                                      _selectedPin = id;
+                                      _selectedPinMapId = maps.selectedMapId;
+                                      _selectedMarker = null;
+                                    });
+                                  },
                                 ),
                               ),
                               if (maps.loading)
@@ -329,7 +445,8 @@ class _MapWorkspaceState extends State<MapWorkspace> {
           if (selected != null)
             _MarkerDetails(
               marker: selected,
-              onClose: () => setState(() => _selectedMarker = null),
+              metadata: maps.metadataFor(selected),
+              onClose: () => _selectMarker(null),
             ),
           if (selectedPin != null)
             Padding(
@@ -342,12 +459,21 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => showPinEditor(
-                      context,
-                      widget.services,
-                      pin: selectedPin,
-                    ),
+                    onPressed: widget.services.settings.busy
+                        ? null
+                        : () => showPinEditor(
+                            context,
+                            widget.services,
+                            pin: selectedPin,
+                          ),
                     child: const Text('Edit pin'),
+                  ),
+                  IconButton(
+                    tooltip: 'Remove selected pin',
+                    onPressed: widget.services.settings.busy
+                        ? null
+                        : () => _removePin(selectedPin!),
+                    icon: const Icon(Icons.delete_outline),
                   ),
                   IconButton(
                     tooltip: 'Close pin details',
@@ -360,11 +486,16 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                 ],
               ),
             ),
+          if (widget.services.settings.busy)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text('Saving map preferences or pins…'),
+            ),
           const SizedBox(height: 6),
           Text(
             map == null
-                ? 'No game listener or live tracking'
-                : 'Drag to pan · wheel zooms at cursor · right-click adds a pin · ${map.attribution['author'] ?? map.name}',
+                ? 'No artwork loaded · saved files only; no live tracking'
+                : 'Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
             style: const TextStyle(color: GridColors.muted, fontSize: 12),
           ),
         ],
@@ -374,8 +505,13 @@ class _MapWorkspaceState extends State<MapWorkspace> {
 }
 
 class _MarkerDetails extends StatelessWidget {
-  const _MarkerDetails({required this.marker, required this.onClose});
+  const _MarkerDetails({
+    required this.marker,
+    required this.metadata,
+    required this.onClose,
+  });
   final PreparedMarker marker;
+  final MapMarkerMetadata metadata;
   final VoidCallback onClose;
   @override
   Widget build(BuildContext context) => Padding(
@@ -399,17 +535,18 @@ class _MarkerDetails extends StatelessWidget {
           ],
         ),
         Text(
-          '${marker.filterKey} · X ${marker.position.x} · Z ${marker.position.z} · height ${marker.position.height ?? 'unknown'}',
+          '${marker.category} / ${marker.filterKey} · X ${marker.position.x} · Z ${marker.position.z} · height ${marker.position.height ?? 'unknown'}',
         ),
+        if (metadata.questNames.isNotEmpty)
+          Text('Quest: ${metadata.questNames.join(', ')}'),
+        if (metadata.traders.isNotEmpty)
+          Text('Trader: ${metadata.traders.join(', ')}'),
+        for (final link in metadata.questLinks) SelectableText(link),
         SizedBox(
           height: 80,
           child: SingleChildScrollView(
             child: SelectableText(
-              marker.details.entries
-                  .where(
-                    (entry) =>
-                        entry.key != 'position' && entry.key != 'outline',
-                  )
+              metadata.fields.entries
                   .map((entry) => '${entry.key}: ${entry.value}')
                   .join(' · '),
             ),
@@ -470,31 +607,63 @@ class _MapPainter extends CustomPainter {
           }
         }
         path.close();
-        _fill.color = Colors.red.withValues(alpha: .16);
+        _fill.color = Colors.red.withValues(
+          alpha: projected.dimmed ? .035 : .16,
+        );
         canvas.drawPath(path, _fill);
-        _edge.color = Colors.redAccent;
+        _edge.color = Colors.redAccent.withValues(
+          alpha: projected.dimmed ? .22 : 1,
+        );
         canvas.drawPath(path, _edge);
       }
       if (!markerBounds.contains(point)) continue;
       _glyph(
         canvas,
         point,
-        marker.filterKey.contains('Extract')
-            ? GridColors.green
-            : marker.category == 'hazards'
-            ? Colors.redAccent
-            : GridColors.gold,
-        marker.id == selectedMarker,
+        (projected.linkedHighlighted || projected.raidHighlighted
+                ? Colors.cyanAccent
+                : marker.filterKey.contains('Extract')
+                ? GridColors.green
+                : marker.category == 'hazards'
+                ? Colors.redAccent
+                : GridColors.gold)
+            .withValues(alpha: projected.dimmed ? .22 : 1),
+        marker.id == selectedMarker ||
+            projected.linkedHighlighted ||
+            projected.raidHighlighted,
       );
     }
+    final player = maps.playerViewportPoint;
+    if (player != null) {
+      final point = Offset(player.x, player.y);
+      final direction = maps.playerSceneDirection;
+      canvas.save();
+      canvas.translate(point.dx, point.dy);
+      _fill.color = Colors.white;
+      canvas.drawCircle(Offset.zero, 6, _fill);
+      if (direction != null) {
+        canvas.rotate(math.atan2(direction.y, direction.x));
+        final arrow = Path()
+          ..moveTo(22, 0)
+          ..lineTo(8, -6)
+          ..lineTo(8, 6)
+          ..close();
+        canvas.drawPath(arrow, _fill);
+      }
+      canvas.restore();
+    }
     if (showPins) {
+      final searchTerms = mapSearchTerms(maps.search);
       for (final pin in pins) {
         final point = maps.projectPin(pin);
         if (point != null) {
+          final matches =
+              searchTerms.isEmpty ||
+              searchTerms.any(pin.label.toLowerCase().contains);
           _glyph(
             canvas,
             Offset(point.x, point.y),
-            Colors.lightBlueAccent,
+            Colors.lightBlueAccent.withValues(alpha: matches ? 1 : .22),
             pin.id == selectedPin,
           );
         }
@@ -516,10 +685,13 @@ class _MapPainter extends CustomPainter {
     final bounds = Offset.zero & size;
     final targets = <CustomPainterSemantics>[];
     for (final marker in maps.visibleMarkers()) {
-      final rect = Rect.fromCircle(
+      var rect = Rect.fromCircle(
         center: Offset(marker.viewportPoint.x, marker.viewportPoint.y),
         radius: 22,
       );
+      for (final vertex in marker.outline) {
+        rect = rect.expandToInclude(Rect.fromLTWH(vertex.x, vertex.y, 1, 1));
+      }
       if (!bounds.overlaps(rect)) continue;
       targets.add(
         CustomPainterSemantics(

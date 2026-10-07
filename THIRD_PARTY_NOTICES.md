@@ -1,6 +1,6 @@
 # Third-party notices
 
-This records inputs selected for the independently authored Blackgrid implementation, not a blanket clearance of the reference inventory. Blackgrid's project license remains unselected; the repository is private and this document does not authorize publication. No reference runtime/source, screenshots or OCR models are shipped. Synthetic test fixtures were independently authored. M3 map artwork is independently acquired and bundled with the source-specific notices below; Blackgrid claims no ownership of that artwork.
+This records inputs selected for the independently authored Blackgrid implementation, not a blanket clearance of the reference inventory. Blackgrid's project license remains unselected; the repository is private and this document does not authorize publication. No reference runtime/source, screenshots or OCR models are shipped; M5 saved-panel OCR uses the installed Windows engine described below. Synthetic test fixtures were independently authored. M3 map artwork is independently acquired and bundled with the source-specific notices below; Blackgrid claims no ownership of that artwork.
 
 ## M3 map artwork and preparation
 
@@ -14,6 +14,12 @@ The representative vector's technical selection was corrected from Streets to In
 The SVG repository licence is not a blanket licence for Labs/Icebreaker raster artwork. Published source and creator evidence is retained; a website software licence does not establish artwork permission. No separate owner-cleared permission is asserted. Inclusion follows the user's direction for this private implementation, not permission for a public release or a visibility change.
 
 Preparation-only dependencies are pinned to `xml 6.6.1` ([MIT](https://github.com/renggli/dart-xml)), `image 4.8.0` ([MIT](https://github.com/brendan-duncan/image)) and `vector_graphics_compiler 1.3.0` ([BSD-3-Clause](https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler)); none requires a Flutter engine. Native runtime `vector_graphics 1.2.3` is qualified separately before its runtime commitment. Resolved transitive notices/lock are integrated by the parent after package resolution.
+
+## M5 Map-owned saved-panel OCR
+
+Map reads exfil/transit panels from explicitly supplied saved screenshots through the Windows `Windows.Media.Ocr` engine, matching the reference companion's backend. The engine, its recognizer language data and WIC/COM are installed OS components; nothing is copied or redistributed. The independently authored boundary is [`windows/ocr/panel_ocr.cpp`](windows/ocr/panel_ocr.cpp), built with the app and bound to its installed SHA-256. It uses no item Scanner worker or reference runtime. Microsoft documents the namespace as supported for packaged desktop apps; Blackgrid calls it unpackaged, as the reference companion does. Private image bytes and original filenames are not repository fixtures or shipped inputs.
+
+The active all-map pack adds Factory, Customs, Woods, Shoreline, Reserve, Lighthouse, Streets of Tarkov, Ground Zero and Terminal artwork from the tarkov-dev SVG maps repository (each map's revision, SHA-256 and terms files are recorded in its manifest `attribution.artworkSource`; terms status `CC-BY-NC-SA-4.0-with-published-README-restrictions`), plus Labyrinth raster artwork from Tarkov.dev under the same no-owner-clearance status as the Labs and Icebreaker rasters. Customs and Reserve also use publisher raster overlays recorded with that status. `<use>` references to symbols the publisher deleted (Customs `path493`, two uses; Streets `stairs-85/86/87/90/92`, ten uses) render nothing, as in a browser and the reference WebView, and are dropped; nothing is invented, and any other missing symbol fails preparation. Private use is user-directed; no public redistribution right is asserted, and none is inferred from software licenses.
 
 ## Resolved selection
 

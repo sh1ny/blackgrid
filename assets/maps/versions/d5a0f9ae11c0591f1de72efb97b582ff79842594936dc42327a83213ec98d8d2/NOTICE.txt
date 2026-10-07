@@ -1,0 +1,62 @@
+Blackgrid map artwork notices
+Factory, Customs, Woods, Shoreline, Reserve, Lighthouse, Streets of Tarkov,
+Ground Zero and Terminal: Shebuka / Escape from Tarkov SVG Maps Project.
+Original SVG sources and per-map URL/SHA-256 identities are frozen in
+evidence/sources.json; matching repository revision is
+5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178. Published LICENSE.md/README.md
+conditions below apply to these source SVGs and their prepared derivatives.
+Changes: ordered dependency-closed floor/component normalization, inherited
+styles/transforms/references retained and exact source drop shadows transferred
+to native effects. <use> references to publisher-deleted symbols (Customs
+path493; Streets stairs-85/86/87/90/92) are dropped, matching browser
+rendering; no symbol is synthesized and any other missing symbol fails
+preparation.
+Ground Zero's four metadata-declared raster grids are frozen/package-validated
+alternative renditions, not embedded SVG overlays and not duplicate painting.
+Labyrinth uses the metadata-declared interactive original z4 raster grid:
+https://assets.tarkov.dev/maps/labyrinth/main/. The selected upstream metadata
+declares no SVG wrapper. No wrapper or substitute artwork has been invented.
+Ground Zero rasters and Labyrinth interactive tiles are credited according to
+their frozen interactive metadata. SVG licensing is not assigned to these
+raster resources; source/creator/terms evidence does not assert public
+redistribution clearance. Inclusion is user-directed private implementation.
+Independent numeric placement for new families is unverified.
+
+
+Interchange: Shebuka / Escape from Tarkov SVG Maps Project.
+Artwork: https://assets.tarkov.dev/maps/svg/Interchange.svg
+SHA-256: 31a44112cd5fe33484ce6be7b7dc80d13db6077cba2583a4425ed94c665f47c4
+Matching source: https://github.com/the-hideout/tarkov-dev-svg-maps/
+Revision: 5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178
+CC BY-NC-SA 4.0: https://creativecommons.org/licenses/by-nc-sa/4.0/
+Verbatim LICENSE.md and README.md, including its additional anti-cheating,
+unfair-advantage, radar/ESP and automation prohibitions and revocation wording,
+are included in evidence/. Retain those published conditions separately from
+Blackgrid code. Prepared derivatives retain noncommercial/share-alike terms.
+Changes: dependency-closed ordered floor components, CSS normalization with
+chained gradient references retained, native vector compilation and
+exact Structure-1/Structure-2 drop-shadow transfer to native component effects;
+no authorship or ownership of the original artwork is claimed.
+
+Labs interactive: Tarkov.dev, https://tarkov.dev/map/the-lab
+Artwork: https://assets.tarkov.dev/maps/labs_v4/
+Icebreaker interactive: TarkovBOT.eu, https://tarkovbot.eu/
+Artwork: https://assets.tarkov.dev/maps/icebreaker/
+Credits follow interactive maps.json, not the separate re3mr 2D Icebreaker map.
+Changes: validated z4 tile selection and common display crop calibration;
+Labs source affine coefficients converted from 175-stride display pixels to
+256-pixel native tile units, checked against independently labelled landmarks.
+Evidence-owned Helicopter/Compartment C-1 marker floor ownership is retained
+separately from unchanged source heights and configured automatic height bands.
+The exact Interchange Non-Kiba alarm console has prepared Second_Floor ownership:
+its complete frozen volume/outline lies within the source metadata layer's
+height band and mall rectangle. Vector automatic height selection remains off;
+unreviewed, unknown and cross-floor records receive no inferred ownership.
+The SVG repository licence is not assigned to these raster families. Frozen
+metadata, creator pages and Tarkov.dev terms evidence are supplied; no separate
+owner-cleared permission or blanket raster licence is asserted. Inclusion is
+for this user-directed private implementation, not authorization to publish.
+
+Marker data and metadata: Tarkov.dev, https://tarkov.dev and
+https://json.tarkov.dev/regular/maps. Source bytes/URLs/hashes are retained.
+Blackgrid claims no ownership of community artwork or Escape from Tarkov assets.

@@ -1,7 +1,176 @@
 import 'package:blackgrid/domain/map_floors.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:test/test.dart';
 
+import '../../tool/maps/calibration.dart' show supportedMapSources;
+import '../support/map_preparation_fixtures.dart'
+    show preparedMapMetadataFixture;
+
 void main() {
+  // Expected floor identities are source-observation data, not obtained from
+  // policy.floors or projection output. These are policy/parity tests, not
+  // independent game-to-artwork placement qualification.
+  final conventionalFloors = <String, List<String>>{
+    'factory': ['Ground_Floor', 'Second_Floor', 'Third_Floor', 'Basement'],
+    'customs': [
+      'Ground_Level',
+      'Second_Floor',
+      'Third_Floor',
+      'Fourth_Floor',
+      'Underground_Level',
+    ],
+    'woods': ['Ground_Level'],
+    'shoreline': [
+      'Ground_Level',
+      'Second_Floor',
+      'Third_Floor',
+      'Underground_Level',
+    ],
+    'interchange': ['Ground_Level', 'First_Floor', 'Second_Floor'],
+    'reserve': [
+      'Ground_Level',
+      'Second_Floor',
+      'Third_Floor',
+      'Fourth_Floor',
+      'Fifth_Floor',
+      'Bunkers',
+    ],
+    'lighthouse': ['Ground_Level'],
+    'streetsoftarkov': [
+      'Ground_Level',
+      'Second_Floor',
+      'Third_Floor',
+      'Fourth_Floor',
+      'Fifth_Floor',
+      'Underground_Level',
+    ],
+    'groundzero': [
+      'Ground_Level',
+      'Second_Floor',
+      'Third_Floor',
+      'Underground_Level',
+    ],
+    'terminal': ['Ground_Level'],
+    'labyrinth': ['Main_Level'],
+  };
+  const attachedBaseMaps = {
+    'customs',
+    'shoreline',
+    'streetsoftarkov',
+    'groundzero',
+    'terminal',
+  };
+  for (final entry in conventionalFloors.entries) {
+    test(
+      '${entry.key} every authored floor composes manually with explicit ownership',
+      () {
+        final map = PreparedMap.fromJson(
+          preparedMapMetadataFixture(supportedMapSources[entry.key]!),
+          assetRoot: 'fixture/',
+        );
+        final policy = map.floorPolicy;
+        final expectedBase = [
+          entry.value.first,
+          if (attachedBaseMaps.contains(entry.key)) 'First_Floor',
+        ];
+        expect(policy.selectableFloors.map((floor) => floor.id), entry.value);
+        expect(policy.reset().visibleLayerIds, expectedBase);
+        expect(policy.exclusive, isFalse);
+        expect(policy.supportsAutomaticHeight, isFalse);
+        expect(
+          policy.floors.every((floor) => floor.heightBand == null),
+          entry.key != 'interchange',
+        );
+        var selection = policy.reset();
+        for (final id in entry.value.skip(1)) {
+          expect(
+            selection.isVisible(
+              floorId: id,
+              height: 0,
+              unknownHeight: UnknownHeightVisibility.visible,
+            ),
+            isFalse,
+          );
+          selection = selection.toggle(id);
+          expect(selection.visibleLayerIds, containsAll([...expectedBase, id]));
+          expect(
+            selection.isVisible(
+              floorId: id,
+              height: null,
+              unknownHeight: UnknownHeightVisibility.hidden,
+            ),
+            isTrue,
+          );
+          expect(
+            selection.isVisible(
+              floorId: id,
+              height: 10000,
+              unknownHeight: UnknownHeightVisibility.hidden,
+            ),
+            isTrue,
+            reason: 'Physical ownership beats unusable conventional height.',
+          );
+        }
+        expect(selection.selectedOverlayIds, entry.value.skip(1).toSet());
+        for (final id in entry.value.skip(1).toList().reversed) {
+          selection = selection.toggle(id);
+          expect(selection.isLayerVisible(id), isFalse);
+          expect(selection.visibleLayerIds, containsAll(expectedBase));
+        }
+        expect(selection.visibleLayerIds, expectedBase);
+        for (final height in [null, -10000.0, 0.0, 10000.0]) {
+          expect(policy.floorForHeight(height), isNull);
+          expect(
+            policy.selectionForHeight(height).visibleLayerIds,
+            expectedBase,
+          );
+          expect(
+            selection.isVisible(
+              height: height,
+              unknownHeight: UnknownHeightVisibility.hidden,
+            ),
+            isFalse,
+          );
+        }
+        if (attachedBaseMaps.contains(entry.key)) {
+          expect(() => selection.select('First_Floor'), throwsArgumentError);
+          expect(selection.isLayerVisible('First_Floor'), isTrue);
+        }
+        expect(() => selection.toggle('Unowned_Floor'), throwsArgumentError);
+        expect(
+          () => selection.selectedOverlayIds.clear(),
+          throwsUnsupportedError,
+        );
+      },
+    );
+  }
+
+  for (final mapId in conventionalFloors.keys) {
+    test(
+      '$mapId does not gain automatic floors from a supplied source band',
+      () {
+        final policy = MapFloorPolicy(
+          mapId: mapId,
+          base: MapFloor(id: 'base', label: 'Base'),
+          overlays: [
+            MapFloor(
+              id: 'upper',
+              label: 'Upper',
+              heightBand: HeightBand(0, 10),
+            ),
+          ],
+        );
+        expect(policy.floorForHeight(null), isNull);
+        expect(policy.floorForHeight(0), isNull);
+        expect(policy.selectionForHeight(5).visibleLayerIds, ['base']);
+        expect(policy.reset().select('upper').visibleLayerIds, [
+          'base',
+          'upper',
+        ]);
+      },
+    );
+  }
+
   test('Streets base and attached first floor remain together with manual overlays only', () {
     final policy = MapFloorPolicy.streets();
     final base = policy.reset();

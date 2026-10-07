@@ -1,7 +1,12 @@
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/map_geometry.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:test/test.dart';
+
+import '../../tool/maps/calibration.dart' show supportedMapSources;
+import '../support/map_preparation_fixtures.dart'
+    show preparedMapMetadataFixture;
 
 void expectPoint(double x, double y, double expectedX, double expectedY) {
   expect(x, closeTo(expectedX, 1e-9));
@@ -10,6 +15,114 @@ void expectPoint(double x, double y, double expectedX, double expectedY) {
 
 void main() {
   final bounds = GameBounds(minX: -2, maxX: 6, minZ: -4, maxZ: 8);
+
+  test(
+    'Reserve abstract SVG restores the original revision-0 pin basis exactly',
+    () {
+      final reserve = PreparedMap.fromJson(
+        preparedMapMetadataFixture('reserve'),
+        assetRoot: 'fixture/',
+      );
+      // Revision-0 pins were normalized over the original SVG bounds; with
+      // the SVG selected again they land on the same normalized artwork point.
+      final pin = MapPinCoordinates(
+        mapId: 'reserve',
+        point: ArtworkPoint(.25, .75),
+        frame: MapCoordinateFrame.legacyNormalized,
+      );
+      final artwork = reserve.pinProjector.pinToArtwork(pin);
+      final restoredGame = reserve.geometry.artworkToGame(artwork);
+      expectPoint(restoredGame.x, restoredGame.z, 141, 135.5);
+      final pixels = reserve.displayFrame.artworkToPixels(artwork);
+      expectPoint(pixels.x, pixels.y, .25 * 827.28742, .75 * 761.16437);
+    },
+  );
+
+  test('Customs and Reserve reject unsupported original-normalized revision1 without rewriting coordinates', () {
+    for (final source in ['customs', 'reserve']) {
+      final raw = preparedMapMetadataFixture(source);
+      final geometry = raw['geometry'] as Map;
+      geometry['pinFrame'] = 'original-normalized';
+      geometry['coordinateRevision'] = 1;
+      expect(
+        () => PreparedMap.fromJson(raw, assetRoot: 'fixture/'),
+        throwsFormatException,
+      );
+      expect(geometry['pinFrame'], 'original-normalized');
+      expect(geometry['coordinateRevision'], 1);
+      final pin = CustomPin(
+        id: 'unsupported-original',
+        mapId: source,
+        x: .25,
+        y: .75,
+        frame: 'original-normalized',
+        frameRevision: 1,
+        label: 'Retained original',
+        updatedAt: DateTime.utc(2026),
+      );
+      expect(() => MapPinCoordinates.fromPin(pin), throwsFormatException);
+      expect(pin.x, .25);
+      expect(pin.y, .75);
+      expect(pin.frame, 'original-normalized');
+      expect(pin.frameRevision, 1);
+    }
+  });
+
+  test('all thirteen pin frames remain map-scoped and unchanged through display transformations', () {
+    for (final entry in supportedMapSources.entries) {
+      final map = PreparedMap.fromJson(
+        preparedMapMetadataFixture(entry.value),
+        assetRoot: 'fixture/',
+      );
+      final labs = entry.key == 'thelab';
+      final pin = CustomPin(
+        id: 'frame-fixture',
+        mapId: entry.key,
+        x: -.2,
+        y: 1.5,
+        frame: labs ? 'labs-native-normalized' : 'legacy-normalized',
+        frameRevision: labs ? 1 : 0,
+        label: 'Frame regression',
+        updatedAt: DateTime.utc(2026),
+      );
+      final stored = pin.toJson();
+      final coordinates = MapPinCoordinates.fromPin(pin);
+      final artwork = map.pinProjector.pinToArtwork(coordinates);
+      final extent = map.displayFrame.originalArtwork;
+      final cropped = MapDisplayFrame(
+        originalArtwork: extent,
+        crop: ArtworkCrop(
+          left: extent.width * .1,
+          top: extent.height * .2,
+          width: extent.width * .7,
+          height: extent.height * .6,
+        ),
+      );
+      final view = MapViewTransform.fit(
+        scene: cropped.sceneExtent,
+        viewport: MapExtent(600, 400),
+      ).zoomAt(ViewportPoint(127, 98), 2.5).panBy(-17, 23);
+      final viewport = view.sceneToViewport(cropped.artworkToScene(artwork));
+      final restored = map.pinProjector.artworkToPin(
+        cropped.sceneToArtwork(view.viewportToScene(viewport)),
+      );
+      expect(restored.mapId, entry.key);
+      expectPoint(restored.point.x, restored.point.y, -.2, 1.5);
+      expect(restored.frame.wireName, pin.frame);
+      expect(restored.frame.revision, pin.frameRevision);
+      expect(pin.toJson(), stored);
+      expect(
+        () => map.pinProjector.pinToArtwork(
+          MapPinCoordinates(
+            mapId: entry.key == 'factory' ? 'customs' : 'factory',
+            point: coordinates.point,
+            frame: coordinates.frame,
+          ),
+        ),
+        throwsArgumentError,
+      );
+    }
+  });
 
   group('affine game projection', () {
     test('rotation precedes anisotropic scaling in the full native frame', () {

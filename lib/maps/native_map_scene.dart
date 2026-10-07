@@ -274,11 +274,20 @@ class NativeMapScene {
     this._tiles,
     this._resources,
     this._tilePaths,
-  );
+  ) : _dimBase =
+          map.kind == 'vector' &&
+          map.tiles.any(
+            (tile) =>
+                tile.floorId != map.floorPolicy.base.id &&
+                selection.isLayerVisible(tile.floorId),
+          );
   final NativeMapResourceOwner _owner;
   final PreparedMap map;
   final MapFloorSelection selection;
   final List<_ScenePicture> _pictures;
+
+  /// Like tarkov.dev, a tile floor shown over SVG artwork dims the base level.
+  final bool _dimBase;
   final List<_SceneTile> _tiles;
   final List<_NativeResource> _resources;
   final Set<String> _tilePaths;
@@ -322,6 +331,8 @@ class NativeMapScene {
     final crop = map.displayFrame.crop;
     canvas.translate(-crop.left, -crop.top);
     for (final item in _pictures) {
+      final dimmed = _dimBase && item.floorId == map.floorPolicy.base.id;
+      if (dimmed) canvas.saveLayer(null, _dimPaint);
       for (final effect in item.effects) {
         canvas.save();
         canvas.translate(effect.dx, effect.dy);
@@ -331,6 +342,7 @@ class NativeMapScene {
         canvas.restore();
       }
       canvas.drawPicture(item.picture);
+      if (dimmed) canvas.restore();
     }
     for (final item in _tiles) {
       canvas.drawImageRect(
@@ -352,6 +364,8 @@ class NativeMapScene {
     }
   }
 
+  static final ui.Paint _dimPaint = ui.Paint()
+    ..color = const ui.Color.fromARGB(51, 0, 0, 0);
   static final ui.Paint _tilePaint = ui.Paint()
     ..filterQuality = ui.FilterQuality.low;
 }
@@ -366,7 +380,7 @@ List<PreparedRasterTile> _visibleTiles(
   MapViewTransform transform,
   ui.Size size,
 ) {
-  if (map.kind != 'raster' || size.width <= 0 || size.height <= 0) {
+  if (map.tiles.isEmpty || size.width <= 0 || size.height <= 0) {
     return const [];
   }
   final topLeft = transform.viewportToScene(ViewportPoint(0, 0));
@@ -407,8 +421,10 @@ class _NativeResource {
 
 class _ScenePicture {
   _ScenePicture(PreparedVectorComponent component, this.picture)
-    : effects = [for (final effect in component.effects) _SceneShadow(effect)];
+    : floorId = component.floorId,
+      effects = [for (final effect in component.effects) _SceneShadow(effect)];
   final ui.Picture picture;
+  final String floorId;
   final List<_SceneShadow> effects;
 }
 
@@ -435,7 +451,8 @@ class _SceneShadow {
 
 class _SceneTile {
   _SceneTile(PreparedRasterTile tile, this.image)
-    : source = ui.Rect.fromLTWH(
+    : floorId = tile.floorId,
+      source = ui.Rect.fromLTWH(
         0,
         0,
         image.width.toDouble(),
@@ -448,6 +465,7 @@ class _SceneTile {
         tile.height,
       );
   final ui.Image image;
+  final String floorId;
   final ui.Rect source;
   final ui.Rect destination;
 }

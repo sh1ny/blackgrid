@@ -1,3 +1,7 @@
+import 'inventory.dart';
+
+export 'inventory.dart' show supportedMapSources, additionalVectorSources;
+
 const vectorSourceRevision = '5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178';
 const vectorSourceUrl = 'https://assets.tarkov.dev/maps/svg/Interchange.svg';
 const vectorSourcePath = 'interchange/Interchange.svg';
@@ -9,16 +13,18 @@ const metadataBlob = '4d7f7bbe8c233027b735ccb37b9b3ee48737163f';
 const markerUrl = 'https://json.tarkov.dev/regular/maps';
 // Independently retrieved content identities. A changed mutable metadata URL
 // requires an explicit new reviewed source generation, never silent reuse.
-const primarySourceHashes = {
+final primarySourceHashes = Map<String, String>.unmodifiable({
   'metadata/maps.json':
       'c53a327dcdcff67a49b9fe2d150731edb4c1611dfc2f75db2ce97444dee2ef77',
   vectorSourcePath:
       '31a44112cd5fe33484ce6be7b7dc80d13db6077cba2583a4425ed94c665f47c4',
+  for (final entry in additionalVectorSources.entries)
+    '${entry.key}/${entry.value['file']}': entry.value['sha256']!,
   'terms/svg-maps-README.md':
       'ee4022e968c052d2920251ba2181b5ebd9ffb45c5c69bdea916bd9f3a6e7031a',
   'terms/svg-maps-LICENSE.md':
       '1349a4b6148492b44f629e64eed676612e234fe9a839e4f3b277c1482c8849f1',
-};
+});
 const vectorSourceRoot =
     'https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/$vectorSourceRevision';
 const labsTiles = [
@@ -262,7 +268,7 @@ Map<String, Object?> calibrationFor(String sourceKey) {
         ],
       };
     default:
-      throw FormatException('Unknown source map: $sourceKey');
+      return additionalCalibrationFor(sourceKey);
   }
 }
 
@@ -300,6 +306,30 @@ List<Map<String, Object?>> reconcileFloors(
       throw FormatException('Upstream silently lost required floor $identity');
     }
   }
+  final rasterDependencies = (local['rasterDependencies'] as List? ?? [])
+      .cast<Map>();
+  if (rasterDependencies.isNotEmpty) {
+    final declared = <String>{
+      if (upstream['tilePath'] is String) upstream['tilePath'] as String,
+      for (final layer in (upstream['layers'] as List? ?? []))
+        if (layer['tilePath'] is String) layer['tilePath'] as String,
+    };
+    final required = rasterDependencies
+        .map((resource) => resource['sourceTileUrl'] as String)
+        .toSet();
+    if (required.length != rasterDependencies.length ||
+        declared.length != required.length ||
+        !declared.containsAll(required)) {
+      throw const FormatException(
+        'Metadata raster dependency closure differs from calibration',
+      );
+    }
+    for (final resource in rasterDependencies) {
+      if (!floors.any((floor) => floor['id'] == resource['id'])) {
+        throw const FormatException('Raster dependency has unknown floor');
+      }
+    }
+  }
   final expected = floors.map((f) => f['sourceTileUrl'] ?? f['id']).toSet();
   if (!expected.containsAll(sourceLayers)) {
     throw FormatException(
@@ -317,6 +347,29 @@ String rawTilePath(String mapId, String floorId, int x, int y) =>
     'tiles/$mapId/$floorId/$x/$y.png';
 
 const artworkNotices = '''Blackgrid map artwork notices
+Factory, Customs, Woods, Shoreline, Reserve, Lighthouse, Streets of Tarkov,
+Ground Zero and Terminal: Shebuka / Escape from Tarkov SVG Maps Project.
+Original SVG sources and per-map URL/SHA-256 identities are frozen in
+evidence/sources.json; matching repository revision is
+5a8b6115d1c0cf56f2ebaac1a96fa5ae3074d178. Published LICENSE.md/README.md
+conditions below apply to these source SVGs and their prepared derivatives.
+Changes: ordered dependency-closed floor/component normalization, inherited
+styles/transforms/references retained and exact source drop shadows transferred
+to native effects. <use> references to publisher-deleted symbols (Customs
+path493; Streets stairs-85/86/87/90/92) are dropped, matching browser
+rendering; no symbol is synthesized and any other missing symbol fails
+preparation.
+Ground Zero's four metadata-declared raster grids are frozen/package-validated
+alternative renditions, not embedded SVG overlays and not duplicate painting.
+Labyrinth uses the metadata-declared interactive original z4 raster grid:
+https://assets.tarkov.dev/maps/labyrinth/main/. The selected upstream metadata
+declares no SVG wrapper. No wrapper or substitute artwork has been invented.
+Ground Zero rasters and Labyrinth interactive tiles are credited according to
+their frozen interactive metadata. SVG licensing is not assigned to these
+raster resources; source/creator/terms evidence does not assert public
+redistribution clearance. Inclusion is user-directed private implementation.
+Independent numeric placement for new families is unverified.
+
 
 Interchange: Shebuka / Escape from Tarkov SVG Maps Project.
 Artwork: https://assets.tarkov.dev/maps/svg/Interchange.svg

@@ -45,12 +45,18 @@ class AppSettings {
     this.saveMarkerFilters = false,
     Map<String, bool> markerFilters = const {},
     this.trackerEnabled = false,
+    this.gameLogDirectory = '',
+    this.screenshotDirectory = '',
+    this.followGameLogs = true,
   }) : markerFilters = Map.unmodifiable(markerFilters);
   final GameMode mode;
   final String selectedMap;
   final bool saveMarkerFilters;
   final Map<String, bool> markerFilters;
   final bool trackerEnabled;
+  final String gameLogDirectory;
+  final String screenshotDirectory;
+  final bool followGameLogs;
 
   AppSettings copyWith({
     GameMode? mode,
@@ -58,12 +64,18 @@ class AppSettings {
     bool? saveMarkerFilters,
     Map<String, bool>? markerFilters,
     bool? trackerEnabled,
+    String? gameLogDirectory,
+    String? screenshotDirectory,
+    bool? followGameLogs,
   }) => AppSettings(
     mode: mode ?? this.mode,
     selectedMap: selectedMap ?? this.selectedMap,
     saveMarkerFilters: saveMarkerFilters ?? this.saveMarkerFilters,
     markerFilters: markerFilters ?? this.markerFilters,
     trackerEnabled: trackerEnabled ?? this.trackerEnabled,
+    gameLogDirectory: gameLogDirectory ?? this.gameLogDirectory,
+    screenshotDirectory: screenshotDirectory ?? this.screenshotDirectory,
+    followGameLogs: followGameLogs ?? this.followGameLogs,
   );
   Map<String, Object?> toJson() => {
     'mode': mode.name,
@@ -71,6 +83,9 @@ class AppSettings {
     'saveMarkerFilters': saveMarkerFilters,
     'markerFilters': markerFilters,
     'trackerEnabled': trackerEnabled,
+    'gameLogDirectory': gameLogDirectory,
+    'screenshotDirectory': screenshotDirectory,
+    'followGameLogs': followGameLogs,
   };
   factory AppSettings.fromJson(Map<String, Object?> json) {
     final mode = GameMode.values.firstWhere((m) => m.name == json['mode']);
@@ -88,6 +103,9 @@ class AppSettings {
       saveMarkerFilters: json['saveMarkerFilters'] as bool,
       markerFilters: filters,
       trackerEnabled: json['trackerEnabled'] as bool,
+      gameLogDirectory: json['gameLogDirectory'] as String? ?? '',
+      screenshotDirectory: json['screenshotDirectory'] as String? ?? '',
+      followGameLogs: json['followGameLogs'] as bool? ?? true,
     );
   }
 }
