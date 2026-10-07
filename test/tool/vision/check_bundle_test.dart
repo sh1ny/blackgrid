@@ -390,13 +390,14 @@ void main() {
     expect(File(inside).existsSync(), isFalse);
   });
 
-  test('report path under a junction is refused', () async {
+  test('report path under a linked directory is refused', () async {
     final target = Directory('${fx.root.path}/real')..createSync();
+    // A junction on Windows, a symbolic link elsewhere.
     final link = '${fx.root.path}/linked';
     Link(link).createSync(target.path);
     final r = await runWithReport('$link/report.json');
     expect(r.code, 2);
     expect(r.err, contains('symbolic link or junction'));
     expect(File('${target.path}/report.json').existsSync(), isFalse);
-  }, skip: Platform.isWindows ? false : 'junctions are Windows-only');
+  });
 }

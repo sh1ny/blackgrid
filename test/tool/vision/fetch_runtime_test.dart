@@ -140,6 +140,41 @@ void main() {
     expect(cacheFiles(), isEmpty);
   });
 
+  for (final (name, status) in [('redirect', 302), ('error', 500)]) {
+    test('fetch times out while a stalled $name body drains', () async {
+      final bytes = utf8.encode('payload');
+      final stall = Completer<void>();
+      routes['/a.bin'] = (response) async {
+        response.statusCode = status;
+        if (status == 302) {
+          response.headers.set(HttpHeaders.locationHeader, url('/b.bin'));
+        }
+        response.contentLength = 1000;
+        response.add(List.filled(10, 0x20));
+        await response.flush();
+        await stall.future;
+      };
+
+      final watch = Stopwatch()..start();
+      await expectLater(
+        run(
+          writeLock([entry('a', bytes)]),
+          timeout: const Duration(milliseconds: 300),
+        ).timeout(const Duration(seconds: 5)),
+        throwsA(
+          isA<FetchException>().having(
+            (e) => e.message,
+            'message',
+            contains('timed out'),
+          ),
+        ),
+      );
+      stall.complete();
+      expect(watch.elapsed, lessThan(const Duration(seconds: 5)));
+      expect(cacheFiles(), isEmpty);
+    });
+  }
+
   test('fetch times out while the connection never establishes', () async {
     final bytes = utf8.encode('never connects');
     final watch = Stopwatch()..start();

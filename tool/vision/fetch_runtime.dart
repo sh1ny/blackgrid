@@ -200,6 +200,26 @@ Future<void> _downloadOne(
       (_) => throw FetchException(input.id, 'timed out after $timeout'),
     ),
   ]);
+  // Once the response exists abort() no longer applies, so a body is read
+  // (or discarded) chunk by chunk against the timer; cancelling the stream on
+  // expiry closes the connection.
+  Future<bool> next(StreamIterator<List<int>> chunks) async {
+    final more = await Future.any([
+      chunks.moveNext(),
+      expired.future.then((_) => false),
+    ]);
+    if (expired.isCompleted) {
+      unawaited(chunks.cancel());
+      throw FetchException(input.id, 'timed out after $timeout');
+    }
+    return more;
+  }
+
+  Future<void> discard(HttpClientResponse response) async {
+    final chunks = StreamIterator(response);
+    while (await next(chunks)) {}
+  }
+
   Future<String> transfer() async {
     var uri = start;
     for (var hop = 0; ; hop++) {
@@ -212,7 +232,7 @@ Future<void> _downloadOne(
       request.followRedirects = false;
       final response = await bounded(request.close());
       if (response.isRedirect) {
-        await response.drain<void>();
+        await discard(response);
         if (hop >= _maxRedirects) {
           throw FetchException(input.id, 'too many redirects from $start');
         }
@@ -224,7 +244,7 @@ Future<void> _downloadOne(
         continue;
       }
       if (response.statusCode != 200) {
-        await response.drain<void>();
+        await discard(response);
         throw FetchException(input.id, 'HTTP ${response.statusCode} from $uri');
       }
       if (response.contentLength > input.size) {
@@ -241,10 +261,7 @@ Future<void> _downloadOne(
       var received = 0;
       try {
         final chunks = StreamIterator(response);
-        while (await Future.any([
-          chunks.moveNext(),
-          expired.future.then((_) => false),
-        ])) {
+        while (await next(chunks)) {
           final chunk = chunks.current;
           received += chunk.length;
           if (received > input.size) {
@@ -255,10 +272,6 @@ Future<void> _downloadOne(
           }
           hasher.add(chunk);
           sink.add(chunk);
-        }
-        if (expired.isCompleted) {
-          unawaited(chunks.cancel());
-          throw FetchException(input.id, 'timed out after $timeout');
         }
         hasher.close();
       } finally {
