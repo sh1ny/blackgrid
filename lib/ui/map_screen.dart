@@ -27,16 +27,37 @@ class _MapInputStatusState extends State<_MapInputStatus> {
   @override
   void initState() {
     super.initState();
-    _ageTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted &&
-          widget.services.mapSession.state.savedScreenshotModifiedAt != null) {
-        setState(() {});
-      }
-    });
+    widget.services.mapSession.addListener(_syncAgeTimer);
+    _syncAgeTimer();
+  }
+
+  @override
+  void didUpdateWidget(_MapInputStatus oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.services.mapSession != widget.services.mapSession) {
+      oldWidget.services.mapSession.removeListener(_syncAgeTimer);
+      widget.services.mapSession.addListener(_syncAgeTimer);
+      _syncAgeTimer();
+    }
+  }
+
+  /// Ticks only while a saved-screenshot age is displayed.
+  void _syncAgeTimer() {
+    final hasAge =
+        widget.services.mapSession.state.savedScreenshotModifiedAt != null;
+    if (hasAge && _ageTimer == null) {
+      _ageTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else if (!hasAge && _ageTimer != null) {
+      _ageTimer!.cancel();
+      _ageTimer = null;
+    }
   }
 
   @override
   void dispose() {
+    widget.services.mapSession.removeListener(_syncAgeTimer);
     _ageTimer?.cancel();
     super.dispose();
   }
