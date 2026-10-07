@@ -383,6 +383,42 @@ void main() {
     );
   });
 
+  test(
+    'unnamed transits take their translated description as the panel label',
+    () {
+      final snapshot = <String, dynamic>{
+        'data': {
+          'maps': {
+            'factory': {
+              'id': '5704e3c2d2720bac5b8b4567',
+              'normalizedName': 'factory',
+              'transits': [
+                {
+                  'id': '12',
+                  'description': 'FAC_TRANSIT_12_DESC',
+                  'position': {'x': 24.36, 'y': 2.24, 'z': 60.22},
+                },
+                {
+                  'id': '13',
+                  'description': 'UNTRANSLATED_DESC',
+                  'position': {'x': 1, 'y': 0, 'z': 1},
+                },
+              ],
+              'bosses': <Object>[],
+            },
+          },
+        },
+      };
+      final markers = prepareMarkers(snapshot, {
+        'FAC_TRANSIT_12_DESC': 'Transit to Woods',
+      }, calibrationFor('factory'));
+      expect(markers.map((marker) => marker['name']), [
+        'Transit to Woods',
+        'UNTRANSLATED_DESC',
+      ]);
+    },
+  );
+
   test('canonical manifest bytes do not depend on insertion order', () {
     expect(
       canonicalJson({

@@ -1000,7 +1000,7 @@
             3.7
           ],
           "id": "transits:12:0",
-          "name": "transits",
+          "name": "Transit to Woods",
           "outline": [
             {
               "height": 0.78,
@@ -1075,7 +1075,7 @@
             1.58
           ],
           "id": "transits:13:0",
-          "name": "transits",
+          "name": "Transit to Customs",
           "outline": [
             {
               "height": -0.42,
@@ -1151,7 +1151,7 @@
             -2.09
           ],
           "id": "transits:14:0",
-          "name": "transits",
+          "name": "Transit to The Lab",
           "outline": [
             {
               "height": -4.09,
@@ -68009,7 +68009,7 @@
             2.92
           ],
           "id": "transits:9:0",
-          "name": "transits",
+          "name": "Transit to Reserve",
           "outline": [
             {
               "height": 0.26,
@@ -68084,7 +68084,7 @@
             3.64
           ],
           "id": "transits:10:0",
-          "name": "transits",
+          "name": "Transit to Factory",
           "outline": [
             {
               "height": 0.98,
@@ -68159,7 +68159,7 @@
             3.44
           ],
           "id": "transits:11:0",
-          "name": "transits",
+          "name": "Transit to Interchange",
           "outline": [
             {
               "height": 0.78,
@@ -68234,7 +68234,7 @@
             1.82
           ],
           "id": "transits:42:0",
-          "name": "transits",
+          "name": "Transit to Shoreline",
           "outline": [
             {
               "height": -2.48,
@@ -250151,7 +250151,7 @@
             2.75
           ],
           "id": "transits:15:0",
-          "name": "transits",
+          "name": "Transit to Factory",
           "outline": [
             {
               "height": -0.18,
@@ -250226,7 +250226,7 @@
             -6.22
           ],
           "id": "transits:16:0",
-          "name": "transits",
+          "name": "Transit to Reserve",
           "outline": [
             {
               "height": -11.19,
@@ -250301,7 +250301,7 @@
             -13.92
           ],
           "id": "transits:17:0",
-          "name": "transits",
+          "name": "Transit to Lighthouse",
           "outline": [
             {
               "height": -19.54,
@@ -250376,7 +250376,7 @@
             3.92
           ],
           "id": "transits:41:0",
-          "name": "transits",
+          "name": "Transit to Customs",
           "outline": [
             {
               "height": -1.7,
@@ -333500,7 +333500,7 @@
             -42.31
           ],
           "id": "transits:24:0",
-          "name": "transits",
+          "name": "Transit to Lighthouse",
           "outline": [
             {
               "height": -69.81,
@@ -333576,7 +333576,7 @@
             -54.67
           ],
           "id": "transits:25:0",
-          "name": "transits",
+          "name": "Transit to Terminal",
           "outline": [
             {
               "height": -60.29,
@@ -333652,7 +333652,7 @@
             -8.33
           ],
           "id": "transits:43:0",
-          "name": "transits",
+          "name": "Transit to Labyrinth?",
           "outline": [
             {
               "height": -11.33,
@@ -333727,7 +333727,7 @@
             -58.71
           ],
           "id": "transits:51:0",
-          "name": "transits",
+          "name": "Transit to Icebreaker",
           "outline": [
             {
               "height": -68.61,
@@ -455672,7 +455672,7 @@
             26.28
           ],
           "id": "transits:6:0",
-          "name": "transits",
+          "name": "Transit to Customs",
           "outline": [
             {
               "height": 20.28,
@@ -455747,7 +455747,7 @@
             27.1
           ],
           "id": "transits:7:0",
-          "name": "transits",
+          "name": "Transit to Streets of Tarkov",
           "outline": [
             {
               "height": 21.1,
@@ -533082,7 +533082,7 @@
             2.32
           ],
           "id": "transits:8:0",
-          "name": "transits",
+          "name": "Transit to Streets of Tarkov",
           "outline": [
             {
               "height": 0.04,
@@ -582235,7 +582235,7 @@
             -3.54
           ],
           "id": "transits:18:0",
-          "name": "transits",
+          "name": "Transit to Customs",
           "outline": [
             {
               "height": -5.54,
@@ -582310,7 +582310,7 @@
             -5.34
           ],
           "id": "transits:19:0",
-          "name": "transits",
+          "name": "Transit to Woods",
           "outline": [
             {
               "height": -7.34,
@@ -582385,7 +582385,7 @@
             -5.25
           ],
           "id": "transits:20:0",
-          "name": "transits",
+          "name": "Transit to Lighthouse",
           "outline": [
             {
               "height": -7.25,
@@ -673710,7 +673710,7 @@
             31.29
           ],
           "id": "transits:21:0",
-          "name": "transits",
+          "name": "Transit to Shoreline",
           "outline": [
             {
               "height": 3.79,
@@ -673785,7 +673785,7 @@
             18.11
           ],
           "id": "transits:22:0",
-          "name": "transits",
+          "name": "Transit to Reserve",
           "outline": [
             {
               "height": 12.49,
@@ -673860,7 +673860,7 @@
             9.59
           ],
           "id": "transits:23:0",
-          "name": "transits",
+          "name": "Transit to Woods",
           "outline": [
             {
               "height": 3.97,
@@ -673936,7 +673936,7 @@
             5.25
           ],
           "id": "transits:51:0",
-          "name": "transits",
+          "name": "Transit to Icebreaker",
           "outline": [
             {
               "height": -4.65,
@@ -772530,7 +772530,7 @@
             4.19
           ],
           "id": "transits:3:0",
-          "name": "transits",
+          "name": "Transit to Ground Zero",
           "outline": [
             {
               "height": 2.19,
@@ -772605,7 +772605,7 @@
             5.39
           ],
           "id": "transits:4:0",
-          "name": "transits",
+          "name": "Transit to Interchange",
           "outline": [
             {
               "height": 3.39,
@@ -772681,7 +772681,7 @@
             -6.38
           ],
           "id": "transits:5:0",
-          "name": "transits",
+          "name": "Transit to The Lab",
           "outline": [
             {
               "height": -8.38,
@@ -940177,7 +940177,7 @@
             17.99
           ],
           "id": "transits:1:0",
-          "name": "transits",
+          "name": "Transit to Streets of Tarkov",
           "outline": [
             {
               "height": 15.99,

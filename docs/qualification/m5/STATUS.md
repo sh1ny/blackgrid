@@ -13,7 +13,7 @@ The user directed functional parity with their reference fork. This replaces the
 
 ## Active pack
 
-Active generation `6a2868b8c4b7c9c8cc53fc2f9b21f77101a4b2d26570d5518b88bdd8fb64b4a5` (preparation version 3, source generation `c194227b…`, calibration evidence SHA-256 `0eb38479d6aeff22890404685fa1e4e0fbe4881f5ffeeef94abf6f608af91818`). Two independent offline rebuilds from frozen `.dart_tool/maps/m5-raw-20261007-abstract` were byte-identical and `validate` passed.
+Active generation `d5a0f9ae11c0591f1de72efb97b582ff79842594936dc42327a83213ec98d8d2` (preparation version 3, source generation `c194227b…`, calibration evidence SHA-256 `0eb38479d6aeff22890404685fa1e4e0fbe4881f5ffeeef94abf6f608af91818`). Two independent offline rebuilds from frozen `.dart_tool/maps/m5-raw-20261007-abstract` were byte-identical and `validate` passed.
 
 | Map | Artwork | Floors |
 | --- | --- | ---: |
@@ -31,7 +31,7 @@ Active generation `6a2868b8c4b7c9c8cc53fc2f9b21f77101a4b2d26570d5518b88bdd8fb64b
 | Icebreaker | raster | 16 |
 | Labyrinth | raster | 1 |
 
-It supersedes `5320e515…`, differing only in `NOTICE.txt` (the corrected `<use>` wording) and the manifest; all artwork bytes are identical. That generation superseded `710eec41…`, which used complete raster renditions for Customs and Reserve; Customs and Reserve are now built from their publisher SVGs, matching the reference. Original persisted pin bounds remain distinct from artwork geometry. The newer marker snapshot re-keys three Interchange control markers; their fixture IDs and paths were re-pinned (Emercom height 24.18→22.45 upstream). Artwork labels, tolerances and X/Z are unchanged. The three-map M3 generation `0e059640…` stays in the repository, inactive. `5320e515…` and `710eec41…` are moved to ignored `.dart_tool/owned_verification/m5-superseded-map-generations-20261007/`.
+It supersedes `6a2868b8…`, differing only in the manifest's 29 transit marker names (PR #7 review P1 below); every other file is byte-identical. `6a2868b8…` superseded `5320e515…`, differing only in `NOTICE.txt` (the corrected `<use>` wording) and the manifest. That generation superseded `710eec41…`, which used complete raster renditions for Customs and Reserve; Customs and Reserve are now built from their publisher SVGs, matching the reference. Original persisted pin bounds remain distinct from artwork geometry. The newer marker snapshot re-keys three Interchange control markers; their fixture IDs and paths were re-pinned (Emercom height 24.18→22.45 upstream). Artwork labels, tolerances and X/Z are unchanged. The three-map M3 generation `0e059640…` stays in the repository, inactive. `6a2868b8…`, `5320e515…` and `710eec41…` are moved to ignored `.dart_tool/owned_verification/m5-superseded-map-generations-20261007/`.
 
 ## Verification
 
@@ -74,6 +74,21 @@ Steam manifest path containment and the final overlay-rectangle finite boundary 
 
 Debug/Profile and live results remain historical, as noted above.
 
+### PR #7 third-round verification (2026-10-07)
+
+The transit-name fix changed preparation and regenerated the pack, so the full offline set was rerun on the settled tree. EFT and Blackgrid were confirmed closed by process name before building; nothing was launched.
+
+| Check | Third-round result |
+| --- | --- |
+| Pack regeneration | Two independent offline rebuilds from frozen `.dart_tool/maps/m5-raw-20261007-abstract` were byte-identical; `validate` passed; promoted as `d5a0f9ae…`. A structural manifest diff against `6a2868b8…` shows exactly 29 changes, all transit `name` fields. |
+| Full offline suite, including qualification | `flutter test`: 701 passed, 0 failed, 4 native/private-image skips, 1 min 46 s. Includes the new transit-label preparation test. |
+| Whole-project analysis | `flutter analyze`: no issues. |
+| Formatting | `dart format --set-exit-if-changed .`: 135 files, 0 changed. |
+| Clean builds | Release, Debug and Profile rebuilt after clearing generated `flutter_assets`; each bundles only `d5a0f9ae…`, and each OCR DLL matches its `.sha256` binding. |
+| Release payload hashes | `blackgrid.exe`: `56c7d4c83128f01ab2a6176c7823206b37a555cc62fb6df93b470c351bc12bad`; `data/app.so`: `c35b3e4e95c3af72ce83c760ed77d790662da235fe972b8fc0732cfafc8add7b`; `blackgrid_panel_ocr.dll`: `90752805a7d83481f23479318e0ccacd8ecc4e750f3a295f4473580cfe68b1c8`. |
+
+The user's live check predates this pack; transit highlighting in a real raid remains user-only and unverified.
+
 **Unverified offline/native gates:** independent numeric placement controls for the ten new families and Icebreaker (also absent in the reference fork); complete all-map pointer/keyboard/semantic checks at resize and DPI contexts; fixed rendering/resource budgets; outside-checkout Release startup and restart; durable pin and import outcomes in the packaged app.
 
 ## Review fixes (2026-10-07)
@@ -91,7 +106,11 @@ Applied from a read-only review of the full diff.
 - PR #7 Steam-path follow-up: manifest `installdir` must be a single relative Windows folder name, without separators, drive syntax or trailing dot/space aliases. Rejected names retain the existing default-install fallback. Temporary-directory regressions cover redirected log discovery and that fallback.
 - PR #7 overlay-arithmetic follow-up: existing coordinate/extent constructors already reject nonfinite intermediate values; the remaining tile-rectangle output now rejects nonfinite origin or dimensions before it enters prepared tiles. A finite-input overflow regression covers this final boundary. Both second-round follow-ups are verified by the second-round offline suite above.
 
-**Left as is:** the raw-text matcher checks the whole panel text as well as the extract/transit section, matching the reference fork.
+- PR #7 Codex review P1 (transit highlighting could never match): source transits have no `name`, so preparation fell back to the category and all 29 transit markers were named `transits`. OCR matching uses marker names and aliases, so no real panel could match a transit. Preparation now uses the entry's `description` translation key (for example `FAC_TRANSIT_12_DESC` → "Transit to Woods") before falling back to the category. Only transits lack a name, and every transit key has an English translation in the frozen snapshot. The pack was regenerated (see third-round verification).
+
+**Left as is:**
+- The raw-text matcher checks the whole panel text as well as the extract/transit section, matching the reference fork.
+- PR #7 Codex review P2: a detected panel with no parsed rows is reported as unreadable and keeps the previous highlights, rather than clearing them as an authoritative empty panel. Zero parsed rows cannot be distinguished from an OCR misread, and clearing on a misread would erase correct highlights. Plan KTD7 requires only positively recognized empty evidence to clear, so no code produces `empty` yet.
 
 ## Earlier evidence still applicable
 

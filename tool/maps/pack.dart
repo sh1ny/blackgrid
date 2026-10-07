@@ -1307,6 +1307,9 @@ List<Map<String, Object?>> prepareMarkers(
         entry['name'] ??
         entry['zoneName'] ??
         entry['hazardType'] ??
+        // Transits carry only a translation key such as FAC_TRANSIT_12_DESC;
+        // its "Transit to Woods" label is what saved exfil panels show.
+        entry['description'] ??
         category;
     final identity =
         '$category:${entry['id'] ?? _hash(utf8.encode('$sourceKey/${canonicalJson(entry)}')).substring(0, 20)}';
