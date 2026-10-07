@@ -1,5 +1,8 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+# Must precede project(): with CMP0091 OLD, CMake writes /MD into the cache
+# flags and silently ignores per-target MSVC_RUNTIME_LIBRARY (ADR-0008).
+cmake_policy(SET CMP0091 NEW)
 project(blackgrid LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
