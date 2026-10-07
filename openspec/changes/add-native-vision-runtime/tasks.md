@@ -93,7 +93,7 @@
 
   Verify: `flutter build windows --release` and `flutter build windows --debug` both complete, the OpenCV configure log shows no download, and the build times are recorded for the PR.
 - [x] 3.4 Implement `windows/vision/vision.cpp`, the `bgv_*` C ABI from design D4. It uses caller-owned buffers only, wraps them in `cv::Mat` headers without copying, checks the size, channel and stride caps natively, catches every C++ exception at the boundary, maps errors to negative status codes, and provides `bgv_abi()`. Build it as `blackgrid_vision.dll` (x64, C++20, static CRT, `/W4 /EHsc /permissive-`). Verify: the Release build produces the DLL, and its PE exports list exactly the `bgv_*` functions.
-- [ ] 3.5 Install into the bundle:
+- [x] 3.5 Install into the bundle:
   - into the exe directory: `blackgrid_vision.dll`, plus `tesseract50.dll` and `leptonica-1.82.0.dll` from the verified cache;
   - into `data/vision/tessdata/`: `eng.traineddata`;
   - into `data/vision/self_check/`: the sample from task 5.1;

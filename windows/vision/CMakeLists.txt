@@ -162,3 +162,109 @@ target_link_libraries(blackgrid_vision PRIVATE
   "${BGV_OPENCV_PREFIX}/lib/opencv_imgproc4130${BGV_OPENCV_SUFFIX}.lib"
   "${BGV_OPENCV_PREFIX}/lib/opencv_core4130${BGV_OPENCV_SUFFIX}.lib"
   "${BGV_OPENCV_PREFIX}/lib/3rdparty/zlib${BGV_OPENCV_SUFFIX}.lib")
+
+# --- Bundle install (design D3, D7) -----------------------------------------
+# INSTALL_BUNDLE_LIB_DIR (exe directory) and INSTALL_BUNDLE_DATA_DIR come from
+# windows/CMakeLists.txt.
+function(bgv_lock_entry id out_index)
+  string(JSON count LENGTH "${BGV_LOCK_JSON}" inputs)
+  math(EXPR last "${count} - 1")
+  foreach(index RANGE ${last})
+    string(JSON entry_id GET "${BGV_LOCK_JSON}" inputs ${index} id)
+    if(entry_id STREQUAL id)
+      set(${out_index} ${index} PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  message(FATAL_ERROR "third_party.lock.json has no '${id}' input")
+endfunction()
+
+# The ABI the manifest records is the one the DLL is compiled with.
+file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/vision.h" BGV_ABI_LINE
+  REGEX "^#define BGV_ABI_VERSION [0-9]+$")
+string(REGEX REPLACE "^#define BGV_ABI_VERSION " "" BGV_ABI_VERSION "${BGV_ABI_LINE}")
+if(NOT BGV_ABI_VERSION MATCHES "^[0-9]+$")
+  message(FATAL_ERROR "vision.h must define BGV_ABI_VERSION as one integer")
+endif()
+bgv_lock_entry(tesseract-nupkg BGV_NUPKG_INDEX)
+string(JSON BGV_ENGINE_VERSION GET "${BGV_LOCK_JSON}"
+  inputs ${BGV_NUPKG_INDEX} engineVersion)
+
+# Third-party files: <lock id> <input variable>. Each is installed at its
+# lock bundlePath, and its installed bytes are re-checked against the lock
+# below, so a cache altered after configure cannot enter the bundle.
+set(BGV_THIRD_PARTY
+  tesseract-dll BGV_INPUT_TESSERACT_DLL
+  leptonica-dll BGV_INPUT_LEPTONICA_DLL
+  eng-traineddata BGV_INPUT_ENG_TRAINEDDATA)
+set(BGV_MANIFEST_FILES "blackgrid_vision.dll")
+set(BGV_PIN_CHECKS "")
+list(LENGTH BGV_THIRD_PARTY BGV_THIRD_PARTY_LENGTH)
+math(EXPR BGV_THIRD_PARTY_LAST "${BGV_THIRD_PARTY_LENGTH} - 1")
+foreach(index RANGE 0 ${BGV_THIRD_PARTY_LAST} 2)
+  math(EXPR value_index "${index} + 1")
+  list(GET BGV_THIRD_PARTY ${index} id)
+  list(GET BGV_THIRD_PARTY ${value_index} input_var)
+  bgv_lock_entry(${id} lock_index)
+  string(JSON bundle_path GET "${BGV_LOCK_JSON}" inputs ${lock_index} bundlePath)
+  string(JSON pinned GET "${BGV_LOCK_JSON}" inputs ${lock_index} sha256)
+  string(TOLOWER "${pinned}" pinned)
+  get_filename_component(bundle_dir "${bundle_path}" DIRECTORY)
+  get_filename_component(bundle_name "${bundle_path}" NAME)
+  get_filename_component(input_name "${${input_var}}" NAME)
+  if(NOT input_name STREQUAL bundle_name)
+    message(FATAL_ERROR "Vision input '${id}' (${input_name}) must install as ${bundle_path}")
+  endif()
+  install(FILES "${${input_var}}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/${bundle_dir}" COMPONENT Runtime)
+  list(APPEND BGV_MANIFEST_FILES "${bundle_path}")
+  list(APPEND BGV_PIN_CHECKS "${bundle_path}|${pinned}")
+endforeach()
+
+install(FILES "$<TARGET_FILE:blackgrid_vision>"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+
+# Self-check sample (task 5.1 output), read by --vision-self-check.
+set(BGV_SELF_CHECK_FILES title.gray title.json)
+foreach(name ${BGV_SELF_CHECK_FILES})
+  install(FILES "${BGV_REPO_ROOT}/assets/vision/self_check/${name}"
+    DESTINATION "${INSTALL_BUNDLE_DATA_DIR}/vision/self_check" COMPONENT Runtime)
+  list(APPEND BGV_MANIFEST_FILES "data/vision/self_check/${name}")
+endforeach()
+
+# App-local Visual C++ runtime for the Flutter runner and tesseract50.dll
+# (D7), filtered to the committed name list. Minimum versions are checked by
+# tool/vision/check_bundle.dart.
+set(BGV_VC_RUNTIME_NAMES msvcp140.dll vcruntime140.dll vcruntime140_1.dll)
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+set(CMAKE_INSTALL_UCRT_LIBRARIES FALSE)
+set(CMAKE_INSTALL_DEBUG_LIBRARIES FALSE)
+include(InstallRequiredSystemLibraries)
+foreach(name ${BGV_VC_RUNTIME_NAMES})
+  set(found "")
+  foreach(lib ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
+    get_filename_component(lib_name "${lib}" NAME)
+    string(TOLOWER "${lib_name}" lib_name)
+    if(lib_name STREQUAL name)
+      set(found "${lib}")
+    endif()
+  endforeach()
+  if(NOT found)
+    message(FATAL_ERROR
+      "InstallRequiredSystemLibraries did not find ${name} "
+      "(found: ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})")
+  endif()
+  install(FILES "${found}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+  list(APPEND BGV_MANIFEST_FILES "${name}")
+endforeach()
+
+# Last: re-check third-party pins on the installed bytes, then bind every
+# vision file into data/vision/runtime.manifest.json (write_manifest.cmake).
+install(CODE "
+  set(BGV_BUNDLE \"${INSTALL_BUNDLE_LIB_DIR}\")
+  set(BGV_PIN_CHECKS \"${BGV_PIN_CHECKS}\")
+  set(BGV_MANIFEST_FILES \"${BGV_MANIFEST_FILES}\")
+  set(BGV_ABI_VERSION \"${BGV_ABI_VERSION}\")
+  set(BGV_ENGINE_VERSION \"${BGV_ENGINE_VERSION}\")
+  include(\"${CMAKE_CURRENT_LIST_DIR}/write_manifest.cmake\")
+  " COMPONENT Runtime)
