@@ -47,6 +47,7 @@
 | vision-runtime → Image primitives operate on caller-owned buffers | Template found in sample | test/qualification/m2_vision_runtime_test.dart | `template crop matches at its location with score >= 0.99` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Malformed buffer rejected | test/data/vision/vision_image_test.dart | `short stride or buffer is invalidImage before native call` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Template larger than image | test/data/vision/vision_image_test.dart | `template larger than image is invalidImage` | green |
+| vision-runtime → Image primitives operate on caller-owned buffers | Uniform template rejected | test/qualification/m2_vision_runtime_test.dart | `uniform template is rejected rather than matched` | green |
 | vision-runtime → Image primitives operate on caller-owned buffers | Colour scan with no match | test/qualification/m2_vision_runtime_test.dart | `row scan without match returns none` | green |
 | vision-runtime → OCR reads text from a caller-owned image | Sample title recognised | test/qualification/m2_vision_runtime_test.dart | `self-check title OCR equals expected text` | green |
 | vision-runtime → OCR reads text from a caller-owned image | Blank image | test/qualification/m2_vision_runtime_test.dart | `white image OCR returns without failure` | green |

@@ -85,6 +85,10 @@ The runtime SHALL expose these operations on caller-owned 8-bit images (width, h
 - **WHEN** the template is wider or taller than the image
 - **THEN** the operation returns failure `invalidImage`
 
+#### Scenario: Uniform template rejected
+- **WHEN** a template with zero variance (every pixel equal) is matched
+- **THEN** the operation returns failure `nativeFailure` with status -2 (`BGV_ERR_IMAGE`), not a match location
+
 #### Scenario: Colour scan with no match
 - **WHEN** no pixel in the scanned row falls within the colour range
 - **THEN** the scan returns none
