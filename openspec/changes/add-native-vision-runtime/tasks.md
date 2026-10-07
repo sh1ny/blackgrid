@@ -101,7 +101,7 @@
   - finally an `install(CODE)` step that writes `data/vision/runtime.manifest.json` (format, abi, engineVersion, files with SHA-256 and size).
 
   Verify: after a Release build, the manifest lists every vision file and each hash equals `Get-FileHash` of the installed file.
-- [ ] 3.6 Add `<activeCodePage>UTF-8</activeCodePage>` to `windows/runner/runner.exe.manifest`. Verify: the Release exe's embedded manifest contains it (`mt.exe -inputresource` or a PE resource read), and `mise run test` still passes. Runtime coverage is task 4.4's non-ASCII row.
+- [x] 3.6 Add `<activeCodePage>UTF-8</activeCodePage>` to `windows/runner/runner.exe.manifest`. Verify: the Release exe's embedded manifest contains it (`mt.exe -inputresource` or a PE resource read), and `mise run test` still passes. Runtime coverage is task 4.4's non-ASCII row.
 
 ## 4. Dart vision runtime and bindings
 
