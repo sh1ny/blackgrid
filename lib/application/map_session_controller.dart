@@ -251,14 +251,15 @@ class MapSessionController extends ChangeNotifier {
     final modeChanged = log.detectedMode != _log.detectedMode;
     _log = log;
     if (sessionChanged) ++_epoch;
+    // An error with unchanged session, map and mode is transient (sharing
+    // violation, rejected record): it stays visible but keeps the evidence.
     if (sessionChanged ||
         detectionChanged ||
         modeChanged ||
         oldMap != effectiveMapId ||
         oldDisagreement != _disagreement ||
         log.status == MapInputStatus.unavailable ||
-        log.status == MapInputStatus.missing ||
-        log.status == MapInputStatus.error) {
+        log.status == MapInputStatus.missing) {
       _invalidate();
     }
     notifyListeners();

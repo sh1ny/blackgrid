@@ -384,6 +384,65 @@ void main() {
   }
 
   test(
+    'transient log errors stay visible without clearing same-context evidence',
+    () async {
+      await session.close();
+      final result = Completer<RaidPanelEvidence>();
+      final started = Completer<void>();
+      logs = SessionLogReader(pollInterval: const Duration(days: 1));
+      final file = await log('shoreline');
+      session = MapSessionController(
+        settings: settings,
+        clock: () => now,
+        logReader: logs,
+        screenshotWatcher: ScreenshotDirectoryWatcher(
+          stabilityDelay: Duration.zero,
+        ),
+        recognize: (_) {
+          started.complete();
+          return result.future;
+        },
+      );
+      await session.initialize();
+      session.updateMapContext(_map('shoreline'), 1);
+      expect(session.state.logStatus, MapInputStatus.watching);
+      final epoch = session.state.sessionEpoch;
+      await screenshot(1);
+      final read = session.readLatest();
+      await started.future;
+      // A rejected record mid-recognition must not fence the in-flight job.
+      await file.writeAsBytes([0xff, 10], mode: FileMode.append, flush: true);
+      await logs.rescan();
+      expect(session.state.logStatus, MapInputStatus.error);
+      expect(session.state.logMessage, contains('Malformed'));
+      result.complete(
+        RaidPanelEvidence(
+          state: RaidPanelState.recognized,
+          extractNames: ['Fixture exit'],
+        ),
+      );
+      await read;
+      expect(session.state.sessionEpoch, epoch);
+      expect(session.state.playerSample!.metadata.position.x, 1);
+      expect(session.state.raidHighlightIds, {'shoreline-exit'});
+
+      await file.writeAsString('clean\n', mode: FileMode.append, flush: true);
+      await logs.rescan();
+      expect(session.state.logStatus, MapInputStatus.watching);
+      expect(session.state.playerSample!.metadata.position.x, 1);
+      expect(session.state.raidEvidence!.state, RaidPanelState.recognized);
+      expect(session.state.raidHighlightIds, {'shoreline-exit'});
+
+      // A missing input still invalidates.
+      await file.delete();
+      await logs.rescan();
+      expect(session.state.logStatus, MapInputStatus.missing);
+      expect(session.state.playerSample, isNull);
+      expect(session.state.raidHighlightIds, isEmpty);
+    },
+  );
+
+  test(
     'partial, missing and unmatched evidence retain IDs; only empty clears',
     () async {
       await session.close();
