@@ -45,3 +45,7 @@ run = "dart run tool/qualification/m0.dart validate"
 [tasks."qualification:report"]
 description = "Generate M0 qualification report from recorded evidence"
 run = "dart run tool/qualification/m0.dart report"
+
+[tasks."vision:fetch"]
+description = "Fetch pinned third-party vision inputs into the verified cache"
+run = "dart run tool/vision/fetch_runtime.dart"
