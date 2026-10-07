@@ -142,7 +142,7 @@
 ## 5. Self-check sample, runner and entry dispatch
 
 - [x] 5.1 Write `tool/vision/make_self_check_sample.dart`. It renders a fixed title string with a font whose license permits redistributing rendered output, writes `assets/vision/self_check/title.gray` (raw 8-bit, no codec) and `title.json` (w, h, stride, expected text, template rect), and adds the font's notice to `THIRD_PARTY_NOTICES.md`. Verify: running the tool twice produces byte-identical files (`Get-FileHash`), and the notice entry exists.
-- [ ] 5.2 Write failing fast tests in `test/application/vision_self_check_test.dart` that use an injected runtime factory and a stub that blocks:
+- [x] 5.2 Write failing fast tests in `test/application/vision_self_check_test.dart` that use an injected runtime factory and a stub that blocks:
   - `blocking stub step yields timeout report and code 3` (with an injectable watchdog duration);
   - `missing path or directory returns code 2 before loading`;
   - `report has format identity steps and result mirroring code`;
