@@ -539,6 +539,40 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - **SHA-256:** `7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2` (4,113,088 bytes), identical to the M0 intake hash
 - **License:** Apache-2.0 (`LICENSE` at tag 4.1.0), verbatim identical to [Apache License 2.0](#apache-license-2-0) below.
 
+<a id="spleen-2-1-0"></a>
+### Spleen 2.1.0 bitmap font (self-check sample, development only)
+
+- **Use:** `tool/vision/make_self_check_sample.dart` renders the self-check title with `spleen-32x64.bdf`, halves it with a box filter, and writes `assets/vision/self_check/title.gray`. Only that rendered output is redistributed in the bundle (`data/vision/self_check/`). The font file is vendored at `tool/vision/fonts/spleen/` for reproducible regeneration and is not part of the application or the bundle.
+- **Version:** 2.1.0
+- **Source:** <https://github.com/fcambus/spleen/releases/download/2.1.0/spleen-2.1.0.tar.gz> (SHA-256 `8b47c56f1a6eb858fbcf9e34530557404b02fbb3455e38e64fb84473fd0c372f`)
+- **File SHA-256:** `spleen-32x64.bdf` `8a6fbd024d11f57ec973291959a19c020465ccbdc0836d938e31e27d68e47e4b`; `LICENSE` `3cb3f3f5a795547d329828df881c80d923bfc75f65065c44ffa703ad78c678bd`
+- **License:** BSD-2-Clause, Copyright (c) 2018-2024, Frederic Cambus, verbatim from `LICENSE`:
+
+    Copyright (c) 2018-2024, Frederic Cambus
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+      * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+
+      * Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+    BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
 <a id="microsoft-visual-cpp-runtime"></a>
 ### Microsoft Visual C++ runtime (app-local)
 
