@@ -33,16 +33,16 @@ Test locations:
 | inspection-capture → Target identity is validated before capture | Minimised target | test/data/capture/capture_policy_test.dart | `minimised target fails without capture` | red |
 | inspection-capture → Target identity is validated before capture | Wrong executable behind the title | test/data/capture/capture_policy_test.dart | `wrong executable is wrongTarget without capture` | red |
 | inspection-capture → Target identity is validated before capture | Handle reused by another process | test/data/capture/capture_policy_test.dart | `pid change is targetGone without capture` | red |
-| inspection-capture → Targeted region is planned in physical client pixels | Sixteen resolution and scaling cells | test/data/capture/capture_geometry_test.dart | `targeted region for all 16 resolution and DPI cells` | red |
-| inspection-capture → Targeted region is planned in physical client pixels | Click on a negative-origin monitor | test/data/capture/capture_geometry_test.dart | `negative-origin monitor maps to client and back` | red |
-| inspection-capture → Targeted region is planned in physical client pixels | Trigger point outside the client | test/data/capture/capture_geometry_test.dart | `trigger outside client is roiOutsideClient` | red |
-| inspection-capture → Fallback region is the visible full client | Full client on one monitor | test/data/capture/capture_geometry_test.dart | `fallback plans the whole client` | red |
-| inspection-capture → Fallback region is the visible full client | Client partly off the desktop | test/data/capture/capture_geometry_test.dart | `fallback clips to the virtual desktop` | red |
-| inspection-capture → Clipping is explicit, never padded | Region crosses the right edge | test/data/capture/capture_geometry_test.dart | `right-edge region is clipped not padded` | red |
-| inspection-capture → Clipping is explicit, never padded | Region crosses the top-left corner | test/data/capture/capture_geometry_test.dart | `top-left region is clipped not padded` | red |
-| inspection-capture → Clipping is explicit, never padded | Region entirely off-screen | test/data/capture/capture_geometry_test.dart | `off-desktop region is roiOutsideClient` | red |
-| inspection-capture → Capture size is bounded | Large but allowed client | test/data/capture/capture_geometry_test.dart | `3840x2160 fallback is within bounds` | red |
-| inspection-capture → Capture size is bounded | Oversized client | test/data/capture/capture_geometry_test.dart | `7680x4320 fallback is captureTooLarge` | red |
+| inspection-capture → Targeted region is planned in physical client pixels | Sixteen resolution and scaling cells | test/data/capture/capture_geometry_test.dart | `targeted region for all 16 resolution and DPI cells` | green |
+| inspection-capture → Targeted region is planned in physical client pixels | Click on a negative-origin monitor | test/data/capture/capture_geometry_test.dart | `negative-origin monitor maps to client and back` | green |
+| inspection-capture → Targeted region is planned in physical client pixels | Trigger point outside the client | test/data/capture/capture_geometry_test.dart | `trigger outside client is roiOutsideClient` | green |
+| inspection-capture → Fallback region is the visible full client | Full client on one monitor | test/data/capture/capture_geometry_test.dart | `fallback plans the whole client` | green |
+| inspection-capture → Fallback region is the visible full client | Client partly off the desktop | test/data/capture/capture_geometry_test.dart | `fallback clips to the virtual desktop` | green |
+| inspection-capture → Clipping is explicit, never padded | Region crosses the right edge | test/data/capture/capture_geometry_test.dart | `right-edge region is clipped not padded` | green |
+| inspection-capture → Clipping is explicit, never padded | Region crosses the top-left corner | test/data/capture/capture_geometry_test.dart | `top-left region is clipped not padded` | green |
+| inspection-capture → Clipping is explicit, never padded | Region entirely off-screen | test/data/capture/capture_geometry_test.dart | `off-desktop region is roiOutsideClient` | green |
+| inspection-capture → Capture size is bounded | Large but allowed client | test/data/capture/capture_geometry_test.dart | `3840x2160 fallback is within bounds` | green |
+| inspection-capture → Capture size is bounded | Oversized client | test/data/capture/capture_geometry_test.dart | `7680x4320 fallback is captureTooLarge` | green |
 | inspection-capture → Capture is coherent with its target | Stable target | test/data/capture/capture_policy_test.dart | `stable pre and post return the frame` | red |
 | inspection-capture → Capture is coherent with its target | Focus moved after validation, before acquisition | test/data/capture/capture_policy_test.dart | `pre snapshot differing from validated is targetChanged and releases` | red |
 | inspection-capture → Capture is coherent with its target | Window moved during acquisition | test/data/capture/capture_policy_test.dart | `moved client is targetChanged and releases` | red |
@@ -109,7 +109,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 ## 4. Capture geometry (pure Dart)
 
 - [x] 4.1 Write failing `test/data/capture/capture_geometry_test.dart` covering the planning, fallback, clipping and size rows. Expected values are written independently in the test table, not computed by the code under test. Verify: the tests fail for the missing implementation.
-- [ ] 4.2 Implement `lib/data/capture/capture_geometry.dart`: the D4 exact-rational planner, the full-client fallback, clipping against the client and virtual desktop (D5), and the side and pixel bounds (8192 / 25,165,824). Verify: `capture_geometry_test.dart` passes; flip its 10 rows green.
+- [x] 4.2 Implement `lib/data/capture/capture_geometry.dart`: the D4 exact-rational planner, the full-client fallback, clipping against the client and virtual desktop (D5), and the side and pixel bounds (8192 / 25,165,824). Verify: `capture_geometry_test.dart` passes; flip its 10 rows green.
 
 ## 5. Validation, coherence and frames
 
