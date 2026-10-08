@@ -132,11 +132,17 @@ final class CaptureFrame implements Finalizable {
   /// or handed off.
   R withPixels<R>(R Function(Uint8List pixels) use) {
     if (_released) throw FrameReleasedError(frameId);
+    // Refused before the call: an async body would keep the view past the
+    // lend, and a Future result is only seen once that body has started.
+    if (use is Future<Object?> Function(Uint8List)) {
+      throw ArgumentError.value(use, 'use', 'must be synchronous');
+    }
     final view = _registry.view(frameId);
     if (view == null) throw FrameReleasedError(frameId);
     _lends++;
     try {
       final result = use(view.pixels.asTypedList(view.stride * view.height));
+      // A FutureOr callback can still return a Future; report the misuse.
       if (result is Future) {
         throw ArgumentError.value(use, 'use', 'must be synchronous');
       }

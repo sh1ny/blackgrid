@@ -101,14 +101,29 @@ void main() {
     expect(registry.liveCount, 0);
   });
 
-  test('an asynchronous callback is refused', () async {
+  test('an asynchronous callback is refused before it runs', () {
     final registry = FakeFrameRegistry.create();
     final frame = newFrame(registry);
-    expect(
-      () => frame.withPixels((p) async => p[0]),
-      throwsArgumentError,
-      reason: 'the view would outlive the lend',
-    );
+    final viewCalls = registry.viewCalls;
+    var ran = false;
+    final callbacks = <Object? Function()>[
+      () => frame.withPixels((p) async {
+        ran = true;
+        await null;
+        return p[0];
+      }),
+      () => frame.withPixels<void>((p) async {
+        ran = true;
+        await null;
+      }),
+      () => frame.withPixels<Object?>((p) async => ran = true),
+      () => frame.withPixels<Object?>((p) => Future.value(ran = true)),
+    ];
+    for (final call in callbacks) {
+      expect(call, throwsArgumentError);
+    }
+    expect(ran, isFalse, reason: 'the view never reaches async work');
+    expect(registry.viewCalls, viewCalls, reason: 'no native access');
     frame.release();
     expect(registry.liveCount, 0);
   });
