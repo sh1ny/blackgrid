@@ -41,6 +41,16 @@ class PushIdentity {
           'origin',
         ], failure: 'Could not read the URL of origin'),
     };
+    for (final url in urls) {
+      if (!_fencedUrl(url)) {
+        throw ReleaseException(
+          'origin URL "${_redactUserinfo(url)}" would authenticate outside '
+          'the confirmed GitHub token (SSH keys, embedded credentials or a '
+          'remote helper). Point origin at an HTTPS URL without credentials, '
+          'for example https://github.com/<owner>/<repo>.git.',
+        );
+      }
+    }
     return git.run([
       ...credentialHelperArguments,
       for (final url in urls) ...['-c', 'http.$url.extraHeader='],
@@ -109,6 +119,29 @@ class PushIdentity {
     return PushIdentity._(login, environment);
   }
 }
+
+/// Whether Git authenticates to [url] only through the fenced credential
+/// helper: HTTP(S) without userinfo. Local paths involve no authentication.
+/// SSH, scp-like, `git://` and `<transport>::` remote-helper URLs are refused.
+bool _fencedUrl(String url) {
+  final withScheme = RegExp(r'^([A-Za-z][A-Za-z0-9+.-]*)://([^/]*)')
+      .firstMatch(url);
+  if (withScheme != null) {
+    final scheme = withScheme[1]!.toLowerCase();
+    if (scheme == 'file') return true;
+    return (scheme == 'https' || scheme == 'http') &&
+        !withScheme[2]!.contains('@');
+  }
+  if (url.contains('::')) return false;
+  if (RegExp(r'^[A-Za-z]:[\\/]').hasMatch(url)) return true;
+  // scp-like `[user@]host:path`: a colon before the first slash.
+  final colon = url.indexOf(':');
+  final slash = url.indexOf('/');
+  return colon < 0 || (slash >= 0 && slash < colon);
+}
+
+String _redactUserinfo(String url) =>
+    url.replaceFirst(RegExp(r'://[^/@]*@'), '://***@');
 
 String _scrub(String text, String token) =>
     token.isEmpty ? text : text.replaceAll(token, '***');

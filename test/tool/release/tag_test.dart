@@ -268,6 +268,55 @@ void main() {
     },
   );
 
+  test('origin URLs that bypass the fenced token are refused', () async {
+    buildMerge();
+    final local = origin.path;
+    // fetch URL, push URL (null = same as fetch).
+    final cases = <(String, String?)>[
+      ('git@github.com:sh1ny/blackgrid.git', null),
+      ('ssh://git@github.com/sh1ny/blackgrid.git', null),
+      ('git+ssh://github.com/sh1ny/blackgrid.git', null),
+      ('git://github.com/sh1ny/blackgrid.git', null),
+      ('ext::ssh -i key github.com %S sh1ny/blackgrid', null),
+      ('https://someone:secret-pw@github.com/sh1ny/blackgrid.git', null),
+      ('https://someone@github.com/sh1ny/blackgrid.git', null),
+      (local, 'git@github.com:sh1ny/blackgrid.git'),
+    ];
+    for (final (fetchUrl, pushUrl) in cases) {
+      _git(work, ['remote', 'set-url', 'origin', fetchUrl]);
+      if (pushUrl != null) {
+        _git(work, ['config', 'remote.origin.pushurl', pushUrl]);
+      }
+      runner = FakeRunner(ProcessCommandRunner(environment: _identity));
+      final e = await refusal();
+      final shown = pushUrl ?? fetchUrl;
+      expect(e.message, contains('origin'), reason: shown);
+      expect(e.message, isNot(contains('secret-pw')), reason: shown);
+      expect(networkGit(), isEmpty, reason: shown);
+      expect(_git(work, ['tag', '--list']), 'v0.1.0', reason: shown);
+      if (pushUrl != null) {
+        _git(work, ['config', '--unset', 'remote.origin.pushurl']);
+      }
+    }
+
+    // An HTTPS origin that pushInsteadOf rewrites to SSH is refused too.
+    _git(work, [
+      'remote',
+      'set-url',
+      'origin',
+      'https://github.com/sh1ny/blackgrid.git',
+    ]);
+    _git(work, [
+      'config',
+      'url.git@github.com:.pushInsteadOf',
+      'https://github.com/',
+    ]);
+    runner = FakeRunner(ProcessCommandRunner(environment: _identity));
+    final e = await refusal();
+    expect(e.message, contains('git@github.com:sh1ny/blackgrid.git'));
+    expect(networkGit(), isEmpty);
+  });
+
   test('network git calls send no inherited HTTP extra headers', () async {
     // A local HTTP server records the probe headers of every request Git
     // makes and answers 404, so nothing is fetched or pushed.
