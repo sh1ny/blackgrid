@@ -82,9 +82,14 @@ final class VisionWorkerStartFailure extends VisionStartFailure {
 /// service becomes [VisionServiceState.unavailable] and the worker is not
 /// respawned.
 ///
-/// Group 3 scope: warm start, templates and a one-request-at-a-time path.
-/// Admission, deadlines, invalidation, frame inputs, job error isolation and
-/// the bounded close are added by later task groups.
+/// Admission (design D1): at most one request is in the worker and one waits
+/// in a single replaceable pending slot on this service. The worker has no
+/// queue; the pending request is sent only after the active reply arrives, so
+/// native calls never overlap. A request submitted before the worker is ready
+/// is held unsent and admitted once it is.
+///
+/// Later task groups add the full deadline and overrun handling, invalidation,
+/// frame inputs, job error isolation and the bounded close.
 final class VisionService<P, R> {
   /// Copies [templates] now, so later changes to the callers' bytes do not
   /// reach the worker.
@@ -100,6 +105,7 @@ final class VisionService<P, R> {
     this.opener = openVisionNative,
     this.platformFactory = openDefaultNativeCapturePlatform,
     this._qpcNow,
+    this.deadline = const Duration(milliseconds: 1500),
   }) : _templates = [for (final t in templates) _TemplateInit.copy(t)];
 
   /// Absolute path of the vision runtime directory.
@@ -114,6 +120,9 @@ final class VisionService<P, R> {
   /// Builds the capture platform inside the worker (and here, unless a
   /// [qpcNow] was given) for the QPC clock.
   final CapturePlatformFactory platformFactory;
+
+  /// How long a request may take, measured from its submission.
+  final Duration deadline;
 
   final List<_TemplateInit> _templates;
   int Function()? _qpcNow;
@@ -130,7 +139,8 @@ final class VisionService<P, R> {
       Completer<VisionStartFailure?>();
 
   int _nextSeq = 0;
-  _Active<R>? _active;
+  _Request<R>? _active;
+  _Request<R>? _pending;
   Future<void>? _closing;
 
   /// Where the service is now.
@@ -158,8 +168,9 @@ final class VisionService<P, R> {
 
   /// Runs the job over the owned [image] with [params].
   ///
-  /// Starts the service first if needed. Throws a [StateError] while another
-  /// request is running: admission is added by a later task group.
+  /// Starts the service first if needed. With no request running the request
+  /// is sent at once; otherwise it becomes the single pending request and
+  /// replaces (answers [VisionSuperseded]) any earlier pending one.
   Future<VisionAnswer<R>> submit(VisionImage image, P params) async {
     final submitted = _clock();
     await start();
@@ -175,20 +186,57 @@ final class VisionService<P, R> {
         );
       case VisionServiceState.closing || VisionServiceState.closed:
         return VisionClosed(submitted);
-      case VisionServiceState.ready:
-        break;
       case VisionServiceState.idle ||
           VisionServiceState.starting ||
+          VisionServiceState.ready ||
           VisionServiceState.active ||
           VisionServiceState.overrun:
-        throw StateError('A vision request is already running.');
+        break;
     }
-    final seq = ++_nextSeq;
-    final active = _Active<R>(seq, submitted);
-    _active = active;
+    final request = _Request<R>(submitted, _OwnedImageInit.copy(image), params);
+    request.timer = Timer(deadline, () => _onDeadline(request));
+    if (_state == VisionServiceState.ready) {
+      _dispatch(request);
+    } else {
+      final replaced = _pending;
+      _pending = request;
+      if (replaced != null) {
+        _finish(replaced, VisionSuperseded<R>(replaced.submittedQpc));
+      }
+    }
+    return request.completer.future;
+  }
+
+  /// Sends [request] to the worker. Only called when nothing is in flight.
+  void _dispatch(_Request<R> request) {
+    final image = request.image!;
+    request.image = null;
+    request.seq = ++_nextSeq;
+    _active = request;
     _state = VisionServiceState.active;
-    _commands!.send(_Run(seq, _OwnedImageInit.copy(image), params));
-    return active.completer.future;
+    _commands!.send(_Run(request.seq, image, request.params));
+  }
+
+  /// The request's deadline passed before it was answered.
+  void _onDeadline(_Request<R> request) {
+    if (request.completer.isCompleted) return;
+    if (identical(request, _pending)) {
+      _pending = null;
+      _finish(request, VisionDeadlineExceeded<R>(request.submittedQpc));
+    } else if (identical(request, _active)) {
+      // The native call is still running: stay busy until its reply arrives.
+      _finish(request, VisionDeadlineExceeded<R>(request.submittedQpc));
+      if (_state == VisionServiceState.active) {
+        _state = VisionServiceState.overrun;
+      }
+    }
+  }
+
+  void _finish(_Request<R> request, VisionAnswer<R> answer) {
+    request.timer?.cancel();
+    request.timer = null;
+    request.image = null;
+    if (!request.completer.isCompleted) request.completer.complete(answer);
   }
 
   /// Stops the worker: it disposes the runtime and exits. Completes when the
@@ -202,7 +250,7 @@ final class VisionService<P, R> {
     if (_state != VisionServiceState.unavailable) {
       _state = VisionServiceState.closing;
     }
-    _answerActive((submitted) => VisionClosed<R>(submitted));
+    _answerAll((submitted) => VisionClosed<R>(submitted));
     if (!_startResult.isCompleted) {
       _startResult.complete(const VisionWorkerStartFailure('Service closed.'));
     }
@@ -284,8 +332,9 @@ final class VisionService<P, R> {
     final active = _active;
     if (active == null || active.seq != reply.seq) return;
     _active = null;
-    if (_state == VisionServiceState.active) _state = VisionServiceState.ready;
-    active.completer.complete(
+    // A reply after the deadline is discarded: the completer is already done.
+    _finish(
+      active,
       VisionDelivered<R>(
         reply.result as R,
         submittedQpc: active.submittedQpc,
@@ -293,6 +342,15 @@ final class VisionService<P, R> {
         finishedQpc: reply.finishedQpc,
       ),
     );
+    if (_state == VisionServiceState.active ||
+        _state == VisionServiceState.overrun) {
+      _state = VisionServiceState.ready;
+      final next = _pending;
+      if (next != null) {
+        _pending = null;
+        _dispatch(next);
+      }
+    }
   }
 
   void _markUnavailable(VisionStartFailure failure) {
@@ -304,7 +362,7 @@ final class VisionService<P, R> {
     _state = VisionServiceState.unavailable;
     _startFailure = failure;
     if (!_startResult.isCompleted) _startResult.complete(failure);
-    _answerActive(
+    _answerAll(
       (submitted) => VisionUnavailableAnswer<R>(
         submitted,
         failure.message,
@@ -327,20 +385,26 @@ final class VisionService<P, R> {
     if (!_exitSignal.isCompleted) _exitSignal.complete();
   }
 
-  void _answerActive(VisionAnswer<R> Function(int submittedQpc) answer) {
+  void _answerAll(VisionAnswer<R> Function(int submittedQpc) answer) {
     final active = _active;
+    final pending = _pending;
     _active = null;
-    if (active != null && !active.completer.isCompleted) {
-      active.completer.complete(answer(active.submittedQpc));
+    _pending = null;
+    for (final request in [?active, ?pending]) {
+      _finish(request, answer(request.submittedQpc));
     }
   }
 }
 
-/// The request the service is waiting on.
-final class _Active<R> {
-  _Active(this.seq, this.submittedQpc);
+/// One submitted request: in flight at the worker, or waiting in the pending
+/// slot (then [image] is still held).
+final class _Request<R> {
+  _Request(this.submittedQpc, this.image, this.params);
 
-  final int seq;
   final int submittedQpc;
+  final Object? params;
+  _OwnedImageInit? image;
+  int seq = 0;
+  Timer? timer;
   final Completer<VisionAnswer<R>> completer = Completer<VisionAnswer<R>>();
 }

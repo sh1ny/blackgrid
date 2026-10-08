@@ -10,10 +10,10 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 | Worker opens the vision runtime once and keeps it warm | Runtime unavailable at start | vision_service_test.dart | runtime failure at start makes the service unavailable without respawn | green |
 | Worker opens the vision runtime once and keeps it warm | Invalid template at start | vision_service_test.dart | invalid or zero-variance template fails start with invalidTemplate and disposes the runtime | green |
 | Worker opens the vision runtime once and keeps it warm | Caller mutates its template bytes after start | vision_service_test.dart | templates are copied at construction | green |
-| Native vision calls never overlap | Requests run one after another | vision_service_test.dart | second job does not start while the first native call is held | red |
-| Native vision calls never overlap | Deadline passes during a held call | vision_service_test.dart | deadline never starts a second native call | red |
-| One active and one replaceable pending request | Pending request runs after the active one | vision_service_test.dart | pending request runs after the active one | red |
-| One active and one replaceable pending request | Newer request replaces the pending one | vision_service_test.dart | newer request supersedes the pending one at once | red |
+| Native vision calls never overlap | Requests run one after another | vision_service_test.dart | second job does not start while the first native call is held | green |
+| Native vision calls never overlap | Deadline passes during a held call | vision_service_test.dart | deadline never starts a second native call | green |
+| One active and one replaceable pending request | Pending request runs after the active one | vision_service_test.dart | pending request runs after the active one | green |
+| One active and one replaceable pending request | Newer request replaces the pending one | vision_service_test.dart | newer request supersedes the pending one at once | green |
 | Results are fenced by generation | Current result is delivered | vision_service_test.dart | current-generation result is delivered | red |
 | Results are fenced by generation | Invalidation during an active job | vision_service_test.dart | invalidate answers the active request at once and discards its late result | red |
 | Results are fenced by generation | Invalidation with a pending request | vision_service_test.dart | invalidate answers the pending request without running it | red |
@@ -54,7 +54,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 4. Admission, pending slot and non-overlap
 
 - [x] 4.1 Write failing tests for rows "Requests run one after another", "Pending request runs after the active one" and "Newer request replaces the pending one", plus "Deadline passes during a held call" (max-concurrency stays ≤ 1).
-- [ ] 4.2 Implement service-side admission (D1). At most one request is in flight and one pending; a newer request supersedes the pending one with an immediate `superseded` answer. The pending request is sent only after the active reply arrives. A request submitted before `_Ready` is held as unsent. Verify: the four rows turn green.
+- [x] 4.2 Implement service-side admission (D1). At most one request is in flight and one pending; a newer request supersedes the pending one with an immediate `superseded` answer. The pending request is sent only after the active reply arrives. A request submitted before `_Ready` is held as unsent. Verify: the four rows turn green.
 
 ## 5. Generation fences and deadlines
 
