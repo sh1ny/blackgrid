@@ -18,7 +18,9 @@ abstract interface class VisionJob<P, R> {
 }
 
 /// Thrown by a job to report a typed [VisionFailure] (for example a
-/// [VisionFailed] result it cannot continue past).
+/// [VisionFailed] result it cannot continue past). The worker answers
+/// [VisionFailureAnswer] with [failure]; a failed context operation is never
+/// turned into a successful result unless the job chooses to continue.
 final class VisionJobAbort implements Exception {
   const VisionJobAbort(this.failure);
 

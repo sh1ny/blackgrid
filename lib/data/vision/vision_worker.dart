@@ -120,13 +120,41 @@ final class _OpenFailed {
   }
 }
 
-final class _Reply {
-  const _Reply(this.seq, this.result, this.startedQpc, this.finishedQpc);
+/// The worker's answer to one [_Run]. The input was released before it was
+/// sent, and [startedQpc] and [finishedQpc] bracket the job on the worker's
+/// clock.
+sealed class _Reply {
+  const _Reply(this.seq, this.startedQpc, this.finishedQpc);
 
   final int seq;
-  final Object? result;
   final int startedQpc;
   final int finishedQpc;
+}
+
+/// The job returned [result].
+final class _ResultReply extends _Reply {
+  const _ResultReply(super.seq, this.result, super.started, super.finished);
+
+  final Object? result;
+}
+
+/// The job threw; [description] is the error text, never the object.
+final class _JobFailedReply extends _Reply {
+  const _JobFailedReply(
+    super.seq,
+    this.description,
+    super.started,
+    super.finished,
+  );
+
+  final String description;
+}
+
+/// The job threw [VisionJobAbort] with a typed [failure].
+final class _FailureReply extends _Reply {
+  const _FailureReply(super.seq, this.failure, super.started, super.finished);
+
+  final VisionFailure failure;
 }
 
 // --- Worker isolate ---
@@ -178,22 +206,39 @@ void _visionWorkerMain(_WorkerInit init) {
             ? null
             : CaptureFrame.adopt(ticket, registry ??= init.registryFactory());
         final started = qpcNow();
-        final Object? result;
-        final int finished;
+        final seq = message.seq;
+        _Reply reply;
         try {
-          result = job.run(
+          final result = job.run(
             context,
             frame != null
                 ? VisionJobInput.frame(frame)
                 : VisionJobInput.image(message.image!.materialize()),
             message.params,
           );
-          finished = qpcNow();
+          reply = _ResultReply(seq, result, started, qpcNow());
+        } on VisionJobAbort catch (abort) {
+          reply = _FailureReply(seq, abort.failure, started, qpcNow());
+        } on Object catch (error) {
+          reply = _JobFailedReply(seq, '$error', started, qpcNow());
         } finally {
           // Released before the reply on every path.
           frame?.release();
         }
-        init.replyTo.send(_Reply(message.seq, result, started, finished));
+        try {
+          init.replyTo.send(reply);
+        } on Object {
+          // The result cannot cross the isolate boundary (a port, a closure
+          // over one, a native handle). The worker stays ready.
+          init.replyTo.send(
+            _JobFailedReply(
+              seq,
+              'result is not sendable',
+              reply.startedQpc,
+              reply.finishedQpc,
+            ),
+          );
+        }
       case _Close():
         runtime.dispose();
         commands.close();

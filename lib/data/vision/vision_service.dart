@@ -461,15 +461,26 @@ final class VisionService<P, R> {
     // current. A late or stale result is discarded: the caller was already
     // answered, and the worker released the input before replying.
     if (!active.completer.isCompleted && active.generation == _generation) {
-      _finish(
-        active,
-        VisionDelivered<R>(
-          reply.result as R,
+      _finish(active, switch (reply) {
+        _ResultReply(:final result) => VisionDelivered<R>(
+          result as R,
           submittedQpc: active.submittedQpc,
           startedQpc: reply.startedQpc,
           finishedQpc: reply.finishedQpc,
         ),
-      );
+        _JobFailedReply(:final description) => VisionJobFailed<R>(
+          description,
+          submittedQpc: active.submittedQpc,
+          startedQpc: reply.startedQpc,
+          finishedQpc: reply.finishedQpc,
+        ),
+        _FailureReply(:final failure) => VisionFailureAnswer<R>(
+          failure,
+          submittedQpc: active.submittedQpc,
+          startedQpc: reply.startedQpc,
+          finishedQpc: reply.finishedQpc,
+        ),
+      });
     } else {
       _finish(active, VisionInvalidated<R>(active.submittedQpc));
     }

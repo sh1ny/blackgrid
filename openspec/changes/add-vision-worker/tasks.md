@@ -24,10 +24,10 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 | Request inputs are owned and released exactly once | Superseded frame released at once | vision_service_test.dart | superseded pending frame is released before the newer request is acknowledged | green |
 | Request inputs are owned and released exactly once | Malformed owned image | vision_service_test.dart | malformed owned image is rejected at submit and keeps the pending request | green |
 | Request inputs are owned and released exactly once | Service dropped with a pending frame | vision_service_test.dart | pending frame keeps its finalizer until it is sent | green |
-| A failing job does not break the worker | Job throws | vision_service_test.dart | throwing job answers jobFailed and the worker stays ready | red |
-| A failing job does not break the worker | Native failure inside a job | vision_service_test.dart | native failure inside a job reaches the caller typed | red |
-| Answers carry monotonic stage timestamps | Timestamps of a completed request | vision_service_test.dart | completed answer reports ordered submit, start and end timestamps | red |
-| Answers carry monotonic stage timestamps | Request answered without running | vision_service_test.dart | superseded answer reports submission only | red |
+| A failing job does not break the worker | Job throws | vision_service_test.dart | throwing job answers jobFailed and the worker stays ready | green |
+| A failing job does not break the worker | Native failure inside a job | vision_service_test.dart | native failure inside a job reaches the caller typed | green |
+| Answers carry monotonic stage timestamps | Timestamps of a completed request | vision_service_test.dart | completed answer reports ordered submit, start and end timestamps | green |
+| Answers carry monotonic stage timestamps | Request answered without running | vision_service_test.dart | superseded answer reports submission only | green |
 | Shutdown drains the worker before releasing handles | Close while idle | vision_service_test.dart | close while idle disposes once and exits | red |
 | Shutdown drains the worker before releasing handles | Close during warm start | vision_service_test.dart | close during warm start disposes the late-opened runtime and exits | red |
 | Shutdown drains the worker before releasing handles | Close during a call that returns in time | vision_service_test.dart | close drains a call that returns within 2 s | red |
@@ -69,7 +69,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 7. Job failures and timestamps
 
 - [x] 7.1 Write failing tests for rows "Job throws", "Native failure inside a job" (scripted native status -3), "Timestamps of a completed request" and "Request answered without running". Add an extra test: a job returning a non-sendable result is answered `jobFailed`.
-- [ ] 7.2 Implement job error isolation (catch in the worker, reply `jobFailed(description)` or `visionFailure`, worker stays ready) and timestamps. The service reads QPC at submission; the worker reads QPC for job start and end, through the capture platform's `qpcNow` (`capture_native.dart:207`) in production and a fake clock in tests. Verify: the four rows and the extra test turn green.
+- [x] 7.2 Implement job error isolation (catch in the worker, reply `jobFailed(description)` or `visionFailure`, worker stays ready) and timestamps. The service reads QPC at submission; the worker reads QPC for job start and end, through the capture platform's `qpcNow` (`capture_native.dart:207`) in production and a fake clock in tests. Verify: the four rows and the extra test turn green.
 
 ## 8. Shutdown and worker failure
 
