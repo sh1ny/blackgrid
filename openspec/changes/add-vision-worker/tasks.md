@@ -88,7 +88,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 11. Integration check
 
 - [x] 11.1 Run `mise run analyze && mise run test` (the offline gate from `openspec/specwright.yaml` `pr.validate`). Verify: both pass and every test-map row is green.
-- [ ] 11.2 Optional, only when a Release bundle is already built and the environment confirms Escape from Tarkov is not running: add a `@Tags(['qualification'])` test `test/qualification/m2_vision_worker_test.dart`. It starts the service against the real bundle runtime with an owned-image job that runs the self-check template match and OCR, and skips unless the bundle directory env var is set, like `m2_vision_runtime_test.dart`. Verify: `mise run test:qualification` passes it, or record it as skipped and unverified.
+- [x] 11.2 Optional, only when a Release bundle is already built and the environment confirms Escape from Tarkov is not running: add a `@Tags(['qualification'])` test `test/qualification/m2_vision_worker_test.dart`. It starts the service against the real bundle runtime with an owned-image job that runs the self-check template match and OCR, and skips unless the bundle directory env var is set, like `m2_vision_runtime_test.dart`. Verify: `mise run test:qualification` passes it, or record it as skipped and unverified. Result (user-run, 2026-10-09, Tarkov closed): `flutter test --tags qualification test/qualification/m2_vision_worker_test.dart` passed 3/3 against `build/windows/x64/runner/Release`.
 
 ## Workflow follow-up
 
