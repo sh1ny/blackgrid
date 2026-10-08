@@ -107,6 +107,7 @@ Scanner today is manual catalog inspection. Screen capture, mouse and hotkey tri
 | `test:all` | Every test |
 | `format` / `format:check` | `dart format`, or check without writing |
 | `changelog` / `release-notes` | [`tool/changelog.dart`](tool/changelog.dart) over git-cliff ([`cliff.toml`](cliff.toml)) |
+| `release:prepare` / `release:tag` / `build:release` | [`tool/release/release.dart`](tool/release/release.dart): prepare a release commit, tag the merged release, build a versioned Release bundle (see **Releases and changelog**) |
 | `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart): download and verify pinned vision inputs |
 | `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart): offline check of a built Release bundle |
 | `qualification:freeze` / `:validate` / `:report` | M0 reference evidence tools in [`tool/qualification/`](tool/qualification/m0.dart) |
@@ -282,15 +283,29 @@ Version 1 holds settings, pins, activity and catalog tables; version 2 adds the 
 </details>
 
 <details>
-<summary><b>Changelog</b></summary>
+<summary><b>Releases and changelog</b></summary>
 
-Conventional commits feed git-cliff. Tags are strict `v`-prefixed semver. These commands only print or write text; they never create tags or releases.
+Versions follow [SemVer 2.0.0](https://semver.org/) with `v`-prefixed tags ([ADR-0009](docs/adr/0009-release-versioning.md)). Each milestone close bumps the minor version (M2 → `0.2.0`), fixes between milestones bump the patch, and a build handed out for user-only checks is a prerelease (`0.2.0-beta.1`). Only a release commit changes `version:` in `pubspec.yaml`. The build number is the commit count of the built `HEAD`.
+
+| Step | Command | Does |
+|---|---|---|
+| Preview | `mise run release-notes -- --unreleased` | Prints the entries the next release will list |
+| Prepare | `mise run release:prepare -- <version>` | On a clean `main` equal to `origin/main`, with a version above every release tag: runs `analyze`, `format:check` and `test:all`, then commits `chore(release): v<version>` (pubspec version and `CHANGELOG.md`) on `release/v<version>`. It does not push; it prints the push and PR commands |
+| Merge | Push the branch, open the PR titled `chore(release): v<version>` and merge it | |
+| Tag | `mise run release:tag` | On `main` right after the release merge: checks the merge and the pubspec version, then creates annotated tag `v<version>` and pushes only that tag as `github.login` from [`openspec/specwright.yaml`](openspec/specwright.yaml) |
+| Build | `mise run build:release` | On a clean checkout: `vision:fetch`, `flutter build windows --release` with the version, the build number and `BLACKGRID_VERSION=<version>+<count>`, then `bundle:check` on `build/windows/x64/runner/Release` |
+
+Pass `--trailer "<line>"` to `release:prepare` to add commit trailers; the commit and tag use Git's identity from the environment (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`). `release:tag` refuses when another PR merged between `prepare` and the release merge: delete `release/v<version>` locally and on `origin`, then prepare again.
+
+The version shows in the **Settings** dialog and in the `appVersion` field of the **Vision self-check** report. A build without the define (`flutter run`) shows `dev`. The executable's file version is `<major>.<minor>.<patch>.<count>`.
+
+The changelog lists one entry per merged PR, titled with the PR title and grouped by its conventional type, so PR titles use `type(scope): summary`. Commits that reached `main` only through a branch are not listed, and prerelease tags get no section of their own: the final release lists everything since the previous final release.
 
 ```text
 mise run changelog
 mise run release-notes -- --unreleased
 mise run release-notes -- --latest
-mise run release-notes -- -- v0.1.0..v0.2.0
+mise run release-notes -- v0.1.0..v0.2.0
 ```
 </details>
 

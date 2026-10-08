@@ -33,55 +33,16 @@ Retires risks 1 (recognition coverage, wrong identities, ROI/DPI drift) and 2 (F
 
 ### Release versioning (`add-release-versioning`)
 
-Decided with the user on 2026-10-08. The change writes an ADR for it when the code lands; until then this section is the plan.
+Decided with the user on 2026-10-08 and recorded in [ADR-0009](../docs/adr/0009-release-versioning.md): SemVer `v` tags, one minor version per milestone close (M2 → `0.2.0`), `-beta.N` prereleases for user-only checks, a commit-count build number, and a changelog with one entry per merged PR.
 
-**Version scheme** - [SemVer 2.0.0](https://semver.org/), `v`-prefixed tags, as [`cliff.toml`](../cliff.toml) already enforces.
+Release flow (local, no CI; details in the [README](../README.md)):
 
-| Version | When |
-|---|---|
-| `0.MINOR.0` | A milestone closes: M2 → `0.2.0`, M4 → `0.3.0`, and so on |
-| `0.x.PATCH` | Fixes or small changes between milestones that are worth a build |
-| `0.x.y-beta.N` | A build handed to the user for user-only checks (clean machine, live game, real screenshots). Agents cannot run those checks, so a milestone version is final only after the user reports them passed |
-| `1.0.0` | M6 closes, unless the user decides then that the app is not ready; it stays `0.x` until they do |
+- `mise run release:prepare -- <version>` - checks a clean, current `main`, runs the offline gates, then commits `chore(release): v<version>` on `release/v<version>`.
+- `mise run release:tag` - after the release PR merges, tags the merge `v<version>` and pushes the tag as the configured GitHub login.
+- `mise run build:release` - builds the Windows Release bundle with the version and build number, then runs `bundle:check`.
+- `mise run release-notes -- --unreleased` - previews the next release's entries.
 
-**What changes the version, and what does not**
-
-- Only a release commit changes `version:` in [`pubspec.yaml`](../pubspec.yaml). Feature and fix PRs never touch it, so branches never conflict over it.
-- The build number (`+N`) is not kept in pubspec. It is the commit count of `main` (`git rev-list --count HEAD`), passed at build time with `--build-number`. It always increases and stays far below 65535, the limit of each field in the Windows file version.
-- Data versions stay independent of the app version: the Drift `schemaVersion`, the map pack hash, the vision runtime manifest and the native ABI versions keep their own numbers. A release whose PRs bump the Drift schema says so in its notes, because the app refuses a newer database: after such a release, going back to an older version needs the newer database removed.
-
-**Changelog: one entry per PR**
-
-- PRs are merged with merge commits, and GitHub puts the PR title in the merge commit's body. git-cliff renders each merge commit on `main` as one entry, using that PR title, grouped by its conventional type (`feat`, `fix`, `docs` ...).
-- Branch commits (`task X.Y ...`, `amend specs`, `address review feedback`, `add planning artifacts`, `archive change`) are skipped. They stay in Git history, not in the changelog.
-- This needs conventional PR titles (`type(scope): summary`). Past titles are mixed (PRs #9 and #11 are plain sentences), and `specwright-pr` only matches the repository's existing style. The change therefore adds a context line to [`openspec/config.yaml`](config.yaml) that makes conventional PR titles the rule. A PR without one still lands under **Other**; the older ones are all inside `v0.1.0`.
-- A rare direct commit to `main` is still listed as its own entry.
-- `CHANGELOG.md` is regenerated only in release commits. Between releases, `mise run release-notes -- --unreleased` previews the next entry.
-
-**Release flow** (all local; no CI)
-
-1. `mise run release:prepare -- <version>`:
-   - Refuses unless the checkout is a clean `main`, up to date with `origin`, and `<version>` is strict SemVer and greater than the latest tag.
-   - Runs the offline gates: `analyze`, `format:check`, `test:all`.
-   - Creates `release/v<version>`, sets `version: <version>` in pubspec, regenerates `CHANGELOG.md` for `v<version>`, and commits `chore(release): v<version>`.
-   - Prints a `git-cliff --bumped-version` suggestion for information only: milestones choose the version, not commit types.
-2. Push, open the PR and merge it, as for any change.
-3. `mise run release:tag`, on `main` after the merge: checks that `HEAD` is that release merge and that pubspec holds the version, then makes an annotated `v<version>` tag on the merge commit and pushes it as the configured GitHub login.
-4. `mise run build:release`, whenever a build is needed: `vision:fetch`, then `flutter build windows --build-name <version> --build-number <count> --dart-define=BLACKGRID_VERSION=<version>+<count>`, then `bundle:check` on the output. The bundle stays local; nothing is uploaded.
-
-At a milestone close, the agent suggests `release:prepare` with the next minor version. The change adds that rule as a context line in [`openspec/config.yaml`](config.yaml), not to the vendored `specwright-roadmap` skill, which a Specwright update would overwrite. If user-only checks are still open, it suggests `-beta.N` first; the final version follows once the user reports them passed.
-
-**Version in the app** - `BLACKGRID_VERSION` is shown in the Settings dialog and written into the `--vision-self-check` report, so every bug report and test result names its build. A build without the define (for example `flutter run`) shows `dev`.
-
-**Baseline** - the change tags `v0.1.0` on `cf02bb7`, the `main` commit when this plan was made, unless its design finds a better point. That gives the first changelog a starting point.
-
-**Not in this change** - installers, GitHub Releases, code signing and CI builds. They belong to M6.
-
-**Done when** (agent-verifiable, offline):
-- Tests cover version validation (strict SemVer, must increase), the `release:prepare` refusals, and changelog rendering on a fixture repository with merge commits and task commits.
-- The changelog generated for the real history shows one entry per merged PR and no task, amend or review lines.
-- The `v0.1.0` tag exists on `origin`.
-- A `build:release` bundle passes `bundle:check`, and its self-check report carries the version.
+Installers, GitHub Releases, code signing and CI builds belong to M6.
 
 ## Next: M4 - complete raid-time Scanner slice
 

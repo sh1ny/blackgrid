@@ -136,5 +136,6 @@ flowchart TB
 | [0006](../docs/adr/0006-windows-media-ocr-for-raid-panels.md) | Map-owned raid-panel OCR uses Windows.Media.Ocr through a hash-bound FFI DLL, separate from future item OCR | — |
 | [0007](../docs/adr/0007-runner-channel-and-ffi-dll-windows-boundary.md) | Implemented Windows integration (credentials, panel OCR) is a runner-embedded method channel plus a standalone FFI DLL, not Flutter plugins; DPAPI current-user for tokens | — |
 | [0008](../docs/adr/0008-item-vision-runtime.md) | Item vision runtime: owned OpenCV primitives DLL, pinned charlesw Tesseract 5.2.0 package binaries (engine 5.0.0, Leptonica 1.82.0), lock plus install-manifest binding, bundle-only load order, app-local Visual C++ runtime, UTF-8 active code page | — |
+| [0009](../docs/adr/0009-release-versioning.md) | Release versioning: SemVer milestone versions set only by release commits, commit-count build numbers, a first-parent per-PR changelog, local `release:prepare`/`release:tag`/`build:release` tasks with a fenced tag push, and a `BLACKGRID_VERSION` define shown by the app | — |
 
 Planned but not built (item recognition pipeline, input hooks, ROI capture, hotkeys) live in the [roadmap](roadmap.md), not here.

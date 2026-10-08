@@ -1,7 +1,7 @@
 name: blackgrid
 description: "Independent Windows desktop manual item decisions."
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.1.0
 
 environment:
   sdk: ^3.13.5
@@ -27,6 +27,7 @@ dev_dependencies:
   vector_graphics_compiler: 1.3.0
   sqlite3: ^3.1.6
   test: ^1.31.0
+  yaml: 3.1.4
   integration_test:
     sdk: flutter
 

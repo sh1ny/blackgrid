@@ -10,6 +10,8 @@ context: |
   AGENTS.md safety and live-game testing rules override everything - agents never launch or test against the game; live-game checks belong to the user and are recorded as unverified until the user reports them.
   Mira (.mira.yml) reviews PRs.
   Specwright replaces the Compound Engineering ce-* skills in this repo; do not use them. docs/plans/ and docs/qualification/ are CE-era history and evidence, not OpenSpec changes.
+  PR titles MUST be conventional `type(scope): summary` (feat, fix, perf, docs, refactor, style, test, build, ci, chore): the changelog lists one entry per merged PR, titled and grouped by its PR title (ADR-0009).
+  At a milestone close, suggest `mise run release:prepare -- <next minor>` (for example `0.2.0` for M2). While user-only checks are still open, suggest a prerelease `<next minor>-beta.N` first; the final version follows once the user reports those checks passed (ADR-0009).
 
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.

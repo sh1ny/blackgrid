@@ -9,6 +9,7 @@ import 'package:ffi/ffi.dart';
 
 import '../data/vision/vision_native.dart' show openVisionNative;
 import '../data/vision/vision_runtime.dart';
+import 'app_version.dart' as app_version;
 import 'launch_mode.dart';
 import 'output_path_guard.dart';
 
@@ -137,6 +138,7 @@ Future<int> runVisionSelfCheck(
   String? runtimeDirectory,
   SelfCheckWorker worker = visionSelfCheckWorker,
   void Function(String text)? writeUsage,
+  String appVersion = app_version.appVersion,
 }) async {
   void usage(String problem) {
     final text = '$problem\n\n$visionSelfCheckHelp';
@@ -284,6 +286,7 @@ Future<int> runVisionSelfCheck(
 
   final report = <String, Object?>{
     'format': visionSelfCheckReportFormat,
+    'appVersion': appVersion,
     'startedAt': startedAt.toIso8601String(),
     'runtimeIdentity': identity,
     'steps': [for (final step in steps) step.toJson()],
