@@ -85,7 +85,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 1. Architecture record
 
-- [ ] 1.1 Write `docs/adr/0010-windows-input-and-capture-boundary.md` (MADR-short: Status, Date, Supersedes none, Context, Decision, Consequences) from design D1-D9 and the ADRs section. Add it to the In-force ADRs index in `openspec/architecture.md`, and update that file's Components table, Boundaries (capture ABI), Resource bounds (trigger ring, frame slots, capture deadline and drain), the "Not built yet" paragraph and the Strategy-vs-code row on input and capture. Verify: the ADR exists, and `openspec/architecture.md` mentions `blackgrid_capture.dll`, the 16-event ring, the 4 frame slots and the 500 ms deadline.
+- [x] 1.1 Write `docs/adr/0010-windows-input-and-capture-boundary.md` (MADR-short: Status, Date, Supersedes none, Context, Decision, Consequences) from design D1-D9 and the ADRs section. Add it to the In-force ADRs index in `openspec/architecture.md`, and update that file's Components table, Boundaries (capture ABI), Resource bounds (trigger ring, frame slots, capture deadline and drain), the "Not built yet" paragraph and the Strategy-vs-code row on input and capture. Verify: the ADR exists, and `openspec/architecture.md` mentions `blackgrid_capture.dll`, the 16-event ring, the 4 frame slots and the 500 ms deadline.
 
 ## 2. Native capture DLL and self-test
 
