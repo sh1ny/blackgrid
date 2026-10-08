@@ -77,6 +77,17 @@ final class VisionWorkerStartFailure extends VisionStartFailure {
   final String message;
 }
 
+/// How [VisionService.close] ended.
+enum VisionCloseResult {
+  /// The worker disposed the runtime and exited within the drain.
+  closed,
+
+  /// The drain expired with a native call or the runtime open still running.
+  /// The runtime was not disposed under it and the worker was not killed; it
+  /// disposes and exits by itself once the call returns.
+  shutdownIncomplete,
+}
+
 /// Runs vision jobs on one dedicated worker isolate that opens the runtime
 /// once and keeps it, the OCR engine and the templates warm until shutdown
 /// (design D1, D4, D7).
@@ -110,6 +121,7 @@ final class VisionService<P, R> {
     this.registryFactory = openDefaultFrameRegistry,
     this._qpcNow,
     this.deadline = const Duration(milliseconds: 1500),
+    this.closeDrain = const Duration(seconds: 2),
   }) : _templates = [for (final t in templates) _TemplateInit.copy(t)];
 
   /// Absolute path of the vision runtime directory.
@@ -135,6 +147,10 @@ final class VisionService<P, R> {
   /// How long a request may take, measured from its submission.
   final Duration deadline;
 
+  /// How long [close] waits for the worker before reporting
+  /// [VisionCloseResult.shutdownIncomplete].
+  final Duration closeDrain;
+
   final List<_TemplateInit> _templates;
   int Function()? _qpcNow;
 
@@ -154,7 +170,12 @@ final class VisionService<P, R> {
   _Request<R>? _unsent;
   _Request<R>? _active;
   _Request<R>? _pending;
-  Future<void>? _closing;
+  Future<VisionCloseResult>? _closing;
+  FrameRegistry? _registry;
+
+  /// Completes when the active request's reply (or the worker's exit) arrives.
+  /// Only set while [close] waits for the active call.
+  Completer<void>? _activeDone;
 
   /// Where the service is now.
   VisionServiceState get state => _state;
@@ -355,28 +376,81 @@ final class VisionService<P, R> {
     if (!request.completer.isCompleted) request.completer.complete(answer);
   }
 
-  /// Stops the worker: it disposes the runtime and exits. Completes when the
-  /// worker is gone. Safe to call repeatedly.
+  /// Stops admission at once and shuts the worker down.
   ///
-  /// The bounded drain and `shutdownIncomplete` are added by a later task
-  /// group; until then this waits for the worker without a limit.
-  Future<void> close() => _closing ??= _close();
+  /// The generation advances, the unsent, pending and active requests are
+  /// answered [VisionClosed] and their inputs released, and later submissions
+  /// are answered [VisionClosed]. Close then waits up to [closeDrain] for the
+  /// active native call to return, tells the worker to dispose the runtime and
+  /// its scratch memory and to exit, and waits for it to do so within the same
+  /// budget.
+  ///
+  /// Returns [VisionCloseResult.shutdownIncomplete] when the budget runs out
+  /// first (a call or the runtime open is still running). The worker is never
+  /// killed and the runtime is never disposed under a running call: the queued
+  /// close makes the worker dispose and exit by itself once the call returns.
+  /// Safe to call repeatedly; every call shares one result.
+  Future<VisionCloseResult> close() => _closing ??= _close();
 
-  Future<void> _close() async {
+  Future<VisionCloseResult> _close() async {
+    final budget = Stopwatch()..start();
     if (_state != VisionServiceState.unavailable) {
       _state = VisionServiceState.closing;
     }
-    _answerAll((submitted) => VisionClosed<R>(submitted));
+    _generation++;
     if (!_startResult.isCompleted) {
       _startResult.complete(const VisionWorkerStartFailure('Service closed.'));
     }
-    if (_spawned && !_exited) {
-      _commands?.send(const _Close());
-      await _exitSignal.future;
+    final unsent = _unsent;
+    final pending = _pending;
+    _unsent = null;
+    _pending = null;
+    for (final request in [?unsent, ?pending]) {
+      _finish(request, VisionClosed<R>(request.submittedQpc));
     }
-    if (_state == VisionServiceState.closing) {
+    final active = _active;
+    if (active != null) {
+      // Stays tracked until the worker replies, so its late result is
+      // discarded and its frame (released by the worker) is not touched.
+      _finish(active, VisionClosed<R>(active.submittedQpc));
+    }
+    if (!_spawned || _exited) {
       _state = VisionServiceState.closed;
+      return VisionCloseResult.closed;
     }
+    final done = _activeDone = active == null ? null : Completer<void>();
+    final drained = await _waitFor(done?.future, closeDrain);
+    // Queued behind a running call; a worker still opening gets it from the
+    // late _Ready.
+    _commands?.send(const _Close());
+    if (!drained) {
+      _state = VisionServiceState.closed;
+      return VisionCloseResult.shutdownIncomplete;
+    }
+    final remaining = closeDrain - budget.elapsed;
+    final exited = await _waitFor(
+      _exitSignal.future,
+      remaining.isNegative ? Duration.zero : remaining,
+    );
+    _state = VisionServiceState.closed;
+    return exited
+        ? VisionCloseResult.closed
+        : VisionCloseResult.shutdownIncomplete;
+  }
+
+  /// Completes with true when [future] completes within [limit] (or is null),
+  /// false when the limit passes first.
+  Future<bool> _waitFor(Future<void>? future, Duration limit) {
+    if (future == null) return Future.value(true);
+    final result = Completer<bool>();
+    final timer = Timer(limit, () {
+      if (!result.isCompleted) result.complete(false);
+    });
+    future.then((_) {
+      timer.cancel();
+      if (!result.isCompleted) result.complete(true);
+    });
+    return result.future;
   }
 
   int _clock() {
@@ -457,6 +531,7 @@ final class VisionService<P, R> {
     if (active == null || active.seq != reply.seq) return;
     _active = null;
     active.sentFrameId = null; // the worker released it before replying
+    _signalActiveDone();
     // Delivered only while the caller still waits and the generation is
     // current. A late or stale result is discarded: the caller was already
     // answered, and the worker released the input before replying.
@@ -521,10 +596,44 @@ final class VisionService<P, R> {
     _port?.close();
     _port = null;
     _commands = null;
+    _releaseSentFrame();
     _markUnavailable(
       const VisionWorkerStartFailure('Vision worker exited unexpectedly.'),
     );
+    // A closing service has no failure to report; the sent request was
+    // already answered.
+    final active = _active;
+    _active = null;
+    if (active != null) {
+      _finish(
+        active,
+        VisionUnavailableAnswer<R>(
+          active.submittedQpc,
+          'Vision worker exited unexpectedly.',
+        ),
+      );
+    }
+    _signalActiveDone();
     if (!_exitSignal.isCompleted) _exitSignal.complete();
+  }
+
+  void _signalActiveDone() {
+    final done = _activeDone;
+    if (done != null && !done.isCompleted) done.complete();
+  }
+
+  /// Releases the ticket of a request the worker never answered, by id. The
+  /// release is generation-checked, so a frame the worker already released is
+  /// a no-op.
+  void _releaseSentFrame() {
+    final id = _active?.sentFrameId;
+    if (id == null) return;
+    _active?.sentFrameId = null;
+    try {
+      (_registry ??= registryFactory()).release(id);
+    } on Object {
+      // No registry, no live slot to release.
+    }
   }
 
   void _answerAll(VisionAnswer<R> Function(int submittedQpc) answer) {

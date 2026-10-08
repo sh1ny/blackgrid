@@ -28,11 +28,11 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 | A failing job does not break the worker | Native failure inside a job | vision_service_test.dart | native failure inside a job reaches the caller typed | green |
 | Answers carry monotonic stage timestamps | Timestamps of a completed request | vision_service_test.dart | completed answer reports ordered submit, start and end timestamps | green |
 | Answers carry monotonic stage timestamps | Request answered without running | vision_service_test.dart | superseded answer reports submission only | green |
-| Shutdown drains the worker before releasing handles | Close while idle | vision_service_test.dart | close while idle disposes once and exits | red |
-| Shutdown drains the worker before releasing handles | Close during warm start | vision_service_test.dart | close during warm start disposes the late-opened runtime and exits | red |
-| Shutdown drains the worker before releasing handles | Close during a call that returns in time | vision_service_test.dart | close drains a call that returns within 2 s | red |
-| Shutdown drains the worker before releasing handles | Close during a call that does not return | vision_service_test.dart | close reports shutdownIncomplete without disposing under a held call | red |
-| Worker failure makes the service unavailable | Worker dies during a request | vision_service_test.dart | worker exit answers outstanding requests unavailable and releases their frames | red |
+| Shutdown drains the worker before releasing handles | Close while idle | vision_service_test.dart | close while idle disposes once and exits | green |
+| Shutdown drains the worker before releasing handles | Close during warm start | vision_service_test.dart | close during warm start disposes the late-opened runtime and exits | green |
+| Shutdown drains the worker before releasing handles | Close during a call that returns in time | vision_service_test.dart | close drains a call that returns within 2 s | green |
+| Shutdown drains the worker before releasing handles | Close during a call that does not return | vision_service_test.dart | close reports shutdownIncomplete without disposing under a held call | green |
+| Worker failure makes the service unavailable | Worker dies during a request | vision_service_test.dart | worker exit answers outstanding requests unavailable and releases their frames | green |
 | Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | no startup path imports or starts the vision service | red |
 | Normal launch does not start the vision worker | Normal launch loads no vision library | test/app/launch_mode_test.dart | no arguments selects UI mode and never constructs runtime | green |
 
@@ -74,7 +74,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 8. Shutdown and worker failure
 
 - [x] 8.1 Write failing tests for rows "Close while idle", "Close during warm start" (open held by the open-hold flag), "Close during a call that returns in time", "Close during a call that does not return" and "Worker dies during a request". Add an extra test that a late `_OpenFailed` during closing is ignored.
-- [ ] 8.2 Implement close (D2, Flow & State Gaps). It stops admission and advances the generation. It answers the unsent, active and pending requests `closed` and releases the pending inputs. It waits up to 2 s for the in-flight call, then sends `_Close`, and the worker disposes the runtime and scratch and then exits. A late `_Ready` gets `_Close`. On drain expiry it returns `shutdownIncomplete` without disposing. Worker exit or error answers outstanding requests `unavailable` and releases sent-but-unanswered frames by id. Verify: the five rows and the extra test turn green, and the dispose count is 1 or 0 as each scenario requires.
+- [x] 8.2 Implement close (D2, Flow & State Gaps). It stops admission and advances the generation. It answers the unsent, active and pending requests `closed` and releases the pending inputs. It waits up to 2 s for the in-flight call, then sends `_Close`, and the worker disposes the runtime and scratch and then exits. A late `_Ready` gets `_Close`. On drain expiry it returns `shutdownIncomplete` without disposing. Worker exit or error answers outstanding requests `unavailable` and releases sent-but-unanswered frames by id. Verify: the five rows and the extra test turn green, and the dispose count is 1 or 0 as each scenario requires.
 
 ## 9. Scratch pool
 
