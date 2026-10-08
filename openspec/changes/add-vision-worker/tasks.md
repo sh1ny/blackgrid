@@ -48,7 +48,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 3. Warm start and templates
 
-- [ ] 3.1 Write failing tests for rows "Warm start", "Runtime unavailable at start", "Invalid template at start" and "Caller mutates its template bytes after start". Confirm they fail because `VisionService` does not exist.
+- [x] 3.1 Write failing tests for rows "Warm start", "Runtime unavailable at start", "Invalid template at start" and "Caller mutates its template bytes after start". Confirm they fail because `VisionService` does not exist.
 - [ ] 3.2 Implement `lib/data/vision/vision_service.dart` and `lib/data/vision/vision_worker.dart`. Use lazy or explicit `start()` with a `RawReceivePort` that also receives `onExit`/`onError`, and `debugName: 'bgv_worker'`. The spawn message carries the runtime directory, the `VisionNativeOpener`, the frame-registry/platform factory, the job factory and the templates as `TransferableTypedData` plus layout, copied at construction. The worker opens `VisionRuntime` once and validates the templates (layout, 1 channel, non-zero variance; not `validateTemplate`, which needs a target). It replies `_Ready` or `_OpenFailed`, disposing the runtime on template failure. There is no respawn. Verify: the four rows turn green.
 
 ## 4. Admission, pending slot and non-overlap
