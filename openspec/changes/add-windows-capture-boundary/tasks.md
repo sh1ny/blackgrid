@@ -89,7 +89,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 2. Native capture DLL and self-test
 
-- [ ] 2.1 Scaffold `windows/capture/` with these files:
+- [x] 2.1 Scaffold `windows/capture/` with these files:
   - `capture.h`: the `bgc_*` ABI, `BGC_ABI_VERSION 1`, the snapshot, frame-info and event structs, and status codes.
   - `capture_internal.h`: the filter, ring, all-zero and registry seams.
   - `CMakeLists.txt`: a static-CRT `blackgrid_capture` SHARED target linked against `user32` and `gdi32`, plus a `blackgrid_capture_selftest` executable with `EXCLUDE_FROM_ALL`.

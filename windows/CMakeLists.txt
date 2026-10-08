@@ -101,6 +101,17 @@ install(CODE "
   file(WRITE \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_panel_ocr.dll.sha256\" \"\${OCR_DLL_HASH}\")
   " COMPONENT Runtime)
 
+# Input and capture boundary (ADR-0010): global mouse hook, window snapshots
+# and desktop-GDI capture, loaded app-local beside the executable.
+add_subdirectory("capture")
+install(FILES "$<TARGET_FILE:blackgrid_capture>"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+# Bind the installed DLL to its exact build; runtime refuses any mismatch.
+install(CODE "
+  file(SHA256 \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_capture.dll\" CAPTURE_DLL_HASH)
+  file(WRITE \"${INSTALL_BUNDLE_LIB_DIR}/blackgrid_capture.dll.sha256\" \"\${CAPTURE_DLL_HASH}\")
+  " COMPONENT Runtime)
+
 # Item vision runtime (ADR-0008): pinned OpenCV, Tesseract and model inputs.
 add_subdirectory("vision")
 
