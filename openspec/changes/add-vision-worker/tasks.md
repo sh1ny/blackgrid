@@ -63,7 +63,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 6. Input ownership
 
-- [ ] 6.1 Write failing tests for rows "Frame released after success", "Superseded frame released at once", "Malformed owned image" and "Service dropped with a pending frame". The finalizer test drops a service holding a pending frame, forces GC as the capture finalizer tests do, and asserts that `FakeFrameRegistry` `effectiveReleases` and `liveCount` return to baseline.
+- [x] 6.1 Write failing tests for rows "Frame released after success", "Superseded frame released at once", "Malformed owned image" and "Service dropped with a pending frame". The finalizer test drops a service holding a pending frame, forces GC as the capture finalizer tests do, and asserts that `FakeFrameRegistry` `effectiveReleases` and `liveCount` return to baseline.
 - [ ] 6.2 Implement D5. `submit` accepts a `CaptureFrame` (kept adopted, finalizer attached, while pending; `handOff()` only on send) or an owned `VisionImage` (validated in `submit()` with `VisionImage.validate`; `invalidInput` does not touch the pending slot). The worker adopts the ticket with its registry, lends pixels to the job as a BGRX 4-channel image, and releases the frame before replying on every path. The service releases each pending frame on supersede, invalidate, expire, close and unavailable. Verify: the four rows turn green, and `liveCount` is at baseline in every test's tearDown.
 
 ## 7. Job failures and timestamps

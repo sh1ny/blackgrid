@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:blackgrid/data/capture/capture_frame.dart';
+import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/data/vision/vision_runtime.dart';
 import 'package:blackgrid/data/vision/vision_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../capture/support/fake_capture_platform.dart';
 import 'support/clock_capture_platform.dart';
 import 'support/holdable_vision_native.dart';
+import 'support/shared_frame_registry.dart';
 
 /// What the probe job reports: the isolate it ran in, the recognised text and
 /// the template bytes it saw. All plain sendable data.
@@ -57,33 +62,80 @@ VisionTemplate template(String name, {int seed = 1}) => VisionTemplate(
   ),
 );
 
+CaptureFrameMetadata frameMetadata() => CaptureFrameMetadata(
+  width: 4,
+  height: 4,
+  stride: 16,
+  desktopLeft: 0,
+  desktopTop: 0,
+  requested: CaptureRect(0, 0, 4, 4),
+  captured: CaptureRect(0, 0, 4, 4),
+  clipped: false,
+  dpi: 96,
+  hwnd: 1,
+  pid: 2,
+  tid: 3,
+  exeName: 'EscapeFromTarkov.exe',
+  qpcBefore: 10,
+  qpcAfter: 20,
+  capturedAtUtc: DateTime.utc(2026, 10, 9),
+  requestId: 1,
+);
+
+/// Submits [frame] to a service that is dropped on return. Separate from the
+/// test body so no local keeps the service reachable.
+void submitAndDrop(Rig rig, FrameRegistry registry) {
+  final frame = CaptureFrame(
+    rig.frames.createFrame(4, 4),
+    frameMetadata(),
+    registry,
+  );
+  unawaited(rig.newService().submitFrame(frame, 1));
+}
+
 /// One service over a fresh fake runtime directory and control block.
 final class Rig {
   Rig({
-    List<VisionTemplate> templates = const [],
-    Duration deadline = const Duration(milliseconds: 1500),
+    this._templates = const [],
+    this._deadline = const Duration(milliseconds: 1500),
   }) : control = VisionControlBlock(),
-       directory = createFakeRuntimeDirectory() {
-    service = VisionService<int, Probe>(
-      runtimeDirectory: directory.path,
-      jobFactory: probeJob,
-      templates: templates,
-      opener: holdableVisionOpener(control.address),
-      platformFactory: clockPlatformFactory(control.address),
-      qpcNow: control.clock.now,
-      deadline: deadline,
-    );
+       directory = createFakeRuntimeDirectory(),
+       frames = FakeFrameRegistry.create() {
+    // Built now: the service copies its templates at construction.
+    service = newService();
   }
 
+  final List<VisionTemplate> _templates;
+  final Duration _deadline;
   final VisionControlBlock control;
   final Directory directory;
+
+  /// The frame slots shared with the worker isolate.
+  final FakeFrameRegistry frames;
   late final VisionService<int, Probe> service;
+
+  VisionService<int, Probe> newService() => VisionService<int, Probe>(
+    runtimeDirectory: directory.path,
+    jobFactory: probeJob,
+    templates: _templates,
+    opener: holdableVisionOpener(control.address),
+    platformFactory: clockPlatformFactory(control.address),
+    registryFactory: sharedFrameRegistryFactory(frames.address),
+    qpcNow: control.clock.now,
+    deadline: _deadline,
+  );
+
+  /// A live frame owned by the caller, 4x4 BGRX.
+  CaptureFrame newFrame() =>
+      CaptureFrame(frames.createFrame(4, 4), frameMetadata(), frames);
 
   File get model =>
       File('${directory.path}/data/vision/tessdata/eng.traineddata');
 
   Future<void> dispose() async {
     await service.close();
+    // Every frame this rig made is released on every outcome.
+    expect(frames.liveCount, 0, reason: 'live frames at teardown');
     control.free();
     directory.deleteSync(recursive: true);
   }
@@ -491,5 +543,104 @@ void main() {
       expect(await slow.service.start(), isNull);
       expect(slow.control.operationCount, 0);
     });
+  });
+
+  group('input ownership', () {
+    late Rig rig;
+
+    setUp(() async {
+      rig = Rig();
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+    });
+
+    tearDown(() => rig.control.held = false);
+
+    test('frame input is released exactly once after success', () async {
+      final frame = rig.newFrame();
+      expect(rig.frames.liveCount, 1);
+
+      final answer = await rig.service.submitFrame(frame, 1);
+
+      expect(answer, isA<VisionDelivered<Probe>>());
+      expect((answer as VisionDelivered<Probe>).result.text, 'hello');
+      expect(rig.frames.effectiveReleases, 1);
+      expect(rig.frames.liveCount, 0);
+      expect(frame.isReleased, isTrue, reason: 'the submitter lost the frame');
+    });
+
+    test('superseded pending frame is released before the newer request is '
+        'acknowledged', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+      final older = rig.service.submitFrame(rig.newFrame(), 2);
+      expect(rig.frames.liveCount, 1);
+
+      final newer = rig.service.submitFrame(rig.newFrame(), 3);
+
+      // Released by the time submit returns, while the native call is held.
+      expect(rig.frames.effectiveReleases, 1);
+      expect(rig.frames.liveCount, 1, reason: 'only the newer frame is held');
+      expect(await older, isA<VisionSuperseded<Probe>>());
+      expect(rig.control.concurrent, 1);
+
+      rig.control.held = false;
+      expect(await first, isA<VisionDelivered<Probe>>());
+      expect(await newer, isA<VisionDelivered<Probe>>());
+      expect(rig.frames.effectiveReleases, 2);
+      expect(rig.frames.liveCount, 0);
+    });
+
+    test('malformed owned image is rejected at submit and keeps the pending '
+        'request', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+      final pendingFrame = rig.newFrame();
+      final pending = rig.service.submitFrame(pendingFrame, 2);
+
+      final malformed = VisionImage(
+        Uint8List(16),
+        width: 4,
+        height: 4,
+        stride: 2,
+        channels: 1,
+      );
+      final answer = await rig.service.submit(malformed, 3);
+
+      expect(answer, isA<VisionInvalidInput<Probe>>());
+      expect(pendingFrame.isReleased, isFalse);
+      expect(rig.frames.liveCount, 1, reason: 'the pending frame is kept');
+      expect(rig.control.operationCount, 1, reason: 'no job ran');
+
+      rig.control.held = false;
+      expect(await first, isA<VisionDelivered<Probe>>());
+      expect(await pending, isA<VisionDelivered<Probe>>());
+      expect(rig.control.operationCount, 2);
+      expect(rig.frames.liveCount, 0);
+    });
+  });
+
+  test('pending frame keeps its finalizer until it is sent', () async {
+    final rig = Rig();
+    addTearDown(rig.dispose);
+    // The worker stays in the opener, so the frame stays unsent.
+    rig.control.openHeld = true;
+    addTearDown(() => rig.control.openHeld = false);
+    final registry = FinalizingFrameRegistry(rig.frames);
+    expect(rig.frames.liveCount, 0);
+
+    submitAndDrop(rig, registry);
+    expect(rig.frames.liveCount, 1);
+
+    await collectGarbageUntil(() => rig.frames.liveCount == 0);
+
+    expect(rig.frames.liveCount, 0);
+    expect(rig.frames.effectiveReleases, 1);
+
+    // The orphaned worker closes itself when it becomes ready.
+    rig.control.openHeld = false;
+    await eventually(() => rig.control.nativeCloseCount == 1);
   });
 }
