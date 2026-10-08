@@ -21,13 +21,13 @@ Test locations:
 | scan-triggers → Trigger queue is bounded | Queue overflow | windows/capture/selftest.cpp | `ring_drops_oldest_and_reports_count` | green |
 | scan-triggers → Trigger queue is bounded | Coalesced signal | windows/capture/selftest.cpp | `signal_coalesces_until_drain` | green |
 | scan-triggers → Trigger queue is bounded | Release during a drain | windows/capture/selftest.cpp | `append_after_drain_resignals` | green |
-| scan-triggers → Hook lifecycle is explicit | Start then stop | test/data/capture/capture_native_qualification_test.dart | `hook starts and stops and drains nothing after stop` | red |
-| scan-triggers → Hook lifecycle is explicit | Second start | test/data/capture/capture_native_qualification_test.dart | `second hook start returns alreadyStarted` | red |
+| scan-triggers → Hook lifecycle is explicit | Start then stop | test/data/capture/capture_native_qualification_test.dart | `hook starts and stops and drains nothing after stop` | green |
+| scan-triggers → Hook lifecycle is explicit | Second start | test/data/capture/capture_native_qualification_test.dart | `second hook start returns alreadyStarted` | green |
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | windows/capture/selftest.cpp | `install_failure_reports_error_and_ends_thread` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | test/data/capture/trigger_source_test.dart | `stopTimedOut keeps the listener open and blocks restart` | green |
 | scan-triggers → Hook lifecycle is explicit | Normal startup | test/data/capture/capture_source_audit_test.dart | `no startup path imports or starts the trigger source` | green |
 | inspection-capture → Target snapshot | Window on a left/top secondary monitor | test/data/capture/capture_policy_test.dart | `snapshot decode keeps signed negative origins` | green |
-| inspection-capture → Target snapshot | Window no longer exists | test/data/capture/capture_native_qualification_test.dart | `snapshot of destroyed handle is targetGone` | red |
+| inspection-capture → Target snapshot | Window no longer exists | test/data/capture/capture_native_qualification_test.dart | `snapshot of destroyed handle is targetGone` | green |
 | inspection-capture → Target identity is validated before capture | Valid target | test/data/capture/capture_policy_test.dart | `valid target passes validation` | green |
 | inspection-capture → Target identity is validated before capture | Focus moved after the click | test/data/capture/capture_policy_test.dart | `foreground change is targetNotForeground without capture` | green |
 | inspection-capture → Target identity is validated before capture | Minimised target | test/data/capture/capture_policy_test.dart | `minimised target fails without capture` | green |
@@ -57,7 +57,7 @@ Test locations:
 | inspection-capture → Frame ownership is single and bounded | Release twice | test/data/capture/capture_frame_test.dart | `second release is a no-op` | green |
 | inspection-capture → Frame ownership is single and bounded | Budget exhausted | windows/capture/selftest.cpp | `registry_refuses_fifth_frame` | green |
 | inspection-capture → Frame ownership is single and bounded | Hand-off to another isolate | test/data/capture/capture_frame_test.dart | `handOff moves ownership across isolates` | green |
-| inspection-capture → Frame ownership is single and bounded | Dropped without release | test/data/capture/capture_native_qualification_test.dart | `finalizer entry releases the slot` | red |
+| inspection-capture → Frame ownership is single and bounded | Dropped without release | test/data/capture/capture_native_qualification_test.dart | `finalizer entry releases the slot` | green |
 | inspection-capture → Capture runs off the UI isolate with single admission | One capture at a time | test/data/capture/capture_service_test.dart | `second request while active is captureBusy` | red |
 | inspection-capture → Capture runs off the UI isolate with single admission | UI stays responsive during a slow capture | test/data/capture/capture_service_test.dart | `caller isolate keeps ticking during a 3 s native hold` | red |
 | inspection-capture → Captures have a deadline that never starts a second native call | Native call overruns | test/data/capture/capture_service_test.dart | `overrun times out stays busy and releases late frame` | red |
@@ -132,7 +132,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 9. Integration checks
 
-- [ ] 9.1 Write `test/data/capture/capture_native_qualification_test.dart` (tag `qualification`): ABI and struct sizes, `targetGone` for a destroyed or invalid handle, hook start then drain-empty then stop, a second start returning `alreadyStarted`, and the finalizer entry releasing a slot reserved by a self-owned capture. Before any native call, it skips with a recorded reason if a game process is listed. Verify: after confirming with `tasklist` that the game is not running, `flutter build windows --release`, then `mise run test:qualification` passes the new tests; flip the rows green.
+- [x] 9.1 Write `test/data/capture/capture_native_qualification_test.dart` (tag `qualification`): ABI and struct sizes, `targetGone` for a destroyed or invalid handle, hook start then drain-empty then stop, a second start returning `alreadyStarted`, and the finalizer entry releasing a slot reserved by a self-owned capture. Before any native call, it skips with a recorded reason if a game process is listed. Verify: after confirming with `tasklist` that the game is not running, `flutter build windows --release`, then `mise run test:qualification` passes the new tests; flip the rows green.
 - [ ] 9.2 Full offline gates: `mise run analyze`, `mise run test`, `mise run build:release` (which runs `bundle:check`) and `mise run capture:selftest`. Verify: all pass, with any skipped self-test capture case recorded as skipped, not passed. No step launches the app against the game.
 
 ## Workflow follow-up
