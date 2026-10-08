@@ -13,12 +13,62 @@ const _banned = <String>[
   'PrintWindow',
 ];
 
+final _rawPrefix = RegExp(r'(?:^|[^A-Za-z0-9_])(?:u8|[LuU])?R$');
+final _numberStart = RegExp(r'(?:^|[^A-Za-z0-9_.])[0-9][A-Za-z0-9_.]*$');
+
 /// Removes C/C++ comments so prose such as "never calls OpenProcess" does not
-/// count as a call. String literals are kept, so a name smuggled through
-/// `GetProcAddress("OpenProcess")` is still caught.
-String stripComments(String source) => source
-    .replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), ' ')
-    .replaceAll(RegExp(r'//[^\n]*'), ' ');
+/// count as a call. It lexes string, character and raw string literals, so a
+/// comment marker inside a literal cannot hide the code after it, and keeps
+/// their contents, so `GetProcAddress("OpenProcess")` is still caught.
+String stripComments(String source) {
+  final out = StringBuffer();
+  final n = source.length;
+  var i = 0;
+  while (i < n) {
+    final c = source[i];
+    final next = i + 1 < n ? source[i + 1] : '';
+    if (c == '/' && next == '/') {
+      while (i < n && source[i] != '\n') {
+        i++;
+      }
+      out.write(' ');
+    } else if (c == '/' && next == '*') {
+      final end = source.indexOf('*/', i + 2);
+      i = end < 0 ? n : end + 2;
+      out.write(' ');
+    } else if (c == '"' && _rawPrefix.hasMatch(source.substring(0, i))) {
+      // R"delim( ... )delim"
+      final open = source.indexOf('(', i + 1);
+      final delim = open < 0 ? '' : source.substring(i + 1, open);
+      final close = open < 0 ? -1 : source.indexOf(')$delim"', open + 1);
+      final end = close < 0 ? n : close + delim.length + 2;
+      out.write(source.substring(i, end));
+      i = end;
+    } else if (c == '"' ||
+        (c == "'" && !_numberStart.hasMatch(source.substring(0, i)))) {
+      // An ordinary string or character literal, up to its unescaped closing
+      // quote. A C++14 digit separator such as 1'000 opens no literal.
+      var j = i + 1;
+      while (j < n && source[j] != c && source[j] != '\n') {
+        j += source[j] == r'\' ? 2 : 1;
+      }
+      final end = j < n ? j + 1 : n;
+      out.write(source.substring(i, end));
+      i = end;
+    } else {
+      out.write(c);
+      i++;
+    }
+  }
+  return out.toString();
+}
+
+final _bannedPattern = RegExp(r'\b(' + _banned.join('|') + r')[AW]?\b');
+
+/// The banned identifiers (and A/W variants) in [source], outside comments.
+List<String> bannedIdentifiers(String source) => [
+  for (final m in _bannedPattern.allMatches(stripComments(source))) m.group(0)!,
+];
 
 /// Returns `file: identifier` findings for the banned APIs (and their A/W
 /// variants) in the C++ sources of [dir]. `null` means no source was found.
@@ -30,12 +80,10 @@ List<String>? auditSources(Directory dir) {
       .where((f) => f.path.endsWith('.h') || f.path.endsWith('.cpp'))
       .toList();
   if (!files.any((f) => f.path.endsWith('.cpp'))) return null;
-  final pattern = RegExp(r'\b(' + _banned.join('|') + r')[AW]?\b');
   final findings = <String>[];
   for (final file in files) {
-    final text = stripComments(file.readAsStringSync());
-    for (final match in pattern.allMatches(text)) {
-      findings.add('${file.uri.pathSegments.last}: ${match.group(0)}');
+    for (final name in bannedIdentifiers(file.readAsStringSync())) {
+      findings.add('${file.uri.pathSegments.last}: $name');
     }
   }
   return findings;
@@ -64,6 +112,31 @@ void main() {
       File('${tmp.path}/a.cpp')
           .writeAsStringSync('void f(){ PostThreadMessageW(0,0,0,0); }');
       expect(auditSources(tmp), isEmpty);
+    });
+
+    test('comment markers inside literals do not hide a banned call', () {
+      // Each line hides OpenProcess from a regex comment stripper.
+      const sources = <String>[
+        r'const char* s = "//"; OpenProcess(0, 0, 0);',
+        r'const char* s = "/*"; OpenProcess(0, 0, 0); // */',
+        r'''char q = '"'; const char* s = "//"; OpenProcess(0, 0, 0);''',
+        r'auto s = R"x(" // )x"; OpenProcess(0, 0, 0);',
+        r'auto s = u8R"(/*)"; OpenProcess(0, 0, 0); /* x */',
+        r'const char* s = "a\"//"; OpenProcess(0, 0, 0);',
+      ];
+      for (final source in sources) {
+        expect(bannedIdentifiers(source), ['OpenProcess'], reason: source);
+      }
+    });
+
+    test('real comments are still ignored and literals still scanned', () {
+      expect(
+        bannedIdentifiers('/* OpenProcess */ int x; // SendInput'),
+        isEmpty,
+      );
+      expect(bannedIdentifiers('GetProcAddress(m, "OpenProcess");'), [
+        'OpenProcess',
+      ]);
     });
 
     test('no startup path imports or starts the trigger source', () {
