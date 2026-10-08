@@ -19,7 +19,9 @@ final class ScanTrigger {
 /// Bridges the native mouse-release hook to a non-buffering broadcast stream.
 ///
 /// The native thread only signals; the handler drains on the Dart isolate.
-/// Triggers with no listener are dropped, never queued. Nothing under
+/// Triggers with no listener, or for a paused listener, are dropped, never
+/// queued: the bounded native queue is the only buffer. A listener's next
+/// trigger counts what it missed in [ScanTrigger.droppedBefore]. Nothing under
 /// `lib/application`, `lib/ui` or `lib/main.dart` references this source yet.
 final class MouseReleaseTriggerSource {
   MouseReleaseTriggerSource(
@@ -30,15 +32,24 @@ final class MouseReleaseTriggerSource {
 
   final CapturePlatform _platform;
   final String _title;
-  final StreamController<ScanTrigger> _controller =
-      StreamController<ScanTrigger>.broadcast();
+  final List<_Listener> _listeners = [];
+  bool _closed = false;
 
   NativeCallable<Void Function()>? _callable;
   bool _active = false;
   bool _stuck = false;
-  int _pendingDropped = 0;
 
-  Stream<ScanTrigger> get triggers => _controller.stream;
+  late final Stream<ScanTrigger> triggers = Stream<ScanTrigger>.multi((
+    controller,
+  ) {
+    if (_closed) {
+      controller.closeSync();
+      return;
+    }
+    final listener = _Listener(controller);
+    _listeners.add(listener);
+    controller.onCancel = () => _listeners.remove(listener);
+  }, isBroadcast: true);
 
   /// Installs the hook. Null means started.
   TriggerFailure? start() {
@@ -54,7 +65,9 @@ final class MouseReleaseTriggerSource {
     }
     _callable = callable;
     _active = true;
-    _pendingDropped = 0;
+    for (final listener in _listeners) {
+      listener.dropped = 0;
+    }
     return null;
   }
 
@@ -82,18 +95,40 @@ final class MouseReleaseTriggerSource {
   /// open, and calling dispose again retries the stop.
   Future<TriggerFailure?> dispose() async {
     final failure = stop();
-    if (!_controller.isClosed) await _controller.close();
+    if (!_closed) {
+      _closed = true;
+      // Synchronous close: a paused listener cannot hold dispose open.
+      for (final listener in List.of(_listeners)) {
+        listener.controller.closeSync();
+      }
+      _listeners.clear();
+    }
     return failure;
   }
 
   void _onSignal() {
-    if (!_active) return;
+    if (!_active || _closed) return;
     final drain = _platform.hookDrain();
-    _pendingDropped += drain.dropped;
-    for (final event in drain.events) {
-      if (_controller.isClosed) return;
-      _controller.add(ScanTrigger(event, _pendingDropped));
-      _pendingDropped = 0;
+    for (final listener in List.of(_listeners)) {
+      listener.dropped += drain.dropped;
+      for (final event in drain.events) {
+        if (listener.controller.isPaused) {
+          listener.dropped++;
+          continue;
+        }
+        // Delivered now, so nothing waits in a buffer if it pauses later.
+        listener.controller.addSync(ScanTrigger(event, listener.dropped));
+        listener.dropped = 0;
+      }
     }
   }
+}
+
+final class _Listener {
+  _Listener(this.controller);
+
+  final MultiStreamController<ScanTrigger> controller;
+
+  /// Triggers this listener missed since its last delivery.
+  int dropped = 0;
 }

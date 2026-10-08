@@ -168,9 +168,6 @@ BGC_API int32_t bgc_capture(uint64_t hwnd, const bgc_rect* rect,
     return status;
   };
 
-  int32_t pre = snapshot_window(hwnd, &out->pre);
-  if (pre != BGC_OK) return fail(pre, 0);
-
   DWORD error = 0;
   if (!registry_allocate(reg, id, rect->width, rect->height, &error)) {
     return fail(BGC_CAPTURE_FAILED, error);
@@ -195,6 +192,17 @@ BGC_API int32_t bgc_capture(uint64_t hwnd, const bgc_rect* rect,
     DeleteDC(memory);
     ReleaseDC(nullptr, screen);
     return fail(BGC_CAPTURE_FAILED, e);
+  }
+
+  // The pre snapshot comes after the allocation and DC setup, directly before
+  // the copy, so a change during a slow full-client allocation that reverts
+  // before the post snapshot cannot go unseen.
+  int32_t pre = snapshot_window(hwnd, &out->pre);
+  if (pre != BGC_OK) {
+    SelectObject(memory, previous);
+    DeleteDC(memory);
+    ReleaseDC(nullptr, screen);
+    return fail(pre, 0);
   }
 
   LARGE_INTEGER before, after;

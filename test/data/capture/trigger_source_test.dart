@@ -162,4 +162,43 @@ void main() {
     expect(await source.dispose(), isNull);
     expect(native.guardHeld, isFalse);
   });
+
+  test('a paused listener drops triggers instead of buffering them', () async {
+    source.start();
+    final paused = <ScanTrigger>[];
+    final subscription = source.triggers.listen(paused.add)..pause();
+    native.drains.add(TriggerDrain([_event(1), _event(2)], 1));
+    native.fire();
+    await _settle();
+    // The active listener still gets both; the paused one gets nothing.
+    expect(received.map((t) => t.event.qpc), [1, 2]);
+    subscription.resume();
+    await _settle();
+    expect(paused, isEmpty, reason: 'no stale trigger replays on resume');
+
+    native.drains.add(TriggerDrain([_event(3)], 0));
+    native.fire();
+    await _settle();
+    expect(paused.single.event.qpc, 3);
+    // One native drop plus the two triggers skipped while paused.
+    expect(paused.single.droppedBefore, 3);
+    expect(received.last.droppedBefore, 0);
+  });
+
+  test('dispose does not wait for a paused listener', () async {
+    source.start();
+    source.triggers.listen((_) {}).pause();
+    native.drains.add(TriggerDrain([_event(1)], 0));
+    native.fire();
+    await _settle();
+    expect(await source.dispose().timeout(const Duration(seconds: 1)), isNull);
+  });
+
+  test('a listener added after dispose is closed at once', () async {
+    await source.dispose();
+    var done = false;
+    source.triggers.listen((_) {}, onDone: () => done = true);
+    await _settle();
+    expect(done, isTrue);
+  });
 }

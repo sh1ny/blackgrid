@@ -119,8 +119,9 @@ BGC_API int32_t bgc_snapshot(uint64_t hwnd, bgc_window_snapshot* out);
 // BGC_OK, BGC_NOT_FOUND or BGC_CAPTURE_FAILED. Never opens the process.
 BGC_API int32_t bgc_process_name(uint32_t pid, uint16_t* name,
                                  uint32_t capacity_chars);
-// Reserves a slot, snapshots (pre), BitBlts rect from the screen DC into a
-// top-down 32 bpp DIB section, snapshots (post) and computes all_zero.
+// Reserves a slot and allocates a top-down 32 bpp DIB section, then snapshots
+// (pre) immediately before BitBlt-ing rect from the screen DC into it,
+// snapshots (post) and computes all_zero.
 // BGC_OK, BGC_TARGET_GONE, BGC_FRAME_BUDGET, BGC_CAPTURE_FAILED or
 // BGC_INVALID_ARGUMENT. On any non-OK status no slot stays reserved.
 BGC_API int32_t bgc_capture(uint64_t hwnd, const bgc_rect* rect,
