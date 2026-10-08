@@ -183,6 +183,7 @@ void main() {
     expect(pass, 0);
     var report = readReport();
     expect(report['format'], 1);
+    expect(report, contains('appVersion'));
     expect(DateTime.parse(report['startedAt'] as String), isA<DateTime>());
     expect(report['result'], 'pass');
     final identity = report['runtimeIdentity'] as Map<String, dynamic>;
@@ -214,6 +215,25 @@ void main() {
     expect(report['result'], 'fail');
     final failed = (report['steps'] as List).single as Map<String, dynamic>;
     expect((failed['failure'] as Map)['message'], contains('eng.traineddata'));
+  });
+
+  test('report records the given appVersion', () async {
+    await runVisionSelfCheck(
+      ['--vision-self-check', reportPath],
+      runtimeDirectory: dir.path,
+      worker: passingWorker,
+      appVersion: '0.2.0-beta.1+120',
+    );
+    expect(readReport()['appVersion'], '0.2.0-beta.1+120');
+  });
+
+  test('report appVersion defaults to dev', () async {
+    await runVisionSelfCheck(
+      ['--vision-self-check', reportPath],
+      runtimeDirectory: dir.path,
+      worker: passingWorker,
+    );
+    expect(readReport()['appVersion'], 'dev');
   });
 
   test('report is written to tmp then renamed; previous report survives a '

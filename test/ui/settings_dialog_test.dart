@@ -1,10 +1,35 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/settings_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
 
 void main() {
+  testWidgets('settings dialog shows the given app version', (tester) async {
+    final h = await pumpM1(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SettingsDialog(services: h.services, version: '0.2.0+120'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('0.2.0+120'), findsOneWidget);
+  });
+
+  testWidgets('settings dialog shows dev by default', (tester) async {
+    final h = await pumpM1(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: SettingsDialog(services: h.services)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Version dev'), findsOneWidget);
+  });
+
   testWidgets(
     'Map file inputs persist independently of the Follow logs preference',
     (tester) async {
