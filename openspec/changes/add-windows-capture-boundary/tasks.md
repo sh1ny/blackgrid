@@ -127,7 +127,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 8. Bundle integrity
 
-- [ ] 8.1 Update `test/tool/vision/check_bundle_test.dart`: the synthetic complete bundle gains `blackgrid_capture.dll` and its sidecar, and new failing cases cover a missing capture library or binding and a capture binding mismatch. Verify: the new and changed cases fail.
+- [x] 8.1 Update `test/tool/vision/check_bundle_test.dart`: the synthetic complete bundle gains `blackgrid_capture.dll` and its sidecar, and new failing cases cover a missing capture library or binding and a capture binding mismatch. Verify: the new and changed cases fail.
 - [ ] 8.2 Add `capture` and `capture-binding` rows to `tool/vision/bundle_inventory.json`, and generalise the sidecar step in `tool/vision/check_bundle.dart:159-172` from role `panel-ocr` to every sidecar-bound role. Verify: `check_bundle_test.dart` passes, including the unchanged green rows; flip the red rows green.
 
 ## 9. Integration checks

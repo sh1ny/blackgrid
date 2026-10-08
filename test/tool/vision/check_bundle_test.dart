@@ -24,6 +24,10 @@ class _Fixture {
     write('sqlite3.dll', _pe(['KERNEL32.dll']));
     write('blackgrid_panel_ocr.dll', _pe(['KERNEL32.dll', 'VCRUNTIME140.dll']));
     write(
+      'blackgrid_capture.dll',
+      _pe(['KERNEL32.dll', 'USER32.dll', 'GDI32.dll']),
+    );
+    write(
       'blackgrid_vision.dll',
       _pe(['KERNEL32.dll', 'api-ms-win-crt-runtime-l1-1-0.dll']),
     );
@@ -45,6 +49,10 @@ class _Fixture {
     write(
       'blackgrid_panel_ocr.dll.sha256',
       utf8.encode(_sha(read('blackgrid_panel_ocr.dll'))),
+    );
+    write(
+      'blackgrid_capture.dll.sha256',
+      utf8.encode(_sha(read('blackgrid_capture.dll'))),
     );
     writeManifest();
     writeLockAndNotices();
@@ -274,6 +282,34 @@ void main() {
     final text = _failures(r.report!, 'inventory');
     expect(text, contains('data/vision/tessdata/eng.traineddata'));
     expect(text, contains('missing'));
+  });
+
+  test('inventory fails naming missing capture library or binding', () async {
+    File('${fx.bundle.path}/blackgrid_capture.dll').deleteSync();
+    final r = await fx.run();
+    expect(r.code, isNot(0));
+    final text = _failures(r.report!, 'inventory');
+    expect(text, contains('blackgrid_capture.dll'));
+    expect(text, contains('missing'));
+
+    final fx2 = _Fixture();
+    addTearDown(fx2.dispose);
+    File('${fx2.bundle.path}/blackgrid_capture.dll.sha256').deleteSync();
+    final r2 = await fx2.run();
+    expect(r2.code, isNot(0));
+    final text2 = _failures(r2.report!, 'inventory');
+    expect(text2, contains('blackgrid_capture.dll.sha256'));
+    expect(text2, contains('missing'));
+  });
+
+  test('hash step fails naming capture library and both hashes', () async {
+    fx.write('blackgrid_capture.dll.sha256', utf8.encode('0' * 64));
+    final r = await fx.run();
+    expect(r.code, isNot(0));
+    final text = _failures(r.report!, 'bindings');
+    expect(text, contains('blackgrid_capture.dll'));
+    expect(text, contains('0' * 64));
+    expect(text, contains(_sha(fx.read('blackgrid_capture.dll'))));
   });
 
   test('hash step passes when manifest, sidecar and lock agree', () async {
