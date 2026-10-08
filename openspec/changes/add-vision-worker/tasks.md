@@ -6,10 +6,10 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Worker opens the vision runtime once and keeps it warm | Warm start | vision_service_test.dart | warm start opens the runtime once in the worker and reuses one engine | red |
-| Worker opens the vision runtime once and keeps it warm | Runtime unavailable at start | vision_service_test.dart | runtime failure at start makes the service unavailable without respawn | red |
-| Worker opens the vision runtime once and keeps it warm | Invalid template at start | vision_service_test.dart | invalid or zero-variance template fails start with invalidTemplate and disposes the runtime | red |
-| Worker opens the vision runtime once and keeps it warm | Caller mutates its template bytes after start | vision_service_test.dart | templates are copied at construction | red |
+| Worker opens the vision runtime once and keeps it warm | Warm start | vision_service_test.dart | warm start opens the runtime once in the worker and reuses one engine | green |
+| Worker opens the vision runtime once and keeps it warm | Runtime unavailable at start | vision_service_test.dart | runtime failure at start makes the service unavailable without respawn | green |
+| Worker opens the vision runtime once and keeps it warm | Invalid template at start | vision_service_test.dart | invalid or zero-variance template fails start with invalidTemplate and disposes the runtime | green |
+| Worker opens the vision runtime once and keeps it warm | Caller mutates its template bytes after start | vision_service_test.dart | templates are copied at construction | green |
 | Native vision calls never overlap | Requests run one after another | vision_service_test.dart | second job does not start while the first native call is held | red |
 | Native vision calls never overlap | Deadline passes during a held call | vision_service_test.dart | deadline never starts a second native call | red |
 | One active and one replaceable pending request | Pending request runs after the active one | vision_service_test.dart | pending request runs after the active one | red |
@@ -49,7 +49,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 3. Warm start and templates
 
 - [x] 3.1 Write failing tests for rows "Warm start", "Runtime unavailable at start", "Invalid template at start" and "Caller mutates its template bytes after start". Confirm they fail because `VisionService` does not exist.
-- [ ] 3.2 Implement `lib/data/vision/vision_service.dart` and `lib/data/vision/vision_worker.dart`. Use lazy or explicit `start()` with a `RawReceivePort` that also receives `onExit`/`onError`, and `debugName: 'bgv_worker'`. The spawn message carries the runtime directory, the `VisionNativeOpener`, the frame-registry/platform factory, the job factory and the templates as `TransferableTypedData` plus layout, copied at construction. The worker opens `VisionRuntime` once and validates the templates (layout, 1 channel, non-zero variance; not `validateTemplate`, which needs a target). It replies `_Ready` or `_OpenFailed`, disposing the runtime on template failure. There is no respawn. Verify: the four rows turn green.
+- [x] 3.2 Implement `lib/data/vision/vision_service.dart` and `lib/data/vision/vision_worker.dart`. Use lazy or explicit `start()` with a `RawReceivePort` that also receives `onExit`/`onError`, and `debugName: 'bgv_worker'`. The spawn message carries the runtime directory, the `VisionNativeOpener`, the frame-registry/platform factory, the job factory and the templates as `TransferableTypedData` plus layout, copied at construction. The worker opens `VisionRuntime` once and validates the templates (layout, 1 channel, non-zero variance; not `validateTemplate`, which needs a target). It replies `_Ready` or `_OpenFailed`, disposing the runtime on template failure. There is no respawn. Verify: the four rows turn green.
 
 ## 4. Admission, pending slot and non-overlap
 
