@@ -104,7 +104,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 ## 3. Dart binding, failures and source audit
 
 - [x] 3.1 Write failing `test/data/capture/capture_source_audit_test.dart`. It scans `windows/capture/*.{h,cpp}` for the banned identifiers (word-boundary match) and checks that nothing under `lib/application/`, `lib/ui/` or `lib/main.dart` imports `lib/data/capture/` or starts the trigger source. Verify: it fails until the sources exist, then passes; flip both audit rows green.
-- [ ] 3.2 Add `lib/data/capture/capture_failure.dart`: sealed `CaptureFailure` and `TriggerFailure` with the D3 catalogue, and a `CaptureResult` sealed result. Add `lib/data/capture/capture_native.dart`: an FFI binding that verifies the absolute path, `.sha256` and `bgc_abi()` before any lookup (like `raid_panel_ocr.dart:186-206`), plus a `CapturePlatform` seam interface that fakes implement. Verify: `mise run analyze` is clean.
+- [x] 3.2 Add `lib/data/capture/capture_failure.dart`: sealed `CaptureFailure` and `TriggerFailure` with the D3 catalogue, and a `CaptureResult` sealed result. Add `lib/data/capture/capture_native.dart`: an FFI binding that verifies the absolute path, `.sha256` and `bgc_abi()` before any lookup (like `raid_panel_ocr.dart:186-206`), plus a `CapturePlatform` seam interface that fakes implement. Verify: `mise run analyze` is clean.
 
 ## 4. Capture geometry (pure Dart)
 
