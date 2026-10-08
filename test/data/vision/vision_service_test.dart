@@ -53,6 +53,10 @@ const scriptOk = 1;
 const scriptThrow = 2;
 const scriptAbortOnFailure = 3;
 
+/// Runs the native call (held by the control block), then ends the worker
+/// isolate without releasing the frame or replying.
+const scriptHoldThenDie = 4;
+
 /// A job that behaves as scripted by its parameter: [scriptOk] recognises,
 /// [scriptThrow] throws, [scriptAbortOnFailure] recognises and aborts with the
 /// typed failure when the native operation fails (the contract the real jobs
@@ -65,6 +69,7 @@ final class _ScriptedJob implements VisionJob<int, Probe> {
     if (params == scriptThrow) throw StateError('boom');
     final text = input.withImage(
       (image) => switch (context.recognise(image)) {
+        VisionOk() when params == scriptHoldThenDie => Isolate.exit(),
         VisionOk(:final value) => value.text,
         VisionFailed(:final failure) when params == scriptAbortOnFailure =>
           throw VisionJobAbort(failure),
@@ -143,6 +148,7 @@ final class Rig {
   Rig({
     this._templates = const [],
     this._deadline = const Duration(milliseconds: 1500),
+    this._closeDrain = const Duration(seconds: 5),
     this._jobFactory = probeJob,
   }) : control = VisionControlBlock(),
        directory = createFakeRuntimeDirectory(),
@@ -153,6 +159,7 @@ final class Rig {
 
   final List<VisionTemplate> _templates;
   final Duration _deadline;
+  final Duration _closeDrain;
   final VisionJobFactory<int, Probe> _jobFactory;
   final VisionControlBlock control;
   final Directory directory;
@@ -170,6 +177,7 @@ final class Rig {
     registryFactory: sharedFrameRegistryFactory(frames.address),
     qpcNow: control.clock.now,
     deadline: _deadline,
+    closeDrain: _closeDrain,
   );
 
   /// A live frame owned by the caller, 4x4 BGRX.
@@ -817,6 +825,193 @@ void main() {
       final next = await service.submit(sample(), scriptThrow);
       expect(next, isA<VisionDelivered<Object?>>());
       expect((next as VisionDelivered<Object?>).result, 'sendable');
+    });
+  });
+
+  group('shutdown', () {
+    late Rig rig;
+
+    tearDown(() {
+      rig.control.held = false;
+      rig.control.openHeld = false;
+    });
+
+    test('close while idle disposes once and exits', () async {
+      rig = Rig();
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+
+      expect(await rig.service.close(), VisionCloseResult.closed);
+
+      expect(rig.service.state, VisionServiceState.closed);
+      expect(rig.service.workerRunning, isFalse);
+      expect(rig.control.engineDisposeCount, 1);
+      expect(rig.control.nativeCloseCount, 1);
+      expect(await rig.service.submit(sample(), 1), isA<VisionClosed<Probe>>());
+      final frame = rig.newFrame();
+      expect(
+        await rig.service.submitFrame(frame, 1),
+        isA<VisionClosed<Probe>>(),
+      );
+      expect(frame.isReleased, isTrue);
+      expect(await rig.service.close(), VisionCloseResult.closed);
+      expect(rig.control.engineDisposeCount, 1);
+    });
+
+    test('close during warm start disposes the late-opened runtime and '
+        'exits', () async {
+      rig = Rig();
+      addTearDown(rig.dispose);
+      rig.control.openHeld = true;
+      final frame = rig.newFrame();
+      final request = rig.service.submitFrame(frame, 1);
+      await eventually(() => rig.control.openCount == 1);
+      expect(rig.service.state, VisionServiceState.starting);
+
+      final closing = rig.service.close();
+      expect(await request, isA<VisionClosed<Probe>>());
+      expect(frame.isReleased, isTrue);
+      expect(rig.frames.liveCount, 0);
+      expect(rig.service.state, VisionServiceState.closing);
+      expect(rig.control.engineDisposeCount, 0);
+
+      rig.control.openHeld = false;
+      expect(await closing, VisionCloseResult.closed);
+
+      expect(rig.service.state, VisionServiceState.closed);
+      expect(rig.service.workerRunning, isFalse);
+      expect(rig.control.openCount, 1);
+      expect(rig.control.engineDisposeCount, 1);
+      expect(rig.control.nativeCloseCount, 1);
+      expect(rig.control.operationCount, 0, reason: 'no job ran');
+    });
+
+    test('late OpenFailed during closing is ignored', () async {
+      // A flat template makes the open fail after the held opener returns.
+      final flat = VisionTemplate(
+        'flat',
+        VisionImage(
+          Uint8List.fromList(List.filled(16, 7)),
+          width: 4,
+          height: 4,
+          stride: 4,
+          channels: 1,
+        ),
+      );
+      rig = Rig(templates: [flat]);
+      addTearDown(rig.dispose);
+      rig.control.openHeld = true;
+      final request = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.openCount == 1);
+
+      final closing = rig.service.close();
+      expect(await request, isA<VisionClosed<Probe>>());
+      rig.control.openHeld = false;
+
+      expect(await closing, VisionCloseResult.closed);
+      expect(rig.service.state, VisionServiceState.closed);
+      expect(rig.service.unavailableReason, isNull);
+      expect(rig.control.engineDisposeCount, 1, reason: 'worker disposed');
+      expect(await rig.service.submit(sample(), 2), isA<VisionClosed<Probe>>());
+    });
+
+    test('close drains a call that returns within 2 s', () async {
+      rig = Rig();
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+      rig.control.held = true;
+      final answers = <VisionAnswer<Probe>>[];
+      final activeFrame = rig.newFrame();
+      final active = rig.service.submitFrame(activeFrame, 1)..then(answers.add);
+      await eventually(() => rig.control.concurrent == 1);
+      final pendingFrame = rig.newFrame();
+      final pending = rig.service.submitFrame(pendingFrame, 2)
+        ..then(answers.add);
+
+      final closing = rig.service.close();
+
+      // Answered while the native call is still held.
+      expect(await active, isA<VisionClosed<Probe>>());
+      expect(await pending, isA<VisionClosed<Probe>>());
+      expect(pendingFrame.isReleased, isTrue);
+      expect(rig.service.state, VisionServiceState.closing);
+      expect(rig.control.engineDisposeCount, 0, reason: 'call still running');
+
+      rig.control.held = false;
+      expect(await closing, VisionCloseResult.closed);
+
+      expect(answers, hasLength(2), reason: 'late result not delivered');
+      expect(rig.control.operationCount, 1, reason: 'pending never ran');
+      expect(rig.control.engineDisposeCount, 1);
+      expect(rig.control.nativeCloseCount, 1);
+      expect(rig.service.workerRunning, isFalse);
+      expect(rig.frames.liveCount, 0);
+    });
+
+    test('close reports shutdownIncomplete without disposing under a held '
+        'call', () async {
+      rig = Rig(closeDrain: const Duration(milliseconds: 100));
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+      rig.control.held = true;
+      final answers = <VisionAnswer<Probe>>[];
+      final frame = rig.newFrame();
+      final request = rig.service.submitFrame(frame, 1)..then(answers.add);
+      await eventually(() => rig.control.concurrent == 1);
+
+      expect(await rig.service.close(), VisionCloseResult.shutdownIncomplete);
+
+      expect(await request, isA<VisionClosed<Probe>>());
+      expect(rig.control.engineDisposeCount, 0);
+      expect(rig.control.nativeCloseCount, 0);
+      expect(rig.service.workerRunning, isTrue);
+      expect(rig.control.concurrent, 1);
+      expect(
+        await rig.service.close(),
+        VisionCloseResult.shutdownIncomplete,
+        reason: 'repeated calls share one result',
+      );
+
+      // The call returns: the input is released, nothing is delivered, and the
+      // worker then disposes and exits on its own.
+      rig.control.held = false;
+      await rig.service.workerExit;
+      expect(answers, hasLength(1));
+      expect(rig.frames.liveCount, 0);
+      expect(rig.control.engineDisposeCount, 1);
+      expect(rig.control.nativeCloseCount, 1);
+    });
+
+    test('worker exit answers outstanding requests unavailable and releases '
+        'their frames', () async {
+      rig = Rig(jobFactory: scriptedJob);
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+      rig.control.held = true;
+      final activeFrame = rig.newFrame();
+      final active = rig.service.submitFrame(activeFrame, scriptHoldThenDie);
+      await eventually(() => rig.control.concurrent == 1);
+      final pendingFrame = rig.newFrame();
+      final pending = rig.service.submitFrame(pendingFrame, scriptOk);
+      expect(rig.frames.liveCount, 2);
+
+      rig.control.held = false;
+
+      expect(await active, isA<VisionUnavailableAnswer<Probe>>());
+      expect(await pending, isA<VisionUnavailableAnswer<Probe>>());
+      expect(rig.frames.liveCount, 0, reason: 'both frames released');
+      expect(pendingFrame.isReleased, isTrue);
+      expect(rig.service.state, VisionServiceState.unavailable);
+      expect(rig.service.workerRunning, isFalse);
+
+      final late = rig.newFrame();
+      expect(
+        await rig.service.submitFrame(late, scriptOk),
+        isA<VisionUnavailableAnswer<Probe>>(),
+      );
+      expect(late.isReleased, isTrue);
+      expect(rig.control.openCount, 1, reason: 'no respawn');
+      expect(rig.frames.liveCount, 0);
     });
   });
 

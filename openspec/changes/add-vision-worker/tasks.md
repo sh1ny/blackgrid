@@ -73,7 +73,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 8. Shutdown and worker failure
 
-- [ ] 8.1 Write failing tests for rows "Close while idle", "Close during warm start" (open held by the open-hold flag), "Close during a call that returns in time", "Close during a call that does not return" and "Worker dies during a request". Add an extra test that a late `_OpenFailed` during closing is ignored.
+- [x] 8.1 Write failing tests for rows "Close while idle", "Close during warm start" (open held by the open-hold flag), "Close during a call that returns in time", "Close during a call that does not return" and "Worker dies during a request". Add an extra test that a late `_OpenFailed` during closing is ignored.
 - [ ] 8.2 Implement close (D2, Flow & State Gaps). It stops admission and advances the generation. It answers the unsent, active and pending requests `closed` and releases the pending inputs. It waits up to 2 s for the in-flight call, then sends `_Close`, and the worker disposes the runtime and scratch and then exits. A late `_Ready` gets `_Close`. On drain expiry it returns `shutdownIncomplete` without disposing. Worker exit or error answers outstanding requests `unavailable` and releases sent-but-unanswered frames by id. Verify: the five rows and the extra test turn green, and the dispose count is 1 or 0 as each scenario requires.
 
 ## 9. Scratch pool
