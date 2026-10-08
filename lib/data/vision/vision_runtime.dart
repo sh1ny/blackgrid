@@ -8,6 +8,7 @@ import 'vision_failure.dart';
 import 'vision_image.dart';
 import 'vision_native.dart';
 import 'vision_primitives.dart';
+import 'vision_scratch.dart';
 
 export 'vision_failure.dart';
 export 'vision_image.dart' show VisionImage;
@@ -221,7 +222,8 @@ final class VisionRuntime {
     }
   }
 
-  /// Ends the engine once, then closes the libraries. Idempotent.
+  /// Ends the engine once, then closes the libraries and frees the scratch
+  /// pool. Idempotent.
   void dispose() {
     if (_status is VisionDisposed) return;
     final engine = _engine;
@@ -234,6 +236,14 @@ final class VisionRuntime {
     } finally {
       native?.close();
     }
+  }
+
+  /// Shrinks the native scratch buffers back to their 16 MiB retention cap.
+  /// The vision worker calls it after each request so one oversized frame does
+  /// not stay pinned. A no-op once disposed or when the native stack keeps no
+  /// scratch.
+  void trimScratch() {
+    if (_native case final VisionScratchOwner owner) owner.trimScratch();
   }
 
   /// OCR over [image] with the pinned engine configuration.
