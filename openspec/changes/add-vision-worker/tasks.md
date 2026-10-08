@@ -39,7 +39,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 1. Decision record
 
 - [x] 1.1 Write `docs/adr/0011-vision-worker-contract.md` (MADR-short: Status, Date, Supersedes none, Context, Decision, Consequences). Cover D1-D7: one warm worker per service owning the runtime, templates and scratch; a service-side single pending slot and generation fence; a deadline from submission with `overrun` and no kill or respawn; the job seam fixed at spawn with sendable params and results; input ownership moving with the request, with pending frames keeping their finalizer; the QPC clock. Include the rejected alternatives and the reversal cost (medium for the job seam). Verify: the file exists and the ADR README index lists it.
-- [ ] 1.2 Update `openspec/architecture.md`. Add a component-table row for the vision worker and `VisionService` ("not wired into startup; change 5 wires it"), an "In-force ADRs" row for 0011, and replace the "Vision call duration: None until the warm worker" resource-bounds row with the 1.5 s deadline, `overrun` and 2 s drain. Adjust the "Not built yet" paragraph. Verify by reading the diff: each change cites ADR-0011.
+- [x] 1.2 Update `openspec/architecture.md`. Add a component-table row for the vision worker and `VisionService` ("not wired into startup; change 5 wires it"), an "In-force ADRs" row for 0011, and replace the "Vision call duration: None until the warm worker" resource-bounds row with the 1.5 s deadline, `overrun` and 2 s drain. Adjust the "Not built yet" paragraph. Verify by reading the diff: each change cites ADR-0011.
 
 ## 2. Job seam and test harness
 
