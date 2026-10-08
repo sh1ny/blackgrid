@@ -108,7 +108,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 4. Capture geometry (pure Dart)
 
-- [ ] 4.1 Write failing `test/data/capture/capture_geometry_test.dart` covering the planning, fallback, clipping and size rows. Expected values are written independently in the test table, not computed by the code under test. Verify: the tests fail for the missing implementation.
+- [x] 4.1 Write failing `test/data/capture/capture_geometry_test.dart` covering the planning, fallback, clipping and size rows. Expected values are written independently in the test table, not computed by the code under test. Verify: the tests fail for the missing implementation.
 - [ ] 4.2 Implement `lib/data/capture/capture_geometry.dart`: the D4 exact-rational planner, the full-client fallback, clipping against the client and virtual desktop (D5), and the side and pixel bounds (8192 / 25,165,824). Verify: `capture_geometry_test.dart` passes; flip its 10 rows green.
 
 ## 5. Validation, coherence and frames
