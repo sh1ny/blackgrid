@@ -97,7 +97,8 @@ BGC_API uint32_t bgc_abi(void);
 // --- Trigger hook (D2) ---
 // Starts the one-per-process hook thread and waits until it reports whether
 // WH_MOUSE_LL was installed. target_title is UTF-16, NUL-terminated and is
-// copied. signal is invoked (with no payload) from the hook thread's loop when
+// copied; a null, empty or over-long title (BGC_TITLE_CHARS - 1 code units or
+// more) returns BGC_INVALID_ARGUMENT. signal is invoked (with no payload) from the hook thread's loop when
 // a drain is wanted; it must be a NativeCallable.listener. On BGC_UNAVAILABLE
 // *win32_error is set and no thread is left running.
 BGC_API int32_t bgc_hook_start(const uint16_t* target_title,

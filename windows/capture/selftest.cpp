@@ -330,6 +330,24 @@ Outcome install_failure_reports_error_and_ends_thread() {
   return pass();
 }
 
+Outcome overlong_title_is_refused_not_truncated() {
+  // A 255-unit title fills the 256-unit window-title read, which a longer,
+  // truncated window title also does, so it is refused rather than matched.
+  std::vector<uint16_t> title(BGC_TITLE_CHARS, 'T');
+  title.back() = 0;  // 255 code units
+  HookInstaller working = {fake_install, fake_uninstall};
+  uint32_t error = 0;
+  CHECK_EQ(hook_start_with(working, title.data(), ignore_signal, &error),
+           BGC_INVALID_ARGUMENT);
+  CHECK(!hook_guard_held());
+
+  title[BGC_TITLE_CHARS - 2] = 0;  // 254 code units: the longest accepted
+  CHECK_EQ(hook_start_with(working, title.data(), ignore_signal, &error),
+           BGC_OK);
+  CHECK_EQ(bgc_hook_stop(), BGC_OK);
+  return pass();
+}
+
 // --- All-zero --------------------------------------------------------------------
 
 Outcome all_zero_ignores_fourth_byte() {
@@ -770,6 +788,8 @@ const Case kCases[] = {
     {"append_after_drain_resignals", append_after_drain_resignals},
     {"install_failure_reports_error_and_ends_thread",
      install_failure_reports_error_and_ends_thread},
+    {"overlong_title_is_refused_not_truncated",
+     overlong_title_is_refused_not_truncated},
     {"all_zero_ignores_fourth_byte", all_zero_ignores_fourth_byte},
     {"all_zero_false_for_one_colour_byte", all_zero_false_for_one_colour_byte},
     {"registry_refuses_fifth_frame", registry_refuses_fifth_frame},

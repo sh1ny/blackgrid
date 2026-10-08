@@ -232,6 +232,13 @@ int32_t hook_start_with(const HookInstaller& installer,
   if (target_title == nullptr || target_title[0] == 0) {
     return BGC_INVALID_ARGUMENT;
   }
+  // Window titles are read into BGC_TITLE_CHARS units, so a read that fills
+  // the buffer may be a truncated longer title. A target that long could match
+  // such a window by its prefix, so refuse it instead of truncating it.
+  size_t length = 0;
+  while (target_title[length] != 0) {
+    if (++length >= BGC_TITLE_CHARS - 1) return BGC_INVALID_ARGUMENT;
+  }
   if (win32_error != nullptr) *win32_error = 0;
   AcquireSRWLockExclusive(&g_api_lock);
   bool expected = false;
@@ -243,12 +250,9 @@ int32_t hook_start_with(const HookInstaller& installer,
     CloseHandle(g_thread);
     g_thread = nullptr;
   }
-  size_t n = 0;
-  while (n + 1 < BGC_TITLE_CHARS && target_title[n] != 0) {
+  for (size_t n = 0; n <= length; n++) {
     g_target[n] = static_cast<wchar_t>(target_title[n]);
-    n++;
   }
-  g_target[n] = 0;
   g_signal = signal;
   ring_clear(g_ring);
 
@@ -299,7 +303,9 @@ BGC_API int32_t bgc_hook_stop(void) {
     ReleaseSRWLockExclusive(&g_api_lock);
     return BGC_NOT_STARTED;
   }
-  // Only post while the thread is still alive, so a recycled id is never hit.
+  // Only post while the thread is still alive. g_thread stays open until the
+  // join below succeeds, and Windows does not reuse a thread id while a handle
+  // to that thread is open, so the id cannot name a recycled thread.
   if (WaitForSingleObject(g_thread, 0) == WAIT_TIMEOUT) {
     DWORD tid = g_thread_id.load();
     if (tid != 0) PostThreadMessageW(tid, WM_QUIT, 0, 0);
