@@ -118,7 +118,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 6. Capture service and worker isolate
 
-- [ ] 6.1 Write failing `test/data/capture/capture_service_test.dart`. Use a fake native platform, created in the worker from a top-level factory and controlled by barrier ports, covering admission, the 3 s responsiveness hold (count caller-isolate timer ticks), overrun and late release, recovery, the three close cases, a frame after `shutdownIncomplete`, and a ticket in the unavailable state. Use `fake_async` only where no real isolate is involved. Verify: the tests fail for the missing implementation.
+- [x] 6.1 Write failing `test/data/capture/capture_service_test.dart`. Use a fake native platform, created in the worker from a top-level factory and controlled by barrier ports, covering admission, the 3 s responsiveness hold (count caller-isolate timer ticks), overrun and late release, recovery, the three close cases, a frame after `shutdownIncomplete`, and a ticket in the unavailable state. Use `fake_async` only where no real isolate is involved. Verify: the tests fail for the missing implementation.
 - [ ] 6.2 Implement `lib/data/capture/capture_service.dart` per D8: lazy worker spawn, single admission, the 500 ms deadline, the `overrun` state, request-id matching, releasing ticket replies in every state, the port kept open until worker exit, close with a 2 s drain and `shutdownIncomplete`, and the worker releasing its own result when close is queued. Verify: `capture_service_test.dart` passes; flip its 9 rows green.
 
 ## 7. Trigger source
