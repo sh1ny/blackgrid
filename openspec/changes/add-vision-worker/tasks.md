@@ -58,7 +58,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 5. Generation fences and deadlines
 
-- [ ] 5.1 Write failing tests for rows "Current result is delivered", "Invalidation during an active job", "Invalidation with a pending request", "Request finishes in time", "Active request overruns" and "Pending request expires while waiting".
+- [x] 5.1 Write failing tests for rows "Current result is delivered", "Invalidation during an active job", "Invalidation with a pending request", "Request finishes in time", "Active request overruns" and "Pending request expires while waiting".
 - [ ] 5.2 Implement generations and deadlines (D2, D3). Each request stamps the generation and gets a 1.5 s deadline from submission, set by a constructor parameter. `invalidate()` advances the generation and answers both the active and the pending request `invalidated` at once. It cancels their answering timers but keeps the active seq tracked until the reply. Keep a separate **overrun-only timer** for the active request's original deadline: when it fires it moves the service to `overrun` without answering the caller again (review note 2). A pending request's deadline answers `visionTimeout` and releases its input. Replies whose seq is not active, or whose generation is stale, are discarded. Do not port CaptureService's held-reply flush trick: the worker releases inputs before replying (review note 1). Verify: the six rows turn green.
 
 ## 6. Input ownership

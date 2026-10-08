@@ -332,4 +332,164 @@ void main() {
       expect(rig.control.maxConcurrent, 1);
     });
   });
+
+  group('generations and deadlines', () {
+    late Rig rig;
+
+    setUp(() async {
+      rig = Rig(deadline: const Duration(milliseconds: 150));
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+    });
+
+    tearDown(() => rig.control.held = false);
+
+    test('current-generation result is delivered', () async {
+      // A generation advanced before submission is the current one.
+      rig.service.invalidate();
+      rig.control.held = true;
+      final request = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+      rig.control.held = false;
+
+      expect(await request, isA<VisionDelivered<Probe>>());
+      expect(rig.service.state, VisionServiceState.ready);
+    });
+
+    test('invalidate answers the active request at once and discards its '
+        'late result', () async {
+      rig.control.held = true;
+      final answers = <VisionAnswer<Probe>>[];
+      final first = rig.service.submit(sample(), 1)..then(answers.add);
+      await eventually(() => rig.control.concurrent == 1);
+
+      rig.service.invalidate();
+      // Answered while the native call is still held.
+      expect(await first, isA<VisionInvalidated<Probe>>());
+      expect(rig.control.concurrent, 1);
+
+      // A request submitted now outlives the first one's deadline, so by the
+      // time it expires the first one's overrun timer has fired.
+      final expired = await rig.service.submit(sample(), 2);
+      expect(expired, isA<VisionDeadlineExceeded<Probe>>());
+      expect(rig.service.state, VisionServiceState.overrun);
+      expect(answers, hasLength(1), reason: 'no second answer for the first');
+      expect(rig.control.operationCount, 1);
+
+      // The call returns: the late result is discarded and the service
+      // recovers to run the next request alone.
+      final third = rig.service.submit(sample(), 3);
+      rig.control.held = false;
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(answers, hasLength(1));
+      expect(rig.control.operationCount, 2);
+      expect(rig.control.maxConcurrent, 1);
+      expect(rig.service.state, VisionServiceState.ready);
+    });
+
+    test('invalidate answers the pending request without running it', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+      final second = rig.service.submit(sample(), 2);
+
+      rig.service.invalidate();
+      expect(await second, isA<VisionInvalidated<Probe>>());
+      expect(await first, isA<VisionInvalidated<Probe>>());
+      expect(rig.control.operationCount, 1);
+
+      final third = rig.service.submit(sample(), 3);
+      rig.control.held = false;
+      expect(await third, isA<VisionDelivered<Probe>>());
+      // Only the first and third ever ran.
+      expect(rig.control.operationCount, 2);
+    });
+
+    test('request within its deadline is delivered and the service is not '
+        'overrun', () async {
+      final fast = Rig();
+      addTearDown(fast.dispose);
+      expect(await fast.service.start(), isNull);
+
+      final answer = await fast.service.submit(sample(), 1);
+
+      expect(answer, isA<VisionDelivered<Probe>>());
+      expect(fast.service.state, VisionServiceState.ready);
+    });
+
+    test('active request past its deadline answers visionTimeout and overruns '
+        'until the call returns', () async {
+      rig.control.held = true;
+      final answers = <VisionAnswer<Probe>>[];
+      final first = rig.service.submit(sample(), 1)..then(answers.add);
+      await eventually(() => rig.control.concurrent == 1);
+
+      expect(await first, isA<VisionDeadlineExceeded<Probe>>());
+      expect(rig.service.state, VisionServiceState.overrun);
+      expect(rig.control.concurrent, 1);
+
+      final second = rig.service.submit(sample(), 2);
+      rig.control.held = false;
+      expect(await second, isA<VisionDelivered<Probe>>());
+      expect(answers, hasLength(1), reason: 'late result is discarded');
+      expect(rig.service.state, VisionServiceState.ready);
+      expect(rig.control.operationCount, 2);
+    });
+
+    test('pending request that expires is answered visionTimeout and never '
+        'runs', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+      final second = rig.service.submit(sample(), 2);
+
+      expect(await second, isA<VisionDeadlineExceeded<Probe>>());
+      expect(await first, isA<VisionDeadlineExceeded<Probe>>());
+      expect(rig.control.operationCount, 1);
+
+      final third = rig.service.submit(sample(), 3);
+      rig.control.held = false;
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(rig.control.operationCount, 2);
+    });
+  });
+
+  group('submission during warm start', () {
+    test('requests submitted during warm start wait in the slots and their '
+        'deadlines run from submission', () async {
+      // Slots and supersession: the first request is held unsent, the second
+      // pending, and a third replaces the second at once.
+      final held = Rig();
+      addTearDown(held.dispose);
+      addTearDown(() => held.control.openHeld = false);
+      held.control.openHeld = true;
+      final first = held.service.submit(sample(), 1);
+      final second = held.service.submit(sample(), 2);
+      final third = held.service.submit(sample(), 3);
+
+      expect(held.service.state, VisionServiceState.starting);
+      expect(await second, isA<VisionSuperseded<Probe>>());
+      expect(held.service.state, VisionServiceState.starting);
+
+      held.control.openHeld = false;
+      expect(await first, isA<VisionDelivered<Probe>>());
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(held.control.operationCount, 2);
+
+      // Deadlines: a slow start times the request out instead of hiding the
+      // delay, and the expired request never runs.
+      final slow = Rig(deadline: const Duration(milliseconds: 150));
+      addTearDown(slow.dispose);
+      addTearDown(() => slow.control.openHeld = false);
+      slow.control.openHeld = true;
+      final late = slow.service.submit(sample(), 1);
+
+      expect(await late, isA<VisionDeadlineExceeded<Probe>>());
+      expect(slow.service.state, VisionServiceState.starting);
+
+      slow.control.openHeld = false;
+      expect(await slow.service.start(), isNull);
+      expect(slow.control.operationCount, 0);
+    });
+  });
 }
