@@ -72,14 +72,14 @@ Test locations:
 | inspection-capture → Native self-test captures only its own window | Game not running | windows/capture/selftest.cpp | `captures_own_window_pattern_and_geometry` | red |
 | inspection-capture → Native self-test captures only its own window | Game running | windows/capture/selftest.cpp | `guard_refuses_when_listing_contains_game` | red |
 | inspection-capture → Native self-test captures only its own window | Own window not foreground | windows/capture/selftest.cpp | `capture_checks_skip_when_not_foreground` | red |
-| release-bundle-integrity → Bundle inventory is exact | Complete bundle passes inventory | test/tool/vision/check_bundle_test.dart | `inventory passes on synthetic complete bundle` | red |
+| release-bundle-integrity → Bundle inventory is exact | Complete bundle passes inventory | test/tool/vision/check_bundle_test.dart | `inventory passes on synthetic complete bundle` | green |
 | release-bundle-integrity → Bundle inventory is exact | Unexpected DLL | test/tool/vision/check_bundle_test.dart | `inventory fails naming unexpected dll` | green |
 | release-bundle-integrity → Bundle inventory is exact | Missing expected file | test/tool/vision/check_bundle_test.dart | `inventory fails naming missing model` | green |
-| release-bundle-integrity → Bundle inventory is exact | Capture library missing | test/tool/vision/check_bundle_test.dart | `inventory fails naming missing capture library or binding` | red |
-| release-bundle-integrity → Each runtime-verified file matches its binding and pin | Bindings and pins agree | test/tool/vision/check_bundle_test.dart | `hash step passes when manifest, sidecar and lock agree` | red |
+| release-bundle-integrity → Bundle inventory is exact | Capture library missing | test/tool/vision/check_bundle_test.dart | `inventory fails naming missing capture library or binding` | green |
+| release-bundle-integrity → Each runtime-verified file matches its binding and pin | Bindings and pins agree | test/tool/vision/check_bundle_test.dart | `hash step passes when manifest, sidecar and lock agree` | green |
 | release-bundle-integrity → Each runtime-verified file matches its binding and pin | Binding disagrees with file | test/tool/vision/check_bundle_test.dart | `hash step fails naming file and both hashes` | green |
 | release-bundle-integrity → Each runtime-verified file matches its binding and pin | Third-party file differs from pin | test/tool/vision/check_bundle_test.dart | `pin step fails when bound file diverges from lock` | green |
-| release-bundle-integrity → Each runtime-verified file matches its binding and pin | Capture binding disagrees with file | test/tool/vision/check_bundle_test.dart | `hash step fails naming capture library and both hashes` | red |
+| release-bundle-integrity → Each runtime-verified file matches its binding and pin | Capture binding disagrees with file | test/tool/vision/check_bundle_test.dart | `hash step fails naming capture library and both hashes` | green |
 
 The two existing tests that change (complete bundle, and bindings agree) start red, because their synthetic bundle must now include the capture files.
 
@@ -128,7 +128,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 ## 8. Bundle integrity
 
 - [x] 8.1 Update `test/tool/vision/check_bundle_test.dart`: the synthetic complete bundle gains `blackgrid_capture.dll` and its sidecar, and new failing cases cover a missing capture library or binding and a capture binding mismatch. Verify: the new and changed cases fail.
-- [ ] 8.2 Add `capture` and `capture-binding` rows to `tool/vision/bundle_inventory.json`, and generalise the sidecar step in `tool/vision/check_bundle.dart:159-172` from role `panel-ocr` to every sidecar-bound role. Verify: `check_bundle_test.dart` passes, including the unchanged green rows; flip the red rows green.
+- [x] 8.2 Add `capture` and `capture-binding` rows to `tool/vision/bundle_inventory.json`, and generalise the sidecar step in `tool/vision/check_bundle.dart:159-172` from role `panel-ocr` to every sidecar-bound role. Verify: `check_bundle_test.dart` passes, including the unchanged green rows; flip the red rows green.
 
 ## 9. Integration checks
 
