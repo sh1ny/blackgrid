@@ -138,4 +138,28 @@ void main() {
     expect(native.guardHeld, isTrue);
     expect(source.stop(), isNull);
   });
+
+  test('dispose reports a stop timeout and keeps the listener', () async {
+    final stuck = MouseReleaseTriggerSource(native);
+    final seen = <ScanTrigger>[];
+    stuck.triggers.listen(seen.add);
+    expect(stuck.start(), isNull);
+    native.stopResult = const StopTimedOut();
+
+    expect(await stuck.dispose(), isA<StopTimedOut>());
+    // The listener is still open: a late signal reaches the handler safely
+    // and emits nothing.
+    native.drains.add(TriggerDrain([_event(1)], 0));
+    native.fire();
+    await _settle();
+    expect(seen, isEmpty);
+    native.stopResult = null;
+    expect(await stuck.dispose(), isNull);
+  });
+
+  test('dispose of a running source reports success', () async {
+    expect(source.start(), isNull);
+    expect(await source.dispose(), isNull);
+    expect(native.guardHeld, isFalse);
+  });
 }

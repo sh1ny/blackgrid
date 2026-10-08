@@ -77,9 +77,13 @@ final class MouseReleaseTriggerSource {
     return null;
   }
 
-  Future<void> dispose() async {
-    stop();
+  /// Stops the hook and closes the stream. Null means the hook thread has
+  /// ended; [StopTimedOut] means it may still run, so its listener stays
+  /// open, and calling dispose again retries the stop.
+  Future<TriggerFailure?> dispose() async {
+    final failure = stop();
     if (!_controller.isClosed) await _controller.close();
+    return failure;
   }
 
   void _onSignal() {
