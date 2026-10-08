@@ -19,13 +19,13 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 | Release preparation runs the offline gates before changing anything | A gate fails | P | `failing gate stops with its name and code; branch, tree and history unchanged` | green |
 | Release commit records the version and the changelog | Release commit created | P | `release commit changes only pubspec version and CHANGELOG section` | green |
 | Release commit records the version and the changelog | Changelog generation fails | P | `changelog failure makes no commit and names branch and files to discard` | green |
-| Changelog lists one entry per merged pull request | Merged PR with branch commits | C | `merged PR is one entry with title and number; branch commits absent` | red |
-| Changelog lists one entry per merged pull request | PR title not conventional | C | `non-conventional PR title lands under Other` | red |
-| Changelog lists one entry per merged pull request | Direct commit on main | C | `direct fix commit on main is listed once under Fixes` | red |
-| Changelog lists one entry per merged pull request | Final release after prereleases | C | `final release folds prerelease sections` | red |
-| Changelog lists one entry per merged pull request | Release notes and preview after a prerelease | C | `--latest and --unreleased use final-tag ranges after a final release` | red |
-| Changelog lists one entry per merged pull request | Preview while a prerelease is the latest tag | C | `--unreleased while a beta is latest lists everything since last final tag` | red |
-| Changelog lists one entry per merged pull request | Release commit and merge | C | `release commit and its merge are not listed` | red |
+| Changelog lists one entry per merged pull request | Merged PR with branch commits | C | `merged PR is one entry with title and number; branch commits absent` | green |
+| Changelog lists one entry per merged pull request | PR title not conventional | C | `non-conventional PR title lands under Other` | green |
+| Changelog lists one entry per merged pull request | Direct commit on main | C | `direct fix commit on main is listed once under Fixes` | green |
+| Changelog lists one entry per merged pull request | Final release after prereleases | C | `final release folds prerelease sections` | green |
+| Changelog lists one entry per merged pull request | Release notes and preview after a prerelease | C | `--latest and --unreleased use final-tag ranges after a final release` | green |
+| Changelog lists one entry per merged pull request | Preview while a prerelease is the latest tag | C | `--unreleased while a beta is latest lists everything since last final tag` | green |
+| Changelog lists one entry per merged pull request | Release commit and merge | C | `release commit and its merge are not listed` | green |
 | Release tag marks the merged release commit | Release merge tagged | T | `release merge gets annotated tag pushed to origin` | red |
 | Release tag marks the merged release commit | Main moved before the release merge | T | `first-parent mismatch refuses naming intervening commits` | red |
 | Release tag marks the merged release commit | HEAD is not a release merge | T | `ordinary merge or non-merge HEAD refuses naming its subject` | red |
@@ -52,7 +52,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 
 - [x] 2.1 Write `test/tool/changelog_test.dart` (rows C). Build a fixture repo with `v0.1.0`, GitHub-shaped merges (`Merge pull request #N from o/b` + blank line + PR title) whose branches hold `task 1.1 …`, `amend specs`, `address review feedback` commits, a non-conventional PR title, a direct `fix:` commit, `v0.2.0-beta.1`, a `chore(release): v0.2.0` release branch merge tagged `v0.2.0`, and one later PR. Cover `--latest` with no previous final tag (range from the root). Run `tool/changelog.dart` as a process. Verify: the tests fail against the current `cliff.toml`/`changelog.dart` for the stated reason (branch commits listed, merges skipped).
 - [x] 2.2 Update `cliff.toml` (D2, D10): remove the `merge_commit` skip, add the GitHub-merge `commit_preprocessors` rule, the `chore(release)` and branch-only-subject skip parsers before the group parsers, and `ignore_tags` for prerelease tags. Settle the design's header Open Question (keep `# blackgrid Changelog` unless a fixture shows a reason). Verify: the C rows for grouping, skipping and folding pass.
-- [ ] 2.3 Rewrite `tool/changelog.dart` (D1): two-stage `--context` → first-parent filter → `--from-context -`, explicit UTF-8, the allowlisted option split (unknown options exit 2), `--latest`/`--unreleased` translated to final-tag ranges by SemVer precedence (reuse `tool/release/src/semver.dart` from 3.2 or land that file first), and the unborn-`HEAD` path kept. Verify: all C rows green; `mise run release-notes -- --unreleased` on the real repo prints PR entries only.
+- [x] 2.3 Rewrite `tool/changelog.dart` (D1): two-stage `--context` → first-parent filter → `--from-context -`, explicit UTF-8, the allowlisted option split (unknown options exit 2), `--latest`/`--unreleased` translated to final-tag ranges by SemVer precedence (reuse `tool/release/src/semver.dart` from 3.2 or land that file first), and the unborn-`HEAD` path kept. Verify: all C rows green; `mise run release-notes -- --unreleased` on the real repo prints PR entries only.
 
 ## 3. Release preparation
 
