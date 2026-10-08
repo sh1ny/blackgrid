@@ -116,8 +116,9 @@ Future<void> prepare({
     // 8. Rewrite the version line.
     _setPubspecVersion(File('${repoDir.path}/pubspec.yaml'), version);
 
-    // 9. Regenerate the changelog.
-    final changelog = await runner.run('dart', [
+    // 9. Regenerate the changelog. Run the Dart executable running this tool:
+    // on Windows the `dart` on PATH is a .bat shim that needs a shell.
+    final changelog = await runner.run(Platform.resolvedExecutable, [
       'run',
       'tool/changelog.dart',
       '--tag',

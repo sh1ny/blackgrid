@@ -44,7 +44,8 @@ class FakeRunner implements CommandRunner {
     if (executable == 'mise' && arguments.first == 'run') {
       return CommandResult(gateCodes[arguments[1]] ?? 0, '', 'gate stderr');
     }
-    if (executable == 'dart' && arguments.contains('tool/changelog.dart')) {
+    if (executable == Platform.resolvedExecutable &&
+        arguments.contains('tool/changelog.dart')) {
       if (changelogCode != 0) {
         return CommandResult(changelogCode, '', 'generator exploded');
       }
