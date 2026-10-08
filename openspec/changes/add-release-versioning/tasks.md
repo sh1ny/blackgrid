@@ -63,7 +63,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 
 ## 4. Release tagging
 
-- [ ] 4.1 Write `test/tool/release/tag_test.dart` (rows T). Use a fixture repo and bare origin with a merged `chore(release): v0.2.0` branch and a stubbed `gh` (token + login). The test records every process invocation and asserts that each `fetch`, `ls-remote` and `push` argv carries `-c credential.helper=` and `-c credential.helper=!gh auth git-credential`. It also asserts that the stub token appears in no argv, no stdout or stderr output, and no exception message, and that a failed push deletes the local tag. Verify: the tests fail because `tag` does not exist.
+- [x] 4.1 Write `test/tool/release/tag_test.dart` (rows T). Use a fixture repo and bare origin with a merged `chore(release): v0.2.0` branch and a stubbed `gh` (token + login). The test records every process invocation and asserts that each `fetch`, `ls-remote` and `push` argv carries `-c credential.helper=` and `-c credential.helper=!gh auth git-credential`. It also asserts that the stub token appears in no argv, no stdout or stderr output, and no exception message, and that a failed push deletes the local tag. Verify: the tests fail because `tag` does not exist.
 - [ ] 4.2 Add `yaml: 3.1.4` as a direct dev dependency. Implement `tool/release/src/push_identity.dart` (D6) and the `tag` subcommand (D5, including the first-parent check and tag rollback), plus the `mise` task `release:tag`. Verify: rows T green; `mise run release:tag` on this branch refuses (not on main) and creates no tag.
 
 ## 5. Release build and app version
