@@ -24,11 +24,29 @@ class PushIdentity {
   final String login;
   final Map<String, String> environment;
 
-  /// Runs a network Git command under the fenced credential environment.
-  Future<CommandResult> git(Git git, List<String> arguments) => git.run([
-    ...credentialHelperArguments,
-    ...arguments,
-  ], environment: environment);
+  /// Runs a network Git command against `origin` under the fenced credential
+  /// environment.
+  ///
+  /// Inherited `http.extraHeader` values (an `Authorization` header set by
+  /// automation, say) would authenticate independently of the credential
+  /// helper. An empty value resets them only at the most specific matching
+  /// URL, so the reset names origin's exact fetch and push URLs.
+  Future<CommandResult> git(Git git, List<String> arguments) async {
+    final urls = {
+      for (final push in [false, true])
+        await git.output([
+          'remote',
+          'get-url',
+          if (push) '--push',
+          'origin',
+        ], failure: 'Could not read the URL of origin'),
+    };
+    return git.run([
+      ...credentialHelperArguments,
+      for (final url in urls) ...['-c', 'http.$url.extraHeader='],
+      ...arguments,
+    ], environment: environment);
+  }
 
   /// Like [git] but throws [ReleaseException] with [failure] on failure.
   Future<String> gitOutput(

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../tool/release/src/git.dart';
+import '../../../tool/release/src/push_identity.dart';
 import '../../../tool/release/src/tag_step.dart';
 
 const _identity = {
@@ -265,6 +267,55 @@ void main() {
       expect(runner.calls.where((c) => c.isGitCommand('push')), isEmpty);
     },
   );
+
+  test('network git calls send no inherited HTTP extra headers', () async {
+    // A local HTTP server records the probe headers of every request Git
+    // makes and answers 404, so nothing is fetched or pushed.
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+    var requests = 0;
+    final probes = <String>[];
+    server.listen((request) {
+      requests++;
+      probes.addAll(request.headers['x-probe'] ?? const []);
+      request.response.statusCode = HttpStatus.notFound;
+      unawaited(request.response.close());
+    });
+    final host = 'http://127.0.0.1:${server.port}/';
+    final fetchUrl = '${host}fetch.git';
+    final pushUrl = '${host}push.git';
+    _git(work, ['remote', 'set-url', 'origin', fetchUrl]);
+    _git(work, ['config', 'remote.origin.pushurl', pushUrl]);
+    _git(work, ['config', '--add', 'http.extraHeader', 'X-Probe: generic']);
+    _git(work, ['config', '--add', 'http.$host.extraHeader', 'X-Probe: host']);
+    _git(work, ['config', '--add', 'http.$fetchUrl.extraHeader', 'X-Probe: f']);
+    _git(work, ['config', '--add', 'http.$pushUrl.extraHeader', 'X-Probe: p']);
+
+    // Control: unfenced, Git sends every inherited header.
+    final environment = {..._identity, 'GIT_TERMINAL_PROMPT': '0'};
+    for (final args in [
+      ['ls-remote', 'origin'],
+      ['push', 'origin', 'refs/tags/v0.1.0'],
+    ]) {
+      await Process.run(
+        'git',
+        args,
+        workingDirectory: work.path,
+        environment: environment,
+      );
+    }
+    expect(probes.toSet(), {'generic', 'host', 'f', 'p'});
+
+    probes.clear();
+    requests = 0;
+    final identity = await PushIdentity.confirm(repoDir: work, runner: runner);
+    final git = Git(runner, work);
+    await identity.git(git, ['fetch', 'origin', 'main', '--tags']);
+    await identity.git(git, ['ls-remote', 'origin', 'refs/tags/v0.1.0']);
+    await identity.git(git, ['push', 'origin', 'refs/tags/v0.1.0']);
+    expect(requests, greaterThanOrEqualTo(3));
+    expect(probes, isEmpty);
+  });
 
   test('network git calls carry the credential-helper override and never the token', () async {
     buildMerge();
