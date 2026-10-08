@@ -46,7 +46,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 
 - [x] 1.1 Write `docs/adr/0009-release-versioning.md` (MADR-short, accepted, date of merge, source: this change's design D1-D10). Cover: the SemVer milestone scheme; the version only in release commits; build number = commit count, ≤ 65535; the first-parent per-PR changelog with prerelease folding; the local `release:prepare`/`release:tag`/`build:release` flow with the fenced push and credential-helper override; the `BLACKGRID_VERSION` define; data versions independent; tag deletion caveat. Add it to the in-force ADR table in `openspec/architecture.md`. Verify: the file exists, the index row links it, and `openspec validate add-release-versioning --strict` passes.
 - [x] 1.2 Add two `context` lines to `openspec/config.yaml` (D9): conventional PR titles `type(scope): summary`, and the milestone-close suggestion of `mise run release:prepare -- <next minor>` (`-beta.N` first while user-only checks are open). Verify: `openspec instructions proposal --change add-release-versioning --json` shows both lines in `context`.
-- [ ] 1.3 Replace the roadmap's "Release versioning" section body with a short pointer to ADR-0009 and the `mise` tasks, keeping the anchor and the M2 "Do next" line. Verify: the roadmap links resolve (`grep -n "0009" openspec/roadmap.md`).
+- [x] 1.3 Replace the roadmap's "Release versioning" section body with a short pointer to ADR-0009 and the `mise` tasks, keeping the anchor and the M2 "Do next" line. Verify: the roadmap links resolve (`grep -n "0009" openspec/roadmap.md`).
 
 ## 2. Changelog: one entry per PR
 
