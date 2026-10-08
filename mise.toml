@@ -61,3 +61,7 @@ run = "dart run tool/release/release.dart prepare"
 [tasks."release:tag"]
 description = "Tag the merged release commit on main and push the tag"
 run = "dart run tool/release/release.dart tag"
+
+[tasks."build:release"]
+description = "Build the Windows Release bundle with version and build number, then check it offline"
+run = "dart run tool/release/release.dart build"

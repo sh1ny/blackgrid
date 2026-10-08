@@ -64,6 +64,8 @@ class ProcessCommandRunner implements CommandRunner {
   }) async {
     final env = _environmentFor(environment);
     final includeParent = environment == null;
+    // flutter is a .bat shim on Windows, which only a shell can launch.
+    final shell = Platform.isWindows && executable == 'flutter';
     if (stream) {
       final process = await Process.start(
         executable,
@@ -71,6 +73,7 @@ class ProcessCommandRunner implements CommandRunner {
         workingDirectory: workingDirectory,
         environment: env,
         includeParentEnvironment: includeParent,
+        runInShell: shell,
         mode: ProcessStartMode.inheritStdio,
       );
       return CommandResult(await process.exitCode, '', '');
@@ -81,6 +84,7 @@ class ProcessCommandRunner implements CommandRunner {
       workingDirectory: workingDirectory,
       environment: env,
       includeParentEnvironment: includeParent,
+      runInShell: shell,
     );
     return CommandResult(
       result.exitCode,
