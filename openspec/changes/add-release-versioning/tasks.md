@@ -57,7 +57,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 ## 3. Release preparation
 
 - [x] 3.1 Write `test/tool/release/semver_test.dart` (rows S) and `test/tool/release/prepare_test.dart` (rows P), with injected gates and runner. Verify: they fail because `tool/release/` does not exist.
-- [ ] 3.2 Implement `tool/release/src/semver.dart` (strict SemVer 2.0.0 parse, §11 precedence, release versions reject build metadata). Verify: rows S green.
+- [x] 3.2 Implement `tool/release/src/semver.dart` (strict SemVer 2.0.0 parse, §11 precedence, release versions reject build metadata). Verify: rows S green.
 - [ ] 3.3 Implement `tool/release/src/git.dart`, `tool/release/src/release_steps.dart` (`prepare`, D4 steps 1-11, with `--trailer` forwarding and ambient identity) and the `tool/release/release.dart` CLI (`prepare <version>`, usage errors exit 2). Add `mise` task `release:prepare` (`dart run tool/release/release.dart prepare`). Verify: rows P green; `mise run release:prepare -- 0.1.0` on this branch refuses (not on main) without changing anything.
 - [ ] 3.4 Set `pubspec.yaml` to `version: 0.1.0` (the one-time baseline removal of `+1`, D9). Verify: `mise run analyze` passes and `flutter pub get` does not change `pubspec.lock`.
 
