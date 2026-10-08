@@ -169,8 +169,13 @@ LRESULT CALLBACK low_level_mouse_proc(int nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 HHOOK real_install(HOOKPROC proc, DWORD* error) {
-  HHOOK hook =
-      SetWindowsHookExW(WH_MOUSE_LL, proc, GetModuleHandleW(nullptr), 0);
+  // A global hook names the module holding proc: this DLL, not the exe.
+  HMODULE module = module_containing(reinterpret_cast<const void*>(proc));
+  if (module == nullptr) {
+    *error = GetLastError();
+    return nullptr;
+  }
+  HHOOK hook = SetWindowsHookExW(WH_MOUSE_LL, proc, module, 0);
   if (hook == nullptr) *error = GetLastError();
   return hook;
 }
@@ -218,6 +223,18 @@ DWORD WINAPI hook_thread(LPVOID param) {
 }
 
 }  // namespace
+
+HMODULE module_containing(const void* address) {
+  if (address == nullptr) return nullptr;
+  HMODULE module = nullptr;
+  // UNCHANGED_REFCOUNT: the module is this code's own image, already loaded.
+  if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                              GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                          static_cast<LPCWSTR>(address), &module)) {
+    return nullptr;
+  }
+  return module;
+}
 
 const HookInstaller& hook_real_installer() {
   static const HookInstaller installer = {real_install, real_uninstall};

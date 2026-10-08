@@ -330,6 +330,20 @@ Outcome install_failure_reports_error_and_ends_thread() {
   return pass();
 }
 
+Outcome hook_module_is_the_module_containing_the_procedure() {
+  // Compiled into this executable, the hook procedure's module is the exe;
+  // linked into blackgrid_capture.dll, the same lookup yields the DLL.
+  CHECK(module_containing(reinterpret_cast<const void*>(&hook_proc_core)) ==
+        GetModuleHandleW(nullptr));
+  // An ntdll export is never forwarded, so it lies inside ntdll itself.
+  HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+  FARPROC version = GetProcAddress(ntdll, "RtlGetVersion");
+  CHECK(version != nullptr);
+  CHECK(module_containing(reinterpret_cast<const void*>(version)) == ntdll);
+  CHECK(module_containing(nullptr) == nullptr);
+  return pass();
+}
+
 Outcome overlong_title_is_refused_not_truncated() {
   // A 255-unit title fills the 256-unit window-title read, which a longer,
   // truncated window title also does, so it is refused rather than matched.
@@ -788,6 +802,8 @@ const Case kCases[] = {
     {"append_after_drain_resignals", append_after_drain_resignals},
     {"install_failure_reports_error_and_ends_thread",
      install_failure_reports_error_and_ends_thread},
+    {"hook_module_is_the_module_containing_the_procedure",
+     hook_module_is_the_module_containing_the_procedure},
     {"overlong_title_is_refused_not_truncated",
      overlong_title_is_refused_not_truncated},
     {"all_zero_ignores_fourth_byte", all_zero_ignores_fourth_byte},

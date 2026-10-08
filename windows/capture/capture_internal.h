@@ -84,6 +84,10 @@ struct HookInstaller {
   void (*uninstall)(HHOOK hook);
 };
 const HookInstaller& hook_real_installer();
+// The module whose image contains address (null on failure). A global hook's
+// hMod must name the module containing the hook procedure: in the shipped
+// build that is blackgrid_capture.dll, not the executable.
+HMODULE module_containing(const void* address);
 // Same as bgc_hook_start with an injectable installer.
 int32_t hook_start_with(const HookInstaller& installer,
                         const uint16_t* target_title, void (*signal)(void),
