@@ -156,9 +156,16 @@ BundleReport checkBundle({
   }
   steps.add(StepResult('inventory', inv));
 
-  // Step 2: bindings (panel sidecar and vision manifest).
+  // Step 2: bindings (sidecars and vision manifest). Every library whose role
+  // has a '<role>-binding' inventory entry (panel-ocr, capture) is bound to a
+  // sha256 sidecar.
   final bind = <String>[];
-  for (final e in entries.where((e) => e.role == 'panel-ocr')) {
+  final sidecarBound = {
+    for (final e in entries)
+      if (e.role.endsWith('-binding') && e.role != 'vision-binding')
+        e.role.substring(0, e.role.length - '-binding'.length),
+  };
+  for (final e in entries.where((e) => sidecarBound.contains(e.role))) {
     final dll = bytesOf(e.path);
     final sidecar = bytesOf('${e.path}$sidecarSuffix');
     if (dll == null || sidecar == null) {

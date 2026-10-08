@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "comment": "Expected native files and models of a Release bundle. Roles: vision and model files must be listed in data/vision/runtime.manifest.json. vcruntime files carry the committed minimum PE file version (design D7: 14.33, the newest toolset that linked a bundled third-party DLL - leptonica-1.82.0.dll links 14.33, tesseract50.dll 14.29 - and within the VS 2022 14.3x floor). Any other .dll or .traineddata under the bundle is unexpected.",
+  "comment": "Expected native files and models of a Release bundle. Roles: panel-ocr and capture libraries are bound by a <path>.sha256 sidecar (panel-ocr-binding, capture-binding) that must hold the library sha256. vision and model files must be listed in data/vision/runtime.manifest.json. vcruntime files carry the committed minimum PE file version (design D7: 14.33, the newest toolset that linked a bundled third-party DLL - leptonica-1.82.0.dll links 14.33, tesseract50.dll 14.29 - and within the VS 2022 14.3x floor). Any other .dll or .traineddata under the bundle is unexpected.",
   "manifestPath": "data/vision/runtime.manifest.json",
   "panelSidecarSuffix": ".sha256",
   "vcRuntimeNoticeAnchor": "microsoft-visual-cpp-runtime",
@@ -10,6 +10,8 @@
     { "path": "sqlite3.dll", "role": "native-asset" },
     { "path": "blackgrid_panel_ocr.dll", "role": "panel-ocr" },
     { "path": "blackgrid_panel_ocr.dll.sha256", "role": "panel-ocr-binding" },
+    { "path": "blackgrid_capture.dll", "role": "capture" },
+    { "path": "blackgrid_capture.dll.sha256", "role": "capture-binding" },
     { "path": "blackgrid_vision.dll", "role": "vision" },
     { "path": "tesseract50.dll", "role": "vision" },
     { "path": "leptonica-1.82.0.dll", "role": "vision" },

@@ -22,7 +22,7 @@ Every third-party native input (OpenCV source archive, OCR engine library, its i
 - **THEN** the build fails with an error naming the input and the fetch command to run
 
 ### Requirement: Bundle inventory is exact
-The integrity check SHALL compare the bundle's native libraries and models against the expected inventory. The inventory is: the vision files, the panel OCR library, the Flutter engine, the native-asset libraries, and the app-local Visual C++ runtime libraries. The check SHALL fail on any missing expected file and on any unexpected `.dll` or `.traineddata`.
+The integrity check SHALL compare the bundle's native libraries and models against the expected inventory. The inventory is: the vision files, the panel OCR library, the capture library and its hash binding, the Flutter engine, the native-asset libraries, and the app-local Visual C++ runtime libraries. The check SHALL fail on any missing expected file and on any unexpected `.dll` or `.traineddata`.
 
 #### Scenario: Complete bundle passes inventory
 - **WHEN** the check runs on a Release bundle produced by this build
@@ -36,8 +36,12 @@ The integrity check SHALL compare the bundle's native libraries and models again
 - **WHEN** the OCR model has been removed from the bundle
 - **THEN** the check fails, naming the model as missing
 
+#### Scenario: Capture library missing
+- **WHEN** `blackgrid_capture.dll` or its `.sha256` binding has been removed from the bundle
+- **THEN** the check fails, naming the removed file as missing
+
 ### Requirement: Each runtime-verified file matches its binding and pin
-For each file the app verifies at runtime (vision files and panel OCR library), the check SHALL confirm that the file matches its build binding. For each third-party file, it SHALL also confirm that the file's SHA-256 equals the lock file's pinned value. The check SHALL record the SHA-256 of build-bound files that are not verified at runtime (Flutter engine, native-asset libraries, Visual C++ runtime) in its report.
+For each file the app verifies at runtime (vision files, panel OCR library and capture library), the check SHALL confirm that the file matches its build binding. For each third-party file, it SHALL also confirm that the file's SHA-256 equals the lock file's pinned value. The check SHALL record the SHA-256 of build-bound files that are not verified at runtime (Flutter engine, native-asset libraries, Visual C++ runtime) in its report.
 
 #### Scenario: Bindings and pins agree
 - **WHEN** every runtime-verified file matches its binding, and every third-party file matches its pin
@@ -50,6 +54,10 @@ For each file the app verifies at runtime (vision files and panel OCR library), 
 #### Scenario: Third-party file differs from pin
 - **WHEN** the bundled OCR engine library has a valid binding, but its SHA-256 differs from the lock file
 - **THEN** the check fails, naming the file as diverging from its pinned source
+
+#### Scenario: Capture binding disagrees with file
+- **WHEN** `blackgrid_capture.dll.sha256` does not match the bytes of `blackgrid_capture.dll`
+- **THEN** the check fails, naming the capture library and both hashes
 
 ### Requirement: Bundle needs no system installation
 For the executable and every DLL in the bundle, the check SHALL read the import table and confirm that each imported DLL is either present in the bundle or is a Windows system library on the check's allow-list. Anything else is a failure. The allow-list SHALL be committed and SHALL NOT contain any Visual C++ redistributable or third-party library.
