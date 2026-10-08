@@ -23,6 +23,7 @@ class FakeRunner implements CommandRunner {
   final List<String> calls = [];
   final Map<String, int> gateCodes = {};
   int changelogCode = 0;
+  int commitCode = 0;
 
   @override
   Future<CommandResult> run(
@@ -34,6 +35,9 @@ class FakeRunner implements CommandRunner {
   }) async {
     final line = [executable, ...arguments].join(' ');
     if (executable == 'git') {
+      if (commitCode != 0 && arguments.first == 'commit') {
+        return CommandResult(commitCode, '', 'hook refused');
+      }
       return real.run(
         executable,
         arguments,
@@ -305,6 +309,38 @@ void main() {
       expect(e.message, contains('git checkout main'));
       expect(_git(work, ['rev-parse', 'HEAD']), mainHead);
       expect(_git(work, ['rev-parse', 'release/v0.2.0']), mainHead);
+    },
+  );
+
+  test(
+    'commit failure leaves a recovery that returns main to a clean tree',
+    () async {
+      File('${work.path}/CHANGELOG.md').writeAsStringSync('# Changelog\n');
+      _git(work, ['add', 'CHANGELOG.md']);
+      _git(work, ['commit', '-m', 'docs: changelog']);
+      _git(work, ['push', 'origin', 'main']);
+      final mainHead = _git(work, ['rev-parse', 'main']);
+      runner.commitCode = 1;
+      final e = await refusal('0.2.0');
+      expect(e.message, contains('hook refused'));
+
+      // Run the printed recovery commands exactly as the user would.
+      final commands = [
+        for (final line in e.message.split('\n'))
+          if (line.startsWith('  git ')) line.trim().split('&&'),
+      ].expand((c) => c).map((c) => c.trim().split(' ').skip(1).toList());
+      expect(commands, isNotEmpty);
+      for (final c in commands) {
+        _git(work, c);
+      }
+
+      expect(_git(work, ['branch', '--show-current']), 'main');
+      expect(_git(work, ['rev-parse', 'HEAD']), mainHead);
+      expect(
+        _git(work, ['status', '--porcelain', '--untracked-files=all']),
+        isEmpty,
+      );
+      expect(_git(work, ['branch', '--list']), isNot(contains('release/')));
     },
   );
 }

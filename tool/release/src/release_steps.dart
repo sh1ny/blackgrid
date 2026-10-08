@@ -108,8 +108,8 @@ Future<void> prepare({
   await git.output(['checkout', '-b', branch]);
   String leftover(String problem) =>
       '$problem\nBranch $branch was created and pubspec.yaml / CHANGELOG.md '
-      'may be modified, but nothing was committed. Discard with:\n'
-      '  git checkout -- pubspec.yaml CHANGELOG.md\n'
+      'may be modified or staged, but nothing was committed. Discard with:\n'
+      '  git restore --staged --worktree -- pubspec.yaml CHANGELOG.md\n'
       '  git checkout main && git branch -D $branch';
 
   try {
