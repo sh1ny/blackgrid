@@ -24,7 +24,7 @@ Test locations:
 | scan-triggers → Hook lifecycle is explicit | Start then stop | test/data/capture/capture_native_qualification_test.dart | `hook starts and stops and drains nothing after stop` | red |
 | scan-triggers → Hook lifecycle is explicit | Second start | test/data/capture/capture_native_qualification_test.dart | `second hook start returns alreadyStarted` | red |
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | windows/capture/selftest.cpp | `install_failure_reports_error_and_ends_thread` | green |
-| scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | test/data/capture/trigger_source_test.dart | `stopTimedOut keeps the listener open and blocks restart` | red |
+| scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | test/data/capture/trigger_source_test.dart | `stopTimedOut keeps the listener open and blocks restart` | green |
 | scan-triggers → Hook lifecycle is explicit | Normal startup | test/data/capture/capture_source_audit_test.dart | `no startup path imports or starts the trigger source` | green |
 | inspection-capture → Target snapshot | Window on a left/top secondary monitor | test/data/capture/capture_policy_test.dart | `snapshot decode keeps signed negative origins` | green |
 | inspection-capture → Target snapshot | Window no longer exists | test/data/capture/capture_native_qualification_test.dart | `snapshot of destroyed handle is targetGone` | red |
@@ -123,7 +123,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 7. Trigger source
 
-- [ ] 7.1 Write failing `test/data/capture/trigger_source_test.dart` with a fake native. It covers draining on a signal, delivering drop counts, `alreadyStarted`, `unavailable(win32)`, and `stopTimedOut` keeping the `NativeCallable` open and blocking restart. Implement `lib/data/capture/mouse_release_trigger_source.dart`: a `NativeCallable.listener` signal, drain into a non-buffering stream (events without a listener are dropped), and ordered stop then close of the callable. Verify: the test passes; flip its row green.
+- [x] 7.1 Write failing `test/data/capture/trigger_source_test.dart` with a fake native. It covers draining on a signal, delivering drop counts, `alreadyStarted`, `unavailable(win32)`, and `stopTimedOut` keeping the `NativeCallable` open and blocking restart. Implement `lib/data/capture/mouse_release_trigger_source.dart`: a `NativeCallable.listener` signal, drain into a non-buffering stream (events without a listener are dropped), and ordered stop then close of the callable. Verify: the test passes; flip its row green.
 
 ## 8. Bundle integrity
 
