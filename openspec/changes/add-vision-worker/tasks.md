@@ -33,7 +33,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 | Shutdown drains the worker before releasing handles | Close during a call that returns in time | vision_service_test.dart | close drains a call that returns within 2 s | green |
 | Shutdown drains the worker before releasing handles | Close during a call that does not return | vision_service_test.dart | close reports shutdownIncomplete without disposing under a held call | green |
 | Worker failure makes the service unavailable | Worker dies during a request | vision_service_test.dart | worker exit answers outstanding requests unavailable and releases their frames | green |
-| Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | no startup path imports or starts the vision service | red |
+| Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | no startup path imports or starts the vision service | green |
 | Normal launch does not start the vision worker | Normal launch loads no vision library | test/app/launch_mode_test.dart | no arguments selects UI mode and never constructs runtime | green |
 
 ## 1. Decision record
@@ -83,7 +83,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 10. Startup audit
 
-- [ ] 10.1 Write `test/data/vision/vision_worker_audit_test.dart`. Following the capture startup audit (`test/data/capture/capture_source_audit_test.dart`, "no startup path" test), assert that no file under `lib/main.dart`, `lib/application` or `lib/ui` imports `vision_service.dart`/`vision_worker.dart` or references `VisionService`. Include a non-vacuity check that the pattern matches a planted string. Do not ban every `data/vision/` import, because `vision_self_check.dart` uses the runtime. Verify: the row turns green; re-run `test/app/launch_mode_test.dart` "no arguments selects UI mode and never constructs runtime" and confirm it stays green.
+- [x] 10.1 Write `test/data/vision/vision_worker_audit_test.dart`. Following the capture startup audit (`test/data/capture/capture_source_audit_test.dart`, "no startup path" test), assert that no file under `lib/main.dart`, `lib/application` or `lib/ui` imports `vision_service.dart`/`vision_worker.dart` or references `VisionService`. Include a non-vacuity check that the pattern matches a planted string. Do not ban every `data/vision/` import, because `vision_self_check.dart` uses the runtime. Verify: the row turns green; re-run `test/app/launch_mode_test.dart` "no arguments selects UI mode and never constructs runtime" and confirm it stays green.
 
 ## 11. Integration check
 
