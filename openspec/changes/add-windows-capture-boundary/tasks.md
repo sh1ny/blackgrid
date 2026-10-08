@@ -11,19 +11,19 @@ Test locations:
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| scan-triggers → Mouse-release trigger records cheap target facts | Release over the target window | windows/capture/selftest.cpp | `filter_accepts_target_release_with_signed_point` | red |
-| scan-triggers → Mouse-release trigger records cheap target facts | Release over another window | windows/capture/selftest.cpp | `filter_rejects_other_title` | red |
-| scan-triggers → Mouse-release trigger records cheap target facts | Press, right button and wheel | windows/capture/selftest.cpp | `filter_rejects_non_left_release_messages` | red |
-| scan-triggers → Mouse-release trigger records cheap target facts | No foreground window | windows/capture/selftest.cpp | `filter_rejects_null_foreground` | red |
-| scan-triggers → Hook callback never does capture, recognition or UI work | Event passed on | windows/capture/selftest.cpp | `hook_proc_always_calls_next_hook` | red |
-| scan-triggers → Hook callback never does capture, recognition or UI work | Dart isolate is busy | windows/capture/selftest.cpp | `append_returns_without_drain_and_keeps_order` | red |
-| scan-triggers → Hook callback never does capture, recognition or UI work | Blackgrid's own window is foreground with a blocked UI thread | windows/capture/selftest.cpp | `filter_skips_own_process_without_title_read` | red |
-| scan-triggers → Trigger queue is bounded | Queue overflow | windows/capture/selftest.cpp | `ring_drops_oldest_and_reports_count` | red |
-| scan-triggers → Trigger queue is bounded | Coalesced signal | windows/capture/selftest.cpp | `signal_coalesces_until_drain` | red |
-| scan-triggers → Trigger queue is bounded | Release during a drain | windows/capture/selftest.cpp | `append_after_drain_resignals` | red |
+| scan-triggers → Mouse-release trigger records cheap target facts | Release over the target window | windows/capture/selftest.cpp | `filter_accepts_target_release_with_signed_point` | green |
+| scan-triggers → Mouse-release trigger records cheap target facts | Release over another window | windows/capture/selftest.cpp | `filter_rejects_other_title` | green |
+| scan-triggers → Mouse-release trigger records cheap target facts | Press, right button and wheel | windows/capture/selftest.cpp | `filter_rejects_non_left_release_messages` | green |
+| scan-triggers → Mouse-release trigger records cheap target facts | No foreground window | windows/capture/selftest.cpp | `filter_rejects_null_foreground` | green |
+| scan-triggers → Hook callback never does capture, recognition or UI work | Event passed on | windows/capture/selftest.cpp | `hook_proc_always_calls_next_hook` | green |
+| scan-triggers → Hook callback never does capture, recognition or UI work | Dart isolate is busy | windows/capture/selftest.cpp | `append_returns_without_drain_and_keeps_order` | green |
+| scan-triggers → Hook callback never does capture, recognition or UI work | Blackgrid's own window is foreground with a blocked UI thread | windows/capture/selftest.cpp | `filter_skips_own_process_without_title_read` | green |
+| scan-triggers → Trigger queue is bounded | Queue overflow | windows/capture/selftest.cpp | `ring_drops_oldest_and_reports_count` | green |
+| scan-triggers → Trigger queue is bounded | Coalesced signal | windows/capture/selftest.cpp | `signal_coalesces_until_drain` | green |
+| scan-triggers → Trigger queue is bounded | Release during a drain | windows/capture/selftest.cpp | `append_after_drain_resignals` | green |
 | scan-triggers → Hook lifecycle is explicit | Start then stop | test/data/capture/capture_native_qualification_test.dart | `hook starts and stops and drains nothing after stop` | red |
 | scan-triggers → Hook lifecycle is explicit | Second start | test/data/capture/capture_native_qualification_test.dart | `second hook start returns alreadyStarted` | red |
-| scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | windows/capture/selftest.cpp | `install_failure_reports_error_and_ends_thread` | red |
+| scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | windows/capture/selftest.cpp | `install_failure_reports_error_and_ends_thread` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | test/data/capture/trigger_source_test.dart | `stopTimedOut keeps the listener open and blocks restart` | red |
 | scan-triggers → Hook lifecycle is explicit | Normal startup | test/data/capture/capture_source_audit_test.dart | `no startup path imports or starts the trigger source` | red |
 | inspection-capture → Target snapshot | Window on a left/top secondary monitor | test/data/capture/capture_policy_test.dart | `snapshot decode keeps signed negative origins` | red |
@@ -98,7 +98,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
   Verify: `flutter build windows --release` installs the DLL and its sidecar, and the sidecar equals the file's SHA-256.
 - [x] 2.2 Write the native self-test harness with failing cases `guard_refuses_when_listing_contains_game`, `capture_checks_skip_when_not_foreground`, the filter, ring, signal and hook-proc cases, `install_failure_reports_error_and_ends_thread`, `all_zero_*`, `registry_refuses_fifth_frame` and `exe_name_from_toolhelp_for_own_pid`. The guard runs first in `main`, before any hook or capture, over an injectable process listing, and exits 2 when it finds `EscapeFromTarkov.exe` or `EscapeFromTarkov_BE.exe`. Verify: before running, confirm with `tasklist` that no game process is listed (AGENTS.md). Then `mise run capture:selftest` reports each case failing for the missing implementation.
-- [ ] 2.3 Implement the hook thread per D2: install on a dedicated thread, filter with own-process skip and `InternalGetWindowText`, append and test-and-set under one SRW critical section, post outside the lock, signal from the loop through `WM_APP` to the listener, drain under the same lock, stop with a 1 s join, and keep the guard held on timeout. Verify: the filter, ring, signal, hook-proc and install-failure self-test cases pass; flip their rows green.
+- [x] 2.3 Implement the hook thread per D2: install on a dedicated thread, filter with own-process skip and `InternalGetWindowText`, append and test-and-set under one SRW critical section, post outside the lock, signal from the loop through `WM_APP` to the listener, drain under the same lock, stop with a 1 s join, and keep the guard held on timeout. Verify: the filter, ring, signal, hook-proc and install-failure self-test cases pass; flip their rows green.
 - [ ] 2.4 Implement `bgc_snapshot` (window queries plus toolhelp executable name; no `OpenProcess`), `bgc_capture` (pre snapshot, DIB section top-down 32 bpp from 4 generation-checked slots, screen-DC `BitBlt`, post snapshot, BGR-only `allZero`), `bgc_frame_info`, `bgc_frame_release`, `bgc_frame_live_count`, a finalizer entry point, `bgc_qpc_now` and `bgc_qpc_frequency`. Verify: `all_zero_*`, `registry_refuses_fifth_frame`, `exe_name_from_toolhelp_for_own_pid` and `captures_own_window_pattern_and_geometry` pass, the last one capturing only the self-test's own foreground window. Flip those rows green, or record `captures_own_window...` as skipped (not passed) if the foreground could not be taken.
 
 ## 3. Dart binding, failures and source audit
