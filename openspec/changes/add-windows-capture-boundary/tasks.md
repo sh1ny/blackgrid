@@ -58,15 +58,15 @@ Test locations:
 | inspection-capture → Frame ownership is single and bounded | Budget exhausted | windows/capture/selftest.cpp | `registry_refuses_fifth_frame` | green |
 | inspection-capture → Frame ownership is single and bounded | Hand-off to another isolate | test/data/capture/capture_frame_test.dart | `handOff moves ownership across isolates` | green |
 | inspection-capture → Frame ownership is single and bounded | Dropped without release | test/data/capture/capture_native_qualification_test.dart | `finalizer entry releases the slot` | green |
-| inspection-capture → Capture runs off the UI isolate with single admission | One capture at a time | test/data/capture/capture_service_test.dart | `second request while active is captureBusy` | red |
-| inspection-capture → Capture runs off the UI isolate with single admission | UI stays responsive during a slow capture | test/data/capture/capture_service_test.dart | `caller isolate keeps ticking during a 3 s native hold` | red |
-| inspection-capture → Captures have a deadline that never starts a second native call | Native call overruns | test/data/capture/capture_service_test.dart | `overrun times out stays busy and releases late frame` | red |
-| inspection-capture → Captures have a deadline that never starts a second native call | Next capture after recovery | test/data/capture/capture_service_test.dart | `request admitted after late reply` | red |
-| inspection-capture → Shutdown drains capture | Close while idle | test/data/capture/capture_service_test.dart | `close while idle exits worker and refuses later captures` | red |
-| inspection-capture → Shutdown drains capture | Close during a capture | test/data/capture/capture_service_test.dart | `close during capture returns captureClosed and releases` | red |
-| inspection-capture → Shutdown drains capture | Native call never returns | test/data/capture/capture_service_test.dart | `close reports shutdownIncomplete after 2 s without killing` | red |
-| inspection-capture → Shutdown drains capture | Frame produced after an incomplete shutdown | test/data/capture/capture_service_test.dart | `frame after shutdownIncomplete is released` | red |
-| inspection-capture → Shutdown drains capture | Reply after the worker failed | test/data/capture/capture_service_test.dart | `ticket reply in unavailable state is released` | red |
+| inspection-capture → Capture runs off the UI isolate with single admission | One capture at a time | test/data/capture/capture_service_test.dart | `second request while active is captureBusy` | green |
+| inspection-capture → Capture runs off the UI isolate with single admission | UI stays responsive during a slow capture | test/data/capture/capture_service_test.dart | `caller isolate keeps ticking during a 3 s native hold` | green |
+| inspection-capture → Captures have a deadline that never starts a second native call | Native call overruns | test/data/capture/capture_service_test.dart | `overrun times out stays busy and releases late frame` | green |
+| inspection-capture → Captures have a deadline that never starts a second native call | Next capture after recovery | test/data/capture/capture_service_test.dart | `request admitted after late reply` | green |
+| inspection-capture → Shutdown drains capture | Close while idle | test/data/capture/capture_service_test.dart | `close while idle exits worker and refuses later captures` | green |
+| inspection-capture → Shutdown drains capture | Close during a capture | test/data/capture/capture_service_test.dart | `close during capture returns captureClosed and releases` | green |
+| inspection-capture → Shutdown drains capture | Native call never returns | test/data/capture/capture_service_test.dart | `close reports shutdownIncomplete after 2 s without killing` | green |
+| inspection-capture → Shutdown drains capture | Frame produced after an incomplete shutdown | test/data/capture/capture_service_test.dart | `frame after shutdownIncomplete is released` | green |
+| inspection-capture → Shutdown drains capture | Reply after the worker failed | test/data/capture/capture_service_test.dart | `ticket reply in unavailable state is released` | green |
 | inspection-capture → The target process is never touched | Source audit | test/data/capture/capture_source_audit_test.dart | `capture sources call no process-access or input APIs` | green |
 | inspection-capture → The target process is never touched | Executable name lookup | windows/capture/selftest.cpp | `exe_name_from_toolhelp_for_own_pid` | green |
 | inspection-capture → Native self-test captures only its own window | Game not running | windows/capture/selftest.cpp | `captures_own_window_pattern_and_geometry` | green |
@@ -119,7 +119,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 ## 6. Capture service and worker isolate
 
 - [x] 6.1 Write failing `test/data/capture/capture_service_test.dart`. Use a fake native platform, created in the worker from a top-level factory and controlled by barrier ports, covering admission, the 3 s responsiveness hold (count caller-isolate timer ticks), overrun and late release, recovery, the three close cases, a frame after `shutdownIncomplete`, and a ticket in the unavailable state. Use `fake_async` only where no real isolate is involved. Verify: the tests fail for the missing implementation.
-- [ ] 6.2 Implement `lib/data/capture/capture_service.dart` per D8: lazy worker spawn, single admission, the 500 ms deadline, the `overrun` state, request-id matching, releasing ticket replies in every state, the port kept open until worker exit, close with a 2 s drain and `shutdownIncomplete`, and the worker releasing its own result when close is queued. Verify: `capture_service_test.dart` passes; flip its 9 rows green.
+- [x] 6.2 Implement `lib/data/capture/capture_service.dart` per D8: lazy worker spawn, single admission, the 500 ms deadline, the `overrun` state, request-id matching, releasing ticket replies in every state, the port kept open until worker exit, close with a 2 s drain and `shutdownIncomplete`, and the worker releasing its own result when close is queued. Verify: `capture_service_test.dart` passes; flip its 9 rows green.
 
 ## 7. Trigger source
 
