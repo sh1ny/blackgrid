@@ -39,7 +39,7 @@ ADR-0004 allows a long-lived isolate for blocking native work and requires the M
 - **A hung native call leaves recognition `overrun` for the rest of the session.** It is visible as the service state and as `visionTimeout` answers. Respawn is not built until a measured hang rate justifies it.
 - **The 1.5 s default is provisional.** It is a constructor parameter; change 5 may tune it or add a per-request deadline once timings exist.
 - **Bounded by construction:** 1 active plus 1 pending request, at most 2 of the 4 capture frame slots held, 1.5 s deadline, 2 s close drain, 16 MiB retained scratch per buffer.
-- **The job result `R` must be plain sendable data.** Frames and runtime handles never leave the worker. A job that returns a non-sendable value gets `jobFailed`.
+- **The job result `R` must be plain sendable data.** Frames and runtime handles never leave the worker. A job that returns a non-sendable value gets `jobFailed`. A request whose parameters `P` are not sendable is answered `invalidInput`: nothing reaches the worker, and the service takes the frame ticket back.
 - **A native crash still ends the process** (ADR-0004); no isolate boundary contains it.
 - **Generation counters fence results** as in ADR-0002, here on the service rather than in a controller.
 - **Not wired yet:** change 5 wires the service into startup and the Scanner.

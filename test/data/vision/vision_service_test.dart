@@ -4,6 +4,8 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:blackgrid/data/capture/capture_frame.dart';
+import 'package:blackgrid/data/capture/capture_service.dart'
+    show FrameRegistryFactory;
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/data/vision/vision_runtime.dart';
@@ -97,6 +99,27 @@ final class _UnsendableJob implements VisionJob<int, Object?> {
 }
 
 VisionJob<int, Object?> unsendableJob() => const _UnsendableJob();
+
+/// Answers `'ran'` for any parameters it is given.
+final class _EchoJob implements VisionJob<Object?, Object?> {
+  const _EchoJob();
+
+  @override
+  Object? run(VisionJobContext context, VisionJobInput input, Object? params) =>
+      'ran';
+}
+
+VisionJob<Object?, Object?> echoJob() => const _EchoJob();
+
+/// The shared registry at [address], except inside the worker isolate, where
+/// it throws: the worker then dies of an uncaught error while adopting its
+/// first frame, before it can release it.
+FrameRegistryFactory workerFailingRegistryFactory(int address) => () {
+  if (Isolate.current.debugName == 'bgv_worker') {
+    throw StateError('no registry in the worker');
+  }
+  return FakeFrameRegistry.fromAddress(address);
+};
 
 VisionImage sample() =>
     VisionImage(Uint8List(16), width: 4, height: 4, stride: 4, channels: 1);
@@ -674,6 +697,77 @@ void main() {
       expect(await pending, isA<VisionDelivered<Probe>>());
       expect(rig.control.operationCount, 2);
       expect(rig.frames.liveCount, 0);
+    });
+  });
+
+  group('input ownership on failure', () {
+    late Rig rig;
+
+    setUp(() {
+      rig = Rig();
+      addTearDown(rig.dispose);
+    });
+
+    test('worker error before the frame is released still releases it on '
+        'exit', () async {
+      final service = VisionService<int, Probe>(
+        runtimeDirectory: rig.directory.path,
+        jobFactory: probeJob,
+        opener: holdableVisionOpener(rig.control.address),
+        platformFactory: clockPlatformFactory(rig.control.address),
+        registryFactory: workerFailingRegistryFactory(rig.frames.address),
+        qpcNow: rig.control.clock.now,
+      );
+      addTearDown(service.close);
+      expect(await service.start(), isNull);
+
+      // The error reaches the service before the exit and answers the
+      // request; the exit must still find the ticket to release.
+      final answer = await service.submitFrame(rig.newFrame(), 1);
+      expect(answer, isA<VisionUnavailableAnswer<Probe>>());
+      await service.workerExit;
+      expect(rig.frames.liveCount, 0, reason: 'sent frame released on exit');
+      expect(rig.frames.effectiveReleases, 1);
+      expect(service.state, VisionServiceState.unavailable);
+    });
+
+    test('unsendable parameters are answered invalidInput, the frame is '
+        'released and the next request runs', () async {
+      final service = VisionService<Object?, Object?>(
+        runtimeDirectory: rig.directory.path,
+        jobFactory: echoJob,
+        opener: holdableVisionOpener(rig.control.address),
+        platformFactory: clockPlatformFactory(rig.control.address),
+        registryFactory: sharedFrameRegistryFactory(rig.frames.address),
+        qpcNow: rig.control.clock.now,
+      );
+      addTearDown(service.close);
+      final unsendable = RawReceivePort()..close();
+
+      // Both wait through warm start: the unsendable one in the unsent slot,
+      // the next one pending, so the failed send must start the pending one.
+      final bad = service.submitFrame(rig.newFrame(), unsendable);
+      final next = service.submitFrame(rig.newFrame(), 1);
+
+      expect(
+        await bad,
+        isA<VisionInvalidInput<Object?>>().having(
+          (a) => a.detail,
+          'detail',
+          contains('not sendable'),
+        ),
+      );
+      final delivered = await next;
+      expect(delivered, isA<VisionDelivered<Object?>>());
+      expect((delivered as VisionDelivered<Object?>).result, 'ran');
+      expect(rig.frames.liveCount, 0);
+      expect(rig.frames.effectiveReleases, 2);
+      expect(service.state, VisionServiceState.ready);
+      expect(
+        rig.control.operationCount,
+        0,
+        reason: 'the echo job is native-free',
+      );
     });
   });
 

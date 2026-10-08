@@ -208,8 +208,8 @@ final class VisionUnavailableAnswer<R> extends VisionNotDelivered<R> {
   final VisionFailure? failure;
 }
 
-/// The submitted owned image violated the buffer contract; nothing was
-/// admitted.
+/// The submitted owned image violated the buffer contract, or the request's
+/// parameters cannot cross to the worker; no job ran.
 final class VisionInvalidInput<R> extends VisionNotDelivered<R> {
   const VisionInvalidInput(super.submittedQpc, [this.detail = '']);
 

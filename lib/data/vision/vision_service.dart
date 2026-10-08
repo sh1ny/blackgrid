@@ -173,6 +173,12 @@ final class VisionService<P, R> {
   Future<VisionCloseResult>? _closing;
   FrameRegistry? _registry;
 
+  /// Id of the frame ticket sent to the worker and not yet seen answered.
+  /// Held here, not on the request: answering the active request early (the
+  /// worker's error arrives before its exit) must not lose the id the exit
+  /// still has to release.
+  int? _sentFrameId;
+
   /// Completes when the active request's reply (or the worker's exit) arrives.
   /// Only set while [close] waits for the active call.
   Completer<void>? _activeDone;
@@ -336,11 +342,31 @@ final class VisionService<P, R> {
     // until the reply, so a dead worker's ticket can be released by id.
     final ticket = request.frame?.handOff();
     request.frame = null;
-    request.sentFrameId = ticket?.frameId;
+    _sentFrameId = ticket?.frameId;
     request.seq = ++_nextSeq;
     _active = request;
     _state = VisionServiceState.active;
-    _commands!.send(_Run(request.seq, request.params, image, ticket));
+    try {
+      _commands!.send(_Run(request.seq, request.params, image, ticket));
+    } on Object catch (error) {
+      // The parameters cannot cross the isolate boundary. Nothing reached the
+      // worker, so the service takes the ticket back and stays ready.
+      _releaseSentFrame();
+      _active = null;
+      _state = VisionServiceState.ready;
+      _finish(
+        request,
+        VisionInvalidInput<R>(
+          request.submittedQpc,
+          'parameters are not sendable: $error',
+        ),
+      );
+      final next = _pending;
+      if (next != null) {
+        _pending = null;
+        _dispatch(next);
+      }
+    }
   }
 
   /// The request's deadline passed before it was answered.
@@ -530,7 +556,7 @@ final class VisionService<P, R> {
     final active = _active;
     if (active == null || active.seq != reply.seq) return;
     _active = null;
-    active.sentFrameId = null; // the worker released it before replying
+    _sentFrameId = null; // the worker released it before replying
     _signalActiveDone();
     // Delivered only while the caller still waits and the generation is
     // current. A late or stale result is discarded: the caller was already
@@ -626,9 +652,9 @@ final class VisionService<P, R> {
   /// release is generation-checked, so a frame the worker already released is
   /// a no-op.
   void _releaseSentFrame() {
-    final id = _active?.sentFrameId;
+    final id = _sentFrameId;
     if (id == null) return;
-    _active?.sentFrameId = null;
+    _sentFrameId = null;
     try {
       (_registry ??= registryFactory()).release(id);
     } on Object {
@@ -671,8 +697,6 @@ final class _Request<R> {
   /// The adopted frame while the request is unsent; null once sent.
   CaptureFrame? frame;
 
-  /// Id of the frame ticket sent to the worker and not yet seen answered.
-  int? sentFrameId;
   int seq = 0;
   Timer? timer;
 
