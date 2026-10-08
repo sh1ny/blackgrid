@@ -133,7 +133,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 ## 9. Integration checks
 
 - [x] 9.1 Write `test/data/capture/capture_native_qualification_test.dart` (tag `qualification`): ABI and struct sizes, `targetGone` for a destroyed or invalid handle, hook start then drain-empty then stop, a second start returning `alreadyStarted`, and the finalizer entry releasing a slot reserved by a self-owned capture. Before any native call, it skips with a recorded reason if a game process is listed. Verify: after confirming with `tasklist` that the game is not running, `flutter build windows --release`, then `mise run test:qualification` passes the new tests; flip the rows green.
-- [ ] 9.2 Full offline gates: `mise run analyze`, `mise run test`, `mise run build:release` (which runs `bundle:check`) and `mise run capture:selftest`. Verify: all pass, with any skipped self-test capture case recorded as skipped, not passed. No step launches the app against the game.
+- [x] 9.2 Full offline gates: `mise run analyze`, `mise run test`, `mise run build:release` (which runs `bundle:check`) and `mise run capture:selftest`. Verify: all pass, with any skipped self-test capture case recorded as skipped, not passed. No step launches the app against the game.
 
 ## Workflow follow-up
 
