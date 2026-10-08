@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import '../application/app_version.dart' as app_version;
 import '../domain/catalog.dart';
 import 'theme.dart';
 
@@ -11,8 +12,13 @@ Future<void> showSettings(BuildContext context, AppServices services) =>
     );
 
 class SettingsDialog extends StatefulWidget {
-  const SettingsDialog({super.key, required this.services});
+  const SettingsDialog({
+    super.key,
+    required this.services,
+    this.version = app_version.appVersion,
+  });
   final AppServices services;
+  final String version;
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
 }
@@ -77,6 +83,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Version ${widget.version}',
+                  style: const TextStyle(color: GridColors.muted),
+                ),
+                const SizedBox(height: 8),
                 const Text(
                   'Manual mode is used when configured Map logs cannot establish a mode. Blackgrid reads saved files only and never interacts with the game.',
                   style: TextStyle(color: GridColors.muted),

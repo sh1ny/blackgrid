@@ -35,11 +35,11 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 | Release builds carry the version and a build number | Dirty tree | B | `dirty tree refuses before building naming files` | green |
 | Release builds carry the version and a build number | Build number exceeds the file-version field | B | `count above 65535 refuses naming count and limit` | green |
 | Release builds carry the version and a build number | Integrity check fails | B | `bundle:check failure fails the build with its output` | green |
-| The running app reports its version | Release build shows its version | U | `settings dialog shows the given app version` | red |
-| The running app reports its version | Development build | U | `settings dialog shows dev by default` | red |
-| vision-runtime → Self-check report is complete and authoritative | Report contents | V | `report has format identity steps and result mirroring code` (extended with `appVersion`) | red |
-| vision-runtime → Self-check report is complete and authoritative | Report names the build | V | `report records the given appVersion` | red |
-| vision-runtime → Self-check report is complete and authoritative | Development build | V | `report appVersion defaults to dev` | red |
+| The running app reports its version | Release build shows its version | U | `settings dialog shows the given app version` | green |
+| The running app reports its version | Development build | U | `settings dialog shows dev by default` | green |
+| vision-runtime → Self-check report is complete and authoritative | Report contents | V | `report has format identity steps and result mirroring code` (extended with `appVersion`) | green |
+| vision-runtime → Self-check report is complete and authoritative | Report names the build | V | `report records the given appVersion` | green |
+| vision-runtime → Self-check report is complete and authoritative | Development build | V | `report appVersion defaults to dev` | green |
 | vision-runtime → Self-check report is complete and authoritative | Report never partially written | V | `report is written to tmp then renamed; previous report survives a …` (existing) | green |
 
 ## 1. ADR and workflow rules
@@ -70,7 +70,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 
 - [x] 5.1 Write `test/tool/release/build_test.dart` (rows B, with Flutter, `vision:fetch` and `bundle:check` stubbed and a fixture repo for the count). In `test/ui/settings_dialog_test.dart` (rows U) and `test/application/vision_self_check_test.dart` (rows V), extend `report has format identity steps and result mirroring code` to expect `appVersion`. Verify: the new tests fail for the stated reasons, and the existing `report is written to tmp…` test still passes.
 - [x] 5.2 Implement the `build` subcommand (D7: clean tree, count ≤ 65535, `vision:fetch`, `flutter build windows --release --build-name --build-number --dart-define=BLACKGRID_VERSION=<version>+<count>`, then `bundle:check` on `build/windows/x64/runner/Release`) and the `mise` task `build:release`. Verify: rows B green.
-- [ ] 5.3 Add `lib/application/app_version.dart` (`const appVersion = String.fromEnvironment('BLACKGRID_VERSION', defaultValue: 'dev')`). Add a `version` parameter to `SettingsDialog` (defaulting to `appVersion`) and show it in the dialog. Add `appVersion` to the self-check report through a parameter defaulting to the constant (D8: format stays 1). Verify: rows U and V green; `mise run analyze` clean.
+- [x] 5.3 Add `lib/application/app_version.dart` (`const appVersion = String.fromEnvironment('BLACKGRID_VERSION', defaultValue: 'dev')`). Add a `version` parameter to `SettingsDialog` (defaulting to `appVersion`) and show it in the dialog. Add `appVersion` to the self-check report through a parameter defaulting to the constant (D8: format stays 1). Verify: rows U and V green; `mise run analyze` clean.
 - [ ] 5.4 Document the release flow in `README.md`: version scheme, the three `mise` tasks, `release-notes -- --unreleased`, and where the version shows. Verify: every command named there exists in `mise.toml`.
 
 ## 6. Baseline tag and integration
