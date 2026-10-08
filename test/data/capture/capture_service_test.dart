@@ -206,4 +206,30 @@ void main() {
       expect(await broken.close(), isNull);
     },
   );
+
+  test(
+    'caller registry that cannot open refuses before any frame exists',
+    () async {
+      final broken = CaptureService(
+        platformFactory: holdableFactory(registry.address, control.address),
+        registryFactory: () => throw StateError('binding changed'),
+      );
+      services.add(broken);
+      final result = failureOf(
+        await broken.capture(holdableTrigger, CaptureMode.targeted),
+      );
+      expect(result, isA<CaptureUnavailable>());
+      expect(
+        (result as CaptureUnavailable).reason,
+        contains('binding changed'),
+      );
+      // No worker was spawned, so no frame could be produced and leaked.
+      expect(broken.workerRunning, isFalse);
+      expect(registry.liveCount, 0);
+      expect(
+        failureOf(await broken.capture(holdableTrigger, CaptureMode.targeted)),
+        isA<CaptureUnavailable>(),
+      );
+    },
+  );
 }

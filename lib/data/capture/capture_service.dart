@@ -37,7 +37,8 @@ final class CaptureService {
   /// Top-level or static function run inside the worker isolate.
   final CapturePlatformFactory platformFactory;
 
-  /// Called lazily in the caller isolate to adopt and release tickets.
+  /// Called in the caller isolate on the first capture, before the worker is
+  /// spawned, to adopt and release tickets.
   final FrameRegistryFactory registryFactory;
   final Duration deadline;
   final Duration closeDrain;
@@ -93,6 +94,18 @@ final class CaptureService {
         return Future.value(const CaptureRejected(CaptureBusy()));
       case _State.idle:
         break;
+    }
+    // Open the caller registry before any frame can exist: a ticket that
+    // cannot be adopted would hold one of the 4 native slots for good.
+    if (_registry == null) {
+      try {
+        _registry = registryFactory();
+      } on Object catch (error) {
+        _markUnavailable('Capture frame registry cannot open: $error');
+        return Future.value(
+          CaptureRejected(CaptureUnavailable(_unavailableReason)),
+        );
+      }
     }
     final seq = ++_nextSeq;
     final request = _Capture(seq, requestId ?? seq, trigger, mode);
@@ -238,7 +251,8 @@ final class CaptureService {
     }
   }
 
-  FrameRegistry get _frames => _registry ??= registryFactory();
+  // Set before the first request is admitted, so every reply can be adopted.
+  FrameRegistry get _frames => _registry!;
 
   void _onDeadline() {
     if (_state != _State.active) return;
