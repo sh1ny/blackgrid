@@ -48,6 +48,51 @@ final class _ProbeJob implements VisionJob<int, Probe> {
 /// Top-level so it can be sent to the worker at spawn.
 VisionJob<int, Probe> probeJob() => const _ProbeJob();
 
+/// Modes of [_ScriptedJob], chosen by the request parameter.
+const scriptOk = 1;
+const scriptThrow = 2;
+const scriptAbortOnFailure = 3;
+
+/// A job that behaves as scripted by its parameter: [scriptOk] recognises,
+/// [scriptThrow] throws, [scriptAbortOnFailure] recognises and aborts with the
+/// typed failure when the native operation fails (the contract the real jobs
+/// follow).
+final class _ScriptedJob implements VisionJob<int, Probe> {
+  const _ScriptedJob();
+
+  @override
+  Probe run(VisionJobContext context, VisionJobInput input, int params) {
+    if (params == scriptThrow) throw StateError('boom');
+    final text = input.withImage(
+      (image) => switch (context.recognise(image)) {
+        VisionOk(:final value) => value.text,
+        VisionFailed(:final failure) when params == scriptAbortOnFailure =>
+          throw VisionJobAbort(failure),
+        VisionFailed(:final failure) => failure.message,
+      },
+    );
+    return (isolate: '', text: text, templates: const {});
+  }
+}
+
+/// Top-level so it can be sent to the worker at spawn.
+VisionJob<int, Probe> scriptedJob() => const _ScriptedJob();
+
+/// Returns a value that cannot cross the isolate boundary.
+final class _UnsendableJob implements VisionJob<int, Object?> {
+  const _UnsendableJob();
+
+  @override
+  Object? run(VisionJobContext context, VisionJobInput input, int params) {
+    if (params != scriptOk) return 'sendable';
+    final port = RawReceivePort();
+    port.close();
+    return port;
+  }
+}
+
+VisionJob<int, Object?> unsendableJob() => const _UnsendableJob();
+
 VisionImage sample() =>
     VisionImage(Uint8List(16), width: 4, height: 4, stride: 4, channels: 1);
 
@@ -98,6 +143,7 @@ final class Rig {
   Rig({
     this._templates = const [],
     this._deadline = const Duration(milliseconds: 1500),
+    this._jobFactory = probeJob,
   }) : control = VisionControlBlock(),
        directory = createFakeRuntimeDirectory(),
        frames = FakeFrameRegistry.create() {
@@ -107,6 +153,7 @@ final class Rig {
 
   final List<VisionTemplate> _templates;
   final Duration _deadline;
+  final VisionJobFactory<int, Probe> _jobFactory;
   final VisionControlBlock control;
   final Directory directory;
 
@@ -116,7 +163,7 @@ final class Rig {
 
   VisionService<int, Probe> newService() => VisionService<int, Probe>(
     runtimeDirectory: directory.path,
-    jobFactory: probeJob,
+    jobFactory: _jobFactory,
     templates: _templates,
     opener: holdableVisionOpener(control.address),
     platformFactory: clockPlatformFactory(control.address),
@@ -619,6 +666,157 @@ void main() {
       expect(await pending, isA<VisionDelivered<Probe>>());
       expect(rig.control.operationCount, 2);
       expect(rig.frames.liveCount, 0);
+    });
+  });
+
+  group('job failures and timestamps', () {
+    late Rig rig;
+
+    setUp(() async {
+      rig = Rig(jobFactory: scriptedJob);
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+    });
+
+    tearDown(() => rig.control.held = false);
+
+    test('throwing job answers jobFailed and the worker stays ready', () async {
+      final frame = rig.newFrame();
+      final failed = await rig.service.submitFrame(frame, scriptThrow);
+
+      expect(
+        failed,
+        isA<VisionJobFailed<Probe>>().having(
+          (a) => a.description,
+          'description',
+          contains('boom'),
+        ),
+      );
+      final timed = failed as VisionJobFailed<Probe>;
+      expect(timed.submittedQpc, lessThanOrEqualTo(timed.startedQpc));
+      expect(timed.startedQpc, lessThanOrEqualTo(timed.finishedQpc));
+      expect(frame.isReleased, isTrue);
+      expect(rig.frames.liveCount, 0, reason: 'input released');
+      expect(rig.service.state, VisionServiceState.ready);
+
+      // The next request runs on the same warm engine.
+      final next = await rig.service.submit(sample(), scriptOk);
+      expect(next, isA<VisionDelivered<Probe>>());
+      expect((next as VisionDelivered<Probe>).result.text, 'hello');
+      expect(rig.control.openCount, 1);
+      expect(rig.control.engineDisposeCount, 0);
+      expect(rig.control.nativeCloseCount, 0);
+      expect(rig.service.state, VisionServiceState.ready);
+    });
+
+    test('native failure inside a job reaches the caller typed', () async {
+      rig.control.nativeStatus = -3;
+      final frame = rig.newFrame();
+      final answer = await rig.service.submitFrame(frame, scriptAbortOnFailure);
+
+      expect(answer, isNot(isA<VisionDelivered<Probe>>()));
+      expect(
+        answer,
+        isA<VisionFailureAnswer<Probe>>().having(
+          (a) => a.failure,
+          'failure',
+          isA<VisionNativeFailure>().having((f) => f.status, 'status', -3),
+        ),
+      );
+      final typed = answer as VisionFailureAnswer<Probe>;
+      expect(typed.submittedQpc, lessThanOrEqualTo(typed.startedQpc));
+      expect(typed.startedQpc, lessThanOrEqualTo(typed.finishedQpc));
+      expect(frame.isReleased, isTrue);
+      expect(rig.frames.liveCount, 0);
+      expect(rig.service.state, VisionServiceState.ready);
+
+      // Once the native side recovers, the same worker succeeds.
+      rig.control.nativeStatus = 0;
+      expect(
+        await rig.service.submit(sample(), scriptOk),
+        isA<VisionDelivered<Probe>>(),
+      );
+      expect(rig.control.openCount, 1);
+    });
+
+    test(
+      'completed answer reports ordered submit, start and end timestamps',
+      () async {
+        rig.control.held = true;
+        final first = rig.service.submit(sample(), scriptOk);
+        await eventually(() => rig.control.concurrent == 1);
+        // Submitted while the first job runs, so it waits behind it.
+        final second = rig.service.submit(sample(), scriptOk);
+        rig.control.held = false;
+
+        final a = await first as VisionDelivered<Probe>;
+        final b = await second as VisionDelivered<Probe>;
+
+        expect(a.submittedQpc, lessThanOrEqualTo(a.startedQpc));
+        expect(a.startedQpc, lessThanOrEqualTo(a.finishedQpc));
+        expect(b.submittedQpc, lessThanOrEqualTo(b.startedQpc));
+        expect(b.startedQpc, lessThanOrEqualTo(b.finishedQpc));
+        expect(b.submittedQpc, greaterThan(a.startedQpc));
+        expect(b.startedQpc, greaterThanOrEqualTo(a.finishedQpc));
+      },
+    );
+
+    test('superseded answer reports submission only', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), scriptOk);
+      await eventually(() => rig.control.concurrent == 1);
+
+      // The worker is held inside a native call and does not read the clock,
+      // so the submission time of the second request is exactly this value.
+      rig.control.clock
+        ..set(5000)
+        ..setStep(0);
+      final second = rig.service.submit(sample(), scriptOk);
+      final third = rig.service.submit(sample(), scriptOk);
+
+      final answer = await second;
+      expect(answer, isA<VisionSuperseded<Probe>>());
+      expect(answer, isA<VisionNotDelivered<Probe>>());
+      expect(answer.submittedQpc, 5000);
+      // The family carries no job start or end.
+      expect(() => (answer as dynamic).startedQpc, throwsNoSuchMethodError);
+      expect(() => (answer as dynamic).finishedQpc, throwsNoSuchMethodError);
+
+      rig.control.held = false;
+      expect(await first, isA<VisionDelivered<Probe>>());
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(rig.control.operationCount, 2, reason: 'second never ran');
+    });
+
+    test('job returning a non-sendable result is answered jobFailed', () async {
+      final service = VisionService<int, Object?>(
+        runtimeDirectory: rig.directory.path,
+        jobFactory: unsendableJob,
+        opener: holdableVisionOpener(rig.control.address),
+        platformFactory: clockPlatformFactory(rig.control.address),
+        registryFactory: sharedFrameRegistryFactory(rig.frames.address),
+        qpcNow: rig.control.clock.now,
+      );
+      addTearDown(service.close);
+      expect(await service.start(), isNull);
+
+      final frame = rig.newFrame();
+      final answer = await service.submitFrame(frame, scriptOk);
+      expect(
+        answer,
+        isA<VisionJobFailed<Object?>>().having(
+          (a) => a.description,
+          'description',
+          contains('not sendable'),
+        ),
+      );
+      expect(frame.isReleased, isTrue);
+      expect(rig.frames.liveCount, 0);
+      expect(service.state, VisionServiceState.ready);
+
+      final next = await service.submit(sample(), scriptThrow);
+      expect(next, isA<VisionDelivered<Object?>>());
+      expect((next as VisionDelivered<Object?>).result, 'sendable');
     });
   });
 

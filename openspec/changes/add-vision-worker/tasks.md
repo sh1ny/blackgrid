@@ -68,7 +68,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 7. Job failures and timestamps
 
-- [ ] 7.1 Write failing tests for rows "Job throws", "Native failure inside a job" (scripted native status -3), "Timestamps of a completed request" and "Request answered without running". Add an extra test: a job returning a non-sendable result is answered `jobFailed`.
+- [x] 7.1 Write failing tests for rows "Job throws", "Native failure inside a job" (scripted native status -3), "Timestamps of a completed request" and "Request answered without running". Add an extra test: a job returning a non-sendable result is answered `jobFailed`.
 - [ ] 7.2 Implement job error isolation (catch in the worker, reply `jobFailed(description)` or `visionFailure`, worker stays ready) and timestamps. The service reads QPC at submission; the worker reads QPC for job start and end, through the capture platform's `qpcNow` (`capture_native.dart:207`) in production and a fake clock in tests. Verify: the four rows and the extra test turn green.
 
 ## 8. Shutdown and worker failure
