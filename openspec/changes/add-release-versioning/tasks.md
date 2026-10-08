@@ -26,11 +26,11 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 | Changelog lists one entry per merged pull request | Release notes and preview after a prerelease | C | `--latest and --unreleased use final-tag ranges after a final release` | green |
 | Changelog lists one entry per merged pull request | Preview while a prerelease is the latest tag | C | `--unreleased while a beta is latest lists everything since last final tag` | green |
 | Changelog lists one entry per merged pull request | Release commit and merge | C | `release commit and its merge are not listed` | green |
-| Release tag marks the merged release commit | Release merge tagged | T | `release merge gets annotated tag pushed to origin` | red |
-| Release tag marks the merged release commit | Main moved before the release merge | T | `first-parent mismatch refuses naming intervening commits` | red |
-| Release tag marks the merged release commit | HEAD is not a release merge | T | `ordinary merge or non-merge HEAD refuses naming its subject` | red |
-| Release tag marks the merged release commit | Pubspec disagrees with the release commit | T | `pubspec version mismatch refuses naming both versions` | red |
-| Release tag marks the merged release commit | Push identity cannot be confirmed | T | `missing credential or other login refuses before any tag exists` | red |
+| Release tag marks the merged release commit | Release merge tagged | T | `release merge gets annotated tag pushed to origin` | green |
+| Release tag marks the merged release commit | Main moved before the release merge | T | `first-parent mismatch refuses naming intervening commits` | green |
+| Release tag marks the merged release commit | HEAD is not a release merge | T | `ordinary merge or non-merge HEAD refuses naming its subject` | green |
+| Release tag marks the merged release commit | Pubspec disagrees with the release commit | T | `pubspec version mismatch refuses naming both versions` | green |
+| Release tag marks the merged release commit | Push identity cannot be confirmed | T | `missing credential or other login refuses before any tag exists` | green |
 | Release builds carry the version and a build number | Release build | B | `build passes build-name, commit-count build-number and version define, then bundle:check` (plus the real build in 6.2) | red |
 | Release builds carry the version and a build number | Dirty tree | B | `dirty tree refuses before building naming files` | red |
 | Release builds carry the version and a build number | Build number exceeds the file-version field | B | `count above 65535 refuses naming count and limit` | red |
@@ -64,7 +64,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 ## 4. Release tagging
 
 - [x] 4.1 Write `test/tool/release/tag_test.dart` (rows T). Use a fixture repo and bare origin with a merged `chore(release): v0.2.0` branch and a stubbed `gh` (token + login). The test records every process invocation and asserts that each `fetch`, `ls-remote` and `push` argv carries `-c credential.helper=` and `-c credential.helper=!gh auth git-credential`. It also asserts that the stub token appears in no argv, no stdout or stderr output, and no exception message, and that a failed push deletes the local tag. Verify: the tests fail because `tag` does not exist.
-- [ ] 4.2 Add `yaml: 3.1.4` as a direct dev dependency. Implement `tool/release/src/push_identity.dart` (D6) and the `tag` subcommand (D5, including the first-parent check and tag rollback), plus the `mise` task `release:tag`. Verify: rows T green; `mise run release:tag` on this branch refuses (not on main) and creates no tag.
+- [x] 4.2 Add `yaml: 3.1.4` as a direct dev dependency. Implement `tool/release/src/push_identity.dart` (D6) and the `tag` subcommand (D5, including the first-parent check and tag rollback), plus the `mise` task `release:tag`. Verify: rows T green; `mise run release:tag` on this branch refuses (not on main) and creates no tag.
 
 ## 5. Release build and app version
 

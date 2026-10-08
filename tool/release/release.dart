@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'src/git.dart';
 import 'src/release_steps.dart';
+import 'src/tag_step.dart';
 
 const _usage = '''
 Usage: dart run tool/release/release.dart <command> [arguments]
@@ -9,6 +10,8 @@ Usage: dart run tool/release/release.dart <command> [arguments]
 Commands:
   prepare <version> [--trailer <line>]...
       Create release/v<version> with the version bump and changelog commit.
+  tag
+      Tag the merged release commit on main and push the tag to origin.
 ''';
 
 Future<void> main(List<String> arguments) async {
@@ -28,6 +31,9 @@ Future<int> runRelease(
   switch (command) {
     case 'prepare':
       return _prepare(rest, runner, repoDir ?? Directory.current);
+    case 'tag':
+      if (rest.isNotEmpty) return _usageError('tag takes no arguments.');
+      return _tag(runner, repoDir ?? Directory.current);
     default:
       return _usageError('Unknown command "$command".');
   }
@@ -63,6 +69,16 @@ Future<int> _prepare(
       runner: runner,
       trailers: trailers,
     );
+    return 0;
+  } on ReleaseException catch (e) {
+    stderr.writeln(e.message);
+    return e.exitCode;
+  }
+}
+
+Future<int> _tag(CommandRunner runner, Directory repoDir) async {
+  try {
+    await tag(repoDir: repoDir, runner: runner);
     return 0;
   } on ReleaseException catch (e) {
     stderr.writeln(e.message);

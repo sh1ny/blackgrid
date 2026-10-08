@@ -57,3 +57,7 @@ run = "dart run tool/vision/check_bundle.dart"
 [tasks."release:prepare"]
 description = "Prepare a release branch and commit; pass the version after --"
 run = "dart run tool/release/release.dart prepare"
+
+[tasks."release:tag"]
+description = "Tag the merged release commit on main and push the tag"
+run = "dart run tool/release/release.dart tag"

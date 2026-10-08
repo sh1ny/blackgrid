@@ -30,6 +30,7 @@ class FakeRunner implements CommandRunner {
     List<String> arguments, {
     required String workingDirectory,
     bool stream = false,
+    Map<String, String>? environment,
   }) async {
     final line = [executable, ...arguments].join(' ');
     if (executable == 'git') {

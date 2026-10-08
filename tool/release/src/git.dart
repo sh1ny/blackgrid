@@ -28,6 +28,7 @@ abstract class CommandRunner {
     List<String> arguments, {
     required String workingDirectory,
     bool stream = false,
+    Map<String, String>? environment,
   });
 }
 
@@ -37,19 +38,39 @@ class ProcessCommandRunner implements CommandRunner {
   /// Extra environment variables merged over the inherited environment.
   final Map<String, String>? environment;
 
+  /// With a per-call [call] environment (the fenced credential environment),
+  /// the child gets the parent environment minus any inherited GitHub tokens,
+  /// then this runner's extras, then [call]. Without one, the parent
+  /// environment is inherited unchanged plus this runner's extras.
+  Map<String, String>? _environmentFor(Map<String, String>? call) {
+    if (call == null) return environment;
+    return {
+      for (final e in Platform.environment.entries)
+        if (e.key.toUpperCase() != 'GH_TOKEN' &&
+            e.key.toUpperCase() != 'GITHUB_TOKEN')
+          e.key: e.value,
+      ...?environment,
+      ...call,
+    };
+  }
+
   @override
   Future<CommandResult> run(
     String executable,
     List<String> arguments, {
     required String workingDirectory,
     bool stream = false,
+    Map<String, String>? environment,
   }) async {
+    final env = _environmentFor(environment);
+    final includeParent = environment == null;
     if (stream) {
       final process = await Process.start(
         executable,
         arguments,
         workingDirectory: workingDirectory,
-        environment: environment,
+        environment: env,
+        includeParentEnvironment: includeParent,
         mode: ProcessStartMode.inheritStdio,
       );
       return CommandResult(await process.exitCode, '', '');
@@ -58,7 +79,8 @@ class ProcessCommandRunner implements CommandRunner {
       executable,
       arguments,
       workingDirectory: workingDirectory,
-      environment: environment,
+      environment: env,
+      includeParentEnvironment: includeParent,
     );
     return CommandResult(
       result.exitCode,
@@ -75,8 +97,15 @@ class Git {
   final CommandRunner runner;
   final Directory directory;
 
-  Future<CommandResult> run(List<String> arguments) =>
-      runner.run('git', arguments, workingDirectory: directory.path);
+  Future<CommandResult> run(
+    List<String> arguments, {
+    Map<String, String>? environment,
+  }) => runner.run(
+    'git',
+    arguments,
+    workingDirectory: directory.path,
+    environment: environment,
+  );
 
   /// Runs git and returns trimmed stdout; throws [ReleaseException] with
   /// [failure] and git's stderr on a non-zero exit.
