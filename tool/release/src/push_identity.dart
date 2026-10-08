@@ -18,6 +18,17 @@ const credentialHelperArguments = [
 /// The token exists only inside [environment]; it is handed to child
 /// processes through the environment and never appears in arguments, output
 /// or messages.
+/// Git arguments that make the fenced token the only credential for [urls].
+///
+/// Besides [credentialHelperArguments], inherited `http.extraHeader` values
+/// (an `Authorization` header set by automation, say) would authenticate
+/// independently of the credential helper. An empty value resets them only
+/// at the most specific matching URL, so the reset names each exact URL.
+List<String> fencedGitArguments(Iterable<String> urls) => [
+  ...credentialHelperArguments,
+  for (final url in urls) ...['-c', 'http.$url.extraHeader='],
+];
+
 class PushIdentity {
   PushIdentity._(this.login, this.environment);
 
@@ -25,12 +36,7 @@ class PushIdentity {
   final Map<String, String> environment;
 
   /// Runs a network Git command against `origin` under the fenced credential
-  /// environment.
-  ///
-  /// Inherited `http.extraHeader` values (an `Authorization` header set by
-  /// automation, say) would authenticate independently of the credential
-  /// helper. An empty value resets them only at the most specific matching
-  /// URL, so the reset names origin's exact fetch and push URLs.
+  /// environment, with [fencedGitArguments] for origin's fetch and push URLs.
   Future<CommandResult> git(Git git, List<String> arguments) async {
     final urls = {
       for (final push in [false, true])
@@ -44,16 +50,15 @@ class PushIdentity {
     for (final url in urls) {
       if (!_fencedUrl(url)) {
         throw ReleaseException(
-          'origin URL "${_redactUserinfo(url)}" would authenticate outside '
-          'the confirmed GitHub token (SSH keys, embedded credentials or a '
-          'remote helper). Point origin at an HTTPS URL without credentials, '
-          'for example https://github.com/<owner>/<repo>.git.',
+          'origin URL "${_redactUserinfo(url)}" would not authenticate with '
+          'the confirmed GitHub token (only HTTPS without embedded '
+          'credentials does). Point origin at an HTTPS URL, for example '
+          'https://github.com/<owner>/<repo>.git.',
         );
       }
     }
     return git.run([
-      ...credentialHelperArguments,
-      for (final url in urls) ...['-c', 'http.$url.extraHeader='],
+      ...fencedGitArguments(urls),
       ...arguments,
     ], environment: environment);
   }
@@ -121,16 +126,16 @@ class PushIdentity {
 }
 
 /// Whether Git authenticates to [url] only through the fenced credential
-/// helper: HTTP(S) without userinfo. Local paths involve no authentication.
-/// SSH, scp-like, `git://` and `<transport>::` remote-helper URLs are refused.
+/// helper: HTTPS without userinfo (`gh auth git-credential` answers for
+/// HTTPS only). Local paths involve no authentication. HTTP, SSH, scp-like,
+/// `git://` and `<transport>::` remote-helper URLs are refused.
 bool _fencedUrl(String url) {
   final withScheme = RegExp(r'^([A-Za-z][A-Za-z0-9+.-]*)://([^/]*)')
       .firstMatch(url);
   if (withScheme != null) {
     final scheme = withScheme[1]!.toLowerCase();
     if (scheme == 'file') return true;
-    return (scheme == 'https' || scheme == 'http') &&
-        !withScheme[2]!.contains('@');
+    return scheme == 'https' && !withScheme[2]!.contains('@');
   }
   if (url.contains('::')) return false;
   if (RegExp(r'^[A-Za-z]:[\\/]').hasMatch(url)) return true;

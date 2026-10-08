@@ -277,6 +277,7 @@ void main() {
       ('ssh://git@github.com/sh1ny/blackgrid.git', null),
       ('git+ssh://github.com/sh1ny/blackgrid.git', null),
       ('git://github.com/sh1ny/blackgrid.git', null),
+      ('http://github.com/sh1ny/blackgrid.git', null),
       ('ext::ssh -i key github.com %S sh1ny/blackgrid', null),
       ('https://someone:secret-pw@github.com/sh1ny/blackgrid.git', null),
       ('https://someone@github.com/sh1ny/blackgrid.git', null),
@@ -355,13 +356,22 @@ void main() {
     }
     expect(probes.toSet(), {'generic', 'host', 'f', 'p'});
 
+    // Fenced with the arguments PushIdentity.git uses, Git sends none.
     probes.clear();
     requests = 0;
-    final identity = await PushIdentity.confirm(repoDir: work, runner: runner);
-    final git = Git(runner, work);
-    await identity.git(git, ['fetch', 'origin', 'main', '--tags']);
-    await identity.git(git, ['ls-remote', 'origin', 'refs/tags/v0.1.0']);
-    await identity.git(git, ['push', 'origin', 'refs/tags/v0.1.0']);
+    final fenced = fencedGitArguments({fetchUrl, pushUrl});
+    for (final args in [
+      ['fetch', 'origin', 'main', '--tags'],
+      ['ls-remote', 'origin', 'refs/tags/v0.1.0'],
+      ['push', 'origin', 'refs/tags/v0.1.0'],
+    ]) {
+      await Process.run(
+        'git',
+        [...fenced, ...args],
+        workingDirectory: work.path,
+        environment: environment,
+      );
+    }
     expect(requests, greaterThanOrEqualTo(3));
     expect(probes, isEmpty);
   });
@@ -379,6 +389,8 @@ void main() {
         '-c',
         'credential.helper=!gh auth git-credential',
       ], reason: c.line);
+      final fenced = fencedGitArguments({origin.path});
+      expect(c.arguments.take(fenced.length).toList(), fenced, reason: c.line);
       expect(c.environment?['GH_TOKEN'], _token, reason: c.line);
     }
     for (final c in runner.calls) {
