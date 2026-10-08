@@ -59,9 +59,11 @@ VisionTemplate template(String name, {int seed = 1}) => VisionTemplate(
 
 /// One service over a fresh fake runtime directory and control block.
 final class Rig {
-  Rig({List<VisionTemplate> templates = const []})
-    : control = VisionControlBlock(),
-      directory = createFakeRuntimeDirectory() {
+  Rig({
+    List<VisionTemplate> templates = const [],
+    Duration deadline = const Duration(milliseconds: 1500),
+  }) : control = VisionControlBlock(),
+       directory = createFakeRuntimeDirectory() {
     service = VisionService<int, Probe>(
       runtimeDirectory: directory.path,
       jobFactory: probeJob,
@@ -69,6 +71,7 @@ final class Rig {
       opener: holdableVisionOpener(control.address),
       platformFactory: clockPlatformFactory(control.address),
       qpcNow: control.clock.now,
+      deadline: deadline,
     );
   }
 
@@ -233,5 +236,100 @@ void main() {
 
     expect(answer, isA<VisionDelivered<Probe>>());
     expect((answer as VisionDelivered<Probe>).result.templates['a'], expected);
+  });
+
+  group('admission', () {
+    late Rig rig;
+
+    setUp(() async {
+      rig = Rig(deadline: const Duration(milliseconds: 150));
+      addTearDown(rig.dispose);
+      expect(await rig.service.start(), isNull);
+    });
+
+    // Released first, so a failing test never leaves the worker spinning when
+    // dispose waits for it.
+    tearDown(() => rig.control.held = false);
+
+    test(
+      'second job does not start while the first native call is held',
+      () async {
+        rig.control.held = true;
+        final first = rig.service.submit(sample(), 1);
+        await eventually(() => rig.control.concurrent == 1);
+        final second = rig.service.submit(sample(), 2);
+
+        expect(rig.control.operationCount, 1);
+        expect(rig.control.concurrent, 1);
+
+        rig.control.held = false;
+        final a = await first as VisionDelivered<Probe>;
+        final b = await second as VisionDelivered<Probe>;
+
+        expect(rig.control.operationCount, 2);
+        expect(rig.control.maxConcurrent, 1);
+        expect(b.startedQpc, greaterThanOrEqualTo(a.finishedQpc));
+      },
+    );
+
+    test('pending request runs after the active one', () async {
+      rig.control.held = true;
+      final order = <int>[];
+      final first = rig.service.submit(sample(), 1)..then((_) => order.add(1));
+      await eventually(() => rig.control.concurrent == 1);
+      final second = rig.service.submit(sample(), 2)..then((_) => order.add(2));
+      expect(rig.service.state, VisionServiceState.active);
+
+      rig.control.held = false;
+      expect(await first, isA<VisionDelivered<Probe>>());
+      expect(await second, isA<VisionDelivered<Probe>>());
+
+      expect(order, [1, 2]);
+      expect(rig.control.operationCount, 2);
+      expect(rig.control.maxConcurrent, 1);
+    });
+
+    test('newer request supersedes the pending one at once', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+      final second = rig.service.submit(sample(), 2);
+      final third = rig.service.submit(sample(), 3);
+
+      // Answered while the first native call is still held.
+      expect(await second, isA<VisionSuperseded<Probe>>());
+      expect(rig.control.concurrent, 1);
+
+      rig.control.held = false;
+      expect(await first, isA<VisionDelivered<Probe>>());
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(rig.control.operationCount, 2);
+      expect(rig.control.maxConcurrent, 1);
+    });
+
+    test('deadline never starts a second native call', () async {
+      rig.control.held = true;
+      final first = rig.service.submit(sample(), 1);
+      await eventually(() => rig.control.concurrent == 1);
+
+      // The deadline passes while the native call is still held.
+      expect(await first, isA<VisionDeadlineExceeded<Probe>>());
+      expect(rig.service.state, VisionServiceState.overrun);
+      expect(rig.control.concurrent, 1);
+
+      // A pending request that expires never runs.
+      expect(
+        await rig.service.submit(sample(), 2),
+        isA<VisionDeadlineExceeded<Probe>>(),
+      );
+      expect(rig.control.operationCount, 1);
+
+      // A fresh request waits for the held call, then runs alone.
+      final third = rig.service.submit(sample(), 3);
+      rig.control.held = false;
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(rig.control.operationCount, 2);
+      expect(rig.control.maxConcurrent, 1);
+    });
   });
 }

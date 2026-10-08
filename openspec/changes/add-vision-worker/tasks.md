@@ -53,7 +53,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 
 ## 4. Admission, pending slot and non-overlap
 
-- [ ] 4.1 Write failing tests for rows "Requests run one after another", "Pending request runs after the active one" and "Newer request replaces the pending one", plus "Deadline passes during a held call" (max-concurrency stays ≤ 1).
+- [x] 4.1 Write failing tests for rows "Requests run one after another", "Pending request runs after the active one" and "Newer request replaces the pending one", plus "Deadline passes during a held call" (max-concurrency stays ≤ 1).
 - [ ] 4.2 Implement service-side admission (D1). At most one request is in flight and one pending; a newer request supersedes the pending one with an immediate `superseded` answer. The pending request is sent only after the active reply arrives. A request submitted before `_Ready` is held as unsent. Verify: the four rows turn green.
 
 ## 5. Generation fences and deadlines
