@@ -53,3 +53,7 @@ run = "dart run tool/vision/fetch_runtime.dart"
 [tasks."bundle:check"]
 description = "Check a built Release bundle offline; pass the bundle directory after --"
 run = "dart run tool/vision/check_bundle.dart"
+
+[tasks."release:prepare"]
+description = "Prepare a release branch and commit; pass the version after --"
+run = "dart run tool/release/release.dart prepare"
