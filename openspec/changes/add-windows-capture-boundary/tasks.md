@@ -26,13 +26,13 @@ Test locations:
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | windows/capture/selftest.cpp | `install_failure_reports_error_and_ends_thread` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | test/data/capture/trigger_source_test.dart | `stopTimedOut keeps the listener open and blocks restart` | red |
 | scan-triggers → Hook lifecycle is explicit | Normal startup | test/data/capture/capture_source_audit_test.dart | `no startup path imports or starts the trigger source` | green |
-| inspection-capture → Target snapshot | Window on a left/top secondary monitor | test/data/capture/capture_policy_test.dart | `snapshot decode keeps signed negative origins` | red |
+| inspection-capture → Target snapshot | Window on a left/top secondary monitor | test/data/capture/capture_policy_test.dart | `snapshot decode keeps signed negative origins` | green |
 | inspection-capture → Target snapshot | Window no longer exists | test/data/capture/capture_native_qualification_test.dart | `snapshot of destroyed handle is targetGone` | red |
-| inspection-capture → Target identity is validated before capture | Valid target | test/data/capture/capture_policy_test.dart | `valid target passes validation` | red |
-| inspection-capture → Target identity is validated before capture | Focus moved after the click | test/data/capture/capture_policy_test.dart | `foreground change is targetNotForeground without capture` | red |
-| inspection-capture → Target identity is validated before capture | Minimised target | test/data/capture/capture_policy_test.dart | `minimised target fails without capture` | red |
-| inspection-capture → Target identity is validated before capture | Wrong executable behind the title | test/data/capture/capture_policy_test.dart | `wrong executable is wrongTarget without capture` | red |
-| inspection-capture → Target identity is validated before capture | Handle reused by another process | test/data/capture/capture_policy_test.dart | `pid change is targetGone without capture` | red |
+| inspection-capture → Target identity is validated before capture | Valid target | test/data/capture/capture_policy_test.dart | `valid target passes validation` | green |
+| inspection-capture → Target identity is validated before capture | Focus moved after the click | test/data/capture/capture_policy_test.dart | `foreground change is targetNotForeground without capture` | green |
+| inspection-capture → Target identity is validated before capture | Minimised target | test/data/capture/capture_policy_test.dart | `minimised target fails without capture` | green |
+| inspection-capture → Target identity is validated before capture | Wrong executable behind the title | test/data/capture/capture_policy_test.dart | `wrong executable is wrongTarget without capture` | green |
+| inspection-capture → Target identity is validated before capture | Handle reused by another process | test/data/capture/capture_policy_test.dart | `pid change is targetGone without capture` | green |
 | inspection-capture → Targeted region is planned in physical client pixels | Sixteen resolution and scaling cells | test/data/capture/capture_geometry_test.dart | `targeted region for all 16 resolution and DPI cells` | green |
 | inspection-capture → Targeted region is planned in physical client pixels | Click on a negative-origin monitor | test/data/capture/capture_geometry_test.dart | `negative-origin monitor maps to client and back` | green |
 | inspection-capture → Targeted region is planned in physical client pixels | Trigger point outside the client | test/data/capture/capture_geometry_test.dart | `trigger outside client is roiOutsideClient` | green |
@@ -43,20 +43,20 @@ Test locations:
 | inspection-capture → Clipping is explicit, never padded | Region entirely off-screen | test/data/capture/capture_geometry_test.dart | `off-desktop region is roiOutsideClient` | green |
 | inspection-capture → Capture size is bounded | Large but allowed client | test/data/capture/capture_geometry_test.dart | `3840x2160 fallback is within bounds` | green |
 | inspection-capture → Capture size is bounded | Oversized client | test/data/capture/capture_geometry_test.dart | `7680x4320 fallback is captureTooLarge` | green |
-| inspection-capture → Capture is coherent with its target | Stable target | test/data/capture/capture_policy_test.dart | `stable pre and post return the frame` | red |
-| inspection-capture → Capture is coherent with its target | Focus moved after validation, before acquisition | test/data/capture/capture_policy_test.dart | `pre snapshot differing from validated is targetChanged and releases` | red |
-| inspection-capture → Capture is coherent with its target | Window moved during acquisition | test/data/capture/capture_policy_test.dart | `moved client is targetChanged and releases` | red |
-| inspection-capture → Capture is coherent with its target | Monitor DPI changed during acquisition | test/data/capture/capture_policy_test.dart | `dpi change is targetChanged and releases` | red |
-| inspection-capture → Blank captures are reported | Black frame from an unsupported display mode | test/data/capture/capture_policy_test.dart | `allZero frame is blankCapture and released` | red |
+| inspection-capture → Capture is coherent with its target | Stable target | test/data/capture/capture_policy_test.dart | `stable pre and post return the frame` | green |
+| inspection-capture → Capture is coherent with its target | Focus moved after validation, before acquisition | test/data/capture/capture_policy_test.dart | `pre snapshot differing from validated is targetChanged and releases` | green |
+| inspection-capture → Capture is coherent with its target | Window moved during acquisition | test/data/capture/capture_policy_test.dart | `moved client is targetChanged and releases` | green |
+| inspection-capture → Capture is coherent with its target | Monitor DPI changed during acquisition | test/data/capture/capture_policy_test.dart | `dpi change is targetChanged and releases` | green |
+| inspection-capture → Blank captures are reported | Black frame from an unsupported display mode | test/data/capture/capture_policy_test.dart | `allZero frame is blankCapture and released` | green |
 | inspection-capture → Blank captures are reported | Black colour with a non-zero fourth byte | windows/capture/selftest.cpp | `all_zero_ignores_fourth_byte` | green |
 | inspection-capture → Blank captures are reported | Dark but not blank | windows/capture/selftest.cpp | `all_zero_false_for_one_colour_byte` | green |
-| inspection-capture → Frames have an immutable pixel layout | Frame layout | test/data/capture/capture_policy_test.dart | `targeted frame reports layout and desktop origin` | red |
-| inspection-capture → Frames have an immutable pixel layout | Pixel access after release | test/data/capture/capture_frame_test.dart | `pixels after release throw frameReleased` | red |
-| inspection-capture → Frames carry their provenance | Frame provenance | test/data/capture/capture_policy_test.dart | `frame carries request id identity and ordered timestamps` | red |
-| inspection-capture → Frames carry their provenance | Clipped provenance | test/data/capture/capture_policy_test.dart | `clipped frame reports both rectangles` | red |
-| inspection-capture → Frame ownership is single and bounded | Release twice | test/data/capture/capture_frame_test.dart | `second release is a no-op` | red |
+| inspection-capture → Frames have an immutable pixel layout | Frame layout | test/data/capture/capture_policy_test.dart | `targeted frame reports layout and desktop origin` | green |
+| inspection-capture → Frames have an immutable pixel layout | Pixel access after release | test/data/capture/capture_frame_test.dart | `pixels after release throw frameReleased` | green |
+| inspection-capture → Frames carry their provenance | Frame provenance | test/data/capture/capture_policy_test.dart | `frame carries request id identity and ordered timestamps` | green |
+| inspection-capture → Frames carry their provenance | Clipped provenance | test/data/capture/capture_policy_test.dart | `clipped frame reports both rectangles` | green |
+| inspection-capture → Frame ownership is single and bounded | Release twice | test/data/capture/capture_frame_test.dart | `second release is a no-op` | green |
 | inspection-capture → Frame ownership is single and bounded | Budget exhausted | windows/capture/selftest.cpp | `registry_refuses_fifth_frame` | green |
-| inspection-capture → Frame ownership is single and bounded | Hand-off to another isolate | test/data/capture/capture_frame_test.dart | `handOff moves ownership across isolates` | red |
+| inspection-capture → Frame ownership is single and bounded | Hand-off to another isolate | test/data/capture/capture_frame_test.dart | `handOff moves ownership across isolates` | green |
 | inspection-capture → Frame ownership is single and bounded | Dropped without release | test/data/capture/capture_native_qualification_test.dart | `finalizer entry releases the slot` | red |
 | inspection-capture → Capture runs off the UI isolate with single admission | One capture at a time | test/data/capture/capture_service_test.dart | `second request while active is captureBusy` | red |
 | inspection-capture → Capture runs off the UI isolate with single admission | UI stays responsive during a slow capture | test/data/capture/capture_service_test.dart | `caller isolate keeps ticking during a 3 s native hold` | red |
@@ -114,7 +114,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 ## 5. Validation, coherence and frames
 
 - [x] 5.1 Write failing `test/data/capture/capture_policy_test.dart` (snapshot decode, identity validation, coherence, blank, layout and provenance rows) against a fake `CapturePlatform` that records release calls. Write failing `test/data/capture/capture_frame_test.dart` (release twice, read after release, hand-off across two isolates through a fake registry). Verify: both fail for the missing implementation.
-- [ ] 5.2 Implement `lib/data/capture/capture_target.dart` (title and executable allow-list), `capture_policy.dart` (validate against S0, plan, capture, compare pre and post with S0, blank check, release on every reject, executable-name cache keyed by `(hwnd, pid, tid)`) and `capture_frame.dart` (`CaptureFrame implements Finalizable`, `NativeFinalizer` on the release entry, `pixels` view, `handOff`/`adopt` tickets, idempotent release). Verify: both test files pass; flip their rows green.
+- [x] 5.2 Implement `lib/data/capture/capture_target.dart` (title and executable allow-list), `capture_policy.dart` (validate against S0, plan, capture, compare pre and post with S0, blank check, release on every reject, executable-name cache keyed by `(hwnd, pid, tid)`) and `capture_frame.dart` (`CaptureFrame implements Finalizable`, `NativeFinalizer` on the release entry, `pixels` view, `handOff`/`adopt` tickets, idempotent release). Verify: both test files pass; flip their rows green.
 
 ## 6. Capture service and worker isolate
 
