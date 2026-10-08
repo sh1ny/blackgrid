@@ -130,4 +130,13 @@ void main() {
     expect(registry.liveCount, 0);
     await events.cancel();
   });
+
+  test('fake registry refuses a frame beyond its capacity', () {
+    final registry = FakeFrameRegistry.create();
+    for (var i = 0; i < 8; i++) {
+      registry.release(registry.createFrame(1, 1));
+    }
+    // Ids are never reused, so a ninth frame would write past the block.
+    expect(() => registry.createFrame(1, 1), throwsStateError);
+  });
 }

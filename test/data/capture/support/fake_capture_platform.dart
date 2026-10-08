@@ -40,6 +40,10 @@ final class FakeFrameRegistry implements FrameRegistry {
   int createFrame(int width, int height, {int? stride, bool zeros = false}) {
     final s = stride ?? width * 4;
     final id = _mem[2] + 1;
+    // Ids are never reused: refuse before writing past the native block.
+    if (id > _maxFrames) {
+      throw StateError('FakeFrameRegistry holds at most $_maxFrames frames');
+    }
     _mem[2] = id;
     final base = _header + (id - 1) * _perFrame;
     final pixels = calloc<Uint8>(s * height);
