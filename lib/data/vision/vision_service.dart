@@ -533,9 +533,12 @@ final class VisionService<P, R> {
         } else {
           _state = VisionServiceState.ready;
           if (!_startResult.isCompleted) _startResult.complete(null);
-          final first = _unsent;
+          // The unsent request may have expired during a slow start; the
+          // pending one behind it can still have time left.
+          final first = _unsent ?? _pending;
           if (first != null) {
             _unsent = null;
+            if (identical(first, _pending)) _pending = null;
             _dispatch(first);
           }
         }
@@ -715,6 +718,9 @@ void Function(Object?) _forwardWeakly(
 ) {
   SendPort? commands;
   return (Object? message) {
+    // Kept whether or not the service is alive now: it may be dropped while
+    // a job runs, and the reply is then the only chance to stop the worker.
+    if (message is _Ready) commands = message.commands;
     final target = service.target;
     if (target != null) {
       target._onMessage(message);
@@ -723,7 +729,6 @@ void Function(Object?) _forwardWeakly(
     // The service was dropped: stop the worker when it next speaks.
     switch (message) {
       case _Ready(commands: final sent):
-        commands = sent;
         sent.send(const _Close());
       case _Reply():
         commands?.send(const _Close());

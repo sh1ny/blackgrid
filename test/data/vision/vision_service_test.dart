@@ -166,6 +166,18 @@ void submitAndDrop(Rig rig, FrameRegistry registry) {
   unawaited(rig.newService().submitFrame(frame, 1));
 }
 
+/// Starts a new service on [rig], leaves a held job running in its worker and
+/// drops the service. Separate from the test body so no local keeps the
+/// service reachable; the weak reference tells the test when it is collected.
+Future<WeakReference<Object>> startSubmitAndDrop(Rig rig) async {
+  final service = rig.newService();
+  expect(await service.start(), isNull);
+  rig.control.held = true;
+  unawaited(service.submit(sample(), 1));
+  await eventually(() => rig.control.concurrent == 1);
+  return WeakReference(service);
+}
+
 /// One service over a fresh fake runtime directory and control block.
 final class Rig {
   Rig({
@@ -621,6 +633,34 @@ void main() {
       expect(await slow.service.start(), isNull);
       expect(slow.control.operationCount, 0);
     });
+
+    test('pending request runs when the unsent one expired during warm '
+        'start', () async {
+      // The deadline runs from submission, so the two requests must be
+      // submitted apart: the second still has half its deadline left when
+      // the first expires.
+      const deadline = Duration(milliseconds: 600);
+      final rig = Rig(deadline: deadline);
+      addTearDown(rig.dispose);
+      addTearDown(() => rig.control.openHeld = false);
+      rig.control.openHeld = true;
+      final first = rig.service.submit(sample(), 1);
+      final gap = Completer<void>();
+      Timer(deadline ~/ 2, gap.complete);
+      await gap.future;
+      final second = rig.service.submit(sample(), 2);
+
+      expect(await first, isA<VisionDeadlineExceeded<Probe>>());
+      rig.control.openHeld = false;
+
+      expect(await second, isA<VisionDelivered<Probe>>());
+      expect(
+        rig.control.operationCount,
+        1,
+        reason: 'the expired one never ran',
+      );
+      expect(rig.service.state, VisionServiceState.ready);
+    });
   });
 
   group('input ownership', () {
@@ -729,6 +769,8 @@ void main() {
       expect(rig.frames.liveCount, 0, reason: 'sent frame released on exit');
       expect(rig.frames.effectiveReleases, 1);
       expect(service.state, VisionServiceState.unavailable);
+      expect(rig.control.engineDisposeCount, 1, reason: 'runtime disposed');
+      expect(rig.control.nativeCloseCount, 1);
     });
 
     test('unsendable parameters are answered invalidInput, the frame is '
@@ -1107,6 +1149,21 @@ void main() {
       expect(rig.control.openCount, 1, reason: 'no respawn');
       expect(rig.frames.liveCount, 0);
     });
+  });
+
+  test('a service dropped while its job runs stops the worker on the '
+      'reply', () async {
+    final rig = Rig();
+    addTearDown(rig.dispose);
+    addTearDown(() => rig.control.held = false);
+
+    final dropped = await startSubmitAndDrop(rig);
+    await collectGarbageUntil(() => dropped.target == null);
+    expect(dropped.target, isNull, reason: 'the service was collected');
+
+    rig.control.held = false;
+    await eventually(() => rig.control.nativeCloseCount == 1);
+    expect(rig.control.engineDisposeCount, 1);
   });
 
   test('pending frame keeps its finalizer until it is sent', () async {

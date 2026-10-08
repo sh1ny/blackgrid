@@ -201,11 +201,21 @@ void _visionWorkerMain(_WorkerInit init) {
     switch (message) {
       case _Run():
         final ticket = message.ticket;
-        // Adopted before anything can throw, so the frame is always released.
-        final frame = ticket == null
-            ? null
-            : CaptureFrame.adopt(ticket, registry ??= init.registryFactory());
-        final started = qpcNow();
+        CaptureFrame? frame;
+        final int started;
+        try {
+          frame = ticket == null
+              ? null
+              : CaptureFrame.adopt(ticket, registry ??= init.registryFactory());
+          started = qpcNow();
+        } on Object {
+          // Fatal: the error ends the worker. Release what it holds first; the
+          // service releases a ticket that was never adopted by id on exit.
+          frame?.release();
+          runtime.dispose();
+          commands.close();
+          rethrow;
+        }
         final seq = message.seq;
         _Reply reply;
         try {
