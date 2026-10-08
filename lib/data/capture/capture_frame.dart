@@ -103,8 +103,8 @@ final class CaptureFrameTicket {
 /// One captured frame with a single owner. Release it, or hand it to another
 /// isolate with [handOff]. A finalizer releases it if the owner drops it.
 ///
-/// Keep the frame reachable while using [pixels]: the view is only valid as
-/// long as the frame is live.
+/// Pixels are only lent, through [withPixels]: a bare view would not keep the
+/// frame reachable, so its finalizer could free the slot under the reader.
 final class CaptureFrame implements Finalizable {
   /// Takes ownership of a frame the registry just produced.
   CaptureFrame(this.frameId, this.metadata, this._registry) {
@@ -121,33 +121,55 @@ final class CaptureFrame implements Finalizable {
   final CaptureFrameMetadata metadata;
   final FrameRegistry _registry;
   bool _released = false;
+  int _lends = 0;
 
   bool get isReleased => _released;
 
-  /// A view over the native pixels (`stride * height` bytes). Throws
-  /// [FrameReleasedError] without touching native memory once released or
-  /// handed off.
-  Uint8List get pixels {
+  /// Lends a view over the native pixels (`stride * height` bytes) to [use],
+  /// which must be synchronous and must not keep the view. The frame stays
+  /// reachable and cannot be released or handed off until [use] returns.
+  /// Throws [FrameReleasedError] without touching native memory once released
+  /// or handed off.
+  R withPixels<R>(R Function(Uint8List pixels) use) {
     if (_released) throw FrameReleasedError(frameId);
     final view = _registry.view(frameId);
     if (view == null) throw FrameReleasedError(frameId);
-    return view.pixels.asTypedList(view.stride * view.height);
+    _lends++;
+    try {
+      final result = use(view.pixels.asTypedList(view.stride * view.height));
+      if (result is Future) {
+        throw ArgumentError.value(use, 'use', 'must be synchronous');
+      }
+      return result;
+    } finally {
+      // Touching this after use returns keeps the frame reachable until then.
+      _lends--;
+    }
   }
 
-  /// Releases the frame. Repeated release is a no-op.
+  /// Releases the frame. Repeated release is a no-op. Throws [StateError]
+  /// inside [withPixels].
   void release() {
     if (_released) return;
+    _refuseWhileLent();
     _released = true;
     _registry.detach(this);
     _registry.release(frameId);
   }
 
   /// Moves ownership out: detaches the finalizer, marks this object released
-  /// and returns the sendable ticket.
+  /// and returns the sendable ticket. Throws [StateError] inside [withPixels].
   CaptureFrameTicket handOff() {
     if (_released) throw FrameReleasedError(frameId);
+    _refuseWhileLent();
     _released = true;
     _registry.detach(this);
     return CaptureFrameTicket(frameId, metadata);
+  }
+
+  void _refuseWhileLent() {
+    if (_lends > 0) {
+      throw StateError('frame $frameId is in use by withPixels');
+    }
   }
 }

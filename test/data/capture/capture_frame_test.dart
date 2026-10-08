@@ -42,9 +42,14 @@ void _receiver(List<Object> message) {
   final registry = FakeFrameRegistry.fromAddress(message[2] as int);
   final frame = CaptureFrame.adopt(ticket, registry);
   final inbox = ReceivePort();
-  toMain.send(['adopted', inbox.sendPort, frame.pixels[1], registry.liveCount]);
+  toMain.send([
+    'adopted',
+    inbox.sendPort,
+    frame.withPixels((p) => p[1]),
+    registry.liveCount,
+  ]);
   inbox.listen((_) {
-    final pixel = frame.pixels[1];
+    final pixel = frame.withPixels((p) => p[1]);
     frame.release();
     toMain.send(['done', pixel, registry.liveCount, frame.isReleased]);
     inbox.close();
@@ -55,14 +60,57 @@ void main() {
   test('pixels after release throw frameReleased', () {
     final registry = FakeFrameRegistry.create();
     final frame = newFrame(registry);
-    expect(frame.pixels, hasLength(4 * 2 * 4));
-    expect(frame.pixels[0], 3);
+    expect(frame.withPixels((p) => p.length), 4 * 2 * 4);
+    expect(frame.withPixels((p) => p[0]), 3);
     frame.release();
     final viewCalls = registry.viewCalls;
-    expect(() => frame.pixels, throwsA(isA<FrameReleasedError>()));
+    expect(
+      () => frame.withPixels((p) => p[0]),
+      throwsA(isA<FrameReleasedError>()),
+    );
     expect(() => frame.handOff(), throwsA(isA<FrameReleasedError>()));
     expect(registry.viewCalls, viewCalls, reason: 'no native access');
     expect(frame.isReleased, isTrue);
+  });
+
+  test('release and handOff are refused while pixels are lent', () {
+    final registry = FakeFrameRegistry.create();
+    final frame = newFrame(registry);
+    frame.withPixels((p) {
+      expect(frame.release, throwsStateError);
+      expect(frame.handOff, throwsStateError);
+      // Nested borrows keep the frame lent until the outermost one ends.
+      frame.withPixels((inner) => expect(inner[0], 3));
+      expect(frame.release, throwsStateError);
+      expect(p[0], 3, reason: 'the slot is still live');
+    });
+    expect(frame.isReleased, isFalse);
+    expect(registry.liveCount, 1);
+    frame.release();
+    expect(registry.liveCount, 0);
+  });
+
+  test('a lend ends when the callback throws', () {
+    final registry = FakeFrameRegistry.create();
+    final frame = newFrame(registry);
+    expect(
+      () => frame.withPixels<void>((_) => throw const FormatException('x')),
+      throwsFormatException,
+    );
+    frame.release();
+    expect(registry.liveCount, 0);
+  });
+
+  test('an asynchronous callback is refused', () async {
+    final registry = FakeFrameRegistry.create();
+    final frame = newFrame(registry);
+    expect(
+      () => frame.withPixels((p) async => p[0]),
+      throwsArgumentError,
+      reason: 'the view would outlive the lend',
+    );
+    frame.release();
+    expect(registry.liveCount, 0);
   });
 
   test('second release is a no-op', () {
@@ -115,7 +163,10 @@ void main() {
     expect(adopted[3], 1);
 
     // The sender can no longer read, and its release leaves the frame live.
-    expect(() => frame.pixels, throwsA(isA<FrameReleasedError>()));
+    expect(
+      () => frame.withPixels((p) => p[0]),
+      throwsA(isA<FrameReleasedError>()),
+    );
     frame.release();
     expect(registry.liveCount, 1);
     expect(registry.releaseCalls, isEmpty);
