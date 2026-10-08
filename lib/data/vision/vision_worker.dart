@@ -189,7 +189,14 @@ void _visionWorkerMain(_WorkerInit init) {
     templates[item.name] = template;
   }
 
-  final job = init.jobFactory();
+  final VisionJob<Object?, Object?> job;
+  try {
+    job = init.jobFactory();
+  } on Object catch (error) {
+    runtime.dispose();
+    init.replyTo.send(_OpenFailed('Vision job factory failed: $error'));
+    return;
+  }
   final context = VisionJobContext(
     runtime,
     templates: templates,

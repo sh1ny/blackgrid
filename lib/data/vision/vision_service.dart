@@ -378,7 +378,12 @@ final class VisionService<P, R> {
       _onOverrun(request);
     } else {
       if (identical(request, _pending)) _pending = null;
-      if (identical(request, _unsent)) _unsent = null;
+      if (identical(request, _unsent)) {
+        // The pending request moves up, so it stays first in line: a newer
+        // submission replaces it instead of running ahead of it.
+        _unsent = _pending;
+        _pending = null;
+      }
       _finish(request, VisionDeadlineExceeded<R>(request.submittedQpc));
     }
   }
@@ -533,12 +538,9 @@ final class VisionService<P, R> {
         } else {
           _state = VisionServiceState.ready;
           if (!_startResult.isCompleted) _startResult.complete(null);
-          // The unsent request may have expired during a slow start; the
-          // pending one behind it can still have time left.
-          final first = _unsent ?? _pending;
+          final first = _unsent;
           if (first != null) {
             _unsent = null;
-            if (identical(first, _pending)) _pending = null;
             _dispatch(first);
           }
         }

@@ -111,6 +111,9 @@ final class _EchoJob implements VisionJob<Object?, Object?> {
 
 VisionJob<Object?, Object?> echoJob() => const _EchoJob();
 
+/// A job factory that fails in the worker, after the runtime opened.
+VisionJob<int, Probe> throwingJobFactory() => throw StateError('no job');
+
 /// The shared registry at [address], except inside the worker isolate, where
 /// it throws: the worker then dies of an uncaught error while adopting its
 /// first frame, before it can release it.
@@ -308,6 +311,26 @@ void main() {
     expect(rig.service.state, VisionServiceState.unavailable);
     expect(rig.control.openCount, 0);
     expect(rig.control.operationCount, 0);
+  });
+
+  test('a throwing job factory fails start and disposes the runtime', () async {
+    final rig = Rig(jobFactory: throwingJobFactory);
+    addTearDown(rig.dispose);
+
+    final failure = await rig.service.start();
+
+    expect(
+      failure,
+      isA<VisionWorkerStartFailure>().having(
+        (f) => f.message,
+        'message',
+        contains('job factory failed'),
+      ),
+    );
+    expect(rig.service.state, VisionServiceState.unavailable);
+    await rig.service.workerExit;
+    expect(rig.control.engineDisposeCount, 1);
+    expect(rig.control.nativeCloseCount, 1);
   });
 
   test('invalid or zero-variance template fails start with invalidTemplate and '
@@ -659,6 +682,35 @@ void main() {
         1,
         reason: 'the expired one never ran',
       );
+      expect(rig.service.state, VisionServiceState.ready);
+    });
+
+    test('the survivor of an expired unsent request runs before a newer '
+        'one', () async {
+      const deadline = Duration(milliseconds: 600);
+      final rig = Rig(deadline: deadline);
+      addTearDown(rig.dispose);
+      addTearDown(() => rig.control.openHeld = false);
+      rig.control.openHeld = true;
+      final first = rig.service.submit(sample(), 1);
+      final gap = Completer<void>();
+      Timer(deadline ~/ 2, gap.complete);
+      await gap.future;
+      final second = rig.service.submit(sample(), 2);
+      expect(await first, isA<VisionDeadlineExceeded<Probe>>());
+
+      // The survivor moved up into the unsent slot, so the newer request
+      // waits behind it instead of running ahead of it.
+      final third = rig.service.submit(sample(), 3);
+      final order = <int>[];
+      unawaited(second.then((_) => order.add(2)));
+      unawaited(third.then((_) => order.add(3)));
+      rig.control.openHeld = false;
+
+      expect(await second, isA<VisionDelivered<Probe>>());
+      expect(await third, isA<VisionDelivered<Probe>>());
+      expect(order, [2, 3]);
+      expect(rig.control.operationCount, 2);
       expect(rig.service.state, VisionServiceState.ready);
     });
   });
