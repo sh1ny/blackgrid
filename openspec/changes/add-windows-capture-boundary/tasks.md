@@ -113,7 +113,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 5. Validation, coherence and frames
 
-- [ ] 5.1 Write failing `test/data/capture/capture_policy_test.dart` (snapshot decode, identity validation, coherence, blank, layout and provenance rows) against a fake `CapturePlatform` that records release calls. Write failing `test/data/capture/capture_frame_test.dart` (release twice, read after release, hand-off across two isolates through a fake registry). Verify: both fail for the missing implementation.
+- [x] 5.1 Write failing `test/data/capture/capture_policy_test.dart` (snapshot decode, identity validation, coherence, blank, layout and provenance rows) against a fake `CapturePlatform` that records release calls. Write failing `test/data/capture/capture_frame_test.dart` (release twice, read after release, hand-off across two isolates through a fake registry). Verify: both fail for the missing implementation.
 - [ ] 5.2 Implement `lib/data/capture/capture_target.dart` (title and executable allow-list), `capture_policy.dart` (validate against S0, plan, capture, compare pre and post with S0, blank check, release on every reject, executable-name cache keyed by `(hwnd, pid, tid)`) and `capture_frame.dart` (`CaptureFrame implements Finalizable`, `NativeFinalizer` on the release entry, `pixels` view, `handOff`/`adopt` tickets, idempotent release). Verify: both test files pass; flip their rows green.
 
 ## 6. Capture service and worker isolate
