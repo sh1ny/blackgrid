@@ -14,12 +14,12 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 | Native vision calls never overlap | Deadline passes during a held call | vision_service_test.dart | deadline never starts a second native call | green |
 | One active and one replaceable pending request | Pending request runs after the active one | vision_service_test.dart | pending request runs after the active one | green |
 | One active and one replaceable pending request | Newer request replaces the pending one | vision_service_test.dart | newer request supersedes the pending one at once | green |
-| Results are fenced by generation | Current result is delivered | vision_service_test.dart | current-generation result is delivered | red |
-| Results are fenced by generation | Invalidation during an active job | vision_service_test.dart | invalidate answers the active request at once and discards its late result | red |
-| Results are fenced by generation | Invalidation with a pending request | vision_service_test.dart | invalidate answers the pending request without running it | red |
-| Requests have a deadline | Request finishes in time | vision_service_test.dart | request within its deadline is delivered and the service is not overrun | red |
-| Requests have a deadline | Active request overruns | vision_service_test.dart | active request past its deadline answers visionTimeout and overruns until the call returns | red |
-| Requests have a deadline | Pending request expires while waiting | vision_service_test.dart | pending request that expires is answered visionTimeout and never runs | red |
+| Results are fenced by generation | Current result is delivered | vision_service_test.dart | current-generation result is delivered | green |
+| Results are fenced by generation | Invalidation during an active job | vision_service_test.dart | invalidate answers the active request at once and discards its late result | green |
+| Results are fenced by generation | Invalidation with a pending request | vision_service_test.dart | invalidate answers the pending request without running it | green |
+| Requests have a deadline | Request finishes in time | vision_service_test.dart | request within its deadline is delivered and the service is not overrun | green |
+| Requests have a deadline | Active request overruns | vision_service_test.dart | active request past its deadline answers visionTimeout and overruns until the call returns | green |
+| Requests have a deadline | Pending request expires while waiting | vision_service_test.dart | pending request that expires is answered visionTimeout and never runs | green |
 | Request inputs are owned and released exactly once | Frame released after success | vision_service_test.dart | frame input is released exactly once after success | red |
 | Request inputs are owned and released exactly once | Superseded frame released at once | vision_service_test.dart | superseded pending frame is released before the newer request is acknowledged | red |
 | Request inputs are owned and released exactly once | Malformed owned image | vision_service_test.dart | malformed owned image is rejected at submit and keeps the pending request | red |
@@ -59,7 +59,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 5. Generation fences and deadlines
 
 - [x] 5.1 Write failing tests for rows "Current result is delivered", "Invalidation during an active job", "Invalidation with a pending request", "Request finishes in time", "Active request overruns" and "Pending request expires while waiting".
-- [ ] 5.2 Implement generations and deadlines (D2, D3). Each request stamps the generation and gets a 1.5 s deadline from submission, set by a constructor parameter. `invalidate()` advances the generation and answers both the active and the pending request `invalidated` at once. It cancels their answering timers but keeps the active seq tracked until the reply. Keep a separate **overrun-only timer** for the active request's original deadline: when it fires it moves the service to `overrun` without answering the caller again (review note 2). A pending request's deadline answers `visionTimeout` and releases its input. Replies whose seq is not active, or whose generation is stale, are discarded. Do not port CaptureService's held-reply flush trick: the worker releases inputs before replying (review note 1). Verify: the six rows turn green.
+- [x] 5.2 Implement generations and deadlines (D2, D3). Each request stamps the generation and gets a 1.5 s deadline from submission, set by a constructor parameter. `invalidate()` advances the generation and answers both the active and the pending request `invalidated` at once. It cancels their answering timers but keeps the active seq tracked until the reply. Keep a separate **overrun-only timer** for the active request's original deadline: when it fires it moves the service to `overrun` without answering the caller again (review note 2). A pending request's deadline answers `visionTimeout` and releases its input. Replies whose seq is not active, or whose generation is stale, are discarded. Do not port CaptureService's held-reply flush trick: the worker releases inputs before replying (review note 1). Verify: the six rows turn green.
 
 ## 6. Input ownership
 

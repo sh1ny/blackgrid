@@ -88,8 +88,8 @@ final class VisionWorkerStartFailure extends VisionStartFailure {
 /// native calls never overlap. A request submitted before the worker is ready
 /// is held unsent and admitted once it is.
 ///
-/// Later task groups add the full deadline and overrun handling, invalidation,
-/// frame inputs, job error isolation and the bounded close.
+/// Every request carries the generation current at submission and a deadline
+/// measured from submission (design D2, D3). Later task groups add frame inputs, job error isolation and the bounded close.
 final class VisionService<P, R> {
   /// Copies [templates] now, so later changes to the callers' bytes do not
   /// reach the worker.
@@ -139,6 +139,8 @@ final class VisionService<P, R> {
       Completer<VisionStartFailure?>();
 
   int _nextSeq = 0;
+  int _generation = 0;
+  _Request<R>? _unsent;
   _Request<R>? _active;
   _Request<R>? _pending;
   Future<void>? _closing;
@@ -171,21 +173,22 @@ final class VisionService<P, R> {
   /// Starts the service first if needed. With no request running the request
   /// is sent at once; otherwise it becomes the single pending request and
   /// replaces (answers [VisionSuperseded]) any earlier pending one.
-  Future<VisionAnswer<R>> submit(VisionImage image, P params) async {
+  Future<VisionAnswer<R>> submit(VisionImage image, P params) {
     final submitted = _clock();
-    await start();
     switch (_state) {
       case VisionServiceState.unavailable:
-        return VisionUnavailableAnswer(
-          submitted,
-          _startFailure?.message ?? 'Vision worker is unavailable.',
-          failure: switch (_startFailure) {
-            VisionRuntimeStartFailure(:final failure) => failure,
-            _ => null,
-          },
+        return Future.value(
+          VisionUnavailableAnswer<R>(
+            submitted,
+            _startFailure?.message ?? 'Vision worker is unavailable.',
+            failure: switch (_startFailure) {
+              VisionRuntimeStartFailure(:final failure) => failure,
+              _ => null,
+            },
+          ),
         );
       case VisionServiceState.closing || VisionServiceState.closed:
-        return VisionClosed(submitted);
+        return Future.value(VisionClosed<R>(submitted));
       case VisionServiceState.idle ||
           VisionServiceState.starting ||
           VisionServiceState.ready ||
@@ -193,18 +196,58 @@ final class VisionService<P, R> {
           VisionServiceState.overrun:
         break;
     }
-    final request = _Request<R>(submitted, _OwnedImageInit.copy(image), params);
+    final request = _Request<R>(
+      submitted,
+      _generation,
+      _OwnedImageInit.copy(image),
+      params,
+    );
     request.timer = Timer(deadline, () => _onDeadline(request));
-    if (_state == VisionServiceState.ready) {
-      _dispatch(request);
-    } else {
-      final replaced = _pending;
-      _pending = request;
-      if (replaced != null) {
-        _finish(replaced, VisionSuperseded<R>(replaced.submittedQpc));
-      }
+    unawaited(start());
+    switch (_state) {
+      case VisionServiceState.ready:
+        _dispatch(request);
+      case VisionServiceState.idle || VisionServiceState.starting
+          when _unsent == null:
+        _unsent = request;
+      default:
+        _setPending(request);
     }
     return request.completer.future;
+  }
+
+  /// Advances the generation: the unsent, pending and active requests are all
+  /// answered [VisionInvalidated] at once, and none is answered again.
+  ///
+  /// The active request stays tracked until the worker replies, so its late
+  /// result is discarded and no second native call starts. If that call
+  /// outlasts the request's original deadline the service reports `overrun`
+  /// without answering the caller again.
+  void invalidate() {
+    _generation++;
+    final unsent = _unsent;
+    final pending = _pending;
+    _unsent = null;
+    _pending = null;
+    for (final request in [?unsent, ?pending]) {
+      _finish(request, VisionInvalidated<R>(request.submittedQpc));
+    }
+    final active = _active;
+    if (active == null || active.completer.isCompleted) return;
+    _finish(active, VisionInvalidated<R>(active.submittedQpc));
+    final remaining = deadline - active.age.elapsed;
+    active.overrunTimer = Timer(
+      remaining.isNegative ? Duration.zero : remaining,
+      () => _onOverrun(active),
+    );
+  }
+
+  void _setPending(_Request<R> request) {
+    final replaced = _pending;
+    _pending = request;
+    if (replaced != null) {
+      _finish(replaced, VisionSuperseded<R>(replaced.submittedQpc));
+    }
   }
 
   /// Sends [request] to the worker. Only called when nothing is in flight.
@@ -220,21 +263,29 @@ final class VisionService<P, R> {
   /// The request's deadline passed before it was answered.
   void _onDeadline(_Request<R> request) {
     if (request.completer.isCompleted) return;
-    if (identical(request, _pending)) {
-      _pending = null;
-      _finish(request, VisionDeadlineExceeded<R>(request.submittedQpc));
-    } else if (identical(request, _active)) {
+    if (identical(request, _active)) {
       // The native call is still running: stay busy until its reply arrives.
       _finish(request, VisionDeadlineExceeded<R>(request.submittedQpc));
-      if (_state == VisionServiceState.active) {
-        _state = VisionServiceState.overrun;
-      }
+      _onOverrun(request);
+    } else {
+      if (identical(request, _pending)) _pending = null;
+      if (identical(request, _unsent)) _unsent = null;
+      _finish(request, VisionDeadlineExceeded<R>(request.submittedQpc));
+    }
+  }
+
+  /// The active request outlived its deadline: busy until the worker replies.
+  void _onOverrun(_Request<R> request) {
+    if (identical(request, _active) && _state == VisionServiceState.active) {
+      _state = VisionServiceState.overrun;
     }
   }
 
   void _finish(_Request<R> request, VisionAnswer<R> answer) {
     request.timer?.cancel();
     request.timer = null;
+    request.overrunTimer?.cancel();
+    request.overrunTimer = null;
     request.image = null;
     if (!request.completer.isCompleted) request.completer.complete(answer);
   }
@@ -314,6 +365,11 @@ final class VisionService<P, R> {
         } else {
           _state = VisionServiceState.ready;
           if (!_startResult.isCompleted) _startResult.complete(null);
+          final first = _unsent;
+          if (first != null) {
+            _unsent = null;
+            _dispatch(first);
+          }
         }
       case _OpenFailed():
         _markUnavailable(message.toFailure());
@@ -332,16 +388,22 @@ final class VisionService<P, R> {
     final active = _active;
     if (active == null || active.seq != reply.seq) return;
     _active = null;
-    // A reply after the deadline is discarded: the completer is already done.
-    _finish(
-      active,
-      VisionDelivered<R>(
-        reply.result as R,
-        submittedQpc: active.submittedQpc,
-        startedQpc: reply.startedQpc,
-        finishedQpc: reply.finishedQpc,
-      ),
-    );
+    // Delivered only while the caller still waits and the generation is
+    // current. A late or stale result is discarded: the caller was already
+    // answered, and the worker released the input before replying.
+    if (!active.completer.isCompleted && active.generation == _generation) {
+      _finish(
+        active,
+        VisionDelivered<R>(
+          reply.result as R,
+          submittedQpc: active.submittedQpc,
+          startedQpc: reply.startedQpc,
+          finishedQpc: reply.finishedQpc,
+        ),
+      );
+    } else {
+      _finish(active, VisionInvalidated<R>(active.submittedQpc));
+    }
     if (_state == VisionServiceState.active ||
         _state == VisionServiceState.overrun) {
       _state = VisionServiceState.ready;
@@ -388,9 +450,11 @@ final class VisionService<P, R> {
   void _answerAll(VisionAnswer<R> Function(int submittedQpc) answer) {
     final active = _active;
     final pending = _pending;
+    final unsent = _unsent;
     _active = null;
     _pending = null;
-    for (final request in [?active, ?pending]) {
+    _unsent = null;
+    for (final request in [?active, ?unsent, ?pending]) {
       _finish(request, answer(request.submittedQpc));
     }
   }
@@ -399,12 +463,20 @@ final class VisionService<P, R> {
 /// One submitted request: in flight at the worker, or waiting in the pending
 /// slot (then [image] is still held).
 final class _Request<R> {
-  _Request(this.submittedQpc, this.image, this.params);
+  _Request(this.submittedQpc, this.generation, this.image, this.params);
 
   final int submittedQpc;
+  final int generation;
+
+  /// Time since submission, for the overrun timer's remaining deadline.
+  final Stopwatch age = Stopwatch()..start();
   final Object? params;
   _OwnedImageInit? image;
   int seq = 0;
   Timer? timer;
+
+  /// Fires at the original deadline of an invalidated active request; moves
+  /// the service to `overrun` without answering the caller again.
+  Timer? overrunTimer;
   final Completer<VisionAnswer<R>> completer = Completer<VisionAnswer<R>>();
 }
