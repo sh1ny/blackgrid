@@ -67,7 +67,7 @@ A fallback request SHALL plan the target's entire client rectangle, intersected 
 - **THEN** the planned region is client (100, 0, 1820, 1080), and the frame is marked clipped
 
 ### Requirement: Clipping is explicit, never padded
-A planned region SHALL be intersected with the client rectangle and the virtual desktop. A non-empty intersection SHALL be captured at its real size, with both the requested and captured rectangles reported and the frame marked clipped. An empty intersection SHALL fail with `roiOutsideClient`. Missing area SHALL NOT be filled with padding.
+A planned region SHALL be intersected with the client rectangle and the virtual desktop. A non-empty intersection SHALL be captured at its real size, with both the requested and captured rectangles reported. The frame SHALL be marked clipped exactly when the captured rectangle differs from the requested one. An empty intersection SHALL fail with `roiOutsideClient`. Missing area SHALL NOT be filled with padding.
 
 #### Scenario: Region crosses the right edge
 - **WHEN** a targeted region is planned for a click at client point (1500, 500) on a 1920×1080 client
