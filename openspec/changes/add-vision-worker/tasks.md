@@ -20,10 +20,10 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 | Requests have a deadline | Request finishes in time | vision_service_test.dart | request within its deadline is delivered and the service is not overrun | green |
 | Requests have a deadline | Active request overruns | vision_service_test.dart | active request past its deadline answers visionTimeout and overruns until the call returns | green |
 | Requests have a deadline | Pending request expires while waiting | vision_service_test.dart | pending request that expires is answered visionTimeout and never runs | green |
-| Request inputs are owned and released exactly once | Frame released after success | vision_service_test.dart | frame input is released exactly once after success | red |
-| Request inputs are owned and released exactly once | Superseded frame released at once | vision_service_test.dart | superseded pending frame is released before the newer request is acknowledged | red |
-| Request inputs are owned and released exactly once | Malformed owned image | vision_service_test.dart | malformed owned image is rejected at submit and keeps the pending request | red |
-| Request inputs are owned and released exactly once | Service dropped with a pending frame | vision_service_test.dart | pending frame keeps its finalizer until it is sent | red |
+| Request inputs are owned and released exactly once | Frame released after success | vision_service_test.dart | frame input is released exactly once after success | green |
+| Request inputs are owned and released exactly once | Superseded frame released at once | vision_service_test.dart | superseded pending frame is released before the newer request is acknowledged | green |
+| Request inputs are owned and released exactly once | Malformed owned image | vision_service_test.dart | malformed owned image is rejected at submit and keeps the pending request | green |
+| Request inputs are owned and released exactly once | Service dropped with a pending frame | vision_service_test.dart | pending frame keeps its finalizer until it is sent | green |
 | A failing job does not break the worker | Job throws | vision_service_test.dart | throwing job answers jobFailed and the worker stays ready | red |
 | A failing job does not break the worker | Native failure inside a job | vision_service_test.dart | native failure inside a job reaches the caller typed | red |
 | Answers carry monotonic stage timestamps | Timestamps of a completed request | vision_service_test.dart | completed answer reports ordered submit, start and end timestamps | red |
@@ -64,7 +64,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 6. Input ownership
 
 - [x] 6.1 Write failing tests for rows "Frame released after success", "Superseded frame released at once", "Malformed owned image" and "Service dropped with a pending frame". The finalizer test drops a service holding a pending frame, forces GC as the capture finalizer tests do, and asserts that `FakeFrameRegistry` `effectiveReleases` and `liveCount` return to baseline.
-- [ ] 6.2 Implement D5. `submit` accepts a `CaptureFrame` (kept adopted, finalizer attached, while pending; `handOff()` only on send) or an owned `VisionImage` (validated in `submit()` with `VisionImage.validate`; `invalidInput` does not touch the pending slot). The worker adopts the ticket with its registry, lends pixels to the job as a BGRX 4-channel image, and releases the frame before replying on every path. The service releases each pending frame on supersede, invalidate, expire, close and unavailable. Verify: the four rows turn green, and `liveCount` is at baseline in every test's tearDown.
+- [x] 6.2 Implement D5. `submit` accepts a `CaptureFrame` (kept adopted, finalizer attached, while pending; `handOff()` only on send) or an owned `VisionImage` (validated in `submit()` with `VisionImage.validate`; `invalidInput` does not touch the pending slot). The worker adopts the ticket with its registry, lends pixels to the job as a BGRX 4-channel image, and releases the frame before replying on every path. The service releases each pending frame on supersede, invalidate, expire, close and unavailable. Verify: the four rows turn green, and `liveCount` is at baseline in every test's tearDown.
 
 ## 7. Job failures and timestamps
 

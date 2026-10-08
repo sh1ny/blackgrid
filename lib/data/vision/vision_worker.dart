@@ -62,6 +62,7 @@ final class _WorkerInit {
     required this.runtimeDirectory,
     required this.opener,
     required this.platformFactory,
+    required this.registryFactory,
     required this.jobFactory,
     required this.templates,
   });
@@ -70,6 +71,7 @@ final class _WorkerInit {
   final String runtimeDirectory;
   final VisionNativeOpener opener;
   final CapturePlatformFactory platformFactory;
+  final FrameRegistryFactory registryFactory;
 
   // Covariant on purpose: the service only sends parameters of its own `P`.
   final VisionJob<Object?, Object?> Function() jobFactory;
@@ -77,11 +79,15 @@ final class _WorkerInit {
 }
 
 final class _Run {
-  const _Run(this.seq, this.image, this.params);
+  const _Run(this.seq, this.params, this.image, this.ticket);
 
   final int seq;
-  final _OwnedImageInit image;
   final Object? params;
+
+  /// Exactly one of [image] and [ticket] is set. A ticket's frame belongs to
+  /// the worker from the moment it is sent.
+  final _OwnedImageInit? image;
+  final CaptureFrameTicket? ticket;
 }
 
 final class _Close {
@@ -161,17 +167,32 @@ void _visionWorkerMain(_WorkerInit init) {
     templates: templates,
     qpcNow: qpcNow,
   );
+  FrameRegistry? registry;
   final commands = RawReceivePort();
   commands.handler = (Object? message) {
     switch (message) {
       case _Run():
+        final ticket = message.ticket;
+        // Adopted before anything can throw, so the frame is always released.
+        final frame = ticket == null
+            ? null
+            : CaptureFrame.adopt(ticket, registry ??= init.registryFactory());
         final started = qpcNow();
-        final result = job.run(
-          context,
-          VisionJobInput.image(message.image.materialize()),
-          message.params,
-        );
-        final finished = qpcNow();
+        final Object? result;
+        final int finished;
+        try {
+          result = job.run(
+            context,
+            frame != null
+                ? VisionJobInput.frame(frame)
+                : VisionJobInput.image(message.image!.materialize()),
+            message.params,
+          );
+          finished = qpcNow();
+        } finally {
+          // Released before the reply on every path.
+          frame?.release();
+        }
         init.replyTo.send(_Reply(message.seq, result, started, finished));
       case _Close():
         runtime.dispose();

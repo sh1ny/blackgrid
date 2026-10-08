@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import '../capture/capture_frame.dart';
 import '../capture/capture_native.dart';
+import '../capture/capture_service.dart'
+    show FrameRegistryFactory, openDefaultFrameRegistry;
 import 'vision_job.dart';
 import 'vision_native.dart' show openVisionNative;
 import 'vision_runtime.dart';
@@ -89,7 +92,7 @@ final class VisionWorkerStartFailure extends VisionStartFailure {
 /// is held unsent and admitted once it is.
 ///
 /// Every request carries the generation current at submission and a deadline
-/// measured from submission (design D2, D3). Later task groups add frame inputs, job error isolation and the bounded close.
+/// measured from submission (design D2, D3). Later task groups add job error isolation and the bounded close.
 final class VisionService<P, R> {
   /// Copies [templates] now, so later changes to the callers' bytes do not
   /// reach the worker.
@@ -104,6 +107,7 @@ final class VisionService<P, R> {
     List<VisionTemplate> templates = const [],
     this.opener = openVisionNative,
     this.platformFactory = openDefaultNativeCapturePlatform,
+    this.registryFactory = openDefaultFrameRegistry,
     this._qpcNow,
     this.deadline = const Duration(milliseconds: 1500),
   }) : _templates = [for (final t in templates) _TemplateInit.copy(t)];
@@ -120,6 +124,13 @@ final class VisionService<P, R> {
   /// Builds the capture platform inside the worker (and here, unless a
   /// [qpcNow] was given) for the QPC clock.
   final CapturePlatformFactory platformFactory;
+
+  /// Builds the frame registry inside the worker, which adopts each frame
+  /// ticket with it. Called on the first frame request.
+  ///
+  /// Must be a top-level function or a closure over sendable values. Tests
+  /// pass a factory over shared state so both isolates see the same frames.
+  final FrameRegistryFactory registryFactory;
 
   /// How long a request may take, measured from its submission.
   final Duration deadline;
@@ -170,13 +181,51 @@ final class VisionService<P, R> {
 
   /// Runs the job over the owned [image] with [params].
   ///
+  /// The bytes are copied now, so the caller keeps its [image]. A malformed
+  /// image is answered [VisionInvalidInput] at once: nothing is admitted and
+  /// the pending request is left alone.
+  ///
   /// Starts the service first if needed. With no request running the request
   /// is sent at once; otherwise it becomes the single pending request and
   /// replaces (answers [VisionSuperseded]) any earlier pending one.
   Future<VisionAnswer<R>> submit(VisionImage image, P params) {
     final submitted = _clock();
+    final invalid = image.validate();
+    if (invalid != null) {
+      return Future.value(VisionInvalidInput<R>(submitted, invalid.reason));
+    }
+    return _admit(submitted, params, image: image);
+  }
+
+  /// Runs the job over the capture [frame] with [params], viewed as a BGRX
+  /// 4-channel image. Admission is as for [submit].
+  ///
+  /// The service takes ownership: the caller must not use [frame] again. The
+  /// service keeps it, finalizer attached, while the request waits, and hands
+  /// it to the worker only when sending, so a service dropped without
+  /// [close] cannot strand the frame. The frame is released exactly once on
+  /// every outcome: by the worker once sent, by the service otherwise
+  /// (superseded, invalidated, expired, closed or unavailable). A frame that
+  /// is already released is answered [VisionInvalidInput].
+  Future<VisionAnswer<R>> submitFrame(CaptureFrame frame, P params) {
+    final submitted = _clock();
+    if (frame.isReleased) {
+      return Future.value(
+        VisionInvalidInput<R>(submitted, 'frame is already released'),
+      );
+    }
+    return _admit(submitted, params, frame: frame);
+  }
+
+  Future<VisionAnswer<R>> _admit(
+    int submitted,
+    P params, {
+    VisionImage? image,
+    CaptureFrame? frame,
+  }) {
     switch (_state) {
       case VisionServiceState.unavailable:
+        frame?.release();
         return Future.value(
           VisionUnavailableAnswer<R>(
             submitted,
@@ -188,6 +237,7 @@ final class VisionService<P, R> {
           ),
         );
       case VisionServiceState.closing || VisionServiceState.closed:
+        frame?.release();
         return Future.value(VisionClosed<R>(submitted));
       case VisionServiceState.idle ||
           VisionServiceState.starting ||
@@ -199,10 +249,16 @@ final class VisionService<P, R> {
     final request = _Request<R>(
       submitted,
       _generation,
-      _OwnedImageInit.copy(image),
+      image == null ? null : _OwnedImageInit.copy(image),
+      frame,
       params,
     );
-    request.timer = Timer(deadline, () => _onDeadline(request));
+    // The timer holds the service and request weakly: a pending frame must
+    // stay collectable (and so finalized) if the owner drops the service.
+    request.timer = Timer(
+      deadline,
+      _expireWeakly(WeakReference(this), WeakReference(request)),
+    );
     unawaited(start());
     switch (_state) {
       case VisionServiceState.ready:
@@ -252,12 +308,18 @@ final class VisionService<P, R> {
 
   /// Sends [request] to the worker. Only called when nothing is in flight.
   void _dispatch(_Request<R> request) {
-    final image = request.image!;
+    final image = request.image;
     request.image = null;
+    // Ownership of a frame moves out here, and only here: its finalizer is
+    // detached and the worker adopts the ticket. The id stays on the request
+    // until the reply, so a dead worker's ticket can be released by id.
+    final ticket = request.frame?.handOff();
+    request.frame = null;
+    request.sentFrameId = ticket?.frameId;
     request.seq = ++_nextSeq;
     _active = request;
     _state = VisionServiceState.active;
-    _commands!.send(_Run(request.seq, image, request.params));
+    _commands!.send(_Run(request.seq, request.params, image, ticket));
   }
 
   /// The request's deadline passed before it was answered.
@@ -287,6 +349,9 @@ final class VisionService<P, R> {
     request.overrunTimer?.cancel();
     request.overrunTimer = null;
     request.image = null;
+    // A frame that was never sent is released here, before the answer.
+    request.frame?.release();
+    request.frame = null;
     if (!request.completer.isCompleted) request.completer.complete(answer);
   }
 
@@ -329,8 +394,10 @@ final class VisionService<P, R> {
 
   void _spawn() {
     _spawned = true;
-    final port = RawReceivePort(_onMessage);
+    final port = RawReceivePort();
     _port = port;
+    // Weak, so an abandoned service (and the frame it holds) can be collected.
+    port.handler = _forwardWeakly(WeakReference(this), port);
     Isolate.spawn(
       _visionWorkerMain,
       _WorkerInit(
@@ -338,6 +405,7 @@ final class VisionService<P, R> {
         runtimeDirectory: runtimeDirectory,
         opener: opener,
         platformFactory: platformFactory,
+        registryFactory: registryFactory,
         jobFactory: jobFactory,
         templates: _templates,
       ),
@@ -388,6 +456,7 @@ final class VisionService<P, R> {
     final active = _active;
     if (active == null || active.seq != reply.seq) return;
     _active = null;
+    active.sentFrameId = null; // the worker released it before replying
     // Delivered only while the caller still waits and the generation is
     // current. A late or stale result is discarded: the caller was already
     // answered, and the worker released the input before replying.
@@ -461,9 +530,15 @@ final class VisionService<P, R> {
 }
 
 /// One submitted request: in flight at the worker, or waiting in the pending
-/// slot (then [image] is still held).
+/// slot (then [image] or [frame] is still held).
 final class _Request<R> {
-  _Request(this.submittedQpc, this.generation, this.image, this.params);
+  _Request(
+    this.submittedQpc,
+    this.generation,
+    this.image,
+    this.frame,
+    this.params,
+  );
 
   final int submittedQpc;
   final int generation;
@@ -472,6 +547,12 @@ final class _Request<R> {
   final Stopwatch age = Stopwatch()..start();
   final Object? params;
   _OwnedImageInit? image;
+
+  /// The adopted frame while the request is unsent; null once sent.
+  CaptureFrame? frame;
+
+  /// Id of the frame ticket sent to the worker and not yet seen answered.
+  int? sentFrameId;
   int seq = 0;
   Timer? timer;
 
@@ -479,4 +560,46 @@ final class _Request<R> {
   /// the service to `overrun` without answering the caller again.
   Timer? overrunTimer;
   final Completer<VisionAnswer<R>> completer = Completer<VisionAnswer<R>>();
+}
+
+/// The port handler for [service]. Built outside the service's methods so its
+/// closure context cannot capture the service itself: a captured service
+/// would stay reachable from the open port and never be collected.
+void Function(Object?) _forwardWeakly(
+  WeakReference<VisionService<Object?, Object?>> service,
+  RawReceivePort port,
+) {
+  SendPort? commands;
+  return (Object? message) {
+    final target = service.target;
+    if (target != null) {
+      target._onMessage(message);
+      return;
+    }
+    // The service was dropped: stop the worker when it next speaks.
+    switch (message) {
+      case _Ready(commands: final sent):
+        commands = sent;
+        sent.send(const _Close());
+      case _Reply():
+        commands?.send(const _Close());
+      case null:
+        port.close();
+      default:
+        break;
+    }
+  };
+}
+
+/// The deadline callback for [request] on [service]. Built outside the
+/// service's methods so its closure context cannot capture the service: a
+/// pending timer must not keep an abandoned service reachable.
+void Function() _expireWeakly<R>(
+  WeakReference<VisionService<Object?, R>> service,
+  WeakReference<_Request<R>> request,
+) {
+  return () {
+    final expired = request.target;
+    if (expired != null) service.target?._onDeadline(expired);
+  };
 }
