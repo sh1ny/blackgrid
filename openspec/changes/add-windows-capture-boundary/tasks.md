@@ -25,7 +25,7 @@ Test locations:
 | scan-triggers → Hook lifecycle is explicit | Second start | test/data/capture/capture_native_qualification_test.dart | `second hook start returns alreadyStarted` | red |
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | windows/capture/selftest.cpp | `install_failure_reports_error_and_ends_thread` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | test/data/capture/trigger_source_test.dart | `stopTimedOut keeps the listener open and blocks restart` | red |
-| scan-triggers → Hook lifecycle is explicit | Normal startup | test/data/capture/capture_source_audit_test.dart | `no startup path imports or starts the trigger source` | red |
+| scan-triggers → Hook lifecycle is explicit | Normal startup | test/data/capture/capture_source_audit_test.dart | `no startup path imports or starts the trigger source` | green |
 | inspection-capture → Target snapshot | Window on a left/top secondary monitor | test/data/capture/capture_policy_test.dart | `snapshot decode keeps signed negative origins` | red |
 | inspection-capture → Target snapshot | Window no longer exists | test/data/capture/capture_native_qualification_test.dart | `snapshot of destroyed handle is targetGone` | red |
 | inspection-capture → Target identity is validated before capture | Valid target | test/data/capture/capture_policy_test.dart | `valid target passes validation` | red |
@@ -67,7 +67,7 @@ Test locations:
 | inspection-capture → Shutdown drains capture | Native call never returns | test/data/capture/capture_service_test.dart | `close reports shutdownIncomplete after 2 s without killing` | red |
 | inspection-capture → Shutdown drains capture | Frame produced after an incomplete shutdown | test/data/capture/capture_service_test.dart | `frame after shutdownIncomplete is released` | red |
 | inspection-capture → Shutdown drains capture | Reply after the worker failed | test/data/capture/capture_service_test.dart | `ticket reply in unavailable state is released` | red |
-| inspection-capture → The target process is never touched | Source audit | test/data/capture/capture_source_audit_test.dart | `capture sources call no process-access or input APIs` | red |
+| inspection-capture → The target process is never touched | Source audit | test/data/capture/capture_source_audit_test.dart | `capture sources call no process-access or input APIs` | green |
 | inspection-capture → The target process is never touched | Executable name lookup | windows/capture/selftest.cpp | `exe_name_from_toolhelp_for_own_pid` | green |
 | inspection-capture → Native self-test captures only its own window | Game not running | windows/capture/selftest.cpp | `captures_own_window_pattern_and_geometry` | green |
 | inspection-capture → Native self-test captures only its own window | Game running | windows/capture/selftest.cpp | `guard_refuses_when_listing_contains_game` | green |
@@ -103,7 +103,7 @@ The two existing tests that change (complete bundle, and bindings agree) start r
 
 ## 3. Dart binding, failures and source audit
 
-- [ ] 3.1 Write failing `test/data/capture/capture_source_audit_test.dart`. It scans `windows/capture/*.{h,cpp}` for the banned identifiers (word-boundary match) and checks that nothing under `lib/application/`, `lib/ui/` or `lib/main.dart` imports `lib/data/capture/` or starts the trigger source. Verify: it fails until the sources exist, then passes; flip both audit rows green.
+- [x] 3.1 Write failing `test/data/capture/capture_source_audit_test.dart`. It scans `windows/capture/*.{h,cpp}` for the banned identifiers (word-boundary match) and checks that nothing under `lib/application/`, `lib/ui/` or `lib/main.dart` imports `lib/data/capture/` or starts the trigger source. Verify: it fails until the sources exist, then passes; flip both audit rows green.
 - [ ] 3.2 Add `lib/data/capture/capture_failure.dart`: sealed `CaptureFailure` and `TriggerFailure` with the D3 catalogue, and a `CaptureResult` sealed result. Add `lib/data/capture/capture_native.dart`: an FFI binding that verifies the absolute path, `.sha256` and `bgc_abi()` before any lookup (like `raid_panel_ocr.dart:186-206`), plus a `CapturePlatform` seam interface that fakes implement. Verify: `mise run analyze` is clean.
 
 ## 4. Capture geometry (pure Dart)
