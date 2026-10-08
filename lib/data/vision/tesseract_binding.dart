@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
 import 'vision_image.dart';
 import 'vision_native.dart';
 import 'vision_primitives.dart';
+import 'vision_scratch.dart';
 
 /// Largest engine text decoded; longer output is cut and flagged.
 const int tesseractTextCap = 64 * 1024;
@@ -16,7 +16,7 @@ typedef TesseractHandle = Pointer<Void>;
 
 /// The D2 Tesseract C API function set, looked up by name.
 final class TesseractBinding {
-  TesseractBinding(DynamicLibrary library)
+  TesseractBinding(DynamicLibrary library, this._scratch)
     : _version = library
           .lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
             'TessVersion',
@@ -94,6 +94,7 @@ final class TesseractBinding {
             void Function(TesseractHandle)
           >('TessBaseAPIDelete');
 
+  final VisionScratch _scratch;
   final Pointer<Utf8> Function() _version;
   final TesseractHandle Function() _create;
   final Pointer<Utf8> Function(TesseractHandle) languages;
@@ -117,15 +118,16 @@ final class TesseractBinding {
   /// Null when the engine could not allocate its handle.
   VisionEngine? createEngine() {
     final handle = _create();
-    return handle == nullptr ? null : _FfiVisionEngine(this, handle);
+    return handle == nullptr ? null : _FfiVisionEngine(this, handle, _scratch);
   }
 }
 
 final class _FfiVisionEngine implements VisionEngine {
-  _FfiVisionEngine(this._api, this._handle);
+  _FfiVisionEngine(this._api, this._handle, this._scratch);
 
   final TesseractBinding _api;
   final TesseractHandle _handle;
+  final VisionScratch _scratch;
   bool _disposed = false;
 
   @override
@@ -156,42 +158,21 @@ final class _FfiVisionEngine implements VisionEngine {
   int get pageSegMode => _api.getPsm(_handle);
 
   @override
-  OcrText recognise(VisionImage image) {
-    final size = image.stride * image.height;
-    final buffer = calloc<Uint8>(size);
-    Pointer<Utf8> text = nullptr;
-    try {
-      buffer
-          .asTypedList(size)
-          .setAll(0, Uint8List.sublistView(image.bytes, 0, size));
-      _api.setImage(
-        _handle,
-        buffer,
-        image.width,
-        image.height,
-        image.channels,
-        image.stride,
-      );
-      text = _api.getText(_handle);
-      if (text == nullptr) {
-        throw const VisionNativeError(-5, 'OCR engine returned no text');
-      }
-      final bytes = text.cast<Uint8>();
-      var length = 0;
-      while (length < tesseractTextCap && bytes[length] != 0) {
-        length++;
-      }
-      final truncated = length == tesseractTextCap && bytes[length] != 0;
-      return OcrText(
-        utf8.decode(bytes.asTypedList(length), allowMalformed: true),
-        truncated: truncated,
-      );
-    } finally {
-      if (text != nullptr) _api.deleteText(text);
-      _api.clear(_handle);
-      calloc.free(buffer);
-    }
-  }
+  OcrText recognise(VisionImage image) => recogniseStaged(
+    scratch: _scratch,
+    image: image,
+    setImage: (buffer) => _api.setImage(
+      _handle,
+      buffer,
+      image.width,
+      image.height,
+      image.channels,
+      image.stride,
+    ),
+    getText: () => _api.getText(_handle),
+    deleteText: _api.deleteText,
+    clear: () => _api.clear(_handle),
+  );
 
   @override
   void dispose() {
@@ -199,5 +180,40 @@ final class _FfiVisionEngine implements VisionEngine {
     _disposed = true;
     _api.end(_handle);
     _api.delete(_handle);
+  }
+}
+
+/// Stages [image] in the scratch input buffer, hands it to the engine through
+/// [setImage], reads at most [tesseractTextCap] bytes of [getText], then
+/// always releases the text and clears the engine image. The engine only
+/// borrows the staged pointer until [clear].
+OcrText recogniseStaged({
+  required VisionScratch scratch,
+  required VisionImage image,
+  required void Function(Pointer<Uint8> buffer) setImage,
+  required Pointer<Utf8> Function() getText,
+  required void Function(Pointer<Utf8> text) deleteText,
+  required void Function() clear,
+}) {
+  Pointer<Utf8> text = nullptr;
+  try {
+    setImage(scratch.input.stage(image));
+    text = getText();
+    if (text == nullptr) {
+      throw const VisionNativeError(-5, 'OCR engine returned no text');
+    }
+    final bytes = text.cast<Uint8>();
+    var length = 0;
+    while (length < tesseractTextCap && bytes[length] != 0) {
+      length++;
+    }
+    final truncated = length == tesseractTextCap && bytes[length] != 0;
+    return OcrText(
+      utf8.decode(bytes.asTypedList(length), allowMalformed: true),
+      truncated: truncated,
+    );
+  } finally {
+    if (text != nullptr) deleteText(text);
+    clear();
   }
 }

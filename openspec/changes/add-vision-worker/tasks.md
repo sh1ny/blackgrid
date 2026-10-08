@@ -79,7 +79,7 @@ Every test runs offline. Each row is in `test/data/vision/vision_service_test.da
 ## 9. Scratch pool
 
 - [x] 9.1 Write failing tests in `test/data/vision/vision_scratch_test.dart`. Repeated primitive and OCR calls of the same size allocate no new native buffer; a request above 16 MiB is trimmed back to 16 MiB retained afterwards; dispose frees everything; outputs are identical to the per-call path for each primitive on fixed fixtures.
-- [ ] 9.2 Implement D6. Add a scratch pool used by `FfiVisionPrimitives` (`vision_primitives.dart:203-230`) and the Tesseract `recognise` copy (`tesseract_binding.dart:160-192`), owned per runtime and freed in `VisionRuntime.dispose`. The worker trims it after each request. Keep the `bgv_*` ABI and the public `VisionRuntime` API unchanged. Verify: 9.1 is green, `test/data/vision/vision_runtime_test.dart` and `test/application/vision_self_check_test.dart` still pass, and `mise run analyze` is clean.
+- [x] 9.2 Implement D6. Add a scratch pool used by `FfiVisionPrimitives` (`vision_primitives.dart:203-230`) and the Tesseract `recognise` copy (`tesseract_binding.dart:160-192`), owned per runtime and freed in `VisionRuntime.dispose`. The worker trims it after each request. Keep the `bgv_*` ABI and the public `VisionRuntime` API unchanged. Verify: 9.1 is green, `test/data/vision/vision_runtime_test.dart` and `test/application/vision_self_check_test.dart` still pass, and `mise run analyze` is clean.
 
 ## 10. Startup audit
 

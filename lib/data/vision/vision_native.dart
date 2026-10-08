@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'tesseract_binding.dart';
 import 'vision_image.dart';
 import 'vision_primitives.dart';
+import 'vision_scratch.dart';
 
 /// OCR output as a Dart string. [truncated] is set when the engine text
 /// exceeded the 64 KiB cap and was cut.
@@ -96,27 +97,31 @@ VisionNative openVisionNative(
   load(leptonica);
   final tesseractLibrary = load(tesseract);
   final visionLibrary = load(vision);
+  final scratch = VisionScratch();
   try {
-    return _FfiVisionNative(opened, tesseractLibrary, visionLibrary);
+    return _FfiVisionNative(opened, tesseractLibrary, visionLibrary, scratch);
   } catch (error) {
     // A missing export means the library is not the pinned build.
+    scratch.dispose();
     closeOpened();
     throw VisionLoadException(vision, '$error');
   }
 }
 
-final class _FfiVisionNative implements VisionNative {
+final class _FfiVisionNative implements VisionNative, VisionScratchOwner {
   _FfiVisionNative(
     this._libraries,
     DynamicLibrary tesseractLibrary,
     DynamicLibrary visionLibrary,
-  ) : _binding = TesseractBinding(tesseractLibrary),
-      primitives = FfiVisionPrimitives(visionLibrary),
+    this._scratch,
+  ) : _binding = TesseractBinding(tesseractLibrary, _scratch),
+      primitives = FfiVisionPrimitives(visionLibrary, _scratch),
       _abi = visionLibrary.lookupFunction<Int32 Function(), int Function()>(
         'bgv_abi',
       );
 
   final List<DynamicLibrary> _libraries;
+  final VisionScratch _scratch;
   final TesseractBinding _binding;
   final int Function() _abi;
   bool _closed = false;
@@ -134,9 +139,13 @@ final class _FfiVisionNative implements VisionNative {
   VisionEngine? createEngine() => _binding.createEngine();
 
   @override
+  void trimScratch() => _scratch.trim();
+
+  @override
   void close() {
     if (_closed) return;
     _closed = true;
+    _scratch.dispose();
     for (final library in _libraries.reversed) {
       library.close();
     }

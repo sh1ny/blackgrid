@@ -1,9 +1,8 @@
 import 'dart:ffi';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
-
 import 'vision_image.dart';
+import 'vision_scratch.dart';
 
 /// `bgv_resize` interpolation modes.
 const int visionInterCubic = 0;
@@ -55,7 +54,8 @@ abstract interface class VisionPrimitives {
   );
 }
 
-typedef _Gray = int Function(
+/// `bgv_to_gray` as Dart sees it.
+typedef VisionGrayFn = int Function(
   Pointer<Uint8>,
   int,
   int,
@@ -65,7 +65,9 @@ typedef _Gray = int Function(
   Pointer<Uint8>,
   int,
 );
-typedef _Resize = int Function(
+
+/// `bgv_resize` as Dart sees it.
+typedef VisionResizeFn = int Function(
   Pointer<Uint8>,
   int,
   int,
@@ -77,7 +79,9 @@ typedef _Resize = int Function(
   int,
   int,
 );
-typedef _Threshold = int Function(
+
+/// `bgv_threshold_binary_inv` as Dart sees it.
+typedef VisionThresholdFn = int Function(
   Pointer<Uint8>,
   int,
   int,
@@ -87,7 +91,9 @@ typedef _Threshold = int Function(
   Pointer<Uint8>,
   int,
 );
-typedef _Match = int Function(
+
+/// `bgv_match_template_best` as Dart sees it.
+typedef VisionMatchFn = int Function(
   Pointer<Uint8>,
   int,
   int,
@@ -100,7 +106,9 @@ typedef _Match = int Function(
   Pointer<Int32>,
   Pointer<Int32>,
 );
-typedef _FindRow = int Function(
+
+/// `bgv_find_in_range_row` as Dart sees it.
+typedef VisionFindRowFn = int Function(
   Pointer<Uint8>,
   int,
   int,
@@ -114,100 +122,109 @@ typedef _FindRow = int Function(
 );
 
 /// `bgv_*` backed by the loaded vision library with Dart-owned buffers.
+///
+/// Inputs and outputs are staged through the runtime's [VisionScratch], so
+/// repeated calls of the same size allocate nothing new.
 final class FfiVisionPrimitives implements VisionPrimitives {
-  FfiVisionPrimitives(DynamicLibrary library)
-    : _toGray = library
-          .lookupFunction<
-            Int32 Function(
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Pointer<Uint8>,
-              Int32,
-            ),
-            _Gray
-          >('bgv_to_gray'),
-      _resize = library
-          .lookupFunction<
-            Int32 Function(
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-            ),
-            _Resize
-          >('bgv_resize'),
-      _threshold = library
-          .lookupFunction<
-            Int32 Function(
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Pointer<Uint8>,
-              Int32,
-            ),
-            _Threshold
-          >('bgv_threshold_binary_inv'),
-      _match = library
-          .lookupFunction<
-            Int32 Function(
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Pointer<Double>,
-              Pointer<Int32>,
-              Pointer<Int32>,
-            ),
-            _Match
-          >('bgv_match_template_best'),
-      _findRow = library
-          .lookupFunction<
-            Int32 Function(
-              Pointer<Uint8>,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Int32,
-              Pointer<Uint8>,
-              Pointer<Uint8>,
-              Pointer<Int32>,
-            ),
-            _FindRow
-          >('bgv_find_in_range_row');
+  FfiVisionPrimitives(DynamicLibrary library, VisionScratch scratch)
+    : this.fromFunctions(
+        scratch: scratch,
+        toGray: library
+            .lookupFunction<
+              Int32 Function(
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Uint8>,
+                Int32,
+              ),
+              VisionGrayFn
+            >('bgv_to_gray'),
+        resize: library
+            .lookupFunction<
+              Int32 Function(
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+              ),
+              VisionResizeFn
+            >('bgv_resize'),
+        threshold: library
+            .lookupFunction<
+              Int32 Function(
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Uint8>,
+                Int32,
+              ),
+              VisionThresholdFn
+            >('bgv_threshold_binary_inv'),
+        match: library
+            .lookupFunction<
+              Int32 Function(
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Double>,
+                Pointer<Int32>,
+                Pointer<Int32>,
+              ),
+              VisionMatchFn
+            >('bgv_match_template_best'),
+        findRow: library
+            .lookupFunction<
+              Int32 Function(
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Uint8>,
+                Pointer<Uint8>,
+                Pointer<Int32>,
+              ),
+              VisionFindRowFn
+            >('bgv_find_in_range_row'),
+      );
 
-  final _Gray _toGray;
-  final _Resize _resize;
-  final _Threshold _threshold;
-  final _Match _match;
-  final _FindRow _findRow;
+  /// Builds the primitives over already-resolved functions. Production goes
+  /// through the library constructor; tests pass Dart stand-ins.
+  FfiVisionPrimitives.fromFunctions({
+    required this._scratch,
+    required this._toGray,
+    required this._resize,
+    required this._threshold,
+    required this._match,
+    required this._findRow,
+  });
 
-  static Pointer<Uint8> _copyIn(VisionImage image) {
-    final size = image.stride * image.height;
-    final buffer = calloc<Uint8>(size);
-    buffer
-        .asTypedList(size)
-        .setAll(0, Uint8List.sublistView(image.bytes, 0, size));
-    return buffer;
-  }
+  final VisionScratch _scratch;
+  final VisionGrayFn _toGray;
+  final VisionResizeFn _resize;
+  final VisionThresholdFn _threshold;
+  final VisionMatchFn _match;
+  final VisionFindRowFn _findRow;
 
   static void _check(int status) {
     if (status < 0) throw VisionNativeError(status);
@@ -218,15 +235,10 @@ final class FfiVisionPrimitives implements VisionPrimitives {
     int outBytes,
     int Function(Pointer<Uint8> input, Pointer<Uint8> output) call,
   ) {
-    final input = _copyIn(src);
-    final output = calloc<Uint8>(outBytes);
-    try {
-      _check(call(input, output));
-      return Uint8List.fromList(output.asTypedList(outBytes));
-    } finally {
-      calloc.free(input);
-      calloc.free(output);
-    }
+    final input = _scratch.input.stage(src);
+    final output = _scratch.output.ensure(outBytes);
+    _check(call(input, output));
+    return Uint8List.fromList(output.asTypedList(outBytes));
   }
 
   @override
@@ -285,35 +297,28 @@ final class FfiVisionPrimitives implements VisionPrimitives {
 
   @override
   TemplateMatch matchTemplateBest(VisionImage image, VisionImage template) {
-    final img = _copyIn(image);
-    final tpl = _copyIn(template);
-    final score = calloc<Double>();
-    final x = calloc<Int32>();
-    final y = calloc<Int32>();
-    try {
-      _check(
-        _match(
-          img,
-          image.width,
-          image.height,
-          image.stride,
-          tpl,
-          template.width,
-          template.height,
-          template.stride,
-          score,
-          x,
-          y,
-        ),
-      );
-      return TemplateMatch(score.value, x.value, y.value);
-    } finally {
-      calloc.free(img);
-      calloc.free(tpl);
-      calloc.free(score);
-      calloc.free(x);
-      calloc.free(y);
-    }
+    final img = _scratch.input.stage(image);
+    final tpl = _scratch.template.stage(template);
+    final aux = _scratch.aux;
+    final score = aux.cast<Double>();
+    final x = (aux + 8).cast<Int32>();
+    final y = (aux + 12).cast<Int32>();
+    _check(
+      _match(
+        img,
+        image.width,
+        image.height,
+        image.stride,
+        tpl,
+        template.width,
+        template.height,
+        template.stride,
+        score,
+        x,
+        y,
+      ),
+    );
+    return TemplateMatch(score.value, x.value, y.value);
   }
 
   @override
@@ -324,32 +329,26 @@ final class FfiVisionPrimitives implements VisionPrimitives {
     List<int> lo,
     List<int> hi,
   ) {
-    final input = _copyIn(src);
-    final low = calloc<Uint8>(3);
-    final high = calloc<Uint8>(3);
-    final out = calloc<Int32>();
-    try {
-      low.asTypedList(3).setAll(0, lo);
-      high.asTypedList(3).setAll(0, hi);
-      final status = _findRow(
-        input,
-        src.width,
-        src.height,
-        src.stride,
-        src.channels,
-        row,
-        startX,
-        low,
-        high,
-        out,
-      );
-      _check(status);
-      return status == 1 ? null : out.value;
-    } finally {
-      calloc.free(input);
-      calloc.free(low);
-      calloc.free(high);
-      calloc.free(out);
-    }
+    final input = _scratch.input.stage(src);
+    final aux = _scratch.aux;
+    final out = (aux + 16).cast<Int32>();
+    final low = aux + 20;
+    final high = aux + 24;
+    low.asTypedList(3).setAll(0, lo);
+    high.asTypedList(3).setAll(0, hi);
+    final status = _findRow(
+      input,
+      src.width,
+      src.height,
+      src.stride,
+      src.channels,
+      row,
+      startX,
+      low,
+      high,
+      out,
+    );
+    _check(status);
+    return status == 1 ? null : out.value;
   }
 }

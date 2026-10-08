@@ -239,6 +239,9 @@ void _visionWorkerMain(_WorkerInit init) {
             ),
           );
         }
+        // After the reply, so the answer does not wait; the next request is
+        // not received until this returns.
+        runtime.trimScratch();
       case _Close():
         runtime.dispose();
         commands.close();
