@@ -10,11 +10,14 @@ import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/native_guard.dart';
+
 /// Loads the real, hash-bound `blackgrid_capture.dll` from a built Release
 /// bundle (run `flutter build windows --release` first). It never captures the
 /// foreground window: the only pixels taken are an 8x8 rectangle under a
-/// hidden window this test creates. Before any native call it refuses to run
-/// while a game process is listed (AGENTS.md).
+/// hidden window this test creates. It skips unless the run confirms no game is
+/// running (`BLACKGRID_NO_GAMES_RUNNING=1`) and no known game is listed
+/// (AGENTS.md).
 void main() {
   final bundle =
       Platform.environment['BLACKGRID_RELEASE_BUNDLE'] ??
@@ -136,21 +139,11 @@ void main() {
   }, skip: skip);
 }
 
-/// Null when the test may call native code; otherwise the recorded reason.
-String? _skipReason() {
-  if (!Platform.isWindows) return 'the capture boundary is Windows-only';
-  final listing = Process.runSync('tasklist', ['/FO', 'CSV', '/NH']);
-  if (listing.exitCode != 0) {
-    return 'cannot confirm the game is not running (tasklist failed)';
-  }
-  final text = (listing.stdout as String).toLowerCase();
-  for (final game in ['escapefromtarkov.exe', 'escapefromtarkov_be.exe']) {
-    if (text.contains('"$game"')) {
-      return 'refused: $game is running (AGENTS.md)';
-    }
-  }
-  return null;
-}
+String? _skipReason() => nativeCaptureSkipReason(
+  isWindows: Platform.isWindows,
+  environment: Platform.environment,
+  listProcesses: () => Process.runSync('tasklist', ['/FO', 'CSV', '/NH']),
+);
 
 final _user32 = DynamicLibrary.open('user32.dll');
 final _createWindowEx = _user32

@@ -1,6 +1,7 @@
 # Builds and runs the native capture self-test in the Flutter CMake tree
 # (run `flutter build windows --release` once first). The self-test itself
-# refuses to start while a game process is listed.
+# refuses to start unless BLACKGRID_NO_GAMES_RUNNING=1 confirms no game is
+# running, and while a known game process is listed.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $buildDir = Join-Path $root 'build/windows/x64'

@@ -1,6 +1,7 @@
 // Native self-test for the capture boundary (design D9). It captures only the
-// window it creates itself, never generates input, and refuses to run while a
-// game process is listed. Every case prints PASS / FAIL / SKIP; the exit code
+// window it creates itself, never generates input, and refuses to run unless
+// BLACKGRID_NO_GAMES_RUNNING=1 confirms no game is running and no known game
+// process is listed. Every case prints PASS / FAIL / SKIP; the exit code
 // is 0 only when nothing FAILed, 2 when the game guard refused.
 #include "capture_internal.h"
 
@@ -464,6 +465,22 @@ Outcome exe_name_from_toolhelp_for_own_pid() {
 
 // --- Game guard ------------------------------------------------------------------
 
+// BLACKGRID_NO_GAMES_RUNNING must be exactly "1". No process listing can tell
+// whether *any* game runs, so the person or agent starting the run confirms it.
+bool no_games_confirmed(const wchar_t* value) {
+  return value != nullptr && wcscmp(value, L"1") == 0;
+}
+
+Outcome guard_requires_exact_no_games_confirmation() {
+  CHECK(no_games_confirmed(L"1"));
+  CHECK(!no_games_confirmed(nullptr));
+  CHECK(!no_games_confirmed(L""));
+  CHECK(!no_games_confirmed(L"0"));
+  CHECK(!no_games_confirmed(L"yes"));
+  CHECK(!no_games_confirmed(L"1 "));
+  return pass();
+}
+
 Outcome guard_refuses_when_listing_contains_game() {
   std::vector<ProcessEntry> clean = {{4, L"System"}, {9, L"notepad.exe"}};
   CHECK(!listing_has_game(clean));
@@ -782,6 +799,8 @@ Outcome real_hook_install_and_remove() {
 }
 
 const Case kCases[] = {
+    {"guard_requires_exact_no_games_confirmation",
+     guard_requires_exact_no_games_confirmation},
     {"guard_refuses_when_listing_contains_game",
      guard_refuses_when_listing_contains_game},
     {"capture_checks_skip_when_not_foreground",
@@ -820,6 +839,13 @@ const Case kCases[] = {
 
 int main() {
   // Game guard: first, before any hook, window or capture.
+  wchar_t confirm[8] = {};
+  DWORD n = GetEnvironmentVariableW(L"BLACKGRID_NO_GAMES_RUNNING", confirm, 8);
+  if (!no_games_confirmed(n > 0 && n < 8 ? confirm : nullptr)) {
+    printf("REFUSED: set BLACKGRID_NO_GAMES_RUNNING=1 to confirm no game is "
+           "running; the self-test installs a system-wide mouse hook\n");
+    return 2;
+  }
   std::vector<ProcessEntry> listing;
   DWORD list_error = 0;
   if (!list_processes_real(&listing, &list_error)) {

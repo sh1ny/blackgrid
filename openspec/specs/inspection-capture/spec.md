@@ -224,11 +224,15 @@ The capture boundary SHALL NOT open a handle to the target process, read or writ
 - **THEN** it comes from a system process listing, and no process handle is opened
 
 ### Requirement: Native self-test captures only its own window
-A native self-test, not shipped in the Release bundle, SHALL exercise real hook installation and removal, the target snapshot and pixel capture against a window it creates. It SHALL capture only while its own window is foreground. It SHALL refuse to start when an `EscapeFromTarkov.exe` or `EscapeFromTarkov_BE.exe` process is running.
+A native self-test, not shipped in the Release bundle, SHALL exercise real hook installation and removal, the target snapshot and pixel capture against a window it creates. It SHALL capture only while its own window is foreground. It SHALL refuse to start unless the run explicitly confirms that no game is running (`BLACKGRID_NO_GAMES_RUNNING=1`), because no process listing can identify every game. It SHALL also refuse to start when an `EscapeFromTarkov.exe` or `EscapeFromTarkov_BE.exe` process is running.
 
 #### Scenario: Game not running
-- **WHEN** the self-test runs with no game process present
+- **WHEN** the self-test runs with `BLACKGRID_NO_GAMES_RUNNING=1` and no game process present
 - **THEN** it captures a known pattern from its own window, checks its pixels and geometry, and exits 0
+
+#### Scenario: No-games confirmation missing
+- **WHEN** the self-test starts without `BLACKGRID_NO_GAMES_RUNNING=1`
+- **THEN** it exits non-zero with a message asking for that confirmation, before listing processes, installing any hook or capturing anything
 
 #### Scenario: Game running
 - **WHEN** the self-test starts while an `EscapeFromTarkov.exe` process is listed

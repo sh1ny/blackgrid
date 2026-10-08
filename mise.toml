@@ -67,5 +67,5 @@ description = "Build the Windows Release bundle with version and build number, t
 run = "dart run tool/release/release.dart build"
 
 [tasks."capture:selftest"]
-description = "Build and run the native capture self-test (refuses while a game is running)"
+description = "Build and run the native capture self-test (needs BLACKGRID_NO_GAMES_RUNNING=1; refuses while a game is running)"
 run = "pwsh -NoProfile -File windows/capture/selftest.ps1"
