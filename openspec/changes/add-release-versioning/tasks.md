@@ -6,19 +6,19 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Release versions are strict increasing SemVer | Next minor version accepted | S | `0.2.0 after v0.1.0 is accepted` | red |
-| Release versions are strict increasing SemVer | Prerelease ordering | S | `prerelease precedence: beta.2 and final follow beta.1` | red |
-| Release versions are strict increasing SemVer | Version not increasing | S | `equal, lower or older-prerelease versions are refused naming latest tag` | red |
-| Release versions are strict increasing SemVer | Malformed version | S | `v-prefix, missing patch, leading zeros and build metadata are refused` | red |
-| Release preparation starts only from a clean, current main | Clean current main | P | `preconditions pass on clean main equal to origin/main` | red |
-| Release preparation starts only from a clean, current main | Wrong branch or dirty tree | P | `wrong branch, modified or untracked file refuses with no change` | red |
-| Release preparation starts only from a clean, current main | Behind or ahead of the remote | P | `local main differing from origin/main refuses naming both commits` | red |
-| Release preparation starts only from a clean, current main | Remote unreachable | P | `fetch failure refuses with the fetch error and no change` | red |
-| Release preparation starts only from a clean, current main | Release already started | P | `existing tag or release branch locally or on origin refuses` | red |
-| Release preparation runs the offline gates before changing anything | Gates pass | P | `gates run in order analyze, format:check, test:all and preparation continues` | red |
-| Release preparation runs the offline gates before changing anything | A gate fails | P | `failing gate stops with its name and code; branch, tree and history unchanged` | red |
-| Release commit records the version and the changelog | Release commit created | P | `release commit changes only pubspec version and CHANGELOG section` | red |
-| Release commit records the version and the changelog | Changelog generation fails | P | `changelog failure makes no commit and names branch and files to discard` | red |
+| Release versions are strict increasing SemVer | Next minor version accepted | S | `0.2.0 after v0.1.0 is accepted` | green |
+| Release versions are strict increasing SemVer | Prerelease ordering | S | `prerelease precedence: beta.2 and final follow beta.1` | green |
+| Release versions are strict increasing SemVer | Version not increasing | S | `equal, lower or older-prerelease versions are refused naming latest tag` | green |
+| Release versions are strict increasing SemVer | Malformed version | S | `v-prefix, missing patch, leading zeros and build metadata are refused` | green |
+| Release preparation starts only from a clean, current main | Clean current main | P | `preconditions pass on clean main equal to origin/main` | green |
+| Release preparation starts only from a clean, current main | Wrong branch or dirty tree | P | `wrong branch, modified or untracked file refuses with no change` | green |
+| Release preparation starts only from a clean, current main | Behind or ahead of the remote | P | `local main differing from origin/main refuses naming both commits` | green |
+| Release preparation starts only from a clean, current main | Remote unreachable | P | `fetch failure refuses with the fetch error and no change` | green |
+| Release preparation starts only from a clean, current main | Release already started | P | `existing tag or release branch locally or on origin refuses` | green |
+| Release preparation runs the offline gates before changing anything | Gates pass | P | `gates run in order analyze, format:check, test:all and preparation continues` | green |
+| Release preparation runs the offline gates before changing anything | A gate fails | P | `failing gate stops with its name and code; branch, tree and history unchanged` | green |
+| Release commit records the version and the changelog | Release commit created | P | `release commit changes only pubspec version and CHANGELOG section` | green |
+| Release commit records the version and the changelog | Changelog generation fails | P | `changelog failure makes no commit and names branch and files to discard` | green |
 | Changelog lists one entry per merged pull request | Merged PR with branch commits | C | `merged PR is one entry with title and number; branch commits absent` | red |
 | Changelog lists one entry per merged pull request | PR title not conventional | C | `non-conventional PR title lands under Other` | red |
 | Changelog lists one entry per merged pull request | Direct commit on main | C | `direct fix commit on main is listed once under Fixes` | red |
@@ -50,7 +50,7 @@ Test files: `test/tool/release/semver_test.dart` (S), `test/tool/release/prepare
 
 ## 2. Changelog: one entry per PR
 
-- [ ] 2.1 Write `test/tool/changelog_test.dart` (rows C). Build a fixture repo with `v0.1.0`, GitHub-shaped merges (`Merge pull request #N from o/b` + blank line + PR title) whose branches hold `task 1.1 …`, `amend specs`, `address review feedback` commits, a non-conventional PR title, a direct `fix:` commit, `v0.2.0-beta.1`, a `chore(release): v0.2.0` release branch merge tagged `v0.2.0`, and one later PR. Cover `--latest` with no previous final tag (range from the root). Run `tool/changelog.dart` as a process. Verify: the tests fail against the current `cliff.toml`/`changelog.dart` for the stated reason (branch commits listed, merges skipped).
+- [x] 2.1 Write `test/tool/changelog_test.dart` (rows C). Build a fixture repo with `v0.1.0`, GitHub-shaped merges (`Merge pull request #N from o/b` + blank line + PR title) whose branches hold `task 1.1 …`, `amend specs`, `address review feedback` commits, a non-conventional PR title, a direct `fix:` commit, `v0.2.0-beta.1`, a `chore(release): v0.2.0` release branch merge tagged `v0.2.0`, and one later PR. Cover `--latest` with no previous final tag (range from the root). Run `tool/changelog.dart` as a process. Verify: the tests fail against the current `cliff.toml`/`changelog.dart` for the stated reason (branch commits listed, merges skipped).
 - [ ] 2.2 Update `cliff.toml` (D2, D10): remove the `merge_commit` skip, add the GitHub-merge `commit_preprocessors` rule, the `chore(release)` and branch-only-subject skip parsers before the group parsers, and `ignore_tags` for prerelease tags. Settle the design's header Open Question (keep `# blackgrid Changelog` unless a fixture shows a reason). Verify: the C rows for grouping, skipping and folding pass.
 - [ ] 2.3 Rewrite `tool/changelog.dart` (D1): two-stage `--context` → first-parent filter → `--from-context -`, explicit UTF-8, the allowlisted option split (unknown options exit 2), `--latest`/`--unreleased` translated to final-tag ranges by SemVer precedence (reuse `tool/release/src/semver.dart` from 3.2 or land that file first), and the unborn-`HEAD` path kept. Verify: all C rows green; `mise run release-notes -- --unreleased` on the real repo prints PR entries only.
 
