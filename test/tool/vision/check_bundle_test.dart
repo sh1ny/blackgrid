@@ -613,6 +613,21 @@ void main() {
       expect(failures.join('\n'), allOf(contains(shaA), contains('recipe-a')));
     });
 
+    test('an artwork file whose bytes are unavailable fails', () {
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaA, 'recipe-a')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      final failures = gameArtworkNoticeFailures(
+        artwork,
+        notices,
+        (rel) => rel == 'data/b/two.gray' ? null : bytesOf(rel),
+      );
+      expect(failures, [
+        'data/b/two.gray: file bytes unavailable, sha256 not verified',
+      ]);
+    });
+
     test('file path and recipe match without case', () {
       final upper = entry('art-a', 'data/a/one', shaA, 'recipe-a')
           .replaceAll('data/a/one', 'DATA/A/ONE')

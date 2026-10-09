@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:blackgrid/application/recognition_matcher.dart';
@@ -186,6 +187,23 @@ void main() {
       expect(back.bytes.sublist(8, 12), [10, 10, 10, 255]);
     });
 
+    test('an image matching the declared client size is accepted', () {
+      final c = parseCorpus(_corpusJson()).first;
+      final image = BgrxImage(Uint8List(0), c.clientWidth, c.clientHeight);
+      expect(clientSizeMismatch(c, image), isNull);
+    });
+
+    test('an image whose size contradicts the declared client is named', () {
+      final c = parseCorpus(_corpusJson()).first;
+      for (final (w, h) in [
+        (c.clientWidth + 1, c.clientHeight),
+        (c.clientWidth, c.clientHeight - 1),
+      ]) {
+        final message = clientSizeMismatch(c, BgrxImage(Uint8List(0), w, h));
+        expect(message, allOf(contains(c.id), contains('${w}x$h')));
+      }
+    });
+
     test('decodePngBgrx rejects bytes that are not a PNG', () {
       expect(
         () => decodePngBgrx(Uint8List.fromList([1, 2, 3])),
@@ -343,22 +361,42 @@ void main() {
   });
 
   group('inputInsideOutput', () {
+    late Directory corpus;
+    setUp(() => corpus = Directory.systemTemp.createTempSync('bg_corpus_io'));
+    tearDown(() => corpus.deleteSync(recursive: true));
+
     test('inputs outside out/ are accepted', () {
       expect(
-        inputInsideOutput(['corpus.json', 'frames/a.png', 'output/b.png']),
+        inputInsideOutput(corpus.path, [
+          'corpus.json',
+          'frames/a.png',
+          'output/b.png',
+        ]),
         isNull,
       );
     });
 
     test('an input inside out/ is named, whatever the separator or case', () {
-      expect(inputInsideOutput(['a.png', 'out/b.png']), 'out/b.png');
-      expect(inputInsideOutput([r'OUT\crops\c.png']), r'OUT\crops\c.png');
-      expect(inputInsideOutput(['./out/d.png']), './out/d.png');
-      expect(inputInsideOutput(['frames/../out/e.png']), 'frames/../out/e.png');
+      String? inside(String input) => inputInsideOutput(corpus.path, [input]);
+      expect(
+        inputInsideOutput(corpus.path, ['a.png', 'out/b.png']),
+        'out/b.png',
+      );
+      expect(inside(r'OUT\crops\c.png'), r'OUT\crops\c.png');
+      expect(inside('./out/d.png'), './out/d.png');
+      expect(inside('frames/../out/e.png'), 'frames/../out/e.png');
     });
 
     test('out itself counts as inside', () {
-      expect(inputInsideOutput(['out']), 'out');
+      expect(inputInsideOutput(corpus.path, ['out']), 'out');
+    });
+
+    test('an input reached through a link into out/ is named', () {
+      final out = Directory('${corpus.path}/out')..createSync();
+      File('${out.path}/a.png').writeAsBytesSync([1]);
+      // On Windows a directory link is a junction, which needs no privilege.
+      Link('${corpus.path}/frames').createSync(out.path);
+      expect(inputInsideOutput(corpus.path, ['frames/a.png']), 'frames/a.png');
     });
   });
 }

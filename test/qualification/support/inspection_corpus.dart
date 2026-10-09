@@ -8,8 +8,10 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:blackgrid/data/capture/capture_geometry.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
@@ -25,30 +27,35 @@ const String rejectOutcome = 'reject';
 /// The corpus subdirectory the run writes its report and crops into.
 const String corpusOutputDir = 'out';
 
-/// The first of [inputs], paths relative to the corpus directory, that lies
-/// inside [corpusOutputDir] (or is it), or null when none does.
+/// The first of [inputs], paths relative to [corpusDir], that lies inside
+/// its [corpusOutputDir] (or is it), or null when none does.
 ///
-/// Separators may be `/` or `\`, `.` and `..` segments are resolved, and the
-/// directory name is compared without case, as Windows does. The run refuses
-/// to write anything when this is not null, so it never overwrites an input.
-String? inputInsideOutput(Iterable<String> inputs) {
+/// Each input is compared canonically through `unsafeOutputReason`: links and
+/// junctions are resolved, `.` and `..` segments collapse, and case is ignored
+/// on Windows. An input that is itself a link or sits below one is named too,
+/// since its real location cannot be trusted to stay outside the output. The
+/// run refuses to write anything when this is not null, so it never
+/// overwrites an input.
+String? inputInsideOutput(String corpusDir, Iterable<String> inputs) {
+  final sep = Platform.pathSeparator;
+  final output = '$corpusDir$sep$corpusOutputDir';
   for (final input in inputs) {
-    final segments = <String>[];
-    for (final part in input.split(RegExp(r'[\\/]+'))) {
-      if (part.isEmpty || part == '.') continue;
-      if (part == '..') {
-        if (segments.isNotEmpty) segments.removeLast();
-        continue;
-      }
-      segments.add(part);
-    }
-    if (segments.isNotEmpty &&
-        segments.first.toLowerCase() == corpusOutputDir) {
-      return input;
-    }
+    final reason = unsafeOutputReason(
+      '$corpusDir$sep$input',
+      protectedDirectories: [output],
+    );
+    if (reason != null) return input;
   }
   return null;
 }
+
+/// Why [image] cannot stand for case [c], or null when its size is the
+/// declared client size the scale, capture region and report derive from.
+String? clientSizeMismatch(CorpusCase c, BgrxImage image) =>
+    image.width == c.clientWidth && image.height == c.clientHeight
+    ? null
+    : '${c.id}: image ${image.width}x${image.height} does not match the '
+          'declared client ${c.clientWidth}x${c.clientHeight}';
 
 /// One corpus entry.
 final class CorpusCase {

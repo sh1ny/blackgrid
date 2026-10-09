@@ -449,7 +449,9 @@ List<String> gameArtworkNoticeFailures(
       failures.add('${e.path}: notices entry "$anchor" does not name the file');
     }
     final data = bytesOf(e.path);
-    if (data != null) {
+    if (data == null) {
+      failures.add('${e.path}: file bytes unavailable, sha256 not verified');
+    } else {
       final sha = _sha(data);
       if (!lower.contains(sha)) {
         failures.add(

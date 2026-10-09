@@ -536,12 +536,19 @@ final class TitleMatchIndex {
 ///
 /// Returns null when the best confidence is under the similarity gate, and
 /// when the title is within the chrome similarity of a UI-chrome label.
-/// Confusable Cyrillic capitals are read as Latin first.
+/// Confusable Cyrillic capitals are read as Latin first. The chrome check
+/// compares both the mapped and the unmapped title, so a Russian label in
+/// capitals is not hidden by the mapping.
 TitleConfirmation? confirmTitle(TitleMatchIndex index, String ocrText) {
-  final title = _runes(_mapCyrillic(ocrText.trim()).toLowerCase());
+  final trimmed = ocrText.trim();
+  final title = _runes(_mapCyrillic(trimmed).toLowerCase());
   final scorer = _Scorer(String.fromCharCodes(title));
+  final unmapped = _Scorer(trimmed.toLowerCase());
   for (final chrome in _chromeRunes) {
-    if (scorer.plain(chrome) >= recognitionGates.chromeSimilarity) return null;
+    if (scorer.plain(chrome) >= recognitionGates.chromeSimilarity ||
+        unmapped.plain(chrome) >= recognitionGates.chromeSimilarity) {
+      return null;
+    }
   }
   var bestIndex = -1;
   var best = -1.0;

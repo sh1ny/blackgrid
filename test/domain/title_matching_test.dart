@@ -437,6 +437,15 @@ void main() {
       expect(confirmTitle(index, 'Subject Search'), isNull);
     });
 
+    test('an upper-case Cyrillic near-chrome title reports none', () {
+      // One edit from "поиск предмета"; its capitals О, С, К, Р and Е have
+      // Latin look-alikes, which must not hide it from the chrome check.
+      final index = TitleMatchIndex.build(
+        snapshot([item('r1', 'ПОИСК ПРЕДМЕТX')]),
+      );
+      expect(confirmTitle(index, 'ПОИСК ПРЕДМЕТX'), isNull);
+    });
+
     test('confirming matcher maps Cyrillic capitals to Latin', () {
       // U+0410 and U+041A look like Latin A and K.
       final index = TitleMatchIndex.build(snapshot([item('k1', 'AK-74N')]));

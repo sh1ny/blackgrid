@@ -80,7 +80,7 @@ void main() {
         if (baseline != null) 'baseline.json',
         for (final c in cases) c.image,
       ];
-      final collision = inputInsideOutput(inputs);
+      final collision = inputInsideOutput(corpusDir, inputs);
       if (collision != null) {
         fail('corpus input $collision lies inside $corpusOutputDir/');
       }
@@ -124,6 +124,9 @@ void main() {
             decoded = decodePngBgrx(at(c.image).readAsBytesSync());
             decodedPath = c.image;
           }
+          // Checked per case: cases sharing an image may declare other sizes.
+          final mismatch = clientSizeMismatch(c, decoded!);
+          if (mismatch != null) fail(mismatch);
           return decoded!;
         }
 
