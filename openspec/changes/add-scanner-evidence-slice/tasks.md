@@ -26,8 +26,8 @@ Test conventions (AGENTS.md):
 |---|---|---|---|---|
 | inspection-capture → Frames carry their provenance | Frame provenance | test/data/capture/capture_policy_test.dart | existing provenance test (request id 42) | green |
 | inspection-capture → Frames carry their provenance | Clipped provenance | test/data/capture/capture_policy_test.dart | existing clipped provenance test | green |
-| inspection-capture → Frames carry their provenance | Client size of a targeted frame | test/data/capture/capture_policy_test.dart | targeted frame reports the validated client size | red |
-| inspection-capture → Frames carry their provenance | Client size of a clipped fallback frame | test/data/capture/capture_policy_test.dart | clipped fallback frame reports full client width | red |
+| inspection-capture → Frames carry their provenance | Client size of a targeted frame | test/data/capture/capture_policy_test.dart | targeted frame reports the validated client size | green |
+| inspection-capture → Frames carry their provenance | Client size of a clipped fallback frame | test/data/capture/capture_policy_test.dart | clipped fallback frame reports full client width | green |
 | inspection-recognition → Recognition runs only as a vision-worker job | Job runs against a fake runtime | test/data/vision/inspection_job_test.dart | job runs through VisionService over a fake native without loading a library (existing) | green |
 | inspection-recognition → Recognition runs only as a vision-worker job | Normal launch | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | red |
 | vision-worker → Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | red |
@@ -121,7 +121,7 @@ Test conventions (AGENTS.md):
 ## 2. Frame provenance gains the client size
 
 - [x] 2.1 In `test/data/capture/capture_policy_test.dart`, add failing tests "targeted frame reports the validated client size" (2560×1440 client) and "clipped fallback frame reports full client width" (1920 client, captured 1800). Run `mise run test -- test/data/capture/capture_policy_test.dart` and confirm they fail because `clientWidth`/`clientHeight` do not exist.
-- [ ] 2.2 Add `clientWidth`/`clientHeight` to `CaptureFrameMetadata` (`lib/data/capture/capture_frame.dart`), fill them from `s0.client` in `CapturePolicy` (`capture_policy.dart:88-104`), and update every constructor call in lib and test fakes. Verify: the 2.1 tests and the existing provenance and clipped tests pass; flip their rows green.
+- [x] 2.2 Add `clientWidth`/`clientHeight` to `CaptureFrameMetadata` (`lib/data/capture/capture_frame.dart`), fill them from `s0.client` in `CapturePolicy` (`capture_policy.dart:88-104`), and update every constructor call in lib and test fakes. Verify: the 2.1 tests and the existing provenance and clipped tests pass; flip their rows green.
 
 ## 3. Settings key and log location
 
