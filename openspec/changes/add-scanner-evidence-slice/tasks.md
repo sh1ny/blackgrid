@@ -48,7 +48,7 @@ Test conventions (AGENTS.md):
 | scan-pipeline → Live scan stops cleanly | Switching off during start | test/application/scan_coordinator_lifecycle_test.dart | switch-off during a hung start is bounded by the close drain | green |
 | scan-pipeline → Live scan stops cleanly | Switching off with a scan in flight | test/application/scan_coordinator_flow_test.dart | switch-off during vision stage publishes nothing and releases the frame | green |
 | scan-pipeline → Live scan stops cleanly | Hook thread does not stop | test/application/scan_coordinator_lifecycle_test.dart | stopTimedOut is a visible warning and the next start retries stop | green |
-| scan-pipeline → Live scan stops cleanly | Worker drain incomplete at shutdown | test/application/scan_pipeline_isolate_test.dart | dispose with a held native call completes after the drain and publishes nothing | red |
+| scan-pipeline → Live scan stops cleanly | Worker drain incomplete at shutdown | test/application/scan_pipeline_isolate_test.dart | dispose with a held native call completes after the drain and publishes nothing | green |
 | scan-pipeline → Worker loss makes live scan unavailable | Vision worker exits mid-session | test/application/scan_coordinator_lifecycle_test.dart | vision worker exit removes hook and is unavailable | green |
 | scan-pipeline → Worker loss makes live scan unavailable | Restart after loss | test/application/scan_coordinator_lifecycle_test.dart | off then on after loss creates fresh services | green |
 | scan-pipeline → Targeted pass runs first | Accepted targeted scan | test/application/scan_coordinator_flow_test.dart | accepted targeted scan requests no fallback | green |
@@ -61,7 +61,7 @@ Test conventions (AGENTS.md):
 | scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Catalog-only rejection | test/application/scan_coordinator_flow_test.dart | catalogModeMismatch requests no fallback | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Burst during capture | test/application/scan_coordinator_flow_test.dart | burst during capture keeps only the newest trigger | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Pending trigger meets an overrun capture | test/application/scan_coordinator_flow_test.dart | pending trigger after captureTimeout fails captureBusy and is logged | green |
-| scan-pipeline → One scan in flight, latest trigger wins | Trigger during the vision stage | test/application/scan_pipeline_isolate_test.dart | trigger during vision invalidates, never overlaps native calls, never publishes the old result | red |
+| scan-pipeline → One scan in flight, latest trigger wins | Trigger during the vision stage | test/application/scan_pipeline_isolate_test.dart | trigger during vision invalidates, never overlaps native calls, never publishes the old result | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Trigger during matching | test/application/scan_coordinator_flow_test.dart | trigger during matching discards the old match | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Triggers dropped by the native queue | test/application/scan_coordinator_flow_test.dart | droppedBefore is recorded on the scan | green |
 | scan-pipeline → Results publish only while current | Switched off during matching | test/application/scan_coordinator_flow_test.dart | switch-off during matching discards the result | green |
@@ -204,7 +204,7 @@ Test conventions (AGENTS.md):
 
 ## 8. Cross-isolate proof with real services
 
-- [ ] 8.1 Write `test/application/scan_pipeline_isolate_test.dart` using the real `CaptureService` and `VisionService`. Build them over the holdable capture platform, the holdable vision native, the shared frame registry and the fake clock (`test/data/capture/support/`, `test/data/vision/support/`), with the real recognition job factory replaced by a holdable test job where needed. Cover:
+- [x] 8.1 Write `test/application/scan_pipeline_isolate_test.dart` using the real `CaptureService` and `VisionService`. Build them over the holdable capture platform, the holdable vision native, the shared frame registry and the fake clock (`test/data/capture/support/`, `test/data/vision/support/`), with the real recognition job factory replaced by a holdable test job where needed. Cover:
   - "trigger during vision invalidates, never overlaps native calls, never publishes the old result": assert the native control memory's concurrent-call count never exceeds 1, and every frame slot is released;
   - "dispose with a held native call completes after the drain and publishes nothing", with injected short drains.
 
