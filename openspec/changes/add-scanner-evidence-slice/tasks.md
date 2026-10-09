@@ -156,7 +156,7 @@ Test conventions (AGENTS.md):
 
 ## 6. Coordinator lifecycle
 
-- [ ] 6.1 Define small ports in `scan_coordinator.dart` so the lifecycle and flow tests use hand-written fakes:
+- [x] 6.1 Define small ports in `scan_coordinator.dart` so the lifecycle and flow tests use hand-written fakes:
   - a capture port over `CaptureService.capture/close/workerExit`;
   - a vision port over `start/submitFrame/invalidate/close/workerExit/state`;
   - a trigger port over `start/stop/dispose/triggers`;
