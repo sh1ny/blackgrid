@@ -145,7 +145,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`.
 
 - [x] 9.1 Run `dart format` on changed files, then `mise run analyze` and `mise run test`. Verify: both pass, and every non-qualification test-map row is green.
 - [ ] 9.2 Run `mise run build:release` and then `mise run test:qualification`, after confirming Escape from Tarkov is not running. If it is running or this cannot be confirmed, stop and ask the user. Verify: the qualification tier passes, including `m2_bundle_integrity_test.dart`, `vision_peaks_test.dart` and `inspection_recognition_test.dart`, and every test-map row is green.
-- [ ] 9.3 Run `openspec validate add-inspection-recognition-pipeline --strict`. Verify: it passes.
+- [x] 9.3 Run `openspec validate add-inspection-recognition-pipeline --strict`. Verify: it passes.
 
 ## Workflow follow-up
 
