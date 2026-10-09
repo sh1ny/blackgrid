@@ -75,9 +75,9 @@ Test conventions (AGENTS.md):
 | scan-pipeline → Every scan records stage timings | Scan ended early | test/application/scan_coordinator_flow_test.dart | early capture failure leaves later stages absent | red |
 | scan-pipeline → Each finished scan is logged as one JSON line | Accepted scan line | test/application/scan_report_test.dart | accepted fallback report encodes a v1 line with per-pass ms | red |
 | scan-pipeline → Each finished scan is logged as one JSON line | Superseded scan line | test/application/scan_report_test.dart | superseded report encodes only the stages reached | red |
-| scan-pipeline → Timing log is bounded and never blocks scanning | Rotation | test/data/scan_timing_log_test.dart | rotates before passing 1 MiB | red |
-| scan-pipeline → Timing log is bounded and never blocks scanning | Disk stalled | test/data/scan_timing_log_test.dart | stalled write queues 32 and counts drops | red |
-| scan-pipeline → Timing log is bounded and never blocks scanning | Log folder not writable | test/data/scan_timing_log_test.dart | open failure sets unavailable and later appends retry | red |
+| scan-pipeline → Timing log is bounded and never blocks scanning | Rotation | test/data/scan_timing_log_test.dart | rotates before passing 1 MiB | green |
+| scan-pipeline → Timing log is bounded and never blocks scanning | Disk stalled | test/data/scan_timing_log_test.dart | stalled write queues 32 and counts drops | green |
+| scan-pipeline → Timing log is bounded and never blocks scanning | Log folder not writable | test/data/scan_timing_log_test.dart | open failure sets unavailable and later appends retry | green |
 | scanner-evidence → Scanner shows the live scan switch and status | Switching on from Scanner | test/ui/live_scan_panel_test.dart | switch on shows ready status | red |
 | scanner-evidence → Scanner shows the live scan switch and status | Unavailable runtime | test/ui/live_scan_panel_test.dart | unavailable status names the missing file | red |
 | scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved | test/ui/live_scan_panel_test.dart | failed switch-on save reverts and shows an error | red |
@@ -134,7 +134,7 @@ Test conventions (AGENTS.md):
 
 ## 4. Timing log writer
 
-- [ ] 4.1 Write failing tests in `test/data/scan_timing_log_test.dart` against a temp directory, with a fake file sink injected through the constructor to hold or fail writes (no sleeps; completers gate the held write):
+- [x] 4.1 Write failing tests in `test/data/scan_timing_log_test.dart` against a temp directory, with a fake file sink injected through the constructor to hold or fail writes (no sleeps; completers gate the held write):
   - "rotates before passing 1 MiB": use a small injected `maxBytes` to prove the rule cheaply, plus one test at the default 1 MiB constant value only;
   - "stalled write queues 32 and counts drops";
   - "open failure sets unavailable and later appends retry";
