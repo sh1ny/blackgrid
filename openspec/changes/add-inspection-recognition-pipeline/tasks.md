@@ -12,17 +12,17 @@
 | inspection-recognition → Marker template is regenerated reproducibly | Reproducible regeneration | test/tool/vision/make_marker_template_test.dart | 1440p screenshot crops a 21px footprint to identical 28x28 output twice | red |
 | inspection-recognition → Marker template is regenerated reproducibly | Footprint outside the screenshot | test/tool/vision/make_marker_template_test.dart | footprint past the screenshot edge exits non-zero and writes nothing | red |
 | inspection-recognition → Marker template is regenerated reproducibly | Screenshot below 1080p scale | test/tool/vision/make_marker_template_test.dart | screenshot below 1080p scale exits non-zero and writes nothing | red |
-| inspection-recognition → Processing scale follows the client size | 4K client | test/data/vision/inspection_geometry_test.dart | 3840x2160 gives scale 2 and a 32x32 template | red |
-| inspection-recognition → Processing scale follows the client size | Ultrawide client | test/data/vision/inspection_geometry_test.dart | 3440x1440 scale follows height | red |
+| inspection-recognition → Processing scale follows the client size | 4K client | test/data/vision/inspection_geometry_test.dart | 3840x2160 gives scale 2 and a 32x32 template | green |
+| inspection-recognition → Processing scale follows the client size | Ultrawide client | test/data/vision/inspection_geometry_test.dart | 3440x1440 scale follows height | green |
 | inspection-recognition → Processing scale follows the client size | Scaled template collapses | test/data/vision/inspection_job_test.dart | template under 2px or larger than frame rejects scaleOutOfRange without matching | red |
 | inspection-recognition → Targeted recognition finds the best marker | Marker present | test/qualification/inspection_recognition_test.dart | real runtime finds a synthetic marker at its position with score at least 0.99 | red |
 | inspection-recognition → Targeted recognition finds the best marker | Score just below the gate | test/data/vision/inspection_job_test.dart | best score 0.8199 yields no evidence and no OCR call | red |
 | inspection-recognition → Targeted recognition finds the best marker | Score at the gate | test/data/vision/inspection_job_test.dart | best score exactly 0.82 runs title extraction | red |
 | inspection-recognition → Full-client recognition finds every inspection | Two inspection windows | test/data/vision/inspection_job_test.dart | two separated peaks give two evidence entries in score order | red |
-| inspection-recognition → Full-client recognition finds every inspection | Overlapping peaks | test/data/vision/inspection_geometry_test.dart | suppression keeps only the higher of two overlapping peaks | red |
+| inspection-recognition → Full-client recognition finds every inspection | Overlapping peaks | test/data/vision/inspection_geometry_test.dart | suppression keeps only the higher of two overlapping peaks | green |
 | inspection-recognition → Full-client recognition finds every inspection | No inspection on screen | test/data/vision/inspection_job_test.dart | no peak at .82 gives empty evidence with best score | red |
-| inspection-recognition → Title region is derived from the marker and clamped | Close button narrows the title | test/data/vision/inspection_geometry_test.dart | close button at x 400 gives title 119,50 217x17 | red |
-| inspection-recognition → Title region is derived from the marker and clamped | Region clipped at the frame edge | test/data/vision/inspection_geometry_test.dart | title region is clamped to the frame without padding | red |
+| inspection-recognition → Title region is derived from the marker and clamped | Close button narrows the title | test/data/vision/inspection_geometry_test.dart | close button at x 400 gives title 119,50 217x17 | green |
+| inspection-recognition → Title region is derived from the marker and clamped | Region clipped at the frame edge | test/data/vision/inspection_geometry_test.dart | title region is clamped to the frame without padding | green |
 | inspection-recognition → Title region is derived from the marker and clamped | Empty region | test/data/vision/inspection_job_test.dart | empty or off-frame title region is emptyTitleRegion with no probe or OCR | red |
 | inspection-recognition → Title text is read from a normalised, thresholded crop | Title recognised | test/qualification/inspection_recognition_test.dart | real runtime reads the rendered SALEWA title through the pipeline | red |
 | inspection-recognition → Title text is read from a normalised, thresholded crop | OCR fails natively | test/data/vision/inspection_job_test.dart | native OCR failure aborts with the typed failure | red |
@@ -107,7 +107,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentation`.
 
 - [x] 4.1 Write failing tests in `test/data/vision/inspection_geometry_test.dart`: "3840x2160 gives scale 2 and a 32x32 template", "3440x1440 scale follows height", "close button at x 400 gives title 119,50 217x17", "title region is clamped to the frame without padding" and "suppression keeps only the higher of two overlapping peaks". Add plateau-rule vectors (equal neighbours, earliest raster wins) and the order score desc / y asc / x asc. Verify they fail for missing functions.
-- [ ] 4.2 Implement `lib/data/vision/inspection_geometry.dart`: `processingScale`, `scaledTemplateSize`, `titleRegion` (including the start-beyond-edge and empty cases), the probe row and its BGRX bounds, `suppressPeaks(candidates, templateW, templateH, maxPeaks: 8)`. Verify: the 4.1 tests pass (flip green).
+- [x] 4.2 Implement `lib/data/vision/inspection_geometry.dart`: `processingScale`, `scaledTemplateSize`, `titleRegion` (including the start-beyond-edge and empty cases), the probe row and its BGRX bounds, `suppressPeaks(candidates, templateW, templateH, maxPeaks: 8)`. Verify: the 4.1 tests pass (flip green).
 
 ## 5. Inspection recognition job
 
