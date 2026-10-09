@@ -5,8 +5,16 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import 'evidence_panels.dart';
 import 'item_decision_card.dart';
+import 'live_scan_panel.dart';
 import 'manual_controls.dart';
+import 'scan_evidence_panel.dart';
 import 'theme.dart';
+
+/// Height of the live scan and manual controls panel at text scale 1.
+const double leftHeight = 760;
+
+/// Minimum height of the scan evidence panel at text scale 1.
+const double evidenceHeight = 520;
 
 class ScannerScreen extends StatelessWidget {
   const ScannerScreen({super.key, required this.services});
@@ -18,11 +26,26 @@ class ScannerScreen extends StatelessWidget {
       final left = GridPanel(
         title: 'Scanner',
         icon: Icons.center_focus_weak,
-        subtitle: 'Manual catalog inspection',
-        child: ManualControls(
-          services: services,
-          storageKey: 'scanner-results',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            LiveScanPanel(
+              scanner: services.scanner,
+              timingLog: services.scanTimingLog,
+            ),
+            const Divider(height: 24),
+            Expanded(
+              child: ManualControls(
+                services: services,
+                storageKey: 'scanner-results',
+              ),
+            ),
+          ],
         ),
+      );
+      final evidence = ScanEvidencePanel(
+        scanner: services.scanner,
+        catalog: services.catalog,
       );
       final current = ItemDecisionCard(services: services);
       final needs = RequirementPanel(services: services);
@@ -32,7 +55,9 @@ class ScannerScreen extends StatelessWidget {
         return ListView(
           key: const PageStorageKey('scanner-compact-scroll'),
           children: [
-            SizedBox(height: 690 * scale, child: left),
+            SizedBox(height: leftHeight * scale, child: left),
+            const SizedBox(height: 14),
+            SizedBox(height: evidenceHeight * scale, child: evidence),
             const SizedBox(height: 14),
             SizedBox(height: 490 * scale, child: current),
             const SizedBox(height: 14),
@@ -51,7 +76,25 @@ class ScannerScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(flex: 19, child: left),
+              Expanded(
+                flex: 19,
+                child: SingleChildScrollView(
+                  key: const PageStorageKey('scanner-left-scroll'),
+                  child: Column(
+                    children: [
+                      SizedBox(height: leftHeight * scale, child: left),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: math.max(
+                          constraints.maxHeight - (leftHeight * scale) - 14,
+                          evidenceHeight * scale,
+                        ),
+                        child: evidence,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 flex: 57,

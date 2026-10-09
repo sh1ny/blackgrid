@@ -78,20 +78,20 @@ Test conventions (AGENTS.md):
 | scan-pipeline → Timing log is bounded and never blocks scanning | Rotation | test/data/scan_timing_log_test.dart | rotates before passing 1 MiB | green |
 | scan-pipeline → Timing log is bounded and never blocks scanning | Disk stalled | test/data/scan_timing_log_test.dart | stalled write queues 32 and counts drops | green |
 | scan-pipeline → Timing log is bounded and never blocks scanning | Log folder not writable | test/data/scan_timing_log_test.dart | open failure sets unavailable and later appends retry | green |
-| scanner-evidence → Scanner shows the live scan switch and status | Switching on from Scanner | test/ui/live_scan_panel_test.dart | switch on shows ready status | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Unavailable runtime | test/ui/live_scan_panel_test.dart | unavailable status names the missing file | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved | test/ui/live_scan_panel_test.dart | failed switch-on save reverts and shows an error | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved when switching off | test/ui/live_scan_panel_test.dart | failed switch-off save stays off and shows an error | red |
-| scanner-evidence → Scan phase is visible, including fallback | Fallback becomes visible | test/ui/scan_evidence_panel_test.dart | fallback phase shows fallback underway | red |
-| scanner-evidence → Scan phase is visible, including fallback | Superseded scan | test/ui/scan_evidence_panel_test.dart | superseded scan shows only the newer phase | red |
-| scanner-evidence → Scanner shows the latest scan's evidence | Accepted scan | test/ui/scan_evidence_panel_test.dart | accepted report shows item, pass, score, crop and text | red |
-| scanner-evidence → Scanner shows the latest scan's evidence | Rejected scan | test/ui/scan_evidence_panel_test.dart | rejected report labels best candidate not accepted | red |
-| scanner-evidence → Scanner shows the latest scan's evidence | Failed scan | test/ui/scan_evidence_panel_test.dart | failed report shows failure and no candidate | red |
-| scanner-evidence → Scanner shows the latest scan's evidence | Navigation keeps evidence | test/ui/shell_test.dart | scan evidence survives Map and back | red |
-| scanner-evidence → Scan evidence never produces a recommendation | Accepted scan leaves the decision card alone | test/application/scan_coordinator_flow_test.dart; test/ui/scanner_screen_test.dart | accepted scan changes no selection or history; decision card unchanged after accepted scan | red |
+| scanner-evidence → Scanner shows the live scan switch and status | Switching on from Scanner | test/ui/live_scan_panel_test.dart | switch on shows ready status | green |
+| scanner-evidence → Scanner shows the live scan switch and status | Unavailable runtime | test/ui/live_scan_panel_test.dart | unavailable status names the missing file | green |
+| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved | test/ui/live_scan_panel_test.dart | failed switch-on save reverts and shows an error | green |
+| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved when switching off | test/ui/live_scan_panel_test.dart | failed switch-off save stays off and shows an error | green |
+| scanner-evidence → Scan phase is visible, including fallback | Fallback becomes visible | test/ui/scan_evidence_panel_test.dart | fallback phase shows fallback underway | green |
+| scanner-evidence → Scan phase is visible, including fallback | Superseded scan | test/ui/scan_evidence_panel_test.dart | superseded scan shows only the newer phase | green |
+| scanner-evidence → Scanner shows the latest scan's evidence | Accepted scan | test/ui/scan_evidence_panel_test.dart | accepted report shows item, pass, score, crop and text | green |
+| scanner-evidence → Scanner shows the latest scan's evidence | Rejected scan | test/ui/scan_evidence_panel_test.dart | rejected report labels best candidate not accepted | green |
+| scanner-evidence → Scanner shows the latest scan's evidence | Failed scan | test/ui/scan_evidence_panel_test.dart | failed report shows failure and no candidate | green |
+| scanner-evidence → Scanner shows the latest scan's evidence | Navigation keeps evidence | test/ui/shell_test.dart | scan evidence survives Map and back | green |
+| scanner-evidence → Scan evidence never produces a recommendation | Accepted scan leaves the decision card alone | test/application/scan_coordinator_flow_test.dart; test/ui/scanner_screen_test.dart | accepted scan changes no selection or history; decision card unchanged after accepted scan | green |
 | scanner-evidence → Scan evidence never produces a recommendation | Rejected scan with a best candidate | test/application/scan_coordinator_flow_test.dart | rejected scan changes no selection or history | green |
-| scanner-evidence → Scanner shows stage timings and recent scans | Timings of an accepted scan | test/ui/scan_evidence_panel_test.dart | timings show stage and total ms | red |
-| scanner-evidence → Scanner shows stage timings and recent scans | Early failure | test/ui/scan_evidence_panel_test.dart | absent stages are shown as absent, not 0 | red |
+| scanner-evidence → Scanner shows stage timings and recent scans | Timings of an accepted scan | test/ui/scan_evidence_panel_test.dart | timings show stage and total ms | green |
+| scanner-evidence → Scanner shows stage timings and recent scans | Early failure | test/ui/scan_evidence_panel_test.dart | absent stages are shown as absent, not 0 | green |
 | scanner-evidence → Scanner shows stage timings and recent scans | Recent list bound | test/application/scan_coordinator_flow_test.dart | recent list keeps the 10 newest | green |
 
 ## 1. ADR and architecture
@@ -236,7 +236,7 @@ Test conventions (AGENTS.md):
   - `test/ui/scan_evidence_panel_test.dart`: fallback underway; superseded shows only the newer phase; accepted, rejected and failed reports; timings and absent stages. The crop is a tiny synthetic gray buffer.
   - `test/ui/scanner_screen_test.dart`: the decision card is unchanged after an accepted scan.
   - `test/ui/shell_test.dart`: evidence survives Map and back.
-- [ ] 10.2 Implement `lib/ui/live_scan_panel.dart` and `lib/ui/scan_evidence_panel.dart`:
+- [x] 10.2 Implement `lib/ui/live_scan_panel.dart` and `lib/ui/scan_evidence_panel.dart`:
   - use `ListenableBuilder` on the coordinator;
   - decode the crop once per report id with `ui.decodeImageFromPixels` and dispose it on replacement;
   - item name from `catalog.snapshot`;
