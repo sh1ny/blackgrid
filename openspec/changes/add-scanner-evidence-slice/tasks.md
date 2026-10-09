@@ -31,14 +31,14 @@ Test conventions (AGENTS.md):
 | inspection-recognition → Recognition runs only as a vision-worker job | Job runs against a fake runtime | test/data/vision/inspection_job_test.dart | job runs through VisionService over a fake native without loading a library (existing) | green |
 | inspection-recognition → Recognition runs only as a vision-worker job | Normal launch | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | red |
 | vision-worker → Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | red |
-| vision-worker → Normal launch does not start the vision worker | Normal launch loads no vision library | test/application/app_services_scan_test.dart | launch with live scan off starts no worker, hook or vision runtime | red |
-| vision-worker → Normal launch does not start the vision worker | Live scanning starts the worker | test/application/app_services_scan_test.dart | launch with live scan saved on starts exactly one vision service | red |
+| vision-worker → Normal launch does not start the vision worker | Normal launch loads no vision library | test/application/app_services_scan_test.dart | launch with live scan off starts no worker, hook or vision runtime | green |
+| vision-worker → Normal launch does not start the vision worker | Live scanning starts the worker | test/application/app_services_scan_test.dart | launch with live scan saved on starts exactly one vision service | green |
 | vision-runtime → Normal app launch does not load the vision runtime | Normal launch | test/app/launch_mode_test.dart | no arguments selects UI mode and never constructs runtime (existing) | green |
 | vision-runtime → Normal app launch does not load the vision runtime | Unknown argument | test/app/launch_mode_test.dart | existing unknown-argument test | green |
-| vision-runtime → Normal app launch does not load the vision runtime | Live scanning on at launch | test/application/app_services_scan_test.dart | live scan on opens the runtime only through the vision service opener | red |
-| scan-pipeline → Live scan starts only when enabled | Launch with live scan off | test/application/app_services_scan_test.dart | launch with live scan off starts no worker, hook or vision runtime | red |
+| vision-runtime → Normal app launch does not load the vision runtime | Live scanning on at launch | test/application/app_services_scan_test.dart | live scan on opens the runtime only through the vision service opener | green |
+| scan-pipeline → Live scan starts only when enabled | Launch with live scan off | test/application/app_services_scan_test.dart | launch with live scan off starts no worker, hook or vision runtime | green |
 | scan-pipeline → Live scan starts only when enabled | Switching live scan on | test/application/scan_coordinator_lifecycle_test.dart | switch-on saves, then template, vision ready, then hook | green |
-| scan-pipeline → Live scan starts only when enabled | Launch with live scan saved on | test/application/app_services_scan_test.dart | launch with live scan saved on starts exactly one vision service | red |
+| scan-pipeline → Live scan starts only when enabled | Launch with live scan saved on | test/application/app_services_scan_test.dart | launch with live scan saved on starts exactly one vision service | green |
 | scan-pipeline → Live scan starts only when enabled | Vision runtime cannot start | test/application/scan_coordinator_lifecycle_test.dart | vision start failure is unavailable without a hook | green |
 | scan-pipeline → Live scan starts only when enabled | Marker template is invalid | test/application/scan_coordinator_lifecycle_test.dart | invalid marker template is unavailable before any worker | green |
 | scan-pipeline → Live scan starts only when enabled | Hook installation refused | test/application/scan_coordinator_lifecycle_test.dart | refused hook is unavailable with OS code and closes vision | green |
@@ -216,7 +216,7 @@ Test conventions (AGENTS.md):
   - "launch with live scan off starts no worker, hook or vision runtime" (the factories record zero calls);
   - "launch with live scan saved on starts exactly one vision service";
   - "live scan on opens the runtime only through the vision service opener".
-- [ ] 9.2 Wire `ScanCoordinator` and `ScanTimingLog` into `AppServices`:
+- [x] 9.2 Wire `ScanCoordinator` and `ScanTimingLog` into `AppServices`:
   - construct both with injectable factories;
   - call `startFromSettings()` after `initialize()`;
   - dispose the coordinator first and the log after it, inside the existing `try`/`finally`.
