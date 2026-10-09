@@ -73,8 +73,8 @@ Test conventions (AGENTS.md):
 | scan-pipeline → Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted timeline is complete and ordered | red |
 | scan-pipeline → Every scan records stage timings | Fallback wins | test/application/scan_coordinator_flow_test.dart | fallback win keeps the targeted pass's own job stamps | red |
 | scan-pipeline → Every scan records stage timings | Scan ended early | test/application/scan_coordinator_flow_test.dart | early capture failure leaves later stages absent | red |
-| scan-pipeline → Each finished scan is logged as one JSON line | Accepted scan line | test/application/scan_report_test.dart | accepted fallback report encodes a v1 line with per-pass ms | red |
-| scan-pipeline → Each finished scan is logged as one JSON line | Superseded scan line | test/application/scan_report_test.dart | superseded report encodes only the stages reached | red |
+| scan-pipeline → Each finished scan is logged as one JSON line | Accepted scan line | test/application/scan_report_test.dart | accepted fallback report encodes a v1 line with per-pass ms | green |
+| scan-pipeline → Each finished scan is logged as one JSON line | Superseded scan line | test/application/scan_report_test.dart | superseded report encodes only the stages reached | green |
 | scan-pipeline → Timing log is bounded and never blocks scanning | Rotation | test/data/scan_timing_log_test.dart | rotates before passing 1 MiB | green |
 | scan-pipeline → Timing log is bounded and never blocks scanning | Disk stalled | test/data/scan_timing_log_test.dart | stalled write queues 32 and counts drops | green |
 | scan-pipeline → Timing log is bounded and never blocks scanning | Log folder not writable | test/data/scan_timing_log_test.dart | open failure sets unavailable and later appends retry | green |
@@ -147,7 +147,7 @@ Test conventions (AGENTS.md):
   - "accepted fallback report encodes a v1 line with per-pass ms": `v`, `utc`, `end`, `item`, `pass`, `ms.trigger` 0, `ms.published`, `ms.targeted.{…}`, `ms.fallback.{…}`, with QPC to ms conversion at a fake frequency;
   - "superseded report encodes only the stages reached": absent keys omitted;
   - no key holds crop bytes.
-- [ ] 5.2 In `lib/application/scan_coordinator.dart`, define the UI-facing values:
+- [x] 5.2 In `lib/application/scan_coordinator.dart`, define the UI-facing values:
   - `LiveScanState`, `ScanFailureCode` plus message (mapped from every `CaptureFailure`, `TriggerFailure`, `VisionAnswer` non-delivery and `VisionStartFailure`);
   - `ScanPhase`, `ScanTimeline`/`PassTimeline` (nullable QPC);
   - the sealed `ScanEnd` (`ScanAccepted`, `ScanRejected`, `ScanFailed`), `ScanReport` and `toLogLine(qpcFrequency)`.
