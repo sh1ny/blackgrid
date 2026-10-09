@@ -175,7 +175,7 @@ Test conventions (AGENTS.md):
 
 ## 7. Coordinator scan flow
 
-- [ ] 7.1 Write failing tests in `test/application/scan_coordinator_flow_test.dart` for every flow row of the test map. Cover:
+- [x] 7.1 Write failing tests in `test/application/scan_coordinator_flow_test.dart` for every flow row of the test map. Cover:
   - targeted accept;
   - identity failure;
   - fallback paths (noMarker, both rejected, vision timeout, fallback capture fails, both blank, catalog-only);
