@@ -139,7 +139,7 @@ Test conventions (AGENTS.md):
   - "stalled write queues 32 and counts drops";
   - "open failure sets unavailable and later appends retry";
   - lines are written in order.
-- [ ] 4.2 Implement `lib/data/scan_timing_log.dart` (`ScanTimingLog` with `append`, `status` as a `ChangeNotifier` or listenable, and `close()` that flushes within 1 s, then drops). Verify: 4.1 passes; flip the Rotation, Disk stalled and Log folder not writable rows green.
+- [x] 4.2 Implement `lib/data/scan_timing_log.dart` (`ScanTimingLog` with `append`, `status` as a `ChangeNotifier` or listenable, and `close()` that flushes within 1 s, then drops). Verify: 4.1 passes; flip the Rotation, Disk stalled and Log folder not writable rows green.
 
 ## 5. Scan report values and log line
 
