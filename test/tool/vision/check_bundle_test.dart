@@ -582,6 +582,14 @@ void main() {
       );
     });
 
+    test('a source too large for exact arithmetic is named as such', () {
+      expect(
+        markerProvenanceFailures(meta({'sourceWidth': 9223372036854775807}))
+            .single,
+        contains('exceeds the maximum'),
+      );
+    });
+
     test('each malformed or inconsistent field fails', () {
       final bad = <String, Map<String, Object?>>{
         'short sha': {'sourceSha256': 'abc'},

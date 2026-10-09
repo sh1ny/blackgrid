@@ -431,6 +431,14 @@ List<String> markerProvenanceFailures(Uint8List bytes) {
     );
     return failures;
   }
+  // No display is this large; the bound keeps the footprint arithmetic exact.
+  const maxSource = 1 << 16;
+  if (width > maxSource || height > maxSource) {
+    failures.add(
+      '$where: source ${width}x$height exceeds the maximum of $maxSource',
+    );
+    return failures;
+  }
   final footprint = meta['footprint'];
   final expected = footprintFor(width, height);
   if (footprint != expected) {
