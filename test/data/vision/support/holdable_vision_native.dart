@@ -7,7 +7,7 @@ import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_native.dart';
 import 'package:blackgrid/data/vision/vision_primitives.dart';
 import 'package:blackgrid/data/vision/vision_runtime.dart'
-    show visionExpectedAbi;
+    show visionCoreFiles, visionExpectedAbi;
 import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter_test/flutter_test.dart' show fail;
@@ -248,12 +248,7 @@ final class HoldableVisionPrimitives implements VisionPrimitives {
 /// [holdableVisionOpener]: placeholder files plus a matching manifest.
 /// Delete it with `deleteSync(recursive: true)`.
 Directory createFakeRuntimeDirectory() {
-  const core = [
-    'leptonica-1.82.0.dll',
-    'tesseract50.dll',
-    'blackgrid_vision.dll',
-    'data/vision/tessdata/eng.traineddata',
-  ];
+  const core = visionCoreFiles;
   final dir = Directory.systemTemp.createTempSync('bgvisionworker');
   final root = dir.path.replaceAll('\\', '/');
   final files = <Map<String, Object>>[];

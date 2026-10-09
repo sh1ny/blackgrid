@@ -29,6 +29,8 @@ const List<String> visionCoreFiles = [
   'tesseract50.dll',
   'blackgrid_vision.dll',
   'data/vision/tessdata/eng.traineddata',
+  'data/vision/marker/inspection_marker.gray',
+  'data/vision/marker/inspection_marker.json',
 ];
 
 const String _tessdataRelative = 'data/vision/tessdata';

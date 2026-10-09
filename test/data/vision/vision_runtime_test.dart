@@ -13,6 +13,8 @@ const coreFiles = [
   'tesseract50.dll',
   'blackgrid_vision.dll',
   'data/vision/tessdata/eng.traineddata',
+  'data/vision/marker/inspection_marker.gray',
+  'data/vision/marker/inspection_marker.json',
 ];
 
 class FakeEngine implements VisionEngine {
@@ -242,7 +244,7 @@ void main() {
     expect(identity.language, 'eng');
     expect(identity.oem, 1);
     expect(identity.files.map((f) => f.path), contains('tesseract50.dll'));
-    expect(identity.files.length, 5);
+    expect(identity.files.length, coreFiles.length + 1);
     expect(fixture.opened.single.map((p) => p.split('/').last), [
       'leptonica-1.82.0.dll',
       'tesseract50.dll',
@@ -286,6 +288,31 @@ void main() {
     fixture.writeManifest(only: coreFiles.take(3).toList());
     final failure = failureOf(fixture.open());
     expect((failure as VisionMissingFile).path, endsWith('eng.traineddata'));
+    expect(fixture.opened, isEmpty);
+  });
+
+  test('altered marker template reports hashMismatch naming it', () {
+    fixture.writeManifest();
+    fixture.write('data/vision/marker/inspection_marker.gray', [9, 9, 9]);
+    final failure = failureOf(fixture.open());
+    expect(failure, isA<VisionHashMismatch>());
+    expect(
+      (failure as VisionHashMismatch).path,
+      endsWith('data/vision/marker/inspection_marker.gray'),
+    );
+    expect(fixture.opened, isEmpty);
+  });
+
+  test('marker metadata absent from the manifest reports missingFile', () {
+    fixture.writeManifest(
+      only: coreFiles.where((p) => !p.endsWith('.json')).toList(),
+    );
+    final failure = failureOf(fixture.open());
+    expect(failure, isA<VisionMissingFile>());
+    expect(
+      (failure as VisionMissingFile).path,
+      endsWith('data/vision/marker/inspection_marker.json'),
+    );
     expect(fixture.opened, isEmpty);
   });
 
