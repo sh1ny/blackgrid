@@ -108,7 +108,7 @@ Test conventions (AGENTS.md):
   - no decisions from scans before M4.
 
   Verify: the file exists, and `docs/adr/README.md` lists it if it keeps an index.
-- [ ] 1.2 Update `openspec/architecture.md`:
+- [x] 1.2 Update `openspec/architecture.md`:
   - add `ScanCoordinator`, `ScanTimingLog` and the Scanner evidence panel rows;
   - remove the "Not wired" notes on capture, vision, job and matcher;
   - rewrite the "Not built yet" paragraph (hotkeys and decisions remain M4);
