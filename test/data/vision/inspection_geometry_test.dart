@@ -118,9 +118,9 @@ void main() {
       expect(plan().narrow(184).width, 1);
     });
 
-    test('close button bounds are in BGRX channel order', () {
-      expect(closeButtonBgrxLo, [10, 10, 50, 0]);
-      expect(closeButtonBgrxHi, [15, 15, 80, 255]);
+    test('close button bounds are in B, G, R channel order', () {
+      expect(closeButtonBgrLo, [10, 10, 50]);
+      expect(closeButtonBgrHi, [15, 15, 80]);
     });
   });
 

@@ -19,11 +19,12 @@ const int _templateSide = 28;
 /// Side of the marker footprint at the reference 1080p client, in pixels.
 const int _referenceMarkerSide = 16;
 
-/// Lower colour bound of the close-button pixel, in BGRX channel order.
-const List<int> closeButtonBgrxLo = [10, 10, 50, 0];
+/// Lower colour bound of the close-button pixel, in the frame's B, G, R
+/// channel order (R 50-80, G 10-15, B 10-15). The X channel is not compared.
+const List<int> closeButtonBgrLo = [10, 10, 50];
 
-/// Upper colour bound of the close-button pixel, in BGRX channel order.
-const List<int> closeButtonBgrxHi = [15, 15, 80, 255];
+/// Upper colour bound of the close-button pixel, in B, G, R channel order.
+const List<int> closeButtonBgrHi = [15, 15, 80];
 
 /// The processing scale for a client of [clientWidth] x [clientHeight]:
 /// `min(width / 1920, height / 1080)`, independent of display scaling.
