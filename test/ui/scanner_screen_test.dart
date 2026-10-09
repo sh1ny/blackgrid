@@ -1,9 +1,11 @@
+import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
+import 'support/scan_ui_support.dart';
 
 void main() {
   testWidgets(
@@ -82,5 +84,63 @@ void main() {
       findsOneWidget,
     );
     expect(h.services.history.rows, isEmpty);
+  });
+  testWidgets('decision card unchanged after accepted scan', (tester) async {
+    final ports = ScanFakePorts();
+    final h = await pumpM1(tester, scanPorts: ports);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Synthetic component');
+    await tester.pump();
+    await tapM1Async(
+      tester,
+      find.widgetWithText(ListTile, 'Synthetic component'),
+      () => h.services.history.rows.length == 1,
+    );
+    final decision = h.services.selection.decision;
+    final decisionCard = find.byWidgetPredicate(
+      (widget) =>
+          widget is GridPanel && widget.title == 'Current manual inspection',
+    );
+    expect(
+      find.descendant(
+        of: decisionCard,
+        matching: find.text('Synthetic component'),
+      ),
+      findsWidgets,
+    );
+
+    final report = (await tester.runAsync(
+      () => publishTargetedScan(
+        h.services.scanner,
+        ports,
+        text: 'Alternative component',
+      ),
+    ))!;
+    await tester.pumpAndSettle();
+
+    expect((report.end as ScanAccepted).itemId, 'item-b');
+    expect(
+      tester.widget<Text>(find.byKey(const Key('scan-item'))).data,
+      contains('Alternative component'),
+    );
+    expect(h.services.selection.item!.id, 'item-a');
+    expect(h.services.selection.decision, same(decision));
+    expect(h.services.history.rows.length, 1);
+    expect(
+      find.descendant(
+        of: decisionCard,
+        matching: find.text('Alternative component'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: decisionCard,
+        matching: find.text('Synthetic component'),
+      ),
+      findsWidgets,
+    );
+    expect(h.services.scans.hasAcceptedScan, isFalse);
   });
 }

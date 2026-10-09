@@ -231,7 +231,7 @@ Test conventions (AGENTS.md):
 
 ## 10. Scanner UI
 
-- [ ] 10.1 Write failing widget tests:
+- [x] 10.1 Write failing widget tests:
   - `test/ui/live_scan_panel_test.dart`: switch on → ready; unavailable reason names the file; failed switch-on save reverts with an error; failed switch-off save stays off with an error. A fake coordinator or fake ports drive the states.
   - `test/ui/scan_evidence_panel_test.dart`: fallback underway; superseded shows only the newer phase; accepted, rejected and failed reports; timings and absent stages. The crop is a tiny synthetic gray buffer.
   - `test/ui/scanner_screen_test.dart`: the decision card is unchanged after an accepted scan.
