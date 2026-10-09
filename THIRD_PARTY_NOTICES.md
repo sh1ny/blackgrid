@@ -573,6 +573,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 
+<a id="inspection-marker-template"></a>
+### Inspection marker template (game UI artwork)
+
+- **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence. It is a 28x28 grayscale crop of the inspect-window magnifier glyph from a screenshot the user took of the game client. Blackgrid claims no ownership of it, and no public redistribution right is asserted. Inclusion follows the user's direction for this private implementation, not a public-release clearance.
+- **Files:** `data/vision/marker/inspection_marker.gray` (SHA-256 `3b6771a1028cb438c14daf252e78fc9c1fe0cf8af79af5800b15681713c8e72f`); `data/vision/marker/inspection_marker.json` (SHA-256 `60321abd52ad2070508930b28c3c1c9b8fa724b3dc7af2fa260db2497ee162e3`). Source copies are under `assets/vision/marker/`.
+- **Source screenshot SHA-256:** `4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3` (3440x1440 client, footprint origin 1198,277). The screenshot is not committed.
+- **Recipe:** `inspection-marker-v1`, produced by `tool/vision/make_marker_template.dart`: OpenCV-rounded BGR luma, a 21x21 footprint (trunc(16 x 4/3)) at the origin, deterministic cubic resize to 28x28.
+- **Regeneration:** rerun the tool on the user's screenshot, then update both file hashes here in the same commit. `mise run bundle:check` fails on a stale entry.
+
 <a id="microsoft-visual-cpp-runtime"></a>
 ### Microsoft Visual C++ runtime (app-local)
 

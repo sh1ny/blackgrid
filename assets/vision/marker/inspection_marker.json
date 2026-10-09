@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "width": 28,
+  "height": 28,
+  "stride": 28,
+  "sourceWidth": 3440,
+  "sourceHeight": 1440,
+  "scale": 1.3333333333333333,
+  "footprint": 21,
+  "origin": {
+    "x": 1198,
+    "y": 277
+  },
+  "sourceSha256": "4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3",
+  "recipe": "inspection-marker-v1"
+}
