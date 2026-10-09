@@ -106,7 +106,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 
 Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentation`.
 
-- [ ] 4.1 Write failing tests in `test/data/vision/inspection_geometry_test.dart`: "3840x2160 gives scale 2 and a 32x32 template", "3440x1440 scale follows height", "close button at x 400 gives title 119,50 217x17", "title region is clamped to the frame without padding" and "suppression keeps only the higher of two overlapping peaks". Add plateau-rule vectors (equal neighbours, earliest raster wins) and the order score desc / y asc / x asc. Verify they fail for missing functions.
+- [x] 4.1 Write failing tests in `test/data/vision/inspection_geometry_test.dart`: "3840x2160 gives scale 2 and a 32x32 template", "3440x1440 scale follows height", "close button at x 400 gives title 119,50 217x17", "title region is clamped to the frame without padding" and "suppression keeps only the higher of two overlapping peaks". Add plateau-rule vectors (equal neighbours, earliest raster wins) and the order score desc / y asc / x asc. Verify they fail for missing functions.
 - [ ] 4.2 Implement `lib/data/vision/inspection_geometry.dart`: `processingScale`, `scaledTemplateSize`, `titleRegion` (including the start-beyond-edge and empty cases), the probe row and its BGRX bounds, `suppressPeaks(candidates, templateW, templateH, maxPeaks: 8)`. Verify: the 4.1 tests pass (flip green).
 
 ## 5. Inspection recognition job
