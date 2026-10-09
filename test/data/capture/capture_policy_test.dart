@@ -23,6 +23,8 @@ WindowSnapshot target({
   int dpi = 96,
   CaptureRect client = const CaptureRect(0, 0, 1920, 1080),
   String title = 'EscapeFromTarkov',
+  CaptureRect monitor = const CaptureRect(0, 0, 1920, 1080),
+  CaptureRect virtualDesktop = const CaptureRect(0, 0, 1920, 1080),
 }) => WindowSnapshot(
   hwnd: hwnd,
   pid: pid,
@@ -31,8 +33,8 @@ WindowSnapshot target({
   foreground: foreground,
   dpi: dpi,
   client: client,
-  monitor: const CaptureRect(0, 0, 1920, 1080),
-  virtualDesktop: const CaptureRect(0, 0, 1920, 1080),
+  monitor: monitor,
+  virtualDesktop: virtualDesktop,
   title: title,
 );
 
@@ -255,6 +257,29 @@ void main() {
     expect(m.clipped, isTrue);
     expect(m.width, 445);
     expect(m.height, 50);
+    frame.release();
+  });
+
+  test('targeted frame reports the validated client size', () {
+    const big = CaptureRect(0, 0, 2560, 1440);
+    platform.s0 = target(client: big, monitor: big, virtualDesktop: big);
+    final frame = succeeded(run());
+    final m = frame.metadata;
+    expect(m.width, lessThan(2560));
+    expect(m.clientWidth, 2560);
+    expect(m.clientHeight, 1440);
+    frame.release();
+  });
+
+  test('clipped fallback frame reports full client width', () {
+    platform.s0 = target(virtualDesktop: const CaptureRect(0, 0, 1800, 1080));
+    final frame = succeeded(run(mode: CaptureMode.fallback));
+    final m = frame.metadata;
+    expect(m.clipped, isTrue);
+    expect(m.captured.width, 1800);
+    expect(m.width, 1800);
+    expect(m.clientWidth, 1920);
+    expect(m.clientHeight, 1080);
     frame.release();
   });
 

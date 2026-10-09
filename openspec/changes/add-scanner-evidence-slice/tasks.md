@@ -120,7 +120,7 @@ Test conventions (AGENTS.md):
 
 ## 2. Frame provenance gains the client size
 
-- [ ] 2.1 In `test/data/capture/capture_policy_test.dart`, add failing tests "targeted frame reports the validated client size" (2560×1440 client) and "clipped fallback frame reports full client width" (1920 client, captured 1800). Run `mise run test -- test/data/capture/capture_policy_test.dart` and confirm they fail because `clientWidth`/`clientHeight` do not exist.
+- [x] 2.1 In `test/data/capture/capture_policy_test.dart`, add failing tests "targeted frame reports the validated client size" (2560×1440 client) and "clipped fallback frame reports full client width" (1920 client, captured 1800). Run `mise run test -- test/data/capture/capture_policy_test.dart` and confirm they fail because `clientWidth`/`clientHeight` do not exist.
 - [ ] 2.2 Add `clientWidth`/`clientHeight` to `CaptureFrameMetadata` (`lib/data/capture/capture_frame.dart`), fill them from `s0.client` in `CapturePolicy` (`capture_policy.dart:88-104`), and update every constructor call in lib and test fakes. Verify: the 2.1 tests and the existing provenance and clipped tests pass; flip their rows green.
 
 ## 3. Settings key and log location
