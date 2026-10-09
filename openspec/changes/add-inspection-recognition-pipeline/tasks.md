@@ -80,7 +80,7 @@
 Skills: none (docs only).
 
 - [x] 1.1 Write `docs/adr/0012-inspection-recognition-pipeline.md` (MADR-short: Status accepted, Date, Supersedes none) covering design D1–D9: the split between the vision job and Dart matching, the off-UI matcher adapters, the peak primitive with Dart-side plateau and suppression (ABI 2, status -6), the 28×28 marker asset at the reference footprint and its provenance, same-weight grayscale, and single-precision gates. Include the rejected alternatives and reversal costs. Verify: the file exists, and `docs/adr/README.md` lists it if that README indexes ADRs.
-- [ ] 1.2 Update `openspec/architecture.md`: add ADR-0012 to "In-force ADRs"; add the recognition job and the title matcher to the component table; replace "the recognition pipeline (M2 change 4)" in "Not built yet" with a note that change 4 is built but unwired until change 5; note vision ABI 2. Verify: `grep -n 0012 openspec/architecture.md` shows the index row.
+- [x] 1.2 Update `openspec/architecture.md`: add ADR-0012 to "In-force ADRs"; add the recognition job and the title matcher to the component table; replace "the recognition pipeline (M2 change 4)" in "Not built yet" with a note that change 4 is built but unwired until change 5; note vision ABI 2. Verify: `grep -n 0012 openspec/architecture.md` shows the index row.
 
 ## 2. Native peak-listing primitive (vision-runtime)
 
