@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:crypto/crypto.dart';
 import 'package:image/image.dart' as img;
 
@@ -250,10 +251,18 @@ int run(List<String> args, {StringSink? out, StringSink? err}) {
   };
   final json = const JsonEncoder.withIndent('  ').convert(meta);
 
+  final grayPath = '$outDir/inspection_marker.gray';
+  final jsonPath = '$outDir/inspection_marker.json';
+  for (final path in [grayPath, jsonPath]) {
+    final unsafe = unsafeOutputReason(path, protectedFiles: [screenshot]);
+    if (unsafe != null) {
+      stderrSink.writeln('error: $unsafe');
+      return 1;
+    }
+  }
   final dir = Directory(outDir)..createSync(recursive: true);
-  File('${dir.path}/inspection_marker.gray').writeAsBytesSync(gray);
-  File('${dir.path}/inspection_marker.json')
-      .writeAsBytesSync(utf8.encode('$json\n'));
+  File(grayPath).writeAsBytesSync(gray);
+  File(jsonPath).writeAsBytesSync(utf8.encode('$json\n'));
   stdoutSink.writeln(
     'wrote ${dir.path} ${markerSide}x$markerSide from ${side}x$side '
     'footprint at ($ox,$oy)',

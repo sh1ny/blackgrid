@@ -341,4 +341,24 @@ void main() {
       expect(() => jsonEncode(report), returnsNormally);
     });
   });
+
+  group('inputInsideOutput', () {
+    test('inputs outside out/ are accepted', () {
+      expect(
+        inputInsideOutput(['corpus.json', 'frames/a.png', 'output/b.png']),
+        isNull,
+      );
+    });
+
+    test('an input inside out/ is named, whatever the separator or case', () {
+      expect(inputInsideOutput(['a.png', 'out/b.png']), 'out/b.png');
+      expect(inputInsideOutput([r'OUT\crops\c.png']), r'OUT\crops\c.png');
+      expect(inputInsideOutput(['./out/d.png']), './out/d.png');
+      expect(inputInsideOutput(['frames/../out/e.png']), 'frames/../out/e.png');
+    });
+
+    test('out itself counts as inside', () {
+      expect(inputInsideOutput(['out']), 'out');
+    });
+  });
 }

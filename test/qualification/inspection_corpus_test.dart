@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:blackgrid/application/recognition_matcher.dart';
 import 'package:blackgrid/data/capture/capture_frame.dart';
 import 'package:blackgrid/data/capture/capture_native.dart';
@@ -70,8 +71,32 @@ void main() {
           ? parseBaseline(baselineFile.readAsStringSync())
           : null;
 
-      final outDir = Directory('$corpusDir${Platform.pathSeparator}out')
-        ..createSync(recursive: true);
+      // The run writes only under out/; refuse before any write when an
+      // input lives there, a write would overwrite an input, or a path
+      // passes through a link.
+      final inputs = [
+        'corpus.json',
+        'catalog.json',
+        if (baseline != null) 'baseline.json',
+        for (final c in cases) c.image,
+      ];
+      final collision = inputInsideOutput(inputs);
+      if (collision != null) {
+        fail('corpus input $collision lies inside $corpusOutputDir/');
+      }
+      final protectedInputs = [for (final input in inputs) at(input).path];
+      void guardWrite(String path) {
+        final unsafe = unsafeOutputReason(
+          path,
+          protectedFiles: protectedInputs,
+        );
+        if (unsafe != null) fail('refusing to write: $unsafe');
+      }
+
+      final outPath = at(corpusOutputDir).path;
+      final reportPath = '$outPath${Platform.pathSeparator}report.json';
+      guardWrite(reportPath);
+      final outDir = Directory(outPath)..createSync(recursive: true);
       final cropDir = Directory('${outDir.path}${Platform.pathSeparator}crops')
         ..createSync(recursive: true);
 
@@ -147,7 +172,13 @@ void main() {
 
         Future<String?> writeCrop(String id, InspectionEvidence e) async {
           if (e.crop.isEmpty) return null;
-          final file = File('${cropDir.path}${Platform.pathSeparator}$id.png')
+          // A separator in the id would place the crop outside crops/.
+          if (id.contains(RegExp(r'[\\/]'))) {
+            fail('case id $id cannot name a crop file');
+          }
+          final path = '${cropDir.path}${Platform.pathSeparator}$id.png';
+          guardWrite(path);
+          final file = File(path)
             ..writeAsBytesSync(cropToPng(e.crop, e.cropWidth, e.cropHeight));
           return file.path;
         }
@@ -172,9 +203,11 @@ void main() {
       }
 
       final report = buildReport(reports, baseline: baseline);
-      File(
-        '${outDir.path}${Platform.pathSeparator}report.json',
-      ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
+      guardWrite(reportPath);
+      writeViaTemp(
+        reportPath,
+        const JsonEncoder.withIndent('  ').convert(report),
+      );
       // ignore: avoid_print
       print('corpus summary: ${jsonEncode(report['summary'])}');
 

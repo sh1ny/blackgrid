@@ -107,4 +107,15 @@ void main() {
     expect(result.err, contains('1080p'));
     expect(out.existsSync() && out.listSync().isNotEmpty, isFalse);
   });
+
+  test('an output that would overwrite the screenshot exits 1', () {
+    // The screenshot carries an output's name inside the output directory.
+    final shot = writeScreenshot(temp, 'inspection_marker.json', 1920, 1080);
+    final before = shot.readAsBytesSync();
+    final result = runTool(shot, '4,6', temp);
+    expect(result.code, 1);
+    expect(result.err, contains('inspection_marker.json'));
+    expect(shot.readAsBytesSync(), before);
+    expect(File('${temp.path}/inspection_marker.gray').existsSync(), isFalse);
+  });
 }

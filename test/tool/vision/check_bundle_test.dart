@@ -555,4 +555,73 @@ void main() {
       expect(File(fx.reportPath).existsSync(), isTrue);
     },
   );
+
+  group('game artwork provenance', () {
+    const shaA =
+        '1111111111111111111111111111111111111111111111111111111111111111';
+    const shaB =
+        '2222222222222222222222222222222222222222222222222222222222222222';
+    final files = <String, List<int>>{
+      'data/a/one.gray': [1],
+      'data/a/one.json': utf8.encode(
+        jsonEncode({'sourceSha256': shaA, 'recipe': 'recipe-a'}),
+      ),
+      'data/b/two.gray': [2],
+      'data/b/two.json': utf8.encode(
+        jsonEncode({'sourceSha256': shaB, 'recipe': 'recipe-b'}),
+      ),
+    };
+    Uint8List? bytesOf(String rel) {
+      final b = files[rel];
+      return b == null ? null : Uint8List.fromList(b);
+    }
+
+    String entry(String anchor, String stem, String sha, String recipe) =>
+        '''
+<a id="$anchor"></a>
+### $anchor
+
+- **Files:** `$stem.gray` (SHA-256 `${_sha(files['$stem.gray']!)}`), `$stem.json` (SHA-256 `${_sha(files['$stem.json']!)}`)
+- **Source screenshot SHA-256:** `$sha`
+- **Recipe:** $recipe
+- **Status:** $gameArtworkStatement.
+''';
+
+    final artwork = <GameArtworkEntry>[
+      (path: 'data/a/one.gray', noticeAnchor: 'art-a'),
+      (path: 'data/a/one.json', noticeAnchor: 'art-a'),
+      (path: 'data/b/two.gray', noticeAnchor: 'art-b'),
+      (path: 'data/b/two.json', noticeAnchor: 'art-b'),
+    ];
+
+    test('each artwork is checked against its own metadata', () {
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaA, 'recipe-a')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      expect(gameArtworkNoticeFailures(artwork, notices, bytesOf), isEmpty);
+    });
+
+    test('an artwork entry carrying another artwork provenance fails', () {
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaB, 'recipe-b')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      final failures = gameArtworkNoticeFailures(artwork, notices, bytesOf);
+      expect(failures, isNotEmpty);
+      expect(failures.every((f) => f.startsWith('data/a/one.')), isTrue);
+      expect(failures.join('\n'), allOf(contains(shaA), contains('recipe-a')));
+    });
+
+    test('file path and recipe match without case', () {
+      final upper = entry('art-a', 'data/a/one', shaA, 'recipe-a')
+          .replaceAll('data/a/one', 'DATA/A/ONE')
+          .replaceAll('recipe-a', 'RECIPE-A');
+      final notices =
+          '# N\n\n'
+          '$upper\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      expect(gameArtworkNoticeFailures(artwork, notices, bytesOf), isEmpty);
+    });
+  });
 }

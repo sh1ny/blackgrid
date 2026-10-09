@@ -22,6 +22,34 @@ const int fullClientDeadlineMs = 1500;
 /// The expected outcome that means "no item may be accepted".
 const String rejectOutcome = 'reject';
 
+/// The corpus subdirectory the run writes its report and crops into.
+const String corpusOutputDir = 'out';
+
+/// The first of [inputs], paths relative to the corpus directory, that lies
+/// inside [corpusOutputDir] (or is it), or null when none does.
+///
+/// Separators may be `/` or `\`, `.` and `..` segments are resolved, and the
+/// directory name is compared without case, as Windows does. The run refuses
+/// to write anything when this is not null, so it never overwrites an input.
+String? inputInsideOutput(Iterable<String> inputs) {
+  for (final input in inputs) {
+    final segments = <String>[];
+    for (final part in input.split(RegExp(r'[\\/]+'))) {
+      if (part.isEmpty || part == '.') continue;
+      if (part == '..') {
+        if (segments.isNotEmpty) segments.removeLast();
+        continue;
+      }
+      segments.add(part);
+    }
+    if (segments.isNotEmpty &&
+        segments.first.toLowerCase() == corpusOutputDir) {
+      return input;
+    }
+  }
+  return null;
+}
+
 /// One corpus entry.
 final class CorpusCase {
   /// Creates a case.

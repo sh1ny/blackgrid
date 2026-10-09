@@ -40,6 +40,8 @@ Per design D8, run it only while the game is not running: the vision worker load
     crops/<case id>.png
 ```
 
+The run writes nothing outside `out/` and refuses before its first write if a case image lies inside `out/`, if a write would overwrite an input, or if an output path passes through a symbolic link or junction. `report.json` is replaced through a temporary sibling, so a failed run leaves the previous report intact.
+
 ### `corpus.json`
 
 ```json

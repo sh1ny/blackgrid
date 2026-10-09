@@ -365,7 +365,17 @@ BundleReport checkBundle({
       }
     }
   }
-  noteFailures.addAll(_gameArtworkNoticeFailures(entries, notices, bytesOf));
+  noteFailures.addAll(
+    gameArtworkNoticeFailures(
+      [
+        for (final e in entries)
+          if (e.role == gameArtwork)
+            (path: e.path, noticeAnchor: e.noticeAnchor),
+      ],
+      notices,
+      bytesOf,
+    ),
+  );
   steps.add(StepResult('notices', noteFailures));
 
   final files = <Map<String, Object?>>[
@@ -383,31 +393,41 @@ BundleReport checkBundle({
   return BundleReport(root, steps, files);
 }
 
+/// A game-artwork file as the notices check sees it: its bundle path and the
+/// inventory `noticeAnchor` of its notices entry.
+typedef GameArtworkEntry = ({String path, String? noticeAnchor});
+
 /// Failures of the game-artwork notices check: each game-artwork file needs a
 /// notices entry (found by its inventory `noticeAnchor`) that names the file,
 /// its current SHA-256, the source screenshot SHA-256 and the recipe recorded
-/// in the bundle's metadata, and states the artwork's rights status.
-List<String> _gameArtworkNoticeFailures(
-  List<_Entry> entries,
+/// in that artwork's own metadata, and states the artwork's rights status.
+///
+/// An artwork's metadata is the `.json` file with the same stem, so
+/// `marker.gray` and `marker.json` share `marker.json`'s provenance. Paths,
+/// hashes, recipes and the statement are compared without case.
+List<String> gameArtworkNoticeFailures(
+  Iterable<GameArtworkEntry> artwork,
   String notices,
   Uint8List? Function(String rel) bytesOf,
 ) {
   final failures = <String>[];
-  final artwork = [
-    for (final e in entries)
-      if (e.role == gameArtwork) e,
-  ];
-  // Provenance comes from the artwork's own metadata file.
-  String? sourceSha;
-  String? recipe;
+  String stem(String path) {
+    final dot = path.lastIndexOf('.');
+    return dot > path.lastIndexOf('/') ? path.substring(0, dot) : path;
+  }
+
+  // Provenance per artwork stem, from that artwork's own metadata file.
+  final provenance = <String, ({String? sourceSha, String? recipe})>{};
   for (final e in artwork.where((e) => e.path.endsWith('.json'))) {
     final data = bytesOf(e.path);
     if (data == null) continue;
     try {
       final meta = jsonDecode(utf8.decode(data));
       if (meta is Map) {
-        sourceSha = (meta['sourceSha256'] as String?)?.trim().toLowerCase();
-        recipe = meta['recipe'] as String?;
+        provenance[stem(e.path)] = (
+          sourceSha: (meta['sourceSha256'] as String?)?.trim().toLowerCase(),
+          recipe: (meta['recipe'] as String?)?.trim(),
+        );
       }
     } on FormatException {
       failures.add('${e.path}: metadata is not valid JSON');
@@ -425,7 +445,7 @@ List<String> _gameArtworkNoticeFailures(
       continue;
     }
     final lower = section.toLowerCase();
-    if (!section.contains(e.path)) {
+    if (!lower.contains(e.path.toLowerCase())) {
       failures.add('${e.path}: notices entry "$anchor" does not name the file');
     }
     final data = bytesOf(e.path);
@@ -438,6 +458,9 @@ List<String> _gameArtworkNoticeFailures(
         );
       }
     }
+    final own = provenance[stem(e.path)];
+    final sourceSha = own?.sourceSha;
+    final recipe = own?.recipe;
     if (sourceSha == null || sourceSha.isEmpty) {
       failures.add('${e.path}: metadata has no sourceSha256');
     } else if (!lower.contains(sourceSha)) {
@@ -448,7 +471,7 @@ List<String> _gameArtworkNoticeFailures(
     }
     if (recipe == null || recipe.isEmpty) {
       failures.add('${e.path}: metadata has no recipe');
-    } else if (!section.contains(recipe)) {
+    } else if (!lower.contains(recipe.toLowerCase())) {
       failures.add('${e.path}: notices entry "$anchor" lacks recipe $recipe');
     }
     if (!lower.contains(gameArtworkStatement.toLowerCase())) {
