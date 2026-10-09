@@ -212,7 +212,7 @@ Test conventions (AGENTS.md):
 
 ## 9. Composition root and audits
 
-- [ ] 9.1 Write failing tests in `test/application/app_services_scan_test.dart` with fake factories (no native DLLs):
+- [x] 9.1 Write failing tests in `test/application/app_services_scan_test.dart` with fake factories (no native DLLs):
   - "launch with live scan off starts no worker, hook or vision runtime" (the factories record zero calls);
   - "launch with live scan saved on starts exactly one vision service";
   - "live scan on opens the runtime only through the vision service opener".
