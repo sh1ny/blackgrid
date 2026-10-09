@@ -31,33 +31,33 @@
 | inspection-recognition → Evidence is sendable and bounded | Stage timestamps are ordered | test/data/vision/inspection_job_test.dart | stage timestamps are non-decreasing | red |
 | inspection-recognition → Recognition runs only as a vision-worker job | Job runs against a fake runtime | test/data/vision/inspection_job_test.dart | job runs through VisionService over a fake native without loading a library | red |
 | inspection-recognition → Recognition runs only as a vision-worker job | Normal launch | test/data/vision/vision_worker_audit_test.dart | no startup path imports or starts the vision service or recognition job | red |
-| item-title-matching → Titles and catalog names are normalised the same way | Punctuation and spacing fold | test/domain/title_matching_test.dart | normalise folds punctuation and spacing | red |
-| item-title-matching → Titles and catalog names are normalised the same way | Compatibility characters fold | test/domain/title_matching_test.dart | normalise applies NFKC to full-width text | red |
-| item-title-matching → Titles and catalog names are normalised the same way | Whitespace-only title | test/domain/title_matching_test.dart | normalise of separators only is empty | red |
-| item-title-matching → Match index is built from one immutable catalog snapshot | Index records its source | test/domain/title_matching_test.dart | index results report snapshot mode and revision | red |
-| item-title-matching → Match index is built from one immutable catalog snapshot | Kebab-case normalised names | test/domain/title_matching_test.dart | kebab-case normalizedName becomes spaced candidate | red |
-| item-title-matching → Match index is built from one immutable catalog snapshot | Empty catalog | test/domain/title_matching_test.dart | empty catalog rejects emptyCatalog | red |
-| item-title-matching → Similarity is the better of two edit measures | Spacing difference only | test/domain/title_matching_test.dart | compact similarity ignores spaces | red |
-| item-title-matching → Similarity is the better of two edit measures | One substitution | test/domain/title_matching_test.dart | one substitution in six scores 5/6 | red |
-| item-title-matching → Titles that are too short or are UI chrome are rejected | Length at the gate | test/domain/title_matching_test.dart | normalised length 3 is matched | red |
-| item-title-matching → Titles that are too short or are UI chrome are rejected | Length below the gate | test/domain/title_matching_test.dart | normalised length 2 rejects titleTooShort | red |
-| item-title-matching → Titles that are too short or are UI chrome are rejected | Chrome label | test/domain/title_matching_test.dart | localised chrome labels reject uiChrome | red |
-| item-title-matching → Best and runner-up are chosen deterministically | Duplicate names | test/domain/title_matching_test.dart | duplicate normalised names keep the smaller id and skip runner-up | red |
-| item-title-matching → Best and runner-up are chosen deterministically | Distinct names tie | test/domain/title_matching_test.dart | distinct names at equal score give margin 0 | red |
-| item-title-matching → Scores and gates are evaluated in single precision | Margin at the gate | test/domain/title_matching_test.dart | float32 margin of 0.95 vs 0.90 is accepted at the gate | red |
-| item-title-matching → Scores and gates are evaluated in single precision | Margin just below the gate in single precision | test/domain/title_matching_test.dart | float32 margin one ulp below .05 goes to the near-tie rule | red |
-| item-title-matching → Baseline acceptance gates | Clear accept | test/domain/title_matching_test.dart | similarity .90 over .60 is accepted with margin .30 | red |
-| item-title-matching → Baseline acceptance gates | Similarity just below the gate | test/domain/title_matching_test.dart | similarity .5499 rejects belowSimilarity | red |
-| item-title-matching → Baseline acceptance gates | Margin just below .05 without confirmation | test/domain/title_matching_test.dart | margin .0499 without confirmation rejects ambiguous | red |
-| item-title-matching → Near-ties need confirmation and quantity | Confirmed near-tie | test/domain/title_matching_test.dart | margin .04 with confirmation is accepted | red |
-| item-title-matching → Near-ties need confirmation and quantity | Close tie with quantity agreement | test/domain/title_matching_test.dart | margin .01 with confirmation and quantity 20 is accepted | red |
-| item-title-matching → Near-ties need confirmation and quantity | Close tie without quantity | test/domain/title_matching_test.dart | margin .01 without quantity rejects ambiguous | red |
-| item-title-matching → Confirming matcher compares lower-cased raw names | Confirming pick | test/domain/title_matching_test.dart | confirming matcher picks the exact raw name | red |
-| item-title-matching → Confirming matcher compares lower-cased raw names | Near-chrome title | test/domain/title_matching_test.dart | confirming matcher reports none within .85 of chrome | red |
-| item-title-matching → Confirming matcher compares lower-cased raw names | Cyrillic look-alike capitals | test/domain/title_matching_test.dart | confirming matcher maps Cyrillic capitals to Latin | red |
-| item-title-matching → A title quantity restricts candidates | OCR confusion in quantity | test/domain/title_matching_test.dart | i2@ reads as quantity 120 | red |
-| item-title-matching → A title quantity restricts candidates | Quantity selects the variant | test/domain/title_matching_test.dart | quantity 200 restricts to the 200 pcs variant | red |
-| item-title-matching → A title quantity restricts candidates | Quantity with no matching candidate | test/domain/title_matching_test.dart | quantity without a matching candidate applies no restriction | red |
+| item-title-matching → Titles and catalog names are normalised the same way | Punctuation and spacing fold | test/domain/title_matching_test.dart | normalise folds punctuation and spacing | green |
+| item-title-matching → Titles and catalog names are normalised the same way | Compatibility characters fold | test/domain/title_matching_test.dart | normalise applies NFKC to full-width text | green |
+| item-title-matching → Titles and catalog names are normalised the same way | Whitespace-only title | test/domain/title_matching_test.dart | normalise of separators only is empty | green |
+| item-title-matching → Match index is built from one immutable catalog snapshot | Index records its source | test/domain/title_matching_test.dart | index results report snapshot mode and revision | green |
+| item-title-matching → Match index is built from one immutable catalog snapshot | Kebab-case normalised names | test/domain/title_matching_test.dart | kebab-case normalizedName becomes spaced candidate | green |
+| item-title-matching → Match index is built from one immutable catalog snapshot | Empty catalog | test/domain/title_matching_test.dart | empty catalog rejects emptyCatalog | green |
+| item-title-matching → Similarity is the better of two edit measures | Spacing difference only | test/domain/title_matching_test.dart | compact similarity ignores spaces | green |
+| item-title-matching → Similarity is the better of two edit measures | One substitution | test/domain/title_matching_test.dart | one substitution in six scores 5/6 | green |
+| item-title-matching → Titles that are too short or are UI chrome are rejected | Length at the gate | test/domain/title_matching_test.dart | normalised length 3 is matched | green |
+| item-title-matching → Titles that are too short or are UI chrome are rejected | Length below the gate | test/domain/title_matching_test.dart | normalised length 2 rejects titleTooShort | green |
+| item-title-matching → Titles that are too short or are UI chrome are rejected | Chrome label | test/domain/title_matching_test.dart | localised chrome labels reject uiChrome | green |
+| item-title-matching → Best and runner-up are chosen deterministically | Duplicate names | test/domain/title_matching_test.dart | duplicate normalised names keep the smaller id and skip runner-up | green |
+| item-title-matching → Best and runner-up are chosen deterministically | Distinct names tie | test/domain/title_matching_test.dart | distinct names at equal score give margin 0 | green |
+| item-title-matching → Scores and gates are evaluated in single precision | Margin at the gate | test/domain/title_matching_test.dart | float32 margin of 0.95 vs 0.90 is accepted at the gate | green |
+| item-title-matching → Scores and gates are evaluated in single precision | Margin just below the gate in single precision | test/domain/title_matching_test.dart | float32 margin one ulp below .05 goes to the near-tie rule | green |
+| item-title-matching → Baseline acceptance gates | Clear accept | test/domain/title_matching_test.dart | similarity .90 over .60 is accepted with margin .30 | green |
+| item-title-matching → Baseline acceptance gates | Similarity just below the gate | test/domain/title_matching_test.dart | similarity .5499 rejects belowSimilarity | green |
+| item-title-matching → Baseline acceptance gates | Margin just below .05 without confirmation | test/domain/title_matching_test.dart | margin .0499 without confirmation rejects ambiguous | green |
+| item-title-matching → Near-ties need confirmation and quantity | Confirmed near-tie | test/domain/title_matching_test.dart | margin .04 with confirmation is accepted | green |
+| item-title-matching → Near-ties need confirmation and quantity | Close tie with quantity agreement | test/domain/title_matching_test.dart | margin .01 with confirmation and quantity 20 is accepted | green |
+| item-title-matching → Near-ties need confirmation and quantity | Close tie without quantity | test/domain/title_matching_test.dart | margin .01 without quantity rejects ambiguous | green |
+| item-title-matching → Confirming matcher compares lower-cased raw names | Confirming pick | test/domain/title_matching_test.dart | confirming matcher picks the exact raw name | green |
+| item-title-matching → Confirming matcher compares lower-cased raw names | Near-chrome title | test/domain/title_matching_test.dart | confirming matcher reports none within .85 of chrome | green |
+| item-title-matching → Confirming matcher compares lower-cased raw names | Cyrillic look-alike capitals | test/domain/title_matching_test.dart | confirming matcher maps Cyrillic capitals to Latin | green |
+| item-title-matching → A title quantity restricts candidates | OCR confusion in quantity | test/domain/title_matching_test.dart | i2@ reads as quantity 120 | green |
+| item-title-matching → A title quantity restricts candidates | Quantity selects the variant | test/domain/title_matching_test.dart | quantity 200 restricts to the 200 pcs variant | green |
+| item-title-matching → A title quantity restricts candidates | Quantity with no matching candidate | test/domain/title_matching_test.dart | quantity without a matching candidate applies no restriction | green |
 | item-title-matching → Targeted and fallback evidence are ranked | Targeted accepted | test/domain/title_matching_test.dart | accepted targeted evidence wins without consulting fallback | red |
 | item-title-matching → Targeted and fallback evidence are ranked | Fallback chooses the accepted inspection | test/domain/title_matching_test.dart | ranking prefers accepted over higher marker score | red |
 | item-title-matching → Targeted and fallback evidence are ranked | Nothing accepted | test/domain/title_matching_test.dart | nothing accepted is a rejection with top evidence and no accepted id | red |
@@ -124,7 +124,7 @@ Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documenta
 
 - [x] 6.1 Add `unorm_dart: 0.3.3` (exact pin) to `pubspec.yaml` dependencies and run `flutter pub get` through mise. Verify: `pubspec.lock` pins 0.3.3, and `mise run analyze` is clean.
 - [x] 6.2 Write failing tests in `test/domain/title_matching_test.dart` for every `title_matching_test.dart` row in the test map, except ranking. Use small synthetic `CatalogSnapshot`s; similarity scenarios that name scores use crafted strings whose exact float32 scores are asserted. Verify they fail for missing code.
-- [ ] 6.3 Implement `lib/domain/title_matching.dart` (design D7): `normaliseTitle`, `RecognitionGates` (float32 constants), similarity with `Float32List` rounding, `TitleMatchIndex.build`, the quantity token with OCR confusions, the confirming matcher with Cyrillic-capital mapping and its .85 chrome check, the primary matcher with duplicate handling, and the near-tie rule. The result is sealed `TitleMatch` (`TitleAccepted`/`TitleRejected`). Verify: the 6.2 tests pass (flip green).
+- [x] 6.3 Implement `lib/domain/title_matching.dart` (design D7): `normaliseTitle`, `RecognitionGates` (float32 constants), similarity with `Float32List` rounding, `TitleMatchIndex.build`, the quantity token with OCR confusions, the confirming matcher with Cyrillic-capital mapping and its .85 chrome check, the primary matcher with duplicate handling, and the near-tie rule. The result is sealed `TitleMatch` (`TitleAccepted`/`TitleRejected`). Verify: the 6.2 tests pass (flip green).
 - [ ] 6.4 Add a qualification-tagged benchmark `test/qualification/title_matching_benchmark_test.dart`: 10k synthetic items; p95 per-title match ≤ 20 ms; index build and isolate copy time recorded. Verify: it passes, with timings printed.
 
 ## 7. Outcome ranking and off-UI adapters
