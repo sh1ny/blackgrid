@@ -9,7 +9,10 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import 'package:blackgrid/application/output_path_guard.dart';
+import 'package:blackgrid/data/vision/marker_template.dart'
+    show markerMetadataPath;
 
+import 'make_marker_template.dart' show footprintFor;
 import 'pe.dart';
 
 const defaultInventoryPath = 'tool/vision/bundle_inventory.json';
@@ -68,11 +71,20 @@ class _Entry {
   _Entry(Map<String, Object?> json)
     : path = json['path']! as String,
       role = json['role']! as String,
-      minVersion = json['minVersion'] as String?;
+      minVersion = json['minVersion'] as String?,
+      noticeAnchor = json['noticeAnchor'] as String?;
   final String path;
   final String role;
   final String? minVersion;
+  final String? noticeAnchor;
 }
+
+/// Inventory role of files derived from game artwork (design D4).
+const gameArtwork = 'game-artwork';
+
+/// Sentence a game-artwork notices entry must contain, compared without case.
+const gameArtworkStatement =
+    "game UI artwork captured by the user, not covered by Blackgrid's licence";
 
 String _sha(List<int> bytes) => sha256.convert(bytes).toString();
 
@@ -228,7 +240,7 @@ BundleReport checkBundle({
     }
   }
   for (final e in entries.where(
-    (e) => e.role == 'vision' || e.role == 'model',
+    (e) => e.role == 'vision' || e.role == 'model' || e.role == gameArtwork,
   )) {
     if (manifestBytes != null && !manifested.contains(e.path.toLowerCase())) {
       bind.add('${e.path}: not listed in $manifestPath');
@@ -356,6 +368,21 @@ BundleReport checkBundle({
       }
     }
   }
+  noteFailures.addAll(
+    gameArtworkNoticeFailures(
+      [
+        for (final e in entries)
+          if (e.role == gameArtwork)
+            (path: e.path, noticeAnchor: e.noticeAnchor),
+      ],
+      notices,
+      bytesOf,
+    ),
+  );
+  final markerMeta = bytesOf(markerMetadataPath);
+  if (markerMeta != null) {
+    noteFailures.addAll(markerProvenanceFailures(markerMeta));
+  }
   steps.add(StepResult('notices', noteFailures));
 
   final files = <Map<String, Object?>>[
@@ -371,6 +398,173 @@ BundleReport checkBundle({
         },
   ];
   return BundleReport(root, steps, files);
+}
+
+/// Failures of the marker template's provenance in its metadata [bytes]: the
+/// source screenshot SHA-256 (64 hex digits), the source client size, and a
+/// footprint and origin consistent with that size, as the regeneration tool
+/// records them. Missing bytes are the inventory step's failure, not this.
+List<String> markerProvenanceFailures(Uint8List bytes) {
+  const where = markerMetadataPath;
+  final Object? meta;
+  try {
+    meta = jsonDecode(utf8.decode(bytes));
+  } on FormatException {
+    return ['$where: metadata is not valid JSON'];
+  }
+  if (meta is! Map) return ['$where: metadata is not an object'];
+  final failures = <String>[];
+  final sha = meta['sourceSha256'];
+  if (sha is! String || !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(sha)) {
+    failures.add('$where: sourceSha256 is not a 64-digit hex SHA-256');
+  }
+  final (width, height) = (meta['sourceWidth'], meta['sourceHeight']);
+  if (width is! int || height is! int || width <= 0 || height <= 0) {
+    failures.add('$where: sourceWidth and sourceHeight must be positive');
+    return failures;
+  }
+  // The regeneration tool refuses any source below 1080p scale (s < 1).
+  if (width < 1920 || height < 1080) {
+    failures.add(
+      '$where: source ${width}x$height is below 1080p scale, which the '
+      'regeneration tool refuses',
+    );
+    return failures;
+  }
+  // No display is this large; the bound keeps the footprint arithmetic exact.
+  const maxSource = 1 << 16;
+  if (width > maxSource || height > maxSource) {
+    failures.add(
+      '$where: source ${width}x$height exceeds the maximum of $maxSource',
+    );
+    return failures;
+  }
+  final footprint = meta['footprint'];
+  final expected = footprintFor(width, height);
+  if (footprint != expected) {
+    failures.add(
+      '$where: footprint $footprint does not match ${width}x$height '
+      '(expected $expected)',
+    );
+    return failures;
+  }
+  final origin = meta['origin'];
+  final (x, y) = origin is Map ? (origin['x'], origin['y']) : (null, null);
+  if (x is! int ||
+      y is! int ||
+      x < 0 ||
+      y < 0 ||
+      // Subtracted, not added, so a huge origin cannot wrap past the bound.
+      x > width - expected ||
+      y > height - expected) {
+    failures.add(
+      '$where: origin must place the ${expected}px footprint inside '
+      '${width}x$height',
+    );
+  }
+  return failures;
+}
+
+/// A game-artwork file as the notices check sees it: its bundle path and the
+/// inventory `noticeAnchor` of its notices entry.
+typedef GameArtworkEntry = ({String path, String? noticeAnchor});
+
+/// Failures of the game-artwork notices check: each game-artwork file needs a
+/// notices entry (found by its inventory `noticeAnchor`) that names the file,
+/// its current SHA-256, the source screenshot SHA-256 and the recipe recorded
+/// in that artwork's own metadata, and states the artwork's rights status.
+///
+/// An artwork's metadata is the `.json` file with the same stem, so
+/// `marker.gray` and `marker.json` share `marker.json`'s provenance. Paths,
+/// hashes, recipes and the statement are compared without case.
+List<String> gameArtworkNoticeFailures(
+  Iterable<GameArtworkEntry> artwork,
+  String notices,
+  Uint8List? Function(String rel) bytesOf,
+) {
+  final failures = <String>[];
+  String stem(String path) {
+    final dot = path.lastIndexOf('.');
+    return dot > path.lastIndexOf('/') ? path.substring(0, dot) : path;
+  }
+
+  // Provenance per artwork stem, from that artwork's own metadata file.
+  final provenance = <String, ({String? sourceSha, String? recipe})>{};
+  for (final e in artwork.where((e) => e.path.endsWith('.json'))) {
+    final data = bytesOf(e.path);
+    if (data == null) continue;
+    try {
+      final meta = jsonDecode(utf8.decode(data));
+      if (meta is Map) {
+        // A field of another type is reported here and then counts as absent.
+        String? text(String name) => switch (meta[name]) {
+          null => null,
+          final String value => value.trim(),
+          _ => () {
+            failures.add('${e.path}: metadata $name is not a string');
+            return null;
+          }(),
+        };
+        provenance[stem(e.path)] = (
+          sourceSha: text('sourceSha256')?.toLowerCase(),
+          recipe: text('recipe'),
+        );
+      }
+    } on FormatException {
+      failures.add('${e.path}: metadata is not valid JSON');
+    }
+  }
+  for (final e in artwork) {
+    final anchor = e.noticeAnchor;
+    if (anchor == null) {
+      failures.add('${e.path}: inventory entry has no noticeAnchor');
+      continue;
+    }
+    final section = _noticeSection(notices, anchor);
+    if (section == null) {
+      failures.add('${e.path}: no notices entry with anchor "$anchor"');
+      continue;
+    }
+    final lower = section.toLowerCase();
+    if (!lower.contains(e.path.toLowerCase())) {
+      failures.add('${e.path}: notices entry "$anchor" does not name the file');
+    }
+    final data = bytesOf(e.path);
+    if (data == null) {
+      failures.add('${e.path}: file bytes unavailable, sha256 not verified');
+    } else {
+      final sha = _sha(data);
+      if (!lower.contains(sha)) {
+        failures.add(
+          '${e.path}: notices entry "$anchor" lacks sha256 $sha '
+          '(stale or missing)',
+        );
+      }
+    }
+    final own = provenance[stem(e.path)];
+    final sourceSha = own?.sourceSha;
+    final recipe = own?.recipe;
+    if (sourceSha == null || sourceSha.isEmpty) {
+      failures.add('${e.path}: metadata has no sourceSha256');
+    } else if (!lower.contains(sourceSha)) {
+      failures.add(
+        '${e.path}: notices entry "$anchor" lacks source screenshot sha256 '
+        '$sourceSha (stale or missing)',
+      );
+    }
+    if (recipe == null || recipe.isEmpty) {
+      failures.add('${e.path}: metadata has no recipe');
+    } else if (!lower.contains(recipe.toLowerCase())) {
+      failures.add('${e.path}: notices entry "$anchor" lacks recipe $recipe');
+    }
+    if (!lower.contains(gameArtworkStatement.toLowerCase())) {
+      failures.add(
+        '${e.path}: notices entry "$anchor" lacks the statement "'
+        '$gameArtworkStatement"',
+      );
+    }
+  }
+  return failures;
 }
 
 /// Text from the `<a id="anchor">` line up to the next anchor or `## `

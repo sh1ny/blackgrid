@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 /// Why writing [output] (and its `<output>.tmp` sibling) would be unsafe, or
@@ -47,6 +48,11 @@ String? unsafeOutputReason(
 }
 
 /// Absolute path with the deepest existing ancestor's links resolved.
+///
+/// The missing tail is kept lexically. `.` and `..` segments inside it are
+/// still collapsed because Win32 normalises the path before `typeSync` and
+/// `resolveSymbolicLinksSync` see it, so `missing/../x` is found as `x`.
+/// `output_path_guard_test.dart` pins this for the shapes the guard relies on.
 String _canonical(String path) {
   var head = File(path).absolute.path;
   final tail = <String>[];
@@ -74,18 +80,30 @@ String _canonical(String path) {
   return Platform.isWindows ? result.toLowerCase() : result;
 }
 
-/// Writes [contents] to `<path>.tmp`, then renames it over [path].
+/// Writes [contents] as UTF-8 through [writeBytesViaTemp].
+void writeViaTemp(String path, String contents) =>
+    writeBytesViaTemp(path, utf8.encode(contents));
+
+/// Writes [bytes] to `<path>.tmp`, then renames it over [path].
 ///
 /// A leftover `<path>.tmp` is removed first and the temp file is created
 /// exclusively, so a planted hard link at the temp path is unlinked rather
-/// than written through to the file it shares.
-void writeViaTemp(String path, String contents) {
+/// than written through to the file it shares. The rename replaces the
+/// directory entry at [path], so a hard link there is replaced too and the
+/// file it shared keeps its contents.
+///
+/// The link checks of [unsafeOutputReason] run again here, so a link planted
+/// at the output, its temp sibling or an ancestor after the caller's own
+/// check throws a [FileSystemException] instead of redirecting the write.
+void writeBytesViaTemp(String path, List<int> bytes) {
+  final unsafe = unsafeOutputReason(path);
+  if (unsafe != null) throw FileSystemException('refusing to write', unsafe);
   final temp = File('$path.tmp');
   if (FileSystemEntity.typeSync(temp.path, followLinks: false) ==
       FileSystemEntityType.file) {
     temp.deleteSync();
   }
   temp.createSync(exclusive: true);
-  temp.writeAsStringSync(contents, flush: true);
+  temp.writeAsBytesSync(bytes, flush: true);
   temp.renameSync(path);
 }

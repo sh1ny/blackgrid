@@ -89,6 +89,14 @@ final class VisionJobContext {
     VisionImage template,
   ) => _runtime.matchTemplate(image, template);
 
+  /// See [VisionRuntime.matchTemplatePeaks].
+  VisionResult<List<TemplatePeak>> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  ) => _runtime.matchTemplatePeaks(image, template, threshold, cap);
+
   /// See [VisionRuntime.findInRangeRow].
   VisionResult<int?> findInRangeRow(
     VisionImage image,

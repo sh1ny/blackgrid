@@ -11,6 +11,10 @@ import '../../support/pe_builder.dart';
 const _opencvUrl = 'https://example.test/opencv-4.13.0.zip';
 const _nupkgUrl = 'https://example.test/Tesseract/5.2.0';
 const _modelUrl = 'https://example.test/eng.traineddata';
+const _markerGray = 'data/vision/marker/inspection_marker.gray';
+const _markerJson = 'data/vision/marker/inspection_marker.json';
+const _screenshotSha =
+    '4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3';
 
 String _sha(List<int> bytes) => sha256.convert(bytes).toString();
 
@@ -46,6 +50,23 @@ class _Fixture {
     write('data/vision/tessdata/eng.traineddata', utf8.encode('model-bytes'));
     write('data/vision/self_check/title.gray', [1, 2, 3]);
     write('data/vision/self_check/title.json', utf8.encode('{}'));
+    write(_markerGray, [for (var i = 0; i < 784; i++) i % 251]);
+    write(
+      _markerJson,
+      utf8.encode(
+        jsonEncode({
+          'format': 1,
+          'width': 28,
+          'height': 28,
+          'sourceSha256': _screenshotSha,
+          'sourceWidth': 1920,
+          'sourceHeight': 1080,
+          'footprint': 16,
+          'origin': {'x': 4, 'y': 6},
+          'recipe': 'inspection-marker-v1',
+        }),
+      ),
+    );
     write(
       'blackgrid_panel_ocr.dll.sha256',
       utf8.encode(_sha(read('blackgrid_panel_ocr.dll'))),
@@ -80,6 +101,8 @@ class _Fixture {
       'tesseract50.dll',
       'leptonica-1.82.0.dll',
       'data/vision/tessdata/eng.traineddata',
+      _markerGray,
+      _markerJson,
     ];
     final manifest = {
       'format': 1,
@@ -98,7 +121,7 @@ class _Fixture {
 
   String get tesseractSha => _sha(read('tesseract50.dll'));
 
-  void writeLockAndNotices({String? noticesTesseractSha}) {
+  void writeLockAndNotices({String? noticesTesseractSha, String? markerSha}) {
     final lock = {
       'format': 1,
       'inputs': [
@@ -161,6 +184,7 @@ class _Fixture {
     };
     File(lockPath).writeAsStringSync(jsonEncode(lock));
     final tessSha = noticesTesseractSha ?? tesseractSha;
+    final grayEntrySha = markerSha ?? _sha(read(_markerGray));
     File(noticesPath).writeAsStringSync('''
 # Notices
 
@@ -190,6 +214,14 @@ class _Fixture {
 
 - **Source:** <$_modelUrl>
 - **SHA-256:** `${_sha(read('data/vision/tessdata/eng.traineddata'))}`
+
+<a id="inspection-marker-template"></a>
+### Inspection marker template
+
+- **Files:** `$_markerGray` (SHA-256 `$grayEntrySha`), `$_markerJson` (SHA-256 `${_sha(read(_markerJson))}`)
+- **Source screenshot SHA-256:** `$_screenshotSha`
+- **Recipe:** inspection-marker-v1
+- **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence.
 
 <a id="microsoft-visual-cpp-runtime"></a>
 ### Microsoft Visual C++ runtime (app-local)
@@ -302,6 +334,24 @@ void main() {
     expect(text2, contains('missing'));
   });
 
+  test('inventory fails naming missing marker template or metadata', () async {
+    File('${fx.bundle.path}/$_markerGray').deleteSync();
+    final r = await fx.run();
+    expect(r.code, isNot(0));
+    final text = _failures(r.report!, 'inventory');
+    expect(text, contains(_markerGray));
+    expect(text, contains('missing'));
+
+    final fx2 = _Fixture();
+    addTearDown(fx2.dispose);
+    File('${fx2.bundle.path}/$_markerJson').deleteSync();
+    final r2 = await fx2.run();
+    expect(r2.code, isNot(0));
+    final text2 = _failures(r2.report!, 'inventory');
+    expect(text2, contains(_markerJson));
+    expect(text2, contains('missing'));
+  });
+
   test('hash step fails naming capture library and both hashes', () async {
     fx.write('blackgrid_capture.dll.sha256', utf8.encode('0' * 64));
     final r = await fx.run();
@@ -357,6 +407,59 @@ void main() {
     final r = await fx.run();
     expect(_step(r.report!, 'notices')['ok'], isTrue);
   });
+
+  test(
+    'game artwork notices step passes with file, sha and source sha',
+    () async {
+      final r = await fx.run();
+      expect(r.code, 0, reason: '${r.err} ${r.report}');
+      expect(_step(r.report!, 'notices')['ok'], isTrue);
+      final files = (r.report!['files']! as List).cast<Map<String, Object?>>();
+      final marker = files.firstWhere((f) => f['path'] == _markerGray);
+      expect(marker['role'], 'game-artwork');
+      expect(marker['sha256'], _sha(fx.read(_markerGray)));
+    },
+  );
+
+  test('game artwork notices step fails naming a stale marker sha', () async {
+    fx.writeLockAndNotices(markerSha: 'd' * 64);
+    final r = await fx.run();
+    expect(r.code, isNot(0));
+    final text = _failures(r.report!, 'notices');
+    expect(text, contains(_markerGray));
+    expect(text, contains(_sha(fx.read(_markerGray))));
+    expect(_step(r.report!, 'inventory')['ok'], isTrue);
+  });
+
+  test(
+    'game artwork notices step fails without the licence statement',
+    () async {
+      final notices = File(fx.noticesPath);
+      notices.writeAsStringSync(
+        notices.readAsStringSync().replaceAll(
+          'not covered by Blackgrid',
+          'covered by Blackgrid',
+        ),
+      );
+      final r = await fx.run();
+      expect(r.code, isNot(0));
+      expect(_failures(r.report!, 'notices'), contains(_markerGray));
+      expect(_failures(r.report!, 'notices'), contains('licence'));
+    },
+  );
+
+  test(
+    'game artwork notices step fails on a stale source screenshot sha',
+    () async {
+      final notices = File(fx.noticesPath);
+      notices.writeAsStringSync(
+        notices.readAsStringSync().replaceAll(_screenshotSha, 'e' * 64),
+      );
+      final r = await fx.run();
+      expect(r.code, isNot(0));
+      expect(_failures(r.report!, 'notices'), contains(_screenshotSha));
+    },
+  );
 
   test('notices step fails naming component with stale sha', () async {
     fx.writeLockAndNotices(noticesTesseractSha: 'c' * 64);
@@ -456,4 +559,192 @@ void main() {
       expect(File(fx.reportPath).existsSync(), isTrue);
     },
   );
+
+  group('marker provenance', () {
+    Uint8List meta(Map<String, Object?> overrides) => utf8.encode(
+      jsonEncode({
+        'sourceSha256': 'ab' * 32,
+        'sourceWidth': 2560,
+        'sourceHeight': 1440,
+        'footprint': 21,
+        'origin': {'x': 4, 'y': 6},
+        ...overrides,
+      }),
+    );
+
+    test('complete, consistent provenance passes', () {
+      expect(markerProvenanceFailures(meta({})), isEmpty);
+      expect(
+        markerProvenanceFailures(
+          meta({'sourceWidth': 1920, 'sourceHeight': 1080, 'footprint': 16}),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a source too large for exact arithmetic is named as such', () {
+      expect(
+        markerProvenanceFailures(meta({'sourceWidth': 9223372036854775807}))
+            .single,
+        contains('exceeds the maximum'),
+      );
+    });
+
+    test('each malformed or inconsistent field fails', () {
+      final bad = <String, Map<String, Object?>>{
+        'short sha': {'sourceSha256': 'abc'},
+        'sha of another type': {'sourceSha256': 7},
+        'missing size': {'sourceWidth': null},
+        'zero height': {'sourceHeight': 0},
+        'below 1080p scale with a zero footprint': {
+          'sourceWidth': 1,
+          'sourceHeight': 1,
+          'footprint': 0,
+          'origin': {'x': 0, 'y': 0},
+        },
+        'one pixel short of 1080p': {
+          'sourceWidth': 1920,
+          'sourceHeight': 1079,
+          'footprint': 15,
+        },
+        'footprint off the size': {'footprint': 16},
+        'missing footprint': {'footprint': null},
+        'missing origin': {'origin': null},
+        'origin past the edge': {
+          'origin': {'x': 2550, 'y': 6},
+        },
+        'negative origin': {
+          'origin': {'x': -1, 'y': 6},
+        },
+        'origin at the integer limit': {
+          'origin': {'x': 9223372036854775807, 'y': 6},
+        },
+      };
+      for (final MapEntry(:key, :value) in bad.entries) {
+        expect(markerProvenanceFailures(meta(value)), isNotEmpty, reason: key);
+      }
+    });
+
+    test('the notices step reports the marker provenance', () async {
+      final m = jsonDecode(utf8.decode(fx.read(_markerJson))) as Map;
+      m.remove('origin');
+      fx.write(_markerJson, utf8.encode(jsonEncode(m)));
+      fx.writeLockAndNotices();
+      final r = await fx.run();
+      expect(r.code, isNot(0));
+      expect(_failures(r.report!, 'notices'), contains('origin'));
+    });
+  });
+
+  group('game artwork provenance', () {
+    const shaA =
+        '1111111111111111111111111111111111111111111111111111111111111111';
+    const shaB =
+        '2222222222222222222222222222222222222222222222222222222222222222';
+    final files = <String, List<int>>{
+      'data/a/one.gray': [1],
+      'data/a/one.json': utf8.encode(
+        jsonEncode({'sourceSha256': shaA, 'recipe': 'recipe-a'}),
+      ),
+      'data/b/two.gray': [2],
+      'data/b/two.json': utf8.encode(
+        jsonEncode({'sourceSha256': shaB, 'recipe': 'recipe-b'}),
+      ),
+    };
+    Uint8List? bytesOf(String rel) {
+      final b = files[rel];
+      return b == null ? null : Uint8List.fromList(b);
+    }
+
+    String entry(String anchor, String stem, String sha, String recipe) =>
+        '''
+<a id="$anchor"></a>
+### $anchor
+
+- **Files:** `$stem.gray` (SHA-256 `${_sha(files['$stem.gray']!)}`), `$stem.json` (SHA-256 `${_sha(files['$stem.json']!)}`)
+- **Source screenshot SHA-256:** `$sha`
+- **Recipe:** $recipe
+- **Status:** $gameArtworkStatement.
+''';
+
+    final artwork = <GameArtworkEntry>[
+      (path: 'data/a/one.gray', noticeAnchor: 'art-a'),
+      (path: 'data/a/one.json', noticeAnchor: 'art-a'),
+      (path: 'data/b/two.gray', noticeAnchor: 'art-b'),
+      (path: 'data/b/two.json', noticeAnchor: 'art-b'),
+    ];
+
+    test('each artwork is checked against its own metadata', () {
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaA, 'recipe-a')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      expect(gameArtworkNoticeFailures(artwork, notices, bytesOf), isEmpty);
+    });
+
+    test('an artwork entry carrying another artwork provenance fails', () {
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaB, 'recipe-b')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      final failures = gameArtworkNoticeFailures(artwork, notices, bytesOf);
+      expect(failures, isNotEmpty);
+      expect(failures.every((f) => f.startsWith('data/a/one.')), isTrue);
+      expect(failures.join('\n'), allOf(contains(shaA), contains('recipe-a')));
+    });
+
+    test('an artwork file whose bytes are unavailable fails', () {
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaA, 'recipe-a')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      final failures = gameArtworkNoticeFailures(
+        artwork,
+        notices,
+        (rel) => rel == 'data/b/two.gray' ? null : bytesOf(rel),
+      );
+      expect(failures, [
+        'data/b/two.gray: file bytes unavailable, sha256 not verified',
+      ]);
+    });
+
+    test('non-string provenance fields are failures, not crashes', () {
+      final malformed = {
+        ...files,
+        'data/a/one.json': utf8.encode(
+          jsonEncode({
+            'sourceSha256': 42,
+            'recipe': ['recipe-a'],
+          }),
+        ),
+      };
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaA, 'recipe-a')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      final failures = gameArtworkNoticeFailures(artwork, notices, (rel) {
+        final b = malformed[rel];
+        return b == null ? null : Uint8List.fromList(b);
+      });
+      expect(
+        failures,
+        containsAll([
+          'data/a/one.json: metadata sourceSha256 is not a string',
+          'data/a/one.json: metadata recipe is not a string',
+        ]),
+      );
+      expect(failures.every((f) => f.startsWith('data/a/one.')), isTrue);
+    });
+
+    test('file path and recipe match without case', () {
+      final upper = entry('art-a', 'data/a/one', shaA, 'recipe-a')
+          .replaceAll('data/a/one', 'DATA/A/ONE')
+          .replaceAll('recipe-a', 'RECIPE-A');
+      final notices =
+          '# N\n\n'
+          '$upper\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      expect(gameArtworkNoticeFailures(artwork, notices, bytesOf), isEmpty);
+    });
+  });
 }

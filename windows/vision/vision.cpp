@@ -165,6 +165,50 @@ BGV_API int32_t bgv_match_template_best(const uint8_t* img, int32_t iw,
   });
 }
 
+BGV_API int32_t bgv_match_template_peaks(
+    const uint8_t* img, int32_t iw, int32_t ih, int32_t istride,
+    const uint8_t* tpl, int32_t tw, int32_t th, int32_t tstride,
+    float threshold, int32_t cap, int32_t* out_x, int32_t* out_y,
+    float* out_score, int32_t* out_count) {
+  if (img == nullptr || tpl == nullptr || out_x == nullptr ||
+      out_y == nullptr || out_score == nullptr || out_count == nullptr) {
+    return BGV_ERR_ARGUMENT;
+  }
+  if (cap < 1 || std::isnan(threshold)) return BGV_ERR_ARGUMENT;
+  if (!ValidImage(img, iw, ih, istride, 1) ||
+      !ValidImage(tpl, tw, th, tstride, 1)) {
+    return BGV_ERR_IMAGE;
+  }
+  if (tw > iw || th > ih) return BGV_ERR_IMAGE;
+  *out_count = 0;
+  return Guard([&] {
+    const cv::Mat image = Wrap(img, iw, ih, istride, 1);
+    const cv::Mat templ = Wrap(tpl, tw, th, tstride, 1);
+    cv::Scalar mean;
+    cv::Scalar stddev;
+    cv::meanStdDev(templ, mean, stddev);
+    if (stddev[0] == 0.0) return BGV_ERR_IMAGE;
+    cv::Mat result;
+    cv::matchTemplate(image, templ, result, cv::TM_CCOEFF_NORMED);
+    int32_t count = 0;
+    for (int y = 0; y < result.rows; ++y) {
+      const float* row = result.ptr<float>(y);
+      for (int x = 0; x < result.cols; ++x) {
+        const float value = row[x];
+        // NaN fails the comparison; infinities are not valid scores.
+        if (!(value >= threshold) || !std::isfinite(value)) continue;
+        if (count >= cap) return BGV_ERR_OVERFLOW;
+        out_x[count] = x;
+        out_y[count] = y;
+        out_score[count] = value;
+        ++count;
+      }
+    }
+    *out_count = count;
+    return BGV_OK;
+  });
+}
+
 BGV_API int32_t bgv_find_in_range_row(const uint8_t* src, int32_t w,
                                       int32_t h, int32_t stride,
                                       int32_t channels, int32_t row,

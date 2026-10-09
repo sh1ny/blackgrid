@@ -17,7 +17,7 @@ export 'vision_native.dart'
 export 'vision_primitives.dart' show TemplateMatch;
 
 /// `bgv_abi()` value this build of the Dart binding expects.
-const int visionExpectedAbi = 1;
+const int visionExpectedAbi = 2;
 
 /// Manifest location relative to the runtime directory.
 const String visionManifestPath = 'data/vision/runtime.manifest.json';
@@ -29,6 +29,8 @@ const List<String> visionCoreFiles = [
   'tesseract50.dll',
   'blackgrid_vision.dll',
   'data/vision/tessdata/eng.traineddata',
+  'data/vision/marker/inspection_marker.gray',
+  'data/vision/marker/inspection_marker.json',
 ];
 
 const String _tessdataRelative = 'data/vision/tessdata';
@@ -316,6 +318,35 @@ final class VisionRuntime {
       );
     }
     return VisionOk(native.primitives.matchTemplateBest(image, template));
+  });
+
+  /// Lists every template-match location scoring at or above [threshold], in
+  /// raster order, up to [cap] entries. A template larger than the image, a
+  /// non-positive [cap] or a non-finite [threshold] is [VisionInvalidImage]
+  /// before any native call. More than [cap] qualifying locations is a
+  /// [VisionNativeFailure] with status -6 and no list.
+  VisionResult<List<TemplatePeak>> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  ) => _run((native, engine) {
+    final invalid =
+        _grayOnly(image) ?? VisionImage.validateTemplate(image, template);
+    if (invalid != null) return VisionFailed(invalid);
+    if (template.channels != 1) {
+      return const VisionFailed(
+        VisionInvalidImage('template must be 1 channel'),
+      );
+    }
+    if (cap < 1 || !threshold.isFinite) {
+      return const VisionFailed(
+        VisionInvalidImage('peak cap must be positive and threshold finite'),
+      );
+    }
+    return VisionOk(
+      native.primitives.matchTemplatePeaks(image, template, threshold, cap),
+    );
   });
 
   /// Null [VisionOk.value] when no pixel of the row is in range.

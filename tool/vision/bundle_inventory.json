@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "comment": "Expected native files and models of a Release bundle. Roles: panel-ocr and capture libraries are bound by a <path>.sha256 sidecar (panel-ocr-binding, capture-binding) that must hold the library sha256. vision and model files must be listed in data/vision/runtime.manifest.json. vcruntime files carry the committed minimum PE file version (design D7: 14.33, the newest toolset that linked a bundled third-party DLL - leptonica-1.82.0.dll links 14.33, tesseract50.dll 14.29 - and within the VS 2022 14.3x floor). Any other .dll or .traineddata under the bundle is unexpected.",
+  "comment": "Expected native files and models of a Release bundle. Roles: panel-ocr and capture libraries are bound by a <path>.sha256 sidecar (panel-ocr-binding, capture-binding) that must hold the library sha256. vision and model files must be listed in data/vision/runtime.manifest.json. vcruntime files carry the committed minimum PE file version (design D7: 14.33, the newest toolset that linked a bundled third-party DLL - leptonica-1.82.0.dll links 14.33, tesseract50.dll 14.29 - and within the VS 2022 14.3x floor). game-artwork files must be listed in the manifest and covered by a THIRD_PARTY_NOTICES.md entry (noticeAnchor) naming the file, its sha256, the source screenshot sha256 and the recipe from the file's metadata. Any other .dll or .traineddata under the bundle is unexpected.",
   "manifestPath": "data/vision/runtime.manifest.json",
   "panelSidecarSuffix": ".sha256",
   "vcRuntimeNoticeAnchor": "microsoft-visual-cpp-runtime",
@@ -18,6 +18,8 @@
     { "path": "data/vision/tessdata/eng.traineddata", "role": "model" },
     { "path": "data/vision/self_check/title.gray", "role": "sample" },
     { "path": "data/vision/self_check/title.json", "role": "sample" },
+    { "path": "data/vision/marker/inspection_marker.gray", "role": "game-artwork", "noticeAnchor": "inspection-marker-template" },
+    { "path": "data/vision/marker/inspection_marker.json", "role": "game-artwork", "noticeAnchor": "inspection-marker-template" },
     { "path": "data/vision/runtime.manifest.json", "role": "vision-binding" },
     { "path": "msvcp140.dll", "role": "vcruntime", "minVersion": "14.33.0.0" },
     { "path": "vcruntime140.dll", "role": "vcruntime", "minVersion": "14.33.0.0" },

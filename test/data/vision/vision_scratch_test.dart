@@ -114,6 +114,11 @@ FfiVisionPrimitives primitivesOver(VisionScratch scratch) =>
         y.value = tw + th;
         return 0;
       },
+      peaks:
+          (img, w, h, stride, tpl, tw, th, tstride, thr, cap, xs, ys, sc, n) {
+            n.value = 0;
+            return 0;
+          },
       findRow: (inp, w, h, stride, ch, row, startX, lo, hi, out) {
         final low = _bytes(lo, 3);
         final high = _bytes(hi, 3);
@@ -295,6 +300,7 @@ void main() {
         resize: (a, b, c, d, e, f, g, h, i, j) => -4,
         threshold: (a, b, c, d, e, f, g, h) => -4,
         match: (a, b, c, d, e, f, g, h, i, j, k) => -4,
+        peaks: (a, b, c, d, e, f, g, h, i, j, k, l, m, n) => -4,
         findRow: (a, b, c, d, e, f, g, h, i, j) => -4,
       );
       final src = image(4, 4, 1);

@@ -573,6 +573,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 
+<a id="inspection-marker-template"></a>
+### Inspection marker template (game UI artwork)
+
+- **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence. It is a 28x28 grayscale crop of the inspect-window magnifier glyph from a screenshot the user took of the game client. Blackgrid claims no ownership of it, and no public redistribution right is asserted. Inclusion follows the user's direction for this private implementation, not a public-release clearance.
+- **Files:** `data/vision/marker/inspection_marker.gray` (SHA-256 `3b6771a1028cb438c14daf252e78fc9c1fe0cf8af79af5800b15681713c8e72f`); `data/vision/marker/inspection_marker.json` (SHA-256 `60321abd52ad2070508930b28c3c1c9b8fa724b3dc7af2fa260db2497ee162e3`). Source copies are under `assets/vision/marker/`.
+- **Source screenshot SHA-256:** `4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3` (3440x1440 client, footprint origin 1198,277). The screenshot is not committed.
+- **Recipe:** `inspection-marker-v1`, produced by `tool/vision/make_marker_template.dart`: OpenCV-rounded BGR luma, a 21x21 footprint (trunc(16 x 4/3)) at the origin, deterministic cubic resize to 28x28.
+- **Regeneration:** rerun the tool on the user's screenshot, then update both file hashes here in the same commit. `mise run bundle:check` fails on a stale entry.
+
 <a id="microsoft-visual-cpp-runtime"></a>
 ### Microsoft Visual C++ runtime (app-local)
 
@@ -857,6 +866,7 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.6 / 
 | string_scanner | 1.4.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/string_scanner/versions/1.4.1) |
 | term_glyph | 1.2.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/term_glyph/versions/1.2.2) |
 | typed_data | 1.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/typed_data/versions/1.4.0) |
+| unorm_dart | 0.3.3 | Item-title NFKC normalisation | [pub.dev](https://pub.dev/packages/unorm_dart/versions/0.3.3) |
 | vector_graphics | 1.2.3 | Native compiled-vector rendering | [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.3) |
 | vector_graphics_codec | 1.1.13 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.1.13) |
 | vector_graphics_compiler | 1.3.0 | Offline map preparation | [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.0) |
@@ -2305,6 +2315,33 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+
+
+
+
+## File "package-root:unorm_dart/LICENSE":
+
+
+Copyright (c) 2018 Yasuhiro Shimizu <the.phantom.bane@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
