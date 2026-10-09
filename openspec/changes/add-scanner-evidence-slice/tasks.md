@@ -247,7 +247,7 @@ Test conventions (AGENTS.md):
 
 ## 11. Integration checks
 
-- [ ] 11.1 Run `dart format` on changed files, then `mise run analyze` and `mise run test`. All must pass with zero analyzer issues. Confirm every test-map row is green.
+- [x] 11.1 Run `dart format` on changed files, then `mise run analyze` and `mise run test`. All must pass with zero analyzer issues. Confirm every test-map row is green.
 - [ ] 11.2 Confirm Escape from Tarkov is not running. If that cannot be confirmed, skip this task and record it as unverified. Then build the Release bundle (`mise run build:release`, which runs the offline `bundle:check`). Confirm the bundle check passes and that the vision files, marker template and capture DLL are present and hash-bound. Do not launch the app.
 - [ ] 11.3 `openspec validate add-scanner-evidence-slice --strict` passes.
 
