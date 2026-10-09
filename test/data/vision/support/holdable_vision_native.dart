@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_native.dart';
 import 'package:blackgrid/data/vision/vision_primitives.dart';
+import 'package:blackgrid/data/vision/vision_runtime.dart'
+    show visionExpectedAbi;
 import 'package:crypto/crypto.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter_test/flutter_test.dart' show fail;
@@ -158,7 +160,7 @@ final class HoldableVisionNative implements VisionNative {
   final VisionPrimitives primitives;
 
   @override
-  int get visionAbi => 1;
+  int get visionAbi => visionExpectedAbi;
 
   @override
   String get tessVersion => '5.0.0';
@@ -225,6 +227,14 @@ final class HoldableVisionPrimitives implements VisionPrimitives {
       _operation(_control, () => const TemplateMatch(0.5, 1, 2));
 
   @override
+  List<TemplatePeak> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  ) => _operation(_control, () => const [TemplatePeak(1, 2, 0.9)]);
+
+  @override
   int? findInRangeRow(
     VisionImage src,
     int row,
@@ -258,7 +268,7 @@ Directory createFakeRuntimeDirectory() {
   manifest.writeAsStringSync(
     jsonEncode({
       'format': 1,
-      'abi': 1,
+      'abi': visionExpectedAbi,
       'engineVersion': '5.0.0',
       'files': files,
     }),

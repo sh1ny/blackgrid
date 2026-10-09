@@ -30,6 +30,16 @@ final class TemplateMatch {
   final int y;
 }
 
+/// One template-match response value at or above the peak threshold: the
+/// template's top-left location and its normalised score.
+final class TemplatePeak {
+  const TemplatePeak(this.x, this.y, this.score);
+
+  final int x;
+  final int y;
+  final double score;
+}
+
 /// The `bgv_*` primitives over validated images. Implementations throw
 /// [VisionNativeError] for a negative native status.
 abstract interface class VisionPrimitives {
@@ -43,6 +53,16 @@ abstract interface class VisionPrimitives {
   Uint8List thresholdBinaryInv(VisionImage src, int thresh, int maxval);
 
   TemplateMatch matchTemplateBest(VisionImage image, VisionImage template);
+
+  /// Every response location with a score at or above [threshold], in raster
+  /// order. Throws [VisionNativeError] with status -6 (`BGV_ERR_OVERFLOW`)
+  /// when more than [cap] locations qualify; no partial list is returned.
+  List<TemplatePeak> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  );
 
   /// Null when no pixel in the row is in range.
   int? findInRangeRow(
@@ -104,6 +124,24 @@ typedef VisionMatchFn = int Function(
   int,
   Pointer<Double>,
   Pointer<Int32>,
+  Pointer<Int32>,
+);
+
+/// `bgv_match_template_peaks` as Dart sees it.
+typedef VisionPeaksFn = int Function(
+  Pointer<Uint8>,
+  int,
+  int,
+  int,
+  Pointer<Uint8>,
+  int,
+  int,
+  int,
+  double,
+  int,
+  Pointer<Int32>,
+  Pointer<Int32>,
+  Pointer<Float>,
   Pointer<Int32>,
 );
 
@@ -190,6 +228,26 @@ final class FfiVisionPrimitives implements VisionPrimitives {
               ),
               VisionMatchFn
             >('bgv_match_template_best'),
+        peaks: library
+            .lookupFunction<
+              Int32 Function(
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Pointer<Uint8>,
+                Int32,
+                Int32,
+                Int32,
+                Float,
+                Int32,
+                Pointer<Int32>,
+                Pointer<Int32>,
+                Pointer<Float>,
+                Pointer<Int32>,
+              ),
+              VisionPeaksFn
+            >('bgv_match_template_peaks'),
         findRow: library
             .lookupFunction<
               Int32 Function(
@@ -216,6 +274,7 @@ final class FfiVisionPrimitives implements VisionPrimitives {
     required this._resize,
     required this._threshold,
     required this._match,
+    required this._peaks,
     required this._findRow,
   });
 
@@ -224,6 +283,7 @@ final class FfiVisionPrimitives implements VisionPrimitives {
   final VisionResizeFn _resize;
   final VisionThresholdFn _threshold;
   final VisionMatchFn _match;
+  final VisionPeaksFn _peaks;
   final VisionFindRowFn _findRow;
 
   static void _check(int status) {
@@ -319,6 +379,45 @@ final class FfiVisionPrimitives implements VisionPrimitives {
       ),
     );
     return TemplateMatch(score.value, x.value, y.value);
+  }
+
+  @override
+  List<TemplatePeak> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  ) {
+    final img = _scratch.input.stage(image);
+    final tpl = _scratch.template.stage(template);
+    // Three parallel arrays of `cap` 4-byte entries: x, y, then score.
+    final out = _scratch.output.ensure(cap * 12);
+    final xs = out.cast<Int32>();
+    final ys = (out + cap * 4).cast<Int32>();
+    final scores = (out + cap * 8).cast<Float>();
+    final count = (_scratch.aux + 28).cast<Int32>();
+    _check(
+      _peaks(
+        img,
+        image.width,
+        image.height,
+        image.stride,
+        tpl,
+        template.width,
+        template.height,
+        template.stride,
+        threshold,
+        cap,
+        xs,
+        ys,
+        scores,
+        count,
+      ),
+    );
+    final n = count.value;
+    return List.unmodifiable([
+      for (var i = 0; i < n; i++) TemplatePeak(xs[i], ys[i], scores[i]),
+    ]);
   }
 
   @override

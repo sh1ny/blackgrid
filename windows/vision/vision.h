@@ -13,7 +13,7 @@
 #endif
 
 // Bumped whenever a signature, status code or semantic changes.
-#define BGV_ABI_VERSION 1
+#define BGV_ABI_VERSION 2
 
 // Status codes. Non-negative values are successful outcomes.
 #define BGV_OK 0
@@ -23,6 +23,7 @@
 #define BGV_ERR_OPENCV (-3)      // cv::Exception caught at the boundary
 #define BGV_ERR_NO_MEMORY (-4)   // std::bad_alloc caught at the boundary
 #define BGV_ERR_INTERNAL (-5)    // any other exception caught at the boundary
+#define BGV_ERR_OVERFLOW (-6)    // bgv_match_template_peaks: more than cap peaks
 
 // Image caps, checked natively as well as in Dart.
 #define BGV_MAX_SIDE 8192
@@ -61,6 +62,19 @@ BGV_API int32_t bgv_match_template_best(const uint8_t* img, int32_t iw,
                                         int32_t th, int32_t tstride,
                                         double* out_score, int32_t* out_x,
                                         int32_t* out_y);
+
+// 1-channel image and template; TM_CCOEFF_NORMED over the same scratch as
+// bgv_match_template_best. Walks the response in raster order and writes every
+// non-NaN value >= threshold to out_x/out_y/out_score (each `cap` entries),
+// setting *out_count. If more than `cap` values qualify it returns
+// BGV_ERR_OVERFLOW with *out_count = 0; the arrays are then unspecified and
+// hold no meaningful partial list. cap must be >= 1. The template must fit
+// inside the image; a uniform template is BGV_ERR_IMAGE.
+BGV_API int32_t bgv_match_template_peaks(
+    const uint8_t* img, int32_t iw, int32_t ih, int32_t istride,
+    const uint8_t* tpl, int32_t tw, int32_t th, int32_t tstride,
+    float threshold, int32_t cap, int32_t* out_x, int32_t* out_y,
+    float* out_score, int32_t* out_count);
 
 // Scans row `row` from x = start_x rightwards for the first pixel whose
 // first three channels c satisfy lo[c] <= p[c] <= hi[c] (inclusive, in the

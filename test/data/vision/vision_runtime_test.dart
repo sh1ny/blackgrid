@@ -70,6 +70,9 @@ class FakePrimitives implements VisionPrimitives {
   /// When set, matchTemplateBest fails with this native status.
   int? matchStatus;
 
+  /// When set, matchTemplatePeaks fails with this native status.
+  int? peaksStatus;
+
   @override
   Uint8List toGray(VisionImage src, {required bool rgbOrder}) {
     calls++;
@@ -97,6 +100,19 @@ class FakePrimitives implements VisionPrimitives {
   }
 
   @override
+  List<TemplatePeak> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  ) {
+    calls++;
+    final status = peaksStatus;
+    if (status != null) throw VisionNativeError(status);
+    return const [TemplatePeak(1, 2, 0.9)];
+  }
+
+  @override
   int? findInRangeRow(
     VisionImage src,
     int row,
@@ -115,7 +131,7 @@ class FakeNative implements VisionNative {
   final List<String> log;
   final FakeEngine engine;
   final primitivesFake = FakePrimitives();
-  int abi = 1;
+  int abi = visionExpectedAbi;
   String version = '5.0.0';
   int closeCalls = 0;
 
@@ -163,7 +179,7 @@ class Fixture {
   void writeManifest({
     List<String>? only,
     Map<String, String> overrides = const {},
-    int abi = 1,
+    int abi = visionExpectedAbi,
     String engineVersion = '5.0.0',
     List<String> extra = const [],
   }) {
@@ -222,7 +238,7 @@ void main() {
     expect(status, isA<VisionReady>());
     final identity = (status as VisionReady).identity;
     expect(identity.tesseractVersion, '5.0.0');
-    expect(identity.visionAbi, 1);
+    expect(identity.visionAbi, visionExpectedAbi);
     expect(identity.language, 'eng');
     expect(identity.oem, 1);
     expect(identity.files.map((f) => f.path), contains('tesseract50.dll'));
@@ -306,7 +322,7 @@ void main() {
     expect(failure, isA<VisionAbiMismatch>());
     final mismatch = failure as VisionAbiMismatch;
     expect(mismatch.component, 'blackgrid_vision');
-    expect(mismatch.expected, '1');
+    expect(mismatch.expected, '$visionExpectedAbi');
     expect(mismatch.actual, '7');
     expect(fixture.native.closeCalls, 1);
   });
@@ -323,7 +339,7 @@ void main() {
   });
 
   test('manifest abi differing from the expected abi is abiMismatch', () {
-    fixture.writeManifest(abi: 2);
+    fixture.writeManifest(abi: visionExpectedAbi + 1);
     final failure = failureOf(fixture.open());
     expect(failure, isA<VisionAbiMismatch>());
     expect(fixture.native.closeCalls, 1);
@@ -403,6 +419,41 @@ void main() {
     expect(failure, isA<VisionNativeFailure>());
     expect((failure as VisionNativeFailure).status, -3);
     expect(fixture.native.primitivesFake.calls, 1);
+    runtime.dispose();
+  });
+
+  test('peak overflow status -6 surfaces as nativeFailure with no list', () {
+    fixture.writeManifest();
+    final runtime = fixture.open();
+    fixture.native.primitivesFake.peaksStatus = -6;
+    final result = runtime.matchTemplatePeaks(
+      gray(4, 4),
+      gray(2, 2),
+      0.8,
+      4096,
+    );
+    final failure = (result as VisionFailed<List<TemplatePeak>>).failure;
+    expect(failure, isA<VisionNativeFailure>());
+    expect((failure as VisionNativeFailure).status, -6);
+    expect(fixture.native.primitivesFake.calls, 1);
+    runtime.dispose();
+  });
+
+  test('peaks with a template larger than the image is invalidImage '
+      'without a native call', () {
+    fixture.writeManifest();
+    final runtime = fixture.open();
+    final result = runtime.matchTemplatePeaks(
+      gray(4, 4),
+      gray(5, 5),
+      0.8,
+      4096,
+    );
+    expect(
+      (result as VisionFailed<List<TemplatePeak>>).failure,
+      isA<VisionInvalidImage>(),
+    );
+    expect(fixture.native.primitivesFake.calls, 0);
     runtime.dispose();
   });
 
