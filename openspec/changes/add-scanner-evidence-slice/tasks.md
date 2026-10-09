@@ -37,20 +37,20 @@ Test conventions (AGENTS.md):
 | vision-runtime → Normal app launch does not load the vision runtime | Unknown argument | test/app/launch_mode_test.dart | existing unknown-argument test | green |
 | vision-runtime → Normal app launch does not load the vision runtime | Live scanning on at launch | test/application/app_services_scan_test.dart | live scan on opens the runtime only through the vision service opener | red |
 | scan-pipeline → Live scan starts only when enabled | Launch with live scan off | test/application/app_services_scan_test.dart | launch with live scan off starts no worker, hook or vision runtime | red |
-| scan-pipeline → Live scan starts only when enabled | Switching live scan on | test/application/scan_coordinator_lifecycle_test.dart | switch-on saves, then template, vision ready, then hook | red |
+| scan-pipeline → Live scan starts only when enabled | Switching live scan on | test/application/scan_coordinator_lifecycle_test.dart | switch-on saves, then template, vision ready, then hook | green |
 | scan-pipeline → Live scan starts only when enabled | Launch with live scan saved on | test/application/app_services_scan_test.dart | launch with live scan saved on starts exactly one vision service | red |
-| scan-pipeline → Live scan starts only when enabled | Vision runtime cannot start | test/application/scan_coordinator_lifecycle_test.dart | vision start failure is unavailable without a hook | red |
-| scan-pipeline → Live scan starts only when enabled | Marker template is invalid | test/application/scan_coordinator_lifecycle_test.dart | invalid marker template is unavailable before any worker | red |
-| scan-pipeline → Live scan starts only when enabled | Hook installation refused | test/application/scan_coordinator_lifecycle_test.dart | refused hook is unavailable with OS code and closes vision | red |
-| scan-pipeline → Live scan stops cleanly | Switching live scan off while idle | test/application/scan_coordinator_lifecycle_test.dart | switch-off removes hook and closes both workers | red |
-| scan-pipeline → Live scan stops cleanly | Setting cannot be saved when switching off | test/application/scan_coordinator_lifecycle_test.dart | failed switch-off save still stops the pipeline | red |
-| scan-pipeline → Live scan stops cleanly | A later save does not reinstall the hook | test/application/scan_coordinator_lifecycle_test.dart | unrelated save after failed switch-off keeps live scan off | red |
-| scan-pipeline → Live scan stops cleanly | Switching off during start | test/application/scan_coordinator_lifecycle_test.dart | switch-off during a hung start is bounded by the close drain | red |
+| scan-pipeline → Live scan starts only when enabled | Vision runtime cannot start | test/application/scan_coordinator_lifecycle_test.dart | vision start failure is unavailable without a hook | green |
+| scan-pipeline → Live scan starts only when enabled | Marker template is invalid | test/application/scan_coordinator_lifecycle_test.dart | invalid marker template is unavailable before any worker | green |
+| scan-pipeline → Live scan starts only when enabled | Hook installation refused | test/application/scan_coordinator_lifecycle_test.dart | refused hook is unavailable with OS code and closes vision | green |
+| scan-pipeline → Live scan stops cleanly | Switching live scan off while idle | test/application/scan_coordinator_lifecycle_test.dart | switch-off removes hook and closes both workers | green |
+| scan-pipeline → Live scan stops cleanly | Setting cannot be saved when switching off | test/application/scan_coordinator_lifecycle_test.dart | failed switch-off save still stops the pipeline | green |
+| scan-pipeline → Live scan stops cleanly | A later save does not reinstall the hook | test/application/scan_coordinator_lifecycle_test.dart | unrelated save after failed switch-off keeps live scan off | green |
+| scan-pipeline → Live scan stops cleanly | Switching off during start | test/application/scan_coordinator_lifecycle_test.dart | switch-off during a hung start is bounded by the close drain | green |
 | scan-pipeline → Live scan stops cleanly | Switching off with a scan in flight | test/application/scan_coordinator_flow_test.dart | switch-off during vision stage publishes nothing and releases the frame | red |
-| scan-pipeline → Live scan stops cleanly | Hook thread does not stop | test/application/scan_coordinator_lifecycle_test.dart | stopTimedOut is a visible warning and the next start retries stop | red |
+| scan-pipeline → Live scan stops cleanly | Hook thread does not stop | test/application/scan_coordinator_lifecycle_test.dart | stopTimedOut is a visible warning and the next start retries stop | green |
 | scan-pipeline → Live scan stops cleanly | Worker drain incomplete at shutdown | test/application/scan_pipeline_isolate_test.dart | dispose with a held native call completes after the drain and publishes nothing | red |
-| scan-pipeline → Worker loss makes live scan unavailable | Vision worker exits mid-session | test/application/scan_coordinator_lifecycle_test.dart | vision worker exit removes hook and is unavailable | red |
-| scan-pipeline → Worker loss makes live scan unavailable | Restart after loss | test/application/scan_coordinator_lifecycle_test.dart | off then on after loss creates fresh services | red |
+| scan-pipeline → Worker loss makes live scan unavailable | Vision worker exits mid-session | test/application/scan_coordinator_lifecycle_test.dart | vision worker exit removes hook and is unavailable | green |
+| scan-pipeline → Worker loss makes live scan unavailable | Restart after loss | test/application/scan_coordinator_lifecycle_test.dart | off then on after loss creates fresh services | green |
 | scan-pipeline → Targeted pass runs first | Accepted targeted scan | test/application/scan_coordinator_flow_test.dart | accepted targeted scan requests no fallback | red |
 | scan-pipeline → Targeted pass runs first | Targeted capture fails on identity | test/application/scan_coordinator_flow_test.dart | targetNotForeground ends failed without fallback | red |
 | scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Targeted pass finds no marker | test/application/scan_coordinator_flow_test.dart | noMarker publishes fallback phase then accepts from fallback | red |
@@ -164,7 +164,7 @@ Test conventions (AGENTS.md):
   - a clock (`qpcNow`/`qpcFrequency`).
 
   The default factories wrap the real services and use `inspectionRecognitionJobFactory` and the runtime directory (S7). Write failing tests in `test/application/scan_coordinator_lifecycle_test.dart` for every lifecycle row of the test map (switch-on order, three start failures, idle switch-off, failed switch-off save, later save does not reinstall, switch-off during a hung start bounded by an injected short close drain, stopTimedOut warning and retry, vision worker exit, restart after loss). Use completers to hold `start()` and `close()`.
-- [ ] 6.2 Implement activation in `ScanCoordinator`:
+- [x] 6.2 Implement activation in `ScanCoordinator`:
   - `setLiveScan`, the only writer of session intent, with save semantics per D2;
   - `startFromSettings()`, which reads `liveScan` once;
   - an activation token and a lifecycle chain;

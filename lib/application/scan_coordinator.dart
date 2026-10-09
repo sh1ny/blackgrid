@@ -1,5 +1,5 @@
-/// The UI-facing values of live scanning, and (in later task groups) the
-/// coordinator that produces them.
+/// The UI-facing values of live scanning and the coordinator that produces
+/// them.
 ///
 /// This file is the one `lib/application` or `lib/ui` source that may
 /// reference the capture and vision services (ADR-0013). Every capture,
@@ -7,15 +7,27 @@
 /// [ScanFailure], so no other file needs those types.
 library;
 
-import 'dart:typed_data';
+import 'dart:async';
+import 'dart:io';
+import 'dart:isolate';
+
+import 'package:flutter/foundation.dart';
 
 import '../data/capture/capture_failure.dart';
-import '../data/vision/inspection_evidence.dart';
+import '../data/capture/capture_frame.dart';
+import '../data/capture/capture_native.dart';
+import '../data/capture/capture_service.dart';
+import '../data/capture/capture_snapshot.dart';
+import '../data/capture/mouse_release_trigger_source.dart';
+import '../data/vision/inspection_recognition.dart';
 import '../data/vision/marker_template.dart';
 import '../data/vision/vision_job.dart';
 import '../data/vision/vision_service.dart';
 import '../domain/catalog.dart';
 import '../domain/title_matching.dart';
+import 'catalog_controller.dart';
+import 'recognition_matcher.dart';
+import 'settings_controller.dart';
 
 /// Where live scanning is in its activation life.
 enum LiveScanState {
@@ -38,7 +50,12 @@ enum LiveScanState {
 /// The activation state with the text the Scanner shows beside it.
 final class LiveScanStatus {
   /// Creates a status.
-  const LiveScanStatus(this.state, {this.reason, this.stopWarning});
+  const LiveScanStatus(
+    this.state, {
+    this.reason,
+    this.reasonCode,
+    this.stopWarning,
+  });
 
   /// Live scanning is off with nothing to report.
   static const LiveScanStatus off = LiveScanStatus(LiveScanState.off);
@@ -49,6 +66,9 @@ final class LiveScanStatus {
   /// Why the state is [LiveScanState.unavailable], else null.
   final String? reason;
 
+  /// The machine-readable form of [reason], else null.
+  final ScanFailureCode? reasonCode;
+
   /// A warning kept after a stop that did not complete (for example the hook
   /// thread did not stop), else null.
   final String? stopWarning;
@@ -58,10 +78,11 @@ final class LiveScanStatus {
       other is LiveScanStatus &&
       other.state == state &&
       other.reason == reason &&
+      other.reasonCode == reasonCode &&
       other.stopWarning == stopWarning;
 
   @override
-  int get hashCode => Object.hash(state, reason, stopWarning);
+  int get hashCode => Object.hash(state, reason, reasonCode, stopWarning);
 }
 
 /// Which part of a scan is running.
@@ -887,3 +908,768 @@ InspectionEvidence _stripEntry(InspectionEvidence e) => InspectionEvidence(
   qpcPreprocess: e.qpcPreprocess,
   qpcOcr: e.qpcOcr,
 );
+
+// ---------------------------------------------------------------------------
+// Ports
+// ---------------------------------------------------------------------------
+
+/// Where a worker behind a port is in its life.
+enum ScanWorkerState {
+  /// Constructed; no worker yet.
+  idle,
+
+  /// The worker is starting.
+  starting,
+
+  /// The worker is warm and has no request running.
+  ready,
+
+  /// A request is running.
+  active,
+
+  /// A request outlived its deadline and the worker has not replied yet.
+  overrun,
+
+  /// A close is draining the worker.
+  closing,
+
+  /// The worker is gone and the service was closed.
+  closed,
+
+  /// The worker cannot run jobs and is not respawned.
+  unavailable,
+}
+
+/// The capture service as the coordinator uses it.
+abstract interface class ScanCapturePort {
+  /// Requests one capture; expected failures are returned, never thrown. The
+  /// caller owns a returned frame.
+  Future<CaptureResult> capture(TriggerEvent trigger, CaptureMode mode);
+
+  /// Stops admission and drains the worker. Null means it closed cleanly.
+  Future<ScanFailure?> close();
+
+  /// Completes when the capture worker isolate has exited.
+  Future<void> get workerExit;
+
+  /// Why the worker cannot run, or null.
+  ScanFailure? get unavailableReason;
+}
+
+/// The vision service as the coordinator uses it.
+abstract interface class ScanVisionPort {
+  /// Spawns the worker and completes null when it is ready, else with why it
+  /// could not be.
+  Future<ScanFailure?> start();
+
+  /// Submits [frame] for recognition. The port takes ownership of the frame.
+  Future<VisionAnswer<InspectionRecognition>> submitFrame(
+    CaptureFrame frame,
+    InspectionRequest request,
+  );
+
+  /// Answers every waiting request invalidated at once.
+  void invalidate();
+
+  /// Stops admission and drains the worker. Null means it closed cleanly.
+  Future<ScanFailure?> close();
+
+  /// Completes when the vision worker isolate has exited.
+  Future<void> get workerExit;
+
+  /// The worker's state.
+  ScanWorkerState get state;
+
+  /// Why the worker cannot run, or null.
+  ScanFailure? get unavailableReason;
+}
+
+/// The mouse-release hook as the coordinator uses it.
+abstract interface class ScanTriggerPort {
+  /// Installs the hook. Null means started.
+  TriggerFailure? start();
+
+  /// Removes the hook. A [StopTimedOut] means the hook thread may still run.
+  TriggerFailure? stop();
+
+  /// Stops the hook and closes [triggers].
+  Future<TriggerFailure?> dispose();
+
+  /// Delivered triggers; nothing is buffered while there is no listener.
+  Stream<ScanTrigger> get triggers;
+}
+
+/// The QPC clock the trigger and capture timestamps use.
+abstract interface class ScanClock {
+  /// The current QPC tick.
+  int qpcNow();
+
+  /// QPC ticks per second.
+  int qpcFrequency();
+}
+
+/// The UI-side capture platform: the one hook and the clock. Opened lazily,
+/// once per coordinator, because only one hook may exist per process.
+abstract interface class ScanPlatform {
+  /// The mouse-release hook.
+  ScanTriggerPort get trigger;
+
+  /// The QPC clock.
+  ScanClock get clock;
+}
+
+/// Loads the marker template from a runtime directory.
+typedef ScanMarkerLoader = Future<MarkerTemplateResult> Function(
+  String runtimeDirectory,
+);
+
+/// Builds the capture service of one activation.
+typedef ScanCaptureFactory = ScanCapturePort Function();
+
+/// Builds the vision service of one activation over a loaded marker template.
+typedef ScanVisionFactory = ScanVisionPort Function(
+  VisionTemplate marker,
+  String runtimeDirectory,
+);
+
+/// Opens the UI-side capture platform. May throw when it cannot open.
+typedef ScanPlatformFactory = ScanPlatform Function();
+
+/// Builds a catalog's title index off the UI isolate.
+typedef ScanIndexBuilder = Future<TitleMatchIndex> Function(CatalogSnapshot s);
+
+/// Ranks the recognition of one scan off the UI isolate.
+typedef ScanMatcher = Future<RecognitionOutcome<InspectionEvidence>> Function(
+  TitleMatchIndex index, {
+  required InspectionRecognition? targeted,
+  InspectionRecognition? fullClient,
+  required GameMode mode,
+});
+
+/// Loads the marker template in one `Isolate.run`.
+Future<MarkerTemplateResult> loadMarkerTemplateOffUi(String runtimeDirectory) =>
+    Isolate.run(() => loadMarkerTemplate(runtimeDirectory));
+
+/// The default [ScanIndexBuilder].
+Future<TitleMatchIndex> buildScanIndex(CatalogSnapshot snapshot) =>
+    buildTitleMatchIndexOffUi(snapshot);
+
+/// The default [ScanMatcher].
+Future<RecognitionOutcome<InspectionEvidence>> matchScanRecognition(
+  TitleMatchIndex index, {
+  required InspectionRecognition? targeted,
+  InspectionRecognition? fullClient,
+  required GameMode mode,
+}) => matchRecognitionOffUi(
+  index,
+  targeted: targeted,
+  fullClient: fullClient,
+  mode: mode,
+);
+
+/// The default [ScanCaptureFactory]: a real capture service.
+ScanCapturePort openDefaultScanCapture() =>
+    _CaptureServicePort(CaptureService());
+
+/// The default [ScanVisionFactory]: a real vision service running the
+/// inspection recognition job over [marker].
+ScanVisionPort openDefaultScanVision(
+  VisionTemplate marker,
+  String runtimeDirectory,
+) => _VisionServicePort(
+  VisionService<InspectionRequest, InspectionRecognition>(
+    runtimeDirectory: runtimeDirectory,
+    jobFactory: inspectionRecognitionJobFactory,
+    templates: [marker],
+  ),
+);
+
+/// The default [ScanPlatformFactory]: the native capture platform.
+ScanPlatform openDefaultScanPlatform() =>
+    _NativeScanPlatform(openDefaultNativeCapturePlatform());
+
+final class _CaptureServicePort implements ScanCapturePort {
+  _CaptureServicePort(this._service);
+
+  final CaptureService _service;
+
+  @override
+  Future<CaptureResult> capture(TriggerEvent trigger, CaptureMode mode) =>
+      _service.capture(trigger, mode);
+
+  @override
+  Future<ScanFailure?> close() async {
+    final failure = await _service.close();
+    return failure == null ? null : scanFailureFromCapture(failure);
+  }
+
+  @override
+  Future<void> get workerExit => _service.workerExit;
+
+  @override
+  ScanFailure? get unavailableReason => null;
+}
+
+final class _VisionServicePort implements ScanVisionPort {
+  _VisionServicePort(this._service);
+
+  final VisionService<InspectionRequest, InspectionRecognition> _service;
+
+  @override
+  Future<ScanFailure?> start() async {
+    final failure = await _service.start();
+    return failure == null ? null : scanFailureFromVisionStart(failure);
+  }
+
+  @override
+  Future<VisionAnswer<InspectionRecognition>> submitFrame(
+    CaptureFrame frame,
+    InspectionRequest request,
+  ) => _service.submitFrame(frame, request);
+
+  @override
+  void invalidate() => _service.invalidate();
+
+  @override
+  Future<ScanFailure?> close() async => switch (await _service.close()) {
+    VisionCloseResult.closed => null,
+    VisionCloseResult.shutdownIncomplete => const ScanFailure(
+      ScanFailureCode.shutdownIncomplete,
+      'The vision worker did not stop within its drain.',
+    ),
+  };
+
+  @override
+  Future<void> get workerExit => _service.workerExit;
+
+  @override
+  ScanWorkerState get state => switch (_service.state) {
+    VisionServiceState.idle => ScanWorkerState.idle,
+    VisionServiceState.starting => ScanWorkerState.starting,
+    VisionServiceState.ready => ScanWorkerState.ready,
+    VisionServiceState.active => ScanWorkerState.active,
+    VisionServiceState.overrun => ScanWorkerState.overrun,
+    VisionServiceState.closing => ScanWorkerState.closing,
+    VisionServiceState.closed => ScanWorkerState.closed,
+    VisionServiceState.unavailable => ScanWorkerState.unavailable,
+  };
+
+  @override
+  ScanFailure? get unavailableReason => switch (_service.unavailableReason) {
+    null => null,
+    final VisionStartFailure failure => scanFailureFromVisionStart(failure),
+  };
+}
+
+final class _NativeScanPlatform implements ScanPlatform, ScanClock {
+  _NativeScanPlatform(this._platform)
+    : trigger = _SourceTriggerPort(MouseReleaseTriggerSource(_platform));
+
+  final CapturePlatform _platform;
+
+  @override
+  final ScanTriggerPort trigger;
+
+  @override
+  ScanClock get clock => this;
+
+  @override
+  int qpcNow() => _platform.qpcNow();
+
+  @override
+  int qpcFrequency() => _platform.qpcFrequency();
+}
+
+final class _SourceTriggerPort implements ScanTriggerPort {
+  _SourceTriggerPort(this._source);
+
+  final MouseReleaseTriggerSource _source;
+
+  @override
+  TriggerFailure? start() => _source.start();
+
+  @override
+  TriggerFailure? stop() => _source.stop();
+
+  @override
+  Future<TriggerFailure?> dispose() => _source.dispose();
+
+  @override
+  Stream<ScanTrigger> get triggers => _source.triggers;
+}
+
+// ---------------------------------------------------------------------------
+// Coordinator
+// ---------------------------------------------------------------------------
+
+/// What one activation (one switch-on) holds.
+final class _Activation {
+  final Completer<void> _cancelled = Completer<void>();
+
+  ScanCapturePort? capture;
+  ScanVisionPort? vision;
+  StreamSubscription<ScanTrigger>? sub;
+  bool hookInstalled = false;
+
+  /// Set once the activation ended, by failure, loss or stop.
+  bool retired = false;
+
+  /// The bounded close of both services; set once.
+  Future<void>? closing;
+
+  Future<void> get cancelled => _cancelled.future;
+
+  void cancel() {
+    if (!_cancelled.isCompleted) _cancelled.complete();
+  }
+}
+
+/// Owns live scanning for the app: the switch, the activation life of the
+/// marker template, vision worker and mouse hook, and the status the Scanner
+/// shows (ADR-0013).
+///
+/// A coordinator is the only writer of the session intent [switchOn]. It reads
+/// the saved `liveScan` setting once, in [startFromSettings], and never reacts
+/// to settings notifications afterwards, so a later unrelated save cannot
+/// restart a pipeline the user switched off.
+///
+/// Activations run through one chain of futures, each link bounded, and carry
+/// a token: a stop (switch-off or dispose) retires the activation at once and
+/// closes every constructed service without waiting for the step in flight.
+class ScanCoordinator extends ChangeNotifier {
+  /// Creates a coordinator. The factories default to the real services;
+  /// [runtimeDirectory] defaults to the directory of the running executable.
+  ScanCoordinator({
+    required this.settings,
+    required this.catalog,
+    required this.appendLogLine,
+    this._markerLoader = loadMarkerTemplateOffUi,
+    this._captureFactory = openDefaultScanCapture,
+    this._visionFactory = openDefaultScanVision,
+    this._platformFactory = openDefaultScanPlatform,
+    this.indexBuilder = buildScanIndex,
+    this.matcher = matchScanRecognition,
+    String? runtimeDirectory,
+    this.closeTimeout = const Duration(milliseconds: 2500),
+  }) : runtimeDirectory =
+           runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path;
+
+  /// The settings the switch saves through.
+  final SettingsController settings;
+
+  /// The catalog scans match against (read only; used by the scan flow).
+  final CatalogController catalog;
+
+  /// Appends one timing log line (used by the scan flow).
+  final void Function(Map<String, Object?> line) appendLogLine;
+
+  /// Builds a title index off the UI isolate (used by the scan flow).
+  final ScanIndexBuilder indexBuilder;
+
+  /// Ranks recognition off the UI isolate (used by the scan flow).
+  final ScanMatcher matcher;
+
+  /// Where the bundle's vision runtime lives.
+  final String runtimeDirectory;
+
+  /// The most any one close is awaited before it counts as incomplete.
+  final Duration closeTimeout;
+
+  final ScanMarkerLoader _markerLoader;
+  final ScanCaptureFactory _captureFactory;
+  final ScanVisionFactory _visionFactory;
+  final ScanPlatformFactory _platformFactory;
+
+  ScanPlatform? _platform;
+  _Activation? _current;
+  Future<void> _chain = Future<void>.value();
+  Future<void>? _disposing;
+  bool _disposed = false;
+  bool _started = false;
+  int _intent = 0;
+  Future<bool>? _onSave;
+
+  bool _switchOn = false;
+  String? _error;
+  LiveScanState _state = LiveScanState.off;
+  ScanFailure? _reason;
+  bool _hookStuck = false;
+  String? _hookWarning;
+  String? _workerWarning;
+
+  /// The session intent of the Scanner switch.
+  bool get switchOn => _switchOn;
+
+  /// The last save error to show, or null.
+  String? get error => _error;
+
+  /// The activation state with its reason and any stop warning.
+  LiveScanStatus get status => LiveScanStatus(
+    _state,
+    reason: _reason?.message,
+    reasonCode: _reason?.code,
+    stopWarning: switch ((_hookWarning, _workerWarning)) {
+      (null, null) => null,
+      (final String one, null) || (null, final String one) => one,
+      (final String hook, final String worker) => '$hook $worker',
+    },
+  );
+
+  /// The QPC clock, once the UI-side platform has opened; else null.
+  ScanClock? get clock => _platform?.clock;
+
+  /// Completes when every activation or stop queued so far has finished.
+  Future<void> get settled async {
+    while (true) {
+      final chain = _chain;
+      await chain;
+      if (identical(chain, _chain)) return;
+    }
+  }
+
+  /// Reads the saved `liveScan` setting once and starts the pipeline when it
+  /// is on. Call after the settings have loaded; later calls do nothing.
+  void startFromSettings() {
+    if (_disposed || _started) return;
+    _started = true;
+    if (!settings.settings.liveScan) return;
+    _switchOn = true;
+    _activate();
+  }
+
+  /// The Scanner switch.
+  ///
+  /// Switching on saves first: a failed or busy save reverts the switch and
+  /// starts nothing. Switching off stops the pipeline at once, before and
+  /// whatever the save does; a failed or busy save shows an error and the
+  /// pipeline stays off for the session.
+  Future<void> setLiveScan(bool on) async {
+    if (_disposed) return;
+    _started = true;
+    if (on) {
+      if (_switchOn) {
+        _notify();
+        return;
+      }
+      // A switch-on save already running decides this tap too.
+      final running = _onSave;
+      if (running != null) {
+        await running;
+        return;
+      }
+      final epoch = ++_intent;
+      _error = null;
+      final save = _onSave = settings.save(
+        settings.settings.copyWith(liveScan: true),
+      );
+      final saved = await save;
+      if (identical(_onSave, save)) _onSave = null;
+      if (_disposed || epoch != _intent) return;
+      if (!saved) {
+        _error = _notSaved(on: true);
+        _notify();
+        return;
+      }
+      _switchOn = true;
+      _activate();
+      return;
+    }
+    ++_intent;
+    _error = null;
+    _switchOn = false;
+    _stop();
+    // Let a switch-on save still running land first, so this save replaces
+    // it instead of being refused as busy or skipped.
+    final running = _onSave;
+    if (running != null) await running;
+    if (_disposed) return;
+    if (!settings.settings.liveScan) return;
+    final saved = await settings.save(
+      settings.settings.copyWith(liveScan: false),
+    );
+    if (_disposed) return;
+    if (!saved) {
+      _error = _notSaved(on: false);
+      _notify();
+    }
+  }
+
+  /// Stops the pipeline, closes every service and the hook, and makes later
+  /// notifications impossible. Bounded by the close timeouts.
+  @override
+  // ignore: must_call_super, super.dispose runs when the teardown finishes.
+  Future<void> dispose() => _disposing ??= _dispose();
+
+  Future<void> _dispose() async {
+    _disposed = true;
+    _stop();
+    await _chain.timeout(closeTimeout * 2, onTimeout: () {});
+    final platform = _platform;
+    if (platform != null) {
+      try {
+        await platform.trigger.dispose().timeout(closeTimeout);
+      } on Object catch (error) {
+        debugPrint('Scan hook dispose failed: $error');
+      }
+    }
+    super.dispose();
+  }
+
+  static String _notSaved({required bool on}) => on
+      ? 'Live scan was not switched on: the preference was not saved.'
+      : 'Live scan is off for this session, but the preference was not saved '
+            'and may return on the next launch.';
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  void _set(LiveScanState state, [ScanFailure? reason]) {
+    _state = state;
+    _reason = reason;
+    _notify();
+  }
+
+  void _enqueue(Future<void> Function() link) {
+    _chain = _chain.then((_) => link()).catchError((
+      Object error,
+      StackTrace stack,
+    ) {
+      debugPrint('Scan lifecycle link failed: $error\n$stack');
+    });
+  }
+
+  bool _stale(_Activation a) => !identical(_current, a) || a.retired;
+
+  void _activate() {
+    final a = _Activation();
+    _current = a;
+    _workerWarning = null;
+    _set(LiveScanState.starting);
+    _enqueue(() => _runStart(a));
+  }
+
+  /// Retires the current activation now: removes the hook, closes every
+  /// constructed service without waiting for a step in flight, and queues the
+  /// move to `off`.
+  void _stop() {
+    final a = _current;
+    _current = null;
+    if (a == null) {
+      if (_state != LiveScanState.off) _set(LiveScanState.off);
+      return;
+    }
+    a.retired = true;
+    a.cancel();
+    _unhook(a);
+    final closing = _closeServices(a);
+    _set(LiveScanState.stopping);
+    _enqueue(() async {
+      await closing;
+      if (_current == null && !_disposed) _set(LiveScanState.off);
+    });
+  }
+
+  /// Removes the hook now (S2: only a stop or a loss calls `stop`).
+  void _unhook(_Activation a) {
+    unawaited(a.sub?.cancel());
+    a.sub = null;
+    if (!a.hookInstalled) return;
+    a.hookInstalled = false;
+    final failure = _platform?.trigger.stop();
+    if (failure == null) {
+      _hookStuck = false;
+      _hookWarning = null;
+    } else {
+      _hookStuck = true;
+      _hookWarning = failure.message;
+    }
+  }
+
+  Future<void> _closeServices(_Activation a) => a.closing ??= _doClose(a);
+
+  Future<void> _doClose(_Activation a) async {
+    final results = await Future.wait([
+      _bounded(a.vision?.close()),
+      _bounded(a.capture?.close()),
+    ]);
+    final failures = [
+      for (final failure in results)
+        if (failure != null) failure.message,
+    ];
+    if (failures.isNotEmpty) _workerWarning = failures.join(' ');
+  }
+
+  Future<ScanFailure?> _bounded(Future<ScanFailure?>? close) async {
+    if (close == null) return null;
+    try {
+      return await close.timeout(
+        closeTimeout,
+        onTimeout: () => const ScanFailure(
+          ScanFailureCode.shutdownIncomplete,
+          'A worker did not stop within its drain.',
+        ),
+      );
+    } on Object catch (error) {
+      return ScanFailure(
+        ScanFailureCode.shutdownIncomplete,
+        'A worker failed to stop: $error',
+      );
+    }
+  }
+
+  /// Resolves with [work]'s value, or null as soon as [a] is cancelled.
+  Future<(T,)?> _unlessCancelled<T>(_Activation a, Future<T> work) {
+    final done = Completer<(T,)?>();
+    work.then<void>(
+      (value) {
+        if (!done.isCompleted) done.complete((value,));
+      },
+      onError: (Object error, StackTrace stack) {
+        if (!done.isCompleted) done.completeError(error, stack);
+      },
+    );
+    unawaited(
+      a.cancelled.then<void>((_) {
+        if (!done.isCompleted) done.complete(null);
+      }),
+    );
+    return done.future;
+  }
+
+  Future<void> _fail(_Activation a, ScanFailure failure) async {
+    if (_stale(a)) return;
+    a.retired = true;
+    _unhook(a);
+    _set(LiveScanState.unavailable, failure);
+    await _closeServices(a);
+  }
+
+  Future<void> _runStart(_Activation a) async {
+    if (_stale(a)) return;
+    // S2: a hook whose stop timed out is checked before anything is opened.
+    if (_hookStuck) {
+      final failure = _platform?.trigger.stop();
+      if (failure != null) {
+        _hookWarning = failure.message;
+        await _fail(a, scanFailureFromTrigger(const AlreadyStarted()));
+        return;
+      }
+      _hookStuck = false;
+      _hookWarning = null;
+    }
+
+    // 1. The marker template, in one Isolate.run.
+    final MarkerTemplateResult? loaded;
+    try {
+      loaded = (await _unlessCancelled(a, _markerLoader(runtimeDirectory)))?.$1;
+    } on Object catch (error) {
+      await _fail(
+        a,
+        ScanFailure(
+          ScanFailureCode.markerTemplateUnavailable,
+          'The marker template could not be loaded: $error',
+        ),
+      );
+      return;
+    }
+    if (loaded == null || _stale(a)) return;
+    final MarkerTemplateLoaded marker;
+    switch (loaded) {
+      case MarkerTemplateLoaded():
+        marker = loaded;
+      case MarkerTemplateUnavailable() || MarkerTemplateInvalid():
+        await _fail(a, scanFailureFromMarkerTemplate(loaded)!);
+        return;
+    }
+
+    // 2. The services, then the vision worker.
+    final ScanVisionPort vision;
+    try {
+      a.capture = _captureFactory();
+      vision = a.vision = _visionFactory(marker.template, runtimeDirectory);
+    } on Object catch (error) {
+      await _fail(
+        a,
+        ScanFailure(
+          ScanFailureCode.visionStartFailed,
+          'The scan services could not be created: $error',
+        ),
+      );
+      return;
+    }
+    _watchExit(a, vision.workerExit, isVision: true);
+    _watchExit(a, a.capture!.workerExit, isVision: false);
+    final (ScanFailure?,)? started;
+    try {
+      started = await _unlessCancelled(a, vision.start());
+    } on Object catch (error) {
+      await _fail(
+        a,
+        ScanFailure(
+          ScanFailureCode.visionStartFailed,
+          'The vision worker failed to start: $error',
+        ),
+      );
+      return;
+    }
+    if (started == null || _stale(a)) return;
+    if (started.$1 case final ScanFailure failure) {
+      await _fail(a, failure);
+      return;
+    }
+
+    // 3. The UI-side capture platform and the hook, created once.
+    final ScanPlatform platform;
+    try {
+      platform = _platform ??= _platformFactory();
+    } on Object catch (error) {
+      await _fail(
+        a,
+        ScanFailure(
+          ScanFailureCode.captureUnavailable,
+          'The capture platform could not open: $error',
+        ),
+      );
+      return;
+    }
+    if (_stale(a)) return;
+    final hookFailure = platform.trigger.start();
+    if (hookFailure != null) {
+      await _fail(a, scanFailureFromTrigger(hookFailure));
+      return;
+    }
+    a.hookInstalled = true;
+    a.sub = platform.trigger.triggers.listen(_onTrigger);
+    _set(LiveScanState.ready);
+  }
+
+  void _watchExit(_Activation a, Future<void> exit, {required bool isVision}) {
+    exit.then<void>(
+      (_) => _onWorkerExit(a, isVision: isVision),
+      onError: (Object _) {},
+    );
+  }
+
+  /// A worker that exits while its activation is still live is a loss (S1).
+  /// Exits the coordinator caused itself retire the activation first.
+  Future<void> _onWorkerExit(_Activation a, {required bool isVision}) async {
+    if (_stale(a)) return;
+    final reason = isVision
+        ? (a.vision?.unavailableReason ??
+              const ScanFailure(
+                ScanFailureCode.visionUnavailable,
+                'The vision worker exited.',
+              ))
+        : (a.capture?.unavailableReason ??
+              const ScanFailure(
+                ScanFailureCode.captureUnavailable,
+                'The capture worker exited.',
+              ));
+    await _fail(a, reason);
+  }
+
+  /// Handles one mouse-release trigger while the pipeline is ready. The scan
+  /// flow (task group 7) fills this in.
+  void _onTrigger(ScanTrigger trigger) {}
+}
