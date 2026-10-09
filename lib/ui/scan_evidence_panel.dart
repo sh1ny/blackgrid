@@ -168,7 +168,10 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
       if (report.winningPass case final ScanPass pass)
         Text('Pass: ${pass.name}', key: const Key('scan-pass')),
       ..._outcome(report.end, match),
-      if (entry != null) ..._entry(entry),
+      if (entry != null)
+        ..._entry(entry)
+      else if (shownBestMarkerScore(report) case final double score)
+        ..._noEntry(score),
       const SizedBox(height: 10),
       Text('TIMINGS', style: bold),
       ..._timings(report, freq),
@@ -256,6 +259,18 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     ];
   }
 
+  /// The evidence rows of a pass that produced no entry, such as `noMarker`.
+  List<Widget> _noEntry(double bestMarkerScore) => [
+    Text(
+      'Best marker score ${_score(bestMarkerScore)} (no entry)',
+      key: const Key('scan-marker'),
+    ),
+    const SizedBox(height: 6),
+    const Text('No title crop', key: Key('scan-crop-placeholder')),
+    const SizedBox(height: 6),
+    const Text('OCR text: (none)', key: Key('scan-text')),
+  ];
+
   List<Widget> _timings(ScanReport report, int? frequency) {
     final timeline = report.timeline;
     String ms(int? stamp) => stamp == null || frequency == null
@@ -330,6 +345,27 @@ InspectionEvidence? shownEvidence(ScanReport report) => switch (report.end) {
         _firstEntry(report.targeted),
   ScanFailed() || ScanSuperseded() => null,
 };
+
+/// The best marker score the panel shows for [report] when it has no
+/// [shownEvidence]: that of the winning pass, else of the last pass that
+/// recognised. Null for a superseded scan or one with no recognition.
+double? shownBestMarkerScore(ScanReport report) {
+  if (report.end is ScanSuperseded) return null;
+  final passes = switch (report.winningPass) {
+    ScanPass.targeted => [report.targeted],
+    ScanPass.fallback => [report.fallback],
+    null => [report.fallback, report.targeted],
+  };
+  for (final pass in passes) {
+    final score = switch (pass?.recognition) {
+      InspectionRecognised(:final bestMarkerScore) => bestMarkerScore,
+      InspectionRejected(:final bestMarkerScore) => bestMarkerScore,
+      null => null,
+    };
+    if (score != null) return score;
+  }
+  return null;
+}
 
 InspectionEvidence? _firstEntry(PassReport? pass) =>
     switch (pass?.recognition) {

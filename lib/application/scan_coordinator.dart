@@ -1665,7 +1665,11 @@ class ScanCoordinator extends ChangeNotifier {
       for (final failure in results)
         if (failure != null) failure.message,
     ];
-    if (failures.isNotEmpty) _workerWarning = failures.join(' ');
+    if (failures.isEmpty) return;
+    // After a loss the state is already unavailable, so nothing else would
+    // tell listeners about the warning.
+    _workerWarning = failures.join(' ');
+    _notify();
   }
 
   Future<ScanFailure?> _bounded(Future<ScanFailure?>? close) async {

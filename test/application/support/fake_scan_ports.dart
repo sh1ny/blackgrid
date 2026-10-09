@@ -242,8 +242,8 @@ final class FakeScanVision implements ScanVisionPort {
   /// When set, `start` completes only when this does.
   Completer<ScanFailure?>? startGate;
 
-  /// When set, `close` completes only when this does. Closing still releases
-  /// a held start, as the real service does.
+  /// When set, `close` completes only when this does, with its value.
+  /// Closing still releases a held start, as the real service does.
   Completer<ScanFailure?>? closeGate;
 
   /// Whether a held `close` is answered by an exit report.
@@ -331,7 +331,10 @@ final class FakeScanVision implements ScanVisionPort {
 
     final hold = closeGate;
     if (hold == null) return finish();
-    return hold.future.then((_) => finish());
+    return hold.future.then((failure) async {
+      await finish();
+      return failure;
+    });
   }
 }
 

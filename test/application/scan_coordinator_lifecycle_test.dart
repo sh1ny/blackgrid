@@ -644,6 +644,40 @@ void main() {
     expect(rig.captures, hasLength(1));
   });
 
+  test('a close warning after a loss notifies listeners', () async {
+    await ready();
+    final heldClose = Completer<ScanFailure?>();
+    rig.visions.single.closeGate = heldClose;
+    final warnings = <String?>[];
+    rig.coordinator.addListener(
+      () => warnings.add(rig.coordinator.status.stopWarning),
+    );
+
+    final unavailable = rig.whenState(LiveScanState.unavailable);
+    rig.captures.single.crash(
+      const ScanFailure(ScanFailureCode.captureUnavailable, 'capture died'),
+    );
+    await unavailable;
+    expect(rig.coordinator.status.stopWarning, isNull);
+
+    heldClose.complete(
+      const ScanFailure(
+        ScanFailureCode.shutdownIncomplete,
+        'The vision worker did not stop within its drain.',
+      ),
+    );
+    await rig.visions.single.workerExit;
+    await pumpEventQueue();
+
+    expect(rig.coordinator.status.state, LiveScanState.unavailable);
+    expect(rig.coordinator.status.stopWarning, contains('did not stop'));
+    expect(
+      warnings.last,
+      contains('did not stop'),
+      reason: 'listeners hear about the warning',
+    );
+  });
+
   test('off then on after loss creates fresh services', () async {
     await ready();
     final lost = rig.whenState(LiveScanState.unavailable);

@@ -193,6 +193,40 @@ void main() {
     expect(find.textContaining('Accepted'), findsNothing);
   });
 
+  testWidgets('noMarker report shows the best marker score without an entry', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await tester.runAsync(() async {
+      final ports = rig.ports;
+      ports.fire(1000);
+      await ports.captureOk(0);
+      await ports.visionDeliver(
+        0,
+        scanRecognised(InspectionFrameKind.targeted, []),
+      );
+      (await rig.matcher.calls.at(0)).complete(
+        const OutcomeRejected<InspectionEvidence>(OutcomeRejectReason.noMarker),
+      );
+      await ports.captureOk(1);
+      await ports.visionDeliver(
+        1,
+        scanRecognised(InspectionFrameKind.fullClient, []),
+      );
+      (await rig.matcher.calls.at(1)).complete(
+        const OutcomeRejected<InspectionEvidence>(OutcomeRejectReason.noMarker),
+      );
+      await reportPublished(rig.coordinator, 1);
+    });
+    await tester.pump();
+
+    expect(_text(tester, 'scan-reason'), 'Reason: noMarker');
+    expect(_text(tester, 'scan-marker'), contains('0.20'));
+    expect(_text(tester, 'scan-crop-placeholder'), 'No title crop');
+    expect(_text(tester, 'scan-text'), contains('(none)'));
+    expect(find.byKey(const Key('scan-crop-image')), findsNothing);
+  });
+
   testWidgets('failed report shows failure and no candidate', (tester) async {
     final rig = await _pump(tester);
     await tester.runAsync(() async {
