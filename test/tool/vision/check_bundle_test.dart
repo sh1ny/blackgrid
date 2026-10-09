@@ -11,6 +11,10 @@ import '../../support/pe_builder.dart';
 const _opencvUrl = 'https://example.test/opencv-4.13.0.zip';
 const _nupkgUrl = 'https://example.test/Tesseract/5.2.0';
 const _modelUrl = 'https://example.test/eng.traineddata';
+const _markerGray = 'data/vision/marker/inspection_marker.gray';
+const _markerJson = 'data/vision/marker/inspection_marker.json';
+const _screenshotSha =
+    '4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3';
 
 String _sha(List<int> bytes) => sha256.convert(bytes).toString();
 
@@ -46,6 +50,19 @@ class _Fixture {
     write('data/vision/tessdata/eng.traineddata', utf8.encode('model-bytes'));
     write('data/vision/self_check/title.gray', [1, 2, 3]);
     write('data/vision/self_check/title.json', utf8.encode('{}'));
+    write(_markerGray, [for (var i = 0; i < 784; i++) i % 251]);
+    write(
+      _markerJson,
+      utf8.encode(
+        jsonEncode({
+          'format': 1,
+          'width': 28,
+          'height': 28,
+          'sourceSha256': _screenshotSha,
+          'recipe': 'inspection-marker-v1',
+        }),
+      ),
+    );
     write(
       'blackgrid_panel_ocr.dll.sha256',
       utf8.encode(_sha(read('blackgrid_panel_ocr.dll'))),
@@ -80,6 +97,8 @@ class _Fixture {
       'tesseract50.dll',
       'leptonica-1.82.0.dll',
       'data/vision/tessdata/eng.traineddata',
+      _markerGray,
+      _markerJson,
     ];
     final manifest = {
       'format': 1,
@@ -98,7 +117,7 @@ class _Fixture {
 
   String get tesseractSha => _sha(read('tesseract50.dll'));
 
-  void writeLockAndNotices({String? noticesTesseractSha}) {
+  void writeLockAndNotices({String? noticesTesseractSha, String? markerSha}) {
     final lock = {
       'format': 1,
       'inputs': [
@@ -161,6 +180,7 @@ class _Fixture {
     };
     File(lockPath).writeAsStringSync(jsonEncode(lock));
     final tessSha = noticesTesseractSha ?? tesseractSha;
+    final grayEntrySha = markerSha ?? _sha(read(_markerGray));
     File(noticesPath).writeAsStringSync('''
 # Notices
 
@@ -190,6 +210,14 @@ class _Fixture {
 
 - **Source:** <$_modelUrl>
 - **SHA-256:** `${_sha(read('data/vision/tessdata/eng.traineddata'))}`
+
+<a id="inspection-marker-template"></a>
+### Inspection marker template
+
+- **Files:** `$_markerGray` (SHA-256 `$grayEntrySha`), `$_markerJson` (SHA-256 `${_sha(read(_markerJson))}`)
+- **Source screenshot SHA-256:** `$_screenshotSha`
+- **Recipe:** inspection-marker-v1
+- **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence.
 
 <a id="microsoft-visual-cpp-runtime"></a>
 ### Microsoft Visual C++ runtime (app-local)
@@ -302,6 +330,24 @@ void main() {
     expect(text2, contains('missing'));
   });
 
+  test('inventory fails naming missing marker template or metadata', () async {
+    File('${fx.bundle.path}/$_markerGray').deleteSync();
+    final r = await fx.run();
+    expect(r.code, isNot(0));
+    final text = _failures(r.report!, 'inventory');
+    expect(text, contains(_markerGray));
+    expect(text, contains('missing'));
+
+    final fx2 = _Fixture();
+    addTearDown(fx2.dispose);
+    File('${fx2.bundle.path}/$_markerJson').deleteSync();
+    final r2 = await fx2.run();
+    expect(r2.code, isNot(0));
+    final text2 = _failures(r2.report!, 'inventory');
+    expect(text2, contains(_markerJson));
+    expect(text2, contains('missing'));
+  });
+
   test('hash step fails naming capture library and both hashes', () async {
     fx.write('blackgrid_capture.dll.sha256', utf8.encode('0' * 64));
     final r = await fx.run();
@@ -357,6 +403,59 @@ void main() {
     final r = await fx.run();
     expect(_step(r.report!, 'notices')['ok'], isTrue);
   });
+
+  test(
+    'game artwork notices step passes with file, sha and source sha',
+    () async {
+      final r = await fx.run();
+      expect(r.code, 0, reason: '${r.err} ${r.report}');
+      expect(_step(r.report!, 'notices')['ok'], isTrue);
+      final files = (r.report!['files']! as List).cast<Map<String, Object?>>();
+      final marker = files.firstWhere((f) => f['path'] == _markerGray);
+      expect(marker['role'], 'game-artwork');
+      expect(marker['sha256'], _sha(fx.read(_markerGray)));
+    },
+  );
+
+  test('game artwork notices step fails naming a stale marker sha', () async {
+    fx.writeLockAndNotices(markerSha: 'd' * 64);
+    final r = await fx.run();
+    expect(r.code, isNot(0));
+    final text = _failures(r.report!, 'notices');
+    expect(text, contains(_markerGray));
+    expect(text, contains(_sha(fx.read(_markerGray))));
+    expect(_step(r.report!, 'inventory')['ok'], isTrue);
+  });
+
+  test(
+    'game artwork notices step fails without the licence statement',
+    () async {
+      final notices = File(fx.noticesPath);
+      notices.writeAsStringSync(
+        notices.readAsStringSync().replaceAll(
+          'not covered by Blackgrid',
+          'covered by Blackgrid',
+        ),
+      );
+      final r = await fx.run();
+      expect(r.code, isNot(0));
+      expect(_failures(r.report!, 'notices'), contains(_markerGray));
+      expect(_failures(r.report!, 'notices'), contains('licence'));
+    },
+  );
+
+  test(
+    'game artwork notices step fails on a stale source screenshot sha',
+    () async {
+      final notices = File(fx.noticesPath);
+      notices.writeAsStringSync(
+        notices.readAsStringSync().replaceAll(_screenshotSha, 'e' * 64),
+      );
+      final r = await fx.run();
+      expect(r.code, isNot(0));
+      expect(_failures(r.report!, 'notices'), contains(_screenshotSha));
+    },
+  );
 
   test('notices step fails naming component with stale sha', () async {
     fx.writeLockAndNotices(noticesTesseractSha: 'c' * 64);

@@ -68,11 +68,20 @@ class _Entry {
   _Entry(Map<String, Object?> json)
     : path = json['path']! as String,
       role = json['role']! as String,
-      minVersion = json['minVersion'] as String?;
+      minVersion = json['minVersion'] as String?,
+      noticeAnchor = json['noticeAnchor'] as String?;
   final String path;
   final String role;
   final String? minVersion;
+  final String? noticeAnchor;
 }
+
+/// Inventory role of files derived from game artwork (design D4).
+const gameArtwork = 'game-artwork';
+
+/// Sentence a game-artwork notices entry must contain, compared without case.
+const gameArtworkStatement =
+    "game UI artwork captured by the user, not covered by Blackgrid's licence";
 
 String _sha(List<int> bytes) => sha256.convert(bytes).toString();
 
@@ -228,7 +237,7 @@ BundleReport checkBundle({
     }
   }
   for (final e in entries.where(
-    (e) => e.role == 'vision' || e.role == 'model',
+    (e) => e.role == 'vision' || e.role == 'model' || e.role == gameArtwork,
   )) {
     if (manifestBytes != null && !manifested.contains(e.path.toLowerCase())) {
       bind.add('${e.path}: not listed in $manifestPath');
@@ -356,6 +365,7 @@ BundleReport checkBundle({
       }
     }
   }
+  noteFailures.addAll(_gameArtworkNoticeFailures(entries, notices, bytesOf));
   steps.add(StepResult('notices', noteFailures));
 
   final files = <Map<String, Object?>>[
@@ -371,6 +381,84 @@ BundleReport checkBundle({
         },
   ];
   return BundleReport(root, steps, files);
+}
+
+/// Failures of the game-artwork notices check: each game-artwork file needs a
+/// notices entry (found by its inventory `noticeAnchor`) that names the file,
+/// its current SHA-256, the source screenshot SHA-256 and the recipe recorded
+/// in the bundle's metadata, and states the artwork's rights status.
+List<String> _gameArtworkNoticeFailures(
+  List<_Entry> entries,
+  String notices,
+  Uint8List? Function(String rel) bytesOf,
+) {
+  final failures = <String>[];
+  final artwork = [
+    for (final e in entries)
+      if (e.role == gameArtwork) e,
+  ];
+  // Provenance comes from the artwork's own metadata file.
+  String? sourceSha;
+  String? recipe;
+  for (final e in artwork.where((e) => e.path.endsWith('.json'))) {
+    final data = bytesOf(e.path);
+    if (data == null) continue;
+    try {
+      final meta = jsonDecode(utf8.decode(data));
+      if (meta is Map) {
+        sourceSha = (meta['sourceSha256'] as String?)?.trim().toLowerCase();
+        recipe = meta['recipe'] as String?;
+      }
+    } on FormatException {
+      failures.add('${e.path}: metadata is not valid JSON');
+    }
+  }
+  for (final e in artwork) {
+    final anchor = e.noticeAnchor;
+    if (anchor == null) {
+      failures.add('${e.path}: inventory entry has no noticeAnchor');
+      continue;
+    }
+    final section = _noticeSection(notices, anchor);
+    if (section == null) {
+      failures.add('${e.path}: no notices entry with anchor "$anchor"');
+      continue;
+    }
+    final lower = section.toLowerCase();
+    if (!section.contains(e.path)) {
+      failures.add('${e.path}: notices entry "$anchor" does not name the file');
+    }
+    final data = bytesOf(e.path);
+    if (data != null) {
+      final sha = _sha(data);
+      if (!lower.contains(sha)) {
+        failures.add(
+          '${e.path}: notices entry "$anchor" lacks sha256 $sha '
+          '(stale or missing)',
+        );
+      }
+    }
+    if (sourceSha == null || sourceSha.isEmpty) {
+      failures.add('${e.path}: metadata has no sourceSha256');
+    } else if (!lower.contains(sourceSha)) {
+      failures.add(
+        '${e.path}: notices entry "$anchor" lacks source screenshot sha256 '
+        '$sourceSha (stale or missing)',
+      );
+    }
+    if (recipe == null || recipe.isEmpty) {
+      failures.add('${e.path}: metadata has no recipe');
+    } else if (!section.contains(recipe)) {
+      failures.add('${e.path}: notices entry "$anchor" lacks recipe $recipe');
+    }
+    if (!lower.contains(gameArtworkStatement.toLowerCase())) {
+      failures.add(
+        '${e.path}: notices entry "$anchor" lacks the statement "'
+        '$gameArtworkStatement"',
+      );
+    }
+  }
+  return failures;
 }
 
 /// Text from the `<a id="anchor">` line up to the next anchor or `## `
