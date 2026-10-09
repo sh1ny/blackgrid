@@ -58,11 +58,11 @@
 | item-title-matching → A title quantity restricts candidates | OCR confusion in quantity | test/domain/title_matching_test.dart | i2@ reads as quantity 120 | green |
 | item-title-matching → A title quantity restricts candidates | Quantity selects the variant | test/domain/title_matching_test.dart | quantity 200 restricts to the 200 pcs variant | green |
 | item-title-matching → A title quantity restricts candidates | Quantity with no matching candidate | test/domain/title_matching_test.dart | quantity without a matching candidate applies no restriction | green |
-| item-title-matching → Targeted and fallback evidence are ranked | Targeted accepted | test/domain/title_matching_test.dart | accepted targeted evidence wins without consulting fallback | red |
-| item-title-matching → Targeted and fallback evidence are ranked | Fallback chooses the accepted inspection | test/domain/title_matching_test.dart | ranking prefers accepted over higher marker score | red |
-| item-title-matching → Targeted and fallback evidence are ranked | Nothing accepted | test/domain/title_matching_test.dart | nothing accepted is a rejection with top evidence and no accepted id | red |
-| item-title-matching → Targeted and fallback evidence are ranked | No marker anywhere | test/domain/title_matching_test.dart | no evidence anywhere rejects noMarker with both best scores | red |
-| item-title-matching → Targeted and fallback evidence are ranked | Index from another mode | test/domain/title_matching_test.dart | index from another mode rejects catalogModeMismatch | red |
+| item-title-matching → Targeted and fallback evidence are ranked | Targeted accepted | test/domain/title_matching_test.dart | accepted targeted evidence wins without consulting fallback | green |
+| item-title-matching → Targeted and fallback evidence are ranked | Fallback chooses the accepted inspection | test/domain/title_matching_test.dart | ranking prefers accepted over higher marker score | green |
+| item-title-matching → Targeted and fallback evidence are ranked | Nothing accepted | test/domain/title_matching_test.dart | nothing accepted is a rejection with top evidence and no accepted id | green |
+| item-title-matching → Targeted and fallback evidence are ranked | No marker anywhere | test/domain/title_matching_test.dart | no evidence anywhere rejects noMarker with both best scores | green |
+| item-title-matching → Targeted and fallback evidence are ranked | Index from another mode | test/domain/title_matching_test.dart | index from another mode rejects catalogModeMismatch | green |
 | vision-runtime → Template match lists every location at or above a threshold | Two template copies | test/qualification/vision_peaks_test.dart | real DLL lists two exact copies in raster order | red |
 | vision-runtime → Template match lists every location at or above a threshold | Nothing reaches the threshold | test/qualification/vision_peaks_test.dart | real DLL returns an empty list below threshold | red |
 | vision-runtime → Template match lists every location at or above a threshold | More locations than the cap | test/data/vision/vision_runtime_test.dart | peak overflow status -6 surfaces as nativeFailure with no list | green |
@@ -132,7 +132,7 @@ Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documenta
 Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentation`.
 
 - [x] 7.1 Write failing ranking tests in `test/domain/title_matching_test.dart`: "accepted targeted evidence wins without consulting fallback", "ranking prefers accepted over higher marker score", "nothing accepted is a rejection with top evidence and no accepted id", "no evidence anywhere rejects noMarker with both best scores", "index from another mode rejects catalogModeMismatch". Verify they fail.
-- [ ] 7.2 Implement `rankOutcome` and sealed `RecognitionOutcome` (`OutcomeAccepted`/`OutcomeRejected` with both best marker scores), treating `emptyTitleRegion` evidence as an empty title. Verify: the 7.1 tests pass (flip green).
+- [x] 7.2 Implement `rankOutcome` and sealed `RecognitionOutcome` (`OutcomeAccepted`/`OutcomeRejected` with both best marker scores), treating `emptyTitleRegion` evidence as an empty title. Verify: the 7.1 tests pass (flip green).
 - [ ] 7.3 Implement `lib/application/recognition_matcher.dart` with `buildTitleMatchIndexOffUi` and `matchRecognitionOffUi` (one `Isolate.run` each; an isolate error gives `OutcomeRejected(matcherFailed)`). Test both in `test/application/recognition_matcher_test.dart`, including the error path through an injected runner. Verify: the tests pass, and the vision worker audit stays green (the adapter imports neither the service nor the job).
 
 ## 8. Offline corpus runner

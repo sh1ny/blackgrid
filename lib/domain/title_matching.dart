@@ -667,3 +667,212 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     revision: index.revision,
   );
 }
+
+/// One recognised title candidate offered to [rankOutcome], carrying the
+/// caller's own [evidence] payload.
+final class RankableEvidence<E> {
+  /// Creates a candidate.
+  const RankableEvidence({
+    required this.evidence,
+    required this.markerScore,
+    required this.text,
+    required this.emptyTitleRegion,
+    required this.peakOrder,
+  });
+
+  /// The caller's payload, returned untouched in the outcome.
+  final E evidence;
+
+  /// Marker correlation of the inspection this title belongs to.
+  final double markerScore;
+
+  /// Recognised title text.
+  final String text;
+
+  /// Whether the title region was empty; such a candidate is matched as an
+  /// empty title regardless of [text].
+  final bool emptyTitleRegion;
+
+  /// Index of the candidate in its result's evidence list.
+  final int peakOrder;
+}
+
+/// The candidates of one recognition result.
+final class RecognitionResultInput<E> {
+  /// Creates a result input.
+  const RecognitionResultInput({
+    required this.entries,
+    required this.bestMarkerScore,
+  });
+
+  /// Candidates in peak order; empty when no marker was found.
+  final List<RankableEvidence<E>> entries;
+
+  /// Best marker score the result saw, or null when it reported none.
+  final double? bestMarkerScore;
+}
+
+/// Why a recognition outcome is a rejection: one of the title matcher's
+/// reasons, or a pipeline-level one.
+enum OutcomeRejectReason {
+  /// No marker evidence in either result.
+  noMarker,
+
+  /// The matcher itself failed; set by the async adapter, never by
+  /// [rankOutcome].
+  matcherFailed,
+
+  /// See [TitleRejectReason.emptyCatalog].
+  emptyCatalog,
+
+  /// See [TitleRejectReason.titleTooShort].
+  titleTooShort,
+
+  /// See [TitleRejectReason.uiChrome].
+  uiChrome,
+
+  /// See [TitleRejectReason.belowSimilarity].
+  belowSimilarity,
+
+  /// See [TitleRejectReason.ambiguous].
+  ambiguous,
+
+  /// See [TitleRejectReason.catalogModeMismatch].
+  catalogModeMismatch;
+
+  /// The outcome reason that mirrors [reason].
+  static OutcomeRejectReason fromTitle(TitleRejectReason reason) =>
+      switch (reason) {
+        TitleRejectReason.emptyCatalog => emptyCatalog,
+        TitleRejectReason.titleTooShort => titleTooShort,
+        TitleRejectReason.uiChrome => uiChrome,
+        TitleRejectReason.belowSimilarity => belowSimilarity,
+        TitleRejectReason.ambiguous => ambiguous,
+        TitleRejectReason.catalogModeMismatch => catalogModeMismatch,
+      };
+}
+
+/// The single result of ranking targeted and fallback evidence; either
+/// [OutcomeAccepted] or [OutcomeRejected].
+sealed class RecognitionOutcome<E> {
+  const RecognitionOutcome();
+}
+
+/// An accepted item identity and the evidence it came from.
+final class OutcomeAccepted<E> extends RecognitionOutcome<E> {
+  /// Creates an acceptance.
+  const OutcomeAccepted(this.match, this.evidence);
+
+  /// The accepted match; its `bestId` is the item.
+  final TitleAccepted match;
+
+  /// The payload of the winning candidate.
+  final E evidence;
+}
+
+/// A rejection. It never exposes an accepted item ID: [match], when present,
+/// is a [TitleRejected].
+final class OutcomeRejected<E> extends RecognitionOutcome<E> {
+  /// Creates a rejection for [reason].
+  const OutcomeRejected(
+    this.reason, {
+    this.evidence,
+    this.match,
+    this.targetedBestMarkerScore,
+    this.fallbackBestMarkerScore,
+  });
+
+  /// Why nothing was accepted.
+  final OutcomeRejectReason reason;
+
+  /// Payload of the highest-ranked candidate, if there was one.
+  final E? evidence;
+
+  /// That candidate's match result, if there was one.
+  final TitleMatch? match;
+
+  /// Best marker score of the targeted result.
+  final double? targetedBestMarkerScore;
+
+  /// Best marker score of the fallback result.
+  final double? fallbackBestMarkerScore;
+}
+
+/// Ranks targeted and fallback evidence into one outcome for a caller in
+/// [mode].
+///
+/// An [index] built for another mode rejects `catalogModeMismatch`. An
+/// accepted targeted candidate wins and the fallback is not matched.
+/// Otherwise every candidate is matched and the first by acceptance, then
+/// best similarity, then marker score (all descending), then peak order
+/// (ascending) is the outcome; on a full tie the targeted candidate precedes
+/// fallback ones, then input order decides. No candidates at all rejects
+/// `noMarker`. Every rejection carries both results' best marker scores.
+RecognitionOutcome<E> rankOutcome<E>(
+  TitleMatchIndex index, {
+  required RecognitionResultInput<E> targeted,
+  RecognitionResultInput<E>? fallback,
+  required GameMode mode,
+}) {
+  OutcomeRejected<E> reject(
+    OutcomeRejectReason reason, {
+    E? evidence,
+    TitleMatch? match,
+  }) => OutcomeRejected<E>(
+    reason,
+    evidence: evidence,
+    match: match,
+    targetedBestMarkerScore: targeted.bestMarkerScore,
+    fallbackBestMarkerScore: fallback?.bestMarkerScore,
+  );
+
+  if (index.mode != mode) {
+    return reject(OutcomeRejectReason.catalogModeMismatch);
+  }
+
+  TitleMatch matchEntry(RankableEvidence<E> e) =>
+      matchTitle(index, e.emptyTitleRegion ? '' : e.text, mode);
+
+  final ranked = <({RankableEvidence<E> entry, TitleMatch match})>[];
+  for (final e in targeted.entries) {
+    final m = matchEntry(e);
+    if (m is TitleAccepted) return OutcomeAccepted<E>(m, e.evidence);
+    ranked.add((entry: e, match: m));
+  }
+  for (final e in fallback?.entries ?? const []) {
+    ranked.add((entry: e, match: matchEntry(e)));
+  }
+  if (ranked.isEmpty) return reject(OutcomeRejectReason.noMarker);
+
+  var top = ranked.first;
+  for (final candidate in ranked.skip(1)) {
+    if (_outranks(candidate, top)) top = candidate;
+  }
+  return switch (top.match) {
+    TitleAccepted() => OutcomeAccepted<E>(
+      top.match as TitleAccepted,
+      top.entry.evidence,
+    ),
+    TitleRejected(:final reason) => reject(
+      OutcomeRejectReason.fromTitle(reason),
+      evidence: top.entry.evidence,
+      match: top.match,
+    ),
+  };
+}
+
+/// Whether [a] ranks strictly before [b]; ties keep the earlier candidate.
+bool _outranks<E>(
+  ({RankableEvidence<E> entry, TitleMatch match}) a,
+  ({RankableEvidence<E> entry, TitleMatch match}) b,
+) {
+  final aAccepted = a.match is TitleAccepted;
+  if (aAccepted != (b.match is TitleAccepted)) return aAccepted;
+  if (a.match.bestScore != b.match.bestScore) {
+    return a.match.bestScore > b.match.bestScore;
+  }
+  if (a.entry.markerScore != b.entry.markerScore) {
+    return a.entry.markerScore > b.entry.markerScore;
+  }
+  return a.entry.peakOrder < b.entry.peakOrder;
+}
