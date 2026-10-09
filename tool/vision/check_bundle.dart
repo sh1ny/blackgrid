@@ -9,7 +9,10 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import 'package:blackgrid/application/output_path_guard.dart';
+import 'package:blackgrid/data/vision/marker_template.dart'
+    show markerMetadataPath;
 
+import 'make_marker_template.dart' show footprintFor;
 import 'pe.dart';
 
 const defaultInventoryPath = 'tool/vision/bundle_inventory.json';
@@ -376,6 +379,10 @@ BundleReport checkBundle({
       bytesOf,
     ),
   );
+  final markerMeta = bytesOf(markerMetadataPath);
+  if (markerMeta != null) {
+    noteFailures.addAll(markerProvenanceFailures(markerMeta));
+  }
   steps.add(StepResult('notices', noteFailures));
 
   final files = <Map<String, Object?>>[
@@ -391,6 +398,54 @@ BundleReport checkBundle({
         },
   ];
   return BundleReport(root, steps, files);
+}
+
+/// Failures of the marker template's provenance in its metadata [bytes]: the
+/// source screenshot SHA-256 (64 hex digits), the source client size, and a
+/// footprint and origin consistent with that size, as the regeneration tool
+/// records them. Missing bytes are the inventory step's failure, not this.
+List<String> markerProvenanceFailures(Uint8List bytes) {
+  const where = markerMetadataPath;
+  final Object? meta;
+  try {
+    meta = jsonDecode(utf8.decode(bytes));
+  } on FormatException {
+    return ['$where: metadata is not valid JSON'];
+  }
+  if (meta is! Map) return ['$where: metadata is not an object'];
+  final failures = <String>[];
+  final sha = meta['sourceSha256'];
+  if (sha is! String || !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(sha)) {
+    failures.add('$where: sourceSha256 is not a 64-digit hex SHA-256');
+  }
+  final (width, height) = (meta['sourceWidth'], meta['sourceHeight']);
+  if (width is! int || height is! int || width <= 0 || height <= 0) {
+    failures.add('$where: sourceWidth and sourceHeight must be positive');
+    return failures;
+  }
+  final footprint = meta['footprint'];
+  final expected = footprintFor(width, height);
+  if (footprint != expected) {
+    failures.add(
+      '$where: footprint $footprint does not match ${width}x$height '
+      '(expected $expected)',
+    );
+    return failures;
+  }
+  final origin = meta['origin'];
+  final (x, y) = origin is Map ? (origin['x'], origin['y']) : (null, null);
+  if (x is! int ||
+      y is! int ||
+      x < 0 ||
+      y < 0 ||
+      x + expected > width ||
+      y + expected > height) {
+    failures.add(
+      '$where: origin must place the ${expected}px footprint inside '
+      '${width}x$height',
+    );
+  }
+  return failures;
 }
 
 /// A game-artwork file as the notices check sees it: its bundle path and the

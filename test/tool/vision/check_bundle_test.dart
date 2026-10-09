@@ -59,6 +59,10 @@ class _Fixture {
           'width': 28,
           'height': 28,
           'sourceSha256': _screenshotSha,
+          'sourceWidth': 1920,
+          'sourceHeight': 1080,
+          'footprint': 16,
+          'origin': {'x': 4, 'y': 6},
           'recipe': 'inspection-marker-v1',
         }),
       ),
@@ -555,6 +559,54 @@ void main() {
       expect(File(fx.reportPath).existsSync(), isTrue);
     },
   );
+
+  group('marker provenance', () {
+    Uint8List meta(Map<String, Object?> overrides) => utf8.encode(
+      jsonEncode({
+        'sourceSha256': 'ab' * 32,
+        'sourceWidth': 2560,
+        'sourceHeight': 1440,
+        'footprint': 21,
+        'origin': {'x': 4, 'y': 6},
+        ...overrides,
+      }),
+    );
+
+    test('complete, consistent provenance passes', () {
+      expect(markerProvenanceFailures(meta({})), isEmpty);
+    });
+
+    test('each malformed or inconsistent field fails', () {
+      final bad = <String, Map<String, Object?>>{
+        'short sha': {'sourceSha256': 'abc'},
+        'sha of another type': {'sourceSha256': 7},
+        'missing size': {'sourceWidth': null},
+        'zero height': {'sourceHeight': 0},
+        'footprint off the size': {'footprint': 16},
+        'missing footprint': {'footprint': null},
+        'missing origin': {'origin': null},
+        'origin past the edge': {
+          'origin': {'x': 2550, 'y': 6},
+        },
+        'negative origin': {
+          'origin': {'x': -1, 'y': 6},
+        },
+      };
+      for (final MapEntry(:key, :value) in bad.entries) {
+        expect(markerProvenanceFailures(meta(value)), isNotEmpty, reason: key);
+      }
+    });
+
+    test('the notices step reports the marker provenance', () async {
+      final m = jsonDecode(utf8.decode(fx.read(_markerJson))) as Map;
+      m.remove('origin');
+      fx.write(_markerJson, utf8.encode(jsonEncode(m)));
+      fx.writeLockAndNotices();
+      final r = await fx.run();
+      expect(r.code, isNot(0));
+      expect(_failures(r.report!, 'notices'), contains('origin'));
+    });
+  });
 
   group('game artwork provenance', () {
     const shaA =
