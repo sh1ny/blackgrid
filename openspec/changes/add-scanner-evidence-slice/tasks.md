@@ -143,7 +143,7 @@ Test conventions (AGENTS.md):
 
 ## 5. Scan report values and log line
 
-- [ ] 5.1 Write failing tests in `test/application/scan_report_test.dart`:
+- [x] 5.1 Write failing tests in `test/application/scan_report_test.dart`:
   - "accepted fallback report encodes a v1 line with per-pass ms": `v`, `utc`, `end`, `item`, `pass`, `ms.trigger` 0, `ms.published`, `ms.targeted.{…}`, `ms.fallback.{…}`, with QPC to ms conversion at a fake frequency;
   - "superseded report encodes only the stages reached": absent keys omitted;
   - no key holds crop bytes.
