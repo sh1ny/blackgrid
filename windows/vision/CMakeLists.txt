@@ -232,6 +232,15 @@ foreach(name ${BGV_SELF_CHECK_FILES})
   list(APPEND BGV_MANIFEST_FILES "data/vision/self_check/${name}")
 endforeach()
 
+# Inspection marker template and its metadata (add-inspection-recognition-
+# pipeline task 3.6), loaded by loadMarkerTemplate and bound by the manifest.
+set(BGV_MARKER_FILES inspection_marker.gray inspection_marker.json)
+foreach(name ${BGV_MARKER_FILES})
+  install(FILES "${BGV_REPO_ROOT}/assets/vision/marker/${name}"
+    DESTINATION "${INSTALL_BUNDLE_DATA_DIR}/vision/marker" COMPONENT Runtime)
+  list(APPEND BGV_MANIFEST_FILES "data/vision/marker/${name}")
+endforeach()
+
 # App-local Visual C++ runtime for the Flutter runner and tesseract50.dll
 # (D7), filtered to the committed name list. Minimum versions are checked by
 # tool/vision/check_bundle.dart.
