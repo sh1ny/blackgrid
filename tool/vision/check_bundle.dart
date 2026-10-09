@@ -424,9 +424,18 @@ List<String> gameArtworkNoticeFailures(
     try {
       final meta = jsonDecode(utf8.decode(data));
       if (meta is Map) {
+        // A field of another type is reported here and then counts as absent.
+        String? text(String name) => switch (meta[name]) {
+          null => null,
+          final String value => value.trim(),
+          _ => () {
+            failures.add('${e.path}: metadata $name is not a string');
+            return null;
+          }(),
+        };
         provenance[stem(e.path)] = (
-          sourceSha: (meta['sourceSha256'] as String?)?.trim().toLowerCase(),
-          recipe: (meta['recipe'] as String?)?.trim(),
+          sourceSha: text('sourceSha256')?.toLowerCase(),
+          recipe: text('recipe'),
         );
       }
     } on FormatException {

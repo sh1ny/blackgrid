@@ -628,6 +628,34 @@ void main() {
       ]);
     });
 
+    test('non-string provenance fields are failures, not crashes', () {
+      final malformed = {
+        ...files,
+        'data/a/one.json': utf8.encode(
+          jsonEncode({
+            'sourceSha256': 42,
+            'recipe': ['recipe-a'],
+          }),
+        ),
+      };
+      final notices =
+          '# N\n\n'
+          '${entry('art-a', 'data/a/one', shaA, 'recipe-a')}\n'
+          '${entry('art-b', 'data/b/two', shaB, 'recipe-b')}';
+      final failures = gameArtworkNoticeFailures(artwork, notices, (rel) {
+        final b = malformed[rel];
+        return b == null ? null : Uint8List.fromList(b);
+      });
+      expect(
+        failures,
+        containsAll([
+          'data/a/one.json: metadata sourceSha256 is not a string',
+          'data/a/one.json: metadata recipe is not a string',
+        ]),
+      );
+      expect(failures.every((f) => f.startsWith('data/a/one.')), isTrue);
+    });
+
     test('file path and recipe match without case', () {
       final upper = entry('art-a', 'data/a/one', shaA, 'recipe-a')
           .replaceAll('data/a/one', 'DATA/A/ONE')
