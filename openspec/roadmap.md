@@ -29,7 +29,7 @@ Retires risks 1 (recognition coverage, wrong identities, ROI/DPI drift) and 2 (F
 4. `add-inspection-recognition-pipeline` - marker correlation, scaled title ROI, threshold, OCR, FormKC normalisation and guarded Levenshtein matching against the immutable catalog, with the baseline gates (.82 / .55 / length 3 / margin .05) and quantity and UI-chrome safeguards; offline corpus tests. Needs change 3.
 5. `add-scanner-evidence-slice` - wire trigger → capture → worker → evidence into the Scanner area, with stage timing instrumentation and visible fallback state; no recommendation is shown from unaccepted evidence. Needs changes 2 and 4.
 
-**Do next, before change 2:** `add-release-versioning` - project tooling, not recognition work, so it sits outside the numbered list (ADR-0008 and [architecture.md](architecture.md) cite those numbers; they stay stable). Independent of every numbered change. It must land before M2 closes, because closing M2 is the first version bump (`0.2.0`). Details in [Release versioning](#release-versioning-add-release-versioning) below.
+**Landed before change 2:** `add-release-versioning` - 2026-10-08 ([PR #15](https://github.com/sh1ny/blackgrid/pull/15)). Project tooling, not recognition work, so it sits outside the numbered list (ADR-0008 and [architecture.md](architecture.md) cite those numbers; they stay stable). Independent of every numbered change. It had to land before M2 closes, because closing M2 is the first version bump (`0.2.0`). Details in [Release versioning](#release-versioning-add-release-versioning) below.
 
 ### Release versioning (`add-release-versioning`)
 
