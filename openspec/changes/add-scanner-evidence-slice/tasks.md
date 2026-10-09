@@ -46,33 +46,33 @@ Test conventions (AGENTS.md):
 | scan-pipeline → Live scan stops cleanly | Setting cannot be saved when switching off | test/application/scan_coordinator_lifecycle_test.dart | failed switch-off save still stops the pipeline | green |
 | scan-pipeline → Live scan stops cleanly | A later save does not reinstall the hook | test/application/scan_coordinator_lifecycle_test.dart | unrelated save after failed switch-off keeps live scan off | green |
 | scan-pipeline → Live scan stops cleanly | Switching off during start | test/application/scan_coordinator_lifecycle_test.dart | switch-off during a hung start is bounded by the close drain | green |
-| scan-pipeline → Live scan stops cleanly | Switching off with a scan in flight | test/application/scan_coordinator_flow_test.dart | switch-off during vision stage publishes nothing and releases the frame | red |
+| scan-pipeline → Live scan stops cleanly | Switching off with a scan in flight | test/application/scan_coordinator_flow_test.dart | switch-off during vision stage publishes nothing and releases the frame | green |
 | scan-pipeline → Live scan stops cleanly | Hook thread does not stop | test/application/scan_coordinator_lifecycle_test.dart | stopTimedOut is a visible warning and the next start retries stop | green |
 | scan-pipeline → Live scan stops cleanly | Worker drain incomplete at shutdown | test/application/scan_pipeline_isolate_test.dart | dispose with a held native call completes after the drain and publishes nothing | red |
 | scan-pipeline → Worker loss makes live scan unavailable | Vision worker exits mid-session | test/application/scan_coordinator_lifecycle_test.dart | vision worker exit removes hook and is unavailable | green |
 | scan-pipeline → Worker loss makes live scan unavailable | Restart after loss | test/application/scan_coordinator_lifecycle_test.dart | off then on after loss creates fresh services | green |
-| scan-pipeline → Targeted pass runs first | Accepted targeted scan | test/application/scan_coordinator_flow_test.dart | accepted targeted scan requests no fallback | red |
-| scan-pipeline → Targeted pass runs first | Targeted capture fails on identity | test/application/scan_coordinator_flow_test.dart | targetNotForeground ends failed without fallback | red |
-| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Targeted pass finds no marker | test/application/scan_coordinator_flow_test.dart | noMarker publishes fallback phase then accepts from fallback | red |
-| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Fallback also rejected | test/application/scan_coordinator_flow_test.dart | both passes rejected keeps both evidences | red |
-| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Targeted vision answer not delivered | test/application/scan_coordinator_flow_test.dart | visionTimeout ends failed without fallback | red |
-| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Fallback capture fails | test/application/scan_coordinator_flow_test.dart | fallback targetGone keeps the targeted rejection | red |
-| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Both passes fail to capture | test/application/scan_coordinator_flow_test.dart | blankCapture twice ends failed with both failures | red |
-| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Catalog-only rejection | test/application/scan_coordinator_flow_test.dart | catalogModeMismatch requests no fallback | red |
-| scan-pipeline → One scan in flight, latest trigger wins | Burst during capture | test/application/scan_coordinator_flow_test.dart | burst during capture keeps only the newest trigger | red |
-| scan-pipeline → One scan in flight, latest trigger wins | Pending trigger meets an overrun capture | test/application/scan_coordinator_flow_test.dart | pending trigger after captureTimeout fails captureBusy and is logged | red |
+| scan-pipeline → Targeted pass runs first | Accepted targeted scan | test/application/scan_coordinator_flow_test.dart | accepted targeted scan requests no fallback | green |
+| scan-pipeline → Targeted pass runs first | Targeted capture fails on identity | test/application/scan_coordinator_flow_test.dart | targetNotForeground ends failed without fallback | green |
+| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Targeted pass finds no marker | test/application/scan_coordinator_flow_test.dart | noMarker publishes fallback phase then accepts from fallback | green |
+| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Fallback also rejected | test/application/scan_coordinator_flow_test.dart | both passes rejected keeps both evidences | green |
+| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Targeted vision answer not delivered | test/application/scan_coordinator_flow_test.dart | visionTimeout ends failed without fallback | green |
+| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Fallback capture fails | test/application/scan_coordinator_flow_test.dart | fallback targetGone keeps the targeted rejection | green |
+| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Both passes fail to capture | test/application/scan_coordinator_flow_test.dart | blankCapture twice ends failed with both failures | green |
+| scan-pipeline → Fallback pass runs when the targeted pass is not accepted | Catalog-only rejection | test/application/scan_coordinator_flow_test.dart | catalogModeMismatch requests no fallback | green |
+| scan-pipeline → One scan in flight, latest trigger wins | Burst during capture | test/application/scan_coordinator_flow_test.dart | burst during capture keeps only the newest trigger | green |
+| scan-pipeline → One scan in flight, latest trigger wins | Pending trigger meets an overrun capture | test/application/scan_coordinator_flow_test.dart | pending trigger after captureTimeout fails captureBusy and is logged | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Trigger during the vision stage | test/application/scan_pipeline_isolate_test.dart | trigger during vision invalidates, never overlaps native calls, never publishes the old result | red |
-| scan-pipeline → One scan in flight, latest trigger wins | Trigger during matching | test/application/scan_coordinator_flow_test.dart | trigger during matching discards the old match | red |
-| scan-pipeline → One scan in flight, latest trigger wins | Triggers dropped by the native queue | test/application/scan_coordinator_flow_test.dart | droppedBefore is recorded on the scan | red |
-| scan-pipeline → Results publish only while current | Switched off during matching | test/application/scan_coordinator_flow_test.dart | switch-off during matching discards the result | red |
-| scan-pipeline → Results publish only while current | Late result after dispose | test/application/scan_coordinator_flow_test.dart | capture success after dispose is released without notification | red |
-| scan-pipeline → Matching uses the current catalog index | Catalog loaded | test/application/scan_coordinator_flow_test.dart | outcome records mode and revision of the current snapshot | red |
-| scan-pipeline → Matching uses the current catalog index | Catalog replaced mid-scan | test/application/scan_coordinator_flow_test.dart | snapshot change mid-scan keeps the old index for that scan | red |
-| scan-pipeline → Matching uses the current catalog index | No catalog | test/application/scan_coordinator_flow_test.dart | no snapshot rejects catalogUnavailable without fallback | red |
-| scan-pipeline → Matching uses the current catalog index | Index build fails | test/application/scan_coordinator_flow_test.dart | failed index build rejects and retries on next snapshot | red |
-| scan-pipeline → Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted timeline is complete and ordered | red |
-| scan-pipeline → Every scan records stage timings | Fallback wins | test/application/scan_coordinator_flow_test.dart | fallback win keeps the targeted pass's own job stamps | red |
-| scan-pipeline → Every scan records stage timings | Scan ended early | test/application/scan_coordinator_flow_test.dart | early capture failure leaves later stages absent | red |
+| scan-pipeline → One scan in flight, latest trigger wins | Trigger during matching | test/application/scan_coordinator_flow_test.dart | trigger during matching discards the old match | green |
+| scan-pipeline → One scan in flight, latest trigger wins | Triggers dropped by the native queue | test/application/scan_coordinator_flow_test.dart | droppedBefore is recorded on the scan | green |
+| scan-pipeline → Results publish only while current | Switched off during matching | test/application/scan_coordinator_flow_test.dart | switch-off during matching discards the result | green |
+| scan-pipeline → Results publish only while current | Late result after dispose | test/application/scan_coordinator_flow_test.dart | capture success after dispose is released without notification | green |
+| scan-pipeline → Matching uses the current catalog index | Catalog loaded | test/application/scan_coordinator_flow_test.dart | outcome records mode and revision of the current snapshot | green |
+| scan-pipeline → Matching uses the current catalog index | Catalog replaced mid-scan | test/application/scan_coordinator_flow_test.dart | snapshot change mid-scan keeps the old index for that scan | green |
+| scan-pipeline → Matching uses the current catalog index | No catalog | test/application/scan_coordinator_flow_test.dart | no snapshot rejects catalogUnavailable without fallback | green |
+| scan-pipeline → Matching uses the current catalog index | Index build fails | test/application/scan_coordinator_flow_test.dart | failed index build rejects and retries on next snapshot | green |
+| scan-pipeline → Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted timeline is complete and ordered | green |
+| scan-pipeline → Every scan records stage timings | Fallback wins | test/application/scan_coordinator_flow_test.dart | fallback win keeps the targeted pass's own job stamps | green |
+| scan-pipeline → Every scan records stage timings | Scan ended early | test/application/scan_coordinator_flow_test.dart | early capture failure leaves later stages absent | green |
 | scan-pipeline → Each finished scan is logged as one JSON line | Accepted scan line | test/application/scan_report_test.dart | accepted fallback report encodes a v1 line with per-pass ms | green |
 | scan-pipeline → Each finished scan is logged as one JSON line | Superseded scan line | test/application/scan_report_test.dart | superseded report encodes only the stages reached | green |
 | scan-pipeline → Timing log is bounded and never blocks scanning | Rotation | test/data/scan_timing_log_test.dart | rotates before passing 1 MiB | green |
@@ -89,10 +89,10 @@ Test conventions (AGENTS.md):
 | scanner-evidence → Scanner shows the latest scan's evidence | Failed scan | test/ui/scan_evidence_panel_test.dart | failed report shows failure and no candidate | red |
 | scanner-evidence → Scanner shows the latest scan's evidence | Navigation keeps evidence | test/ui/shell_test.dart | scan evidence survives Map and back | red |
 | scanner-evidence → Scan evidence never produces a recommendation | Accepted scan leaves the decision card alone | test/application/scan_coordinator_flow_test.dart; test/ui/scanner_screen_test.dart | accepted scan changes no selection or history; decision card unchanged after accepted scan | red |
-| scanner-evidence → Scan evidence never produces a recommendation | Rejected scan with a best candidate | test/application/scan_coordinator_flow_test.dart | rejected scan changes no selection or history | red |
+| scanner-evidence → Scan evidence never produces a recommendation | Rejected scan with a best candidate | test/application/scan_coordinator_flow_test.dart | rejected scan changes no selection or history | green |
 | scanner-evidence → Scanner shows stage timings and recent scans | Timings of an accepted scan | test/ui/scan_evidence_panel_test.dart | timings show stage and total ms | red |
 | scanner-evidence → Scanner shows stage timings and recent scans | Early failure | test/ui/scan_evidence_panel_test.dart | absent stages are shown as absent, not 0 | red |
-| scanner-evidence → Scanner shows stage timings and recent scans | Recent list bound | test/application/scan_coordinator_flow_test.dart | recent list keeps the 10 newest | red |
+| scanner-evidence → Scanner shows stage timings and recent scans | Recent list bound | test/application/scan_coordinator_flow_test.dart | recent list keeps the 10 newest | green |
 
 ## 1. ADR and architecture
 
@@ -188,7 +188,7 @@ Test conventions (AGENTS.md):
   - a switch-off with a scan in flight releases its frame (fake frame registry counts releases).
 
   Use fake ports and gate every stage with completers.
-- [ ] 7.2 Implement the flow per D3-D7:
+- [x] 7.2 Implement the flow per D3-D7:
   - one active scan and one pending trigger, with `scanGeneration`;
   - stage-specific supersession (wait for capture, `invalidate()` in vision, discard in matching);
   - serialised matching runs (ledger);

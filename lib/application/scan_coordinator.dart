@@ -8,6 +8,7 @@
 library;
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -1211,6 +1212,10 @@ final class _Activation {
   StreamSubscription<ScanTrigger>? sub;
   bool hookInstalled = false;
 
+  /// The QPC clock and its frequency, read once when the platform opened.
+  ScanClock? clock;
+  int qpcFrequency = 1;
+
   /// Set once the activation ended, by failure, loss or stop.
   bool retired = false;
 
@@ -1222,6 +1227,122 @@ final class _Activation {
   void cancel() {
     if (!_cancelled.isCompleted) _cancelled.complete();
   }
+}
+
+/// Which stage a scan waits in; it decides how a newer trigger supersedes it.
+enum _Stage { capture, vision, matching }
+
+/// A trigger waiting for the scan in flight to return from capture, and the
+/// number of older pending triggers it replaced.
+final class _Pending {
+  _Pending(this.trigger, this.replaced);
+
+  final ScanTrigger trigger;
+  final int replaced;
+}
+
+/// One scan in flight: its trigger, the stamps and results gathered so far.
+final class _Scan {
+  _Scan({
+    required this.activation,
+    required this.trigger,
+    required this.id,
+    required this.generation,
+    required this.replacedTriggers,
+  });
+
+  final _Activation activation;
+  final ScanTrigger trigger;
+  final int id;
+
+  /// The scan generation current when this scan started. A newer value
+  /// anywhere means this scan was superseded.
+  final int generation;
+
+  /// Older pending triggers dropped before this scan started.
+  final int replacedTriggers;
+
+  /// Triggers that arrived while this scan ran.
+  int supersedingTriggers = 0;
+  _Stage stage = _Stage.capture;
+  bool ended = false;
+
+  PassTimeline targetedTimeline = const PassTimeline();
+  PassTimeline? fallbackTimeline;
+  PassReport? targetedReport;
+  PassReport? fallbackReport;
+  InspectionRecognition? targetedRecognition;
+  InspectionRecognition? fallbackRecognition;
+  GameMode? catalogMode;
+  String? catalogRevision;
+
+  PassTimeline? timeline(ScanPass pass) => switch (pass) {
+    ScanPass.targeted => targetedTimeline,
+    ScanPass.fallback => fallbackTimeline,
+  };
+
+  void stamp(ScanPass pass, PassTimeline Function(PassTimeline) update) {
+    switch (pass) {
+      case ScanPass.targeted:
+        targetedTimeline = update(targetedTimeline);
+      case ScanPass.fallback:
+        fallbackTimeline = update(fallbackTimeline ?? const PassTimeline());
+    }
+  }
+}
+
+/// What one pass produced.
+sealed class _PassResult {
+  const _PassResult();
+}
+
+/// The pass delivered a recognition.
+final class _PassRecognised extends _PassResult {
+  const _PassRecognised(this.recognition);
+
+  final InspectionRecognition recognition;
+}
+
+/// The pass ended in a capture or vision failure.
+final class _PassFailed extends _PassResult {
+  const _PassFailed(this.failure);
+
+  final ScanFailure failure;
+}
+
+/// The scan is no longer current; nothing more is done for it.
+final class _PassAbandoned extends _PassResult {
+  const _PassAbandoned();
+}
+
+/// What the matching stage produced.
+sealed class _MatchResult {
+  const _MatchResult();
+}
+
+/// The matcher ranked the evidence.
+final class _Matched extends _MatchResult {
+  const _Matched(this.outcome);
+
+  final RecognitionOutcome<InspectionEvidence> outcome;
+}
+
+/// No catalog index was available.
+final class _NoIndex extends _MatchResult {
+  const _NoIndex();
+}
+
+/// The scan is no longer current.
+final class _MatchAbandoned extends _MatchResult {
+  const _MatchAbandoned();
+}
+
+/// The cached title index of one catalog snapshot; a failed build is null.
+final class _IndexEntry {
+  _IndexEntry(this.snapshot, this.index);
+
+  final CatalogSnapshot snapshot;
+  final Future<TitleMatchIndex?> index;
 }
 
 /// Owns live scanning for the app: the switch, the activation life of the
@@ -1252,7 +1373,9 @@ class ScanCoordinator extends ChangeNotifier {
     String? runtimeDirectory,
     this.closeTimeout = const Duration(milliseconds: 2500),
   }) : runtimeDirectory =
-           runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path;
+           runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path {
+    catalog.addListener(_syncIndex);
+  }
 
   /// The settings the switch saves through.
   final SettingsController settings;
@@ -1275,6 +1398,9 @@ class ScanCoordinator extends ChangeNotifier {
   /// The most any one close is awaited before it counts as incomplete.
   final Duration closeTimeout;
 
+  /// How many published scans [recent] keeps.
+  static const int recentLimit = 10;
+
   final ScanMarkerLoader _markerLoader;
   final ScanCaptureFactory _captureFactory;
   final ScanVisionFactory _visionFactory;
@@ -1288,6 +1414,23 @@ class ScanCoordinator extends ChangeNotifier {
   bool _started = false;
   int _intent = 0;
   Future<bool>? _onSave;
+
+  ScanPhase _phase = ScanPhase.idle;
+  ScanReport? _latest;
+  final List<ScanReport> _recent = [];
+
+  /// Advances when a newer trigger, a stop or a loss supersedes the scans in
+  /// flight; a scan started under an older value is never published.
+  int _scanGeneration = 0;
+  int _nextReportId = 1;
+  _Scan? _active;
+  _Pending? _pending;
+  _IndexEntry? _index;
+
+  /// The match still running off the UI isolate, if any. Matches are
+  /// serialised: a new one starts only after this one ends, even when its scan
+  /// was superseded and its result will be discarded.
+  Future<void>? _runningMatch;
 
   bool _switchOn = false;
   String? _error;
@@ -1317,6 +1460,16 @@ class ScanCoordinator extends ChangeNotifier {
 
   /// The QPC clock, once the UI-side platform has opened; else null.
   ScanClock? get clock => _platform?.clock;
+
+  /// The phase of the scan in flight, or [ScanPhase.idle].
+  ScanPhase get phase => _phase;
+
+  /// The latest published scan, with its crop bytes, or null.
+  ScanReport? get latest => _latest;
+
+  /// The most recent published scans, newest first, at most [recentLimit].
+  /// Each is a summary without crop bytes.
+  List<ScanReport> get recent => UnmodifiableListView(_recent);
 
   /// Completes when every activation or stop queued so far has finished.
   Future<void> get settled async {
@@ -1402,6 +1555,7 @@ class ScanCoordinator extends ChangeNotifier {
 
   Future<void> _dispose() async {
     _disposed = true;
+    catalog.removeListener(_syncIndex);
     _stop();
     await _chain.timeout(closeTimeout * 2, onTimeout: () {});
     final platform = _platform;
@@ -1445,6 +1599,7 @@ class ScanCoordinator extends ChangeNotifier {
     final a = _Activation();
     _current = a;
     _workerWarning = null;
+    _syncIndex();
     _set(LiveScanState.starting);
     _enqueue(() => _runStart(a));
   }
@@ -1455,6 +1610,8 @@ class ScanCoordinator extends ChangeNotifier {
   void _stop() {
     final a = _current;
     _current = null;
+    _abandonScans();
+    _index = null;
     if (a == null) {
       if (_state != LiveScanState.off) _set(LiveScanState.off);
       return;
@@ -1540,6 +1697,7 @@ class ScanCoordinator extends ChangeNotifier {
   Future<void> _fail(_Activation a, ScanFailure failure) async {
     if (_stale(a)) return;
     a.retired = true;
+    _abandonScans();
     _unhook(a);
     _set(LiveScanState.unavailable, failure);
     await _closeServices(a);
@@ -1639,6 +1797,8 @@ class ScanCoordinator extends ChangeNotifier {
       await _fail(a, scanFailureFromTrigger(hookFailure));
       return;
     }
+    a.clock = platform.clock;
+    a.qpcFrequency = platform.clock.qpcFrequency();
     a.hookInstalled = true;
     a.sub = platform.trigger.triggers.listen(_onTrigger);
     _set(LiveScanState.ready);
@@ -1669,7 +1829,526 @@ class ScanCoordinator extends ChangeNotifier {
     await _fail(a, reason);
   }
 
-  /// Handles one mouse-release trigger while the pipeline is ready. The scan
-  /// flow (task group 7) fills this in.
-  void _onTrigger(ScanTrigger trigger) {}
+  // -------------------------------------------------------------------------
+  // Scan flow
+  // -------------------------------------------------------------------------
+
+  /// Whether live scanning is switched on and the coordinator is alive.
+  bool get _liveOn => _switchOn && !_disposed;
+
+  /// Whether [s] was superseded or its activation ended; such a scan
+  /// publishes nothing and releases any frame it holds.
+  bool _dead(_Scan s) =>
+      s.generation != _scanGeneration || _stale(s.activation) || _disposed;
+
+  int _now(_Activation a) => a.clock?.qpcNow() ?? 0;
+
+  /// Handles one mouse-release trigger while the pipeline is ready.
+  ///
+  /// With no scan in flight the trigger starts one. Otherwise it supersedes
+  /// the scan in flight, and how the new scan starts depends on the stage the
+  /// old one is in: capture cannot be cancelled, so the newest trigger waits
+  /// in the pending slot for the capture answer; a vision request is
+  /// invalidated and the new scan starts now; a match is left to finish and
+  /// its result is discarded.
+  void _onTrigger(ScanTrigger trigger) {
+    final a = _current;
+    if (_disposed || a == null || a.retired) return;
+    final active = _active;
+    if (active == null) {
+      _begin(a, trigger, replaced: 0);
+      return;
+    }
+    active.supersedingTriggers++;
+    _scanGeneration++;
+    switch (active.stage) {
+      case _Stage.capture:
+        final waiting = _pending;
+        _pending = _Pending(
+          trigger,
+          waiting == null ? 0 : waiting.replaced + 1,
+        );
+      case _Stage.vision:
+        a.vision?.invalidate();
+        _begin(a, trigger, replaced: 0);
+      case _Stage.matching:
+        _begin(a, trigger, replaced: 0);
+    }
+  }
+
+  void _begin(_Activation a, ScanTrigger trigger, {required int replaced}) {
+    final scan = _Scan(
+      activation: a,
+      trigger: trigger,
+      id: _nextReportId++,
+      generation: _scanGeneration,
+      replacedTriggers: replaced,
+    );
+    _active = scan;
+    _setPhase(scan, ScanPhase.targeted);
+    unawaited(_run(scan));
+  }
+
+  /// Drops the scan in flight and the pending trigger, as a stop or a loss
+  /// does. The scan's own flow notices at its next hand-off, releases what it
+  /// holds and logs it as superseded.
+  void _abandonScans() {
+    _scanGeneration++;
+    _active = null;
+    _pending = null;
+    _phase = ScanPhase.idle;
+  }
+
+  Future<void> _run(_Scan s) async {
+    try {
+      await _flow(s);
+    } on Object catch (error, stack) {
+      debugPrint('Scan flow failed: $error\n$stack');
+      _endSuperseded(s);
+    } finally {
+      _retire(s);
+    }
+  }
+
+  /// Frees the in-flight slot of a finished scan and starts the pending
+  /// trigger, if one waited for it.
+  void _retire(_Scan s) {
+    if (!identical(_active, s)) return;
+    _active = null;
+    final next = _pending;
+    _pending = null;
+    final a = _current;
+    if (next == null || a == null || a.retired || _disposed) return;
+    _begin(a, next.trigger, replaced: next.replaced);
+  }
+
+  void _setPhase(_Scan s, ScanPhase phase) {
+    if (_dead(s) || _phase == phase) return;
+    _phase = phase;
+    _notify();
+  }
+
+  Future<void> _flow(_Scan s) async {
+    // Targeted pass.
+    ScanFailure? targetedFailure;
+    OutcomeRejected<InspectionEvidence>? targetedRejection;
+    switch (await _runPass(s, ScanPass.targeted)) {
+      case _PassAbandoned():
+        return _endSuperseded(s);
+      case _PassFailed(:final failure):
+        s.targetedReport = PassReport(failure: failure);
+        if (!_fallsBackAfterCapture(failure.code)) {
+          return _finish(s, ScanFailed(failure));
+        }
+        targetedFailure = failure;
+      case _PassRecognised(:final recognition):
+        s.targetedRecognition = recognition;
+        s.targetedReport = PassReport(recognition: recognition);
+        switch (await _match(s, ScanPass.targeted, targeted: recognition)) {
+          case _MatchAbandoned():
+            return _endSuperseded(s);
+          case _NoIndex():
+            return _finish(
+              s,
+              const ScanRejected(reason: ScanRejectReason.catalogUnavailable),
+            );
+          case _Matched(:final outcome):
+            switch (outcome) {
+              case OutcomeAccepted<InspectionEvidence>():
+                return _finish(
+                  s,
+                  ScanAccepted(itemId: outcome.match.bestId!, outcome: outcome),
+                );
+              case OutcomeRejected<InspectionEvidence>(:final reason):
+                if (!_fallsBackAfterRejection(reason)) {
+                  return _finish(s, _rejection(outcome));
+                }
+                targetedRejection = outcome;
+            }
+        }
+    }
+
+    // Fallback pass: the phase is published before the capture request.
+    _setPhase(s, ScanPhase.fallback);
+    switch (await _runPass(s, ScanPass.fallback)) {
+      case _PassAbandoned():
+        return _endSuperseded(s);
+      case _PassFailed(:final failure):
+        s.fallbackReport = PassReport(failure: failure);
+        if (targetedRejection != null) {
+          return _finish(
+            s,
+            _rejection(targetedRejection, fallbackFailure: failure),
+          );
+        }
+        return _finish(
+          s,
+          ScanFailed(failure, targetedFailure: targetedFailure),
+        );
+      case _PassRecognised(:final recognition):
+        s.fallbackRecognition = recognition;
+        s.fallbackReport = PassReport(recognition: recognition);
+        final matched = await _match(
+          s,
+          ScanPass.fallback,
+          targeted: s.targetedRecognition,
+          fullClient: recognition,
+        );
+        switch (matched) {
+          case _MatchAbandoned():
+            return _endSuperseded(s);
+          case _NoIndex():
+            return _finish(
+              s,
+              const ScanRejected(reason: ScanRejectReason.catalogUnavailable),
+            );
+          case _Matched(:final outcome):
+            return _finish(s, switch (outcome) {
+              OutcomeAccepted<InspectionEvidence>() => ScanAccepted(
+                itemId: outcome.match.bestId!,
+                outcome: outcome,
+              ),
+              OutcomeRejected<InspectionEvidence>() => _rejection(outcome),
+            });
+        }
+    }
+  }
+
+  ScanRejected _rejection(
+    OutcomeRejected<InspectionEvidence> outcome, {
+    ScanFailure? fallbackFailure,
+  }) => ScanRejected(
+    reason: ScanRejectReason.fromOutcome(outcome.reason),
+    outcome: outcome,
+    fallbackFailure: fallbackFailure,
+  );
+
+  /// The closed list of targeted rejections that run a fallback pass.
+  static bool _fallsBackAfterRejection(OutcomeRejectReason reason) =>
+      switch (reason) {
+        OutcomeRejectReason.emptyCatalog ||
+        OutcomeRejectReason.catalogModeMismatch => false,
+        OutcomeRejectReason.noMarker ||
+        OutcomeRejectReason.matcherFailed ||
+        OutcomeRejectReason.titleTooShort ||
+        OutcomeRejectReason.uiChrome ||
+        OutcomeRejectReason.belowSimilarity ||
+        OutcomeRejectReason.ambiguous => true,
+      };
+
+  /// The closed list of targeted capture failures that run a fallback pass.
+  static bool _fallsBackAfterCapture(ScanFailureCode code) => switch (code) {
+    ScanFailureCode.roiOutsideClient ||
+    ScanFailureCode.blankCapture ||
+    ScanFailureCode.targetChanged => true,
+    _ => false,
+  };
+
+  /// Captures and recognises one pass of [s].
+  Future<_PassResult> _runPass(_Scan s, ScanPass pass) async {
+    final a = s.activation;
+    final (mode, kind) = switch (pass) {
+      ScanPass.targeted => (CaptureMode.targeted, InspectionFrameKind.targeted),
+      ScanPass.fallback => (
+        CaptureMode.fallback,
+        InspectionFrameKind.fullClient,
+      ),
+    };
+    s.stage = _Stage.capture;
+    s.stamp(pass, (t) => t.copyWith(captureRequested: _now(a)));
+    final CaptureResult result;
+    try {
+      result = await a.capture!.capture(s.trigger.event, mode);
+    } on Object catch (error) {
+      s.stamp(pass, (t) => t.copyWith(captureAnswered: _now(a)));
+      if (_dead(s)) return const _PassAbandoned();
+      return _PassFailed(
+        ScanFailure(
+          ScanFailureCode.captureFailed,
+          'The capture request failed: $error',
+        ),
+      );
+    }
+    s.stamp(pass, (t) => t.copyWith(captureAnswered: _now(a)));
+    switch (result) {
+      case CaptureRejected(:final failure):
+        if (_dead(s)) return const _PassAbandoned();
+        return _PassFailed(scanFailureFromCapture(failure));
+      case CaptureSuccess(:final frame):
+        if (_dead(s)) {
+          frame.release();
+          return const _PassAbandoned();
+        }
+        final metadata = frame.metadata;
+        s.stamp(
+          pass,
+          (t) => t.copyWith(
+            acquireStart: metadata.qpcBefore,
+            acquireEnd: metadata.qpcAfter,
+          ),
+        );
+        s.stage = _Stage.vision;
+        final VisionAnswer<InspectionRecognition> answer;
+        try {
+          // The vision port owns the frame from here on.
+          answer = await a.vision!.submitFrame(
+            frame,
+            InspectionRequest(
+              kind: kind,
+              clientWidth: metadata.clientWidth,
+              clientHeight: metadata.clientHeight,
+            ),
+          );
+        } on Object catch (error) {
+          frame.release();
+          if (_dead(s)) return const _PassAbandoned();
+          return _PassFailed(
+            ScanFailure(
+              ScanFailureCode.visionJobFailed,
+              'The recognition request failed: $error',
+            ),
+          );
+        }
+        final (int? started, int? finished) = switch (answer) {
+          VisionDelivered(:final startedQpc, :final finishedQpc) ||
+          VisionJobFailed(:final startedQpc, :final finishedQpc) ||
+          VisionFailureAnswer(
+            :final startedQpc,
+            :final finishedQpc,
+          ) => (startedQpc, finishedQpc),
+          VisionNotDelivered() => (null, null),
+        };
+        s.stamp(
+          pass,
+          (t) => t.copyWith(
+            visionSubmitted: answer.submittedQpc,
+            jobStarted: started,
+            jobFinished: finished,
+          ),
+        );
+        if (_dead(s)) return const _PassAbandoned();
+        if (answer case VisionDelivered(:final result)) {
+          return _PassRecognised(result);
+        }
+        return _PassFailed(scanFailureFromVision(answer)!);
+    }
+  }
+
+  /// Ranks the recognition of [pass] against the current catalog index.
+  ///
+  /// A match never starts while an earlier one still runs, whether or not its
+  /// scan is still current. The index is the one current when this match
+  /// starts, awaited if it is still being built.
+  Future<_MatchResult> _match(
+    _Scan s,
+    ScanPass pass, {
+    required InspectionRecognition? targeted,
+    InspectionRecognition? fullClient,
+  }) async {
+    final a = s.activation;
+    s.stage = _Stage.matching;
+    for (
+      var running = _runningMatch;
+      running != null;
+      running = _runningMatch
+    ) {
+      await running;
+      if (_dead(s)) return const _MatchAbandoned();
+    }
+    if (_dead(s)) return const _MatchAbandoned();
+    _syncIndex();
+    final entry = _index;
+    final index = entry == null ? null : await entry.index;
+    if (_dead(s)) return const _MatchAbandoned();
+    if (index == null) return const _NoIndex();
+
+    final mode = catalog.mode;
+    s.stamp(pass, (t) => t.copyWith(matchStarted: _now(a)));
+    final run = Future<RecognitionOutcome<InspectionEvidence>>.sync(
+      () => matcher(
+        index,
+        targeted: targeted,
+        fullClient: fullClient,
+        mode: mode,
+      ),
+    );
+    late final Future<void> done;
+    done = run.then<void>((_) {}, onError: (Object _) {}).whenComplete(() {
+      if (identical(_runningMatch, done)) _runningMatch = null;
+    });
+    _runningMatch = done;
+    RecognitionOutcome<InspectionEvidence> outcome;
+    try {
+      outcome = await run;
+    } on Object catch (error) {
+      debugPrint('Scan matcher failed: $error');
+      outcome = OutcomeRejected<InspectionEvidence>(
+        OutcomeRejectReason.matcherFailed,
+        targetedBestMarkerScore: targeted == null
+            ? null
+            : recognitionInputFor(targeted).bestMarkerScore,
+        fallbackBestMarkerScore: fullClient == null
+            ? null
+            : recognitionInputFor(fullClient).bestMarkerScore,
+      );
+    }
+    s.stamp(pass, (t) => t.copyWith(matchFinished: _now(a)));
+    if (_dead(s)) return const _MatchAbandoned();
+    s.catalogMode = index.mode;
+    s.catalogRevision = index.revision;
+    return _Matched(outcome);
+  }
+
+  /// Rebuilds the title index when the catalog snapshot changed, only while
+  /// live scanning is on. A failed build leaves a null entry that the next
+  /// snapshot change replaces.
+  void _syncIndex() {
+    final snapshot = catalog.snapshot;
+    if (!_liveOn || snapshot == null) {
+      _index = null;
+      return;
+    }
+    if (identical(_index?.snapshot, snapshot)) return;
+    _index = _IndexEntry(snapshot, _buildIndex(snapshot));
+  }
+
+  Future<TitleMatchIndex?> _buildIndex(CatalogSnapshot snapshot) async {
+    try {
+      return await indexBuilder(snapshot);
+    } on Object catch (error) {
+      debugPrint('Scan title index build failed: $error');
+      return null;
+    }
+  }
+
+  /// Ends [s] with [end]: logs it and publishes it while it is current, else
+  /// logs it as superseded.
+  void _finish(_Scan s, ScanEnd end) {
+    if (s.ended) return;
+    if (_dead(s) || !_liveOn) {
+      _endSuperseded(s);
+      return;
+    }
+    s.ended = true;
+    final a = s.activation;
+    final winner = switch (end) {
+      ScanAccepted(:final outcome) => outcome.evidence,
+      ScanRejected(:final outcome) => outcome?.evidence,
+      ScanFailed() || ScanSuperseded() => null,
+    };
+    final report = _report(s, end, winner: winner, published: _now(a));
+    _log(a, report);
+    _publish(report);
+    // A worker that reports itself unavailable ends the activation.
+    final lost = [s.targetedReport?.failure, s.fallbackReport?.failure]
+        .whereType<ScanFailure>()
+        .where(
+          (f) =>
+              f.code == ScanFailureCode.captureUnavailable ||
+              f.code == ScanFailureCode.visionUnavailable,
+        );
+    if (lost.isNotEmpty) _enqueue(() => _fail(a, lost.last));
+  }
+
+  void _endSuperseded(_Scan s) {
+    if (s.ended) return;
+    s.ended = true;
+    final report = _report(s, const ScanSuperseded(), winner: null);
+    _log(s.activation, report);
+  }
+
+  ScanReport _report(
+    _Scan s,
+    ScanEnd end, {
+    required InspectionEvidence? winner,
+    int? published,
+  }) {
+    final superseded = end is ScanSuperseded;
+    final winningPass = _winningPass(
+      winner,
+      s.targetedRecognition,
+      s.fallbackRecognition,
+    );
+    PassTimeline? stamped(
+      ScanPass pass,
+      PassTimeline? timeline,
+      InspectionRecognition? recognition,
+    ) => timeline == null || recognition == null
+        ? timeline
+        : timeline.withEvidenceStamps(
+            recognition,
+            winner: winningPass == pass ? winner : null,
+          );
+    return ScanReport(
+      id: s.id,
+      utc: DateTime.now().toUtc(),
+      end: end,
+      winningPass: winningPass,
+      targeted: s.targetedReport ?? (superseded ? const PassReport() : null),
+      fallback:
+          s.fallbackReport ??
+          (superseded && s.fallbackTimeline != null
+              ? const PassReport()
+              : null),
+      catalogMode: s.catalogMode,
+      catalogRevision: s.catalogRevision,
+      timeline: ScanTimeline(
+        trigger: s.trigger.event.qpc,
+        published: published,
+        targeted: stamped(
+          ScanPass.targeted,
+          s.targetedTimeline,
+          s.targetedRecognition,
+        ),
+        fallback: stamped(
+          ScanPass.fallback,
+          s.fallbackTimeline,
+          s.fallbackRecognition,
+        ),
+      ),
+      droppedTriggers: s.trigger.droppedBefore,
+      supersededTriggers: s.replacedTriggers + s.supersedingTriggers,
+    );
+  }
+
+  /// The pass whose evidence holds [winner], preferring the targeted pass on a
+  /// tie, or null when there is no winner.
+  static ScanPass? _winningPass(
+    InspectionEvidence? winner,
+    InspectionRecognition? targeted,
+    InspectionRecognition? fallback,
+  ) {
+    if (winner == null) return null;
+    bool holds(InspectionRecognition? recognition) => switch (recognition) {
+      InspectionRecognised(:final evidence) => evidence.any(
+        (e) =>
+            e.markerX == winner.markerX &&
+            e.markerY == winner.markerY &&
+            e.markerScore == winner.markerScore &&
+            e.text == winner.text,
+      ),
+      InspectionRejected() || null => false,
+    };
+    if (holds(targeted)) return ScanPass.targeted;
+    if (holds(fallback)) return ScanPass.fallback;
+    return fallback != null ? ScanPass.fallback : ScanPass.targeted;
+  }
+
+  void _log(_Activation a, ScanReport report) {
+    try {
+      appendLogLine(report.toLogLine(a.qpcFrequency));
+    } on Object catch (error) {
+      debugPrint('Scan log line failed: $error');
+    }
+  }
+
+  void _publish(ScanReport report) {
+    _phase = ScanPhase.idle;
+    _latest = report;
+    _recent.insert(0, report.withoutCrops());
+    while (_recent.length > recentLimit) {
+      _recent.removeLast();
+    }
+    _notify();
+  }
 }
