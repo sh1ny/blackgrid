@@ -96,7 +96,7 @@ Test conventions (AGENTS.md):
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0013-scan-pipeline-coordination.md` in MADR-short form (Status accepted, Date, Supersedes none, Context, Decision, Rejected alternatives, Consequences). It records design D1-D10:
+- [x] 1.1 Write `docs/adr/0013-scan-pipeline-coordination.md` in MADR-short form (Status accepted, Date, Supersedes none, Context, Decision, Rejected alternatives, Consequences). It records design D1-D10:
   - one app-scoped coordinator;
   - start order template → vision → hook;
   - session intent owned by the coordinator;
