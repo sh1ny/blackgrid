@@ -122,7 +122,7 @@ Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documenta
 
 Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentation`, `dart-run-static-analysis`.
 
-- [ ] 6.1 Add `unorm_dart: 0.3.3` (exact pin) to `pubspec.yaml` dependencies and run `flutter pub get` through mise. Verify: `pubspec.lock` pins 0.3.3, and `mise run analyze` is clean.
+- [x] 6.1 Add `unorm_dart: 0.3.3` (exact pin) to `pubspec.yaml` dependencies and run `flutter pub get` through mise. Verify: `pubspec.lock` pins 0.3.3, and `mise run analyze` is clean.
 - [ ] 6.2 Write failing tests in `test/domain/title_matching_test.dart` for every `title_matching_test.dart` row in the test map, except ranking. Use small synthetic `CatalogSnapshot`s; similarity scenarios that name scores use crafted strings whose exact float32 scores are asserted. Verify they fail for missing code.
 - [ ] 6.3 Implement `lib/domain/title_matching.dart` (design D7): `normaliseTitle`, `RecognitionGates` (float32 constants), similarity with `Float32List` rounding, `TitleMatchIndex.build`, the quantity token with OCR confusions, the confirming matcher with Cyrillic-capital mapping and its .85 chrome check, the primary matcher with duplicate handling, and the near-tie rule. The result is sealed `TitleMatch` (`TitleAccepted`/`TitleRejected`). Verify: the 6.2 tests pass (flip green).
 - [ ] 6.4 Add a qualification-tagged benchmark `test/qualification/title_matching_benchmark_test.dart`: 10k synthetic items; p95 per-title match ≤ 20 ms; index build and isolate copy time recorded. Verify: it passes, with timings printed.
