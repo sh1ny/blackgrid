@@ -128,7 +128,10 @@ CorpusCase _parseCase(int index, Object? raw, Set<String> seen) {
   final where = 'case #$index';
   if (raw is! Map<String, Object?>) _bad('$where must be an object');
   final id = _field<String>(raw, 'id', where);
-  if (id.isEmpty || !seen.add(id)) _bad('$where: id "$id" is not unique');
+  // Ids name crop files, which collide without case on Windows.
+  if (id.isEmpty || !seen.add(id.toLowerCase())) {
+    _bad('$where: id "$id" is not unique (compared without case)');
+  }
   final client = _field<Map<String, Object?>>(raw, 'client', id);
   final width = _field<int>(client, 'width', id);
   final height = _field<int>(client, 'height', id);

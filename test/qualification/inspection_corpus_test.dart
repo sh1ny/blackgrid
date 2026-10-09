@@ -181,9 +181,10 @@ void main() {
           }
           final path = '${cropDir.path}${Platform.pathSeparator}$id.png';
           guardWrite(path);
-          final file = File(path)
-            ..writeAsBytesSync(cropToPng(e.crop, e.cropWidth, e.cropHeight));
-          return file.path;
+          // Replaced through a temp file, so a hard link at the crop path is
+          // replaced rather than written through to the input it shares.
+          writeBytesViaTemp(path, cropToPng(e.crop, e.cropWidth, e.cropHeight));
+          return path;
         }
 
         for (final c in cases) {

@@ -118,6 +118,7 @@ void main() {
       };
       final bad = <String, List<Map<String, Object?>>>{
         'duplicate id': [base(), base()],
+        'id colliding without case': [base(), base()..['id'] = 'A'],
         'unknown kind': [base()..['kind'] = 'wide'],
         'missing cursor': [base()..remove('cursor')],
         'cursor outside': [

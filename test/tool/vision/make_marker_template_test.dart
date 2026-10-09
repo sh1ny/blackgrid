@@ -7,6 +7,19 @@ import 'package:image/image.dart' as img;
 
 import '../../../tool/vision/make_marker_template.dart';
 
+/// Creates [link] as a hard link to [target] with `mklink /H`, which needs no
+/// privilege on NTFS.
+void _hardLink(String link, String target) {
+  final r = Process.runSync('cmd', [
+    '/c',
+    'mklink',
+    '/H',
+    link.replaceAll('/', r'\'),
+    target.replaceAll('/', r'\'),
+  ]);
+  if (r.exitCode != 0) fail('mklink /H failed: ${r.stdout}${r.stderr}');
+}
+
 /// Writes a sparse PNG: all zero except a textured patch at (4, 6).
 File writeScreenshot(Directory dir, String name, int width, int height) {
   final image = img.Image(width: width, height: height, numChannels: 3);
@@ -107,6 +120,28 @@ void main() {
     expect(result.err, contains('1080p'));
     expect(out.existsSync() && out.listSync().isNotEmpty, isFalse);
   });
+
+  test(
+    'outputs hard-linked to the screenshot are replaced, not written through',
+    () {
+      final shot = writeScreenshot(temp, 'shot.png', 1920, 1080);
+      final before = shot.readAsBytesSync();
+      final out = Directory('${temp.path}/out')..createSync();
+      _hardLink('${out.path}/inspection_marker.gray', shot.path);
+      _hardLink('${out.path}/inspection_marker.json', shot.path);
+      final result = runTool(shot, '4,6', out);
+      expect(result.code, 0, reason: result.err);
+      expect(shot.readAsBytesSync(), before);
+      expect(File('${out.path}/inspection_marker.gray').lengthSync(), 28 * 28);
+      expect(
+        jsonDecode(
+          File('${out.path}/inspection_marker.json').readAsStringSync(),
+        ),
+        containsPair('format', 1),
+      );
+    },
+    skip: Platform.isWindows ? false : 'uses mklink /H',
+  );
 
   test('an output that would overwrite the screenshot exits 1', () {
     // The screenshot carries an output's name inside the output directory.

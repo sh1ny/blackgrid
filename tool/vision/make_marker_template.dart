@@ -261,8 +261,10 @@ int run(List<String> args, {StringSink? out, StringSink? err}) {
     }
   }
   final dir = Directory(outDir)..createSync(recursive: true);
-  File(grayPath).writeAsBytesSync(gray);
-  File(jsonPath).writeAsBytesSync(utf8.encode('$json\n'));
+  // Replaced through temp files, so a hard link at either output is
+  // replaced rather than written through to the file it shares.
+  writeBytesViaTemp(grayPath, gray);
+  writeViaTemp(jsonPath, '$json\n');
   stdoutSink.writeln(
     'wrote ${dir.path} ${markerSide}x$markerSide from ${side}x$side '
     'footprint at ($ox,$oy)',

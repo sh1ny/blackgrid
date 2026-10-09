@@ -3,6 +3,19 @@ import 'dart:io';
 import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// Creates [link] as a hard link to [target] with `mklink /H`, which needs no
+/// privilege on NTFS.
+void _hardLink(String link, String target) {
+  final r = Process.runSync('cmd', [
+    '/c',
+    'mklink',
+    '/H',
+    link.replaceAll('/', r'\'),
+    target.replaceAll('/', r'\'),
+  ]);
+  if (r.exitCode != 0) fail('mklink /H failed: ${r.stdout}${r.stderr}');
+}
+
 void main() {
   group('unsafeOutputReason', () {
     late Directory dir;
@@ -71,6 +84,19 @@ void main() {
         contains('must not be modified'),
       );
     });
+
+    test(
+      'writeBytesViaTemp replaces a hard link instead of writing through it',
+      () {
+        final output = '${dir.path}/y.txt';
+        _hardLink(output, input);
+        writeBytesViaTemp(output, [1, 2, 3]);
+        expect(File(output).readAsBytesSync(), [1, 2, 3]);
+        expect(File(input).readAsStringSync(), 'input');
+        expect(File('$output.tmp').existsSync(), isFalse);
+      },
+      skip: Platform.isWindows ? false : 'uses mklink /H',
+    );
 
     test('an output below a link is refused', () {
       final real = Directory('${dir.path}/real')..createSync();
