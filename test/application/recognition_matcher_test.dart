@@ -161,6 +161,40 @@ void main() {
       },
     );
 
+    test(
+      'ranks every full-client peak when there is no targeted result',
+      () async {
+        final index = await buildTitleMatchIndexOffUi(_snapshot());
+        final outcome = await matchRecognitionOffUi(
+          index,
+          targeted: null,
+          fullClient: _recognised(InspectionFrameKind.fullClient, [
+            _evidence('Steel Hex Boltz', score: 0.95),
+            _evidence('Salewa First Aid Kit', score: 0.85),
+          ], best: 0.95),
+          mode: GameMode.pvp,
+        );
+        final accepted = outcome as OutcomeAccepted<InspectionEvidence>;
+        expect(accepted.match.bestId, 'kit');
+        expect(accepted.evidence.text, 'Salewa First Aid Kit');
+      },
+    );
+
+    test('no targeted result and no peaks is noMarker with no targeted '
+        'score', () async {
+      final index = await buildTitleMatchIndexOffUi(_snapshot());
+      final outcome = await matchRecognitionOffUi(
+        index,
+        targeted: null,
+        fullClient: _recognised(InspectionFrameKind.fullClient, [], best: 0.4),
+        mode: GameMode.pvp,
+      );
+      final rejected = outcome as OutcomeRejected<InspectionEvidence>;
+      expect(rejected.reason, OutcomeRejectReason.noMarker);
+      expect(rejected.targetedBestMarkerScore, isNull);
+      expect(rejected.fallbackBestMarkerScore, 0.4);
+    });
+
     test('a rejected targeted result with no fallback is noMarker with its '
         'score', () async {
       final index = await buildTitleMatchIndexOffUi(_snapshot());

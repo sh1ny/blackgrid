@@ -27,8 +27,8 @@ const String rejectOutcome = 'reject';
 /// The corpus subdirectory the run writes its report and crops into.
 const String corpusOutputDir = 'out';
 
-/// The first of [inputs], paths relative to [corpusDir], that lies inside
-/// its [corpusOutputDir] (or is it), or null when none does.
+/// The first of [inputs], paths relative to [corpusDir], that is its
+/// [corpusOutputDir] or lies inside it, or null when none does.
 ///
 /// Each input is compared canonically through `unsafeOutputReason`: links and
 /// junctions are resolved, `.` and `..` segments collapse, and case is ignored
@@ -260,10 +260,11 @@ typedef CorpusRecogniser = Future<TimedRecognition> Function(
   InspectionFrameKind kind,
 );
 
-/// Ranks the evidence of one case; `fullClient` is null before a fallback.
+/// Ranks the evidence of one case. `targeted` is null for a full-client
+/// case; `fullClient` is null before a fallback.
 typedef CorpusMatcher =
     Future<RecognitionOutcome<InspectionEvidence>> Function({
-      required InspectionRecognition targeted,
+      required InspectionRecognition? targeted,
       InspectionRecognition? fullClient,
     });
 
@@ -375,8 +376,8 @@ final class CaseReport {
 /// Runs one case: the declared recognition, then, for a targeted case that is
 /// not accepted, the full-client recognition as the fallback.
 ///
-/// A full-client case is matched as the primary result, so the best accepted
-/// peak wins.
+/// A full-client case is matched as full-client evidence with no targeted
+/// result, so every peak is ranked and the best accepted one wins.
 Future<CaseReport> evaluateCase(
   CorpusCase corpusCase, {
   required CorpusRecogniser recognise,
@@ -384,7 +385,9 @@ Future<CaseReport> evaluateCase(
   required CropWriter writeCrop,
 }) async {
   final first = await recognise(corpusCase, corpusCase.kind);
-  var outcome = await match(targeted: first.result);
+  var outcome = corpusCase.kind == InspectionFrameKind.fullClient
+      ? await match(targeted: null, fullClient: first.result)
+      : await match(targeted: first.result);
   TimedRecognition? fallback;
   var fullClientElapsed = corpusCase.kind == InspectionFrameKind.fullClient
       ? first.elapsed

@@ -47,6 +47,11 @@ String? unsafeOutputReason(
 }
 
 /// Absolute path with the deepest existing ancestor's links resolved.
+///
+/// The missing tail is kept lexically. `.` and `..` segments inside it are
+/// still collapsed because Win32 normalises the path before `typeSync` and
+/// `resolveSymbolicLinksSync` see it, so `missing/../x` is found as `x`.
+/// `output_path_guard_test.dart` pins this for the shapes the guard relies on.
 String _canonical(String path) {
   var head = File(path).absolute.path;
   final tail = <String>[];

@@ -358,6 +358,55 @@ void main() {
       expect((report['baseline']! as Map)['passed'], isTrue);
       expect(() => jsonEncode(report), returnsNormally);
     });
+
+    test('a full-client case ranks every peak, not the first', () async {
+      final c = parseCorpus(
+        _corpusJson(
+          cases: [
+            {
+              'id': 'full',
+              'image': 'full.png',
+              'client': {'width': 1920, 'height': 1080},
+              'kind': 'fullClient',
+              'expected': 'kit',
+            },
+          ],
+        ),
+      ).single;
+      final index = await buildTitleMatchIndexOffUi(_snapshot());
+      final calls = <String>[];
+      final report = await evaluateCase(
+        c,
+        recognise: (c, kind) async {
+          calls.add(kind.name);
+          return (
+            result: InspectionRecognised(
+              kind: kind,
+              scale: 1,
+              bestMarkerScore: 0.95,
+              evidence: [
+                _evidence('Steel Hex Boltz', score: 0.95),
+                _evidence('Salewa First Aid Kit', score: 0.85),
+              ],
+            ),
+            elapsed: const Duration(milliseconds: 300),
+          );
+        },
+        match: ({required targeted, fullClient}) => matchRecognitionOffUi(
+          index,
+          targeted: targeted,
+          fullClient: fullClient,
+          mode: GameMode.pvp,
+        ),
+        writeCrop: (id, evidence) async => null,
+      );
+      expect(calls, ['fullClient']);
+      expect(report.outcome, 'kit');
+      expect(report.text, 'Salewa First Aid Kit');
+      expect(report.correct, isTrue);
+      expect(report.usedFallback, isFalse);
+      expect(report.fullClientMs, 300);
+    });
   });
 
   group('inputInsideOutput', () {
@@ -394,7 +443,7 @@ void main() {
     test('an input reached through a link into out/ is named', () {
       final out = Directory('${corpus.path}/out')..createSync();
       File('${out.path}/a.png').writeAsBytesSync([1]);
-      // On Windows a directory link is a junction, which needs no privilege.
+      // Dart creates a junction or a symbolic link; either is rejected.
       Link('${corpus.path}/frames').createSync(out.path);
       expect(inputInsideOutput(corpus.path, ['frames/a.png']), 'frames/a.png');
     });
