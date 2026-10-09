@@ -125,7 +125,7 @@ Test conventions (AGENTS.md):
 
 ## 3. Settings key and log location
 
-- [ ] 3.1 Add failing tests in the existing settings tests (or `test/domain/settings_test.dart` if none):
+- [x] 3.1 Add failing tests in the existing settings tests (or `test/domain/settings_test.dart` if none):
   - `AppSettings` defaults `liveScan` to false;
   - it round-trips through `toJson`/`fromJson`;
   - a payload without `liveScan` reads as false.

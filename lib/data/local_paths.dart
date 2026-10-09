@@ -10,6 +10,9 @@ class LocalPaths {
   Directory get credentials =>
       Directory('${root.path}${Platform.pathSeparator}credentials');
 
+  /// Directory for diagnostic logs such as `scan-timings.jsonl`.
+  Directory get logs => Directory('${root.path}${Platform.pathSeparator}logs');
+
   static Future<LocalPaths> resolve() async {
     if (!Platform.isWindows) {
       throw UnsupportedError('Blackgrid supports Windows desktop only.');
@@ -23,6 +26,7 @@ class LocalPaths {
     await root.create(recursive: true);
     final result = LocalPaths(root);
     await result.credentials.create();
+    await result.logs.create();
     return result;
   }
 }
