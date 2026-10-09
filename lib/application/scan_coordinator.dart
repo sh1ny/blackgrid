@@ -1069,8 +1069,16 @@ Future<RecognitionOutcome<InspectionEvidence>> matchScanRecognition(
 );
 
 /// The default [ScanCaptureFactory]: a real capture service.
-ScanCapturePort openDefaultScanCapture() =>
-    _CaptureServicePort(CaptureService());
+ScanCapturePort openDefaultScanCapture() => scanCapturePort(CaptureService());
+
+/// The [ScanCapturePort] over [service].
+ScanCapturePort scanCapturePort(CaptureService service) =>
+    _CaptureServicePort(service);
+
+/// The [ScanVisionPort] over [service].
+ScanVisionPort scanVisionPort(
+  VisionService<InspectionRequest, InspectionRecognition> service,
+) => _VisionServicePort(service);
 
 /// The default [ScanVisionFactory]: a real vision service running the
 /// inspection recognition job over [marker].
@@ -1108,7 +1116,10 @@ final class _CaptureServicePort implements ScanCapturePort {
   Future<void> get workerExit => _service.workerExit;
 
   @override
-  ScanFailure? get unavailableReason => null;
+  ScanFailure? get unavailableReason => switch (_service.unavailableReason) {
+    null => null,
+    final reason => scanFailureFromCapture(CaptureUnavailable(reason)),
+  };
 }
 
 final class _VisionServicePort implements ScanVisionPort {
@@ -2162,7 +2173,7 @@ class ScanCoordinator extends ChangeNotifier {
     if (_dead(s)) return const _MatchAbandoned();
     if (index == null) return const _NoIndex();
 
-    final mode = catalog.mode;
+    final mode = index.mode;
     s.stamp(pass, (t) => t.copyWith(matchStarted: _now(a)));
     final run = Future<RecognitionOutcome<InspectionEvidence>>.sync(
       () => matcher(

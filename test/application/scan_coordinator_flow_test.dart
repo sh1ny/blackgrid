@@ -932,6 +932,39 @@ void main() {
       match.complete(_accepted(_ev()));
       expect((await rig.published.at(0)).end, isA<ScanAccepted>());
     });
+
+    test(
+      'a mode change while the index builds matches in the index mode',
+      () async {
+        rig = await _Rig.standalone(
+          snapshots: {
+            GameMode.pvp: _snapshot(GameMode.pvp, 'r1'),
+            GameMode.pve: _snapshot(GameMode.pve, 'r2'),
+          },
+        );
+        final hold = rig.builder.hold = Completer<void>();
+        await rig.loadCatalog(GameMode.pvp);
+        await rig.ready();
+        await rig.builder.builds.at(0);
+
+        rig.fire(1000);
+        (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
+        (await rig.vision.calls.at(0))
+            .deliver(_recognised(InspectionFrameKind.targeted, [_ev()]));
+        await pumpEventQueue();
+        expect(rig.matcher.calls.length, 0, reason: 'index not built yet');
+
+        await rig.catalog.setMode(GameMode.pve);
+        hold.complete();
+        final match = await rig.matcher.calls.at(0);
+        expect(match.index.mode, GameMode.pvp);
+        expect(match.mode, GameMode.pvp, reason: 'the awaited index decides');
+        match.complete(_accepted(_ev()));
+        final report = await rig.published.at(0);
+        expect(report.end, isA<ScanAccepted>());
+        expect(report.catalogMode, GameMode.pvp);
+      },
+    );
   });
 
   group('timings', () {

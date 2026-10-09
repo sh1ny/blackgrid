@@ -14,8 +14,6 @@ import 'dart:typed_data';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/settings_controller.dart';
-import 'package:blackgrid/data/capture/capture_failure.dart';
-import 'package:blackgrid/data/capture/capture_frame.dart';
 import 'package:blackgrid/data/capture/capture_service.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/capture/mouse_release_trigger_source.dart';
@@ -69,69 +67,6 @@ final class _HeldRecognitionJob
 VisionJob<InspectionRequest, InspectionRecognition> _heldJobFactory() =>
     const _HeldRecognitionJob();
 
-/// The real capture service behind the coordinator's port.
-final class _CapturePort implements ScanCapturePort {
-  _CapturePort(this.service);
-
-  final CaptureService service;
-
-  @override
-  Future<CaptureResult> capture(TriggerEvent trigger, CaptureMode mode) =>
-      service.capture(trigger, mode);
-
-  @override
-  Future<ScanFailure?> close() async {
-    final failure = await service.close();
-    return failure == null ? null : scanFailureFromCapture(failure);
-  }
-
-  @override
-  Future<void> get workerExit => service.workerExit;
-
-  @override
-  ScanFailure? get unavailableReason => null;
-}
-
-/// The real vision service behind the coordinator's port.
-final class _VisionPort implements ScanVisionPort {
-  _VisionPort(this.service);
-
-  final VisionService<InspectionRequest, InspectionRecognition> service;
-
-  @override
-  Future<ScanFailure?> start() async {
-    final failure = await service.start();
-    return failure == null ? null : scanFailureFromVisionStart(failure);
-  }
-
-  @override
-  Future<VisionAnswer<InspectionRecognition>> submitFrame(
-    CaptureFrame frame,
-    InspectionRequest request,
-  ) => service.submitFrame(frame, request);
-
-  @override
-  void invalidate() => service.invalidate();
-
-  @override
-  Future<ScanFailure?> close() async => switch (await service.close()) {
-    VisionCloseResult.closed => null,
-    VisionCloseResult.shutdownIncomplete => const ScanFailure(
-      ScanFailureCode.shutdownIncomplete,
-      'The vision worker did not stop within its drain.',
-    ),
-  };
-
-  @override
-  Future<void> get workerExit => service.workerExit;
-
-  @override
-  ScanWorkerState get state => ScanWorkerState.ready;
-
-  @override
-  ScanFailure? get unavailableReason => null;
-}
-
 class _EmptyStore implements CatalogStore {
   @override
   Future<CatalogSnapshot?> loadCatalog(GameMode mode) async => null;
@@ -182,7 +117,7 @@ final class _Rig {
           closeDrain: closeDrain,
         );
         captureServices.add(service);
-        return _CapturePort(service);
+        return scanCapturePort(service);
       },
       visionFactory: (marker, directory) {
         final service = VisionService<InspectionRequest, InspectionRecognition>(
@@ -197,7 +132,7 @@ final class _Rig {
           closeDrain: closeDrain,
         );
         visionServices.add(service);
-        return _VisionPort(service);
+        return scanVisionPort(service);
       },
       platformFactory: () => platform = FakeScanPlatform(events),
     );

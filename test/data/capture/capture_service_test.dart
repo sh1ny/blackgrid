@@ -194,11 +194,13 @@ void main() {
     'worker that cannot open the platform makes the service unavailable',
     () async {
       final broken = makeService(factory: failingFactory);
+      expect(broken.unavailableReason, isNull);
       final result = failureOf(
         await broken.capture(holdableTrigger, CaptureMode.targeted),
       );
       expect(result, isA<CaptureUnavailable>());
       expect((result as CaptureUnavailable).reason, contains('cannot open'));
+      expect(broken.unavailableReason, contains('cannot open'));
       expect(
         failureOf(await broken.capture(holdableTrigger, CaptureMode.targeted)),
         isA<CaptureUnavailable>(),

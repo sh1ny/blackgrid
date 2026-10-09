@@ -71,6 +71,10 @@ final class CaptureService {
   /// Waits until the worker isolate has exited.
   Future<void> get workerExit => _exitSignal.future;
 
+  /// Why the service is unavailable, or null while it is not.
+  String? get unavailableReason =>
+      _state == _State.unavailable ? _unavailableReason : null;
+
   /// Behaves as if the worker reported an error, without touching the worker.
   void debugReportWorkerError(String reason) => _markUnavailable(reason);
 
