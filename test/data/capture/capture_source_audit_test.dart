@@ -89,6 +89,21 @@ List<String>? auditSources(Directory dir) {
   return findings;
 }
 
+/// The one Dart file under `lib/application`, `lib/ui` and `lib/main.dart` that
+/// may import `data/capture/` or name the trigger source (ADR-0013).
+const allowedCaptureImporter = 'lib/application/scan_coordinator.dart';
+
+final _captureImport = RegExp(r'''(import|export)\s+['"][^'"]*data/capture/''');
+
+/// Whether [source] imports `data/capture/` or names the trigger source.
+bool reachesCaptureLayer(String source) =>
+    _captureImport.hasMatch(source) ||
+    source.contains('MouseReleaseTriggerSource');
+
+/// Whether the file at [path] (any separator) is the allowed importer.
+bool mayReachCaptureLayer(String path) =>
+    path.replaceAll('\\', '/') == allowedCaptureImporter;
+
 void main() {
   group('capture source audit', () {
     test('capture sources call no process-access or input APIs', () {
@@ -139,7 +154,7 @@ void main() {
       ]);
     });
 
-    test('no startup path imports or starts the trigger source', () {
+    test('only the scan coordinator imports capture or the trigger source', () {
       final offenders = <String>[];
       final roots = <FileSystemEntity>[
         Directory('lib/application'),
@@ -161,13 +176,43 @@ void main() {
       expect(files, isNotEmpty);
       for (final file in files) {
         final text = file.readAsStringSync();
-        if (RegExp(r'''(import|export)\s+['"][^'"]*data/capture/''')
-                .hasMatch(text) ||
-            text.contains('MouseReleaseTriggerSource')) {
+        if (!mayReachCaptureLayer(file.path) && reachesCaptureLayer(text)) {
           offenders.add(file.path);
         }
       }
       expect(offenders, isEmpty);
+      expect(
+        reachesCaptureLayer(File(allowedCaptureImporter).readAsStringSync()),
+        isTrue,
+        reason: 'the allowance would be vacuous',
+      );
     });
+
+    test(
+      'any other file is still flagged and only the coordinator is allowed',
+      () {
+        const sources = <String>[
+          "import '../data/capture/capture_service.dart';",
+          "import 'package:blackgrid/data/capture/capture_native.dart';",
+          'final s = MouseReleaseTriggerSource(platform);',
+        ];
+        for (final path in const [
+          'lib/ui/scanner_screen.dart',
+          'lib/application/other.dart',
+          'lib/main.dart',
+        ]) {
+          expect(mayReachCaptureLayer(path), isFalse, reason: path);
+          for (final source in sources) {
+            expect(reachesCaptureLayer(source), isTrue, reason: source);
+          }
+        }
+        expect(mayReachCaptureLayer(allowedCaptureImporter), isTrue);
+        expect(
+          mayReachCaptureLayer('lib\\application\\scan_coordinator.dart'),
+          isTrue,
+        );
+        expect(reachesCaptureLayer("import 'dart:io';"), isFalse);
+      },
+    );
   });
 }

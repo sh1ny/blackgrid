@@ -19,34 +19,71 @@ final _serviceReference = RegExp('VisionService|InspectionRecognitionJob');
 bool startsVisionService(String source) =>
     _serviceImport.hasMatch(source) || _serviceReference.hasMatch(source);
 
+/// The one file under `lib/application`, `lib/ui` and `lib/main.dart` that may
+/// reference the vision service or the recognition job (ADR-0013).
+const allowedVisionReferencer = 'lib/application/scan_coordinator.dart';
+
+/// Whether the file at [path] (any separator) is [allowedVisionReferencer].
+bool mayReferenceVisionService(String path) =>
+    path.replaceAll('\\', '/') == allowedVisionReferencer;
+
 void main() {
   group('vision worker audit', () {
-    test(
-      'no startup path imports or starts the vision service or recognition job',
-      () {
-        final roots = <FileSystemEntity>[
-          Directory('lib/application'),
-          Directory('lib/ui'),
-          File('lib/main.dart'),
-        ];
-        final files = <File>[];
-        for (final root in roots) {
-          if (root is File && root.existsSync()) files.add(root);
-          if (root is Directory && root.existsSync()) {
-            files.addAll(
-              root
-                  .listSync(recursive: true)
-                  .whereType<File>()
-                  .where((f) => f.path.endsWith('.dart')),
-            );
-          }
+    test('only the scan coordinator references the service or recognition job', () {
+      final roots = <FileSystemEntity>[
+        Directory('lib/application'),
+        Directory('lib/ui'),
+        File('lib/main.dart'),
+      ];
+      final files = <File>[];
+      for (final root in roots) {
+        if (root is File && root.existsSync()) files.add(root);
+        if (root is Directory && root.existsSync()) {
+          files.addAll(
+            root
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dart')),
+          );
         }
-        expect(files, isNotEmpty, reason: 'audit would be vacuous');
-        final offenders = [
-          for (final file in files)
-            if (startsVisionService(file.readAsStringSync())) file.path,
-        ];
-        expect(offenders, isEmpty);
+      }
+      expect(files, isNotEmpty, reason: 'audit would be vacuous');
+      final offenders = [
+        for (final file in files)
+          if (!mayReferenceVisionService(file.path) &&
+              startsVisionService(file.readAsStringSync()))
+            file.path,
+      ];
+      expect(offenders, isEmpty);
+      // The allowance is not vacuous: the coordinator really uses the service.
+      expect(
+        startsVisionService(File(allowedVisionReferencer).readAsStringSync()),
+        isTrue,
+      );
+    });
+
+    test(
+      'any other file is still flagged and only the coordinator is allowed',
+      () {
+        const source = "import '../data/vision/vision_service.dart';";
+        for (final path in const [
+          'lib/ui/scanner_screen.dart',
+          'lib/application/other.dart',
+          'lib/main.dart',
+          'lib/application/scan_coordinator_extra.dart',
+        ]) {
+          expect(mayReferenceVisionService(path), isFalse, reason: path);
+          expect(
+            !mayReferenceVisionService(path) && startsVisionService(source),
+            isTrue,
+            reason: path,
+          );
+        }
+        expect(mayReferenceVisionService(allowedVisionReferencer), isTrue);
+        expect(
+          mayReferenceVisionService('lib\\application\\scan_coordinator.dart'),
+          isTrue,
+        );
       },
     );
 

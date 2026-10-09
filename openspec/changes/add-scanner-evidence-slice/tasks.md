@@ -29,8 +29,8 @@ Test conventions (AGENTS.md):
 | inspection-capture → Frames carry their provenance | Client size of a targeted frame | test/data/capture/capture_policy_test.dart | targeted frame reports the validated client size | green |
 | inspection-capture → Frames carry their provenance | Client size of a clipped fallback frame | test/data/capture/capture_policy_test.dart | clipped fallback frame reports full client width | green |
 | inspection-recognition → Recognition runs only as a vision-worker job | Job runs against a fake runtime | test/data/vision/inspection_job_test.dart | job runs through VisionService over a fake native without loading a library (existing) | green |
-| inspection-recognition → Recognition runs only as a vision-worker job | Normal launch | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | red |
-| vision-worker → Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | red |
+| inspection-recognition → Recognition runs only as a vision-worker job | Normal launch | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | green |
+| vision-worker → Normal launch does not start the vision worker | No startup path starts the worker | test/data/vision/vision_worker_audit_test.dart | only the scan coordinator references the service or recognition job | green |
 | vision-worker → Normal launch does not start the vision worker | Normal launch loads no vision library | test/application/app_services_scan_test.dart | launch with live scan off starts no worker, hook or vision runtime | green |
 | vision-worker → Normal launch does not start the vision worker | Live scanning starts the worker | test/application/app_services_scan_test.dart | launch with live scan saved on starts exactly one vision service | green |
 | vision-runtime → Normal app launch does not load the vision runtime | Normal launch | test/app/launch_mode_test.dart | no arguments selects UI mode and never constructs runtime (existing) | green |
@@ -222,7 +222,7 @@ Test conventions (AGENTS.md):
   - dispose the coordinator first and the log after it, inside the existing `try`/`finally`.
 
   Leave `SessionScanState` untouched (M4). Verify: 9.1 passes and `test/application/app_services_test.dart` still passes; flip the rows green.
-- [ ] 9.3 Narrow the audits:
+- [x] 9.3 Narrow the audits:
   - `test/data/vision/vision_worker_audit_test.dart`: allow exactly `lib/application/scan_coordinator.dart`.
   - `test/data/capture/capture_source_audit_test.dart`: the trigger-source and `lib/ui` `data/capture/` import audits allow exactly that file; every process-access and input API ban stays unchanged.
   - Add matcher cases proving that a second file is still flagged.
