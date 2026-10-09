@@ -91,7 +91,13 @@ void writeViaTemp(String path, String contents) =>
 /// than written through to the file it shares. The rename replaces the
 /// directory entry at [path], so a hard link there is replaced too and the
 /// file it shared keeps its contents.
+///
+/// The link checks of [unsafeOutputReason] run again here, so a link planted
+/// at the output, its temp sibling or an ancestor after the caller's own
+/// check throws a [FileSystemException] instead of redirecting the write.
 void writeBytesViaTemp(String path, List<int> bytes) {
+  final unsafe = unsafeOutputReason(path);
+  if (unsafe != null) throw FileSystemException('refusing to write', unsafe);
   final temp = File('$path.tmp');
   if (FileSystemEntity.typeSync(temp.path, followLinks: false) ==
       FileSystemEntityType.file) {

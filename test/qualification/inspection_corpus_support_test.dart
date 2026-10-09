@@ -119,6 +119,12 @@ void main() {
       final bad = <String, List<Map<String, Object?>>>{
         'duplicate id': [base(), base()],
         'id colliding without case': [base(), base()..['id'] = 'A'],
+        'reserved device id': [base()..['id'] = 'CON'],
+        'reserved device id with extension': [base()..['id'] = 'aux.1'],
+        'id with a colon': [base()..['id'] = 'bad:name'],
+        'id with a separator': [base()..['id'] = 'a/b'],
+        'id ending with a dot': [base()..['id'] = 'a.'],
+        'empty id': [base()..['id'] = ''],
         'unknown kind': [base()..['kind'] = 'wide'],
         'missing cursor': [base()..remove('cursor')],
         'cursor outside': [

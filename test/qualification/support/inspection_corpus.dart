@@ -124,12 +124,25 @@ List<CorpusCase> parseCorpus(String source) {
   ];
 }
 
+/// Ids that are portable file basenames: letters, digits, `.`, `_` and `-`,
+/// starting with a letter or digit and not ending with `.`.
+final _cropSafeId = RegExp(r'^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?$');
+
+/// Windows device names, which are reserved with or without an extension.
+final _reservedName = RegExp(
+  r'^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$',
+  caseSensitive: false,
+);
+
 CorpusCase _parseCase(int index, Object? raw, Set<String> seen) {
   final where = 'case #$index';
   if (raw is! Map<String, Object?>) _bad('$where must be an object');
   final id = _field<String>(raw, 'id', where);
   // Ids name crop files, which collide without case on Windows.
-  if (id.isEmpty || !seen.add(id.toLowerCase())) {
+  if (!_cropSafeId.hasMatch(id) || _reservedName.hasMatch(id)) {
+    _bad('$where: id "$id" cannot name a Windows crop file');
+  }
+  if (!seen.add(id.toLowerCase())) {
     _bad('$where: id "$id" is not unique (compared without case)');
   }
   final client = _field<Map<String, Object?>>(raw, 'client', id);

@@ -66,7 +66,7 @@ The run writes nothing outside `out/` and refuses before its first write if a ca
 }
 ```
 
-- `id`: unique case name; it also names the crop file.
+- `id`: case name, unique without regard to case; it also names the crop file, so it uses only letters, digits, `.`, `_` and `-`, starts with a letter or digit, does not end with `.`, and is not a Windows device name such as `CON` or `AUX`.
 - `image`: a PNG of the whole game client area, `client.width` by `client.height`.
 - `kind`: `targeted` or `fullClient`.
 - `cursor`: required for `targeted`; the cursor point in client pixels. The runner crops the capture region from it with the capture spec's rule, `(x - m/2, y - m/2, m + r, m)` with `m = floor(50 s)`, `r = floor(600 s)` and `s = min(W/1920, H/1080)`, clipped to the client. It uses the same `planTargeted` as the app.

@@ -98,6 +98,27 @@ void main() {
       skip: Platform.isWindows ? false : 'uses mklink /H',
     );
 
+    test('writeBytesViaTemp refuses a link planted at the temp path', () {
+      final output = '${dir.path}/y.txt';
+      Link('$output.tmp').createSync(input);
+      expect(
+        () => writeBytesViaTemp(output, [1, 2, 3]),
+        throwsA(isA<FileSystemException>()),
+      );
+      expect(File(input).readAsStringSync(), 'input');
+      expect(File(output).existsSync(), isFalse);
+    });
+
+    test('writeBytesViaTemp refuses an output below a link', () {
+      final real = Directory('${dir.path}/real')..createSync();
+      Link('${dir.path}/via').createSync(real.path);
+      expect(
+        () => writeBytesViaTemp('${dir.path}/via/z.txt', [1]),
+        throwsA(isA<FileSystemException>()),
+      );
+      expect(real.listSync(), isEmpty);
+    });
+
     test('an output below a link is refused', () {
       final real = Directory('${dir.path}/real')..createSync();
       Link('${dir.path}/via').createSync(real.path);
