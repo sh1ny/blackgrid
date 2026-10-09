@@ -423,6 +423,14 @@ List<String> markerProvenanceFailures(Uint8List bytes) {
     failures.add('$where: sourceWidth and sourceHeight must be positive');
     return failures;
   }
+  // The regeneration tool refuses any source below 1080p scale (s < 1).
+  if (width < 1920 || height < 1080) {
+    failures.add(
+      '$where: source ${width}x$height is below 1080p scale, which the '
+      'regeneration tool refuses',
+    );
+    return failures;
+  }
   final footprint = meta['footprint'];
   final expected = footprintFor(width, height);
   if (footprint != expected) {

@@ -574,6 +574,12 @@ void main() {
 
     test('complete, consistent provenance passes', () {
       expect(markerProvenanceFailures(meta({})), isEmpty);
+      expect(
+        markerProvenanceFailures(
+          meta({'sourceWidth': 1920, 'sourceHeight': 1080, 'footprint': 16}),
+        ),
+        isEmpty,
+      );
     });
 
     test('each malformed or inconsistent field fails', () {
@@ -582,6 +588,17 @@ void main() {
         'sha of another type': {'sourceSha256': 7},
         'missing size': {'sourceWidth': null},
         'zero height': {'sourceHeight': 0},
+        'below 1080p scale with a zero footprint': {
+          'sourceWidth': 1,
+          'sourceHeight': 1,
+          'footprint': 0,
+          'origin': {'x': 0, 'y': 0},
+        },
+        'one pixel short of 1080p': {
+          'sourceWidth': 1920,
+          'sourceHeight': 1079,
+          'footprint': 15,
+        },
         'footprint off the size': {'footprint': 16},
         'missing footprint': {'footprint': null},
         'missing origin': {'origin': null},
