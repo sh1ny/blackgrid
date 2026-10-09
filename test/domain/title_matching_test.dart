@@ -506,4 +506,208 @@ void main() {
       }
     });
   });
+  group('outcome ranking', () {
+    final index = TitleMatchIndex.build(
+      snapshot([
+        item('a1', 'Gas analyzer'),
+        item('k1', 'Salewa first aid kit'),
+        item('h1', 'Comtac headset'),
+      ]),
+    );
+
+    RankableEvidence<String> entry(
+      String evidence,
+      String text, {
+      double marker = 0.9,
+      int order = 0,
+      bool emptyRegion = false,
+    }) => RankableEvidence<String>(
+      evidence: evidence,
+      markerScore: marker,
+      text: text,
+      emptyTitleRegion: emptyRegion,
+      peakOrder: order,
+    );
+
+    RecognitionResultInput<String> result(
+      List<RankableEvidence<String>> entries, {
+      double? best,
+    }) =>
+        RecognitionResultInput<String>(entries: entries, bestMarkerScore: best);
+
+    RecognitionOutcome<String> rank(
+      RecognitionResultInput<String> targeted, {
+      RecognitionResultInput<String>? fallback,
+      TitleMatchIndex? using,
+      GameMode mode = GameMode.pvp,
+    }) => rankOutcome<String>(
+      using ?? index,
+      targeted: targeted,
+      fallback: fallback,
+      mode: mode,
+    );
+
+    OutcomeAccepted<String> won(RecognitionOutcome<String> o) => switch (o) {
+      OutcomeAccepted<String>() => o,
+      OutcomeRejected<String>(:final reason) => fail('rejected: $reason'),
+    };
+
+    OutcomeRejected<String> lost(RecognitionOutcome<String> o) => switch (o) {
+      OutcomeRejected<String>() => o,
+      OutcomeAccepted<String>() => fail('expected a rejection'),
+    };
+
+    test('accepted targeted evidence wins without consulting fallback', () {
+      // The fallback holds an exact match that would outrank the targeted
+      // near match if it were ranked.
+      final o = won(
+        rank(
+          result([entry('targeted', 'Gas analyzr', marker: 0.85)]),
+          fallback: result([
+            entry('fallback', 'Salewa first aid kit', marker: 0.99),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'targeted');
+      expect(o.match.bestId, 'a1');
+    });
+
+    test('ranking prefers accepted over higher marker score', () {
+      final o = won(
+        rank(
+          result(const [], best: null),
+          fallback: result([
+            entry('unaccepted', 'qqqqqqqq', marker: 0.95, order: 0),
+            entry('accepted', 'Gas analyzer', marker: 0.85, order: 1),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'accepted');
+    });
+
+    test(
+      'nothing accepted is a rejection with top evidence and no accepted id',
+      () {
+        final o = lost(
+          rank(
+            result([entry('t', 'Gas an', marker: 0.9)]),
+            fallback: result([entry('f', 'qqqqqqqq', marker: 0.95)]),
+          ),
+        );
+        // Both unaccepted: the higher similarity ('Gas an') ranks first.
+        expect(o.evidence, 't');
+        expect(o.reason, OutcomeRejectReason.belowSimilarity);
+        expect(o.match, isA<TitleRejected>());
+        expect(o.match!.bestScore, greaterThan(0));
+      },
+    );
+
+    test('no evidence anywhere rejects noMarker with both best scores', () {
+      final o = lost(
+        rank(
+          result(const [], best: 0.4),
+          fallback: result(const [], best: 0.6),
+        ),
+      );
+      expect(o.reason, OutcomeRejectReason.noMarker);
+      expect(o.evidence, isNull);
+      expect(o.match, isNull);
+      expect(o.targetedBestMarkerScore, 0.4);
+      expect(o.fallbackBestMarkerScore, 0.6);
+    });
+
+    test('no evidence without a fallback leaves its best score null', () {
+      final o = lost(rank(result(const [], best: 0.4)));
+      expect(o.reason, OutcomeRejectReason.noMarker);
+      expect(o.targetedBestMarkerScore, 0.4);
+      expect(o.fallbackBestMarkerScore, isNull);
+    });
+
+    test('index from another mode rejects catalogModeMismatch', () {
+      final o = lost(
+        rank(
+          result([entry('t', 'Gas analyzer')], best: 0.9),
+          fallback: result([entry('f', 'Gas analyzer')], best: 0.8),
+          mode: GameMode.pve,
+        ),
+      );
+      expect(o.reason, OutcomeRejectReason.catalogModeMismatch);
+      expect(o.targetedBestMarkerScore, 0.9);
+      expect(o.fallbackBestMarkerScore, 0.8);
+    });
+
+    test('an empty title region is matched as an empty title', () {
+      final o = lost(
+        rank(result([entry('t', 'Gas analyzer', emptyRegion: true)])),
+      );
+      expect(o.reason, OutcomeRejectReason.titleTooShort);
+      expect(o.evidence, 't');
+    });
+
+    test('rejection copies best scores from both results', () {
+      final o = lost(
+        rank(
+          result([entry('t', 'qqqqqqqq')], best: 0.91),
+          fallback: result(const [], best: 0.7),
+        ),
+      );
+      expect(o.targetedBestMarkerScore, 0.91);
+      expect(o.fallbackBestMarkerScore, 0.7);
+    });
+
+    test('higher similarity ranks before marker score', () {
+      final o = won(
+        rank(
+          result(const []),
+          fallback: result([
+            entry('near', 'Gas analyzr', marker: 0.99, order: 0),
+            entry('exact', 'Salewa first aid kit', marker: 0.83, order: 1),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'exact');
+    });
+
+    test('similarity tie is broken by marker score', () {
+      final o = won(
+        rank(
+          result(const []),
+          fallback: result([
+            entry('low', 'Gas analyzer', marker: 0.85, order: 0),
+            entry('high', 'Gas analyzer', marker: 0.95, order: 1),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'high');
+    });
+
+    test('marker tie is broken by lower peak order', () {
+      final o = won(
+        rank(
+          result(const []),
+          fallback: result([
+            entry('second', 'Gas analyzer', order: 1),
+            entry('first', 'Gas analyzer', order: 0),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'first');
+    });
+
+    test('a full tie keeps the targeted entry first', () {
+      final o = lost(
+        rank(
+          result([entry('targeted', 'qqqqqqqq')]),
+          fallback: result([entry('fallback', 'qqqqqqqq')]),
+        ),
+      );
+      expect(o.evidence, 'targeted');
+    });
+
+    test('outcome rejection reasons cover every title rejection reason', () {
+      for (final reason in TitleRejectReason.values) {
+        expect(OutcomeRejectReason.fromTitle(reason).name, reason.name);
+      }
+    });
+  });
 }
