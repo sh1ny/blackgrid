@@ -591,6 +591,9 @@ void main() {
         'negative origin': {
           'origin': {'x': -1, 'y': 6},
         },
+        'origin at the integer limit': {
+          'origin': {'x': 9223372036854775807, 'y': 6},
+        },
       };
       for (final MapEntry(:key, :value) in bad.entries) {
         expect(markerProvenanceFailures(meta(value)), isNotEmpty, reason: key);

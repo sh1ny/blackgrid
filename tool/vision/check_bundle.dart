@@ -438,8 +438,9 @@ List<String> markerProvenanceFailures(Uint8List bytes) {
       y is! int ||
       x < 0 ||
       y < 0 ||
-      x + expected > width ||
-      y + expected > height) {
+      // Subtracted, not added, so a huge origin cannot wrap past the bound.
+      x > width - expected ||
+      y > height - expected) {
     failures.add(
       '$where: origin must place the ${expected}px footprint inside '
       '${width}x$height',
