@@ -78,7 +78,8 @@ final class DirectoryScanTimingSink implements ScanTimingFileSink {
 /// time in append order. At most [maxQueued] lines wait; further lines are
 /// dropped and counted, and the next written line carries `droppedLines`.
 /// Before a write would grow the file past [maxBytes], the file is renamed to
-/// `scan-timings.1.jsonl`, replacing any earlier one.
+/// `scan-timings.1.jsonl`, replacing any earlier one. A line longer than
+/// [maxBytes] on its own is dropped and counted.
 class ScanTimingLog {
   /// Creates a log in [logs]. [sink] replaces the real file for tests.
   ScanTimingLog(
@@ -118,6 +119,7 @@ class ScanTimingLog {
   int _dropped = 0;
   bool _closed = false;
   bool _discard = false;
+  bool _writing = false;
   Future<void>? _loop;
 
   /// Whether the last write worked. Notifies when it changes.
@@ -136,7 +138,11 @@ class ScanTimingLog {
       return;
     }
     _queue.add(Map<String, Object?>.of(entry));
-    _loop ??= _run();
+    // A flag, not `_loop == null`: a run that drops every line finishes
+    // synchronously, before `_loop` would be assigned.
+    if (_writing) return;
+    _writing = true;
+    _loop = _run();
   }
 
   /// Writes what is queued within [closeTimeout], drops the rest, and ignores
@@ -161,8 +167,14 @@ class ScanTimingLog {
         final entry = _queue.removeFirst();
         final carried = _dropped;
         final line = carried == 0 ? entry : {...entry, 'droppedLines': carried};
+        final bytes = utf8.encode('${jsonEncode(line)}\n');
+        if (bytes.length > maxBytes) {
+          // No file could hold it within the bound: drop it like an overflow.
+          _dropped++;
+          continue;
+        }
         try {
-          await _write(utf8.encode('${jsonEncode(line)}\n'));
+          await _write(bytes);
           _dropped -= carried;
           _setStatus(const ScanTimingAvailable());
         } on Object catch (error) {
@@ -170,7 +182,7 @@ class ScanTimingLog {
         }
       }
     } finally {
-      _loop = null;
+      _writing = false;
     }
   }
 

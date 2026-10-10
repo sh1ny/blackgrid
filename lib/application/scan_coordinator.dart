@@ -1425,6 +1425,7 @@ class ScanCoordinator extends ChangeNotifier {
   bool _started = false;
   int _intent = 0;
   Future<bool>? _saving;
+  Future<void>? _offPersist;
 
   ScanPhase _phase = ScanPhase.idle;
   ScanReport? _latest;
@@ -1536,10 +1537,17 @@ class ScanCoordinator extends ChangeNotifier {
     _error = null;
     _switchOn = false;
     _stop();
+    final persist = _offPersist = _persistOff(epoch);
+    await persist;
+  }
+
+  /// Saves the switch-off of tap [epoch]. Dispose waits for it, so an off
+  /// tap right before exit still reaches the setting.
+  Future<void> _persistOff(int epoch) async {
     // Let a save still running land first, so this save replaces it instead
     // of being refused as busy or skipped; a later tap decides instead.
     await _savesLanded();
-    if (_disposed || epoch != _intent) return;
+    if (epoch != _intent) return;
     if (!settings.settings.liveScan) return;
     final saved = await _save(on: false);
     if (_disposed || epoch != _intent) return;
@@ -1579,6 +1587,10 @@ class ScanCoordinator extends ChangeNotifier {
     _disposed = true;
     catalog.removeListener(_syncIndex);
     _stop();
+    final persist = _offPersist;
+    if (persist != null) {
+      await persist.timeout(closeTimeout, onTimeout: () {});
+    }
     await _chain.timeout(closeTimeout * 2, onTimeout: () {});
     final platform = _platform;
     if (platform != null) {
@@ -2101,10 +2113,7 @@ class ScanCoordinator extends ChangeNotifier {
         if (_dead(s)) return const _PassAbandoned();
         return _PassFailed(scanFailureFromCapture(failure));
       case CaptureSuccess(:final frame):
-        if (_dead(s)) {
-          frame.release();
-          return const _PassAbandoned();
-        }
+        // Stamp reached stages before the fence, so a superseded line keeps them.
         final metadata = frame.metadata;
         s.stamp(
           pass,
@@ -2113,6 +2122,10 @@ class ScanCoordinator extends ChangeNotifier {
             acquireEnd: metadata.qpcAfter,
           ),
         );
+        if (_dead(s)) {
+          frame.release();
+          return const _PassAbandoned();
+        }
         s.stage = _Stage.vision;
         final VisionAnswer<InspectionRecognition> answer;
         try {
@@ -2152,6 +2165,10 @@ class ScanCoordinator extends ChangeNotifier {
             jobFinished: finished,
           ),
         );
+        if (answer case VisionDelivered(:final result)) {
+          // The report restamps from the winner; a superseded scan keeps these.
+          s.stamp(pass, (t) => t.withEvidenceStamps(result));
+        }
         if (_dead(s)) return const _PassAbandoned();
         if (answer case VisionDelivered(:final result)) {
           return _PassRecognised(result);

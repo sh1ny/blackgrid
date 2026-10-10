@@ -504,6 +504,21 @@ void main() {
     });
   });
 
+  group('switch-off then dispose', () {
+    test('a switch-off right before dispose still saves off', () async {
+      rig = await _Rig.create();
+      await rig.switchOn();
+      expect((await rig.db.readSettings()).liveScan, isTrue);
+
+      final off = rig.coordinator.setLiveScan(false);
+      final disposed = rig.coordinator.dispose();
+      await Future.wait([off, disposed]);
+
+      expect((await rig.db.readSettings()).liveScan, isFalse);
+      expect(rig.settings.settings.liveScan, isFalse);
+    });
+  });
+
   group('switch-off during a hung start', () {
     test(
       'switch-off during a hung start is bounded by the close drain',

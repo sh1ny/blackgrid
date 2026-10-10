@@ -26,7 +26,8 @@ class LocalPaths {
     await root.create(recursive: true);
     final result = LocalPaths(root);
     await result.credentials.create();
-    await result.logs.create();
+    // The logs directory is optional: the timing log creates it on its first
+    // write and reports a failure as unavailable, so it never blocks startup.
     return result;
   }
 }

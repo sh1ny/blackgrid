@@ -172,6 +172,40 @@ void main() {
       },
     );
 
+    test('a line larger than maxBytes is dropped and counted', () async {
+      for (final existing in [0, 10]) {
+        final sink = _FakeSink()..size = existing;
+        final log = ScanTimingLog(
+          Directory.systemTemp,
+          maxBytes: 100,
+          sink: sink,
+        );
+
+        log.append({'v': 1, 'pad': 'x' * 200});
+        log.append({'v': 1, 'n': 2});
+        await log.close();
+
+        expect(sink.rotations, 0, reason: 'existing $existing: no rotation');
+        expect(sink.written, hasLength(1), reason: 'existing $existing');
+        final line = _decode(sink.written.single);
+        expect(line['n'], 2);
+        expect(line['droppedLines'], 1);
+      }
+    });
+
+    test('a logs path that is a file is unavailable, not thrown', () async {
+      final data = Directory.systemTemp.createTempSync('blackgrid-log-');
+      addTearDown(() => data.deleteSync(recursive: true));
+      final logs = Directory('${data.path}${Platform.pathSeparator}logs');
+      File(logs.path).writeAsStringSync('x');
+      final log = ScanTimingLog(logs);
+
+      log.append({'v': 1});
+      await log.close();
+
+      expect(log.status.value, isA<ScanTimingUnavailable>());
+    });
+
     test('open failure sets unavailable and later appends retry', () async {
       final sink = _FakeSink()..failWith = const FileSystemException('denied');
       final log = ScanTimingLog(Directory.systemTemp, sink: sink);

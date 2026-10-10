@@ -659,6 +659,55 @@ void main() {
       expect(rig.coordinator.phase, ScanPhase.targeted);
     });
 
+    test(
+      'a capture answered after a trigger keeps its acquire stamps',
+      () async {
+        await readyRig();
+        rig.fire(1000);
+        final old = await rig.capture.calls.at(0);
+        rig.fire(2000);
+
+        old.succeed(rig.frames.frame(qpcBefore: 1020, qpcAfter: 1030));
+
+        final line = await rig.logs.at(0);
+        expect(line['end'], 'superseded');
+        expect(
+          ((line['ms']! as Map)['targeted']! as Map).keys,
+          containsAll(['acquireStart', 'acquireEnd']),
+        );
+      },
+    );
+
+    test('a recognition delivered before a trigger keeps its stages', () async {
+      await readyRig();
+      rig.fire(1000);
+      (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
+      final old = await rig.vision.calls.at(0);
+
+      old.deliver(
+        _recognised(InspectionFrameKind.targeted, [_ev(base: 1100)]),
+        submitted: 1050,
+        started: 1060,
+        finished: 1200,
+      );
+      rig.fire(2000);
+
+      final line = await rig.logs.at(0);
+      expect(line['end'], 'superseded');
+      expect(
+        ((line['ms']! as Map)['targeted']! as Map).keys,
+        containsAll([
+          'visionSubmitted',
+          'jobStarted',
+          'marker',
+          'title',
+          'preprocess',
+          'ocr',
+          'jobFinished',
+        ]),
+      );
+    });
+
     test('trigger during matching discards the old match', () async {
       await readyRig();
       final oldMatch = await rig.toMatching(0, 1000);
