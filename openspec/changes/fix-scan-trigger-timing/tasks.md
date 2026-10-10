@@ -85,7 +85,7 @@ Implementation notes:
 
 ## 6. Integration
 
-- [ ] 6.1 Run `mise run analyze` and `mise run test`, and `dart format` the changed files. Verify: both are green and every test-map row is green.
+- [x] 6.1 Run `mise run analyze` and `mise run test`, and `dart format` the changed files. Verify: both are green and every test-map row is green.
 - [ ] 6.2 `mise run build:release`, only after confirming Escape from Tarkov is not running. If that cannot be confirmed, skip the build and record it as unverified. Verify: the build succeeds, or the skip is recorded.
 
 ## Workflow follow-up
