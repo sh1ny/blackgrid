@@ -220,6 +220,9 @@ final class ScanFakePorts {
   ScanPlatformFactory get platformFactory =>
       () => platform = FakeScanPlatform(events);
 
+  /// The waiter to hand to the coordinator: it never waits.
+  ScanWaiter get waiter => immediateScanWaiter;
+
   /// The loader to hand to the coordinator, honouring [markerOverride].
   ScanMarkerLoader get loader =>
       (directory) async => markerOverride ?? await markerLoader(directory);
@@ -285,6 +288,7 @@ final class ScanUiRig {
       captureFactory: ports.captureFactory,
       visionFactory: ports.visionFactory,
       platformFactory: ports.platformFactory,
+      waiter: immediateScanWaiter,
     );
   }
 

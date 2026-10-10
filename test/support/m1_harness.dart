@@ -53,6 +53,7 @@ class M1Harness {
       scanCaptureFactory: scanPorts?.captureFactory,
       scanVisionFactory: scanPorts?.visionFactory,
       scanPlatformFactory: scanPorts?.platformFactory,
+      scanWaiter: scanPorts?.waiter,
     );
   }
   late final BlackgridDatabase db;
