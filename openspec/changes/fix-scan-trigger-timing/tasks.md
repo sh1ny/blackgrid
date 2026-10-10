@@ -51,7 +51,7 @@ Implementation notes:
   - the fork's differences: the settle runs from dequeue, and the fallback deadline from enqueue for automatic scans only.
 
   Add it to the ADR index in `docs/adr/README.md` and `openspec/architecture.md`, and update the scan pipeline row. Verify: the files exist and the indexes link 0014.
-- [ ] 1.2 Add change 6 `fix-scan-trigger-timing` to the M2 list in `openspec/roadmap.md`, citing the failed live exit criterion. Verify: `openspec validate --all` shows no new error from this change.
+- [x] 1.2 Add change 6 `fix-scan-trigger-timing` to the M2 list in `openspec/roadmap.md`, citing the failed live exit criterion. Verify: `openspec validate --all` shows no new error from this change.
 
 ## 2. Coordinator waits
 
