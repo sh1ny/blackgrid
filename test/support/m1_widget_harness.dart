@@ -3,6 +3,7 @@ import 'package:blackgrid/ui/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../ui/support/scan_ui_support.dart';
 import 'm1_harness.dart';
 
 Future<M1Harness> pumpM1(
@@ -10,6 +11,7 @@ Future<M1Harness> pumpM1(
   Size size = const Size(1672, 941),
   double scale = 1,
   GameMode mode = GameMode.pvp,
+  ScanFakePorts? scanPorts,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -20,7 +22,7 @@ Future<M1Harness> pumpM1(
   // Create native/external async resources in the real zone too; constructing
   // them under FakeAsync can strand initialization before runAsync returns.
   final h = (await tester.runAsync(() async {
-    final result = M1Harness();
+    final result = M1Harness(scanPorts: scanPorts);
     await result.initialize(mode: mode);
     return result;
   }))!;

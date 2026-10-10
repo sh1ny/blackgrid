@@ -147,6 +147,8 @@ CaptureFrameMetadata frameMetadata() => CaptureFrameMetadata(
   requested: CaptureRect(0, 0, 4, 4),
   captured: CaptureRect(0, 0, 4, 4),
   clipped: false,
+  clientWidth: 1920,
+  clientHeight: 1080,
   dpi: 96,
   hwnd: 1,
   pid: 2,

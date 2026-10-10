@@ -48,6 +48,7 @@ class AppSettings {
     this.gameLogDirectory = '',
     this.screenshotDirectory = '',
     this.followGameLogs = true,
+    this.liveScan = false,
   }) : markerFilters = Map.unmodifiable(markerFilters);
   final GameMode mode;
   final String selectedMap;
@@ -58,6 +59,9 @@ class AppSettings {
   final String screenshotDirectory;
   final bool followGameLogs;
 
+  /// Whether the live scanner starts with the application. Off by default.
+  final bool liveScan;
+
   AppSettings copyWith({
     GameMode? mode,
     String? selectedMap,
@@ -67,6 +71,7 @@ class AppSettings {
     String? gameLogDirectory,
     String? screenshotDirectory,
     bool? followGameLogs,
+    bool? liveScan,
   }) => AppSettings(
     mode: mode ?? this.mode,
     selectedMap: selectedMap ?? this.selectedMap,
@@ -76,6 +81,7 @@ class AppSettings {
     gameLogDirectory: gameLogDirectory ?? this.gameLogDirectory,
     screenshotDirectory: screenshotDirectory ?? this.screenshotDirectory,
     followGameLogs: followGameLogs ?? this.followGameLogs,
+    liveScan: liveScan ?? this.liveScan,
   );
   Map<String, Object?> toJson() => {
     'mode': mode.name,
@@ -86,6 +92,7 @@ class AppSettings {
     'gameLogDirectory': gameLogDirectory,
     'screenshotDirectory': screenshotDirectory,
     'followGameLogs': followGameLogs,
+    'liveScan': liveScan,
   };
   factory AppSettings.fromJson(Map<String, Object?> json) {
     final mode = GameMode.values.firstWhere((m) => m.name == json['mode']);
@@ -106,6 +113,7 @@ class AppSettings {
       gameLogDirectory: json['gameLogDirectory'] as String? ?? '',
       screenshotDirectory: json['screenshotDirectory'] as String? ?? '',
       followGameLogs: json['followGameLogs'] as bool? ?? true,
+      liveScan: json['liveScan'] as bool? ?? false,
     );
   }
 }

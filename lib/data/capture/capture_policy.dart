@@ -94,6 +94,8 @@ final class CapturePolicy {
       requested: plan.requested,
       captured: plan.captured,
       clipped: plan.clipped,
+      clientWidth: s0.client.width,
+      clientHeight: s0.client.height,
       dpi: s0.dpi,
       hwnd: s0.hwnd,
       pid: s0.pid,

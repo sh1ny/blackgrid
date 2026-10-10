@@ -22,6 +22,8 @@ final class CaptureFrameMetadata {
     required this.requested,
     required this.captured,
     required this.clipped,
+    required this.clientWidth,
+    required this.clientHeight,
     required this.dpi,
     required this.hwnd,
     required this.pid,
@@ -45,6 +47,11 @@ final class CaptureFrameMetadata {
   final CaptureRect requested;
   final CaptureRect captured;
   final bool clipped;
+
+  /// Physical client size of the snapshot the request was validated against,
+  /// independent of the captured region's size.
+  final int clientWidth;
+  final int clientHeight;
   final int dpi;
   final int hwnd;
   final int pid;

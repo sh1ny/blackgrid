@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -9,6 +10,7 @@ import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
 import '../data/game_paths.dart';
 import '../data/raid_panel_ocr.dart';
+import '../data/scan_timing_log.dart';
 import '../data/tracker_client.dart';
 import '../domain/catalog.dart';
 import '../domain/credential_store.dart';
@@ -19,6 +21,7 @@ import 'history_controller.dart';
 import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'progress_controller.dart';
+import 'scan_coordinator.dart';
 import 'selection_controller.dart';
 import 'session_scan_state.dart';
 import 'settings_controller.dart';
@@ -32,6 +35,12 @@ class AppServices {
     MapController? mapController,
     RaidPanelOcr? panelOcr,
     GamePathDiscovery? pathDiscovery,
+    Directory? scanLogDirectory,
+    String? scanRuntimeDirectory,
+    ScanMarkerLoader? scanMarkerLoader,
+    ScanCaptureFactory? scanCaptureFactory,
+    ScanVisionFactory? scanVisionFactory,
+    ScanPlatformFactory? scanPlatformFactory,
   }) : _client = client {
     final loader = PreparedMapPackLoader();
     maps =
@@ -66,6 +75,20 @@ class AppServices {
       clock: clock,
       discovery: pathDiscovery,
     );
+    scanTimingLog = ScanTimingLog(
+      scanLogDirectory ??
+          Directory('${Directory.systemTemp.path}/blackgrid-scan-logs'),
+    );
+    scanner = ScanCoordinator(
+      settings: settings,
+      catalog: catalog,
+      appendLogLine: scanTimingLog.append,
+      markerLoader: scanMarkerLoader ?? loadMarkerTemplateOffUi,
+      captureFactory: scanCaptureFactory ?? openDefaultScanCapture,
+      visionFactory: scanVisionFactory ?? openDefaultScanVision,
+      platformFactory: scanPlatformFactory ?? openDefaultScanPlatform,
+      runtimeDirectory: scanRuntimeDirectory,
+    );
     settings.addListener(_syncMapSettings);
     maps.addListener(_syncMapContext);
     mapSession.addListener(_syncMapSession);
@@ -75,6 +98,12 @@ class AppServices {
   late final SettingsController settings;
   late final MapController maps;
   late final MapSessionController mapSession;
+
+  /// Owns live scanning: the switch, the worker, the hook and the scan flow.
+  late final ScanCoordinator scanner;
+
+  /// The bounded timing log the scanner appends to.
+  late final ScanTimingLog scanTimingLog;
   bool _mapsInitialized = false;
   int _mapContentGeneration = -1;
   Object? _publishedPlayerSample;
@@ -96,6 +125,7 @@ class AppServices {
       credentials: DpapiCredentialStore(paths.credentials),
       client: http.Client(),
       pathDiscovery: GamePathDiscovery(),
+      scanLogDirectory: paths.logs,
     );
     try {
       await result.initialize();
@@ -123,6 +153,9 @@ class AppServices {
     await mapSession.initialize();
     _syncMapSession();
     await _modeChange;
+    // Settings are loaded; a saved "on" starts the pipeline. Later calls and
+    // later initialize() runs do nothing.
+    if (!_disposed) scanner.startFromSettings();
   }
 
   void _syncMapSettings() {
@@ -185,6 +218,11 @@ class AppServices {
     maps.removeListener(_syncMapContext);
     mapSession.removeListener(_syncMapSession);
     try {
+      try {
+        await scanner.dispose();
+      } finally {
+        await scanTimingLog.close();
+      }
       await mapSession.close();
     } finally {
       selection.dispose();

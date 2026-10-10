@@ -71,6 +71,8 @@ CaptureFrameMetadata frameMetadata() => CaptureFrameMetadata(
   requested: CaptureRect(0, 0, frameWidth, frameHeight),
   captured: CaptureRect(0, 0, frameWidth, frameHeight),
   clipped: false,
+  clientWidth: 1920,
+  clientHeight: 1080,
   dpi: 96,
   hwnd: 1,
   pid: 2,

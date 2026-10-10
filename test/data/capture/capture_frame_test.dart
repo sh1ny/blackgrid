@@ -18,6 +18,8 @@ CaptureFrameMetadata metadata({int width = 4, int height = 2}) =>
       requested: CaptureRect(0, 0, width, height),
       captured: CaptureRect(0, 0, width, height),
       clipped: false,
+      clientWidth: 1920,
+      clientHeight: 1080,
       dpi: 96,
       hwnd: 1,
       pid: 2,

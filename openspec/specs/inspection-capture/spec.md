@@ -138,7 +138,7 @@ A returned frame SHALL expose its width, height, row stride in bytes, pixel form
 - **THEN** the read fails with a typed `frameReleased` error, and no native memory is accessed
 
 ### Requirement: Frames carry their provenance
-A returned frame SHALL also expose the requested and captured client rectangles, the clipped flag, the DPI, and the target identity (window handle, process id, thread id, executable name). It SHALL expose monotonic timestamps from before and after acquisition, on the same clock as trigger timestamps, plus the UTC capture time and the caller's request id.
+A returned frame SHALL also expose the requested and captured client rectangles, the clipped flag, the DPI, the physical client width and height of the snapshot the request was validated against, and the target identity (window handle, process id, thread id, executable name). It SHALL expose monotonic timestamps from before and after acquisition, on the same clock as trigger timestamps, plus the UTC capture time and the caller's request id.
 
 #### Scenario: Frame provenance
 - **WHEN** a targeted capture with request id 42 succeeds unclipped for a trigger stamped at monotonic time T
@@ -147,6 +147,14 @@ A returned frame SHALL also expose the requested and captured client rectangles,
 #### Scenario: Clipped provenance
 - **WHEN** a targeted capture is clipped at the right client edge
 - **THEN** the frame reports differing requested and captured rectangles and clipped true
+
+#### Scenario: Client size of a targeted frame
+- **WHEN** a targeted capture succeeds for a 2560×1440 client
+- **THEN** the frame reports client width 2560 and height 1440, independent of its captured region's size
+
+#### Scenario: Client size of a clipped fallback frame
+- **WHEN** a fallback capture of a 1920×1080 client is clipped by the virtual desktop to 1800×1080
+- **THEN** the frame reports captured width 1800 and client width 1920
 
 ### Requirement: Frame ownership is single and bounded
 Each frame SHALL have exactly one owner, which releases it exactly once. Repeated release SHALL be a no-op. At most 4 frames SHALL be live at once. Another capture SHALL then fail with `frameBudgetExceeded` before acquiring pixels. A frame handed to another isolate SHALL move ownership: the sender can no longer read or release it. A frame its owner drops unreleased SHALL be released by a finalizer.
