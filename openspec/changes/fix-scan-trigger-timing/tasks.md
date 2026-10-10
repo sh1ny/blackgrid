@@ -15,7 +15,7 @@ Implementation notes:
 |---|---|---|---|---|
 | scan-pipeline → One scan in flight, latest trigger wins | Burst during capture | test/application/scan_coordinator_flow_test.dart | burst during capture keeps only the newest trigger | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Pending trigger meets an overrun capture | test/application/scan_coordinator_flow_test.dart | pending trigger after captureTimeout fails captureBusy and is logged | green |
-| scan-pipeline → One scan in flight, latest trigger wins | Trigger during the vision stage | test/application/scan_coordinator_flow_test.dart | trigger during the vision stage invalidates at once (extended: the new scan's settle wait starts before the old job ends) | red |
+| scan-pipeline → One scan in flight, latest trigger wins | Trigger during the vision stage | test/application/scan_coordinator_flow_test.dart | trigger during the vision stage invalidates at once (extended: the new scan's settle wait starts before the old job ends) | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Trigger during matching | test/application/scan_coordinator_flow_test.dart | trigger during matching discards the old match | green |
 | scan-pipeline → One scan in flight, latest trigger wins | Triggers dropped by the native queue | test/application/scan_coordinator_flow_test.dart | droppedBefore is recorded on the scan | green |
 | scan-pipeline → Targeted capture waits for the inspect window to settle | Fresh trigger | test/application/scan_coordinator_wait_test.dart | fresh trigger waits the remaining 49 ms before the targeted capture | green |
@@ -23,8 +23,8 @@ Implementation notes:
 | scan-pipeline → Targeted capture waits for the inspect window to settle | Switched off while waiting | test/application/scan_coordinator_wait_test.dart | switch-off during the settle wait requests no capture and publishes nothing | green |
 | scan-pipeline → Fallback capture waits until 200 ms after the trigger | Quick targeted rejection | test/application/scan_coordinator_wait_test.dart | quick noMarker publishes fallback phase, then waits to trigger + 200 ms | green |
 | scan-pipeline → Fallback capture waits until 200 ms after the trigger | Slow targeted rejection | test/application/scan_coordinator_wait_test.dart | targeted rejection after 260 ms falls back without waiting | green |
-| scan-pipeline → A trigger during a wait supersedes the scan at once | Second click during the settle wait | test/application/scan_coordinator_wait_test.dart | second click during the settle wait supersedes at once | red |
-| scan-pipeline → A trigger during a wait supersedes the scan at once | Click during the fallback wait | test/application/scan_coordinator_wait_test.dart | click during the fallback wait supersedes at once | red |
+| scan-pipeline → A trigger during a wait supersedes the scan at once | Second click during the settle wait | test/application/scan_coordinator_wait_test.dart | second click during the settle wait supersedes at once | green |
+| scan-pipeline → A trigger during a wait supersedes the scan at once | Click during the fallback wait | test/application/scan_coordinator_wait_test.dart | click during the fallback wait supersedes at once | green |
 | scanner-evidence → Scan phase is visible, including fallback | Fallback becomes visible | test/ui/scan_evidence_panel_test.dart | fallback phase shows fallback underway | green |
 | scanner-evidence → Scan phase is visible, including fallback | Superseded scan | test/ui/scan_evidence_panel_test.dart | superseded scan shows only the newer phase | green |
 | scanner-evidence → Scanner shows the latest scan's evidence | Accepted scan | test/ui/scan_evidence_panel_test.dart | accepted report shows item, pass, score, crop and text | green |
@@ -59,7 +59,7 @@ Implementation notes:
 - [x] 2.2 Add `test/application/scan_coordinator_wait_test.dart`, with a recording fake waiter and a fake clock, covering the settle rows (Fresh trigger, Trigger already old, Switched off while waiting) and the fallback rows (Quick and Slow targeted rejection). Verify: each fails for the right reason (no wait requested, or capture before the deadline).
 - [x] 2.3 Implement `_Stage.waiting`, `_waitUntil` (remaining time = deadline − now, capped at the delay, no wait when ≤ 0, raced against the scan's `cancelled` completer, then a `_dead` check), and the two call sites in `_flow`. The fallback wait runs after `_setPhase(fallback)`. Verify: the 2.2 tests pass, then flip their rows green.
 - [x] 2.4 Add the supersession tests "second click during the settle wait supersedes at once" and "click during the fallback wait supersedes at once". Extend "trigger during the vision stage invalidates at once" to assert that the new scan's settle wait starts before the old job ends. Verify: they fail.
-- [ ] 2.5 Implement the `_Stage.waiting` case in `_onTrigger` (start now, complete `cancelled`), and make `_abandonScans` complete the active scan's `cancelled`. Verify: the 2.4 tests and the whole `scan_coordinator_*` suite pass, then flip the rows green and re-run the green rows of "One scan in flight".
+- [x] 2.5 Implement the `_Stage.waiting` case in `_onTrigger` (start now, complete `cancelled`), and make `_abandonScans` complete the active scan's `cancelled`. Verify: the 2.4 tests and the whole `scan_coordinator_*` suite pass, then flip the rows green and re-run the green rows of "One scan in flight".
 
 ## 3. Last accepted scan
 

@@ -1241,7 +1241,7 @@ final class _Activation {
 }
 
 /// Which stage a scan waits in; it decides how a newer trigger supersedes it.
-enum _Stage { capture, vision, matching }
+enum _Stage { waiting, capture, vision, matching }
 
 /// A trigger waiting for the scan in flight to return from capture, and the
 /// number of older pending triggers it replaced.
@@ -1277,6 +1277,17 @@ final class _Scan {
   int supersedingTriggers = 0;
   _Stage stage = _Stage.capture;
   bool ended = false;
+
+  final Completer<void> _cancelled = Completer<void>();
+
+  /// Completes when a newer trigger, a stop or a loss supersedes this scan,
+  /// so a wait ends at once.
+  Future<void> get cancelled => _cancelled.future;
+
+  /// Completes [cancelled]; later calls do nothing.
+  void cancel() {
+    if (!_cancelled.isCompleted) _cancelled.complete();
+  }
 
   PassTimeline targetedTimeline = const PassTimeline();
   PassTimeline? fallbackTimeline;
@@ -1356,6 +1367,16 @@ final class _IndexEntry {
   final Future<TitleMatchIndex?> index;
 }
 
+/// Waits for a duration; the scan flow's only way to wait. Tests inject a
+/// waiter they complete by hand.
+typedef ScanWaiter = Future<void> Function(Duration duration);
+
+Future<void> _timerWaiter(Duration duration) {
+  final done = Completer<void>();
+  Timer(duration, done.complete);
+  return done.future;
+}
+
 /// Owns live scanning for the app: the switch, the activation life of the
 /// marker template, vision worker and mouse hook, and the status the Scanner
 /// shows (ADR-0013).
@@ -1383,7 +1404,11 @@ class ScanCoordinator extends ChangeNotifier {
     this.matcher = matchScanRecognition,
     String? runtimeDirectory,
     this.closeTimeout = const Duration(milliseconds: 2500),
-  }) : runtimeDirectory =
+    ScanWaiter? waiter,
+    this.settleDelay = const Duration(milliseconds: 50),
+    this.fallbackDelay = const Duration(milliseconds: 200),
+  }) : _waiter = waiter ?? _timerWaiter,
+       runtimeDirectory =
            runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path {
     catalog.addListener(_syncIndex);
   }
@@ -1409,6 +1434,14 @@ class ScanCoordinator extends ChangeNotifier {
   /// The most any one close is awaited before it counts as incomplete.
   final Duration closeTimeout;
 
+  /// How long after the trigger's timestamp the targeted capture may be
+  /// requested, so the inspect window can settle.
+  final Duration settleDelay;
+
+  /// How long after the trigger's timestamp the fallback capture may be
+  /// requested.
+  final Duration fallbackDelay;
+
   /// How many published scans [recent] keeps.
   static const int recentLimit = 10;
 
@@ -1416,6 +1449,7 @@ class ScanCoordinator extends ChangeNotifier {
   final ScanCaptureFactory _captureFactory;
   final ScanVisionFactory _visionFactory;
   final ScanPlatformFactory _platformFactory;
+  final ScanWaiter _waiter;
 
   ScanPlatform? _platform;
   _Activation? _current;
@@ -1890,9 +1924,9 @@ class ScanCoordinator extends ChangeNotifier {
   /// With no scan in flight the trigger starts one. Otherwise it supersedes
   /// the scan in flight, and how the new scan starts depends on the stage the
   /// old one is in: capture cannot be cancelled, so the newest trigger waits
-  /// in the pending slot for the capture answer; a vision request is
-  /// invalidated and the new scan starts now; a match is left to finish and
-  /// its result is discarded.
+  /// in the pending slot for the capture answer; a wait is cut short and the
+  /// new scan starts now; a vision request is invalidated and the new scan
+  /// starts now; a match is left to finish and its result is discarded.
   void _onTrigger(ScanTrigger trigger) {
     final a = _current;
     if (_disposed || a == null || a.retired) return;
@@ -1910,6 +1944,9 @@ class ScanCoordinator extends ChangeNotifier {
           trigger,
           waiting == null ? 0 : waiting.replaced + 1,
         );
+      case _Stage.waiting:
+        active.cancel();
+        _begin(a, trigger, replaced: 0);
       case _Stage.vision:
         a.vision?.invalidate();
         _begin(a, trigger, replaced: 0);
@@ -1936,6 +1973,7 @@ class ScanCoordinator extends ChangeNotifier {
   /// holds and logs it as superseded.
   void _abandonScans() {
     _scanGeneration++;
+    _active?.cancel();
     _active = null;
     _pending = null;
     _phase = ScanPhase.idle;
@@ -1971,7 +2009,8 @@ class ScanCoordinator extends ChangeNotifier {
   }
 
   Future<void> _flow(_Scan s) async {
-    // Targeted pass.
+    // Targeted pass, once the inspect window had time to settle.
+    if (!await _waitUntil(s, settleDelay)) return _endSuperseded(s);
     ScanFailure? targetedFailure;
     OutcomeRejected<InspectionEvidence>? targetedRejection;
     switch (await _runPass(s, ScanPass.targeted)) {
@@ -2012,6 +2051,7 @@ class ScanCoordinator extends ChangeNotifier {
 
     // Fallback pass: the phase is published before the capture request.
     _setPhase(s, ScanPhase.fallback);
+    if (!await _waitUntil(s, fallbackDelay)) return _endSuperseded(s);
     switch (await _runPass(s, ScanPass.fallback)) {
       case _PassAbandoned():
         return _endSuperseded(s);
@@ -2054,6 +2094,28 @@ class ScanCoordinator extends ChangeNotifier {
             });
         }
     }
+  }
+
+  /// Holds [s] until [delay] after its trigger's timestamp, or until it is
+  /// superseded. Returns whether the scan is still current.
+  ///
+  /// The wait holds no frame and makes no native call. A trigger already old
+  /// enough waits not at all. The wait never exceeds [delay], which also bounds
+  /// it when the clock is missing.
+  Future<bool> _waitUntil(_Scan s, Duration delay) async {
+    final a = s.activation;
+    s.stage = _Stage.waiting;
+    final frequency = a.qpcFrequency;
+    final delayTicks = delay.inMicroseconds * frequency ~/ 1000000;
+    final remainingTicks = s.trigger.event.qpc + delayTicks - _now(a);
+    final ticks = remainingTicks < delayTicks ? remainingTicks : delayTicks;
+    if (ticks > 0) {
+      await Future.any<void>([
+        _waiter(Duration(microseconds: ticks * 1000000 ~/ frequency)),
+        s.cancelled,
+      ]);
+    }
+    return !_dead(s);
   }
 
   ScanRejected _rejection(
