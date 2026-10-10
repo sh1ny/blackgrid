@@ -63,7 +63,7 @@ Implementation notes:
 
 ## 3. Last accepted scan
 
-- [ ] 3.1 Add the test "lastAccepted follows the newest accepted scan only": accepted A, rejected, accepted B, failed, so lastAccepted goes A, A, B, B. Verify: it fails (no getter).
+- [x] 3.1 Add the test "lastAccepted follows the newest accepted scan only": accepted A, rejected, accepted B, failed, so lastAccepted goes A, A, B, B. Verify: it fails (no getter).
 - [ ] 3.2 Implement `_lastAccepted` in `_publish` and the `lastAccepted` getter. Its doc comment says crops are kept for it as well as for `latest`. Verify: 3.1 and "crop bytes are kept only on the latest report" pass; update that test's expectation to "latest and lastAccepted" if needed, then flip the row green.
 
 ## 4. Evidence panel

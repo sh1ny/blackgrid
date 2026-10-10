@@ -1197,6 +1197,34 @@ void main() {
       expect(rig.coordinator.recent.first.id, latest.id);
     });
 
+    test('lastAccepted follows the newest accepted scan only', () async {
+      await readyRig();
+      final a = await rig.acceptTargeted(0, 1000, 'a');
+      expect(rig.coordinator.lastAccepted, same(a));
+
+      // Scan 1 is rejected without a fallback.
+      rig.fire(2000);
+      (await rig.capture.calls.at(1)).succeed(rig.frames.frame());
+      final evidence = _ev();
+      (await rig.vision.calls.at(1))
+          .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+      (await rig.matcher.calls.at(
+        1,
+      )).complete(_rejected(OutcomeRejectReason.catalogModeMismatch, evidence));
+      expect((await rig.published.at(1)).end, isA<ScanRejected>());
+      expect(rig.coordinator.lastAccepted, same(a));
+
+      final b = await rig.acceptTargeted(2, 3000, 'b');
+      expect(rig.coordinator.lastAccepted, same(b));
+
+      // Scan 3 fails at its targeted capture, with no fallback.
+      rig.fire(4000);
+      (await rig.capture.calls.at(3)).fail(const TargetNotForeground());
+      expect((await rig.published.at(3)).end, isA<ScanFailed>());
+      expect(rig.coordinator.lastAccepted, same(b));
+      expect(rig.coordinator.lastAccepted!.hasCrops, isTrue);
+    });
+
     test('the clock frequency is read once per activation', () async {
       await readyRig();
       await rig.acceptTargeted(0, 1000);
