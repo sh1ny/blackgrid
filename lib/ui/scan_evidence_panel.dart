@@ -9,8 +9,9 @@ import '../data/vision/inspection_evidence.dart';
 import '../domain/title_matching.dart';
 import 'theme.dart';
 
-/// What the latest published scan found, the phase of the scan in flight,
-/// stage timings and the recent scans.
+/// What the last accepted scan found (the latest published scan before any is
+/// accepted), a note for a later scan that was not accepted, the phase of the
+/// scan in flight, the latest scan's stage timings and the recent scans.
 ///
 /// It only shows evidence. It never selects an item or reads a decision, so a
 /// scan cannot change what the decision card shows.
@@ -22,7 +23,8 @@ class ScanEvidencePanel extends StatefulWidget {
     required this.catalog,
   });
 
-  /// The coordinator whose phase, latest and recent scans are shown.
+  /// The coordinator whose phase, last accepted, latest and recent scans are
+  /// shown.
   final ScanCoordinator scanner;
 
   /// The catalog the item names come from.
@@ -66,10 +68,10 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     super.dispose();
   }
 
-  /// Decodes the latest report's crop once per report id and disposes the
+  /// Decodes the shown report's crop once per report id and disposes the
   /// image it replaces.
   void _syncImage() {
-    final report = widget.scanner.latest;
+    final report = _shown(widget.scanner);
     final entry = report == null ? null : shownEvidence(report);
     final id = entry != null && _hasCrop(entry) ? report!.id : null;
     if (id == _imageFor) return;
@@ -106,15 +108,28 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
       builder: (context, _) {
         final scanner = widget.scanner;
         final latest = scanner.latest;
+        final shown = _shown(scanner);
         final frequency = scanner.clock?.qpcFrequency();
         return ListView(
           key: const PageStorageKey('scan-evidence-scroll'),
           children: [
             ..._phase(scanner.phase),
-            if (latest == null)
+            if (shown == null)
               const Text('No scan published yet')
-            else
-              ..._report(context, latest, frequency),
+            else ...[
+              if (latest != null && latest.id != shown.id)
+                ..._note(context, latest),
+              ..._report(context, shown),
+            ],
+            if (latest != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                'TIMINGS • Scan #${latest.id}',
+                key: const Key('scan-timings-label'),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              ..._timings(latest, frequency),
+            ],
             const Divider(height: 24),
             const Text(
               'RECENT SCANS',
@@ -154,7 +169,7 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     ],
   };
 
-  List<Widget> _report(BuildContext context, ScanReport report, int? freq) {
+  List<Widget> _report(BuildContext context, ScanReport report) {
     final entry = shownEvidence(report);
     final match = switch (report.end) {
       ScanAccepted(:final outcome) => outcome.match,
@@ -172,9 +187,45 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
         ..._entry(entry)
       else if (shownBestMarkerScore(report) case final double score)
         ..._noEntry(score),
-      const SizedBox(height: 10),
-      Text('TIMINGS', style: bold),
-      ..._timings(report, freq),
+    ];
+  }
+
+  /// The note for [report], a later scan that was not accepted: its reason or
+  /// failure, and when present its OCR text, marker score and best candidate.
+  List<Widget> _note(BuildContext context, ScanReport report) {
+    final entry = shownEvidence(report);
+    return [
+      Text(
+        'Last scan not accepted',
+        key: const Key('scan-note'),
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
+      Text('Scan #${report.id}'),
+      ...switch (report.end) {
+        ScanRejected(:final reason, :final outcome) => [
+          Text('Reason: ${reason.name}', key: const Key('scan-note-reason')),
+          if (entry != null) ...[
+            Text(
+              'Marker score ${_score(entry.markerScore)}',
+              key: const Key('scan-note-marker'),
+            ),
+            Text(
+              'OCR text: ${entry.text.isEmpty ? '(empty)' : entry.text}',
+              key: const Key('scan-note-text'),
+            ),
+          ],
+          ..._candidates(outcome?.match, accepted: false, prefix: 'scan-note'),
+        ],
+        ScanFailed(:final failure) => [
+          Text(
+            'Failure: ${failure.code.name}',
+            key: const Key('scan-note-reason'),
+          ),
+          const Text('No candidate'),
+        ],
+        ScanAccepted() || ScanSuperseded() => const <Widget>[],
+      },
+      const Divider(height: 24),
     ];
   }
 
@@ -200,7 +251,11 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     ScanSuperseded() => const [],
   };
 
-  List<Widget> _candidates(TitleMatch? match, {required bool accepted}) {
+  List<Widget> _candidates(
+    TitleMatch? match, {
+    required bool accepted,
+    String prefix = 'scan',
+  }) {
     final bestId = match?.bestId;
     if (match == null || bestId == null) {
       return accepted ? const [] : const [Text('No candidate')];
@@ -211,14 +266,14 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
             ? 'Best: ${_itemLabel(bestId)} ${_score(match.bestScore)}'
             : 'Best candidate (not accepted): ${_itemLabel(bestId)} '
                   '${_score(match.bestScore)}',
-        key: const Key('scan-best'),
+        key: Key('$prefix-best'),
       ),
       if (match.runnerUpId case final String runnerUp)
         Text(
           'Runner-up: ${_itemLabel(runnerUp)} ${_score(match.runnerUpScore)}',
-          key: const Key('scan-runner-up'),
+          key: Key('$prefix-runner-up'),
         ),
-      Text('Margin ${_score(match.margin)}', key: const Key('scan-margin')),
+      Text('Margin ${_score(match.margin)}', key: Key('$prefix-margin')),
     ];
   }
 
@@ -334,6 +389,11 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     return name == null ? id : '$name ($id)';
   }
 }
+
+/// The report whose evidence the panel shows: the last accepted scan, else
+/// the latest published one.
+ScanReport? _shown(ScanCoordinator scanner) =>
+    scanner.lastAccepted ?? scanner.latest;
 
 /// The evidence entry the panel shows for [report]: the accepted or best
 /// ranked entry, else the first entry of the winning or any pass.

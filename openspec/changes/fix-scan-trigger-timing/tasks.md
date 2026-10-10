@@ -32,10 +32,10 @@ Implementation notes:
 | scanner-evidence → Scanner shows the latest scan's evidence | Failed scan | test/ui/scan_evidence_panel_test.dart | failed report shows failure and no candidate | green |
 | scanner-evidence → Scanner shows the latest scan's evidence | Navigation keeps evidence | test/ui/shell_test.dart | scan evidence survives Map and back | green |
 | scanner-evidence → Scanner shows the latest scan's evidence | Newer accepted scan replaces the shown one | test/application/scan_coordinator_flow_test.dart | lastAccepted follows the newest accepted scan only | green |
-| scanner-evidence → A later unaccepted scan is shown as a note | Rejection after an accepted item | test/ui/scan_evidence_panel_test.dart | rejection after an accepted item keeps it and shows a note | red |
-| scanner-evidence → A later unaccepted scan is shown as a note | Crop and timings after a rejection | test/ui/scan_evidence_panel_test.dart | after a rejection the crop is the accepted scan's and timings are the latest's | red |
-| scanner-evidence → A later unaccepted scan is shown as a note | Failure after an accepted item | test/ui/scan_evidence_panel_test.dart | failure after an accepted item shows a failure note | red |
-| scanner-evidence → A later unaccepted scan is shown as a note | Accepted again | test/ui/scan_evidence_panel_test.dart | a newer acceptance removes the note | red |
+| scanner-evidence → A later unaccepted scan is shown as a note | Rejection after an accepted item | test/ui/scan_evidence_panel_test.dart | rejection after an accepted item keeps it and shows a note | green |
+| scanner-evidence → A later unaccepted scan is shown as a note | Crop and timings after a rejection | test/ui/scan_evidence_panel_test.dart | after a rejection the crop is the accepted scan's and timings are the latest's | green |
+| scanner-evidence → A later unaccepted scan is shown as a note | Failure after an accepted item | test/ui/scan_evidence_panel_test.dart | failure after an accepted item shows a failure note | green |
+| scanner-evidence → A later unaccepted scan is shown as a note | Accepted again | test/ui/scan_evidence_panel_test.dart | a newer acceptance removes the note | green |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | test/ui/shell_test.dart | scan evidence panel is fully on screen at 1660x870 | red |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | test/ui/shell_test.dart | scan evidence panel is on screen at 1100x720 with a long recent list | red |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | test/ui/shell_test.dart | compact layout puts evidence right after the Scanner controls | red |
@@ -69,7 +69,7 @@ Implementation notes:
 ## 4. Evidence panel
 
 - [x] 4.1 Add widget tests in `test/ui/scan_evidence_panel_test.dart` for the four note rows: Rejection after an accepted item, Crop and timings after a rejection, Failure after an accepted item, Accepted again. Verify: they fail.
-- [ ] 4.2 In `lib/ui/scan_evidence_panel.dart`:
+- [x] 4.2 In `lib/ui/scan_evidence_panel.dart`:
   - show `lastAccepted ?? latest` as the main evidence;
   - add the "Last scan not accepted" note, built from `latest` when it differs from `lastAccepted`;
   - decode the crop for the shown report, keyed by its id;
