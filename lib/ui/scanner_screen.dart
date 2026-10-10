@@ -10,7 +10,14 @@ import 'manual_controls.dart';
 import 'scan_evidence_panel.dart';
 import 'theme.dart';
 
-/// Height of the live scan and manual controls panel at text scale 1.
+/// Narrowest window width, in logical pixels, that gets the desktop layout.
+const double desktopWindowWidth = 1100;
+
+/// Horizontal padding the shell puts around the Scanner screen (14 per side).
+const double _shellPadding = 28;
+
+/// Height the live scan and manual controls need at text scale 1. A shorter
+/// desktop column scrolls them inside their panel.
 const double leftHeight = 760;
 
 /// Minimum height of the scan evidence panel at text scale 1.
@@ -26,21 +33,31 @@ class ScannerScreen extends StatelessWidget {
       final left = GridPanel(
         title: 'Scanner',
         icon: Icons.center_focus_weak,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LiveScanPanel(
-              scanner: services.scanner,
-              timingLog: services.scanTimingLog,
-            ),
-            const Divider(height: 24),
-            Expanded(
-              child: ManualControls(
-                services: services,
-                storageKey: 'scanner-results',
+        // The controls need `leftHeight`; on a shorter column they scroll
+        // inside their own panel instead of overflowing.
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            key: const PageStorageKey('scanner-left-scroll'),
+            child: SizedBox(
+              height: math.max(box.maxHeight, leftHeight * scale),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LiveScanPanel(
+                    scanner: services.scanner,
+                    timingLog: services.scanTimingLog,
+                  ),
+                  const Divider(height: 24),
+                  Expanded(
+                    child: ManualControls(
+                      services: services,
+                      storageKey: 'scanner-results',
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       );
       final evidence = ScanEvidencePanel(
@@ -51,7 +68,7 @@ class ScannerScreen extends StatelessWidget {
       final needs = RequirementPanel(services: services);
       final sources = SourcePanel(services: services);
       final history = HistoryPanel(services: services);
-      if (constraints.maxWidth < 1100) {
+      if (constraints.maxWidth + _shellPadding < desktopWindowWidth) {
         return ListView(
           key: const PageStorageKey('scanner-compact-scroll'),
           children: [
@@ -76,25 +93,7 @@ class ScannerScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: 19,
-                child: SingleChildScrollView(
-                  key: const PageStorageKey('scanner-left-scroll'),
-                  child: Column(
-                    children: [
-                      SizedBox(height: leftHeight * scale, child: left),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: math.max(
-                          constraints.maxHeight - (leftHeight * scale) - 14,
-                          evidenceHeight * scale,
-                        ),
-                        child: evidence,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(flex: 19, child: left),
               const SizedBox(width: 14),
               Expanded(
                 flex: 57,
@@ -116,7 +115,16 @@ class ScannerScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              Expanded(flex: 24, child: history),
+              Expanded(
+                flex: 24,
+                child: Column(
+                  children: [
+                    Expanded(flex: 60, child: evidence),
+                    const SizedBox(height: 14),
+                    Expanded(flex: 40, child: history),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
