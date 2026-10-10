@@ -39,9 +39,9 @@ Implementation notes:
 | scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | test/ui/shell_test.dart | scan evidence panel is fully on screen at 1660x870 | green |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | test/ui/shell_test.dart | scan evidence panel is on screen at 1100x720 with a long recent list | green |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | test/ui/shell_test.dart | compact layout puts evidence right after the Scanner controls | green |
-| scanner-evidence → Footer shows the live scan state | Live scan on | test/ui/shell_test.dart | footer says live scan is on when ready | red |
-| scanner-evidence → Footer shows the live scan state | Live scan off | test/ui/shell_test.dart | footer says live scan is off and nothing is captured | red |
-| scanner-evidence → Footer shows the live scan state | Live scan unavailable | test/ui/shell_test.dart | footer says live scan is unavailable | red |
+| scanner-evidence → Footer shows the live scan state | Live scan on | test/ui/shell_test.dart | footer says live scan is on when ready | green |
+| scanner-evidence → Footer shows the live scan state | Live scan off | test/ui/shell_test.dart | footer says live scan is off and nothing is captured | green |
+| scanner-evidence → Footer shows the live scan state | Live scan unavailable | test/ui/shell_test.dart | footer says live scan is unavailable | green |
 
 ## 1. ADR and roadmap
 
@@ -81,7 +81,7 @@ Implementation notes:
 
 - [x] 5.1 Add tests in `test/ui/shell_test.dart`: the panel is fully on screen at 1660x870; it is on screen at 1100x720 with a long recent list; the compact order is right at 900 wide; and the three footer states. Replace the footer assertion at `shell_test.dart:23`. Verify: they fail.
 - [x] 5.2 Move the evidence panel into the desktop right column above history (flex 60 to 40), and make the left column the Scanner panel only (`Expanded`, no page-level scroll; the controls scroll inside the panel when the column is shorter than they need, and the desktop breakpoint is measured on the window, per amended D4), as in `lib/ui/scanner_screen.dart`. Update "reference panel positions and proportions at Scanner aspect" for the new right-column layout. Verify: the 5.1 layout tests and the existing "does not overflow" tests pass.
-- [ ] 5.3 Replace the constant footer text in `lib/ui/shell.dart` with a `ListenableBuilder` on `services.scanner` using the D5 texts. Verify: the 5.1 footer tests pass, then flip the rows green.
+- [x] 5.3 Replace the constant footer text in `lib/ui/shell.dart` with a `ListenableBuilder` on `services.scanner` using the D5 texts. Verify: the 5.1 footer tests pass, then flip the rows green.
 
 ## 6. Integration
 
