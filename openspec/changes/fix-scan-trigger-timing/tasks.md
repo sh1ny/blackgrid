@@ -68,7 +68,7 @@ Implementation notes:
 
 ## 4. Evidence panel
 
-- [ ] 4.1 Add widget tests in `test/ui/scan_evidence_panel_test.dart` for the four note rows: Rejection after an accepted item, Crop and timings after a rejection, Failure after an accepted item, Accepted again. Verify: they fail.
+- [x] 4.1 Add widget tests in `test/ui/scan_evidence_panel_test.dart` for the four note rows: Rejection after an accepted item, Crop and timings after a rejection, Failure after an accepted item, Accepted again. Verify: they fail.
 - [ ] 4.2 In `lib/ui/scan_evidence_panel.dart`:
   - show `lastAccepted ?? latest` as the main evidence;
   - add the "Last scan not accepted" note, built from `latest` when it differs from `lastAccepted`;

@@ -77,6 +77,41 @@ Future<void> _accept(
   await tester.pump();
 }
 
+/// Drives scan [index] + 1 to a `belowSimilarity` rejection over both passes.
+/// Its evidence has no crop, so a crop on screen can only be the accepted one.
+Future<void> _reject(
+  WidgetTester tester,
+  ScanUiRig rig, {
+  required int index,
+  int trigger = 5000000,
+  String text = 'FILTERBYITEM',
+}) async {
+  await tester.runAsync(() async {
+    final ports = rig.ports;
+    ports.fire(trigger);
+    await ports.captureOk(index * 2 - 1, at: trigger + 30 * _msTicks);
+    final first = scanEvidence(text: text, score: 0.88, withCrop: false);
+    await ports.visionDeliver(
+      index,
+      scanRecognised(InspectionFrameKind.targeted, [first]),
+      at: trigger + 60 * _msTicks,
+    );
+    (await rig.matcher.calls.at(index)).complete(scanBelowSimilarity(first));
+    await ports.captureOk(index * 2, at: trigger + 70 * _msTicks);
+    final second = scanEvidence(text: text, score: 0.88, withCrop: false);
+    await ports.visionDeliver(
+      index + 1,
+      scanRecognised(InspectionFrameKind.fullClient, [second]),
+      at: trigger + 90 * _msTicks,
+    );
+    rig.ports.clock.now = trigger + 120 * _msTicks;
+    (await rig.matcher.calls.at(index + 1))
+        .complete(scanBelowSimilarity(second));
+    await reportPublished(rig.coordinator, 2);
+  });
+  await tester.pump();
+}
+
 void main() {
   testWidgets('fallback phase shows fallback underway', (tester) async {
     final rig = await _pump(tester);
@@ -242,6 +277,90 @@ void main() {
     expect(find.byKey(const Key('scan-best')), findsNothing);
     expect(find.byKey(const Key('scan-item')), findsNothing);
     expect(find.text('No candidate'), findsOneWidget);
+  });
+
+  testWidgets('rejection after an accepted item keeps it and shows a note', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await _accept(tester, rig);
+    await _reject(tester, rig, index: 1);
+
+    expect(_text(tester, 'scan-end'), 'Accepted');
+    expect(_text(tester, 'scan-item'), contains(scanItemName));
+    expect(find.text('Last scan not accepted'), findsOneWidget);
+    expect(_text(tester, 'scan-note-reason'), contains('belowSimilarity'));
+    expect(_text(tester, 'scan-note-text'), contains('FILTERBYITEM'));
+    expect(_text(tester, 'scan-note-marker'), contains('0.88'));
+    final best = _text(tester, 'scan-note-best');
+    expect(best, contains('not accepted'));
+    expect(best, contains(scanOtherName));
+    expect(
+      tester.getTopLeft(find.text('Last scan not accepted')).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('scan-end'))).dy),
+    );
+  });
+
+  testWidgets("after a rejection the crop is the accepted scan's and "
+      "timings are the latest's", (tester) async {
+    final rig = await _pump(tester);
+    await _accept(tester, rig);
+    await _reject(tester, rig, index: 1);
+    await _untilCrop(tester);
+
+    final crop = tester.widget<RawImage>(
+      find.byKey(const Key('scan-crop-image')),
+    );
+    expect((crop.image!.width, crop.image!.height), (4, 4));
+    expect(_text(tester, 'scan-timings-label'), contains('Scan #2'));
+    expect(_text(tester, 'scan-timing-total'), 'Total 120 ms');
+    expect(find.text('Scan #1'), findsOneWidget);
+  });
+
+  testWidgets('failure after an accepted item shows a failure note', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await _accept(tester, rig);
+    await tester.runAsync(() async {
+      rig.ports.fire(5000000);
+      (await rig.ports.capture.calls.at(1)).fail(const TargetNotForeground());
+      await reportPublished(rig.coordinator, 2);
+    });
+    await tester.pump();
+
+    expect(_text(tester, 'scan-end'), 'Accepted');
+    expect(_text(tester, 'scan-item'), contains(scanItemName));
+    expect(find.text('Last scan not accepted'), findsOneWidget);
+    expect(_text(tester, 'scan-note-reason'), contains('targetNotForeground'));
+    expect(find.byKey(const Key('scan-note-best')), findsNothing);
+  });
+
+  testWidgets('a newer acceptance removes the note', (tester) async {
+    final rig = await _pump(tester);
+    await _accept(tester, rig);
+    await _reject(tester, rig, index: 1);
+    expect(find.text('Last scan not accepted'), findsOneWidget);
+
+    await tester.runAsync(() async {
+      final ports = rig.ports;
+      ports.fire(9000000);
+      await ports.captureOk(3, at: 9000000 + 40 * _msTicks);
+      final evidence = scanEvidence();
+      await ports.visionDeliver(
+        3,
+        scanRecognised(InspectionFrameKind.targeted, [evidence]),
+        at: 9000000 + 90 * _msTicks,
+      );
+      (await rig.matcher.calls.at(3)).complete(scanAccepted(evidence));
+      await reportPublished(rig.coordinator, 3);
+    });
+    await tester.pump();
+
+    expect(find.text('Last scan not accepted'), findsNothing);
+    expect(find.byKey(const Key('scan-note-reason')), findsNothing);
+    expect(find.text('Scan #3'), findsOneWidget);
+    expect(_text(tester, 'scan-end'), 'Accepted');
   });
 
   testWidgets('timings show stage and total ms', (tester) async {
