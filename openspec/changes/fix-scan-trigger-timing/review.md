@@ -2,11 +2,12 @@
 
 ## Metadata
 
-- **Round:** 1
-- **Prior round:** none
+- **Round:** 2
+- **Prior round:** 1
 - **Reviewer:** fresh-context subagent (Claude Code, specwright-reviewer)
 - **Reviewed:** `proposal.md`, `design.md` (TIER: FULL), `specs/scan-pipeline/spec.md`, `specs/scanner-evidence/spec.md`; main specs `openspec/specs/scan-pipeline/spec.md`, `openspec/specs/scanner-evidence/spec.md`; `openspec/architecture.md`; ADR-0010, ADR-0013; source `lib/application/scan_coordinator.dart`, `lib/application/app_services.dart`, `lib/ui/scanner_screen.dart`, `lib/ui/scan_evidence_panel.dart`, `lib/ui/shell.dart`, `lib/data/capture/capture_policy.dart`; tests `test/ui/shell_test.dart`, `test/ui/scan_evidence_panel_test.dart`, `test/ui/support/scan_ui_support.dart`, `test/application/support/fake_scan_ports.dart`, `test/application/scan_coordinator_flow_test.dart`; fork `Services/ScannerOrchestrator.cs`, `MainWindow.xaml.cs`, `Services/ScannerStateStore.cs`; `docs/IMPLEMENTATION_STRATEGY.md:35,196`. Nothing was built, run or tested.
 - **Re-check (round 1):** the same reviewer, in a new run, re-checked Required Changes 1-4 against the updated `specs/scan-pipeline/spec.md` (MODIFIED "One scan in flight, latest trigger wins"), `specs/scanner-evidence/spec.md` (MODIFIED "Scan phase is visible, including fallback", plus the scenario "Crop and timings after a rejection"), design.md D1 (Wiring, Tests) and D3 (Crop, Timings), and the proposal's Impact. All four hold. One leftover, which does not affect the verdict: design.md D1 still says "The fork measures from enqueue" in its second Rejected bullet, while its Scope bullet and the ADR-0014 note now say the fork's settle starts at dequeue.
+- **Re-check (round 2):** a new fresh-context reviewer checked the two "*Amended during apply:*" bullets in design.md D4 and task 5.2 against `specs/scanner-evidence/spec.md` ("Scan evidence panel is visible without scrolling" and its three scenarios, "Footer shows the live scan state"), the rest of D4 and D5, and the uncommitted diff of `lib/ui/scanner_screen.dart`, `lib/ui/shell.dart`, `lib/ui/manual_controls.dart` and `test/ui/shell_test.dart`. Confirmed in `lib/ui/shell.dart`: the Scanner screen sits in `Padding(padding: EdgeInsets.all(14))` (`:158-160`) between a `66 × scale` header and a `34 × scale` footer, so the 28 px claim is right. Computed by hand, not run: at 1100x720 the screen gets 1072 x 592, `1072 + 28` is not below 1100, so the desktop layout is used. Nothing was built, run or tested.
 
 <!-- This verdict covers only the contents reviewed. Editing proposal, specs or design afterward (other than applying Required Changes) voids it. -->
 
@@ -53,11 +54,39 @@ None.
 
 4. **State the left-column sizing in D4.** Today the left column is a fixed `760 * scale` inside its own scroll view (`scanner_screen.dart:76-83`). The desktop row's minimum height is `700 * scale` (`:69`). Without the nested scroll view, the Scanner panel shrinks to the row height, and `ManualControls` absorbs the loss. Say whether that is intended, so the 1.25 and 1.5 scale overflow tests in `shell_test.dart:9-28` are not a surprise.
 
+### Round 2
+
+The amendment satisfies the spec. Evidence now sits at the top of the right column, so at 1100x720 its frame spans y 80 to about 492 with the page at rest (`0.6 × (700 − 14)` ≈ 412 px tall). At 1660x870 it spans about 80 to 497. The new breakpoint is right: windows of 1100 to 1127 px get the desktop layout. The inner `SingleChildScrollView` sized `max(available, 760 × scale)` removes the 117 px overflow without hiding any control. `isExpanded: true` on the dropdown is a safe width fix. D5 matches `_liveScanFooter` row for row. The compact order is unchanged.
+
+#### Moderate (round 2)
+
+1. **The amended D4 says "The page itself never scrolls", but at 1100x720 it does.**
+   - The desktop branch still wraps the row in `SingleChildScrollView(key: 'scanner-desktop-scroll')` with `height: math.max(constraints.maxHeight, 700 * scale)` (`lib/ui/scanner_screen.dart:89-92`).
+   - At 1100x720 the screen gets 592 px of height (`720 − 66 − 34 − 28`), so the row is 700 px and the page has 108 px of scroll extent. The Scanner panel's bottom is at about y 780, 60 px below the window, and only a page scroll reaches it. Its controls therefore scroll in two nested views, the panel's own and the page's. The same holds for any window shorter than about 828 px, and for larger windows at text scale 1.25 and 1.5.
+   - The spec is still met, because it asks for the frame to be on screen "without scrolling the page", and the evidence panel is at the top. But the design records a property the code does not have. A later test or change written from D4 ("page never scrolls") would fail or remove the 700 px floor that protects the middle column from overflowing.
+   - The tests do not show the gap. The 1660x870 test asserts `page.position.pixels == 0`, which nothing in the test could change, so it proves nothing. At that size the page cannot scroll anyway (742 > 700). The 1100x720 test does not look at the page scroll at all.
+
+#### Suggestions (round 2)
+
+1. **Derive the breakpoint from the window, not from the shell's padding.** `_shellPadding = 28` in `scanner_screen.dart:17` copies `EdgeInsets.all(14)` in `shell.dart:160`, and neither file names the other. The risk is small. If the shell padding grows, the 1100x720 test fails, because the compact layout puts evidence at y 854 or lower. If it shrinks, windows a few px under 1100 get the desktop layout, which does no harm. `MediaQuery.sizeOf(context).width < desktopWindowWidth` measures the window, as the spec says, and removes the coupling. It is not required.
+2. **Make the layout tests prove what they claim.**
+   - 1660x870: assert `page.position.maxScrollExtent == 0`, not `pixels == 0`.
+   - 1100x720: assert `page.position.pixels == 0` before reading the frame (the requirement says "without scrolling the page"), and assert the desktop layout explicitly, for example `evidence.left > scanner.right`. Today the desktop layout is only proven indirectly, because the compact layout would put the frame below 720.
+   - The footer tests cover the three spec scenarios. `starting` and `stopping` have no test, and neither does the gold colour for `ready`. The spec has no scenario for them, so this is optional.
+
 ## Verdict
 
 VERDICT: APPROVE_WITH_CHANGES
 
+Round 2 verdict. The amended D4 meets the spec and does not break D5 or any other requirement. One design statement is wrong about the code (Moderate round 2, item 1).
+
 ## Required Changes
+
+### Round 2
+
+1. In design.md D4, replace "The page itself never scrolls" with what the code does. The desktop page keeps its `700 × scale` minimum height and scrolls when the screen area is shorter (108 px at 1100x720, where the Scanner panel's bottom is reachable only by that scroll). The evidence panel is at the top of the right column, so its frame is fully on screen while the page is unscrolled. Alternatively, remove the 700 px floor and show that the middle column does not overflow at 1100x720. In either case, the 1100x720 test in `test/ui/shell_test.dart` must assert that the page scroll offset is 0 when it reads the evidence frame.
+
+### Round 1 (applied, see Rebuttals)
 
 1. In `specs/scan-pipeline/spec.md`, add a `## MODIFIED Requirements` entry for "One scan in flight, latest trigger wins". Copy the full main text and narrow the pending-slot sentence to a scan in its capture stage. State that a trigger during a wait or during vision or matching starts the new scan at once. Keep all existing scenarios.
 2. In `specs/scanner-evidence/spec.md`, add a MODIFIED entry for "Scan phase is visible, including fallback". Change "from the fallback capture request" to "from the start of the fallback pass, including its wait before the fallback capture request". Keep both existing scenarios.
@@ -76,3 +105,8 @@ CHANGES_APPLIED: yes
   - The footer spec lists `stopping`.
   - The settle scenario asserts the exact 49 ms remaining wait.
   - D4 says the left column fills its height and `ManualControls` scrolls.
+- **Round 2, required change 1:** fixed by correcting D4. The desktop page keeps its `700 × scale` floor (it stops the middle column overflowing); D4 now says the page scrolls on short windows (108 px at 1100x720) and that the Scanner controls are then reached through both scrolls. The 1100x720 test asserts the page offset is 0 when it reads the evidence frame.
+- **Round 2 suggestions:**
+  - Applied: the 1660x870 test asserts `maxScrollExtent == 0`, and the 1100x720 test asserts the desktop layout directly (evidence right of the Scanner panel).
+  - Not applied: measuring the breakpoint with `MediaQuery` instead of the 28 px shell padding allowance. The reviewer rated the coupling a small risk, and `ScannerScreen` measuring its own constraints keeps it correct when hosted in a narrower box.
+  - Not applied: tests for the `starting` and `stopping` footer texts and the `ready` gold colour, which have no spec scenario.
