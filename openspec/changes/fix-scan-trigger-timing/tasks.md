@@ -86,7 +86,8 @@ Implementation notes:
 ## 6. Integration
 
 - [x] 6.1 Run `mise run analyze` and `mise run test`, and `dart format` the changed files. Verify: both are green and every test-map row is green.
-- [ ] 6.2 `mise run build:release`, only after confirming Escape from Tarkov is not running. If that cannot be confirmed, skip the build and record it as unverified. Verify: the build succeeds, or the skip is recorded.
+- [x] 6.2 `mise run build:release`, only after confirming Escape from Tarkov is not running. If that cannot be confirmed, skip the build and record it as unverified. Verify: the build succeeds, or the skip is recorded.
+  - **Skipped, unverified (2026-10-10):** a process-name check found Escape from Tarkov running (`EscapeFromTarkov`, `BEService`, `BsgLauncher`), so the agent did not run `mise run build:release`. The user runs it, or an agent runs it once the game is confirmed closed.
 
 ## Workflow follow-up
 
