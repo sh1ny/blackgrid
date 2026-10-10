@@ -1587,10 +1587,14 @@ class ScanCoordinator extends ChangeNotifier {
     _disposed = true;
     catalog.removeListener(_syncIndex);
     _stop();
-    final persist = _offPersist;
-    if (persist != null) {
-      await persist.timeout(closeTimeout, onTimeout: () {});
+    // Let a switch save land before the settings and database are torn down:
+    // the off save a tap queued, then any save still running.
+    Future<void> saves() async {
+      await _offPersist;
+      await _savesLanded();
     }
+
+    await saves().timeout(closeTimeout, onTimeout: () {});
     await _chain.timeout(closeTimeout * 2, onTimeout: () {});
     final platform = _platform;
     if (platform != null) {

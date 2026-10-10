@@ -193,6 +193,21 @@ void main() {
       }
     });
 
+    test('a line JSON cannot encode is dropped and counted', () async {
+      final sink = _FakeSink();
+      final log = ScanTimingLog(Directory.systemTemp, sink: sink);
+
+      log.append({'v': 1, 'score': double.nan});
+      log.append({'v': 1, 'n': 2});
+      await log.close();
+
+      expect(sink.written, hasLength(1));
+      final line = _decode(sink.written.single);
+      expect(line['n'], 2);
+      expect(line['droppedLines'], 1);
+      expect(log.status.value, isA<ScanTimingAvailable>());
+    });
+
     test('a logs path that is a file is unavailable, not thrown', () async {
       final data = Directory.systemTemp.createTempSync('blackgrid-log-');
       addTearDown(() => data.deleteSync(recursive: true));

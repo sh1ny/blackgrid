@@ -79,7 +79,7 @@ final class DirectoryScanTimingSink implements ScanTimingFileSink {
 /// dropped and counted, and the next written line carries `droppedLines`.
 /// Before a write would grow the file past [maxBytes], the file is renamed to
 /// `scan-timings.1.jsonl`, replacing any earlier one. A line longer than
-/// [maxBytes] on its own is dropped and counted.
+/// [maxBytes] on its own, or one JSON cannot encode, is dropped and counted.
 class ScanTimingLog {
   /// Creates a log in [logs]. [sink] replaces the real file for tests.
   ScanTimingLog(
@@ -167,7 +167,14 @@ class ScanTimingLog {
         final entry = _queue.removeFirst();
         final carried = _dropped;
         final line = carried == 0 ? entry : {...entry, 'droppedLines': carried};
-        final bytes = utf8.encode('${jsonEncode(line)}\n');
+        final List<int> bytes;
+        try {
+          bytes = utf8.encode('${jsonEncode(line)}\n');
+        } on JsonUnsupportedObjectError {
+          // A value JSON cannot hold, such as NaN: drop it like an overflow.
+          _dropped++;
+          continue;
+        }
         if (bytes.length > maxBytes) {
           // No file could hold it within the bound: drop it like an overflow.
           _dropped++;

@@ -47,7 +47,7 @@ class _Rig {
   _Rig._(this.db, this.settings, this.catalog);
 
   static Future<_Rig> create({bool liveScanSaved = false}) async {
-    final db = BlackgridDatabase(NativeDatabase.memory());
+    final db = _GatedDatabase(NativeDatabase.memory());
     if (liveScanSaved) {
       await db.saveSettings(AppSettings(liveScan: true));
     }
@@ -62,7 +62,7 @@ class _Rig {
     return _Rig._(db, settings, catalog);
   }
 
-  final BlackgridDatabase db;
+  final _GatedDatabase db;
   final SettingsController settings;
   final CatalogController catalog;
 
@@ -517,6 +517,26 @@ void main() {
       expect((await rig.db.readSettings()).liveScan, isFalse);
       expect(rig.settings.settings.liveScan, isFalse);
     });
+
+    test('dispose waits for a switch-on save in flight', () async {
+      rig = await _Rig.create();
+      final gate = rig.db.saveGate = Completer<void>();
+      final on = rig.coordinator.setLiveScan(true);
+      await rig.db.saveEntered.future;
+
+      var disposeDone = false;
+      final disposed = rig.coordinator.dispose().then(
+        (_) => disposeDone = true,
+      );
+      // Drain everything dispose could do without the save landing.
+      await pumpEventQueue();
+      expect(disposeDone, isFalse, reason: 'dispose waits for the save');
+
+      gate.complete();
+      await Future.wait([on, disposed]);
+      expect((await rig.db.readSettings()).liveScan, isTrue);
+      expect(rig.settings.settings.liveScan, isTrue);
+    });
   });
 
   group('switch-off during a hung start', () {
@@ -823,4 +843,25 @@ void main() {
       heldClose.complete(null);
     });
   });
+}
+
+/// A database whose settings writes can be held at [saveGate].
+class _GatedDatabase extends BlackgridDatabase {
+  _GatedDatabase(super.executor);
+
+  /// When set, settings writes wait for it before writing.
+  Completer<void>? saveGate;
+
+  /// Completes when a held settings write starts waiting.
+  final Completer<void> saveEntered = Completer<void>();
+
+  @override
+  Future<void> saveSettings(AppSettings settings) async {
+    final gate = saveGate;
+    if (gate != null) {
+      if (!saveEntered.isCompleted) saveEntered.complete();
+      await gate.future;
+    }
+    await super.saveSettings(settings);
+  }
 }
