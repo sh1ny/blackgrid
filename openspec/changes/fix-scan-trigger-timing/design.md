@@ -70,8 +70,10 @@ TIER: FULL
 
 - **Choice:**
   - The desktop right column becomes a `Column`: `Expanded(flex: 60, evidence)`, a 14 px gap, then `Expanded(flex: 40, history)`.
-  - The left column drops its nested scroll view and the evidence slot, so it is just the Scanner controls. It fills the column height (`Expanded`) instead of a fixed 760 px. `ManualControls` already scrolls its own results (`scanner_screen.dart:36-41`), so the column shrinks on short windows without clipping.
-  - The panel's existing inner `ListView` scrolls the content. The compact layout (< 1100) keeps its current order, which already puts evidence right after the Scanner controls.
+  - The left column drops the page-level scroll view that held the Scanner controls and the evidence slot. It is now the Scanner panel only and fills the column height (`Expanded`) instead of a fixed 760 px.
+  - *Amended during apply:* the Scanner controls need about 760 px at scale 1 (744 px measured at 1100 wide). `ManualControls` scrolling only its own results is not enough at 1100x720, where the panel overflowed by 117 px. So the controls scroll inside the Scanner panel (`SingleChildScrollView` sized to `max(available, 760 × scale)`). The desktop page keeps its existing scroll view with a `700 × scale` minimum height, which stops the middle column overflowing on short windows (at 1100x720 the page can scroll by 108 px). On such windows the Scanner controls are reached through both scrolls. The evidence panel's frame is on screen with the page unscrolled, which is what the spec requires; the 1100x720 test asserts a page offset of 0. The mode dropdown gets `isExpanded: true`, which fixes a 19 px width overflow at that size.
+  - The panel's existing inner `ListView` scrolls the content. The compact layout keeps its current order, which already puts evidence right after the Scanner controls.
+  - *Amended during apply:* the breakpoint is measured on the window, as the spec states ("window at least 1100 logical pixels wide"). The shell pads the screen by 14 px per side, so the old `constraints.maxWidth < 1100` sent windows of 1100 to 1127 px to the compact layout. The compare is now `maxWidth + 28 < 1100` (`desktopWindowWidth`).
 - **Rejected:** a tab or toggle in the left column between Scanner controls and evidence. It hides evidence behind a click again, which is the problem we are fixing.
 - **Rejected:** squeezing evidence into the middle column. It competes with the decision card, the main manual surface.
 - **Reversal cost:** low.
