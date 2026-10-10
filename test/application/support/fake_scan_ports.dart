@@ -14,6 +14,39 @@ import 'package:blackgrid/domain/title_matching.dart';
 /// An ordered record of what the fakes were asked to do.
 typedef ScanEventLog = List<String>;
 
+/// A [ScanWaiter] that returns at once, so a rig never waits for a real timer.
+Future<void> immediateScanWaiter(Duration _) => Future<void>.value();
+
+/// A hand-written [ScanWaiter] that records every requested duration.
+///
+/// By default each wait returns at once. With [hold] set, each wait stays open
+/// until the test calls [release].
+final class FakeScanWaiter {
+  FakeScanWaiter({this.hold = false});
+
+  /// Whether a wait stays open until released.
+  final bool hold;
+
+  /// Every duration requested, in order.
+  final CallLog<Duration> requests = CallLog<Duration>();
+  final List<Completer<void>> _open = [];
+
+  /// The [ScanWaiter] to hand to the coordinator.
+  Future<void> call(Duration duration) {
+    requests.add(duration);
+    if (!hold) return Future<void>.value();
+    final done = Completer<void>();
+    _open.add(done);
+    return done.future;
+  }
+
+  /// Completes the wait at [index] (in request order) if it is still open.
+  void release(int index) {
+    final done = _open[index];
+    if (!done.isCompleted) done.complete();
+  }
+}
+
 /// An append-only list whose entries can be awaited by index, so a test waits
 /// for a call to arrive instead of sleeping.
 final class CallLog<T> {
@@ -258,6 +291,10 @@ final class FakeScanVision implements ScanVisionPort {
   int startCalls = 0;
   int closeCalls = 0;
   int invalidations = 0;
+
+  /// Whether `invalidate` answers the waiting requests at once. A test turns
+  /// this off to keep an invalidated job running past the invalidation.
+  bool answerOnInvalidate = true;
   ScanWorkerState _state = ScanWorkerState.idle;
   final Completer<void> _exit = Completer<void>();
 
@@ -304,6 +341,7 @@ final class FakeScanVision implements ScanVisionPort {
   void invalidate() {
     invalidations++;
     events.add('$name.invalidate');
+    if (!answerOnInvalidate) return;
     for (final call in calls.items) {
       call.answer(const VisionInvalidated<InspectionRecognition>(0));
     }

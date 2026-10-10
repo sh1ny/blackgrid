@@ -142,6 +142,7 @@ final class _Rig {
         return created;
       },
       platformFactory: () => platform = FakeScanPlatform(events),
+      waiter: waiter.call,
     );
     coordinator.addListener(_observe);
   }
@@ -178,6 +179,7 @@ final class _Rig {
   final FakeScanFrames frames = FakeScanFrames();
   final FakeScanMatcher matcher = FakeScanMatcher();
   final FakeIndexBuilder builder = FakeIndexBuilder();
+  final FakeScanWaiter waiter = FakeScanWaiter();
   final CallLog<Map<String, Object?>> logs = CallLog<Map<String, Object?>>();
   final CallLog<ScanReport> published = CallLog<ScanReport>();
   final List<ScanPhase> phases = [];
@@ -639,16 +641,25 @@ void main() {
 
     test('trigger during the vision stage invalidates at once', () async {
       await readyRig();
+      rig.vision.answerOnInvalidate = false;
       rig.fire(1000);
       (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
       final old = await rig.vision.calls.at(0);
+      expect(rig.waiter.requests.length, 1, reason: 'scan 1 settle wait');
 
       rig.fire(2000);
 
       expect(rig.vision.invalidations, 1);
+      expect(old.isAnswered, isFalse, reason: 'the old job is still running');
+      expect(
+        rig.waiter.requests.length,
+        2,
+        reason: 'the new settle wait starts before the old job ends',
+      );
       final second = await rig.capture.calls.at(1);
       expect(second.trigger.qpc, 2000);
-      expect(old.isAnswered, isTrue);
+
+      old.deliver(_recognised(InspectionFrameKind.targeted, [_ev()]));
       final line = await rig.logs.at(0);
       expect(line['end'], 'superseded');
       expect(
@@ -1120,8 +1131,9 @@ void main() {
       await readyRig();
       rig.clock.now = 1010;
       rig.fire(1000);
+      final call = await rig.capture.calls.at(0);
       rig.clock.now = 1020;
-      (await rig.capture.calls.at(0)).fail(const TargetGone());
+      call.fail(const TargetGone());
 
       final report = await rig.published.at(0);
       final targeted = report.timeline.targeted!;
