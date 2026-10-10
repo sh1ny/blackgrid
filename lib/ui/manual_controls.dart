@@ -30,6 +30,7 @@ class ManualControls extends StatelessWidget {
           DropdownButtonFormField<GameMode>(
             key: ValueKey('$storageKey-${services.catalog.mode.name}'),
             initialValue: services.catalog.mode,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Live game mode'),
             items: GameMode.values
                 .map(

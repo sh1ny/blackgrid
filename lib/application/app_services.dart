@@ -41,6 +41,9 @@ class AppServices {
     ScanCaptureFactory? scanCaptureFactory,
     ScanVisionFactory? scanVisionFactory,
     ScanPlatformFactory? scanPlatformFactory,
+    ScanWaiter? scanWaiter,
+    Duration scanSettleDelay = const Duration(milliseconds: 50),
+    Duration scanFallbackDelay = const Duration(milliseconds: 200),
   }) : _client = client {
     final loader = PreparedMapPackLoader();
     maps =
@@ -88,6 +91,9 @@ class AppServices {
       visionFactory: scanVisionFactory ?? openDefaultScanVision,
       platformFactory: scanPlatformFactory ?? openDefaultScanPlatform,
       runtimeDirectory: scanRuntimeDirectory,
+      waiter: scanWaiter,
+      settleDelay: scanSettleDelay,
+      fallbackDelay: scanFallbackDelay,
     );
     settings.addListener(_syncMapSettings);
     maps.addListener(_syncMapContext);

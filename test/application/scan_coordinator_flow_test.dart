@@ -142,6 +142,7 @@ final class _Rig {
         return created;
       },
       platformFactory: () => platform = FakeScanPlatform(events),
+      waiter: waiter.call,
     );
     coordinator.addListener(_observe);
   }
@@ -178,6 +179,7 @@ final class _Rig {
   final FakeScanFrames frames = FakeScanFrames();
   final FakeScanMatcher matcher = FakeScanMatcher();
   final FakeIndexBuilder builder = FakeIndexBuilder();
+  final FakeScanWaiter waiter = FakeScanWaiter();
   final CallLog<Map<String, Object?>> logs = CallLog<Map<String, Object?>>();
   final CallLog<ScanReport> published = CallLog<ScanReport>();
   final List<ScanPhase> phases = [];
@@ -639,16 +641,25 @@ void main() {
 
     test('trigger during the vision stage invalidates at once', () async {
       await readyRig();
+      rig.vision.answerOnInvalidate = false;
       rig.fire(1000);
       (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
       final old = await rig.vision.calls.at(0);
+      expect(rig.waiter.requests.length, 1, reason: 'scan 1 settle wait');
 
       rig.fire(2000);
 
       expect(rig.vision.invalidations, 1);
+      expect(old.isAnswered, isFalse, reason: 'the old job is still running');
+      expect(
+        rig.waiter.requests.length,
+        2,
+        reason: 'the new settle wait starts before the old job ends',
+      );
       final second = await rig.capture.calls.at(1);
       expect(second.trigger.qpc, 2000);
-      expect(old.isAnswered, isTrue);
+
+      old.deliver(_recognised(InspectionFrameKind.targeted, [_ev()]));
       final line = await rig.logs.at(0);
       expect(line['end'], 'superseded');
       expect(
@@ -1120,8 +1131,9 @@ void main() {
       await readyRig();
       rig.clock.now = 1010;
       rig.fire(1000);
+      final call = await rig.capture.calls.at(0);
       rig.clock.now = 1020;
-      (await rig.capture.calls.at(0)).fail(const TargetGone());
+      call.fail(const TargetGone());
 
       final report = await rig.published.at(0);
       final targeted = report.timeline.targeted!;
@@ -1183,6 +1195,34 @@ void main() {
         reason: 'summaries only',
       );
       expect(rig.coordinator.recent.first.id, latest.id);
+    });
+
+    test('lastAccepted follows the newest accepted scan only', () async {
+      await readyRig();
+      final a = await rig.acceptTargeted(0, 1000, 'a');
+      expect(rig.coordinator.lastAccepted, same(a));
+
+      // Scan 1 is rejected without a fallback.
+      rig.fire(2000);
+      (await rig.capture.calls.at(1)).succeed(rig.frames.frame());
+      final evidence = _ev();
+      (await rig.vision.calls.at(1))
+          .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+      (await rig.matcher.calls.at(
+        1,
+      )).complete(_rejected(OutcomeRejectReason.catalogModeMismatch, evidence));
+      expect((await rig.published.at(1)).end, isA<ScanRejected>());
+      expect(rig.coordinator.lastAccepted, same(a));
+
+      final b = await rig.acceptTargeted(2, 3000, 'b');
+      expect(rig.coordinator.lastAccepted, same(b));
+
+      // Scan 3 fails at its targeted capture, with no fallback.
+      rig.fire(4000);
+      (await rig.capture.calls.at(3)).fail(const TargetNotForeground());
+      expect((await rig.published.at(3)).end, isA<ScanFailed>());
+      expect(rig.coordinator.lastAccepted, same(b));
+      expect(rig.coordinator.lastAccepted!.hasCrops, isTrue);
     });
 
     test('the clock frequency is read once per activation', () async {

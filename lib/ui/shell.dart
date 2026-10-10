@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/app_services.dart';
+import '../application/scan_coordinator.dart';
 import 'import_dialog.dart';
 import 'map_screen.dart';
 import 'scanner_screen.dart';
@@ -219,11 +220,10 @@ class _BlackgridShellState extends State<BlackgridShell> {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(width: 22),
-                          const Text(
-                            'No capture • no game interaction',
-                            style: TextStyle(
-                              color: GridColors.muted,
-                              fontSize: 11,
+                          ListenableBuilder(
+                            listenable: widget.services.scanner,
+                            builder: (context, _) => _liveScanFooter(
+                              widget.services.scanner.status.state,
                             ),
                           ),
                         ],
@@ -238,6 +238,22 @@ class _BlackgridShellState extends State<BlackgridShell> {
       ),
     ),
   );
+
+  /// The footer line for the live scan [state]; only `ready` is gold.
+  Widget _liveScanFooter(LiveScanState state) {
+    final (text, color) = switch (state) {
+      LiveScanState.off => ('Live scan off • no capture', GridColors.muted),
+      LiveScanState.starting => ('Live scan starting', GridColors.muted),
+      LiveScanState.ready => (
+        'Live scan on • captures on click',
+        GridColors.gold,
+      ),
+      LiveScanState.stopping => ('Live scan stopping', GridColors.muted),
+      LiveScanState.unavailable => ('Live scan unavailable', GridColors.muted),
+    };
+    return Text(text, style: TextStyle(color: color, fontSize: 11));
+  }
+
   Widget _nav(int index, IconData icon, String label) => Semantics(
     selected: selected == index,
     child: InkWell(
