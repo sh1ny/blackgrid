@@ -653,8 +653,8 @@ final class ScanSuperseded extends ScanEnd {
 
 /// Everything known about one finished scan.
 ///
-/// Crop bytes are kept only on the latest published report; call
-/// [withoutCrops] to store a summary in the recent list.
+/// Crop bytes are kept only on the latest and the last accepted published
+/// reports; call [withoutCrops] to store a summary in the recent list.
 final class ScanReport {
   /// Creates a report.
   const ScanReport({
@@ -1463,6 +1463,7 @@ class ScanCoordinator extends ChangeNotifier {
 
   ScanPhase _phase = ScanPhase.idle;
   ScanReport? _latest;
+  ScanReport? _lastAccepted;
   final List<ScanReport> _recent = [];
 
   /// Advances when a newer trigger, a stop or a loss supersedes the scans in
@@ -1512,6 +1513,14 @@ class ScanCoordinator extends ChangeNotifier {
 
   /// The latest published scan, with its crop bytes, or null.
   ScanReport? get latest => _latest;
+
+  /// The most recent accepted scan, with its crop bytes, or null before any
+  /// scan is accepted.
+  ///
+  /// It stays until a newer scan is accepted, so Scanner keeps showing it
+  /// while later scans are rejected or fail. Crop bytes are kept for it as
+  /// well as for [latest].
+  ScanReport? get lastAccepted => _lastAccepted;
 
   /// The most recent published scans, newest first, at most [recentLimit].
   /// Each is a summary without crop bytes.
@@ -2454,6 +2463,7 @@ class ScanCoordinator extends ChangeNotifier {
   void _publish(ScanReport report) {
     _phase = ScanPhase.idle;
     _latest = report;
+    if (report.end is ScanAccepted) _lastAccepted = report;
     _recent.insert(0, report.withoutCrops());
     while (_recent.length > recentLimit) {
       _recent.removeLast();

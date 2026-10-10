@@ -31,7 +31,7 @@ Implementation notes:
 | scanner-evidence → Scanner shows the latest scan's evidence | Rejected scan | test/ui/scan_evidence_panel_test.dart | rejected report labels best candidate not accepted | green |
 | scanner-evidence → Scanner shows the latest scan's evidence | Failed scan | test/ui/scan_evidence_panel_test.dart | failed report shows failure and no candidate | green |
 | scanner-evidence → Scanner shows the latest scan's evidence | Navigation keeps evidence | test/ui/shell_test.dart | scan evidence survives Map and back | green |
-| scanner-evidence → Scanner shows the latest scan's evidence | Newer accepted scan replaces the shown one | test/application/scan_coordinator_flow_test.dart | lastAccepted follows the newest accepted scan only | red |
+| scanner-evidence → Scanner shows the latest scan's evidence | Newer accepted scan replaces the shown one | test/application/scan_coordinator_flow_test.dart | lastAccepted follows the newest accepted scan only | green |
 | scanner-evidence → A later unaccepted scan is shown as a note | Rejection after an accepted item | test/ui/scan_evidence_panel_test.dart | rejection after an accepted item keeps it and shows a note | red |
 | scanner-evidence → A later unaccepted scan is shown as a note | Crop and timings after a rejection | test/ui/scan_evidence_panel_test.dart | after a rejection the crop is the accepted scan's and timings are the latest's | red |
 | scanner-evidence → A later unaccepted scan is shown as a note | Failure after an accepted item | test/ui/scan_evidence_panel_test.dart | failure after an accepted item shows a failure note | red |
@@ -64,7 +64,7 @@ Implementation notes:
 ## 3. Last accepted scan
 
 - [x] 3.1 Add the test "lastAccepted follows the newest accepted scan only": accepted A, rejected, accepted B, failed, so lastAccepted goes A, A, B, B. Verify: it fails (no getter).
-- [ ] 3.2 Implement `_lastAccepted` in `_publish` and the `lastAccepted` getter. Its doc comment says crops are kept for it as well as for `latest`. Verify: 3.1 and "crop bytes are kept only on the latest report" pass; update that test's expectation to "latest and lastAccepted" if needed, then flip the row green.
+- [x] 3.2 Implement `_lastAccepted` in `_publish` and the `lastAccepted` getter. Its doc comment says crops are kept for it as well as for `latest`. Verify: 3.1 and "crop bytes are kept only on the latest report" pass; update that test's expectation to "latest and lastAccepted" if needed, then flip the row green.
 
 ## 4. Evidence panel
 
