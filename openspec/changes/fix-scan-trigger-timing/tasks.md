@@ -45,7 +45,7 @@ Implementation notes:
 
 ## 1. ADR and roadmap
 
-- [ ] 1.1 Write `docs/adr/0014-scan-settle-and-fallback-waits.md` (MADR-short). It supersedes only ADR-0013's stage-specific supersession bullet and covers:
+- [x] 1.1 Write `docs/adr/0014-scan-settle-and-fallback-waits.md` (MADR-short). It supersedes only ADR-0013's stage-specific supersession bullet and covers:
   - the `waiting` stage and its start-now rule;
   - 50 ms and 200 ms measured from the hook's QPC stamp, with no wait once a deadline has passed;
   - the fork's differences: the settle runs from dequeue, and the fallback deadline from enqueue for automatic scans only.
