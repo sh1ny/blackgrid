@@ -463,6 +463,45 @@ void main() {
       expect(rig.coordinator.error, isNull);
       expect(rig.visions, hasLength(1));
     });
+
+    test('on, off, on during the save ends on and saved on', () async {
+      rig = await _Rig.create();
+
+      final first = rig.coordinator.setLiveScan(true);
+      final off = rig.coordinator.setLiveScan(false);
+      final last = rig.coordinator.setLiveScan(true);
+      await Future.wait([first, off, last]);
+      await rig.coordinator.settled;
+
+      expect(rig.coordinator.switchOn, isTrue);
+      expect(rig.coordinator.status.state, LiveScanState.ready);
+      expect(rig.coordinator.error, isNull);
+      expect((await rig.db.readSettings()).liveScan, isTrue);
+      expect(rig.settings.settings.liveScan, isTrue);
+      expect(rig.visions, hasLength(1));
+    });
+
+    test('off, on, off during the save ends off and saved off', () async {
+      rig = await _Rig.create();
+      await rig.switchOn();
+
+      final first = rig.coordinator.setLiveScan(false);
+      final on = rig.coordinator.setLiveScan(true);
+      final last = rig.coordinator.setLiveScan(false);
+      await Future.wait([first, on, last]);
+      await rig.coordinator.settled;
+
+      expect(rig.coordinator.switchOn, isFalse);
+      expect(rig.coordinator.status.state, LiveScanState.off);
+      expect(rig.coordinator.error, isNull);
+      expect((await rig.db.readSettings()).liveScan, isFalse);
+      expect(rig.settings.settings.liveScan, isFalse);
+      expect(
+        rig.visions,
+        hasLength(1),
+        reason: 'the middle tap started nothing',
+      );
+    });
   });
 
   group('switch-off during a hung start', () {

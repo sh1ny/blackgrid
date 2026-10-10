@@ -1424,7 +1424,7 @@ class ScanCoordinator extends ChangeNotifier {
   bool _disposed = false;
   bool _started = false;
   int _intent = 0;
-  Future<bool>? _onSave;
+  Future<bool>? _saving;
 
   ScanPhase _phase = ScanPhase.idle;
   ScanReport? _latest;
@@ -1506,7 +1506,8 @@ class ScanCoordinator extends ChangeNotifier {
   /// Switching on saves first: a failed or busy save reverts the switch and
   /// starts nothing. Switching off stops the pipeline at once, before and
   /// whatever the save does; a failed or busy save shows an error and the
-  /// pipeline stays off for the session.
+  /// pipeline stays off for the session. Of taps that overlap a save, only
+  /// the latest saves and acts, once the earlier saves have landed.
   Future<void> setLiveScan(bool on) async {
     if (_disposed) return;
     _started = true;
@@ -1515,19 +1516,12 @@ class ScanCoordinator extends ChangeNotifier {
         _notify();
         return;
       }
-      // A switch-on save already running decides this tap too.
-      final running = _onSave;
-      if (running != null) {
-        await running;
-        return;
-      }
+      // Only the latest tap acts once the saves already running have landed.
       final epoch = ++_intent;
       _error = null;
-      final save = _onSave = settings.save(
-        settings.settings.copyWith(liveScan: true),
-      );
-      final saved = await save;
-      if (identical(_onSave, save)) _onSave = null;
+      await _savesLanded();
+      if (_disposed || epoch != _intent) return;
+      final saved = await _save(on: true);
       if (_disposed || epoch != _intent) return;
       if (!saved) {
         _error = _notSaved(on: true);
@@ -1538,23 +1532,40 @@ class ScanCoordinator extends ChangeNotifier {
       _activate();
       return;
     }
-    ++_intent;
+    final epoch = ++_intent;
     _error = null;
     _switchOn = false;
     _stop();
-    // Let a switch-on save still running land first, so this save replaces
-    // it instead of being refused as busy or skipped.
-    final running = _onSave;
-    if (running != null) await running;
-    if (_disposed) return;
+    // Let a save still running land first, so this save replaces it instead
+    // of being refused as busy or skipped; a later tap decides instead.
+    await _savesLanded();
+    if (_disposed || epoch != _intent) return;
     if (!settings.settings.liveScan) return;
-    final saved = await settings.save(
-      settings.settings.copyWith(liveScan: false),
-    );
-    if (_disposed) return;
+    final saved = await _save(on: false);
+    if (_disposed || epoch != _intent) return;
     if (!saved) {
       _error = _notSaved(on: false);
       _notify();
+    }
+  }
+
+  /// Saves the `liveScan` setting, tracked so later taps wait for it.
+  Future<bool> _save({required bool on}) async {
+    final save = _saving = settings.save(
+      settings.settings.copyWith(liveScan: on),
+    );
+    try {
+      return await save;
+    } finally {
+      if (identical(_saving, save)) _saving = null;
+    }
+  }
+
+  /// Completes once no save started by [setLiveScan] is running.
+  Future<void> _savesLanded() async {
+    for (var running = _saving; running != null; running = _saving) {
+      // A failed save is the tap's own error to report, not this wait's.
+      await running.then((_) {}, onError: (Object _) {});
     }
   }
 
