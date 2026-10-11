@@ -1037,6 +1037,43 @@ void main() {
     });
 
     test(
+      'a session started after the strip was copied never takes the scan',
+      () async {
+        rig = await _Rig.create();
+        await rig.startRecording();
+        final first = rig.recorder.status.value.folder;
+        rig.fire(1000);
+        (await rig.nextCapture()).succeed(rig.pixelFrame(seed: 1));
+        final targeted = await rig.nextVision();
+
+        await rig.coordinator.setRecording(false);
+        expect(rig.state, ScanRecordingState.off);
+        await rig.startRecording();
+        expect(rig.recorder.status.value.folder, isNot(first));
+
+        final read = _ev(score: 0.55);
+        targeted.deliver(_recognised(InspectionFrameKind.targeted, read));
+        (await rig.nextMatch()).complete(
+          _rejected(OutcomeRejectReason.belowSimilarity, read),
+        );
+        (await rig.nextCapture()).succeed(rig.pixelFrame(seed: 2));
+        final ev = _ev();
+        (await rig.nextVision()).deliver(
+          _recognised(InspectionFrameKind.fullClient, ev),
+        );
+        (await rig.nextMatch()).complete(_accepted(ev));
+        await rig.nextPublished();
+        rig.fire(2000);
+        // The next scan starts only once the first one is concluded.
+        final next = await rig.nextCapture();
+
+        expect(next.trigger.qpc, 2000);
+        expect(rig.recorded.length, 0);
+        expect(rig.recorder.status.value.handedOff, 0);
+      },
+    );
+
+    test(
       'a session started during the extra capture never takes its scan',
       () async {
         rig = await _Rig.create();

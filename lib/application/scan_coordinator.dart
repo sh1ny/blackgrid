@@ -1312,6 +1312,10 @@ final class _Scan {
   int? recordedCursorX;
   int? recordedCursorY;
 
+  /// The folder of the recording session the scan's first frame was copied
+  /// for; a later session never takes the scan.
+  String? recordedSession;
+
   /// Why the extra capture produced no frame, when one was attempted.
   String? extraFailure;
 
@@ -2443,6 +2447,7 @@ class ScanCoordinator extends ChangeNotifier {
     required bool full,
   }) {
     final m = frame.metadata;
+    s.recordedSession ??= _recorder?.status.value.folder;
     try {
       final pixels = frame.withPixels(
         (bytes) => TransferableTypedData.fromList([bytes]),
@@ -2514,6 +2519,9 @@ class ScanCoordinator extends ChangeNotifier {
       if (!_extraStillCurrent(s)) return;
       if (recorder.status.value.folder != session) return;
     }
+    // Frames copied for an earlier session never go into a later one.
+    final copiedFor = s.recordedSession;
+    if (copiedFor != null && copiedFor != recorder.status.value.folder) return;
     if (s.recordingLost) {
       recorder.drop();
       return;
