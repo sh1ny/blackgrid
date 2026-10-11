@@ -17,13 +17,13 @@ Implementation notes:
 |---|---|---|---|---|
 | scan-frame-recording → Recording is opt-in and lasts one session | Restart | test/application/scan_coordinator_recording_test.dart | recording is off in a new coordinator and is never saved in settings | red |
 | scan-frame-recording → Recording is opt-in and lasts one session | Live scan switched off | test/application/scan_coordinator_recording_test.dart | switching live scan off turns recording off and on again leaves it off | red |
-| scan-frame-recording → Recording is opt-in and lasts one session | Live scan leaves ready while recording starts | test/data/scan_frame_recorder_test.dart | stop during starting ends off and kills the late writer | red |
+| scan-frame-recording → Recording is opt-in and lasts one session | Live scan leaves ready while recording starts | test/data/scan_frame_recorder_test.dart | stop during starting ends off and kills the late writer | green |
 | scan-frame-recording → Recording is opt-in and lasts one session | Live scan becomes unavailable | test/application/scan_coordinator_recording_test.dart | worker loss turns recording off and outstanding scans are still written | red |
-| scan-frame-recording → Recording is opt-in and lasts one session | Switching on while the last session drains | test/data/scan_frame_recorder_test.dart | start while stopping is refused and creates no folder | red |
-| scan-frame-recording → Recording is opt-in and lasts one session | Switching on after the last session drained | test/data/scan_frame_recorder_test.dart | a new session after a drain starts with zero counts | red |
-| scan-frame-recording → Each recording session gets its own folder | Switching recording on | test/data/scan_frame_recorder_test.dart | start creates the session folder named by local start time | red |
-| scan-frame-recording → Each recording session gets its own folder | Folder name already used | test/data/scan_frame_recorder_test.dart | a second start in the same second uses the -2 suffix | red |
-| scan-frame-recording → Each recording session gets its own folder | Folder cannot be created | test/data/scan_frame_recorder_test.dart | folder creation failure leaves recording off with the error | red |
+| scan-frame-recording → Recording is opt-in and lasts one session | Switching on while the last session drains | test/data/scan_frame_recorder_test.dart | start while stopping is refused and creates no folder | green |
+| scan-frame-recording → Recording is opt-in and lasts one session | Switching on after the last session drained | test/data/scan_frame_recorder_test.dart | a new session after a drain starts with zero counts | green |
+| scan-frame-recording → Each recording session gets its own folder | Switching recording on | test/data/scan_frame_recorder_test.dart | start creates the session folder named by local start time | green |
+| scan-frame-recording → Each recording session gets its own folder | Folder name already used | test/data/scan_frame_recorder_test.dart | a second start in the same second uses the -2 suffix | green |
+| scan-frame-recording → Each recording session gets its own folder | Folder cannot be created | test/data/scan_frame_recorder_test.dart | folder creation failure leaves recording off with the error | green |
 | scan-frame-recording → Every published scan writes one case line and its frames | Scan accepted by the fallback pass | test/application/scan_coordinator_recording_test.dart | fallback acceptance records full and targeted PNGs and one line | red |
 | scan-frame-recording → Every published scan writes one case line and its frames | Superseded scan | test/application/scan_coordinator_recording_test.dart | a superseded scan records nothing | red |
 | scan-frame-recording → Every published scan writes one case line and its frames | Accepted scan whose extra capture fails | test/application/scan_coordinator_recording_test.dart | failed extra capture records the strip with image null and fullFailure | red |
@@ -35,12 +35,12 @@ Implementation notes:
 | scan-frame-recording → Each case line carries labelling hints | Window partly off the desktop | test/application/scan_coordinator_recording_test.dart | clipped fallback frame records captured and clipped true | red |
 | scan-frame-recording → Each case line carries labelling hints | Full frame taken after the decision | test/application/scan_coordinator_recording_test.dart | extra frame time is later than the strip time | red |
 | scan-frame-recording → Recording never changes the recorded scan, and its only effect on later scans is the extra capture | Recording off | test/application/scan_coordinator_recording_test.dart | with recording off no pixels are read and no capture follows | red |
-| scan-frame-recording → Recording never changes the recorded scan, and its only effect on later scans is the extra capture | Writer falls behind | test/data/scan_frame_recorder_test.dart | a third outstanding scan is dropped and counted | red |
+| scan-frame-recording → Recording never changes the recorded scan, and its only effect on later scans is the extra capture | Writer falls behind | test/data/scan_frame_recorder_test.dart | a third outstanding scan is dropped and counted | green |
 | scan-frame-recording → Recording never changes the recorded scan, and its only effect on later scans is the extra capture | Later click during the extra capture | test/application/scan_coordinator_recording_test.dart | a trigger during the extra capture starts after its answer and the frame is recorded | red |
-| scan-frame-recording → Recording is bounded and stops cleanly on failure | Cap reached | test/data/scan_frame_recorder_test.dart | the 500th hand-off stops intake and its ack turns recording off | red |
+| scan-frame-recording → Recording is bounded and stops cleanly on failure | Cap reached | test/data/scan_frame_recorder_test.dart | the 500th hand-off stops intake and its ack turns recording off | green |
 | scan-frame-recording → Recording is bounded and stops cleanly on failure | Disk full | test/data/scan_frame_writer_test.dart | a failed PNG write leaves no line and no final PNG | green |
-| scan-frame-recording → Recording is bounded and stops cleanly on failure | Disk full | test/data/scan_frame_recorder_test.dart | a writer failure turns recording off with the error | red |
-| scan-frame-recording → Recording is bounded and stops cleanly on failure | App closes while writing | test/data/scan_frame_recorder_test.dart | close waits up to the timeout and ignores late acks | red |
+| scan-frame-recording → Recording is bounded and stops cleanly on failure | Disk full | test/data/scan_frame_recorder_test.dart | a writer failure turns recording off with the error | green |
+| scan-frame-recording → Recording is bounded and stops cleanly on failure | App closes while writing | test/data/scan_frame_recorder_test.dart | close waits up to the timeout and ignores late acks | green |
 | scan-frame-recording → Recordings stay local and carry no credentials | Recording with Tracker connected | test/application/scan_coordinator_recording_test.dart | recorded files never contain the saved Tracker token | red |
 | scan-frame-recording → Recordings stay local and carry no credentials | Timing log while recording | test/application/scan_coordinator_recording_test.dart | timing log line keys are the same with recording on | red |
 | scan-pipeline → Recording receives each pass's pixels before vision | Recorded fallback scan | test/application/scan_coordinator_recording_test.dart | both passes are copied before submit and each frame is released once | red |
@@ -94,7 +94,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
   - close with timeout and stale-token acks ignored.
 
   Verify: they fail.
-- [ ] 3.2 Implement `ScanFrameRecorder`:
+- [x] 3.2 Implement `ScanFrameRecorder`:
   - the state machine `off/starting/on/stopping` with a session token (D5);
   - folder naming (D6);
   - the outstanding bound of 2, the cap of 500 hand-offs and the counters;
