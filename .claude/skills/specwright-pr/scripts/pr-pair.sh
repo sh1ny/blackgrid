@@ -13,23 +13,43 @@
 #                                     the expected PR set: store (GitHub origin) and code (PR in any state, or commits)
 #   ensure-pr --repo o/n --branch b --base main --title t --body-file f
 #                                     find the open PR or create it; stops on a wrong base; never edits a description
+#   closing-check --repo o/n --pr N   the issues the description's closing lines name vs what GitHub will close
+#                                     status match | mismatch | not_default_base (one GraphQL read; a failure = unknown, exit 3)
+#   closed-check --repo o/n --pr N --repos o/n[,o/n] [--login o/n=L ...]
+#                                     at cleanup: which issues the merged PR's closing lines name are still open
+#                                     status merged | not_merged | not_default_base; open, reopened, closed, outside (a failed read = unknown, exit 3)
+#                                     --login: the login that reads o/n when it is not the one the call runs as
 #   link --repo o/n --pr N --kind store|code --peer-url URL [--login L]
 #                                     one marker comment <!-- specwright:link KIND URL -->; edits its own on a new peer
 #   pair-state --code d --store d --branch b [--snapshot code=f] [--snapshot store=f] [--dropped id@rev]...
 #                                     watch action: ship | wait | ready | split_hand_off | cleanup | no_watch
-#   rounds --code d --store d --branch b
+#   rounds --code d [--store d] --branch b
 #                                     highest Feedback-Round across both branches (+ legacy subject count, unpushed)
-#   pass write --code d --store d --code-repo o/n --change c --intent file [--store-prefix openspec]
-#   pass plan|done --code d --store d --code-repo o/n --change c --snapshot code=f --snapshot store=f
-#                                     the intent record of a feedback pass; the evidence-based resume plan; delete
+#   pass write --code d [--store d] --code-repo o/n --change c --intent file [--store-prefix openspec]
+#   pass plan --code d [--store d] --code-repo o/n --change c --snapshot code=f [--snapshot store=f] [--owner id]
+#   pass done --code d [--store d] --code-repo o/n --change c --snapshot code=f [--snapshot store=f] --owner id
+#   pass adopt --code d [--store d] --code-repo o/n --change c --owner new-id --from shown-id|none
+#                                     the intent record of a feedback pass (write returns the owner id); the evidence-based
+#                                     resume plan (owned: true|false|null); delete, by its owner; hand over, naming the owner shown
+#                                     (no --store: a repo-local change, code repo only)
+#                                     plan's rerequest row counts a request done when it was posted at or after the cutoff:
+#                                     the head's push time (cutoff_source push), else the time a snapshot first saw the head
+#                                     (first_seen), else, only with no such record, when the record was written (pass_written;
+#                                     written_at, or the owner's at in an older record); none = no cutoff, the row stays todo
 #   cleanup-plan --code d --store d --branch b
-#                                     post-merge commands per repo whose expected PR is MERGED
-# Exit: 0 answered, 1 stop (the JSON has "error" and "message"), 2 usage or missing input,
+#                                     post-merge commands per repo whose expected PR is MERGED: checkout, pull, then
+#                                     branch-check (--head: the merged PR's head); `delete` (git branch -D) runs only on delete: true
+#   branch-check --dir d --branch b --main m [--head sha]
+#                                     delete true when the branch tip is on main (on_main) or is the merged head or an ancestor of
+#                                     it (pr_head); else false with reason lacking | head_unknown and the commits "lacking" (sha,
+#                                     subject). Read-only, no network; a git error stops (ok false, exit 1)
+# Exit: 0 answered, 1 stop (the JSON has "error" and "message"; an unexpected failure is
+#       error "internal_error"), 2 usage or missing input,
 #       3 GitHub state unknown (a lookup failed; never read it as "no PR").
 # Every gh call names its repository (--repo or repos/<o>/<n>/...) and runs with GH_REPO unset, so an
 # inherited override cannot redirect a store lookup to the code repo. Wrap with as.sh to pin the
 # GitHub identity, started inside the repository it acts on (its header scrub is per working directory).
-# Needs bash, git, gh and python 3.8+.
+# Needs bash, git, gh 2.40+ and Python 3.8+.
 set -euo pipefail
 
 py=
@@ -42,12 +62,22 @@ unset GH_REPO
 PR_PAIR_BASH=${BASH:-}
 if [ -n "$PR_PAIR_BASH" ] && command -v cygpath >/dev/null 2>&1; then PR_PAIR_BASH=$(cygpath -w "$PR_PAIR_BASH"); fi
 export PR_PAIR_BASH
+# absolute, so the python below can hand as.sh to bash from any working directory (-m: forward slashes bash accepts)
+PR_PAIR_DIR=$(cd "$(dirname "$0")" && pwd -P)
+if command -v cygpath >/dev/null 2>&1; then PR_PAIR_DIR=$(cygpath -m "$PR_PAIR_DIR"); fi
+export PR_PAIR_DIR
 
 exec "$py" -I -X utf8 - "$@" <<'PYSRC'
+import contextlib
+import datetime
+import errno
+import hashlib
 import json
 import os
 import re
+import secrets
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -93,13 +123,31 @@ def git(d, *args):
     return run(["git", *args], cwd=d)
 
 
+IDENT = {}
+
+
+def git_net(d, *args):
+    """git ls-remote / fetch in `d`, authenticated as the login that reads d's repo (as.sh pins the transport)."""
+    if d not in IDENT:
+        try:
+            IDENT[d] = identity(d)["repo"].lower()
+        except Stop:  # no GitHub origin: plain git, as before
+            IDENT[d] = None
+    login = REPO_LOGIN.get(IDENT[d] or "")
+    if not login:
+        return git(d, *args)
+    token_for(login)  # no credential / wrong identity stops here, before any git network command
+    return run([BASH, f"{os.environ['PR_PAIR_DIR']}/as.sh", login, "git", *args], cwd=d)
+
+
 REPO_LOGIN, TOKENS = {}, {}  # repo slug (lower) -> login that reads it; login -> its verified token
 
 
-def gh(*args):
+def gh(*args, repo=None):
     # through bash so a `gh` that is a shell script (or a shim) resolves like it does for the caller
+    # `repo` names whose login to use when the arguments carry no repo (a GraphQL node id)
     cmd = [BASH, "-c", 'exec gh "$@"', "gh", *args] if BASH else ["gh", *args]
-    login = REPO_LOGIN.get((repo_of(args) or "").lower())
+    login = REPO_LOGIN.get((repo or repo_of(args) or "").lower())
     if not login:
         return run(cmd)
     try:
@@ -638,24 +686,379 @@ def cmd_ensure_pr(argv):
     return {"ok": True, "action": "created", "pr": {"number": int(m.group(2)), "url": m.group(1), "state": "OPEN", "base": base}}
 
 
+CLOSING_QUERY = ("query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) "
+                 "{ defaultBranchRef { name } pullRequest(number: $number) { body baseRefName "
+                 "closingIssuesReferences(first: 100) { nodes { number repository { nameWithOwner } } "
+                 "pageInfo { hasNextPage } } } } }")
+CLOSE_KW = r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b:?"
+ISSUE_REF = (r"https?://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)\b|(?<![\w/.-])([\w.-]+/[\w.-]+)#(\d+)\b"
+             r"|(?<![\w/&])#(\d+)\b")
+
+
+def backtick_span(text, i):
+    """The backtick run at text[i:] and the end of the code span it opens: (run_end, close_end), close_end None when no later run
+    of the same length closes it (the run is then literal text)."""
+    n, j = len(text), i
+    while j < n and text[j] == "`":
+        j += 1
+    k = j
+    while k < n:
+        if text[k] != "`":
+            k += 1
+            continue
+        m = k
+        while m < n and text[m] == "`":
+            m += 1
+        if m - k == j - i:
+            return j, m
+        k = m
+    return j, None
+
+
+def strip_code_spans(line):
+    """CommonMark inline code: a span opens at a backtick run and closes at the next run of the same length; a run with no such
+    closer is literal text, and so are the backticks of a run that is longer or shorter than the opener. A removed span leaves a
+    space, so the text around it never joins into a new word."""
+    out, i, n = [], 0, len(line)
+    while i < n:
+        if line[i] != "`":
+            out.append(line[i])
+            i += 1
+            continue
+        j, close = backtick_span(line, i)
+        if close is None:
+            out.append(line[i:j])
+            i = j
+        else:
+            out.append(" ")
+            i = close
+    return "".join(out)
+
+
+def inline_comments(text):
+    """(start, end) of each HTML comment in `text`, scanning left to right where the first construct wins: a `<!--` inside a code
+    span is code, and a backtick inside a comment is comment text. An unclosed comment runs to the end of `text`."""
+    found, i, n = [], 0, len(text)
+    while i < n:
+        if text[i] == "`":
+            j, close = backtick_span(text, i)
+            i = j if close is None else close
+        elif text.startswith("<!--", i):
+            end = text.find("-->", i + 4)
+            end = n if end < 0 else end + 3
+            found.append((i, end))
+            i = end
+        else:
+            i += 1
+    return found
+
+
+def indent_columns(line):
+    """Leading white space of a line in columns, a tab advancing to the next multiple of four."""
+    col = 0
+    for ch in line:
+        if ch == " ":
+            col += 1
+        elif ch == "\t":
+            col += 4 - col % 4
+        else:
+            break
+    return col
+
+
+def container_content(line):
+    """The line after its blockquote markers (each `>` with up to three spaces before it and one optional space after it) and list
+    markers (`-`, `+`, `*`, `1.` or `1)` with up to three spaces before it and the one space or tab after it), where CommonMark
+    applies the block rules: `>     x` is indented code inside a quote, and `- ~~~` opens a fence inside a list item."""
+    return line[re.match(r"(?: {0,3}(?:>[ \t]?|(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)))*", line).end():]
+
+
+def quote_content(line):
+    """The line after its blockquote markers only. Inside an open fence a list marker is content, so the closer is matched here:
+    `- ```` inside a fence is code, not its end."""
+    return line[re.match(r"(?: {0,3}>[ \t]?)*", line).end():]
+
+
+LIST_CODE = re.compile(r" {0,3}(?:[-+*]|\d{1,9}[.)]) {5,}\S")  # a list item whose first block is indented code
+
+
+def without_code(body):
+    """The description's lines with what GitHub does not read as text removed: fenced blocks (closed only by a fence line of the
+    same character, at least as long, with nothing but white space after it), indented code (every line indented four or more
+    columns, unless the line before it is a paragraph line; a list item whose marker is followed by five spaces), HTML comments
+    (also across lines) and inline code spans, which may continue across the lines of one paragraph (a blank line ends it). Within
+    a paragraph the leftmost construct wins, so a `<!--` inside a code span is code; a line that starts with `<!--` is an HTML
+    block, not a paragraph, and takes the rest of its closing line, while the text after an inline comment's `-->` is read. The
+    block rules read each line after its blockquote and list markers."""
+    out, para = [], []
+    fence, in_comment = None, False
+    comment_block = False  # the open comment started its own line (an HTML block), so it takes the rest of its closing line
+    prev_para = False  # the previous line was a paragraph line, so an indented line continues it
+    lines = body.replace("\r\n", "\n").split("\n")
+
+    def flush():
+        if para:
+            out.extend(strip_code_spans("\n".join(para)).split("\n"))
+            del para[:]
+
+    def strip_comments(line, comment_line, rest):
+        """`line` without its HTML comments; a comment that does not end on the line leaves in_comment set."""
+        nonlocal in_comment, comment_block
+        head = "\n".join(para) + "\n" if para and not comment_line else ""
+        tail = []
+        for nxt in rest:  # the rest of the paragraph decides whether a backtick before a `<!--` closes a span
+            if not nxt.strip():
+                break
+            tail.append(nxt)
+        base, kept, at = len(head), [], 0
+        for start, end in inline_comments(head + "\n".join([line] + tail)):
+            if start < base:
+                continue
+            if start >= base + len(line):
+                break
+            kept.append(line[at:start - base])
+            if end > base + len(line):
+                in_comment, comment_block, at = True, comment_line, len(line)
+                break
+            at = end - base
+        kept.append(line[at:])
+        return "".join(kept)
+
+    for idx, raw in enumerate(lines):
+        line, comment_line = raw, in_comment and comment_block
+        if in_comment:
+            end = line.find("-->")
+            if end < 0:
+                prev_para = prev_para and not comment_block  # an inline comment's lines stay in their paragraph
+                continue
+            line, in_comment = line[end + 3:], False
+        else:
+            m = re.match(r"\s{0,3}(`{3,}|~{3,})", container_content(line))
+            if fence:
+                closer = re.match(r"\s{0,3}(`{3,}|~{3,})\s*$", quote_content(line))
+                if closer and closer.group(1)[0] == fence[0] and len(closer.group(1)) >= len(fence):
+                    fence = None
+                continue
+            if m:
+                flush()
+                fence, prev_para = m.group(1), False
+                continue
+            inner = container_content(line)
+            if indent_columns(inner) < 4 and inner.lstrip().startswith("<!--"):
+                comment_line = True
+        if "<!--" in line:
+            line = strip_comments(line, comment_line, lines[idx + 1:])
+        inner = container_content(raw)
+        if not inner.strip():
+            flush()
+            prev_para = False
+            continue
+        if (indent_columns(inner) >= 4 and not prev_para and not comment_line) or LIST_CODE.match(inner):
+            flush()
+            continue
+        stripped = inner.lstrip()
+        if (comment_line or re.match(r"#{1,6}(?:\s|$)", stripped) or re.match(r"([-*_])(?:\s*\1){2,}\s*$", stripped)
+                or not line.strip()):
+            flush()  # a heading, thematic break or comment line is no paragraph line and ends the paragraph
+            prev_para = False
+            if line.strip() and not comment_line:
+                out.append(strip_code_spans(line))
+            continue
+        prev_para = True
+        para.append(line)
+    flush()
+    return out
+
+
+def issue_key(m, repo):
+    """(owner/name, number) of an ISSUE_REF match; a bare #N takes the PR's own repository."""
+    if m.group(1):
+        return m.group(1), int(m.group(2))
+    if m.group(3):
+        return m.group(3), int(m.group(4))
+    return repo, int(m.group(5))
+
+
+LIST_GAP = re.compile(r"(?:[\s,;]|\band\b|" + CLOSE_KW + r")*", re.I)
+FIRST_GAP = re.compile(r"\s*")  # the keyword's own optional colon is part of CLOSE_KW
+
+
+def intended_issues(body, repo):
+    """Issues a description's closing lines name: every ref directly after a closing keyword, and the closing list of a line that
+    starts with one: the ref after that keyword (only white space between; a `,`, `;`, `and` or a removed code span there means no
+    list) and each next ref separated from the one before by only `,`, `;`, `and`,
+    white space or another closing keyword. Any other text ends the list; a line whose first ref does not directly follow the
+    keyword has none."""
+    found = []
+    for line in without_code(body):
+        refs = [(m.start(), m.end(), issue_key(m, repo)) for m in re.finditer(ISSUE_REF, line)]
+        lead = re.match(r"(?:[\s>*+-]|\d{1,9}[.)](?=\s))*" + CLOSE_KW, line, re.I)
+        if lead:
+            prev, first = lead.end(), True
+            for at, end, k in refs:
+                if at < lead.end():
+                    continue
+                gap = FIRST_GAP if first else LIST_GAP  # the first ref follows the keyword with only white space between
+                if gap.match(line, prev).end() != at:
+                    break
+                first = False
+                found.append(k)
+                prev = end
+        for kw in re.finditer(CLOSE_KW, line, re.I):
+            nxt = next((k for at, _, k in refs if at >= kw.end() and not line[kw.end():at].strip()), None)
+            if nxt:
+                found.append(nxt)
+    seen, out = set(), []
+    for slug, n in found:
+        if (slug.lower(), n) not in seen:
+            seen.add((slug.lower(), n))
+            out.append((slug, n))
+    return out
+
+
+def cmd_closing_check(argv):
+    a, _ = parse_args(argv, {"--repo": "repo", "--pr": "pr"})
+    need(a, "repo", "pr")
+    repo = a["repo"]
+    if not re.match(r"^[^/\s]+/[^/\s]+$", repo) or not str(a["pr"]).isdigit():
+        usage("--repo is owner/name and --pr a number")
+    owner, name = repo.split("/")
+    r = gh("api", "graphql", "-f", f"query={CLOSING_QUERY}", "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={a['pr']}",
+           repo=repo)
+    if r.returncode != 0:
+        unknown((r.stderr or r.stdout).strip() or f"gh exited {r.returncode}")
+    try:
+        data = json.loads(r.stdout)
+    except ValueError as e:
+        unknown(f"unreadable response: {e}")
+    try:
+        if data.get("errors"):
+            unknown(f"GraphQL errors: {data['errors']}")
+        rep = data["data"]["repository"]
+        pr = rep["pullRequest"]
+        default = rep["defaultBranchRef"]["name"]
+        base = pr["baseRefName"]
+        refs = pr["closingIssuesReferences"]
+        nodes, more = refs["nodes"], refs["pageInfo"]["hasNextPage"]
+        linked = [(n["repository"]["nameWithOwner"], int(n["number"])) for n in nodes]
+        body = pr["body"] or ""
+    except (KeyError, TypeError, AttributeError, ValueError):
+        unknown("unexpected GraphQL response shape (PR, default branch or closing list missing)")
+    if more:
+        unknown("the PR closes more than 100 issues; the closing list is cut off")
+    intended = intended_issues(body, repo)
+    fmt = lambda ks: [f"{s}#{n}" for s, n in ks]
+    low = lambda ks: {(s.lower(), n) for s, n in ks}
+    out = {"ok": True, "intended": fmt(intended), "linked": fmt(linked), "base": base, "default_branch": default}
+    if base != default:  # GitHub applies closing keywords only on PRs into the default branch
+        return {**out, "status": "not_default_base", "missing": [], "extra": []}
+    missing = [k for k in intended if (k[0].lower(), k[1]) not in low(linked)]
+    extra = [k for k in linked if (k[0].lower(), k[1]) not in low(intended)]
+    return {**out, "status": "mismatch" if missing else "match", "missing": fmt(missing), "extra": fmt(extra)}
+
+
+CLOSED_PR_QUERY = ("query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) "
+                   "{ defaultBranchRef { name } pullRequest(number: $number) { state url body baseRefName mergedAt } } }")
+CLOSED_ISSUE_QUERY = ("query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) "
+                      "{ issue(number: $number) { state timelineItems(last: 1, itemTypes: [CLOSED_EVENT]) "
+                      "{ nodes { ... on ClosedEvent { createdAt } } } } } }")
+
+
+def graphql_read(query, slug, number):
+    """The `data` of one GraphQL read through `slug`'s login; any failure or GraphQL error is unknown (exit 3)."""
+    owner, name = slug.split("/")
+    r = gh("api", "graphql", "-f", f"query={query}", "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={number}", repo=slug)
+    if r.returncode != 0:
+        unknown((r.stderr or r.stdout).strip() or f"gh exited {r.returncode}")
+    try:
+        data = json.loads(r.stdout)
+    except ValueError as e:
+        unknown(f"unreadable response: {e}")
+    if not isinstance(data, dict) or data.get("errors"):
+        unknown(f"GraphQL errors: {data.get('errors') if isinstance(data, dict) else data}")
+    return data
+
+
+def cmd_closed_check(argv):
+    a, _ = parse_args(argv, {"--repo": "repo", "--pr": "pr", "--repos": "repos", "--login": "+login"})
+    need(a, "repo", "pr", "repos")
+    repo, scope = a["repo"], [s for s in a["repos"].split(",") if s]
+    slug_ok = lambda s: re.match(r"^[^/\s]+/[^/\s]+$", s)
+    if not slug_ok(repo) or not str(a["pr"]).isdigit() or not scope or not all(slug_ok(s) for s in scope):
+        usage("--repo is owner/name, --pr a number and --repos a comma-separated list of owner/name")
+    for pair in a.get("login", []):  # a repository read through a login other than the ambient one
+        slug, _, login = pair.partition("=")
+        if not slug_ok(slug) or not login:
+            usage("--login is owner/name=login")
+        REPO_LOGIN[slug.lower()] = login
+    data = graphql_read(CLOSED_PR_QUERY, repo, a["pr"])
+    try:
+        rep = data["data"]["repository"]
+        pr = rep["pullRequest"]
+        default, base, state = rep["defaultBranchRef"]["name"], pr["baseRefName"], pr["state"]
+        url, body, merged_at = pr["url"], pr["body"] or "", pr["mergedAt"]
+    except (KeyError, TypeError, AttributeError):
+        unknown("unexpected GraphQL response shape (PR, state or default branch missing)")
+    intended = intended_issues(body, repo)
+    fmt = lambda ks: [f"{s}#{n}" for s, n in ks]
+    out = {"ok": True, "status": "merged", "pr_url": url, "base": base, "default_branch": default, "intended": fmt(intended),
+           "open": [], "reopened": [], "closed": [], "outside": []}
+    if state != "MERGED":
+        return {**out, "status": "not_merged"}
+    if not isinstance(merged_at, str) or not merged_at:
+        unknown("the merged PR has no mergedAt")
+    if base != default:  # GitHub closed nothing from this PR, and the fix has not reached the default branch
+        return {**out, "status": "not_default_base"}
+    inside = {s.lower() for s in scope}
+    for slug, n in intended:
+        if slug.lower() not in inside:
+            out["outside"].append(f"{slug}#{n}")  # never read
+            continue
+        try:
+            issue = graphql_read(CLOSED_ISSUE_QUERY, slug, n)["data"]["repository"]["issue"]
+            st, events = issue["state"], issue["timelineItems"]["nodes"]
+            last_close = events[-1]["createdAt"] if events else None
+        except (KeyError, TypeError, AttributeError, IndexError):
+            unknown(f"unexpected GraphQL response shape for {slug}#{n}")
+        if last_close is not None and not isinstance(last_close, str):
+            unknown(f"unexpected close time for {slug}#{n}")
+        if st == "CLOSED":
+            out["closed"].append(f"{slug}#{n}")
+        elif st == "OPEN":  # closed at or after the merge and open now: a person reopened it; an older close does not count
+            out["reopened" if last_close and last_close >= merged_at else "open"].append(f"{slug}#{n}")
+        else:
+            unknown(f"{slug}#{n} has unexpected state {st!r}")
+    return out
+
+
+def link_state(repo, n, kind, peer):
+    """Does PR `n` of `repo` already name `peer` (the `kind` PR's URL)? In its description, or in a `specwright:link <kind>` marker.
+    The one test `link` skips on and the feedback pass's `link` row reports. Returns (reason, comment id, the kind's markers)."""
+    pr = gh_obj(f"repos/{repo}/pulls/{n}")
+    if peer in (pr.get("body") or ""):
+        return "description", None, []
+    found = []
+    for c in gh_list(f"repos/{repo}/issues/{n}/comments?per_page=100"):
+        m = MARK.search(c.get("body") or "")
+        if m and m.group(1) == kind:
+            found.append((c, m.group(2)))
+    for c, url in found:
+        if url == peer:
+            return "marker", c["id"], found
+    return None, None, found
+
+
 def cmd_link(argv):
     a, _ = parse_args(argv, {"--repo": "repo", "--pr": "pr", "--kind": "kind", "--peer-url": "peer", "--login": "login"})
     need(a, "repo", "pr", "kind", "peer")
     repo, n, kind, peer = a["repo"], a["pr"], a["kind"], a["peer"]
     if kind not in ("store", "code"):
         usage("--kind is store or code")
-    pr = gh_obj(f"repos/{repo}/pulls/{n}")
-    if peer in (pr.get("body") or ""):
+    reason, cid0, found = link_state(repo, n, kind, peer)
+    if reason == "description":
         return {"ok": True, "action": "skipped", "reason": "description"}
-    comments = gh_list(f"repos/{repo}/issues/{n}/comments?per_page=100")
-    found = []
-    for c in comments:
-        m = MARK.search(c.get("body") or "")
-        if m and m.group(1) == kind:
-            found.append((c, m.group(2)))
-    for c, url in found:
-        if url == peer:
-            return {"ok": True, "action": "skipped", "reason": "marker", "comment_id": c["id"]}
+    if reason:
+        return {"ok": True, "action": "skipped", "reason": "marker", "comment_id": cid0}
     login = (a.get("login") or ambient_login()).lower()
     mine = [c for c, _ in found if ((c.get("user") or {}).get("login") or "").lower() == login]
     label = "Store" if kind == "store" else "Code"
@@ -724,6 +1127,23 @@ def read_snapshots(a):
     return out
 
 
+def snapshot_refresh(s, pr):
+    """The refresh blocker when snapshot s is not of the discovered PR (repo, number, head commit), else None."""
+    m = re.match(r"https?://[^/]+/([^/]+/[^/]+)/pull/(\d+)", (s.get("url") or "") if isinstance(s.get("url"), str) else "")
+    want_m = re.match(r"https?://[^/]+/([^/]+/[^/]+)/pull/(\d+)", pr.get("url") or "")
+    number = s.get("number")
+    same_repo = bool(m and want_m and m.group(1).lower() == want_m.group(1).lower())
+    if number != pr["number"] or not same_repo:
+        got = "?" if number is None else str(number)
+        if number == pr["number"] and m:
+            got = f"{m.group(1)}#{number}"
+        return f"refresh:pr:{got}!={pr['number']}"
+    got, want = s.get("head_oid") or "", pr.get("head_sha") or ""
+    if not got or got != want:
+        return f"refresh:head:{got[:7] or '?'}!={want[:7]}"
+    return None
+
+
 def cmd_pair_state(argv):
     a, _ = parse_args(argv, {"--code": "code", "--store": "store", "--branch": "branch", "--snapshot": "+snapshot", "--dropped": "+dropped"})
     need(a, "code", "store", "branch")
@@ -731,7 +1151,7 @@ def cmd_pair_state(argv):
     snaps, dropped = read_snapshots(a), set(a.get("dropped", []))
     members = e["set"]
     states = {k: (e[k]["pr"]["state"] if e[k]["pr"] else None) for k in members}
-    r = {"ok": True, "set": members, "states": states, "waits": [], "ready": {}, "waiting_on": [], "blocking": {}, "missing": [],
+    r = {"ok": True, "set": members, "states": states, "waits": [], "ready": {}, "waiting_on": [], "blocking": {}, "missing": [], "refresh": [],
          "merged": [], "closed": [], "open": [], "stop_waits": False, "archive": False, "rerequest": False,
          "share_store_by_hand": "code" in members and "store" not in members,
          "prs": {k: e[k]["pr"] for k in members}, "ship": e["ship"]}
@@ -750,6 +1170,10 @@ def cmd_pair_state(argv):
         return {**r, "action": "cleanup", "stop_waits": True}
     for k in members:
         ok, blockers, stale_only = readiness(snaps.get(k), dropped)
+        stale = snapshot_refresh(snaps[k], e[k]["pr"]) if snaps.get(k) is not None else None
+        if stale:
+            ok, blockers, stale_only = False, [stale] + blockers, False
+            r["refresh"].append(k)
         r["ready"][k] = ok
         if not ok:
             r["blocking"][k] = blockers
@@ -761,7 +1185,7 @@ def cmd_pair_state(argv):
 
 
 def remote_contains(d, branch, sha):
-    r = git(d, "ls-remote", "origin", f"refs/heads/{branch}")
+    r = git_net(d, "ls-remote", "origin", f"refs/heads/{branch}")
     if r.returncode != 0:
         raise Stop("remote_unreadable", f"git ls-remote origin failed in {d}: {r.stderr.strip()}", code=3, unknown=True)
     line = r.stdout.strip().split("\n")[0].strip()
@@ -772,7 +1196,7 @@ def remote_contains(d, branch, sha):
         return True
     if git(d, "cat-file", "-e", remote + "^{commit}").returncode != 0:
         # another checkout pushed a tip this repo lacks: fetch it (FETCH_HEAD only, no local ref moves) before the ancestry test
-        git(d, "fetch", "-q", "origin", f"refs/heads/{branch}")
+        git_net(d, "fetch", "-q", "origin", f"refs/heads/{branch}")
     r = git(d, "merge-base", "--is-ancestor", sha, remote)
     if r.returncode in (0, 1):
         return r.returncode == 0
@@ -794,22 +1218,35 @@ def branch_log(d, rng, branch_ref):
 
 def cmd_rounds(argv):
     a, _ = parse_args(argv, {"--code": "code", "--store": "store", "--branch": "branch"})
-    need(a, "code", "store", "branch")
-    ctx = contexts(a["code"], a["store"])
+    need(a, "code", "branch")  # no --store: a repo-local change, whose only branch is the code branch
+    ctx = contexts(a["code"], a.get("store"))
+    repos = pass_repos(a)
     per, rounds_all = {}, {}
-    for k, d in (("code", a["code"]), ("store", a["store"])):
+    for k, d in repos:
         mref = main_ref(d, ctx[k]["main"])
         commits = branch_log(d, f"{mref}..refs/heads/{a['branch']}", None) if mref and has_ref(d, f"refs/heads/{a['branch']}") else []
         commits = commits or []
         trailers = {sha: max([int(x) for x in TRAILER.findall(body)] or [0]) for sha, _, body in commits}
         per[k] = {"max_trailer": max(trailers.values(), default=0), "trailers": trailers,
                   "subject_count": sum(1 for _, s, _ in commits if LEGACY_SUBJECT.search(s))}
-    rounds = max(per["code"]["max_trailer"], per["store"]["max_trailer"], per["code"]["subject_count"], per["store"]["subject_count"])
-    top = max(per["code"]["max_trailer"], per["store"]["max_trailer"])
+    top = max(p["max_trailer"] for p in per.values())
+    # trailers are exact; the legacy subject count only stands in on a branch that has none in either repo
+    rounds = top or max(p["subject_count"] for p in per.values())
     unpushed, unreadable = {}, []
     if top:
-        for k, d in (("code", a["code"]), ("store", a["store"])):
-            shas = [s for s, n in per[k]["trailers"].items() if n == top]
+        shas_of = {k: [s for s, n in per[k]["trailers"].items() if n == top] for k, _ in repos}
+        if a.get("store") and shas_of.get("store"):
+            # the store may need its own login: stop on a missing credential before the per-repo loop, but only when
+            # the store has top-round commits to look for on its remote
+            try:
+                slug = identity(a["store"])["repo"]
+            except Stop:  # no GitHub origin: plain git, as before
+                slug = None
+            read_store_as(ctx, slug)
+            if slug and REPO_LOGIN.get(slug.lower()):
+                token_for(REPO_LOGIN[slug.lower()])
+        for k, d in repos:
+            shas = shas_of[k]
             try:
                 missing = [s for s in shas if not remote_contains(d, a["branch"], s)]
             except Stop:  # the count does not depend on the remote; say which side could not be checked
@@ -820,17 +1257,139 @@ def cmd_rounds(argv):
     limit = ctx["max_fix_rounds"]
     for k in per:
         del per[k]["trailers"]
-    return {"ok": True, "rounds": rounds, "code": per["code"], "store": per["store"], "max_fix_rounds": limit,
+    return {"ok": True, "rounds": rounds, "code": per["code"], "store": per.get("store"), "max_fix_rounds": limit,
             "limit_reached": rounds >= limit, "after_limit": ctx["after_limit"], "unpushed": unpushed,
             "remote_unreadable": unreadable}
 
 
 # ---- the feedback pass record ----------------------------------------------------------------------------------
+def record_dir():
+    return Path(os.environ.get("SPECWRIGHT_STATE_DIR") or str(Path.home() / ".cache" / "specwright")) / "feedback"
+
+
+def _safe(s):
+    return re.sub(r"[^A-Za-z0-9._-]", "_", s)
+
+
 def record_path(code_repo, change):
-    base = os.environ.get("SPECWRIGHT_STATE_DIR") or str(Path.home() / ".cache" / "specwright")
+    """<owner>.<name>.<change>-<32 hex of sha256(lower(owner), lower(name), change)>.json: the hash keeps hyphenated
+    identities apart (0.1.9 joined the parts with '-', so acme-tools/widget and acme/tools-widget shared a file). The readable
+    part is cut to 120 characters so the file and its `.lock` stay under the 255-character name limit; the hash covers it all."""
     owner, _, name = code_repo.partition("/")
-    safe = lambda s: re.sub(r"[^A-Za-z0-9._-]", "_", s)
-    return Path(base) / "feedback" / f"{safe(owner)}-{safe(name)}-{safe(change)}.json"
+    h = hashlib.sha256(f"{owner.lower()}\n{name.lower()}\n{change}".encode("utf-8")).hexdigest()[:32]
+    return record_dir() / (f"{_safe(owner)}.{_safe(name)}.{_safe(change)}"[:120].lower() + f"-{h}.json")
+
+
+def legacy_record_path(code_repo, change):
+    owner, _, name = code_repo.partition("/")
+    return record_dir() / f"{_safe(owner)}-{_safe(name)}-{_safe(change)}.json"
+
+
+def publish(src, dst):
+    """Create dst from src's content, failing with FileExistsError if dst exists: a hard link, so dst is complete the moment it
+    appears; where links are unsupported, an O_EXCL create and write (a crash mid-write leaves a record_unreadable file)."""
+    try:
+        os.link(src, dst)
+        return
+    except FileExistsError:
+        raise
+    except OSError:
+        pass
+    data = Path(src).read_bytes()
+    fd = os.open(dst, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_BINARY", 0))
+    try:  # the destination is ours from here: a failed write or close must not leave a file a later call reads as record_unreadable
+        try:
+            f = os.fdopen(fd, "wb")
+        except BaseException:
+            os.close(fd)
+            raise
+        with f:
+            f.write(data)
+    except BaseException:
+        try:
+            os.unlink(dst)
+        except OSError:
+            pass
+        raise
+
+
+def exists_here(p):
+    """Path.exists(), except that a path the OS rejects as too long is absent: no file can have that name."""
+    try:
+        return p.exists()
+    except OSError as e:
+        if e.errno == errno.ENAMETOOLONG or getattr(e, "winerror", None) == 206:
+            return False
+        raise
+
+
+def locate_record(code_repo, change):
+    """(path, ignored legacy path or None). A 0.1.9-key record of this repository and change is moved to the new key on first
+    use; one of another identity stays where it is, and one beside an existing new-key record is left and reported. A legacy
+    file byte-identical to the new-key record is the leftover of an interrupted move and is removed. With no new-key record, an
+    unreadable legacy file stops (record_unreadable): it may be the pass in progress, and a new pass must not start beside it;
+    beside a new-key record it is reported as ignored."""
+    path, old = record_path(code_repo, change), legacy_record_path(code_repo, change)
+    if not exists_here(old):
+        return path, None
+    if path.exists():
+        try:
+            if old.read_bytes() == path.read_bytes():
+                old.unlink()
+                return path, None
+        except OSError:
+            pass
+    try:
+        rec = load_record(old)
+    except Stop:
+        if path.exists():
+            return path, norm(old)
+        raise
+    if (not isinstance(rec, dict) or str(rec.get("code_repo") or "").lower() != code_repo.lower() or rec.get("change") != change):
+        return path, None
+    if path.exists():
+        return path, norm(old)
+    try:
+        publish(old, path)
+    except FileExistsError:
+        return path, norm(old)
+    try:
+        old.unlink()
+    except FileNotFoundError:  # another call finished the move first
+        pass
+    return path, None
+
+
+def new_owner(oid, checkout):
+    return {"id": oid, "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "checkout": norm(os.path.abspath(checkout)),
+            "host": socket.gethostname()}
+
+
+LEFT_LOCKS = []  # locks this call could not remove; the output names them, and later calls stop with record_busy
+
+
+@contextlib.contextmanager
+def record_lock(path):
+    """The `<record>.lock` directory, held only by the call that created it; a lock already there is never removed. A failed removal
+    never replaces the outcome of the work under the lock: it is recorded in LEFT_LOCKS and reported as `lock_left`."""
+    lock = Path(str(path) + ".lock")
+    try:
+        os.mkdir(lock)
+    except FileExistsError:
+        raise Stop("record_busy", f"{lock} exists: another call, or an interrupted one, holds the record; it is not removed automatically",
+                   path=norm(path), lock=norm(lock))
+    try:
+        yield
+    finally:
+        try:
+            os.rmdir(lock)
+        except OSError:
+            LEFT_LOCKS.append(norm(lock))
+
+
+def temp_beside(path):
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".tmp-", suffix=".json")
+    return os.fdopen(fd, "w", encoding="utf-8", newline="\n"), tmp
 
 
 def load_record(p):
@@ -838,7 +1397,7 @@ def load_record(p):
         return json.loads(p.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return None
-    except ValueError as e:
+    except (ValueError, OSError) as e:  # cut off, not JSON, or not readable at all (a denied permission): identity unknown
         raise Stop("record_unreadable", f"{p}: {e}")
 
 
@@ -878,8 +1437,36 @@ def pass_args(argv, extra=None):
     spec = {"--code": "code", "--store": "store", "--code-repo": "code_repo", "--change": "change", "--snapshot": "+snapshot"}
     spec.update(extra or {})
     a, _ = parse_args(argv, spec)
-    need(a, "code", "store", "code_repo", "change")
+    need(a, "code", "code_repo", "change")  # no --store: a repo-local change (code only)
     return a
+
+
+def pass_repos(a):
+    """[(name, dir)] the call reads: the code repo, and the store when --store is given."""
+    return [("code", a["code"])] + ([("store", a["store"])] if a.get("store") else [])
+
+
+def is_pos_int(v):
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 1
+
+
+def check_intent_header(intent, local=False):
+    """branch, round and prs, before anything is written; a repo-local change (local) has no store PR."""
+    if not isinstance(intent["branch"], str) or not intent["branch"].strip():
+        raise Stop("invalid_intent", "'branch' must be a non-empty string", code=2)
+    if not is_pos_int(intent["round"]):
+        raise Stop("invalid_intent", "'round' must be a positive integer", code=2)
+    prs = intent["prs"]
+    if not isinstance(prs, dict) or set(prs) - {"code", "store"}:
+        raise Stop("invalid_intent", "'prs' must be an object with only 'code' and 'store' entries", code=2)
+    if local and prs.get("store") is not None:
+        raise Stop("invalid_intent", "'prs.store' must be absent or null: this change is repo-local (no --store)", code=2)
+    for k, v in prs.items():
+        if v is None:
+            continue
+        if (not isinstance(v, dict) or not isinstance(v.get("repo"), str) or not re.match(r"^[^/\s]+/[^/\s]+$", v["repo"])
+                or not is_pos_int(v.get("number"))):
+            raise Stop("invalid_intent", f"'prs.{k}' must be null or an object with 'repo' as <owner>/<name> and 'number' as a positive integer", code=2)
 
 
 def pass_write(argv):
@@ -893,7 +1480,9 @@ def pass_write(argv):
     for key in ("branch", "round", "prs", "findings"):
         if key not in intent:
             raise Stop("invalid_intent", f"intent lacks '{key}'", code=2)
-    path = record_path(a["code_repo"], a["change"])
+    local = not a.get("store")
+    check_intent_header(intent, local)
+    path, _ = locate_record(a["code_repo"], a["change"])
     if path.exists():
         raise Stop("record_exists", f"a feedback pass record exists at {path}; resume that pass before starting another", path=str(path))
     seen = set()
@@ -911,6 +1500,14 @@ def pass_write(argv):
                 or not all(isinstance(e, dict) and isinstance(e.get("file"), str) and e["file"] for e in f["edits"])):
             raise Stop("invalid_intent", f"finding {f['id']} is duplicated or malformed", code=2)
         seen.add(f["id"])
+        if local and (f["source"] != "code" or f["destination"] != "code"):
+            raise Stop("misrouted", f"finding {f['id']}: a repo-local change has only the code repo, so source and destination must be code",
+                       finding=f["id"])
+        if f.get("kind", "thread") == "thread":
+            if not is_pos_int(f.get("root_id")):
+                raise Stop("invalid_intent", f"finding {f['id']}: thread finding needs 'root_id' as a positive integer", code=2)
+        elif not isinstance(f["item"], str) or not f["item"]:
+            raise Stop("invalid_intent", f"finding {f['id']}: {f['kind']} finding needs 'item' as a non-empty string", code=2)
         for e in f["edits"]:
             r = e.get("repo")
             if (f["destination"] == "both" and r not in ("code", "store")) or (f["destination"] != "both" and r not in (None, f["destination"])):
@@ -920,18 +1517,28 @@ def pass_write(argv):
                 raise Stop("misrouted", f"finding {f['id']}: {e['file']} is not under {prefix}/, so it does not belong to the store branch",
                            finding=f["id"], file=e["file"])
     heads = {}
-    for k in ("code", "store"):
-        r = git(a[k], "rev-parse", f"refs/heads/{intent['branch']}")
+    for k, d in pass_repos(a):
+        r = git(d, "rev-parse", f"refs/heads/{intent['branch']}")
         if r.returncode != 0:
             raise Stop("branch_missing", f"{k} has no branch {intent['branch']}")
         heads[k] = r.stdout.strip()
-    marker = find_marker(a["store"], intent["branch"], a["change"], prefix, (contexts(a["code"], a["store"])["store"] or {}).get("main")) if any(edits_for(f, "code") for f in intent["findings"]) else None
-    rec = {**intent, "change": a["change"], "code_repo": a["code_repo"], "heads": heads, "marker": marker, "version": 1}
+    marker = (find_marker(a["store"], intent["branch"], a["change"], prefix, (contexts(a["code"], a["store"])["store"] or {}).get("main"))
+              if not local and any(edits_for(f, "code") for f in intent["findings"]) else None)
+    owner = new_owner(secrets.token_hex(16), a["code"])
+    rec = {**intent, "version": 2, "owner": owner, "change": a["change"], "code_repo": a["code_repo"], "heads": heads, "marker": marker,
+           "written_at": owner["at"]}  # when the pass began: the last-resort re-request cutoff (adopt keeps it; nothing rewrites it)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(rec, indent=2), encoding="utf-8", newline="\n")
-    os.replace(tmp, path)
-    return {"ok": True, "path": norm(path), "round": rec["round"], "heads": heads, "marker": marker}
+    f, tmp = temp_beside(path)  # a uniquely named file: two writers never share one
+    try:
+        with f:
+            f.write(json.dumps(rec, indent=2))
+        try:
+            publish(tmp, path)  # exclusive: fails if any record exists, and the record is complete when it appears
+        except FileExistsError:
+            raise Stop("record_exists", f"a feedback pass record exists at {path}; resume that pass before starting another", path=str(path))
+    finally:
+        os.unlink(tmp)
+    return {"ok": True, "path": norm(path), "round": rec["round"], "heads": heads, "marker": marker, "owner": owner["id"]}
 
 
 def listify(v):
@@ -977,37 +1584,91 @@ def fix_commit(d, head0, branch, n):
     return None, True
 
 
-def request_state(repo, num, branch, tip, reqs):
-    """Which re-requests exist after the push of `tip` (GitHub timestamps only)."""
+def first_seen_at(repo, num, oid):
+    """The earliest GitHub time a snapshot on this machine saw head `oid` of the PR, as an ISO time, or None when the record
+    cannot be read. The record is pr-snapshot.sh's: <state>/heads/<owner/name/pr, lowercased>/<oid>, one HTTP-date line."""
+    base = Path(os.environ.get("SPECWRIGHT_STATE_DIR") or str(Path.home() / ".cache" / "specwright"))
+    try:
+        lines = (base / "heads" / f"{repo}/{num}".lower() / oid).read_text(encoding="utf-8").splitlines()
+        m = re.match(r"^[A-Za-z]{3}, ([0-9]{2} [A-Za-z]{3} [0-9]{4} [0-9:]{8}) GMT$", lines[0].strip())
+        return datetime.datetime.strptime(m.group(1), "%d %b %Y %H:%M:%S").strftime("%Y-%m-%dT%H:%M:%SZ")
+    except (OSError, IndexError, AttributeError, ValueError):
+        return None
+
+
+def request_state(repo, num, branch, tip, reqs, written=None):
+    """Which re-requests exist after the cutoff for `tip`: the push time, else the time a snapshot first saw the head, else (only
+    when no such record can be read) `written`, the time the pass record was written. GitHub timestamps otherwise.
+    Returns (states, push time, cutoff, cutoff source)."""
     acts = gh_list(f"repos/{repo}/activity?ref=refs/heads/{branch}&per_page=100")
     pushed = next((x.get("timestamp") for x in acts if x.get("after") == tip), None)
+    cutoff, source = pushed, "push"
+    if not cutoff:
+        cutoff, source = first_seen_at(repo, num, tip), "first_seen"
+    if not cutoff:
+        cutoff, source = written, "pass_written"
+    if not cutoff:
+        source = "none"
     comments = gh_list(f"repos/{repo}/issues/{num}/comments?per_page=100")
     out = []
     for r in reqs:
         poster = (r["poster"] or ambient_login()).lower()
-        done = bool(pushed) and any(((c.get("user") or {}).get("login") or "").lower() == poster
+        done = bool(cutoff) and any(((c.get("user") or {}).get("login") or "").lower() == poster
                                     and (c.get("body") or "").strip() == r["body"].strip()
-                                    and (c.get("created_at") or "") >= pushed for c in comments)
+                                    and (c.get("created_at") or "") >= cutoff for c in comments)
         out.append({"body": r["body"], "poster": r["poster"], "done": done})
-    return out, pushed
+    return out, pushed, cutoff, source
+
+
+REACTION_GQL = ("query($id: ID!, $cursor: String) { node(id: $id) { ... on Reactable { reactions(first: 100, content: %s, after: $cursor) "
+                "{ nodes { user { login } } pageInfo { hasNextPage endCursor } } } } }")
+
+
+def has_reaction(repo, kind, target, reaction, viewer):
+    """Has `viewer` put `reaction` (+1 or -1) on the recorded target? A thread's root is a numeric review-comment id (REST);
+    a comment or review is a node id (GraphQL). Any failed read exits 3."""
+    who = (viewer or "").lower()
+    if kind == "thread":
+        content = "%2B1" if reaction == "+1" else "-1"
+        return any(((r.get("user") or {}).get("login") or "").lower() == who and r.get("content") == reaction
+                   for r in gh_list(f"repos/{repo}/pulls/comments/{target}/reactions?content={content}&per_page=100"))
+    query, cursor = REACTION_GQL % ("THUMBS_UP" if reaction == "+1" else "THUMBS_DOWN"), None
+    while True:
+        r = gh("api", "graphql", "-f", f"query={query}", "-f", f"id={target}", *(["-f", f"cursor={cursor}"] if cursor else []), repo=repo)
+        if r.returncode != 0:
+            unknown((r.stderr or r.stdout).strip() or f"gh exited {r.returncode}")
+        try:
+            node = (json.loads(r.stdout).get("data") or {}).get("node")
+            rx = node["reactions"]
+            if any(((n.get("user") or {}).get("login") or "").lower() == who for n in rx["nodes"]):
+                return True
+            more, cursor = rx["pageInfo"]["hasNextPage"], rx["pageInfo"]["endCursor"]
+        except (ValueError, TypeError, KeyError, AttributeError):
+            unknown(f"unreadable reactions of {target}")
+        if not more or not cursor:
+            return False
 
 
 def pass_plan(argv):
-    a = pass_args(argv)
-    path = record_path(a["code_repo"], a["change"])
+    a = pass_args(argv, {"--owner": "owner"})
+    path, ignored = locate_record(a["code_repo"], a["change"])
     rec = load_record(path)
     if rec is None:
         return {"ok": True, "record": False, "new_pass_allowed": True, "status": "none", "rows": [], "stops": [],
                 "delete_record": False, "needs_user": False}
+    held = rec.get("owner")
+    owned = None if not held else a.get("owner") == held.get("id")
     snaps = read_snapshots(a)
     findings, n, branch, prs = rec["findings"], rec["round"], rec["branch"], rec.get("prs") or {}
     for src in sorted({f["source"] for f in findings}):
         if src not in snaps:
             raise Stop("snapshot_required", f"pass plan needs --snapshot {src}=<file> (a fresh pr-snapshot.sh of that PR)", code=2, source=src)
-    ctx = contexts(a["code"], a["store"])
-    dirs = {"code": a["code"], "store": a["store"]}
+    ctx = contexts(a["code"], a.get("store"))
+    dirs = {"code": a["code"], "store": a.get("store")}
     marker = rec.get("marker")
     dests = [k for k in ("store", "code") if any(edits_for(f, k) for f in findings) or (k == "store" and marker)]
+    if not a.get("store") and ("store" in dests or prs.get("store") or any(f["source"] == "store" for f in findings)):
+        raise Stop("store_required", "this record names the store repo; pass plan needs --store <dir>", code=2)
     rows, stops = [], []
     fix, tip, pushed, slug = {}, {}, {}, {}
     for k in ("code", "store"):
@@ -1055,10 +1716,12 @@ def pass_plan(argv):
     def unmet(*ids):
         return [i for i in ids if not any(r["step"] + ":" + r["repo"] == i and r["state"] in ("done", "not_applicable") for r in rows if "repo" in r)]
 
+    adopted = None
     if "code" in dests and not prs.get("code"):  # a code fix on a store-only change: the code PR is now expected
         opened = [p for p in discover(slug["code"], branch, base=ctx["code"]["main"])["prs"] if p["state"] == "OPEN"]
         if opened:
             prs = {**prs, "code": {"repo": slug["code"], "number": opened[0]["number"]}}
+            adopted = prs["code"]
 
     for k in dests:  # 2. push
         pr = prs.get(k)
@@ -1090,10 +1753,18 @@ def pass_plan(argv):
             row["blocked"] = bool(row["after"])
             row["state"] = "todo"
             if not row["after"]:
-                states, pushed_at = request_state(pr["repo"], pr["number"], branch, tip[k], reqs)
-                row["requests"], row["push_time"] = states, pushed_at
+                states, pushed_at, cutoff, source = request_state(pr["repo"], pr["number"], branch, tip[k], reqs,
+                                                                  rec.get("written_at") or (held or {}).get("at"))
+                row["requests"], row["push_time"], row["cutoff"], row["cutoff_source"] = states, pushed_at, cutoff, source
                 row["state"] = "done" if all(s["done"] for s in states) else "todo"
         rows.append(row)
+
+    if adopted and prs.get("store"):  # 3b. a code PR adopted after the pair was linked (or not): the link is evidence too
+        urls = {k: gh_obj(f"repos/{prs[k]['repo']}/pulls/{prs[k]['number']}")["html_url"] for k in ("code", "store")}  # canonical, never built
+        linked = (link_state(prs["code"]["repo"], prs["code"]["number"], "store", urls["store"])[0]
+                  and link_state(prs["store"]["repo"], prs["store"]["number"], "code", urls["code"])[0])
+        rows.append({"step": "link", "state": "done" if linked else "todo",
+                     **{k: {"repo": prs[k]["repo"], "number": prs[k]["number"], "url": urls[k]} for k in ("code", "store")}})
 
     react_on = ctx["react"]
     for f in findings:  # 4-6. reply, resolution, reaction
@@ -1149,31 +1820,119 @@ def pass_plan(argv):
         if not reaction:
             rows.append({**base, "step": "react", "state": "not_applicable"})
         else:
-            rows.append({**base, "step": "react", "state": "rerun" if answered else "todo", "react": reaction, "comment": target,
-                         "idempotent": True})
+            # a reaction counts once GitHub shows it: read it with the viewer's login, after the reply is posted
+            seen = answered and has_reaction(pr.get("repo") or slug[src], kind, target, reaction, viewer)
+            rows.append({**base, "step": "react", "state": "done" if seen else "todo", "react": reaction, "comment": target,
+                         "pr": {"repo": pr.get("repo"), "number": pr.get("number")}, "idempotent": True})
 
-    done_states = ("done", "not_applicable", "rerun")
+    done_states = ("done", "not_applicable")
     complete = not stops and all(r["state"] in done_states for r in rows)
     status = "stop" if stops else ("complete" if complete else "resume")
     return {"ok": True, "record": True, "round": n, "branch": branch, "new_pass_allowed": False, "status": status, "stops": stops,
             "rows": rows, "delete_record": complete, "needs_user": bool(stops) or any(r["state"] == "ask" for r in rows),
-            "share_by_hand": [r["repo"] for r in rows if r["step"] == "push" and r.get("share_by_hand")], "path": norm(path)}
+            "share_by_hand": [r["repo"] for r in rows if r["step"] == "push" and r.get("share_by_hand")], "path": norm(path),
+            "owner": held, "owned": owned, **({"legacy_record_ignored": ignored} if ignored else {})}
+
+
+def owner_id(rec):
+    return (rec.get("owner") or {}).get("id")
 
 
 def pass_done(argv):
-    p = pass_plan(argv)
-    if not p.get("record"):
+    a = pass_args(argv, {"--owner": "owner"})
+    need(a, "owner")
+    path, _ = locate_record(a["code_repo"], a["change"])
+    if not path.exists():
         return {"ok": True, "deleted": False, "record": False}
-    if not p["delete_record"]:
-        raise Stop("not_complete", "the pass still has steps to do; run pass plan", status=p["status"])
-    record_path(pass_args(argv)["code_repo"], pass_args(argv)["change"]).unlink()
+    with record_lock(path):
+        rec = load_record(path)
+        if rec is None:
+            return {"ok": True, "deleted": False, "record": False}
+        if owner_id(rec) != a["owner"]:
+            raise Stop("not_owner", f"the record at {norm(path)} is owned by {owner_id(rec) or 'no session'}, not {a['owner']}; "
+                       "show its owner and ask the user", owner=rec.get("owner"))
+        p = pass_plan(argv)
+        if not p["delete_record"]:
+            raise Stop("not_complete", "the pass still has steps to do; run pass plan", status=p["status"])
+        path.unlink()
     return {"ok": True, "deleted": True}
 
 
+def pass_adopt(argv):
+    a = pass_args(argv, {"--owner": "owner", "--from": "frm"})
+    need(a, "owner", "frm")
+    path, _ = locate_record(a["code_repo"], a["change"])
+    if not path.exists():
+        raise Stop("no_record", f"no feedback pass record at {norm(path)}")
+    with record_lock(path):
+        rec = load_record(path)
+        if rec is None:
+            raise Stop("no_record", f"no feedback pass record at {norm(path)}")
+        cur = owner_id(rec)
+        if cur != (None if a["frm"] == "none" else a["frm"]):
+            raise Stop("not_owner", f"the record at {norm(path)} is owned by {cur or 'no session'}, not {a['frm']}; nothing changed",
+                       owner=rec.get("owner"))
+        # an older record has no written_at and falls back to the owner's at: keep that pass start before the owner changes
+        rec = {**rec, "version": 2, "written_at": rec.get("written_at") or (rec.get("owner") or {}).get("at"),
+               "owner": new_owner(a["owner"], a["code"])}
+        if rec["written_at"] is None:
+            rec.pop("written_at")
+        f, tmp = temp_beside(path)
+        try:
+            with f:
+                f.write(json.dumps(rec, indent=2))
+            os.replace(tmp, path)
+        except BaseException:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+            raise
+    return {"ok": True, "path": norm(path), "owner": a["owner"], "previous": cur}
+
+
 def cmd_pass(argv):
-    if not argv or argv[0] not in ("write", "plan", "done"):
-        usage("pass write|plan|done ...")
-    return {"write": pass_write, "plan": pass_plan, "done": pass_done}[argv[0]](argv[1:])
+    if not argv or argv[0] not in ("write", "plan", "done", "adopt"):
+        usage("pass write|plan|done|adopt ...")
+    return {"write": pass_write, "plan": pass_plan, "done": pass_done, "adopt": pass_adopt}[argv[0]](argv[1:])
+
+
+def cmd_branch_check(argv):
+    """May a change branch be deleted once its PR merged and main is updated? Local refs only; changes nothing."""
+    a, _ = parse_args(argv, {"--dir": "dir", "--branch": "branch", "--main": "main", "--head": "head"})
+    need(a, "dir", "branch", "main")
+    d, b, m, head = a["dir"], a["branch"], a["main"], a.get("head")
+    if head is not None and not re.match(r"^[0-9a-fA-F]{4,64}$", head):
+        raise Stop("usage", f"--head must be a commit id, got {head!r}", code=2)
+
+    def fail(what, r):
+        raise Stop("git_error", f"{what} in {d}: {(r.stderr or r.stdout).strip()}")
+
+    for ref in (f"refs/heads/{b}", f"refs/heads/{m}"):
+        r = git(d, "rev-parse", "--verify", "-q", ref + "^{commit}")
+        if r.returncode != 0:
+            fail(f"cannot resolve {ref}", r)
+
+    def ancestor(x, y, what):
+        r = git(d, "merge-base", "--is-ancestor", x, y)
+        if r.returncode not in (0, 1):
+            fail(what, r)
+        return r.returncode == 0
+
+    def lacking(*rng):
+        r = git(d, "log", "--format=%H%x1f%s%x1e", *rng)
+        if r.returncode != 0:
+            fail("git log failed", r)
+        rows = [(rec.strip("\n").split("\x1f") + [""])[:2] for rec in r.stdout.split("\x1e") if rec.strip()]
+        return [{"sha": sha.strip(), "subject": subject} for sha, subject in rows]
+
+    tip, mref = f"refs/heads/{b}", f"refs/heads/{m}"
+    if ancestor(tip, mref, f"cannot compare {b} with {m}"):
+        return {"ok": True, "delete": True, "reason": "on_main", "lacking": []}
+    known = bool(head) and git(d, "cat-file", "-e", head + "^{commit}").returncode == 0
+    if not known:
+        return {"ok": True, "delete": False, "reason": "head_unknown", "lacking": lacking(f"{mref}..{tip}")}
+    if ancestor(tip, head, f"cannot compare {b} with {head}"):
+        return {"ok": True, "delete": True, "reason": "pr_head", "lacking": []}
+    return {"ok": True, "delete": False, "reason": "lacking", "lacking": lacking(f"{mref}..{tip}", "--not", head)}
 
 
 def cmd_cleanup(argv):
@@ -1192,10 +1951,10 @@ def cmd_cleanup(argv):
         if side["expected"] and pr and pr["state"] == "MERGED":
             ent["merged"] = True
             if exists:
-                tipsha = git(d, "rev-parse", f"refs/heads/{branch}").stdout.strip()
-                ent["commands"] = [cmd("git", "checkout", main), cmd("git", "pull", "--ff-only"), cmd("git", "branch", "-d", branch)]
-                ent["force_delete"] = ["git", "branch", "-D", branch]  # only when -d refuses and the PR head is this tip
-                ent["force_delete_allowed"] = bool(pr.get("head_sha")) and pr["head_sha"] == tipsha
+                # after the pull, branch-check decides: the skill runs `delete` only when it answers delete: true
+                check = ["pr-pair.sh", "branch-check", "--dir", cwd, "--branch", branch, "--main", main] + (["--head", pr["head_sha"]] if pr.get("head_sha") else [])
+                ent["commands"] = [cmd("git", "checkout", main), cmd("git", "pull", "--ff-only"), cmd(*check)]
+                ent["delete"] = ["git", "branch", "-D", branch]
         elif side["expected"]:
             keep.append({"repo": k, "slug": side["repo"], "state": pr["state"] if pr else "NONE", "branch": branch,
                          "url": pr["url"] if pr else None})
@@ -1209,14 +1968,19 @@ def cmd_cleanup(argv):
 
 
 COMMANDS = {"identity": cmd_identity, "context": cmd_context, "discover": cmd_discover, "expected": cmd_expected,
-            "ensure-pr": cmd_ensure_pr, "link": cmd_link, "pair-state": cmd_pair_state, "rounds": cmd_rounds,
-            "pass": cmd_pass, "cleanup-plan": cmd_cleanup}
+            "ensure-pr": cmd_ensure_pr, "closing-check": cmd_closing_check,
+            "closed-check": cmd_closed_check, "link": cmd_link, "pair-state": cmd_pair_state, "rounds": cmd_rounds,
+            "pass": cmd_pass, "cleanup-plan": cmd_cleanup, "branch-check": cmd_branch_check}
 
 args = sys.argv[1:]
 try:
     if not args or args[0] not in COMMANDS:
         usage("subcommand: " + " | ".join(COMMANDS))
-    emit(COMMANDS[args[0]](args[1:]))
+    out = COMMANDS[args[0]](args[1:])
+    emit({**out, "lock_left": LEFT_LOCKS} if LEFT_LOCKS else out)
 except Stop as e:
-    emit(e.obj(), e.code)
+    emit({**e.obj(), "lock_left": LEFT_LOCKS} if LEFT_LOCKS else e.obj(), e.code)
+except Exception as e:
+    err = {"ok": False, "error": "internal_error", "message": f"{type(e).__name__}: {e}"}
+    emit({**err, "lock_left": LEFT_LOCKS} if LEFT_LOCKS else err, 1)
 PYSRC
