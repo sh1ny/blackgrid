@@ -50,9 +50,9 @@ Implementation notes:
 | scan-pipeline → Targeted acceptance gets one extra full-client capture while recording | Trigger during the extra capture | test/application/scan_coordinator_recording_test.dart | a trigger during the extra capture starts after its answer and the frame is recorded | green |
 | scan-pipeline → Targeted acceptance gets one extra full-client capture while recording | Extra capture overruns with a trigger pending | test/application/scan_coordinator_recording_test.dart | extra captureTimeout fails the pending scan captureBusy and records fullFailure | green |
 | scan-pipeline → Targeted acceptance gets one extra full-client capture while recording | Extra capture fails | test/application/scan_coordinator_recording_test.dart | failed extra capture records the strip with image null and fullFailure | green |
-| scanner-evidence → Scanner shows the record switch and its status | Recording runs | test/ui/live_scan_panel_test.dart | record status shows written, dropped and folder | red |
-| scanner-evidence → Scanner shows the record switch and its status | Live scan not ready | test/ui/live_scan_panel_test.dart | record switch is off and disabled unless live scan is ready | red |
-| scanner-evidence → Scanner shows the record switch and its status | Write failure | test/ui/live_scan_panel_test.dart | record status shows the write error and folder after a self-stop | red |
+| scanner-evidence → Scanner shows the record switch and its status | Recording runs | test/ui/live_scan_panel_test.dart | record status shows written, dropped and folder | green |
+| scanner-evidence → Scanner shows the record switch and its status | Live scan not ready | test/ui/live_scan_panel_test.dart | record switch is off and disabled unless live scan is ready | green |
+| scanner-evidence → Scanner shows the record switch and its status | Write failure | test/ui/live_scan_panel_test.dart | record status shows the write error and folder after a self-stop | green |
 
 Also add (no row): "stop during the extra capture releases the frame and records nothing" (S7), and "coordinator still the only capture and vision caller" (both audits re-run green).
 
@@ -121,7 +121,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 ## 5. Scanner panel
 
 - [x] 5.1 Add the three panel tests to `test/ui/live_scan_panel_test.dart` (switch key `record-frames-switch`, status key `record-frames-status`). Verify: they fail.
-- [ ] 5.2 Add the "Record scan frames" switch and status lines to `lib/ui/live_scan_panel.dart`, listening to `scanner.recordingStatus`. Raise `leftHeight` in `lib/ui/scanner_screen.dart` if the controls need it. Verify: the 5.1 tests and the existing panel and `shell_test.dart` layout tests pass (re-run them), then flip the rows green.
+- [x] 5.2 Add the "Record scan frames" switch and status lines to `lib/ui/live_scan_panel.dart`, listening to `scanner.recordingStatus`. Raise `leftHeight` in `lib/ui/scanner_screen.dart` if the controls need it. Verify: the 5.1 tests and the existing panel and `shell_test.dart` layout tests pass (re-run them), then flip the rows green.
 
 ## 6. Corpus documentation
 
