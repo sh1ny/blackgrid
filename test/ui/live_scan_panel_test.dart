@@ -235,6 +235,34 @@ void main() {
     expect(recordSwitch().onChanged, isNull);
   });
 
+  testWidgets('a starting recording session can be switched off', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await tester.runAsync(rig.ready);
+    await tester.pump();
+    final gate = rig.writerGate = Completer<void>();
+
+    await tester.tap(find.byKey(_recordKey));
+    await _until(
+      tester,
+      () => rig.recorder.status.value.state == ScanRecordingState.starting,
+    );
+    final recordSwitch = tester.widget<Switch>(find.byKey(_recordKey));
+    expect(recordSwitch.value, isTrue);
+    expect(recordSwitch.onChanged, isNotNull);
+
+    await tester.tap(find.byKey(_recordKey));
+    await tester.pump();
+
+    expect(rig.recorder.status.value.state, ScanRecordingState.off);
+    expect(_switchValueOf(tester, _recordKey), isFalse);
+    await tester.runAsync(() async {
+      gate.complete();
+      await rig.recorder.close(timeout: Duration.zero);
+    });
+  });
+
   testWidgets(
     'record status shows the write error and folder after a self-stop',
     (tester) async {

@@ -69,13 +69,14 @@ class LiveScanPanel extends StatelessWidget {
                 const Expanded(child: Text('Record scan frames')),
                 Switch(
                   key: const Key('record-frames-switch'),
+                  // A starting session shows on and can be switched off; only
+                  // a stopping one refuses the switch.
                   value:
                       recording.state == ScanRecordingState.on ||
                       recording.state == ScanRecordingState.starting,
                   onChanged:
                       status.state == LiveScanState.ready &&
-                          (recording.state == ScanRecordingState.off ||
-                              recording.state == ScanRecordingState.on)
+                          recording.state != ScanRecordingState.stopping
                       ? scanner.setRecording
                       : null,
                 ),

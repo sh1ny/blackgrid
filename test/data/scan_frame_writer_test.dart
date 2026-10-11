@@ -248,6 +248,19 @@ void main() {
       expect(!lines.existsSync() || lines.readAsStringSync().isEmpty, isTrue);
     });
 
+    test('a scan queued behind a failed one is never written', () async {
+      final w = await spawn(fileOps: _failingPngOps);
+      w.write(_scan('e1', full: _frame()));
+      w.write(_scan('e2', kind: RecordedScanKind.fullClient));
+
+      final failure = await answers.next();
+      expect(failure, isA<ScanFrameFailure>());
+      expect((failure as ScanFrameFailure).id, 'e1');
+      // The writer ends instead of taking e2, which would write its line.
+      expect(await answers.next(), isA<ScanFrameWriterExited>());
+      expect(File('${dir.path}/frames.jsonl').existsSync(), isFalse);
+    });
+
     test('answers carry the session token', () async {
       final ok = await spawn(token: 42);
       ok.write(_scan('d1', full: _frame()));

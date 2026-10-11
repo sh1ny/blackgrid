@@ -158,7 +158,7 @@ final class _Writer implements ScanFrameWriter {
 }
 
 /// A Tracker token saved on this machine, which no recorded file may hold.
-const String _token = 'tracker-token-SECRET-0123456789';
+const String _token = 'PVP_synthetic-fixture-only';
 
 /// A credential store with one Tracker token, in memory.
 final class _MemoryCredentials implements CredentialStore {
@@ -662,6 +662,68 @@ void main() {
         expect(line.containsKey('expected'), isFalse);
       },
     );
+
+    test(
+      'a later full frame from a moved window replaces the strip geometry',
+      () async {
+        rig = await _Rig.create();
+        await rig.startRecording();
+        await rig.fallbackScan(
+          x: 912,
+          y: 453,
+          strip: rig.pixelFrame(
+            clientWidth: 2560,
+            clientHeight: 1440,
+            desktopLeft: 887,
+            desktopTop: 428,
+            captured: const CaptureRect(787, 378, _w, _h),
+          ),
+          full: rig.pixelFrame(
+            seed: 2,
+            clientWidth: 1920,
+            clientHeight: 1080,
+            desktopLeft: 200,
+            desktopTop: 100,
+            captured: const CaptureRect(0, 0, _w, _h),
+          ),
+          evidence: _ev(),
+          outcome: _rejected(OutcomeRejectReason.belowSimilarity, _ev()),
+        );
+
+        final scan = await rig.recorded.at(0);
+        expect((scan.clientWidth, scan.clientHeight), (1920, 1080));
+        expect((scan.cursorX, scan.cursorY), (712, 353));
+      },
+    );
+
+    test('the extra full frame from a moved window replaces the strip geometry', () async {
+      rig = await _Rig.create();
+      await rig.startRecording();
+      await rig.acceptTargeted(
+        strip: rig.pixelFrame(
+          clientWidth: 2560,
+          clientHeight: 1440,
+          desktopLeft: 110,
+          desktopTop: 70,
+          captured: const CaptureRect(100, 50, _w, _h),
+        ),
+      );
+      (await rig.nextCapture()).succeed(
+        rig.pixelFrame(
+          seed: 2,
+          clientWidth: 1920,
+          clientHeight: 1080,
+          desktopLeft: 5,
+          desktopTop: 7,
+          captured: const CaptureRect(0, 0, _w, _h),
+        ),
+      );
+
+      final scan = await rig.recorded.at(0);
+      expect((scan.clientWidth, scan.clientHeight), (1920, 1080));
+      // The trigger is at desktop (10, 20) and the new client origin at (5, 7).
+      expect((scan.cursorX, scan.cursorY), (5, 13));
+    });
 
     test('roiOutsideClient records kind fullClient without a cursor', () async {
       rig = await _Rig.create();

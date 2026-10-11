@@ -430,6 +430,9 @@ Future<void> _writerMain(_Init init) async {
       init.replies.send(_Ack(message.id));
     } on Object catch (error) {
       init.replies.send(_Failure(message.id, error.toString()));
+      // A failed session writes nothing more: leaving the loop closes the
+      // command port, drops the scans queued behind and ends the isolate.
+      break;
     }
   }
 }
@@ -794,11 +797,22 @@ class ScanFrameRecorder {
     final name = _folderName(clock());
     final sep = Platform.pathSeparator;
     var path = '$root$sep$name';
-    for (var n = 2; await Directory(path).exists(); n++) {
-      path = '$root$sep$name-$n';
+    var n = 2;
+    while (true) {
+      if (!await Directory(path).exists()) {
+        await Directory(path).create(recursive: true);
+        // Creating a directory that exists succeeds, so another session
+        // starting in the same second could share it. Creating the case file
+        // exclusively claims the folder: the loser moves to the next suffix.
+        try {
+          await File('$path$sep$scanFramesFileName').create(exclusive: true);
+          return path;
+        } on PathExistsException {
+          // Claimed by another session; try the next suffix.
+        }
+      }
+      path = '$root$sep$name-${n++}';
     }
-    await Directory(path).create(recursive: true);
-    return path;
   }
 
   static String _folderName(DateTime time) {

@@ -104,6 +104,24 @@ void main() {
     );
   });
 
+  test(
+    'two recorders starting in the same second get different folders',
+    () async {
+      final first = build();
+      final second = build();
+      addTearDown(() async {
+        await first.close(timeout: Duration.zero);
+        await second.close(timeout: Duration.zero);
+      });
+
+      final results = await Future.wait([first.start(), second.start()]);
+
+      expect(results, [true, true]);
+      expect(first.status.value.folder, isNot(second.status.value.folder));
+      expect(sessionFolders(), 2);
+    },
+  );
+
   test('folder creation failure leaves recording off with the error', () async {
     File(root)
       ..createSync(recursive: true)

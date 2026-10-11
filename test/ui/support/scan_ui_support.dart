@@ -320,6 +320,7 @@ final class ScanUiRig {
       clock: () => DateTime(2026, 10, 10, 14, 3, 7),
       writerFactory:
           ({required folder, required token, required onAnswer}) async {
+            await writerGate?.future;
             final writer = FakeRecordWriter(token, onAnswer);
             writers.add(writer);
             return writer;
@@ -373,6 +374,10 @@ final class ScanUiRig {
 
   /// The recorder behind [coordinator], over fake writers.
   late final ScanFrameRecorder recorder;
+
+  /// When set, the recording writer is not created until it completes, which
+  /// holds a session in `starting`.
+  Completer<void>? writerGate;
 
   /// Every recording writer created, in session order.
   final List<FakeRecordWriter> writers = [];

@@ -2437,19 +2437,29 @@ class ScanCoordinator extends ChangeNotifier {
   ///
   /// A failed copy leaves the scan out of the recording, counted as dropped;
   /// the caller still submits the frame.
-  RecordedFrame? _copyPixels(_Scan s, CaptureFrame frame) {
+  RecordedFrame? _copyPixels(
+    _Scan s,
+    CaptureFrame frame, {
+    required bool full,
+  }) {
     final m = frame.metadata;
     try {
       final pixels = frame.withPixels(
         (bytes) => TransferableTypedData.fromList([bytes]),
       );
-      s.recordedClientWidth ??= m.clientWidth;
-      s.recordedClientHeight ??= m.clientHeight;
+      // The window may have moved or resized between captures, so a
+      // full-client frame, the newest and the one the recorded image comes
+      // from, always replaces the geometry; a strip only fills a gap.
       // The client origin lies at the desktop point
       // `desktopLeft - captured.left`.
-      s.recordedCursorX ??=
-          s.trigger.event.x - (m.desktopLeft - m.captured.left);
-      s.recordedCursorY ??= s.trigger.event.y - (m.desktopTop - m.captured.top);
+      final cursorX = s.trigger.event.x - (m.desktopLeft - m.captured.left);
+      final cursorY = s.trigger.event.y - (m.desktopTop - m.captured.top);
+      if (full || s.recordedClientWidth == null) {
+        s.recordedClientWidth = m.clientWidth;
+        s.recordedClientHeight = m.clientHeight;
+        s.recordedCursorX = cursorX;
+        s.recordedCursorY = cursorY;
+      }
       return RecordedFrame(
         width: m.width,
         height: m.height,
@@ -2472,7 +2482,7 @@ class ScanCoordinator extends ChangeNotifier {
   }
 
   void _copyForRecording(_Scan s, ScanPass pass, CaptureFrame frame) {
-    final copy = _copyPixels(s, frame);
+    final copy = _copyPixels(s, frame, full: pass == ScanPass.fallback);
     if (copy == null) return;
     switch (pass) {
       case ScanPass.targeted:
@@ -2529,7 +2539,7 @@ class ScanCoordinator extends ChangeNotifier {
       case CaptureSuccess(:final frame):
         try {
           if (_extraStillCurrent(s) && _recordingOn) {
-            s.recordedFull = _copyPixels(s, frame);
+            s.recordedFull = _copyPixels(s, frame, full: true);
           }
         } finally {
           frame.release();
