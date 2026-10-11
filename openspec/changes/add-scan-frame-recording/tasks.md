@@ -125,7 +125,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 6. Corpus documentation
 
-- [ ] 6.1 Add a "Recording a corpus from live scans" section to `docs/qualification/m2/CORPUS.md`. It covers:
+- [x] 6.1 Add a "Recording a corpus from live scans" section to `docs/qualification/m2/CORPUS.md`. It covers:
   - the switch and the session folder;
   - mapping `frames.jsonl` to `corpus.json`: keep lines with an `image` and `clipped: false`, copy `id`, `image`, `client`, `kind`, `cursor`, and add `expected` from the user's label;
   - the hint fields are never labels;

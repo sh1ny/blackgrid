@@ -105,3 +105,44 @@ Each thresholded title crop of the deciding evidence is written as a grayscale P
 ## Pass rule
 
 Without a baseline the run only reports. With one, the test fails when the number of correct cases is below the baseline's or the number of false positives is above it, over the cases present in both.
+
+## Recording a corpus from live scans
+
+Instead of taking screenshots by hand, the user can record the frames of their own live scans (ADR-0015). The agent never records: it needs the game running, which belongs to the user.
+
+### Recording
+
+- The "Record scan frames" switch is in the Scanner panel. It is off at every start (never persisted) and can be switched on only while live scan is `ready`. Leaving `ready` turns it off.
+- Each recording session writes to `%LOCALAPPDATA%\Blackgrid\scan-frames\<yyyyMMdd-HHmmss>[-N]\` (`-N` separates two sessions started in the same second). The panel shows the path.
+- The folder holds `<id>-full.png`, `<id>-targeted.png` and `frames.jsonl`. The id is `<session folder name>-NNNN`, where `NNNN` is the scan number.
+- The recorder holds at most 2 scans at a time and drops (and counts) the rest; a session stops at 500 hand-offs. Click one item at a time.
+
+### `frames.jsonl`
+
+One JSON object per published scan, appended after its PNGs exist. Version 1 (`v: 1`) has these fields:
+
+- Corpus fields: `id`, `image` (the `<id>-full.png` file name, or null when no whole-client frame exists), `client` (`{width, height}`), `kind` and `cursor` (`{x, y}`, omitted for `fullClient`).
+- `captured` (`{left, top, width, height}`): the client-pixel rectangle the full PNG covers; null with `image`.
+- Hint fields: `clipped`, `strip` (the `<id>-targeted.png` file name, or null), `outcome` (`accepted`, `rejected` or `failed`), `acceptedId`, `rejectReason`, `failure`, `fullFailure` (why no whole-client frame exists), `text` (the OCR text), `targetedMarkerScore`, `fallbackMarkerScore`, `stripCapturedAtUtc` and `fullCapturedAtUtc`.
+- There is no `expected`. Labelling is the user's.
+
+### Mapping to `corpus.json`
+
+1. Keep the lines whose `image` is not null and whose `clipped` is `false`.
+2. Copy `id`, `image`, `client`, `kind` and `cursor` into a case, unchanged.
+3. Add `expected` from the user's own label: the catalog item ID, or `reject`.
+4. Put the PNGs named by `image` beside `corpus.json`. Ids carry the session folder name, so several sessions can be merged into one corpus directory without renaming.
+
+The hint fields are never labels. `outcome`, `acceptedId`, `rejectReason`, `text` and the scores are what the app saw at record time. Copying `acceptedId` into `expected` would make the corpus agree with the app by construction, not independently of it.
+
+### Clipped lines
+
+A line with `clipped: true` is not a valid case as recorded. The runner requires the image size to equal `client`, and the capture is clip-not-pad (ADR-0010), so a clipped image is smaller than the client. `captured` gives the offset of the image inside the client, which a later tool could use to place the cursor; until then, drop those lines or take that screenshot by hand.
+
+### Reading the file
+
+Readers skip an unparseable final line: a crash during an append can leave a partial one. Every other line names PNGs that exist.
+
+### Timings
+
+Timings and timing-log lines from a recording session include the pixel copy and the extra whole-client capture after a targeted acceptance, and a click made during that capture can wait up to 500 ms. Judge latency with recording off.
