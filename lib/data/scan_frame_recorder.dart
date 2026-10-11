@@ -313,13 +313,7 @@ abstract interface class ScanFrameWriter {
 /// `rowStride: stride` and `ChannelOrder.bgra`, then `convert(numChannels: 3)`
 /// to drop the undefined fourth byte, then `encodePng` at a fast level.
 class IsolateScanFrameWriter implements ScanFrameWriter {
-  IsolateScanFrameWriter._(
-    this._isolate,
-    this._commands,
-    this._replies,
-    this._exits,
-    this._errors,
-  );
+  IsolateScanFrameWriter._(this._isolate, this._commands, this._replies);
 
   /// PNG compression level: fast, since the frame is written off the scan path.
   static const int pngLevel = 1;
@@ -334,9 +328,10 @@ class IsolateScanFrameWriter implements ScanFrameWriter {
     required void Function(ScanFrameWriterAnswer answer) onAnswer,
     ScanFrameFileOps Function() fileOps = defaultScanFrameFileOps,
   }) async {
+    // Answers, errors and the exit notice share one port, so the exit notice,
+    // which an isolate sends as its last message, always follows the failure
+    // it sent before leaving.
     final replies = ReceivePort();
-    final exits = ReceivePort();
-    final errors = ReceivePort();
     final ready = Completer<SendPort>();
     var exited = false;
     void exit(String? error) {
@@ -356,34 +351,34 @@ class IsolateScanFrameWriter implements ScanFrameWriter {
           onAnswer(ScanFrameAck(token, id));
         case _Failure(:final id, :final error):
           onAnswer(ScanFrameFailure(token, id, error));
+        // An uncaught error arrives as `[error, stack]`.
+        case [final Object? error, _]:
+          exit(error.toString());
+        // The exit notice.
+        case null:
+          exit(null);
       }
     });
-    exits.listen((_) => exit(null));
-    errors.listen((Object? message) => exit(message.toString()));
 
     final Isolate isolate;
     try {
       isolate = await Isolate.spawn(
         _writerMain,
         _Init(replies.sendPort, folder, fileOps),
-        onExit: exits.sendPort,
-        onError: errors.sendPort,
+        onExit: replies.sendPort,
+        onError: replies.sendPort,
       );
     } on Object {
       replies.close();
-      exits.close();
-      errors.close();
       rethrow;
     }
     final commands = await ready.future;
-    return IsolateScanFrameWriter._(isolate, commands, replies, exits, errors);
+    return IsolateScanFrameWriter._(isolate, commands, replies);
   }
 
   final Isolate _isolate;
   final SendPort _commands;
   final ReceivePort _replies;
-  final ReceivePort _exits;
-  final ReceivePort _errors;
 
   @override
   void write(RecordedScan scan) => _commands.send(scan);
@@ -392,8 +387,6 @@ class IsolateScanFrameWriter implements ScanFrameWriter {
   void kill() {
     _isolate.kill(priority: Isolate.immediate);
     _replies.close();
-    _exits.close();
-    _errors.close();
   }
 }
 

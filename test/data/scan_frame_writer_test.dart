@@ -61,6 +61,9 @@ RecordedScan _scan(
 /// Top-level so it can be sent to the writer isolate.
 ScanFrameFileOps _failingPngOps() => _FailingPngOps();
 
+/// File operations whose creation crashes the writer isolate.
+ScanFrameFileOps _crashingOps() => throw StateError('ops crashed');
+
 final class _FailingPngOps implements ScanFrameFileOps {
   final ScanFrameFileOps _real = defaultScanFrameFileOps();
 
@@ -259,6 +262,14 @@ void main() {
       // The writer ends instead of taking e2, which would write its line.
       expect(await answers.next(), isA<ScanFrameWriterExited>());
       expect(File('${dir.path}/frames.jsonl').existsSync(), isFalse);
+    });
+
+    test('a crashed writer reports its error', () async {
+      await spawn(fileOps: _crashingOps);
+
+      final exited = await answers.next();
+      expect(exited, isA<ScanFrameWriterExited>());
+      expect((exited as ScanFrameWriterExited).error, contains('ops crashed'));
     });
 
     test('answers carry the session token', () async {
