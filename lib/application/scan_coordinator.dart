@@ -20,6 +20,7 @@ import '../data/capture/capture_native.dart';
 import '../data/capture/capture_service.dart';
 import '../data/capture/capture_snapshot.dart';
 import '../data/capture/mouse_release_trigger_source.dart';
+import '../data/scan_frame_recorder.dart';
 import '../data/vision/inspection_recognition.dart';
 import '../data/vision/marker_template.dart';
 import '../data/vision/vision_job.dart';
@@ -1298,6 +1299,25 @@ final class _Scan {
   GameMode? catalogMode;
   String? catalogRevision;
 
+  /// The strip copied for the recorder, when recording was on at its pass.
+  RecordedFrame? recordedStrip;
+
+  /// The full-client frame copied for the recorder: the fallback pass's, or
+  /// the extra capture's after a targeted acceptance.
+  RecordedFrame? recordedFull;
+
+  /// Client size and cursor, read from the first frame copied for recording.
+  int? recordedClientWidth;
+  int? recordedClientHeight;
+  int? recordedCursorX;
+  int? recordedCursorY;
+
+  /// Why the extra capture produced no frame, when one was attempted.
+  String? extraFailure;
+
+  /// Whether a pixel copy failed, so the scan is left out of the recording.
+  bool recordingLost = false;
+
   PassTimeline? timeline(ScanPass pass) => switch (pass) {
     ScanPass.targeted => targetedTimeline,
     ScanPass.fallback => fallbackTimeline,
@@ -1407,6 +1427,7 @@ class ScanCoordinator extends ChangeNotifier {
     ScanWaiter? waiter,
     this.settleDelay = const Duration(milliseconds: 50),
     this.fallbackDelay = const Duration(milliseconds: 200),
+    this._recorder,
   }) : _waiter = waiter ?? _timerWaiter,
        runtimeDirectory =
            runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path {
@@ -1450,6 +1471,7 @@ class ScanCoordinator extends ChangeNotifier {
   final ScanVisionFactory _visionFactory;
   final ScanPlatformFactory _platformFactory;
   final ScanWaiter _waiter;
+  final ScanFrameRecorder? _recorder;
 
   ScanPlatform? _platform;
   _Activation? _current;
@@ -1504,6 +1526,35 @@ class ScanCoordinator extends ChangeNotifier {
       (final String hook, final String worker) => '$hook $worker',
     },
   );
+
+  static final ValueListenable<ScanRecordingStatus> _noRecording =
+      ValueNotifier<ScanRecordingStatus>(const ScanRecordingStatus());
+
+  /// The recording state, counts, folder and stop reason; constantly off when
+  /// the coordinator has no recorder.
+  ValueListenable<ScanRecordingStatus> get recordingStatus =>
+      _recorder?.status ?? _noRecording;
+
+  /// Turns frame recording on or off.
+  ///
+  /// Turning on is accepted only while live scan is `ready` and no earlier
+  /// session is running or still draining; otherwise it does nothing and the
+  /// switch stays off. Turning off stops the session, and the scans already
+  /// handed to the writer are still written. Recording is never saved in the
+  /// settings.
+  Future<void> setRecording(bool on) async {
+    final recorder = _recorder;
+    if (recorder == null || _disposed) return;
+    if (!on) {
+      recorder.stop();
+      return;
+    }
+    if (_state != LiveScanState.ready ||
+        recorder.status.value.state != ScanRecordingState.off) {
+      return;
+    }
+    await recorder.start();
+  }
 
   /// The QPC clock, once the UI-side platform has opened; else null.
   ScanClock? get clock => _platform?.clock;
@@ -1662,6 +1713,9 @@ class ScanCoordinator extends ChangeNotifier {
   void _set(LiveScanState state, [ScanFailure? reason]) {
     _state = state;
     _reason = reason;
+    // Recording lasts only while live scan is ready, including while it is
+    // still starting.
+    if (state != LiveScanState.ready) _recorder?.stop();
     _notify();
   }
 
@@ -2028,7 +2082,7 @@ class ScanCoordinator extends ChangeNotifier {
       case _PassFailed(:final failure):
         s.targetedReport = PassReport(failure: failure);
         if (!_fallsBackAfterCapture(failure.code)) {
-          return _finish(s, ScanFailed(failure));
+          return _conclude(s, ScanFailed(failure));
         }
         targetedFailure = failure;
       case _PassRecognised(:final recognition):
@@ -2038,20 +2092,20 @@ class ScanCoordinator extends ChangeNotifier {
           case _MatchAbandoned():
             return _endSuperseded(s);
           case _NoIndex():
-            return _finish(
+            return _conclude(
               s,
               const ScanRejected(reason: ScanRejectReason.catalogUnavailable),
             );
           case _Matched(:final outcome):
             switch (outcome) {
               case OutcomeAccepted<InspectionEvidence>():
-                return _finish(
+                return _conclude(
                   s,
                   ScanAccepted(itemId: outcome.match.bestId!, outcome: outcome),
                 );
               case OutcomeRejected<InspectionEvidence>(:final reason):
                 if (!_fallsBackAfterRejection(reason)) {
-                  return _finish(s, _rejection(outcome));
+                  return _conclude(s, _rejection(outcome));
                 }
                 targetedRejection = outcome;
             }
@@ -2067,12 +2121,12 @@ class ScanCoordinator extends ChangeNotifier {
       case _PassFailed(:final failure):
         s.fallbackReport = PassReport(failure: failure);
         if (targetedRejection != null) {
-          return _finish(
+          return _conclude(
             s,
             _rejection(targetedRejection, fallbackFailure: failure),
           );
         }
-        return _finish(
+        return _conclude(
           s,
           ScanFailed(failure, targetedFailure: targetedFailure),
         );
@@ -2089,12 +2143,12 @@ class ScanCoordinator extends ChangeNotifier {
           case _MatchAbandoned():
             return _endSuperseded(s);
           case _NoIndex():
-            return _finish(
+            return _conclude(
               s,
               const ScanRejected(reason: ScanRejectReason.catalogUnavailable),
             );
           case _Matched(:final outcome):
-            return _finish(s, switch (outcome) {
+            return _conclude(s, switch (outcome) {
               OutcomeAccepted<InspectionEvidence>() => ScanAccepted(
                 itemId: outcome.match.bestId!,
                 outcome: outcome,
@@ -2201,6 +2255,7 @@ class ScanCoordinator extends ChangeNotifier {
           frame.release();
           return const _PassAbandoned();
         }
+        if (_recordingOn) _copyForRecording(s, pass, frame);
         s.stage = _Stage.vision;
         final VisionAnswer<InspectionRecognition> answer;
         try {
@@ -2340,12 +2395,13 @@ class ScanCoordinator extends ChangeNotifier {
   }
 
   /// Ends [s] with [end]: logs it and publishes it while it is current, else
-  /// logs it as superseded.
-  void _finish(_Scan s, ScanEnd end) {
-    if (s.ended) return;
+  /// logs it as superseded. Returns the published report, or null when the
+  /// scan was not published.
+  ScanReport? _finish(_Scan s, ScanEnd end) {
+    if (s.ended) return null;
     if (_dead(s) || !_liveOn) {
       _endSuperseded(s);
-      return;
+      return null;
     }
     s.ended = true;
     final a = s.activation;
@@ -2366,7 +2422,195 @@ class ScanCoordinator extends ChangeNotifier {
               f.code == ScanFailureCode.visionUnavailable,
         );
     if (lost.isNotEmpty) _enqueue(() => _fail(a, lost.last));
+    return report;
   }
+
+  // -------------------------------------------------------------------------
+  // Frame recording
+  // -------------------------------------------------------------------------
+
+  /// Whether a recording session takes scans right now.
+  bool get _recordingOn =>
+      _recorder?.status.value.state == ScanRecordingState.on;
+
+  /// Copies the pixels of [frame] for the recorder, once, on the UI isolate.
+  ///
+  /// A failed copy leaves the scan out of the recording, counted as dropped;
+  /// the caller still submits the frame.
+  RecordedFrame? _copyPixels(_Scan s, CaptureFrame frame) {
+    final m = frame.metadata;
+    try {
+      final pixels = frame.withPixels(
+        (bytes) => TransferableTypedData.fromList([bytes]),
+      );
+      s.recordedClientWidth ??= m.clientWidth;
+      s.recordedClientHeight ??= m.clientHeight;
+      // The client origin lies at the desktop point
+      // `desktopLeft - captured.left`.
+      s.recordedCursorX ??=
+          s.trigger.event.x - (m.desktopLeft - m.captured.left);
+      s.recordedCursorY ??= s.trigger.event.y - (m.desktopTop - m.captured.top);
+      return RecordedFrame(
+        width: m.width,
+        height: m.height,
+        stride: m.stride,
+        pixels: pixels,
+        clipped: m.clipped,
+        capturedAtUtc: m.capturedAtUtc,
+        captured: (
+          left: m.captured.left,
+          top: m.captured.top,
+          width: m.captured.width,
+          height: m.captured.height,
+        ),
+      );
+    } on Object catch (error) {
+      debugPrint('Scan frame copy failed: $error');
+      s.recordingLost = true;
+      return null;
+    }
+  }
+
+  void _copyForRecording(_Scan s, ScanPass pass, CaptureFrame frame) {
+    final copy = _copyPixels(s, frame);
+    if (copy == null) return;
+    switch (pass) {
+      case ScanPass.targeted:
+        s.recordedStrip = copy;
+      case ScanPass.fallback:
+        s.recordedFull = copy;
+    }
+  }
+
+  /// Finishes [s], then hands it to the recorder.
+  ///
+  /// A targeted acceptance first takes one more full-client capture, after it
+  /// is published and logged, so the recorded case has a whole-client image.
+  Future<void> _conclude(_Scan s, ScanEnd end) async {
+    final report = _finish(s, end);
+    final recorder = _recorder;
+    if (report == null || recorder == null || !_recordingOn) return;
+    if (end is ScanAccepted && report.fallback == null) {
+      await _captureExtra(s);
+      if (!_extraStillCurrent(s)) return;
+    }
+    if (s.recordingLost) {
+      recorder.drop();
+      return;
+    }
+    final scan = _recordedScan(s, report, recorder);
+    if (scan != null) recorder.record(scan);
+  }
+
+  /// Whether [s] was not abandoned by a stop, a pipeline loss or a dispose.
+  ///
+  /// A newer trigger does not abandon it: the published scan is final and its
+  /// extra frame is still recorded.
+  bool _extraStillCurrent(_Scan s) =>
+      identical(_active, s) && !_stale(s.activation) && !_disposed;
+
+  /// Requests the extra full-client capture of the accepted scan [s] and
+  /// copies its pixels. The frame is released here, at once.
+  Future<void> _captureExtra(_Scan s) async {
+    final a = s.activation;
+    if (!_extraStillCurrent(s)) return;
+    s.stage = _Stage.capture;
+    final CaptureResult result;
+    try {
+      result = await a.capture!.capture(s.trigger.event, CaptureMode.fallback);
+    } on Object catch (error) {
+      debugPrint('Scan extra capture failed: $error');
+      s.extraFailure = ScanFailureCode.captureFailed.name;
+      return;
+    }
+    switch (result) {
+      case CaptureRejected(:final failure):
+        s.extraFailure = scanFailureFromCapture(failure).code.name;
+      case CaptureSuccess(:final frame):
+        try {
+          if (_extraStillCurrent(s) && _recordingOn) {
+            s.recordedFull = _copyPixels(s, frame);
+          }
+        } finally {
+          frame.release();
+        }
+    }
+  }
+
+  /// The case for [report], or null when [report] has no end to record.
+  RecordedScan? _recordedScan(
+    _Scan s,
+    ScanReport report,
+    ScanFrameRecorder recorder,
+  ) {
+    final folder = recorder.status.value.folder;
+    if (folder == null) return null;
+    final session = folder.split(RegExp(r'[\\/]')).last;
+    final fullClient =
+        s.targetedReport?.failure?.code == ScanFailureCode.roiOutsideClient;
+    final (
+      outcome,
+      acceptedId,
+      rejectReason,
+      failure,
+      text,
+    ) = switch (report.end) {
+      ScanAccepted(:final itemId, :final outcome) => (
+        RecordedOutcome.accepted,
+        itemId,
+        null,
+        null,
+        outcome.evidence.text,
+      ),
+      ScanRejected(:final reason, :final outcome) => (
+        RecordedOutcome.rejected,
+        null,
+        reason.name,
+        null,
+        outcome?.evidence?.text,
+      ),
+      ScanFailed(failure: final failed) => (
+        RecordedOutcome.failed,
+        null,
+        null,
+        failed.code.name,
+        null,
+      ),
+      ScanSuperseded() => (null, null, null, null, null),
+    };
+    if (outcome == null) return null;
+    return RecordedScan(
+      id: '$session-${report.id.toString().padLeft(4, '0')}',
+      clientWidth: s.recordedClientWidth,
+      clientHeight: s.recordedClientHeight,
+      kind: fullClient
+          ? RecordedScanKind.fullClient
+          : RecordedScanKind.targeted,
+      cursorX: fullClient ? null : s.recordedCursorX,
+      cursorY: fullClient ? null : s.recordedCursorY,
+      outcome: outcome,
+      acceptedId: acceptedId,
+      rejectReason: rejectReason,
+      failure: failure,
+      fullFailure:
+          s.extraFailure ??
+          (s.recordedFull == null
+              ? s.fallbackReport?.failure?.code.name
+              : null),
+      text: text,
+      targetedMarkerScore: _bestMarker(s.targetedRecognition),
+      fallbackMarkerScore: _bestMarker(s.fallbackRecognition),
+      full: s.recordedFull,
+      strip: s.recordedStrip,
+    );
+  }
+
+  static double? _bestMarker(InspectionRecognition? recognition) =>
+      switch (recognition) {
+        InspectionRecognised(:final bestMarkerScore) => bestMarkerScore,
+        InspectionRejected(:final bestMarkerScore) => bestMarkerScore,
+        null => null,
+      };
 
   void _endSuperseded(_Scan s) {
     if (s.ended) return;

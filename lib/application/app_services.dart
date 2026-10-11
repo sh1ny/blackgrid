@@ -10,6 +10,7 @@ import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
 import '../data/game_paths.dart';
 import '../data/raid_panel_ocr.dart';
+import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
 import '../data/tracker_client.dart';
 import '../domain/catalog.dart';
@@ -36,6 +37,7 @@ class AppServices {
     RaidPanelOcr? panelOcr,
     GamePathDiscovery? pathDiscovery,
     Directory? scanLogDirectory,
+    Directory? scanFramesDirectory,
     String? scanRuntimeDirectory,
     ScanMarkerLoader? scanMarkerLoader,
     ScanCaptureFactory? scanCaptureFactory,
@@ -82,6 +84,14 @@ class AppServices {
       scanLogDirectory ??
           Directory('${Directory.systemTemp.path}/blackgrid-scan-logs'),
     );
+    scanFrameRecorder = ScanFrameRecorder(
+      root:
+          (scanFramesDirectory ??
+                  Directory(
+                    '${Directory.systemTemp.path}/blackgrid-scan-frames',
+                  ))
+              .path,
+    );
     scanner = ScanCoordinator(
       settings: settings,
       catalog: catalog,
@@ -92,6 +102,7 @@ class AppServices {
       platformFactory: scanPlatformFactory ?? openDefaultScanPlatform,
       runtimeDirectory: scanRuntimeDirectory,
       waiter: scanWaiter,
+      recorder: scanFrameRecorder,
       settleDelay: scanSettleDelay,
       fallbackDelay: scanFallbackDelay,
     );
@@ -110,6 +121,9 @@ class AppServices {
 
   /// The bounded timing log the scanner appends to.
   late final ScanTimingLog scanTimingLog;
+
+  /// The opt-in recorder of scan frames, driven by the scanner.
+  late final ScanFrameRecorder scanFrameRecorder;
   bool _mapsInitialized = false;
   int _mapContentGeneration = -1;
   Object? _publishedPlayerSample;
@@ -132,6 +146,7 @@ class AppServices {
       client: http.Client(),
       pathDiscovery: GamePathDiscovery(),
       scanLogDirectory: paths.logs,
+      scanFramesDirectory: paths.scanFrames,
     );
     try {
       await result.initialize();
@@ -227,7 +242,11 @@ class AppServices {
       try {
         await scanner.dispose();
       } finally {
-        await scanTimingLog.close();
+        try {
+          await scanFrameRecorder.close();
+        } finally {
+          await scanTimingLog.close();
+        }
       }
       await mapSession.close();
     } finally {

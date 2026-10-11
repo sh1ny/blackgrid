@@ -81,10 +81,10 @@ class RecordedScan {
   /// Creates a recorded scan. Absent values are `null`.
   const RecordedScan({
     required this.id,
-    required this.clientWidth,
-    required this.clientHeight,
     required this.kind,
     required this.outcome,
+    this.clientWidth,
+    this.clientHeight,
     this.cursorX,
     this.cursorY,
     this.acceptedId,
@@ -101,11 +101,11 @@ class RecordedScan {
   /// The scan's id, which names its files.
   final String id;
 
-  /// Client area width in pixels.
-  final int clientWidth;
+  /// Client area width in pixels, or `null` when the scan has no frame.
+  final int? clientWidth;
 
-  /// Client area height in pixels.
-  final int clientHeight;
+  /// Client area height in pixels, or `null` when the scan has no frame.
+  final int? clientHeight;
 
   /// Whether the scan was targeted or whole-client.
   final RecordedScanKind kind;
@@ -165,11 +165,14 @@ String encodeScanFrameLine(RecordedScan scan) {
   final full = scan.full;
   final strip = scan.strip;
   final captured = full?.captured;
+  final (clientWidth, clientHeight) = (scan.clientWidth, scan.clientHeight);
   final line = <String, Object?>{
     'v': 1,
     'id': scan.id,
     'image': full == null ? null : scanFullImageName(scan.id),
-    'client': {'width': scan.clientWidth, 'height': scan.clientHeight},
+    'client': clientWidth == null || clientHeight == null
+        ? null
+        : {'width': clientWidth, 'height': clientHeight},
     'kind': scan.kind.wire,
     if (scan.kind == RecordedScanKind.targeted &&
         scan.cursorX != null &&
@@ -712,6 +715,13 @@ class ScanFrameRecorder {
       _beginStopping(const ScanRecordingCapReached());
     }
     return ScanRecordResult.handedOver;
+  }
+
+  /// Counts a scan that ended while recording but could not be offered, such
+  /// as one whose pixel copy failed. Only an `on` session counts it.
+  void drop() {
+    if (_now.state != ScanRecordingState.on) return;
+    _status.value = _now._copy(dropped: _now.dropped + 1);
   }
 
   /// Stops intake, waits up to [timeout] for outstanding scans, then kills the

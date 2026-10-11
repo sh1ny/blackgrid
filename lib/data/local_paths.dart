@@ -13,6 +13,10 @@ class LocalPaths {
   /// Directory for diagnostic logs such as `scan-timings.jsonl`.
   Directory get logs => Directory('${root.path}${Platform.pathSeparator}logs');
 
+  /// Directory for opt-in scan frame recordings, one folder per session.
+  Directory get scanFrames =>
+      Directory('${root.path}${Platform.pathSeparator}scan-frames');
+
   static Future<LocalPaths> resolve() async {
     if (!Platform.isWindows) {
       throw UnsupportedError('Blackgrid supports Windows desktop only.');

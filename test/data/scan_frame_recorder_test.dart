@@ -210,6 +210,16 @@ void main() {
     expect(recorder.status.value.dropped, 1);
   });
 
+  test('drop counts a lost scan only while on', () async {
+    recorder.drop();
+    expect(recorder.status.value.dropped, 0);
+
+    await recorder.start();
+    recorder.drop();
+    expect(recorder.status.value.dropped, 1);
+    expect(writers.single.scans, isEmpty);
+  });
+
   test(
     'the 500th hand-off stops intake and its ack turns recording off',
     () async {
