@@ -137,7 +137,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 7. Integration
 
-- [ ] 7.1 Run `mise run analyze` and `mise run test`, and `dart format` the changed files. Verify: both are green and every test-map row is green.
+- [x] 7.1 Run `mise run analyze` and `mise run test`, and `dart format` the changed files. Verify: both are green and every test-map row is green.
 - [ ] 7.2 Run `mise run build:release`, only after confirming Escape from Tarkov is not running; if that cannot be confirmed, record the build as skipped and unverified. Verify: the build and bundle check pass (the `image` package adds no bundle file), or the skip is recorded.
 
 ## Workflow follow-up
