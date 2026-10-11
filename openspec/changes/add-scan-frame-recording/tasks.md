@@ -72,7 +72,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 2. Writer isolate
 
-- [ ] 2.1 Add `test/data/scan_frame_writer_test.dart`, with a real writer isolate over a temp dir and an 8x4 BGRX frame with stride padding. It covers:
+- [x] 2.1 Add `test/data/scan_frame_writer_test.dart`, with a real writer isolate over a temp dir and an 8x4 BGRX frame with stride padding. It covers:
   - the PNG decodes to the expected RGB pixels, opaque;
   - the line is appended after both PNGs, with the D7 fields;
   - "a failed PNG write leaves no line and no final PNG", using an injected failing file-ops factory (a top-level function sent to the isolate);
