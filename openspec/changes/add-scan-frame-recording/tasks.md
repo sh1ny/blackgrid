@@ -68,7 +68,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
   Add it to `docs/adr/README.md` and the `openspec/architecture.md` ADR index, and update the ScanCoordinator row. Verify: the files exist and both indexes link 0015.
 - [ ] 1.2 Add change 7 `add-scan-frame-recording` to the M2 list in `openspec/roadmap.md`, naming the corpus exit criteria it serves. Verify: `openspec validate --all` shows no new error.
-- [ ] 1.3 Move `image: 4.8.0` from `dev_dependencies` to `dependencies` in `pubspec.yaml`, then run `mise exec -- flutter pub get`. Check the D3 API (`Image.fromBytes` with `rowStride`, `numChannels: 4`, `order: ChannelOrder.bgra`; 3-channel convert; `encodePng(level:)`) with `ctx7` or the package source (`mcp__dart__read_package_uris`), and note the confirmed calls in the 2.x writer's doc comment. Verify: `mise run analyze` is clean.
+- [x] 1.3 Move `image: 4.8.0` from `dev_dependencies` to `dependencies` in `pubspec.yaml`, then run `mise exec -- flutter pub get`. Check the D3 API (`Image.fromBytes` with `rowStride`, `numChannels: 4`, `order: ChannelOrder.bgra`; 3-channel convert; `encodePng(level:)`) with `ctx7` or the package source (`mcp__dart__read_package_uris`), and note the confirmed calls in the 2.x writer's doc comment. Verify: `mise run analyze` is clean.
 
 ## 2. Writer isolate
 
