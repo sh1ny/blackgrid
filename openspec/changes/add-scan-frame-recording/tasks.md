@@ -58,7 +58,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 1. ADR, roadmap and dependency
 
-- [ ] 1.1 Write `docs/adr/0015-opt-in-scan-frame-recording.md` (MADR-short, D8). It covers:
+- [x] 1.1 Write `docs/adr/0015-opt-in-scan-frame-recording.md` (MADR-short, D8). It covers:
   - the opt-in, session-only mode;
   - the recording-only pixel copy (an exception to the copies ADR-0010 and ADR-0011 rejected for the scan path; it supersedes nothing);
   - the post-publish extra capture and its cost to a click made during it;
