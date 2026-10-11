@@ -87,7 +87,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 3. Recorder lifecycle and bounds
 
-- [ ] 3.1 Add `test/data/scan_frame_recorder_test.dart`, with a fake writer (completer-driven) and an injected clock and folder root. It covers the recorder rows:
+- [x] 3.1 Add `test/data/scan_frame_recorder_test.dart`, with a fake writer (completer-driven) and an injected clock and folder root. It covers the recorder rows:
   - start, the folder name and the `-2` suffix, folder failure;
   - stop during starting, refusal while stopping, zero counts after a drain;
   - a third outstanding scan dropped, the cap of 500 hand-offs, a writer failure;
