@@ -10,6 +10,7 @@ import 'package:blackgrid/data/vision/inspection_recognition.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/title_matching.dart';
+import 'package:ffi/ffi.dart';
 
 /// An ordered record of what the fakes were asked to do.
 typedef ScanEventLog = List<String>;
@@ -76,30 +77,69 @@ final class CallLog<T> {
   }
 }
 
-/// A frame registry that only counts releases.
+/// A frame registry that counts releases and, for frames made with `pixels`,
+/// lends real BGRX bytes and counts every lend.
 final class FakeScanFrames implements FrameRegistry {
+  FakeScanFrames([this.events]);
+
+  /// When set, every lend of pixels adds `frame.view` to it, so a test can
+  /// order lends against the other fakes' calls.
+  final ScanEventLog? events;
+
   final List<int> released = [];
+
+  /// The released frame ids, awaitable by index.
+  final CallLog<int> releases = CallLog<int>();
+  final Map<int, FrameView> _views = {};
+  final List<Pointer<Uint8>> _allocated = [];
   int _issued = 0;
 
+  /// How many times a frame's pixels were lent (`withPixels` calls that
+  /// reached the registry).
+  int viewCalls = 0;
+
   /// A frame owned by the caller, with the given provenance.
+  ///
+  /// With [pixels] the frame lends `stride * height` bytes, byte `i` being
+  /// `(i + seed) & 0xff`. [captured] defaults to the whole `width` x `height`
+  /// frame; it may differ from the buffer size to stand for a larger frame.
   CaptureFrame frame({
     int clientWidth = 2560,
     int clientHeight = 1440,
     int qpcBefore = 0,
     int qpcAfter = 0,
+    int width = 4,
+    int height = 4,
+    int? stride,
+    int desktopLeft = 0,
+    int desktopTop = 0,
+    CaptureRect? captured,
+    bool clipped = false,
+    DateTime? capturedAtUtc,
+    bool pixels = false,
+    int seed = 0,
   }) {
     final id = ++_issued;
+    final rowBytes = stride ?? width * 4;
+    if (pixels) {
+      final bytes = calloc<Uint8>(rowBytes * height);
+      _allocated.add(bytes);
+      for (var i = 0; i < rowBytes * height; i++) {
+        bytes[i] = (i + seed) & 0xff;
+      }
+      _views[id] = FrameView(bytes, width, height, rowBytes);
+    }
     return CaptureFrame(
       id,
       CaptureFrameMetadata(
-        width: 4,
-        height: 4,
-        stride: 16,
-        desktopLeft: 0,
-        desktopTop: 0,
-        requested: const CaptureRect(0, 0, 4, 4),
-        captured: const CaptureRect(0, 0, 4, 4),
-        clipped: false,
+        width: width,
+        height: height,
+        stride: rowBytes,
+        desktopLeft: desktopLeft,
+        desktopTop: desktopTop,
+        requested: captured ?? CaptureRect(0, 0, width, height),
+        captured: captured ?? CaptureRect(0, 0, width, height),
+        clipped: clipped,
         clientWidth: clientWidth,
         clientHeight: clientHeight,
         dpi: 96,
@@ -109,18 +149,38 @@ final class FakeScanFrames implements FrameRegistry {
         exeName: 'EscapeFromTarkov.exe',
         qpcBefore: qpcBefore,
         qpcAfter: qpcAfter,
-        capturedAtUtc: DateTime.utc(2026, 10, 10),
+        capturedAtUtc: capturedAtUtc ?? DateTime.utc(2026, 10, 10),
         requestId: id,
       ),
       this,
     );
   }
 
-  @override
-  FrameView? view(int frameId) => null;
+  /// Frees the memory behind every frame made with `pixels`.
+  void freePixels() {
+    for (final bytes in _allocated) {
+      calloc.free(bytes);
+    }
+    _allocated.clear();
+    _views.clear();
+  }
 
   @override
-  void release(int frameId) => released.add(frameId);
+  FrameView? view(int frameId) {
+    final view = _views[frameId];
+    if (view != null) {
+      viewCalls++;
+      events?.add('frame.view');
+    }
+    return view;
+  }
+
+  @override
+  void release(int frameId) {
+    released.add(frameId);
+    releases.add(frameId);
+    _views.remove(frameId);
+  }
 
   @override
   int get liveCount => _issued - released.length;

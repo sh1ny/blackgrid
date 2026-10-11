@@ -106,7 +106,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 4. Coordinator
 
-- [ ] 4.1 Add `test/application/scan_coordinator_recording_test.dart` over the existing fake capture and vision ports (`test/application/support/fake_scan_ports.dart`), extended so a fake frame can lend pixels and counts `withPixels` calls. Add a fake recorder that records `RecordedScan`s. It covers every coordinator row of the test map, plus "stop during the extra capture releases the frame and records nothing". Verify: they fail.
+- [x] 4.1 Add `test/application/scan_coordinator_recording_test.dart` over the existing fake capture and vision ports (`test/application/support/fake_scan_ports.dart`), extended so a fake frame can lend pixels and counts `withPixels` calls. Add a fake recorder that records `RecordedScan`s. It covers every coordinator row of the test map, plus "stop during the extra capture releases the frame and records nothing". Verify: they fail.
 - [ ] 4.2 In `lib/application/scan_coordinator.dart`:
   - take an injected `ScanFrameRecorder`;
   - `setRecording(bool)` and `recordingStatus`;
