@@ -38,7 +38,7 @@ Implementation notes:
 | scan-frame-recording → Recording never changes the recorded scan, and its only effect on later scans is the extra capture | Writer falls behind | test/data/scan_frame_recorder_test.dart | a third outstanding scan is dropped and counted | red |
 | scan-frame-recording → Recording never changes the recorded scan, and its only effect on later scans is the extra capture | Later click during the extra capture | test/application/scan_coordinator_recording_test.dart | a trigger during the extra capture starts after its answer and the frame is recorded | red |
 | scan-frame-recording → Recording is bounded and stops cleanly on failure | Cap reached | test/data/scan_frame_recorder_test.dart | the 500th hand-off stops intake and its ack turns recording off | red |
-| scan-frame-recording → Recording is bounded and stops cleanly on failure | Disk full | test/data/scan_frame_writer_test.dart | a failed PNG write leaves no line and no final PNG | red |
+| scan-frame-recording → Recording is bounded and stops cleanly on failure | Disk full | test/data/scan_frame_writer_test.dart | a failed PNG write leaves no line and no final PNG | green |
 | scan-frame-recording → Recording is bounded and stops cleanly on failure | Disk full | test/data/scan_frame_recorder_test.dart | a writer failure turns recording off with the error | red |
 | scan-frame-recording → Recording is bounded and stops cleanly on failure | App closes while writing | test/data/scan_frame_recorder_test.dart | close waits up to the timeout and ignores late acks | red |
 | scan-frame-recording → Recordings stay local and carry no credentials | Recording with Tracker connected | test/application/scan_coordinator_recording_test.dart | recorded files never contain the saved Tracker token | red |
@@ -79,7 +79,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
   - messages and answers carry the session token.
 
   Verify: the tests fail (no writer).
-- [ ] 2.2 Implement in `lib/data/scan_frame_recorder.dart`:
+- [x] 2.2 Implement in `lib/data/scan_frame_recorder.dart`:
   - the plain-data types `RecordedFrame` and `RecordedScan`, and the line serialiser (D7, `v: 1`, nulls for absent values);
   - the writer isolate entry: materialise, BGRX→RGB, `encodePng`, then `.png.tmp` → rename, then append the line in one write, then ack or a typed failure with its token.
 
