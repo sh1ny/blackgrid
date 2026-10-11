@@ -1017,5 +1017,50 @@ void main() {
         expect(rig.recorded.length, 0);
       },
     );
+
+    test('a targeted acceptance ending with the writer full is dropped without '
+        'the extra capture', () async {
+      rig = await _Rig.create();
+      await rig.startRecording();
+      await rig.busyScan(qpc: 1000);
+      await rig.busyScan(qpc: 2000);
+      expect(rig.recorded.length, 2, reason: 'two scans outstanding');
+
+      await rig.acceptTargeted(qpc: 3000);
+      rig.fire(4000);
+      final next = await rig.nextCapture();
+
+      expect(next.mode, CaptureMode.targeted, reason: 'no extra capture');
+      expect(next.trigger.qpc, 4000);
+      expect(rig.recorder.status.value.dropped, 1);
+      expect(rig.recorded.length, 2);
+    });
+
+    test(
+      'a session started during the extra capture never takes its scan',
+      () async {
+        rig = await _Rig.create();
+        await rig.startRecording();
+        final first = rig.recorder.status.value.folder;
+        await rig.acceptTargeted();
+        final extra = await rig.nextCapture();
+
+        await rig.coordinator.setRecording(false);
+        expect(rig.state, ScanRecordingState.off);
+        await rig.startRecording();
+        expect(rig.recorder.status.value.folder, isNot(first));
+
+        rig.fire(2000);
+        final lateFrame = rig.pixelFrame(seed: 2);
+        extra.succeed(lateFrame);
+        // The next scan starts only once the accepted one is concluded.
+        final next = await rig.nextCapture();
+
+        expect(next.trigger.qpc, 2000);
+        expect(rig.frames.released, contains(lateFrame.frameId));
+        expect(rig.recorded.length, 0);
+        expect(rig.recorder.status.value.handedOff, 0);
+      },
+    );
   });
 }

@@ -2501,8 +2501,18 @@ class ScanCoordinator extends ChangeNotifier {
     final recorder = _recorder;
     if (report == null || recorder == null || !_recordingOn) return;
     if (end is ScanAccepted && report.fallback == null) {
+      // A scan the session cannot take is dropped now, at its end, without
+      // the extra capture a pending click would wait for.
+      if (!recorder.hasRoom) {
+        recorder.drop();
+        return;
+      }
+      // The scan belongs to the session it ended in; a session started
+      // during the capture never takes it.
+      final session = recorder.status.value.folder;
       await _captureExtra(s);
       if (!_extraStillCurrent(s)) return;
+      if (recorder.status.value.folder != session) return;
     }
     if (s.recordingLost) {
       recorder.drop();

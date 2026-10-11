@@ -695,6 +695,14 @@ class ScanFrameRecorder {
     }
   }
 
+  /// Whether an `on` session would take a scan offered now instead of
+  /// dropping it.
+  ///
+  /// Only [record] lowers the room, so a scan that finds room here still has
+  /// it later, as long as nothing else is recorded in between.
+  bool get hasRoom =>
+      _now.state == ScanRecordingState.on && _outstanding < maxOutstanding;
+
   /// Offers [scan] to the session.
   ///
   /// Only an `on` session takes scans; otherwise the result is
