@@ -120,7 +120,7 @@ Also add (no row): "stop during the extra capture releases the frame and records
 
 ## 5. Scanner panel
 
-- [ ] 5.1 Add the three panel tests to `test/ui/live_scan_panel_test.dart` (switch key `record-frames-switch`, status key `record-frames-status`). Verify: they fail.
+- [x] 5.1 Add the three panel tests to `test/ui/live_scan_panel_test.dart` (switch key `record-frames-switch`, status key `record-frames-status`). Verify: they fail.
 - [ ] 5.2 Add the "Record scan frames" switch and status lines to `lib/ui/live_scan_panel.dart`, listening to `scanner.recordingStatus`. Raise `leftHeight` in `lib/ui/scanner_screen.dart` if the controls need it. Verify: the 5.1 tests and the existing panel and `shell_test.dart` layout tests pass (re-run them), then flip the rows green.
 
 ## 6. Corpus documentation

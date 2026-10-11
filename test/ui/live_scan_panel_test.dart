@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:blackgrid/application/scan_coordinator.dart';
+import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/ui/live_scan_panel.dart';
@@ -10,6 +13,8 @@ import 'support/scan_ui_support.dart';
 
 const _switchKey = Key('live-scan-switch');
 const _statusKey = Key('live-scan-status');
+const _recordKey = Key('record-frames-switch');
+const _recordStatusKey = Key('record-frames-status');
 
 Future<ScanUiRig> _pump(
   WidgetTester tester, {
@@ -60,6 +65,12 @@ bool _switchValue(WidgetTester tester) =>
 
 String _status(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(_statusKey)).data!;
+
+bool _switchValueOf(WidgetTester tester, Key key) =>
+    tester.widget<Switch>(find.byKey(key)).value;
+
+String _recordStatus(WidgetTester tester) =>
+    tester.widget<Text>(find.byKey(_recordStatusKey)).data!;
 
 void main() {
   testWidgets('switch on shows ready status', (tester) async {
@@ -142,4 +153,108 @@ void main() {
     expect(rig.coordinator.status.state, LiveScanState.off);
     expect(find.textContaining('preference was not saved'), findsOneWidget);
   });
+
+  testWidgets('record status shows written, dropped and folder', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await tester.runAsync(rig.ready);
+    await tester.pump();
+
+    await tester.tap(find.byKey(_recordKey));
+    await _until(
+      tester,
+      () => rig.recorder.status.value.state == ScanRecordingState.on,
+    );
+    final writer = rig.writers.single;
+    for (var n = 1; n <= 12; n++) {
+      rig.recorder.record(recordedScan('s$n'));
+      writer.ack('s$n');
+    }
+    // Two outstanding fill the bound, so the third is dropped.
+    rig.recorder.record(recordedScan('s13'));
+    rig.recorder.record(recordedScan('s14'));
+    rig.recorder.record(recordedScan('s15'));
+    await tester.pump();
+
+    final folder = rig.recorder.status.value.folder!;
+    expect(_switchValueOf(tester, _recordKey), isTrue);
+    final text = _recordStatus(tester);
+    expect(text, contains('12 written'));
+    expect(text, contains('1 dropped'));
+    expect(text, contains(folder));
+  });
+
+  testWidgets('record switch is off and disabled unless live scan is ready', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    Switch recordSwitch() => tester.widget<Switch>(find.byKey(_recordKey));
+
+    // Off.
+    expect(recordSwitch().value, isFalse);
+    expect(recordSwitch().onChanged, isNull);
+
+    // Starting: the marker loader never answers.
+    final gate = Completer<MarkerTemplateResult>();
+    final loader = rig.ports.markerLoader;
+    rig.ports.markerGate = gate.future;
+    await tester.tap(find.byKey(_switchKey));
+    await _until(
+      tester,
+      () => rig.coordinator.status.state == LiveScanState.starting,
+    );
+    expect(recordSwitch().value, isFalse);
+    expect(recordSwitch().onChanged, isNull);
+    gate.complete(await loader(''));
+
+    // Ready.
+    await _until(
+      tester,
+      () => rig.coordinator.status.state == LiveScanState.ready,
+    );
+    expect(recordSwitch().value, isFalse);
+    expect(recordSwitch().onChanged, isNotNull);
+
+    // Unavailable.
+    await tester.tap(find.byKey(_switchKey));
+    await _until(
+      tester,
+      () => rig.coordinator.status.state == LiveScanState.off,
+    );
+    rig.ports.markerGate = null;
+    rig.ports.markerOverride = const MarkerTemplateUnavailable(
+      VisionMissingFile('data/vision/inspection_marker.pgm'),
+    );
+    await tester.tap(find.byKey(_switchKey));
+    await _until(
+      tester,
+      () => rig.coordinator.status.state == LiveScanState.unavailable,
+    );
+    expect(recordSwitch().value, isFalse);
+    expect(recordSwitch().onChanged, isNull);
+  });
+
+  testWidgets(
+    'record status shows the write error and folder after a self-stop',
+    (tester) async {
+      final rig = await _pump(tester);
+      await tester.runAsync(rig.ready);
+      await tester.pump();
+      await tester.tap(find.byKey(_recordKey));
+      await _until(
+        tester,
+        () => rig.recorder.status.value.state == ScanRecordingState.on,
+      );
+      rig.recorder.record(recordedScan('s1'));
+
+      rig.writers.single.fail('s1', 'disk full');
+      await tester.pump();
+
+      expect(_switchValueOf(tester, _recordKey), isFalse);
+      final text = _recordStatus(tester);
+      expect(text, contains('disk full'));
+      expect(text, contains(rig.recorder.status.value.folder!));
+    },
+  );
 }
