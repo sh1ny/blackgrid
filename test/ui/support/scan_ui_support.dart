@@ -9,6 +9,7 @@ import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/capture/mouse_release_trigger_source.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/database.dart';
+import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/scan_timing_log.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/data/vision/inspection_geometry.dart';
@@ -202,6 +203,9 @@ final class ScanFakePorts {
   /// What the marker loader answers instead, when set.
   MarkerTemplateResult? markerOverride;
 
+  /// When set, the loader waits for it before answering.
+  Future<MarkerTemplateResult>? markerGate;
+
   /// The capture factory.
   ScanCaptureFactory get captureFactory => () {
     final created = FakeScanCapture(events);
@@ -225,7 +229,8 @@ final class ScanFakePorts {
 
   /// The loader to hand to the coordinator, honouring [markerOverride].
   ScanMarkerLoader get loader =>
-      (directory) async => markerOverride ?? await markerLoader(directory);
+      (directory) async =>
+          await markerGate ?? markerOverride ?? await markerLoader(directory);
 
   FakeScanCapture get capture => captures.last;
   FakeScanVision get vision => visions.last;
@@ -263,6 +268,39 @@ final class ScanFakePorts {
           .answer(const VisionDeadlineExceeded<InspectionRecognition>(5));
 }
 
+/// A recording writer whose answers the test delivers by hand.
+final class FakeRecordWriter implements ScanFrameWriter {
+  /// Creates a writer for the session [token] answering through [onAnswer].
+  FakeRecordWriter(this.token, this.onAnswer);
+
+  /// The session token the recorder gave this writer.
+  final int token;
+
+  /// Delivers an answer to the recorder.
+  final void Function(ScanFrameWriterAnswer) onAnswer;
+
+  @override
+  void write(RecordedScan scan) {}
+
+  @override
+  void kill() {}
+
+  /// Acknowledges the scan [id] as written.
+  void ack(String id) => onAnswer(ScanFrameAck(token, id));
+
+  /// Fails the scan [id] with [error].
+  void fail(String id, String error) =>
+      onAnswer(ScanFrameFailure(token, id, error));
+}
+
+/// A scan with no frames, enough to hand to the recorder.
+RecordedScan recordedScan(String id) => RecordedScan(
+  id: id,
+  kind: RecordedScanKind.targeted,
+  outcome: RecordedOutcome.failed,
+  failure: 'captureBusy',
+);
+
 /// A coordinator over real settings and catalog controllers, a fake matcher
 /// and a real timing log over a [FailingSink].
 final class ScanUiRig {
@@ -276,7 +314,20 @@ final class ScanUiRig {
       _unusedDirectory,
       sink: sink,
     );
+    recordingRoot = Directory.systemTemp.createTempSync('scan_ui_rig');
+    recorder = ScanFrameRecorder(
+      root: '${recordingRoot.path}/scan-frames',
+      clock: () => DateTime(2026, 10, 10, 14, 3, 7),
+      writerFactory:
+          ({required folder, required token, required onAnswer}) async {
+            await writerGate?.future;
+            final writer = FakeRecordWriter(token, onAnswer);
+            writers.add(writer);
+            return writer;
+          },
+    );
     coordinator = ScanCoordinator(
+      recorder: recorder,
       settings: settings,
       catalog: catalog,
       appendLogLine: timingLog.append,
@@ -318,6 +369,19 @@ final class ScanUiRig {
   late final ScanTimingLog timingLog;
   late final ScanCoordinator coordinator;
 
+  /// The temporary directory holding the recording folders.
+  late final Directory recordingRoot;
+
+  /// The recorder behind [coordinator], over fake writers.
+  late final ScanFrameRecorder recorder;
+
+  /// When set, the recording writer is not created until it completes, which
+  /// holds a session in `starting`.
+  Completer<void>? writerGate;
+
+  /// Every recording writer created, in session order.
+  final List<FakeRecordWriter> writers = [];
+
   static final _unusedDirectory = Directory.systemTemp;
 
   /// Switches live scan on through the coordinator and waits until settled.
@@ -352,6 +416,8 @@ final class ScanUiRig {
 
   Future<void> dispose() async {
     await coordinator.dispose();
+    await recorder.close(timeout: Duration.zero);
+    recordingRoot.deleteSync(recursive: true);
     await timingLog.close();
     settings.dispose();
     catalog.dispose();
