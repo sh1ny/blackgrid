@@ -6,7 +6,16 @@
 # Usage: bash pr-pair.sh <subcommand> [options]
 #   identity <dir>                    fetch URL + every push URL of origin -> owner/name
 #   context --code <dir> [--store <dir>]
-#                                     per-repo login, main, validate, reviewers (specwright.yaml + planning_store:)
+#                                     per-repo login, main, validate, reviewers, merge_ready (specwright.yaml + planning_store:);
+#                                     merge (user|agent), merge_method, delete_branch (bad value = exit 2 bad_setting)
+#   merge --repo o/n --pr N --method merge|squash|rebase --head sha
+#                                     one PUT repos/o/n/pulls/N/merge (merge_method, sha), then always a read-back: merged (also when a
+#                                     person merged first), refused (reason head_changed on 409, else refused; exit 1) or, when the state
+#                                     cannot be read or the PUT got a 5xx, unknown (exit 3). Never a second PUT, auto-merge or a queue call; bad input = exit 2
+#   delete-remote --repo o/n --branch b --head sha
+#                                     delete the remote branch only when it is still at the full 40-hex merged head and no open PR is
+#                                     based on it: deleted | gone (404, or 422 gone meanwhile) | moved (sha) | based_on (prs) |
+#                                     kept (DELETE refused, GitHub's message; exit 1); a failed read is unknown (exit 3), nothing deleted
 #   discover --repo o/n --branch b [--base main] [--state all|open|closed|merged[,..]]
 #                                     every PR from o/n's own branch b, paginated; failure = unknown (exit 3)
 #   expected --code <dir> --store <dir> --branch b
@@ -37,7 +46,8 @@
 #                                     (first_seen), else, only with no such record, when the record was written (pass_written;
 #                                     written_at, or the owner's at in an older record); none = no cutoff, the row stays todo
 #   cleanup-plan --code d --store d --branch b
-#                                     post-merge commands per repo whose expected PR is MERGED: checkout, pull, then
+#                                     post-merge commands per repo whose expected PR is MERGED: checkout, a pull fenced as
+#                                     that repo's login (bash <as.sh> <login> git pull --ff-only), then
 #                                     branch-check (--head: the merged PR's head); `delete` (git branch -D) runs only on delete: true
 #   branch-check --dir d --branch b --main m [--head sha]
 #                                     delete true when the branch tip is on main (on_main) or is the merged head or an ancestor of
@@ -82,6 +92,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from urllib.parse import quote
 
 ENV = {k: v for k, v in os.environ.items() if k != "GH_REPO"}
 BASH = os.environ.get("PR_PAIR_BASH") or shutil.which("bash")
@@ -102,6 +113,10 @@ class Stop(Exception):
         return {"ok": False, "error": self.error, "message": self.message, **self.extra}
 
 
+class Refused(Stop):
+    """as.sh refused a fenced read (exit 3 with an `as.sh:` message): never an ordinary network failure."""
+
+
 def usage(msg):
     raise Stop("usage", msg, code=2)
 
@@ -112,32 +127,76 @@ def emit(obj, code=0):
     sys.exit(code)
 
 
-def run(cmd, cwd=None):
+def run(cmd, cwd=None, env=None):
     try:
-        return subprocess.run(cmd, cwd=cwd, env=ENV, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        return subprocess.run(cmd, cwd=cwd, env=env or ENV, capture_output=True, text=True, encoding="utf-8", errors="replace")
     except OSError as e:
         return subprocess.CompletedProcess(cmd, 127, "", str(e))
 
 
-def git(d, *args):
-    return run(["git", *args], cwd=d)
+def git(d, *args, env=None):
+    return run(["git", *args], cwd=d, env=env)
+
+
+FENCE_VAR = re.compile(r"GH_TOKEN|GIT_SSH_COMMAND|GIT_TERMINAL_PROMPT|GCM_INTERACTIVE|GIT_ASKPASS|SSH_ASKPASS|GIT_CONFIG_COUNT"
+                       r"|GIT_CONFIG_(?:KEY|VALUE)_\d+|AS_SH_ORIG_\w+")
+
+
+def unfenced_env():
+    """ENV without an outer as.sh's git fence (and its token), with the values it kept restored: a non-GitHub remote
+    authenticates as the user's own git would. Outside as.sh, ENV unchanged."""
+    if "AS_SH_ORIG_SET" not in ENV:
+        return ENV
+    env = {k: v for k, v in ENV.items() if not FENCE_VAR.fullmatch(k)}
+    env.update({v: ENV.get(f"AS_SH_ORIG_{v}", "") for v in ENV["AS_SH_ORIG_SET"].split()})
+    return env
 
 
 IDENT = {}
+HOST_VARS = ("GH_HOST", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN")  # gh must target github.com only (as.sh unsets them too)
+_START = []
+
+
+def started_in(d):
+    """True when `d` is the work tree this process started in: the outer as.sh checked that repo, and only that one."""
+    if not _START:
+        _START.append(toplevel_path(os.getcwd()))
+    return bool(_START[0]) and _START[0] == toplevel_path(d)
+
+
+def toplevel_path(d):
+    r = git(d, "rev-parse", "--show-toplevel")
+    return os.path.normcase(os.path.realpath(r.stdout.strip())) if r.returncode == 0 and r.stdout.strip() else ""
+
+
+def fetch_repo(d):
+    """`owner/name` of origin's GitHub fetch URL, whatever its push URLs; None when it does not fetch from GitHub."""
+    try:
+        return identity(d)["repo"]
+    except Stop:
+        r = git(d, "remote", "get-url", "origin")
+        return parse_repo(r.stdout.strip()) if r.returncode == 0 else None
 
 
 def git_net(d, *args):
-    """git ls-remote / fetch in `d`, authenticated as the login that reads d's repo (as.sh pins the transport)."""
-    if d not in IDENT:
-        try:
-            IDENT[d] = identity(d)["repo"].lower()
-        except Stop:  # no GitHub origin: plain git, as before
-            IDENT[d] = None
-    login = REPO_LOGIN.get(IDENT[d] or "")
+    """git ls-remote / fetch in `d`. A GitHub repo other than the one this process started in is read through as.sh from
+    inside it, as its own login, else as the code run login (the ambient, fenced one): the URL check and header scrub of
+    the outer as.sh cover only the repo it started in. Non-GitHub remotes stay plain git, outside the outer fence."""
+    if d not in IDENT:  # the fetch URL alone decides: a GitHub fetch is fenced, anything else is plain git
+        fetch = fetch_repo(d)
+        IDENT[d] = fetch.lower() if fetch else None
+    if IDENT[d] is None:
+        return git(d, *args, env=unfenced_env())
+    login = REPO_LOGIN.get(IDENT[d])
     if not login:
-        return git(d, *args)
+        if started_in(d):
+            return git(d, *args)
+        login = ambient_login()
     token_for(login)  # no credential / wrong identity stops here, before any git network command
-    return run([BASH, f"{os.environ['PR_PAIR_DIR']}/as.sh", login, "git", *args], cwd=d)
+    r = run([BASH, f"{os.environ['PR_PAIR_DIR']}/as.sh", login, "git", *args], cwd=d)
+    if r.returncode == 3 and r.stderr.lstrip().startswith("as.sh:"):
+        raise Refused("fence_refused", f"as.sh refused the read in {d}: {r.stderr.strip()}", code=3, repo_dir=norm(d))
+    return r
 
 
 REPO_LOGIN, TOKENS = {}, {}  # repo slug (lower) -> login that reads it; login -> its verified token
@@ -151,7 +210,8 @@ def gh(*args, repo=None):
     if not login:
         return run(cmd)
     try:
-        return subprocess.run(cmd, env={**ENV, "GH_TOKEN": token_for(login)}, capture_output=True, text=True,
+        return subprocess.run(cmd, env={**{k: v for k, v in ENV.items() if k not in HOST_VARS}, "GH_TOKEN": token_for(login)},
+                              capture_output=True, text=True,
                               encoding="utf-8", errors="replace")
     except OSError as e:
         return subprocess.CompletedProcess(cmd, 127, "", str(e))
@@ -170,7 +230,7 @@ def repo_of(args):
 def token_for(login):
     """`login`'s gh token, pinned and verified the way as.sh pins one (never `gh auth switch`)."""
     if login not in TOKENS:
-        bare = {k: v for k, v in ENV.items() if k not in ("GH_TOKEN", "GITHUB_TOKEN")}
+        bare = {k: v for k, v in ENV.items() if k not in ("GH_TOKEN", "GITHUB_TOKEN", *HOST_VARS)}
         base = [BASH, "-c", 'exec gh "$@"', "gh"] if BASH else ["gh"]
         r = subprocess.run(base + ["auth", "token", "--hostname", "github.com", "--user", login], env=bare,
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -339,6 +399,13 @@ def block_scalar(raw, start, indent, style, chomp):
     return text + "\n" + ("\n" * trailing if chomp == "+" else ""), end
 
 
+class Map(dict):
+    """A YAML mapping that also keeps each plain scalar's text as written (`yes` stays `yes` in messages)."""
+    def __init__(self):
+        super().__init__()
+        self.text = {}
+
+
 def parse_yaml(text):
     raw = text.splitlines()
     lines = []
@@ -348,7 +415,7 @@ def parse_yaml(text):
             lines.append((len(s) - len(s.lstrip(" ")), s.strip(), n))
 
     def block(i, indent):
-        d = {}
+        d = Map()
         while i < len(lines) and lines[i][0] == indent:
             body = lines[i][1]
             m = re.match(r"^((?:\"(?:[^\"\\]|\\.)*\"|'(?:[^']|'')*'|[^:\s][^:]*?)):(?:\s+(.*))?$", body)
@@ -370,6 +437,7 @@ def parse_yaml(text):
                     d[key] = None
             else:
                 d[key] = scalar(val)
+                d.text[key] = val.strip()
         return d, i
 
     return block(0, lines[0][0])[0] if lines else {}
@@ -471,7 +539,18 @@ def repo_ctx(s, d, which):
         c["validate"] = str(pr.get("validate") or "")
         c["reviewers"] = reviewers_of(pr.get("reviewers"))
         c["requests_disabled"] = False
+    ready = any(r["role"] == "required" for r in c["reviewers"].values())
+    c["merge_ready"], c["merge_reason"] = ready, None if ready else "no_required_reviewer"
     return c
+
+
+def setting_text(m, key):
+    """The setting as the user wrote it, for messages; the parsed value when the text is not kept."""
+    text = m.text.get(key) if isinstance(m, Map) else None
+    if text is not None:
+        return text
+    v = m.get(key)
+    return str(v).lower() if isinstance(v, bool) else str(v)
 
 
 def contexts(code, store):
@@ -481,6 +560,23 @@ def contexts(code, store):
            "finish": str(s.get("finish") or ""), "max_fix_rounds": int(pr.get("max_fix_rounds") if isinstance(pr.get("max_fix_rounds"), int) else 2),
            "after_limit": str(pr.get("after_limit") or "ask"), "react": bool(pr.get("react")),
            "poll_interval": duration(pr.get("poll_interval"), 300)}
+    merge = pr.get("merge")
+    out["merge"] = merge if merge in ("user", "agent") else "user"
+    if merge not in (None, "") and merge not in ("user", "agent"):
+        out["merge_note"] = f"pr.merge: {setting_text(pr, 'merge')} is not user or agent; treated as user"
+    out["merge_method"], out["delete_branch"] = "merge", True
+    if out["merge"] != "agent":  # only the agent merge reads them: user mode keeps today's behaviour
+        return out
+    method = pr.get("merge_method")
+    method = "merge" if method is None else method
+    if method not in ("merge", "squash", "rebase"):
+        raise Stop("bad_setting", f"pr.merge_method: {setting_text(pr, 'merge_method')} must be merge, squash or rebase", code=2)
+    out["merge_method"] = method
+    delete = pr.get("delete_branch")
+    delete = True if delete is None else delete
+    if not isinstance(delete, bool):
+        raise Stop("bad_setting", f"pr.delete_branch: {setting_text(pr, 'delete_branch')} must be true or false", code=2)
+    out["delete_branch"] = delete
     return out
 
 
@@ -541,11 +637,17 @@ def gh_obj(endpoint, *extra):
         unknown(f"unreadable response: {e}")
 
 
+_AMBIENT = []
+
+
 def ambient_login():
-    r = gh("api", "user", "--jq", ".login")
-    if r.returncode != 0 or not r.stdout.strip():
-        unknown("cannot read the ambient gh login")
-    return r.stdout.strip()
+    """The active gh login, read once per run: a later `gh auth switch` cannot change it mid-run."""
+    if not _AMBIENT:
+        r = gh("api", "user", "--jq", ".login")
+        if r.returncode != 0 or not r.stdout.strip():
+            unknown("cannot read the ambient gh login")
+        _AMBIENT.append(r.stdout.strip())
+    return _AMBIENT[0]
 
 
 def norm_pr(p):
@@ -1238,10 +1340,7 @@ def cmd_rounds(argv):
         if a.get("store") and shas_of.get("store"):
             # the store may need its own login: stop on a missing credential before the per-repo loop, but only when
             # the store has top-round commits to look for on its remote
-            try:
-                slug = identity(a["store"])["repo"]
-            except Stop:  # no GitHub origin: plain git, as before
-                slug = None
+            slug = fetch_repo(a["store"])  # by the fetch URL, as git_net reads it, whatever the push URLs
             read_store_as(ctx, slug)
             if slug and REPO_LOGIN.get(slug.lower()):
                 token_for(REPO_LOGIN[slug.lower()])
@@ -1249,6 +1348,8 @@ def cmd_rounds(argv):
             shas = shas_of[k]
             try:
                 missing = [s for s in shas if not remote_contains(d, a["branch"], s)]
+            except Refused:  # as.sh refused (a credential in a URL, no credential): a stop, not an unreadable remote
+                raise
             except Stop:  # the count does not depend on the remote; say which side could not be checked
                 unreadable.append(k)
                 continue
@@ -1940,6 +2041,8 @@ def cmd_cleanup(argv):
     need(a, "code", "store", "branch")
     branch = a["branch"]
     e = expected_set(a["code"], a["store"], branch)
+    ctx = contexts(a["code"], a["store"])
+    as_sh = f"{os.environ['PR_PAIR_DIR']}/as.sh"
     members, keep, out = e["set"], [], {}
     all_merged = bool(members) and all(e[k]["pr"] and e[k]["pr"]["state"] == "MERGED" for k in members)
     for k, d in (("code", a["code"]), ("store", a["store"])):
@@ -1953,7 +2056,7 @@ def cmd_cleanup(argv):
             if exists:
                 # after the pull, branch-check decides: the skill runs `delete` only when it answers delete: true
                 check = ["pr-pair.sh", "branch-check", "--dir", cwd, "--branch", branch, "--main", main] + (["--head", pr["head_sha"]] if pr.get("head_sha") else [])
-                ent["commands"] = [cmd("git", "checkout", main), cmd("git", "pull", "--ff-only"), cmd(*check)]
+                ent["commands"] = [cmd("git", "checkout", main), cmd("bash", as_sh, ctx[k]["login"] or ambient_login(), "git", "pull", "--ff-only"), cmd(*check)]
                 ent["delete"] = ["git", "branch", "-D", branch]
         elif side["expected"]:
             keep.append({"repo": k, "slug": side["repo"], "state": pr["state"] if pr else "NONE", "branch": branch,
@@ -1967,10 +2070,96 @@ def cmd_cleanup(argv):
     return {"ok": True, "branch": branch, "set": members, "code": out["code"], "store": out["store"], "keep": keep}
 
 
+def cmd_merge(argv):
+    """Merge PR n at the ready head with the configured method, once, and decide from a read-back (never from the PUT alone)."""
+    a, _ = parse_args(argv, {"--repo": "repo", "--pr": "pr", "--method": "method", "--head": "head"})
+    need(a, "repo", "pr", "method", "head")
+    repo, n, method, head = a["repo"], a["pr"], a["method"], a["head"]
+    if not re.fullmatch(r"[1-9][0-9]*", n):
+        usage("--pr must be a positive integer")
+    if method not in ("merge", "squash", "rebase"):
+        usage(f"--method must be merge, squash or rebase, got {method!r}")
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", head):
+        usage(f"--head must be a commit id of 7 to 40 hex digits, got {head!r}")
+    n = int(n)
+    r = gh("api", "-X", "PUT", f"repos/{repo}/pulls/{n}/merge", "-f", f"merge_method={method}", "-f", f"sha={head}")
+    m = re.search(r"\(HTTP (\d{3})\)", r.stderr or "")
+    status = int(m.group(1)) if m else None
+    message = ""
+    try:
+        body = json.loads(r.stdout)
+        message = body.get("message") or "" if isinstance(body, dict) else ""
+    except ValueError:
+        pass
+    message = message or (r.stderr or r.stdout).strip() or f"gh exited {r.returncode}"
+    try:
+        pr = gh_obj(f"repos/{repo}/pulls/{n}")  # unreadable = unknown (exit 3): the merge may have happened
+    except Stop as e:
+        e.extra.setdefault("status", "unknown")
+        raise
+    if pr.get("merged_at"):
+        return {"ok": True, "status": "merged", "repo": repo, "pr": n, "head_sha": (pr.get("head") or {}).get("sha"),
+                "merge_commit_sha": pr.get("merge_commit_sha")}
+    if r.returncode == 0 or status is None or status >= 500:  # a server error may still complete the merge
+        raise Stop("lookup_failed", f"GitHub state unknown: merge of {repo}#{n} is not confirmed: {message}", code=3,
+                   unknown=True, status="unknown")
+    raise Stop("refused", message, status="refused", reason="head_changed" if status == 409 else "refused",
+               http_status=status, repo=repo, pr=n)
+
+
+def http_status(r):
+    m = re.search(r"\(HTTP (\d{3})\)", r.stderr or "")
+    return int(m.group(1)) if m else None
+
+
+def reply_message(r):
+    try:
+        body = json.loads(r.stdout)
+        message = body.get("message") or "" if isinstance(body, dict) else ""
+    except ValueError:
+        message = ""
+    return message or (r.stderr or r.stdout).strip() or f"gh exited {r.returncode}"
+
+
+def cmd_delete_remote(argv):
+    """Delete the remote branch only at the merged head with no open PR based on it; a failed read is unknown, never a delete."""
+    a, _ = parse_args(argv, {"--repo": "repo", "--branch": "branch", "--head": "head"})
+    need(a, "repo", "branch", "head")
+    repo, branch, head = a["repo"], a["branch"], a["head"]
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", head):  # GitHub reports the full id: no prefix matching
+        usage(f"--head must be a full 40-digit commit id, got {head!r}")
+    path = quote(branch, safe="/")
+    base = {"repo": repo, "branch": branch}
+    r = gh("api", f"repos/{repo}/git/ref/heads/{path}")
+    if r.returncode != 0:
+        if http_status(r) == 404:
+            return {"ok": True, "status": "gone", **base}
+        unknown(reply_message(r))
+    try:
+        sha = json.loads(r.stdout)["object"]["sha"]
+    except (ValueError, KeyError, TypeError):
+        unknown("unreadable ref response")
+    if not isinstance(sha, str) or sha.lower() != head.lower():
+        return {"ok": True, "status": "moved", **base, "sha": sha}
+    based = gh_list(f"repos/{repo}/pulls?state=open&base={quote(branch, safe='')}&per_page=100")
+    if based:
+        return {"ok": True, "status": "based_on", **base, "prs": [p["number"] for p in based]}
+    r = gh("api", "-X", "DELETE", f"repos/{repo}/git/refs/heads/{path}")
+    if r.returncode == 0:
+        return {"ok": True, "status": "deleted", **base}
+    status, message = http_status(r), reply_message(r)
+    if status is None:
+        unknown(message)
+    if status == 422 and "does not exist" in message.lower():  # gone between the read and the delete
+        return {"ok": True, "status": "gone", **base}
+    raise Stop("kept", message, status="kept", http_status=status, **base)
+
+
 COMMANDS = {"identity": cmd_identity, "context": cmd_context, "discover": cmd_discover, "expected": cmd_expected,
             "ensure-pr": cmd_ensure_pr, "closing-check": cmd_closing_check,
             "closed-check": cmd_closed_check, "link": cmd_link, "pair-state": cmd_pair_state, "rounds": cmd_rounds,
-            "pass": cmd_pass, "cleanup-plan": cmd_cleanup, "branch-check": cmd_branch_check}
+            "pass": cmd_pass, "cleanup-plan": cmd_cleanup, "branch-check": cmd_branch_check, "merge": cmd_merge,
+            "delete-remote": cmd_delete_remote}
 
 args = sys.argv[1:]
 try:

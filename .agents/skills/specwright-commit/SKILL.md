@@ -2,7 +2,7 @@
 name: specwright-commit
 description: "MANDATORY during the OpenSpec apply phase: /opsx:apply, openspec-apply-change, `openspec instructions apply`, or the user asks to implement/apply an OpenSpec change. Commits each completed task on the change branch, verifies the commits when all tasks are done, then hands off to archive or to the PR."
 metadata:
-  version: 0.1.13
+  version: 0.4.0
 user-invocable: false
 allowed-tools: Bash(git *) Bash(openspec *)
 ---
@@ -42,9 +42,11 @@ A failed or interrupted step can leave a task ticked in the store with no store 
 ## 3. When every task is `[x]`
 One call: `git log <main>..HEAD --oneline && git status --porcelain`. Every checked `X.Y` needs a commit whose subject contains `task X.Y ` (with the trailing space, so 1.1 does not match 1.10), and the tree must be clean apart from the files noted in step 1 (and build or test byproducts such as `__pycache__`, which you may delete if you created them). Report `<N> tasks, <M> task commits, tree clean`, listing the pre-existing files you left alone. Store-backed: **Reconcile** first; then every ticked task needs a code commit or a store commit with `Code-Changes: none`, and a store commit containing `task X.Y `. Run the same check in the store (`git -C "<store toplevel>" log <store main>..HEAD --oneline && git -C "<store toplevel>" status --porcelain`) and report each repo on its own line: `code: <N> tasks, <M> task commits, tree clean` and `store: ...`. No handoff below until both repos pass. On a gap, stop and offer: commit the leftovers (by name), amend (only if the user picks it), or investigate.
 
+**Pre-ship review.** Once the check passes, load the `specwright-review` skill and run its **Pre-ship review** on the finished change. The hand-off below waits until the review passes (no unwaived P0/P1 finding); its fix rounds and amendments are committed under these rules. With `review.preship: false` in `openspec/specwright.yaml`, skip it: no pre-ship review, and the hand-off follows the check.
+
 Then read `finish` in `openspec/specwright.yaml` (default `local`):
 - `local` → suggest `/opsx:archive`; the user runs it.
-- `pr` → hand off to `specwright-pr` **ship**, then offer **watch**. Archive after review settles, on the same branch, before the PR is merged: **watch** offers it once the PR is ready.
+- `pr` → resolve the run login (`github.login`, else one `bash <specwright-pr>/scripts/as.sh --resolve`, `<specwright-pr>` being that skill's folder; exit 3 stops and tells the user), hand off to `specwright-pr` **ship** stating `run login: <login>`, then offer **watch**. Archive after review settles, on the same branch, before the PR is merged: **watch** offers it once the PR is ready.
 
 Never commit on main, push from this skill, batch tasks into one commit, amend unprompted, or start archive yourself.
 
