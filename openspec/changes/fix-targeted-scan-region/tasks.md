@@ -45,7 +45,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
 ## 1. ADR-0016 and architecture index
 
 - [x] 1.1 Write `docs/adr/0016-centred-targeted-region.md` (MADR-short: Status accepted, Date 2026-10-17, `Supersedes: 0010` with "region formula in the ROI bullet only"), from design D1–D3 and D6. Include the measured geometry, the rejected alternatives with reversal costs, the consequence for the M4 hotkey (the region needs no cursor beyond the in-client guard), and the corrected size bound from review S2 (the pixel cap binds first, at about 11,650 px wide at 16:9). Do not edit ADR-0010, 0012 or 0014. Verify: the file exists, and `grep -n "Supersedes: 0010" docs/adr/0016-*.md` matches.
-- [ ] 1.2 Update `openspec/architecture.md`: add the 0016 row to the in-force index, and mark the 0010 row as partly superseded by 0016 (region formula). Fix any prose that describes the targeted region as a cursor strip. Verify: `grep -n "0016" openspec/architecture.md` shows the index row, and `grep -n -i "cursor strip\|near the cursor" openspec/architecture.md` returns nothing stale.
+- [x] 1.2 Update `openspec/architecture.md`: add the 0016 row to the in-force index, and mark the 0010 row as partly superseded by 0016 (region formula). Fix any prose that describes the targeted region as a cursor strip. Verify: `grep -n "0016" openspec/architecture.md` shows the index row, and `grep -n -i "cursor strip\|near the cursor" openspec/architecture.md` returns nothing stale.
 
 ## 2. Centred targeted band (inspection-capture)
 
