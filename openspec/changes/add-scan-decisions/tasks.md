@@ -39,7 +39,7 @@
 
 ## 2. History source `scan`
 
-- [ ] 2.1 Add the failing test `scan activity is one row per item and mode with source scan` to `test/data/database_test.dart`. It records the same item twice in PvP with `ActivitySource.scan`, then expects one row with source `scan`, revision 2 and the second time, and expects it to survive `readActivity`. Verify that it fails because `recordActivity` has no source parameter (a compile error counts).
+- [x] 2.1 Add the failing test `scan activity is one row per item and mode with source scan` to `test/data/database_test.dart`. It records the same item twice in PvP with `ActivitySource.scan`, then expects one row with source `scan`, revision 2 and the second time, and expects it to survive `readActivity`. Verify that it fails because `recordActivity` has no source parameter (a compile error counts).
 - [ ] 2.2 Add `scan` to `ActivitySource` (`lib/domain/settings.dart`). Give `BlackgridDatabase.recordActivity` and `HistoryController.record` a `source` parameter defaulting to `manual`. `record` takes the failure message from its source ("Accepted scan was not recorded: local persistence failed." for `scan`). Add a `_disposed` guard to `HistoryController`, so a `load` or `record` finishing after `dispose` does not notify (review suggestion 6), with a test in `test/application/history_controller_test.dart`. Keep `schemaVersion` at 2 with no Drift migration. Verify: the 2.1 row is green, `mise run test` passes the existing database and migration tests, and the history panel labels `scan` rows (covered by 5.1).
 
 ## 3. Selection gains a scan source
