@@ -30,7 +30,7 @@ The job SHALL resize the title crop by 2 ÷ scale (cubic when enlarging, area wh
 - **THEN** the evidence has title status `read` and empty text, its preview is the original white crop subject to the byte limit, and OCR is not called
 
 ### Requirement: Evidence is sendable and bounded
-A recognition result SHALL hold the frame kind (targeted or full client), processing scale, best marker score and its evidence entries. Each entry SHALL hold marker score and position, title region, title status (`read` or `emptyTitleRegion`), OCR text, a thresholded crop copy of at most 256 KiB and QPC stage timestamps. Nothing SHALL reference frame or native memory. The crop SHALL be the image sent to OCR (the blank image when OCR is skipped), or its downscaled preview above the limit.
+A recognition result SHALL hold the frame kind (targeted or full client), processing scale, best marker score and its evidence entries. Each entry SHALL hold marker score and position, title region, title status (`read` or `emptyTitleRegion`), OCR text, a crop of at most 256 KiB and QPC stage timestamps. Nothing SHALL reference frame or native memory. The crop SHALL be the thresholded OCR input (blank when OCR is skipped), its downscaled preview above the limit, or empty for `emptyTitleRegion`.
 
 #### Scenario: Evidence outlives the frame
 - **WHEN** a targeted recognition completes and the frame has been released
