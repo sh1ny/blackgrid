@@ -5,8 +5,8 @@
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan replaces a manual selection | test/application/scan_decision_feed_test.dart | accepted scan replaces a manual selection | red |
-| scan-decisions → An accepted scan becomes the current selection | Manual selection after a scan | test/application/selection_controller_test.dart | manual selection after a scan stays after refresh | red |
-| scan-decisions → An accepted scan becomes the current selection | Accepted scan while a history row is open | test/application/selection_controller_test.dart | accepted scan closes an open history row into the live mode | red |
+| scan-decisions → An accepted scan becomes the current selection | Manual selection after a scan | test/application/selection_controller_test.dart | manual selection after a scan stays after refresh | green |
+| scan-decisions → An accepted scan becomes the current selection | Accepted scan while a history row is open | test/application/selection_controller_test.dart | accepted scan closes an open history row into the live mode | green |
 | scan-decisions → Scan decisions come from the shared engine | Confirmed current need | test/application/scan_decision_precedence_test.dart | scanned confirmed current need is Keep with the need | red |
 | scan-decisions → Scan decisions come from the shared engine | Unknown progress | test/application/scan_decision_precedence_test.dart | scanned item with unknown progress is Check naming progress | red |
 | scan-decisions → Scan decisions come from the shared engine | Every precedence rule | test/application/scan_decision_precedence_test.dart | every precedence rule matches the hand-selected decision | red |
@@ -17,11 +17,11 @@
 | scan-decisions → Scans from an older mode or session drive no decision | Mode changes mid-scan | test/application/scan_decision_feed_test.dart | scan from an older mode is fenced | red |
 | scan-decisions → Scans from an older mode or session drive no decision | Session changes mid-scan | test/application/scan_decision_feed_test.dart | scan from an older session is fenced | red |
 | scan-decisions → Scans from an older mode or session drive no decision | Item missing from the current catalog | test/application/scan_decision_feed_test.dart | scan of an item missing from the current catalog is fenced | red |
-| scan-decisions → Accepted scans are recorded in history as scans | Two scans of the same item | test/data/database_test.dart | scan activity is one row per item and mode with source scan | red |
-| scan-decisions → Accepted scans are recorded in history as scans | History write fails | test/application/selection_controller_test.dart | failed scan history write keeps the decision with an error | red |
-| scan-decisions → FIR resets on every new accepted scan | Same item scanned again | test/application/selection_controller_test.dart | FIR resets when the same item is scanned again | red |
+| scan-decisions → Accepted scans are recorded in history as scans | Two scans of the same item | test/data/database_test.dart | scan activity is one row per item and mode with source scan | green |
+| scan-decisions → Accepted scans are recorded in history as scans | History write fails | test/application/selection_controller_test.dart | failed scan history write keeps the decision with an error | green |
+| scan-decisions → FIR resets on every new accepted scan | Same item scanned again | test/application/selection_controller_test.dart | FIR resets when the same item is scanned again | green |
 | scan-decisions → FIR resets on every new accepted scan | Session change | test/application/scan_decision_feed_test.dart | session change retires the scan and resets FIR | red |
-| scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Prices go stale after a scan | test/application/selection_controller_test.dart | stale Flea quote downgrades the scan to Check, acceptance unchanged | red |
+| scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Prices go stale after a scan | test/application/selection_controller_test.dart | stale Flea quote downgrades the scan to Check, acceptance unchanged | green |
 | scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Mode changes after a scan | test/application/scan_decision_feed_test.dart | mode change retires the scan and records nothing | red |
 | scanner-evidence → Unaccepted scan evidence never produces a recommendation | Accepted scan drives the decision card | test/ui/scanner_screen_test.dart | accepted scan drives the decision card | red |
 | scanner-evidence → Unaccepted scan evidence never produces a recommendation | Rejected scan with a best candidate | test/application/scan_coordinator_flow_test.dart | rejected scan changes no selection or history | green |
@@ -64,7 +64,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
 
 ## 4. Feed, epoch stamp and wiring
 
-- [ ] 4.1 Add the failing test `the epoch is stamped when the scan begins` to `test/application/scan_coordinator_flow_test.dart`. Its reader returns E0 at the trigger and E1 before publication, and the published `ScanReport.epoch` must equal E0 and survive `withoutCrops`. Verify that it fails because the field does not exist.
+- [x] 4.1 Add the failing test `the epoch is stamped when the scan begins` to `test/application/scan_coordinator_flow_test.dart`. Its reader returns E0 at the trigger and E1 before publication, and the published `ScanReport.epoch` must equal E0 and survive `withoutCrops`. Verify that it fails because the field does not exist.
 - [ ] 4.2 Give `ScanCoordinator` an optional `ScanEpoch Function()? epoch` reader (default constant). Read it in `_begin`, store it on `_Scan`, and copy it to `ScanReport.epoch`. It stays out of `toLogLine`, so log schema v1 is unchanged. Verify: the 4.1 test is green, and the existing coordinator, timing-log and audit tests pass unchanged (the coordinator still imports no selection or history).
 - [ ] 4.3 Add the failing tests to `test/application/scan_decision_feed_test.dart`. The source is a hand-written `FakeAcceptedScanSource` (a `ChangeNotifier` with a settable `lastAccepted`), and the epoch reader is injected; both live in `test/application/support/`. Use the `M1Harness` selection, history and catalog. The tests:
   - `accepted scan replaces a manual selection`
