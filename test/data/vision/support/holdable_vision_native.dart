@@ -85,7 +85,8 @@ abstract final class VisionOp {
   /// are packed as `b | g << 8 | r << 16`.
   static const findRow = 6;
 
-  /// `[width, height, channels]`
+  /// `[width, height, channels, stride, checksum]`; the checksum is
+  /// [pixelChecksum] of the logical pixels OCR received.
   static const recognise = 7;
 
   static const count = 8;
@@ -124,6 +125,7 @@ final class VisionScript {
     this.ocrTexts = const ['hello'],
     this.failures = const [],
     this.patternedThreshold = false,
+    this.titleInk,
   });
 
   /// What `matchTemplateBest` returns.
@@ -146,6 +148,12 @@ final class VisionScript {
   /// Whether `thresholdBinaryInv` returns [patternByte] bytes instead of zeros.
   final bool patternedThreshold;
 
+  /// When set, `thresholdBinaryInv` answers in call order (the last repeats)
+  /// with a binary title whose rightmost foreground column is the listed
+  /// value, drawn by [titleInkByte]; null draws an all-white title. Takes
+  /// precedence over [patternedThreshold].
+  final List<int?>? titleInk;
+
   int? failureFor(int op, int call) {
     for (final f in failures) {
       if (f.op == op && f.call == call) return f.status;
@@ -156,6 +164,29 @@ final class VisionScript {
 
 /// The byte at [index] of a patterned threshold output.
 int patternByte(int index) => (index * 13 + 5) & 0xff;
+
+/// The pixel at ([x], [y]) of a binary title whose rightmost foreground
+/// column is [ink]: black (0) at that column and on a diagonal pattern left
+/// of it, white (255) elsewhere; all white when [ink] is null.
+int titleInkByte(int x, int y, int? ink) =>
+    ink != null && x <= ink && (x == ink || (x + y) % 3 == 0) ? 0 : 255;
+
+/// A binary title of [width] by [height] drawn by [titleInkByte].
+Uint8List titleInkImage(int width, int height, int? ink) => Uint8List.fromList([
+  for (var y = 0; y < height; y++)
+    for (var x = 0; x < width; x++) titleInkByte(x, y, ink),
+]);
+
+/// An FNV-1a hash of the logical pixels of [bytes], skipping row padding.
+int pixelChecksum(Uint8List bytes, int width, int height, int stride) {
+  var hash = 0xcbf29ce484222325;
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      hash = (hash ^ bytes[y * stride + x]) * 0x100000001b3;
+    }
+  }
+  return hash;
+}
 
 /// Records the call, counts it per op and runs [body] as a held, counted
 /// native operation, failing first when the script injects a failure.
@@ -371,7 +402,18 @@ final class HoldableVisionEngine implements VisionEngine {
     _script,
     _counts,
     VisionOp.recognise,
-    [image.width, image.height, image.channels],
+    [
+      image.width,
+      image.height,
+      image.channels,
+      image.stride,
+      pixelChecksum(
+        image.bytes,
+        image.width * image.channels,
+        image.height,
+        image.stride,
+      ),
+    ],
     (call) => OcrText(_lastOrAt(_script.ocrTexts, call), truncated: false),
   );
 
@@ -412,12 +454,21 @@ final class HoldableVisionPrimitives implements VisionPrimitives {
   Uint8List thresholdBinaryInv(VisionImage src, int thresh, int maxval) => _run(
     VisionOp.threshold,
     [src.width, src.height, thresh, maxval],
-    (_) => _script.patternedThreshold
-        ? Uint8List.fromList([
-            for (var i = 0; i < src.width * src.height; i++) patternByte(i),
-          ])
-        : Uint8List(src.width * src.height),
+    (call) => switch (_script.titleInk) {
+      final List<int?> ink => titleInkImage(
+        src.width,
+        src.height,
+        _lastOrAt(ink, call),
+      ),
+      null => _patternedOrZero(src),
+    },
   );
+
+  Uint8List _patternedOrZero(VisionImage src) => _script.patternedThreshold
+      ? Uint8List.fromList([
+          for (var i = 0; i < src.width * src.height; i++) patternByte(i),
+        ])
+      : Uint8List(src.width * src.height);
 
   @override
   TemplateMatch matchTemplateBest(VisionImage image, VisionImage template) =>

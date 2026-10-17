@@ -613,6 +613,200 @@ void main() {
     expect(previous, lessThanOrEqualTo(answer.finishedQpc));
   });
 
+  group('title margin', () {
+    /// The title the fake thresholded for [threshold], bounded to [width]
+    /// columns as tightly packed bytes.
+    Uint8List expectedTitle(VisionCall threshold, int? ink, int width) {
+      final [sourceWidth, height, ...] = threshold.args;
+      final source = titleInkImage(sourceWidth, height, ink);
+      return Uint8List.fromList([
+        for (var y = 0; y < height; y++)
+          ...source.sublist(y * sourceWidth, y * sourceWidth + width),
+      ]);
+    }
+
+    /// Checks the single OCR call read exactly [expected], [width] wide.
+    void expectOcrRead(VisionCall ocr, Uint8List expected, int width) {
+      final height = expected.length ~/ width;
+      expect(ocr.args.take(5), [
+        width,
+        height,
+        1,
+        width,
+        pixelChecksum(expected, width, height, width),
+      ]);
+    }
+
+    test('OCR receives the bounded title image', () async {
+      for (final request in [targeted, fullClient]) {
+        final rig = newRig(
+          script: const VisionScript(
+            bestScore: 0.9,
+            bestX: 40,
+            bestY: 12,
+            peaks: [TemplatePeak(40, 12, 0.9)],
+            titleInk: [100],
+          ),
+        );
+
+        final evidence = recognised(await rig.recognition(request))
+            .evidence
+            .single;
+
+        final threshold = rig.control.callsOf(VisionOp.threshold).single;
+        // The 141x17 title enlarges to 282x34; ink ends at x 100, so OCR
+        // reads columns 0 through 108.
+        expect(threshold.args.take(2), [282, 34], reason: '${request.kind}');
+        final expected = expectedTitle(threshold, 100, 109);
+        expectOcrRead(
+          rig.control.callsOf(VisionOp.recognise).single,
+          expected,
+          109,
+        );
+        expect((evidence.cropWidth, evidence.cropHeight), (109, 34));
+        expect(evidence.crop, expected);
+      }
+    });
+
+    test('OCR receives a boundary title unchanged', () async {
+      // Ink in the last column, and ink closer to it than the margin.
+      for (final ink in [281, 276]) {
+        final rig = newRig(
+          script: VisionScript(
+            bestScore: 0.9,
+            bestX: 40,
+            bestY: 12,
+            titleInk: [ink],
+          ),
+        );
+
+        final evidence = recognised(await rig.recognition(targeted))
+            .evidence
+            .single;
+
+        final threshold = rig.control.callsOf(VisionOp.threshold).single;
+        final expected = expectedTitle(threshold, ink, 282);
+        expectOcrRead(
+          rig.control.callsOf(VisionOp.recognise).single,
+          expected,
+          282,
+        );
+        expect((evidence.cropWidth, evidence.cropHeight), (282, 34));
+        expect(evidence.crop, expected, reason: 'ink $ink');
+      }
+    });
+
+    test('blank title skips OCR and retains white preview', () async {
+      final rig = newRig(
+        script: const VisionScript(
+          bestScore: 0.9,
+          bestX: 40,
+          bestY: 12,
+          titleInk: [null],
+          ocrTexts: ['INVENTED'],
+        ),
+      );
+
+      final answer =
+          await rig.run(targeted) as VisionDelivered<InspectionRecognition>;
+
+      final evidence = recognised(answer.result).evidence.single;
+      expect(evidence.titleStatus, InspectionTitleStatus.read);
+      expect(evidence.text, isEmpty);
+      expect(rig.control.callsOf(VisionOp.recognise), isEmpty);
+      expect((evidence.cropWidth, evidence.cropHeight), (282, 34));
+      expect(evidence.crop, everyElement(255));
+      expect(evidence.crop, hasLength(282 * 34));
+      expect(evidence.cropDownscaled, isFalse);
+      var stage = answer.startedQpc;
+      for (final stamp in [
+        evidence.qpcMarker,
+        evidence.qpcTitle,
+        evidence.qpcPreprocess,
+        evidence.qpcOcr,
+        answer.finishedQpc,
+      ]) {
+        expect(stamp, greaterThanOrEqualTo(stage));
+        stage = stamp;
+      }
+    });
+
+    test('blank title is followed by a readable second peak', () async {
+      final rig = newRig(
+        script: const VisionScript(
+          peaks: [TemplatePeak(20, 10, 0.95), TemplatePeak(100, 10, 0.9)],
+          titleInk: [null, 10],
+          ocrTexts: ['SECOND'],
+        ),
+      );
+
+      final result = recognised(await rig.recognition(fullClient));
+
+      expect(result.evidence.map((e) => e.titleStatus), [
+        InspectionTitleStatus.read,
+        InspectionTitleStatus.read,
+      ]);
+      expect(result.evidence.map((e) => e.text), ['', 'SECOND']);
+      final thresholds = rig.control.callsOf(VisionOp.threshold);
+      expect(thresholds, hasLength(2));
+      // Each peak is bounded on its own: the second is not widened or
+      // narrowed by the first.
+      final expected = expectedTitle(thresholds[1], 10, 19);
+      expectOcrRead(
+        rig.control.callsOf(VisionOp.recognise).single,
+        expected,
+        19,
+      );
+      expect(result.evidence[1].crop, expected);
+      expect(result.evidence[0].crop, everyElement(255));
+    });
+
+    test(
+      'preview equals bounded OCR input and titleRect retains source geometry',
+      () async {
+        final rig = newRig(
+          script: const VisionScript(
+            bestScore: 0.9,
+            bestX: 40,
+            bestY: 12,
+            titleInk: [50],
+            ocrTexts: ['SHORT'],
+          ),
+        );
+        final frame = CaptureFrame(
+          rig.frames.createFrame(frameWidth, frameHeight),
+          frameMetadata(),
+          rig.frames,
+        );
+
+        final answer = await rig.service.submitFrame(frame, targeted);
+
+        expect(frame.isReleased, isTrue);
+        expect(rig.frames.liveCount, 0);
+        final evidence = recognised(
+          (answer as VisionDelivered<InspectionRecognition>).result,
+        ).evidence.single;
+        expect(
+          evidence.titleRect,
+          const TitleRegion(x: 59, y: 12, width: 141, height: 17),
+        );
+        final threshold = rig.control.callsOf(VisionOp.threshold).single;
+        final expected = expectedTitle(threshold, 50, 59);
+        expectOcrRead(
+          rig.control.callsOf(VisionOp.recognise).single,
+          expected,
+          59,
+        );
+        expect(evidence.text, 'SHORT');
+        expect((evidence.cropWidth, evidence.cropHeight), (59, 34));
+        expect(evidence.cropDownscaled, isFalse);
+        expect(evidence.crop, expected);
+        // Plain owned bytes, not a window onto the wider threshold output.
+        expect(evidence.crop.buffer.lengthInBytes, evidence.crop.length);
+      },
+    );
+  });
+
   test('scaled template is cached for four sizes, oldest evicted', () async {
     // Scales 1, 1.5, 2, 2.5, 3 give 16, 24, 32, 40 and 48 px templates. The
     // best score stays under the gate, so only template resizes happen.
