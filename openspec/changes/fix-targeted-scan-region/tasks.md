@@ -78,7 +78,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
 
 ## 6. Offline replay over recorded scans (design D5)
 
-- [ ] 6.1 Add pure support in `test/qualification/support/targeted_region_replay.dart`, with unit tests in `test/qualification/targeted_region_replay_support_test.dart` (untagged, so they run in `mise run test`):
+- [x] 6.1 Add pure support in `test/qualification/support/targeted_region_replay.dart`, with unit tests in `test/qualification/targeted_region_replay_support_test.dart` (untagged, so they run in `mise run test`):
   - parse `frames.jsonl` by the CORPUS.md rules: skip lines with `image: null` or `clipped: true`, skip `fullClient` lines (they have no cursor, review S3) and count every skip by reason, tolerate an unparseable final line, and reject a malformed other line with a `FormatException` naming it;
   - classify each frame: targeted accepts, full-client accepts, agreement, conflicting accept (the hard failure), and miss cause (winner marker outside the band, or inside it but rejected);
   - build the summary: share of full-client accepts also accepted by the targeted pass, conflict count, and job-time percentiles per kind.
