@@ -10,19 +10,19 @@ Paths are relative to the code repo. `job` below means `test/data/vision/inspect
 | Title text is read from a normalised, thresholded crop | OCR fails natively | job | native OCR failure aborts with the typed failure | green |
 | Title text is read from a normalised, thresholded crop | Short title has an excessive blank right margin | crop; job | bounds the recorded 999-to-595 extent; OCR receives the bounded title image | red |
 | Title text is read from a normalised, thresholded crop | Title reaches the existing crop boundary | crop; job | foreground at the last column retains full width; OCR receives a boundary title unchanged | red |
-| Title text is read from a normalised, thresholded crop | Internal spaces and detached punctuation | crop | preserves internal spaces and detached final punctuation | red |
+| Title text is read from a normalised, thresholded crop | Internal spaces and detached punctuation | crop | preserves internal spaces and detached final punctuation | green |
 | Title text is read from a normalised, thresholded crop | No foreground | job | blank title skips OCR and retains white preview | red |
 | Evidence is sendable and bounded | Evidence outlives the frame | job | evidence crop and text survive frame release and isolate transfer | green |
 | Evidence is sendable and bounded | Oversized crop | job | crop above 256 KiB is downscaled and flagged while OCR used full size | green |
 | Evidence is sendable and bounded | Stage timestamps are ordered | job | stage timestamps are non-decreasing | green |
 | Evidence is sendable and bounded | Right margin is bounded before preview generation | job | preview equals bounded OCR input and titleRect retains source geometry | red |
-| OCR title margin is bounded by rendered content | Bounded whitespace remains | crop | rightmost foreground at 19 yields width 28 | red |
-| OCR title margin is bounded by rendered content | Limited room at the boundary | crop | rightmost foreground at 46 retains width 50 | red |
+| OCR title margin is bounded by rendered content | Bounded whitespace remains | crop | rightmost foreground at 19 yields width 28 | green |
+| OCR title margin is bounded by rendered content | Limited room at the boundary | crop | rightmost foreground at 46 retains width 50 | green |
 
 ## 1. Pure title-crop policy
 
 - [x] 1.1 Add failing tests in `inspection_title_crop_test.dart` for the test-map crop scenarios, plus padded stride with black padding ignored, all-white input, foreground in different rows, one-pixel images, and source-byte preservation. Use very short heights even for the recorded numeric extent. Verify with `mise exec -- flutter test test/data/vision/inspection_title_crop_test.dart` and record the expected missing-helper/red failure before implementation.
-- [ ] 1.2 Implement the pure helper/result in `lib/data/vision/inspection_title_crop.dart` following design D1/D2 and the spec's single margin rule. Respect validated logical image dimensions, avoid counting row padding, and produce a tightly packed owned copy only on narrowing; expose blank content without a zero-width image. Add `///` documentation to public declarations. Run the new crop tests to green, format with pinned `dart format`, and update the corresponding test-map states.
+- [x] 1.2 Implement the pure helper/result in `lib/data/vision/inspection_title_crop.dart` following design D1/D2 and the spec's single margin rule. Respect validated logical image dimensions, avoid counting row padding, and produce a tightly packed owned copy only on narrowing; expose blank content without a zero-width image. Add `///` documentation to public declarations. Run the new crop tests to green, format with pinned `dart format`, and update the corresponding test-map states.
 
 ## 2. Worker job integration and evidence
 
