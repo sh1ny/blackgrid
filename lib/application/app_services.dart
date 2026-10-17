@@ -23,6 +23,8 @@ import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'progress_controller.dart';
 import 'scan_coordinator.dart';
+import 'scan_decision_feed.dart';
+import 'scan_epoch.dart';
 import 'selection_controller.dart';
 import 'session_scan_state.dart';
 import 'settings_controller.dart';
@@ -105,7 +107,15 @@ class AppServices {
       recorder: scanFrameRecorder,
       settleDelay: scanSettleDelay,
       fallbackDelay: scanFallbackDelay,
+      epoch: _currentEpoch,
     );
+    scanFeed = ScanDecisionFeed(
+      source: scanner,
+      selection: selection,
+      catalog: catalog,
+      epoch: _currentEpoch,
+    );
+    _appliedSessionEpoch = mapSession.state.sessionEpoch;
     settings.addListener(_syncMapSettings);
     maps.addListener(_syncMapContext);
     mapSession.addListener(_syncMapSession);
@@ -119,6 +129,9 @@ class AppServices {
   /// Owns live scanning: the switch, the worker, the hook and the scan flow.
   late final ScanCoordinator scanner;
 
+  /// Carries accepted scans from [scanner] into [selection].
+  late final ScanDecisionFeed scanFeed;
+
   /// The bounded timing log the scanner appends to.
   late final ScanTimingLog scanTimingLog;
 
@@ -129,6 +142,7 @@ class AppServices {
   Object? _publishedPlayerSample;
   Set<String>? _publishedRaidHighlights;
   GameMode? _appliedMode;
+  int _appliedSessionEpoch = 0;
   Future<void> _modeChange = Future.value();
   late final HistoryController history;
   late final CatalogController catalog;
@@ -138,6 +152,10 @@ class AppServices {
   final scans = const SessionScanState();
   bool _disposed = false;
   int _modeTransition = 0;
+
+  /// The epoch a scan begins in and is fenced against.
+  ScanEpoch _currentEpoch() =>
+      ScanEpoch(_modeTransition, mapSession.state.sessionEpoch);
   static Future<AppServices> open() async {
     final paths = await LocalPaths.resolve();
     final result = AppServices(
@@ -210,13 +228,21 @@ class AppServices {
       maps.setRaidHighlights(state.raidHighlightIds);
     }
     final mode = mapSession.effectiveMode;
+    var epochChanged = false;
     if (mode != _appliedMode) {
       _appliedMode = mode;
       ++_modeTransition;
+      epochChanged = true;
       // Both invalidate synchronously, before either asynchronous read ends.
       _modeChange = Future.wait([progress.setMode(mode), catalog.setMode(mode)])
           .then((_) {});
     }
+    if (state.sessionEpoch != _appliedSessionEpoch) {
+      _appliedSessionEpoch = state.sessionEpoch;
+      epochChanged = true;
+    }
+    // After the mode block, so a combined change retires once.
+    if (epochChanged) scanFeed.epochChanged();
   }
 
   Future<bool> setMode(GameMode mode) async {
@@ -238,6 +264,7 @@ class AppServices {
     settings.removeListener(_syncMapSettings);
     maps.removeListener(_syncMapContext);
     mapSession.removeListener(_syncMapSession);
+    scanFeed.dispose();
     try {
       try {
         await scanner.dispose();

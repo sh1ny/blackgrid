@@ -4,25 +4,25 @@
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| scan-decisions → An accepted scan becomes the current selection | Accepted scan replaces a manual selection | test/application/scan_decision_feed_test.dart | accepted scan replaces a manual selection | red |
+| scan-decisions → An accepted scan becomes the current selection | Accepted scan replaces a manual selection | test/application/scan_decision_feed_test.dart | accepted scan replaces a manual selection | green |
 | scan-decisions → An accepted scan becomes the current selection | Manual selection after a scan | test/application/selection_controller_test.dart | manual selection after a scan stays after refresh | green |
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan while a history row is open | test/application/selection_controller_test.dart | accepted scan closes an open history row into the live mode | green |
 | scan-decisions → Scan decisions come from the shared engine | Confirmed current need | test/application/scan_decision_precedence_test.dart | scanned confirmed current need is Keep with the need | red |
 | scan-decisions → Scan decisions come from the shared engine | Unknown progress | test/application/scan_decision_precedence_test.dart | scanned item with unknown progress is Check naming progress | red |
 | scan-decisions → Scan decisions come from the shared engine | Every precedence rule | test/application/scan_decision_precedence_test.dart | every precedence rule matches the hand-selected decision | red |
-| scan-decisions → Unaccepted scans never change the selection | Rejected scan with a candidate | test/application/scan_decision_feed_test.dart | rejected scan with a candidate changes nothing | red |
-| scan-decisions → Unaccepted scans never change the selection | Failed scan after an accepted one | test/application/scan_decision_feed_test.dart | failed scan keeps the scanned item and its FIR | red |
-| scan-decisions → Each accepted scan is consumed once | Refresh after an accepted scan | test/application/scan_decision_feed_test.dart | refresh after an accepted scan records nothing new | red |
-| scan-decisions → Each accepted scan is consumed once | Unrelated notification | test/application/scan_decision_feed_test.dart | notification without a new accepted scan keeps the manual item | red |
-| scan-decisions → Scans from an older mode or session drive no decision | Mode changes mid-scan | test/application/scan_decision_feed_test.dart | scan from an older mode is fenced | red |
-| scan-decisions → Scans from an older mode or session drive no decision | Session changes mid-scan | test/application/scan_decision_feed_test.dart | scan from an older session is fenced | red |
-| scan-decisions → Scans from an older mode or session drive no decision | Item missing from the current catalog | test/application/scan_decision_feed_test.dart | scan of an item missing from the current catalog is fenced | red |
+| scan-decisions → Unaccepted scans never change the selection | Rejected scan with a candidate | test/application/scan_decision_feed_test.dart | rejected scan with a candidate changes nothing | green |
+| scan-decisions → Unaccepted scans never change the selection | Failed scan after an accepted one | test/application/scan_decision_feed_test.dart | failed scan keeps the scanned item and its FIR | green |
+| scan-decisions → Each accepted scan is consumed once | Refresh after an accepted scan | test/application/scan_decision_feed_test.dart | refresh after an accepted scan records nothing new | green |
+| scan-decisions → Each accepted scan is consumed once | Unrelated notification | test/application/scan_decision_feed_test.dart | notification without a new accepted scan keeps the manual item | green |
+| scan-decisions → Scans from an older mode or session drive no decision | Mode changes mid-scan | test/application/scan_decision_feed_test.dart | scan from an older mode is fenced | green |
+| scan-decisions → Scans from an older mode or session drive no decision | Session changes mid-scan | test/application/scan_decision_feed_test.dart | scan from an older session is fenced | green |
+| scan-decisions → Scans from an older mode or session drive no decision | Item missing from the current catalog | test/application/scan_decision_feed_test.dart | scan of an item missing from the current catalog is fenced | green |
 | scan-decisions → Accepted scans are recorded in history as scans | Two scans of the same item | test/data/database_test.dart | scan activity is one row per item and mode with source scan | green |
 | scan-decisions → Accepted scans are recorded in history as scans | History write fails | test/application/selection_controller_test.dart | failed scan history write keeps the decision with an error | green |
 | scan-decisions → FIR resets on every new accepted scan | Same item scanned again | test/application/selection_controller_test.dart | FIR resets when the same item is scanned again | green |
-| scan-decisions → FIR resets on every new accepted scan | Session change | test/application/scan_decision_feed_test.dart | session change retires the scan and resets FIR | red |
+| scan-decisions → FIR resets on every new accepted scan | Session change | test/application/scan_decision_feed_test.dart | session change retires the scan and resets FIR | green |
 | scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Prices go stale after a scan | test/application/selection_controller_test.dart | stale Flea quote downgrades the scan to Check, acceptance unchanged | green |
-| scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Mode changes after a scan | test/application/scan_decision_feed_test.dart | mode change retires the scan and records nothing | red |
+| scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Mode changes after a scan | test/application/scan_decision_feed_test.dart | mode change retires the scan and records nothing | green |
 | scanner-evidence → Unaccepted scan evidence never produces a recommendation | Accepted scan drives the decision card | test/ui/scanner_screen_test.dart | accepted scan drives the decision card | red |
 | scanner-evidence → Unaccepted scan evidence never produces a recommendation | Rejected scan with a best candidate | test/application/scan_coordinator_flow_test.dart | rejected scan changes no selection or history | green |
 
@@ -79,7 +79,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
   - `mode change retires the scan and records nothing`
 
   Verify that they fail because the feed does not exist.
-- [ ] 4.4 Add `lib/application/scan_decision_feed.dart` per design D1-D3. The high-water id starts at `lastAccepted?.id ?? 0` and rises before the fences. The three fences each name themselves in a `debugPrint`. `epochChanged()` calls `selection.retireScan()`. The listener has no `try`/`catch`, because `ChangeNotifier` already reports listener errors (review suggestion 1). `dispose` removes the listener.
+- [x] 4.4 Add `lib/application/scan_decision_feed.dart` per design D1-D3. The high-water id starts at `lastAccepted?.id ?? 0` and rises before the fences. The three fences each name themselves in a `debugPrint`. `epochChanged()` calls `selection.retireScan()`. The listener has no `try`/`catch`, because `ChangeNotifier` already reports listener errors (review suggestion 1). `dispose` removes the listener.
 
   Wire it in `AppServices`:
   - pass the epoch reader `() => ScanEpoch(_modeTransition, mapSession.state.sessionEpoch)` to the coordinator;
