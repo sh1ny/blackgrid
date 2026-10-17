@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:blackgrid/application/history_controller.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/database.dart';
@@ -8,7 +10,81 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 
+/// A database whose activity read and write complete only when released.
+class _GatedDatabase extends BlackgridDatabase {
+  _GatedDatabase() : super(NativeDatabase.memory());
+  final readGate = Completer<void>();
+  final writeGate = Completer<void>();
+  bool failWrite = false;
+
+  @override
+  Future<List<ItemActivity>> readActivity() async {
+    await readGate.future;
+    return super.readActivity();
+  }
+
+  @override
+  Future<ItemActivity> recordActivity(
+    String itemId,
+    GameMode mode,
+    DateTime time, {
+    ActivitySource source = ActivitySource.manual,
+  }) async {
+    await writeGate.future;
+    if (failWrite) throw StateError('synthetic write failure');
+    return super.recordActivity(itemId, mode, time, source: source);
+  }
+}
+
 void main() {
+  test('load finishing after dispose does not notify listeners', () async {
+    final db = _GatedDatabase();
+    final history = HistoryController(db);
+    var notified = 0;
+    history.addListener(() => notified++);
+    final pending = history.load();
+    history.dispose();
+    db.readGate.complete();
+    await pending;
+    expect(notified, 0);
+    await db.close();
+  });
+  test('record finishing after dispose does not notify listeners', () async {
+    final db = _GatedDatabase()..failWrite = true;
+    final history = HistoryController(db);
+    var notified = 0;
+    history.addListener(() => notified++);
+    final pending = history.record(
+      'synthetic-unknown-item',
+      GameMode.pve,
+      fixtureNow,
+      source: ActivitySource.scan,
+    );
+    history.dispose();
+    db.writeGate.complete();
+    expect(await pending, isFalse);
+    expect(notified, 0);
+    await db.close();
+  });
+  test('record failure message follows the source', () async {
+    final db = _GatedDatabase()..failWrite = true;
+    db.writeGate.complete();
+    final history = HistoryController(db);
+    await history.record('synthetic-unknown-item', GameMode.pve, fixtureNow);
+    expect(history.error, contains('Manual inspection was not recorded'));
+    await history.record(
+      'synthetic-unknown-item',
+      GameMode.pve,
+      fixtureNow,
+      source: ActivitySource.scan,
+    );
+    expect(
+      history.error,
+      'Accepted scan was not recorded: local persistence failed.',
+    );
+    history.dispose();
+    await db.close();
+  });
   test(
     'durable identity activity is unique by mode and no transient fields exist',
     () async {
