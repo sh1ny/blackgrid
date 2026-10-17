@@ -54,7 +54,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
   - `stale Flea quote downgrades the scan to Check, acceptance unchanged`, which sets FIR yes, then advances an injected clock past the 1 h quote age; no sleeps
 
   Verify that they fail because `selectScan` does not exist.
-- [ ] 3.2 Add `lib/application/scan_epoch.dart` with the value type `ScanEpoch(modeTransition, session)` (equality and hashCode, doc comments). Add the immutable `AcceptedScan` (report id, item id, mode, catalog revision, accepted at, epoch, `decisionAtAcceptance`) in `selection_controller.dart` or its own file.
+- [x] 3.2 Add `lib/application/scan_epoch.dart` with the value type `ScanEpoch(modeTransition, session)` (equality and hashCode, doc comments). Add the immutable `AcceptedScan` (report id, item id, mode, catalog revision, accepted at, epoch, `decisionAtAcceptance`) in `selection_controller.dart` or its own file.
 
   `SelectionController.selectScan` takes the report fields (`reportId, itemId, mode, catalogRevision, epoch`). It stamps `acceptedAt` from its own `clock` when it is called, never from `report.utc` (design D4, review round 2), and uses that time for `history.record` and the card's age. It builds the `AcceptedScan` only after its first projection, so the record is immutable from construction (review suggestion 2). It then does what design D4 lists: generation bump, clear the other sources, `loadingHistory = false`, FIR unknown, project, notify, then `history.record(..., source: scan)` behind the generation check.
 

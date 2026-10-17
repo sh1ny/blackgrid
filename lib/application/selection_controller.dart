@@ -10,7 +10,9 @@ import '../domain/inspection_context.dart';
 import '../domain/settings.dart';
 import 'catalog_controller.dart';
 import 'progress_controller.dart';
+import 'accepted_scan.dart';
 import 'history_controller.dart';
+import 'scan_epoch.dart';
 
 class SelectionController extends ChangeNotifier {
   SelectionController({
@@ -37,6 +39,8 @@ class SelectionController extends ChangeNotifier {
   Timer? _timer;
   String query = '';
   String? _manualId;
+  String? _scanItemId;
+  AcceptedScan? _scan;
   ItemActivity? _historyRow;
   CatalogSnapshot? _historyCatalog;
   FirState _fir = FirState.unknown;
@@ -47,9 +51,17 @@ class SelectionController extends ChangeNotifier {
   bool get _usesLiveCatalog => !isHistory || catalog.mode == inspectionMode;
   CatalogSnapshot? get inspectionCatalog =>
       _usesLiveCatalog ? catalog.snapshot ?? _historyCatalog : _historyCatalog;
-  CatalogItem? get item =>
-      inspectionCatalog?.items[_historyRow?.itemId ?? _manualId];
-  String? get selectedId => _historyRow?.itemId ?? _manualId;
+  CatalogItem? get item => inspectionCatalog?.items[selectedId];
+  String? get selectedId => _historyRow?.itemId ?? _scanItemId ?? _manualId;
+
+  /// The accepted scan the card shows, or null when another source is current.
+  AcceptedScan? get scan => _scan;
+
+  /// Whether the last scan was retired, for the card's retired message.
+  ///
+  /// The next select or open clears it.
+  bool get scanRetired => _scanRetired;
+  bool _scanRetired = false;
   List<CatalogItem> get results => catalog.snapshot?.search(query) ?? const [];
   ItemDecision? _decision;
   ItemDecision? get decision => _decision;
@@ -73,8 +85,11 @@ class SelectionController extends ChangeNotifier {
   Future<void> selectManual(CatalogItem value) async {
     final generation = ++_generation;
     _manualId = value.id;
+    _clearScan();
+    _scanRetired = false;
     _historyRow = null;
     _historyCatalog = null;
+    loadingHistory = false;
     _fir = FirState.unknown;
     error = null;
     _authority = _fingerprint();
@@ -87,8 +102,82 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Selects the item a scan matched and records it as scan activity.
+  ///
+  /// The acceptance time comes from [clock] when this is called, never from the
+  /// scan report. It times the record, the history write and the card's age.
+  Future<void> selectScan({
+    required int reportId,
+    required String itemId,
+    required GameMode mode,
+    required String catalogRevision,
+    required ScanEpoch epoch,
+  }) async {
+    final generation = ++_generation;
+    final acceptedAt = clock().toUtc();
+    _scanItemId = itemId;
+    _scan = null;
+    _scanRetired = false;
+    _manualId = null;
+    _historyRow = null;
+    _historyCatalog = null;
+    loadingHistory = false;
+    _fir = FirState.unknown;
+    error = null;
+    _authority = _fingerprint();
+    _project();
+    final decision = _decision;
+    if (decision != null) {
+      _scan = AcceptedScan(
+        reportId: reportId,
+        itemId: itemId,
+        mode: mode,
+        catalogRevision: catalogRevision,
+        acceptedAt: acceptedAt,
+        epoch: epoch,
+        decisionAtAcceptance: decision,
+      );
+    }
+    notifyListeners();
+    final recorded = await history.record(
+      itemId,
+      mode,
+      acceptedAt,
+      source: ActivitySource.scan,
+    );
+    if (_disposed || generation != _generation) return;
+    if (!recorded) error = history.error;
+    notifyListeners();
+  }
+
+  /// Drops the scan source when a mode or session change invalidates it.
+  ///
+  /// FIR resets for every source. Only a scan source is cleared, flagged as
+  /// retired and fenced from a pending history write, so a history load in
+  /// flight keeps running.
+  void retireScan() {
+    final wasScan = _scanItemId != null;
+    _fir = FirState.unknown;
+    if (wasScan) {
+      ++_generation;
+      _clearScan();
+      _scanRetired = true;
+      error = null;
+    }
+    _authority = _fingerprint();
+    _project();
+    notifyListeners();
+  }
+
+  void _clearScan() {
+    _scanItemId = null;
+    _scan = null;
+  }
+
   Future<void> openHistory(ItemActivity row) async {
     final generation = ++_generation;
+    _clearScan();
+    _scanRetired = false;
     _historyRow = row;
     _historyCatalog = null;
     _fir = FirState.unknown;
@@ -115,6 +204,8 @@ class SelectionController extends ChangeNotifier {
 
   void closeHistory() {
     ++_generation;
+    _clearScan();
+    _scanRetired = false;
     _historyRow = null;
     _historyCatalog = null;
     loadingHistory = false;
