@@ -69,7 +69,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
 ## 4. Ranking within targeted entries (item-title-matching)
 
 - [x] 4.1 Add tests to `test/domain/title_matching_test.dart`. In the first, an unaccepted targeted entry with marker .95 and an accepted one with marker .85: the accepted one wins, and the fallback is not matched (assert it with a fallback entry that would otherwise outrank). In the second, two accepted targeted entries with similarities about .90 and .97: the higher one wins. Run them and confirm that the first fails or the second picks the first-visited entry under today's loop.
-- [ ] 4.2 Change `rankOutcome` (`lib/domain/title_matching.dart`): match every targeted entry, take the best by `_outranks`, and return it when it is accepted. Otherwise rank everything together as today. Update its doc comment. Verify: the new tests pass, and the green ranking tests re-run and still pass, including `a full tie keeps the targeted entry first`. Also run `test/application/recognition_matcher_test.dart`.
+- [x] 4.2 Change `rankOutcome` (`lib/domain/title_matching.dart`): match every targeted entry, take the best by `_outranks`, and return it when it is accepted. Otherwise rank everything together as today. Update its doc comment. Verify: the new tests pass, and the green ranking tests re-run and still pass, including `a full tie keeps the targeted entry first`. Also run `test/application/recognition_matcher_test.dart`.
 
 ## 5. Coordinator, recording and corpus tooling follow-through
 
