@@ -104,7 +104,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
   - history holding the manual row plus one `scan` row, with the history panel labelling it as a scan.
 
   Verify that it fails before 5.3.
-- [ ] 5.3 Update `ItemDecisionCard` (`lib/ui/item_decision_card.dart`):
+- [x] 5.3 Update `ItemDecisionCard` (`lib/ui/item_decision_card.dart`):
   - a scan source shows the title "Accepted scan" and the subtitle "Scanned <age> ago • shared item decision", with the age from `selection.clock` minus `scan.acceptedAt`;
   - the manual subtitle stays "not an accepted scan";
   - `scanRetired` shows "Last scan was in an earlier mode or session; scan again" in the empty state.
