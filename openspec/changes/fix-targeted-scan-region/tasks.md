@@ -64,7 +64,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
   - a targeted overflow test (`markerPeaksOverflow`).
 
   Run it and confirm that the red rows fail because the targeted branch still calls `matchTemplate` only.
-- [ ] 3.2 Route the targeted kind through the full-client peak path in `lib/data/vision/inspection_recognition.dart`: one code path, with `kind` kept on the result. Update the `evidence` doc comment at `lib/data/vision/inspection_evidence.dart:162` to "0 to 8, in score order" for both kinds. Verify: the job tests pass, and the rows flip to green. The existing full-client tests still pass.
+- [x] 3.2 Route the targeted kind through the full-client peak path in `lib/data/vision/inspection_recognition.dart`: one code path, with `kind` kept on the result. Update the `evidence` doc comment at `lib/data/vision/inspection_evidence.dart:162` to "0 to 8, in score order" for both kinds. Verify: the job tests pass, and the rows flip to green. The existing full-client tests still pass.
 
 ## 4. Ranking within targeted entries (item-title-matching)
 

@@ -159,7 +159,7 @@ final class InspectionRecognised extends InspectionRecognition {
   /// The best marker score observed, whether or not it reached the gate.
   final double bestMarkerScore;
 
-  /// Targeted: 0 or 1 entries. Full client: 0 to 8, in score order.
+  /// 0 to 8 entries, in score order, for both frame kinds.
   final List<InspectionEvidence> evidence;
 }
 
