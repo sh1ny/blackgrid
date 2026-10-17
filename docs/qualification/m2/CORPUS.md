@@ -69,7 +69,7 @@ The run writes nothing outside `out/` and refuses before its first write if a ca
 - `id`: case name, unique without regard to case; it also names the crop file, so it uses only letters, digits, `.`, `_` and `-`, starts with a letter or digit, does not end with `.`, and is not a Windows device name such as `CON` or `AUX`.
 - `image`: a PNG of the whole game client area, `client.width` by `client.height`.
 - `kind`: `targeted` or `fullClient`.
-- `cursor`: required for `targeted`; the cursor point in client pixels. The runner crops the capture region from it with the capture spec's rule, `(x - m/2, y - m/2, m + r, m)` with `m = floor(50 s)`, `r = floor(600 s)` and `s = min(W/1920, H/1080)`, clipped to the client. It uses the same `planTargeted` as the app.
+- `cursor`: required for `targeted`; the cursor point in client pixels. The cursor must lie inside the client but does not move the crop. The runner crops the centred band with the capture spec's rule, `(cx - f(440), 0, f(440) + f(700), cy + f(60))` with `cx = W div 2`, `cy = H div 2`, `f(k) = floor(k s)` and `s = min(W/1920, H/1080)`, clipped to the client; 1920x1080 gives (520, 0, 1140, 600). It uses the same `planTargeted` as the app. See [ADR-0016](../../adr/0016-centred-targeted-region.md); results measured before that change used the ADR-0010 cursor strip.
 - `expected`: the catalog item ID that must be accepted, or `reject` when nothing may be accepted.
 
 A malformed corpus (duplicate IDs, an unknown kind, a missing cursor, a cursor outside the client) fails the run with a `FormatException` naming the case.

@@ -74,7 +74,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
 ## 5. Coordinator, recording and corpus tooling follow-through
 
 - [x] 5.1 Update `test/application/scan_coordinator_recording_test.dart` so that the fallback-acceptance test asserts a band-sized targeted PNG (1140×600 on 1920×1080), and fix any other test fixture that hard-codes the 650×50 strip (`grep -rn "650\|866" test`). Verify: `mise run test` passes, and the recording row flips to green. The green recording rows re-run and still pass.
-- [ ] 5.2 Update `test/qualification/support/inspection_corpus.dart` docs and `test/qualification/inspection_corpus_support_test.dart` expectations for the band crop, and update the targeted crop rule in `docs/qualification/m2/CORPUS.md` (the formula and its link to ADR-0016). Verify: `mise exec -- flutter test test/qualification/inspection_corpus_support_test.dart` passes, and `grep -n "600 s\|r = floor" docs/qualification/m2/CORPUS.md` no longer shows the strip rule.
+- [x] 5.2 Update `test/qualification/support/inspection_corpus.dart` docs and `test/qualification/inspection_corpus_support_test.dart` expectations for the band crop, and update the targeted crop rule in `docs/qualification/m2/CORPUS.md` (the formula and its link to ADR-0016). Verify: `mise exec -- flutter test test/qualification/inspection_corpus_support_test.dart` passes, and `grep -n "600 s\|r = floor" docs/qualification/m2/CORPUS.md` no longer shows the strip rule.
 
 ## 6. Offline replay over recorded scans (design D5)
 
