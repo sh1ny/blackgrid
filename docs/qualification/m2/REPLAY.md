@@ -31,9 +31,9 @@ mise exec -- flutter test --tags qualification test/qualification/targeted_regio
 
 Copy the session folders out of `%LOCALAPPDATA%\Blackgrid\scan-frames\` first, so the run reads a stable copy.
 
-## Exporting the PvP catalog
+## Exporting the catalog
 
-The app caches each mode's catalog in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. The table `catalog_records` holds the payloads (column `payload`, the JSON of `CatalogSnapshot.toJson`), and `active_catalogs` points each `cache_key` at the active row through `record_id`. The PvP key is `json.tarkov.dev:pvp`. The replay reads that payload unchanged with `CatalogSnapshot.fromJson`, and matches in the snapshot's own `mode`.
+The app caches each mode's catalog in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. The table `catalog_records` holds the payloads (column `payload`, the JSON of `CatalogSnapshot.toJson`), and `active_catalogs` points each `cache_key` at the active row through `record_id`. The keys are `json.tarkov.dev:pvp` and `json.tarkov.dev:seasonal`. Export the mode the sessions were recorded in: `frames.jsonl` does not record it, so list the cached keys first (`SELECT cache_key FROM active_catalogs;`) and, when both are cached, ask whoever recorded the sessions. The replay reads that payload unchanged with `CatalogSnapshot.fromJson`, and matches in the snapshot's own `mode`.
 
 Export it from a copy, never from the live file:
 
@@ -45,10 +45,10 @@ Export it from a copy, never from the live file:
 $scratch = 'D:\replay\db'
 New-Item -ItemType Directory -Force $scratch | Out-Null
 Copy-Item "$env:LOCALAPPDATA\Blackgrid\blackgrid.sqlite*" $scratch
-sqlite3 -readonly "$scratch\blackgrid.sqlite" "SELECT writefile('D:\replay\catalog.json', r.payload) FROM catalog_records r JOIN active_catalogs a ON a.record_id = r.id WHERE a.cache_key = 'json.tarkov.dev:pvp';"
+sqlite3 -readonly "$scratch\blackgrid.sqlite" "SELECT writefile('D:\replay\catalog.json', r.payload) FROM catalog_records r JOIN active_catalogs a ON a.record_id = r.id WHERE a.cache_key = 'json.tarkov.dev:<mode>';"
 ```
 
-The command prints the number of bytes written; no output means no PvP catalog is cached. Keep `catalog.json` outside the repository.
+The command prints the number of bytes written; no output means no catalog is cached for that key. Keep `catalog.json` outside the repository.
 
 ## Frames replayed
 
