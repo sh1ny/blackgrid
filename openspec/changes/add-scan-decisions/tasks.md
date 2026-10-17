@@ -7,9 +7,9 @@
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan replaces a manual selection | test/application/scan_decision_feed_test.dart | accepted scan replaces a manual selection | green |
 | scan-decisions → An accepted scan becomes the current selection | Manual selection after a scan | test/application/selection_controller_test.dart | manual selection after a scan stays after refresh | green |
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan while a history row is open | test/application/selection_controller_test.dart | accepted scan closes an open history row into the live mode | green |
-| scan-decisions → Scan decisions come from the shared engine | Confirmed current need | test/application/scan_decision_precedence_test.dart | scanned confirmed current need is Keep with the need | red |
-| scan-decisions → Scan decisions come from the shared engine | Unknown progress | test/application/scan_decision_precedence_test.dart | scanned item with unknown progress is Check naming progress | red |
-| scan-decisions → Scan decisions come from the shared engine | Every precedence rule | test/application/scan_decision_precedence_test.dart | every precedence rule matches the hand-selected decision | red |
+| scan-decisions → Scan decisions come from the shared engine | Confirmed current need | test/application/scan_decision_precedence_test.dart | scanned confirmed current need is Keep with the need | green |
+| scan-decisions → Scan decisions come from the shared engine | Unknown progress | test/application/scan_decision_precedence_test.dart | scanned item with unknown progress is Check naming progress | green |
+| scan-decisions → Scan decisions come from the shared engine | Every precedence rule | test/application/scan_decision_precedence_test.dart | every precedence rule matches the hand-selected decision | green |
 | scan-decisions → Unaccepted scans never change the selection | Rejected scan with a candidate | test/application/scan_decision_feed_test.dart | rejected scan with a candidate changes nothing | green |
 | scan-decisions → Unaccepted scans never change the selection | Failed scan after an accepted one | test/application/scan_decision_feed_test.dart | failed scan keeps the scanned item and its FIR | green |
 | scan-decisions → Each accepted scan is consumed once | Refresh after an accepted scan | test/application/scan_decision_feed_test.dart | refresh after an accepted scan records nothing new | green |
@@ -92,7 +92,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
 
 ## 5. Precedence fixtures and the decision card
 
-- [ ] 5.1 Add `test/application/scan_decision_precedence_test.dart` with a small fixture catalog: one item per precedence rule, plus progress fixtures, reusing the shapes in `test/domain/decision_engine_test.dart`. The tests:
+- [x] 5.1 Add `test/application/scan_decision_precedence_test.dart` with a small fixture catalog: one item per precedence rule, plus progress fixtures, reusing the shapes in `test/domain/decision_engine_test.dart`. The tests:
   - `scanned confirmed current need is Keep with the need`
   - `scanned item with unknown progress is Check naming progress`
   - `every precedence rule matches the hand-selected decision`: for each fixture it calls `selectScan`, sets FIR yes for Flea, Trader and Price Unavailable, records the recommendation and reasons, then does the same through `selectManual` and compares
