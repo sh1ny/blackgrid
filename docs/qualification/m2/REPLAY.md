@@ -19,7 +19,7 @@ The pure parts (`frames.jsonl` parsing, the band, per-frame classification, the 
 
 With any variable absent the test skips and prints which one is missing, before any library is loaded. It also skips, naming the path, when the bundle folder, a recording folder's `frames.jsonl` or the catalog file does not exist.
 
-Per design D8, run it only while the game is not running: the vision worker loads the bundle's native libraries.
+Per AGENTS.md, run it only while the game is not running: the vision worker loads the bundle's native libraries.
 
 ```powershell
 $env:BLACKGRID_RELEASE_BUNDLE = 'build\windows\x64\runner\Release'

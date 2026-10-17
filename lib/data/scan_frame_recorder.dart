@@ -8,7 +8,7 @@ import 'package:image/image.dart' as img;
 
 /// Which kind of capture a recorded scan came from.
 enum RecordedScanKind {
-  /// The scan read a strip around the cursor.
+  /// The scan read the centred targeted band (ADR-0016).
   targeted('targeted'),
 
   /// The scan fell back to the whole client area.
