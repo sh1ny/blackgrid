@@ -1,7 +1,7 @@
 # inspection-recognition Specification
 
 ## Purpose
-Turns a captured inspection frame, either a targeted region near the cursor or the full game client, into typed per-inspection evidence (marker, title crop, OCR text, timings) inside the vision worker, using a marker template whose bytes and provenance are bound in the bundle.
+Turns a captured inspection frame, either the targeted region where the inspect window opens or the full game client, into typed per-inspection evidence (marker, title crop, OCR text, timings) inside the vision worker, using a marker template whose bytes and provenance are bound in the bundle.
 
 ## Requirements
 
