@@ -37,3 +37,25 @@ The probe also removed a suffix from MDR 0016 and inserted the missing space in 
 - The corpus runner reconstructs a targeted strip from each saved full frame, which was captured later than the actual recorded strip. This replay does not establish live targeted-pass success or trigger latency.
 - No reference companion comparison, clean-machine test or live-game retest has been performed in this session.
 - The original handoff was copied beside the local corpus as `HANDOFF-20261014.md`, then removed from the repo to satisfy the clean-main branch gate.
+
+## Qualification result after the fix
+
+Run 2026-10-17 on `bugfix/fix-title-crop` at `61029e2` (recognition code last changed in `648120c`), with the same release bundle as the baseline (`build/windows/x64/runner/Release`: `blackgrid_vision.dll` built 2026-10-10, runtime manifest 2026-10-14) and the same corpus, labels and catalog. The process list showed neither Tarkov process in the shell call that then ran the command above. No app, companion or game was launched.
+
+- Result: 31/35 correct item cases (88.57% coverage), two false positives, all 15 reject cases rejected.
+- Local reports, outside Git: `out/before-fix-title-crop.json` (unchanged), `out/after-fix-title-crop.json` and the per-case comparison `out/comparison-fix-title-crop.json`.
+- Comparison: every check passed. Case sets and labels are identical. All 26 previously correct items are retained, no case gains a false positive, and no already wrong case changes its wrong ID.
+
+| Case | Before | After | After text, trimmed |
+| --- | --- | --- | --- |
+| 0007 ANA M1 OD Green | ambiguous | ambiguous: expected ID best at 1.0, runner-up 0.974 | ANA Tactical M1 plate carrier (OD Green) |
+| 0031 Olight Baldr Pro | ambiguous | correct | Olight Baldr Pro tactical flashlight with laser |
+| 0034 Lancer L7AWM 25-round | ambiguous | correct | AR-10 762x51 Lancer L7AWM 25-round magazine |
+| 0037 BS ammo pack | ambiguous | correct | 5.45x39mm BS gs ammo pack (38 pcs) |
+| 0051 M855A1 ammo pack | ambiguous | ambiguous: tie at 0.893 after a quantity misread | 5.56x45mm M85SA1 ammo pack (188 pcs) |
+| 0016/0017 MDR | wrong (HCO preset) | correct (base rifle) | Desert Tech MOR 762x51 assault rifle |
+| 0012/0013 Weapon case | wrong (flea-listable case) | wrong, same ID | Weapon case |
+
+The remaining failures concern matcher ambiguity and catalog identity, not the crop margin. They stay visible in qualification and are outside this change.
+
+**Unverified:** reference companion comparison (no reference baseline exists), accuracy at other resolutions (the corpus is 3440 x 1440 only), clean-machine check and live-game retest. Each needs the user or a later change.
