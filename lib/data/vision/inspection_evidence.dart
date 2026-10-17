@@ -32,7 +32,9 @@ enum InspectionRejection {
 
 /// Whether a title was read.
 enum InspectionTitleStatus {
-  /// The title region was non-empty and OCR ran on it.
+  /// The title region was non-empty and its thresholded crop was read: OCR
+  /// ran on it, or was skipped because the crop held no foreground pixel and
+  /// the text is empty.
   read,
 
   /// The title region was empty; no probe or OCR ran, and the text is empty.
@@ -88,20 +90,26 @@ final class InspectionEvidence {
   /// Top-left y of the marker in the submitted frame.
   final int markerY;
 
-  /// The title region after clamping and close-button narrowing; its width or
-  /// height may be zero or negative when [titleStatus] is
-  /// [InspectionTitleStatus.emptyTitleRegion].
+  /// The title region after clamping and close-button narrowing, in frame
+  /// pixels; its width or height may be zero or negative when [titleStatus]
+  /// is [InspectionTitleStatus.emptyTitleRegion].
+  ///
+  /// This is the extraction rectangle, not the size of [crop], which is
+  /// rescaled and may be narrowed to its rendered text.
   final TitleRegion titleRect;
 
   /// Whether the title was read.
   final InspectionTitleStatus titleStatus;
 
-  /// The trimmed OCR text; empty when no title was read.
+  /// The trimmed OCR text; empty when no title was read or the crop held no
+  /// foreground pixel.
   final String text;
 
-  /// The thresholded title crop, one byte per pixel, [cropWidth] by
-  /// [cropHeight]. A preview within [inspectionCropByteLimit] when
-  /// [cropDownscaled]; empty when no title was read.
+  /// The thresholded title crop OCR read, one byte per pixel, [cropWidth] by
+  /// [cropHeight]: the normalised crop with its blank right margin bounded,
+  /// or the whole blank crop when OCR was skipped for lack of foreground. A
+  /// preview within [inspectionCropByteLimit] when [cropDownscaled]; empty
+  /// when no title was read.
   final Uint8List crop;
 
   /// Width of [crop] in pixels.
