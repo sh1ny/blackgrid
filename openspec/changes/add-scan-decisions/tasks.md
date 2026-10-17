@@ -46,7 +46,7 @@
 
 Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-test` first.
 
-- [ ] 3.1 Add the failing tests to `test/application/selection_controller_test.dart`, using `M1Harness` and calling `selectScan` directly:
+- [x] 3.1 Add the failing tests to `test/application/selection_controller_test.dart`, using `M1Harness` and calling `selectScan` directly:
   - `manual selection after a scan stays after refresh`
   - `accepted scan closes an open history row into the live mode`, which also asserts `loadingHistory` is false
   - `failed scan history write keeps the decision with an error`

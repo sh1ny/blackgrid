@@ -28,8 +28,14 @@ class MemoryCredentials implements CredentialStore {
 }
 
 class M1Harness {
-  M1Harness({BlackgridDatabase? database, ScanFakePorts? scanPorts}) {
+  M1Harness({
+    BlackgridDatabase? database,
+    ScanFakePorts? scanPorts,
+    DateTime Function()? clock,
+    void Function(Map<String, dynamic> wire)? shapeWire,
+  }) {
     final wire = wireFixture();
+    shapeWire?.call(wire);
     db = database ?? BlackgridDatabase(NativeDatabase.memory());
     if (scanPorts != null) {
       scanLogs = Directory.systemTemp.createTempSync('blackgrid-m1-scan-');
@@ -37,7 +43,7 @@ class M1Harness {
     services = AppServices(
       database: db,
       credentials: credentials,
-      clock: () => fixtureNow,
+      clock: clock ?? () => fixtureNow,
       client: MockClient((request) async {
         requests.add(request);
         if (failNetwork) return http.Response('synthetic unavailable', 503);
