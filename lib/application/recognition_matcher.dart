@@ -63,9 +63,9 @@ RecognitionResultInput<InspectionEvidence> recognitionInputFor(
 ///
 /// A null [targeted] means no targeted frame was recognised: the full-client
 /// evidence is then ranked as a whole rather than through the targeted fast
-/// path, which would accept its first entry. An error from [runner] yields
-/// [OutcomeRejectReason.matcherFailed] carrying both results' best marker
-/// scores.
+/// path, which would accept its best-ranked entry alone. An error from
+/// [runner] yields [OutcomeRejectReason.matcherFailed] carrying both
+/// results' best marker scores.
 Future<RecognitionOutcome<InspectionEvidence>> matchRecognitionOffUi(
   TitleMatchIndex index, {
   required InspectionRecognition? targeted,

@@ -148,19 +148,37 @@ void main() {
   });
 
   group('targetedRegion', () {
-    test('is (x - m/2, y - m/2, m + r, m) at 1080p', () {
-      expect(
-        targetedRegion(
-          clientWidth: 1920,
-          clientHeight: 1080,
-          cursorX: 500,
-          cursorY: 300,
-        ),
-        const CaptureRect(475, 275, 650, 50),
-      );
+    test(
+      'is the centred band (cx - f(440), 0, f(440) + f(700), cy + f(60))',
+      () {
+        expect(
+          targetedRegion(
+            clientWidth: 1920,
+            clientHeight: 1080,
+            cursorX: 500,
+            cursorY: 300,
+          ),
+          const CaptureRect(520, 0, 1140, 600),
+        );
+      },
+    );
+
+    test('does not move with the cursor', () {
+      for (final (x, y) in const [(0, 0), (1919, 1079), (960, 540)]) {
+        expect(
+          targetedRegion(
+            clientWidth: 1920,
+            clientHeight: 1080,
+            cursorX: x,
+            cursorY: y,
+          ),
+          const CaptureRect(520, 0, 1140, 600),
+          reason: '($x, $y)',
+        );
+      }
     });
 
-    test('scales with the smaller axis and clips to the client', () {
+    test('scales with the smaller axis', () {
       expect(
         targetedRegion(
           clientWidth: 3840,
@@ -168,7 +186,28 @@ void main() {
           cursorX: 10,
           cursorY: 10,
         ),
-        const CaptureRect(0, 0, 1260, 60),
+        const CaptureRect(1040, 0, 2280, 1200),
+      );
+      expect(
+        targetedRegion(
+          clientWidth: 3440,
+          clientHeight: 1440,
+          cursorX: 10,
+          cursorY: 10,
+        ),
+        const CaptureRect(1134, 0, 1519, 800),
+      );
+    });
+
+    test('is null when the cursor lies outside the client', () {
+      expect(
+        targetedRegion(
+          clientWidth: 1920,
+          clientHeight: 1080,
+          cursorX: 1920,
+          cursorY: 10,
+        ),
+        isNull,
       );
     });
   });

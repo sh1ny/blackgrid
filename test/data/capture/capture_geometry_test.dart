@@ -35,18 +35,18 @@ CapturePlan planned(PlanResult result) {
 void main() {
   group('targeted planning', () {
     // Expected values come from the spec scenarios, not from the planner.
-    // client size -> (planned width, height, origin x, origin y) for a click
-    // at client point (900, 500).
-    final cells = <(int, int, int, int, int, int)>[
-      (1920, 1080, 650, 50, 875, 475),
-      (2560, 1440, 866, 66, 867, 467),
-      (3440, 1440, 866, 66, 867, 467),
-      (3840, 2160, 1300, 100, 850, 450),
+    // client size -> the planned (left, top, width, height) for a click at
+    // client point (900, 500).
+    final cells = <(int, int, CaptureRect)>[
+      (1920, 1080, const CaptureRect(520, 0, 1140, 600)),
+      (2560, 1440, const CaptureRect(694, 0, 1519, 800)),
+      (3440, 1440, const CaptureRect(1134, 0, 1519, 800)),
+      (3840, 2160, const CaptureRect(1040, 0, 2280, 1200)),
     ];
 
     test('targeted region for all 16 resolution and DPI cells', () {
       var count = 0;
-      for (final (w, h, pw, ph, ox, oy) in cells) {
+      for (final (w, h, expected) in cells) {
         for (final dpi in const [96, 120, 144, 192]) {
           final plan = planned(
             planTargeted(
@@ -55,17 +55,50 @@ void main() {
               y: 500,
             ),
           );
-          expect(
-            plan.requested,
-            CaptureRect(ox, oy, pw, ph),
-            reason: '${w}x$h @ $dpi dpi',
-          );
+          expect(plan.requested, expected, reason: '${w}x$h @ $dpi dpi');
           expect(plan.captured, plan.requested);
           expect(plan.clipped, isFalse);
           count++;
         }
       }
       expect(count, 16);
+    });
+
+    test('targeted region is the same for any in-client point', () {
+      final hd = snapshot(client: const CaptureRect(0, 0, 1920, 1080));
+      for (final (x, y) in const [(10, 10), (900, 500), (1900, 1070)]) {
+        final plan = planned(planTargeted(hd, x: x, y: y));
+        expect(
+          plan.requested,
+          const CaptureRect(520, 0, 1140, 600),
+          reason: '($x, $y)',
+        );
+        expect(plan.clipped, isFalse, reason: '($x, $y)');
+      }
+    });
+
+    test('targeted region on a 1920x1200 client starts at the top', () {
+      final plan = planned(
+        planTargeted(
+          snapshot(client: const CaptureRect(0, 0, 1920, 1200)),
+          x: 900,
+          y: 500,
+        ),
+      );
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 660));
+      expect(plan.clipped, isFalse);
+    });
+
+    test('targeted region on a 1366x768 client floors each term', () {
+      final plan = planned(
+        planTargeted(
+          snapshot(client: const CaptureRect(0, 0, 1366, 768)),
+          x: 600,
+          y: 300,
+        ),
+      );
+      expect(plan.requested, const CaptureRect(371, 0, 809, 426));
+      expect(plan.clipped, isFalse);
     });
 
     test('negative-origin monitor maps to client and back', () {
@@ -80,9 +113,9 @@ void main() {
           y: 340,
         ),
       );
-      expect(plan.requested, const CaptureRect(1327, 667, 866, 66));
-      expect(plan.captured, const CaptureRect(1327, 667, 866, 66));
-      expect(plan.desktop, const CaptureRect(-1233, 307, 866, 66));
+      expect(plan.requested, const CaptureRect(694, 0, 1519, 800));
+      expect(plan.captured, const CaptureRect(694, 0, 1519, 800));
+      expect(plan.desktop, const CaptureRect(-1866, -360, 1519, 800));
       expect(plan.clipped, isFalse);
     });
 
@@ -129,31 +162,63 @@ void main() {
   });
 
   group('clipping', () {
-    final hd = snapshot(client: const CaptureRect(0, 0, 1920, 1080));
+    test('band inside a visible client is not clipped', () {
+      final plan = planned(
+        planTargeted(
+          snapshot(client: const CaptureRect(0, 0, 1920, 1080)),
+          x: 900,
+          y: 500,
+        ),
+      );
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 600));
+      expect(plan.captured, plan.requested);
+      expect(plan.clipped, isFalse);
+    });
 
     test('right-edge region is clipped not padded', () {
-      final plan = planned(planTargeted(hd, x: 1500, y: 500));
-      expect(plan.requested, const CaptureRect(1475, 475, 650, 50));
-      expect(plan.captured, const CaptureRect(1475, 475, 445, 50));
-      expect(plan.desktop, const CaptureRect(1475, 475, 445, 50));
+      final plan = planned(
+        planTargeted(
+          snapshot(
+            client: const CaptureRect(0, 0, 1920, 1080),
+            virtualDesktop: const CaptureRect(0, 0, 1200, 1080),
+          ),
+          x: 600,
+          y: 500,
+        ),
+      );
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 600));
+      expect(plan.captured, const CaptureRect(520, 0, 680, 600));
+      expect(plan.desktop, const CaptureRect(520, 0, 680, 600));
       expect(plan.clipped, isTrue);
     });
 
     test('top-left region is clipped not padded', () {
-      final plan = planned(planTargeted(hd, x: 10, y: 10));
-      expect(plan.requested, const CaptureRect(-15, -15, 650, 50));
-      expect(plan.captured, const CaptureRect(0, 0, 635, 35));
+      final plan = planned(
+        planTargeted(
+          snapshot(
+            client: const CaptureRect(-1000, -200, 1920, 1080),
+            virtualDesktop: const CaptureRect(0, 0, 1920, 1080),
+          ),
+          x: 500,
+          y: 300,
+        ),
+      );
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 600));
+      expect(plan.captured, const CaptureRect(1000, 200, 660, 400));
+      expect(plan.desktop, const CaptureRect(0, 0, 660, 400));
       expect(plan.clipped, isTrue);
     });
 
     test('off-desktop region is roiOutsideClient', () {
-      // The client lies inside its own bounds but the virtual desktop ends
-      // before the region begins.
-      final result = planFallback(
+      // The trigger is inside the client, but the desktop begins after the
+      // whole band.
+      final result = planTargeted(
         snapshot(
-          client: const CaptureRect(2000, 0, 1920, 1080),
+          client: const CaptureRect(-1700, 0, 1920, 1080),
           virtualDesktop: const CaptureRect(0, 0, 1920, 1080),
         ),
+        x: 100,
+        y: 500,
       );
       expect(result, isA<PlanFailure>());
       expect((result as PlanFailure).failure, isA<RoiOutsideClient>());

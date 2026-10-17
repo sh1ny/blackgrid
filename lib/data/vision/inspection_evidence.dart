@@ -14,7 +14,8 @@ const int inspectionCropByteLimit = 256 * 1024;
 
 /// Which kind of frame a request carries.
 enum InspectionFrameKind {
-  /// A small region near the cursor: the single best marker is read.
+  /// The centred band where the inspect window opens (ADR-0016): every
+  /// marker is read, up to a bound, as for the whole client.
   targeted,
 
   /// The whole game client: every marker is read, up to a bound.
@@ -159,7 +160,7 @@ final class InspectionRecognised extends InspectionRecognition {
   /// The best marker score observed, whether or not it reached the gate.
   final double bestMarkerScore;
 
-  /// Targeted: 0 or 1 entries. Full client: 0 to 8, in score order.
+  /// 0 to 8 entries, in score order, for both frame kinds.
   final List<InspectionEvidence> evidence;
 }
 

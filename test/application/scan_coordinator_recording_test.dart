@@ -11,6 +11,7 @@ import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
 import 'package:blackgrid/data/capture/capture_frame.dart';
+import 'package:blackgrid/data/capture/capture_geometry.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/capture/mouse_release_trigger_source.dart';
 import 'package:blackgrid/data/catalog_client.dart';
@@ -124,9 +125,25 @@ const int _w = 8;
 const int _h = 4;
 const int _stride = 36;
 
-Uint8List _bytes(int seed) => Uint8List.fromList([
-  for (var i = 0; i < _stride * _h; i++) (i + seed) & 0xff,
-]);
+/// The 1920x1080 client the planner sizes the recorded frames for.
+WindowSnapshot _client1080p() => const WindowSnapshot(
+  hwnd: 1,
+  pid: 2,
+  tid: 3,
+  minimised: false,
+  foreground: true,
+  dpi: 96,
+  client: CaptureRect(0, 0, 1920, 1080),
+  monitor: CaptureRect(0, 0, 1920, 1080),
+  virtualDesktop: CaptureRect(0, 0, 1920, 1080),
+  title: 'EscapeFromTarkov',
+);
+
+/// The rectangle [planTargeted] or [planFallback] captures on [_client1080p].
+CaptureRect _planned(PlanResult result) => switch (result) {
+  PlanOk(:final plan) => plan.captured,
+  PlanFailure(:final failure) => fail('plan failed: $failure'),
+};
 
 /// A writer whose answers the test delivers by hand. With [persist] it also
 /// appends each line to `frames.jsonl`, as the real writer does.
@@ -306,8 +323,12 @@ final class _Rig {
   }
 
   /// A changing set of BGRX frames: [seed] tells them apart.
+  ///
+  /// [width] and [height] default to the small 8x4 test frame.
   CaptureFrame pixelFrame({
     int seed = 1,
+    int width = _w,
+    int height = _h,
     int clientWidth = 2560,
     int clientHeight = 1440,
     int desktopLeft = 0,
@@ -318,9 +339,9 @@ final class _Rig {
   }) => frames.frame(
     pixels: true,
     seed: seed,
-    width: _w,
-    height: _h,
-    stride: _stride,
+    width: width,
+    height: height,
+    stride: width == _w ? _stride : width * 4,
     clientWidth: clientWidth,
     clientHeight: clientHeight,
     desktopLeft: desktopLeft,
@@ -499,9 +520,27 @@ void main() {
       () async {
         rig = await _Rig.create();
         await rig.startRecording();
+        // The fake capture returns what the test hands it, so the frames take
+        // the sizes the real policy plans for a 1920x1080 client.
+        final band = _planned(planTargeted(_client1080p(), x: 960, y: 540));
+        final whole = _planned(planFallback(_client1080p()));
         final report = await rig.fallbackScan(
-          strip: rig.pixelFrame(seed: 1),
-          full: rig.pixelFrame(seed: 2),
+          strip: rig.pixelFrame(
+            seed: 1,
+            width: band.width,
+            height: band.height,
+            clientWidth: 1920,
+            clientHeight: 1080,
+            captured: band,
+          ),
+          full: rig.pixelFrame(
+            seed: 2,
+            width: whole.width,
+            height: whole.height,
+            clientWidth: 1920,
+            clientHeight: 1080,
+            captured: whole,
+          ),
           targetedEvidence: _ev(score: 0.55),
           evidence: _ev(),
           outcome: _accepted(_ev()),
@@ -517,13 +556,18 @@ void main() {
         expect(scan.fallbackMarkerScore, 0.93);
         final full = scan.full!;
         final strip = scan.strip!;
-        expect((full.width, full.height, full.stride), (_w, _h, _stride));
-        expect((strip.width, strip.height, strip.stride), (_w, _h, _stride));
-        expect(full.pixels.materialize().asUint8List(), _bytes(2));
-        expect(strip.pixels.materialize().asUint8List(), _bytes(1));
+        expect((full.width, full.height), (1920, 1080));
+        expect((strip.width, strip.height), (1140, 600));
+        expect(full.stride, 1920 * 4);
+        expect(strip.stride, 1140 * 4);
+        final stripBytes = strip.pixels.materialize().asUint8List();
+        expect(stripBytes.length, 1140 * 4 * 600);
+        expect(stripBytes[0], 1);
+        expect(stripBytes[1], 2);
+        expect(full.pixels.materialize().asUint8List()[0], 2);
         expect(full.clipped, isFalse);
-        expect(scan.clientWidth, 2560);
-        expect(scan.clientHeight, 1440);
+        expect(scan.clientWidth, 1920);
+        expect(scan.clientHeight, 1080);
       },
     );
 

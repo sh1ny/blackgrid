@@ -178,10 +178,11 @@ CorpusCase _parseCase(int index, Object? raw, Set<String> seen) {
   );
 }
 
-/// The targeted capture region around the cursor, in client pixels, by the
-/// capture spec's rule: `(x - m/2, y - m/2, m + r, m)` with `m = floor(50 s)`
-/// and `r = floor(600 s)`, clipped to the client. Null when the region lies
-/// outside the client.
+/// The targeted capture region, in client pixels, by the capture spec's rule
+/// (ADR-0016): the centred band `(cx - f(440), 0, f(440) + f(700), cy + f(60))`
+/// with `f(k) = floor(k * s)` and `s = min(W/1920, H/1080)`, clipped to the
+/// client. The cursor does not move the band; it only has to lie inside the
+/// client, otherwise the result is null.
 CaptureRect? targetedRegion({
   required int clientWidth,
   required int clientHeight,

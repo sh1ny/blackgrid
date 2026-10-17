@@ -144,11 +144,19 @@ The matcher SHALL take the title's last run of digits as a number, ignoring digi
 - **THEN** no restriction applies, and all candidates are scored
 
 ### Requirement: Targeted and fallback evidence are ranked into one outcome
-A recognition outcome SHALL be the matched targeted evidence when accepted. Otherwise, given full-client evidence, it SHALL rank by acceptance, then similarity, then marker score, then peak order, and take the first. With no evidence at all it SHALL be rejection `noMarker`; if matching itself fails, `matcherFailed`. An unaccepted outcome SHALL carry its evidence and SHALL NOT expose an accepted item ID.
+Candidates SHALL be ranked by acceptance, then similarity, then marker score, then peak order, taking the first. When the best-ranked targeted entry is accepted, it SHALL be the outcome and fallback evidence SHALL NOT be matched. Otherwise targeted and full-client entries SHALL be ranked together, a targeted entry first on a full tie. No evidence SHALL be rejection `noMarker`; a matching failure, `matcherFailed`. An unaccepted outcome SHALL carry its evidence and no accepted item ID.
 
 #### Scenario: Targeted accepted
-- **WHEN** the targeted evidence is accepted
+- **WHEN** the targeted evidence holds one entry and it is accepted
 - **THEN** the outcome is that accepted identity, and the fallback evidence is not consulted
+
+#### Scenario: Targeted entries ranked among themselves
+- **WHEN** the targeted evidence holds an unaccepted entry with marker .95 and an accepted entry with marker .85
+- **THEN** the outcome is the accepted entry with marker .85, and the fallback evidence is not consulted
+
+#### Scenario: Two accepted targeted entries
+- **WHEN** the targeted evidence holds two accepted entries with similarities .90 and .97
+- **THEN** the outcome is the entry with similarity .97
 
 #### Scenario: Fallback chooses the accepted inspection
 - **WHEN** targeted evidence is `noMarker`, and full-client evidence holds an unaccepted entry with marker .95 and an accepted entry with marker .85

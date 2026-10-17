@@ -808,10 +808,11 @@ final class OutcomeRejected<E> extends RecognitionOutcome<E> {
 /// Ranks targeted and fallback evidence into one outcome for a caller in
 /// [mode].
 ///
-/// An [index] built for another mode rejects `catalogModeMismatch`. An
-/// accepted targeted candidate wins and the fallback is not matched.
-/// Otherwise every candidate is matched and the first by acceptance, then
-/// best similarity, then marker score (all descending), then peak order
+/// An [index] built for another mode rejects `catalogModeMismatch`. Every
+/// targeted candidate is matched and the best of them wins when it is
+/// accepted, without matching the fallback. Otherwise targeted and fallback
+/// candidates are ranked together and the first by acceptance, then best
+/// similarity, then marker score (all descending), then peak order
 /// (ascending) is the outcome; on a full tie the targeted candidate precedes
 /// fallback ones, then input order decides. No candidates at all rejects
 /// `noMarker`. Every rejection carries both results' best marker scores.
@@ -840,21 +841,31 @@ RecognitionOutcome<E> rankOutcome<E>(
   TitleMatch matchEntry(RankableEvidence<E> e) =>
       matchTitle(index, e.emptyTitleRegion ? '' : e.text, mode);
 
-  final ranked = <({RankableEvidence<E> entry, TitleMatch match})>[];
-  for (final e in targeted.entries) {
-    final m = matchEntry(e);
-    if (m is TitleAccepted) return OutcomeAccepted<E>(m, e.evidence);
-    ranked.add((entry: e, match: m));
+  ({RankableEvidence<E> entry, TitleMatch match}) best(
+    List<({RankableEvidence<E> entry, TitleMatch match})> candidates,
+  ) {
+    var top = candidates.first;
+    for (final candidate in candidates.skip(1)) {
+      if (_outranks(candidate, top)) top = candidate;
+    }
+    return top;
+  }
+
+  final ranked = <({RankableEvidence<E> entry, TitleMatch match})>[
+    for (final e in targeted.entries) (entry: e, match: matchEntry(e)),
+  ];
+  if (ranked.isNotEmpty) {
+    final bestTargeted = best(ranked);
+    if (bestTargeted.match case final TitleAccepted accepted) {
+      return OutcomeAccepted<E>(accepted, bestTargeted.entry.evidence);
+    }
   }
   for (final e in fallback?.entries ?? const []) {
     ranked.add((entry: e, match: matchEntry(e)));
   }
   if (ranked.isEmpty) return reject(OutcomeRejectReason.noMarker);
 
-  var top = ranked.first;
-  for (final candidate in ranked.skip(1)) {
-    if (_outranks(candidate, top)) top = candidate;
-  }
+  final top = best(ranked);
   return switch (top.match) {
     TitleAccepted() => OutcomeAccepted<E>(
       top.match as TitleAccepted,

@@ -581,6 +581,38 @@ void main() {
       expect(o.match.bestId, 'a1');
     });
 
+    test('best targeted entry wins over a higher-marker unaccepted one '
+        'without fallback', () {
+      // The fallback exact match would outrank the accepted near match if it
+      // were ranked.
+      final o = won(
+        rank(
+          result([
+            entry('unaccepted', 'qqqqqqqq', marker: 0.95, order: 0),
+            entry('accepted', 'Gas analyzr', marker: 0.85, order: 1),
+          ]),
+          fallback: result([
+            entry('fallback', 'Salewa first aid kit', marker: 0.99),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'accepted');
+      expect(o.match.bestId, 'a1');
+    });
+
+    test('of two accepted targeted entries the higher similarity wins', () {
+      // The near match has the higher marker score and is visited first.
+      final o = won(
+        rank(
+          result([
+            entry('near', 'Gas analyzr', marker: 0.95, order: 0),
+            entry('exact', 'Gas analyzer', marker: 0.85, order: 1),
+          ]),
+        ),
+      );
+      expect(o.evidence, 'exact');
+    });
+
     test('ranking prefers accepted over higher marker score', () {
       final o = won(
         rank(

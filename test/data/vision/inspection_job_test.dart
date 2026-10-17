@@ -196,13 +196,17 @@ void main() {
   });
 
   test('best score 0.8199 yields no evidence and no OCR call', () async {
-    final rig = newRig(script: const VisionScript(bestScore: 0.8199));
+    final rig = newRig(
+      script: const VisionScript(peaks: [], bestScore: 0.8199),
+    );
 
     final result = recognised(await rig.recognition(targeted));
 
     expect(result.kind, InspectionFrameKind.targeted);
     expect(result.bestMarkerScore, 0.8199);
     expect(result.evidence, isEmpty);
+    // No peak at the gate: the best score comes from the one no-peak query.
+    expect(rig.control.callsOf(VisionOp.peaks), hasLength(1));
     expect(rig.control.callsOf(VisionOp.matchBest), hasLength(1));
     expect(rig.control.callsOf(VisionOp.recognise), isEmpty);
     expect(rig.control.callsOf(VisionOp.findRow), isEmpty);
@@ -214,9 +218,7 @@ void main() {
     for (final score in [gate, 0.82]) {
       final rig = newRig(
         script: VisionScript(
-          bestScore: score,
-          bestX: 40,
-          bestY: 12,
+          peaks: [TemplatePeak(40, 12, score)],
           ocrTexts: const ['  SALEWA FIRST AID KIT \n'],
         ),
       );
@@ -232,6 +234,7 @@ void main() {
       expect(evidence.titleStatus, InspectionTitleStatus.read);
       expect(evidence.text, 'SALEWA FIRST AID KIT');
       expect(rig.control.callsOf(VisionOp.recognise), hasLength(1));
+      expect(rig.control.callsOf(VisionOp.matchBest), isEmpty);
     }
   });
 
@@ -239,9 +242,7 @@ void main() {
       'arguments', () async {
     final rig = newRig(
       script: const VisionScript(
-        bestScore: 0.9,
-        bestX: 40,
-        bestY: 12,
+        peaks: [TemplatePeak(40, 12, 0.9)],
         findRowResults: [130],
       ),
     );
@@ -261,7 +262,7 @@ void main() {
     expect(calls.map((c) => c.op), [
       VisionOp.toGray,
       VisionOp.resize,
-      VisionOp.matchBest,
+      VisionOp.peaks,
       VisionOp.findRow,
       VisionOp.resize,
       VisionOp.toGray,
@@ -270,9 +271,11 @@ void main() {
     ]);
     // The BGRX frame is converted with BGR weights.
     expect(calls[0].args.take(4), [frameWidth, frameHeight, 4, 0]);
-    // 28 -> 16: area. The match runs on the 16 px gray template.
+    // 28 -> 16: area. The peak scan runs on the 16 px gray template with the
+    // native cap and the gate.
     expect(calls[1].args.take(6), [28, 28, 16, 16, visionInterArea, 1]);
-    expect(calls[2].args.take(4), [frameWidth, frameHeight, 16, 16]);
+    expect(calls[2].args.take(5), [frameWidth, frameHeight, 16, 16, 4096]);
+    expect(calls[2].doubleAt(5), gate);
     // The probe runs on the colour frame with the three BGR bounds.
     expect(calls[3].args.take(7), [
       frameWidth,
@@ -291,6 +294,52 @@ void main() {
     expect(calls[7].args.take(3), [14, 34, 1]);
     expect(evidence.cropWidth, 14);
     expect(evidence.cropHeight, 34);
+  });
+
+  test('targeted frame with two separated peaks gives two entries in score '
+      'order', () async {
+    final rig = newRig(
+      script: const VisionScript(
+        // Raster order: the lower score comes first.
+        peaks: [TemplatePeak(20, 10, 0.9), TemplatePeak(100, 10, 0.95)],
+        ocrTexts: ['HIGH', 'LOW'],
+      ),
+    );
+
+    final result = recognised(await rig.recognition(targeted));
+
+    expect(result.kind, InspectionFrameKind.targeted);
+    expect(result.bestMarkerScore, 0.95);
+    expect(result.evidence.map((e) => (e.markerX, e.markerY, e.markerScore)), [
+      (100, 10, 0.95),
+      (20, 10, 0.9),
+    ]);
+    // Each entry has its own title read, in score order.
+    expect(result.evidence.map((e) => e.text), ['HIGH', 'LOW']);
+    expect(rig.control.callsOf(VisionOp.peaks), hasLength(1));
+    expect(rig.control.callsOf(VisionOp.matchBest), isEmpty);
+  });
+
+  test('targeted peak overflow rejects markerPeaksOverflow', () async {
+    final rig = newRig(
+      script: const VisionScript(
+        failures: [(op: VisionOp.peaks, call: 0, status: -6)],
+      ),
+    );
+
+    expect(
+      await rig.recognition(targeted),
+      isA<InspectionRejected>()
+          .having(
+            (r) => r.reason,
+            'reason',
+            InspectionRejection.markerPeaksOverflow,
+          )
+          .having((r) => r.kind, 'kind', InspectionFrameKind.targeted)
+          .having((r) => r.scale, 'scale', 1.0)
+          .having((r) => r.bestMarkerScore, 'bestMarkerScore', isNull),
+    );
+    expect(rig.control.callsOf(VisionOp.recognise), isEmpty);
   });
 
   test(
@@ -383,7 +432,7 @@ void main() {
 
       for (final (request, op) in [
         (fullClient, VisionOp.peaks),
-        (targeted, VisionOp.matchBest),
+        (targeted, VisionOp.peaks),
       ]) {
         final rig = newRig(
           script: VisionScript(failures: [(op: op, call: 0, status: -4)]),
@@ -407,7 +456,7 @@ void main() {
     // Marker at x 190: the title would start at 190 + 19 = 209, past the
     // 200 px frame edge.
     final offFrame = newRig(
-      script: const VisionScript(bestScore: 0.9, bestX: 190, bestY: 12),
+      script: const VisionScript(peaks: [TemplatePeak(190, 12, 0.9)]),
     );
     final off = recognised(await offFrame.recognition(targeted))
         .evidence
@@ -423,9 +472,7 @@ void main() {
     // runs, OCR does not, and the request still succeeds.
     final narrowed = newRig(
       script: const VisionScript(
-        bestScore: 0.9,
-        bestX: 40,
-        bestY: 12,
+        peaks: [TemplatePeak(40, 12, 0.9)],
         findRowResults: [100],
       ),
     );
@@ -455,9 +502,7 @@ void main() {
   test('native OCR failure aborts with the typed failure', () async {
     final rig = newRig(
       script: const VisionScript(
-        bestScore: 0.9,
-        bestX: 40,
-        bestY: 12,
+        peaks: [TemplatePeak(40, 12, 0.9)],
         failures: [(op: VisionOp.recognise, call: 0, status: -3)],
       ),
     );
@@ -508,9 +553,7 @@ void main() {
     () async {
       final rig = newRig(
         script: const VisionScript(
-          bestScore: 0.9,
-          bestX: 40,
-          bestY: 12,
+          peaks: [TemplatePeak(40, 12, 0.9)],
           ocrTexts: ['SALEWA FIRST AID KIT'],
           patternedThreshold: true,
         ),
@@ -553,9 +596,7 @@ void main() {
       'size', () async {
     expect(inspectionCropByteLimit, 256 * 1024);
     const script = VisionScript(
-      bestScore: 0.9,
-      bestX: 40,
-      bestY: 12,
+      peaks: [TemplatePeak(40, 12, 0.9)],
       patternedThreshold: true,
     );
 
@@ -649,9 +690,6 @@ void main() {
       for (final request in [targeted, fullClient]) {
         final rig = newRig(
           script: const VisionScript(
-            bestScore: 0.9,
-            bestX: 40,
-            bestY: 12,
             peaks: [TemplatePeak(40, 12, 0.9)],
             titleInk: [100],
           ),
@@ -681,9 +719,7 @@ void main() {
       for (final ink in [281, 276]) {
         final rig = newRig(
           script: VisionScript(
-            bestScore: 0.9,
-            bestX: 40,
-            bestY: 12,
+            peaks: [TemplatePeak(40, 12, 0.9)],
             titleInk: [ink],
           ),
         );
@@ -707,9 +743,7 @@ void main() {
     test('blank title skips OCR and retains white preview', () async {
       final rig = newRig(
         script: const VisionScript(
-          bestScore: 0.9,
-          bestX: 40,
-          bestY: 12,
+          peaks: [TemplatePeak(40, 12, 0.9)],
           titleInk: [null],
           ocrTexts: ['INVENTED'],
         ),
@@ -774,9 +808,7 @@ void main() {
       () async {
         final rig = newRig(
           script: const VisionScript(
-            bestScore: 0.9,
-            bestX: 40,
-            bestY: 12,
+            peaks: [TemplatePeak(40, 12, 0.9)],
             titleInk: [50],
             ocrTexts: ['SHORT'],
           ),
@@ -817,8 +849,8 @@ void main() {
 
   test('scaled template is cached for four sizes, oldest evicted', () async {
     // Scales 1, 1.5, 2, 2.5, 3 give 16, 24, 32, 40 and 48 px templates. The
-    // best score stays under the gate, so only template resizes happen.
-    final rig = newRig();
+    // scan finds no peak, so only template resizes happen.
+    final rig = newRig(script: const VisionScript(peaks: []));
     InspectionRequest at(double scale) => InspectionRequest(
       kind: InspectionFrameKind.targeted,
       clientWidth: (1920 * scale).round(),
@@ -855,7 +887,7 @@ void main() {
     'a template already at the scaled size is used without a resize',
     () async {
       expect(scaledTemplateSize(1.75), 28);
-      final rig = newRig();
+      final rig = newRig(script: const VisionScript(peaks: []));
 
       await rig.recognition(
         const InspectionRequest(
@@ -878,7 +910,7 @@ void main() {
   test('job runs through VisionService over a fake native without loading a '
       'library', () async {
     final rig = newRig(
-      script: const VisionScript(bestScore: 0.9, bestX: 40, bestY: 12),
+      script: const VisionScript(peaks: [TemplatePeak(40, 12, 0.9)]),
     );
 
     final answer = await rig.run(targeted);

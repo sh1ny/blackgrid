@@ -40,8 +40,30 @@ final class PlanFailure extends PlanResult {
   final CaptureFailure failure;
 }
 
-/// Plans the targeted region around the desktop point ([x], [y]) in physical
-/// client pixels (design D4). DPI never changes the region.
+/// Reference-resolution extent of the targeted band left of the client
+/// centre: the centred window (400) plus the 40 pixel cascade margin.
+const int targetedLeftReference = 440;
+
+/// Reference-resolution extent of the targeted band right of the client
+/// centre: the centred window (400) plus the 300 pixel cascade margin.
+const int targetedRightReference = 700;
+
+/// Reference-resolution extent of the targeted band below the client centre.
+const int targetedBelowCentreReference = 60;
+
+/// Reference client width and height (1920x1080) that define the scale.
+const int _referenceWidth = 1920;
+const int _referenceHeight = 1080; // 2 * 540, the reference half height.
+
+/// Plans the targeted region as a fixed band around the client centre
+/// (design D1).
+///
+/// With physical client size `w x h`, `cx = w div 2`, `cy = h div 2` and the
+/// exact rational scale `s = min(w / 1920, h / 1080)`, the band is
+/// `(cx - f(440), 0, f(440) + f(700), cy + f(60))` where `f(k) = floor(k * s)`.
+/// The point ([x], [y]) no longer moves the region; it must still lie inside
+/// the client or the plan fails with [RoiOutsideClient]. DPI never changes
+/// the region, and only the virtual desktop can clip it.
 PlanResult planTargeted(
   WindowSnapshot snapshot, {
   required int x,
@@ -50,17 +72,22 @@ PlanResult planTargeted(
   final client = snapshot.client;
   if (client.isEmpty) return const PlanFailure(RoiOutsideClient());
   if (!client.containsPoint(x, y)) return const PlanFailure(RoiOutsideClient());
-  final cx = x - client.left;
-  final cy = y - client.top;
   // s = min(w / 1920, h / 1080) as the exact rational n / (1920 * 1080), so
   // floor(k * s) is an integer division.
-  const denominator = 1920 * 1080;
-  final n = client.width * 1080 < client.height * 1920
-      ? client.width * 1080
-      : client.height * 1920;
-  final m = (50 * n) ~/ denominator;
-  final r = (600 * n) ~/ denominator;
-  final requested = CaptureRect(cx - m ~/ 2, cy - m ~/ 2, m + r, m);
+  const denominator = _referenceWidth * _referenceHeight;
+  final n = client.width * _referenceHeight < client.height * _referenceWidth
+      ? client.width * _referenceHeight
+      : client.height * _referenceWidth;
+  int f(int k) => (k * n) ~/ denominator;
+  final cx = client.width ~/ 2;
+  final cy = client.height ~/ 2;
+  final left = f(targetedLeftReference);
+  final requested = CaptureRect(
+    cx - left,
+    0,
+    left + f(targetedRightReference),
+    cy + f(targetedBelowCentreReference),
+  );
   return _clip(snapshot, requested);
 }
 

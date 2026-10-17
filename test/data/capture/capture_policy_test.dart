@@ -130,7 +130,7 @@ void main() {
     expect(platform.captureCalls.single.hwnd, _hwnd);
     expect(
       platform.captureCalls.single.rect,
-      const CaptureRect(875, 475, 650, 50),
+      const CaptureRect(520, 0, 1140, 600),
     );
     expect(platform.frames.releaseCalls, isEmpty);
     expect(platform.frames.liveCount, 1);
@@ -183,7 +183,7 @@ void main() {
     final frame = succeeded(run());
     expect(frame.metadata.hwnd, _hwnd);
     expect(frame.metadata.dpi, 96);
-    expect(frame.metadata.captured, const CaptureRect(875, 475, 650, 50));
+    expect(frame.metadata.captured, const CaptureRect(520, 0, 1140, 600));
     expect(platform.frames.liveCount, 1);
     frame.release();
   });
@@ -224,12 +224,12 @@ void main() {
   test('targeted frame reports layout and desktop origin', () {
     final frame = succeeded(run());
     final m = frame.metadata;
-    expect(m.width, 650);
-    expect(m.height, 50);
-    expect(m.stride, greaterThanOrEqualTo(2600));
+    expect(m.width, 1140);
+    expect(m.height, 600);
+    expect(m.stride, greaterThanOrEqualTo(4560));
     expect(m.pixelFormat, CapturePixelFormat.bgrx);
     expect(m.rowOrder, CaptureRowOrder.topDown);
-    expect(m.desktopOrigin, (x: 875, y: 475));
+    expect(m.desktopOrigin, (x: 520, y: 0));
     frame.release();
   });
 
@@ -250,13 +250,14 @@ void main() {
   });
 
   test('clipped frame reports both rectangles', () {
-    final frame = succeeded(run(t: trigger(x: 1500, y: 500)));
+    platform.s0 = target(virtualDesktop: const CaptureRect(0, 0, 1200, 1080));
+    final frame = succeeded(run(t: trigger(x: 600, y: 500)));
     final m = frame.metadata;
-    expect(m.requested, const CaptureRect(1475, 475, 650, 50));
-    expect(m.captured, const CaptureRect(1475, 475, 445, 50));
+    expect(m.requested, const CaptureRect(520, 0, 1140, 600));
+    expect(m.captured, const CaptureRect(520, 0, 680, 600));
     expect(m.clipped, isTrue);
-    expect(m.width, 445);
-    expect(m.height, 50);
+    expect(m.width, 680);
+    expect(m.height, 600);
     frame.release();
   });
 

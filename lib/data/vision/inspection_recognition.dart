@@ -23,7 +23,7 @@ export 'inspection_evidence.dart';
 /// Most correlation peaks the native scan may list before it reports overflow.
 const int _peakCap = 4096;
 
-/// Most inspections read from one full-client frame, after suppression.
+/// Most inspections read from one frame, after suppression.
 const int _maxPeaks = 8;
 
 /// Native status of `BGV_ERR_OVERFLOW`.
@@ -85,48 +85,37 @@ final class InspectionRecognitionJob
     final gray = _value(context.toGray(frame, rgbOrder: false));
     final template = _scaledTemplate(context, marker.image, side);
 
-    final List<PeakCandidate> found;
-    final double best;
-    switch (request.kind) {
-      case InspectionFrameKind.targeted:
-        final match = _value(context.matchTemplate(gray, template));
-        best = match.score;
-        found = [
-          if (best >= recognitionGates.markerScore)
-            PeakCandidate(x: match.x, y: match.y, score: best),
-        ];
-      case InspectionFrameKind.fullClient:
-        final peaks = context.matchTemplatePeaks(
-          gray,
-          template,
-          recognitionGates.markerScore,
-          _peakCap,
-        );
-        if (peaks case VisionFailed(
-          failure: VisionNativeFailure(status: _nativeOverflow),
-        )) {
-          return InspectionRejected(
-            kind: request.kind,
-            scale: scale,
-            reason: InspectionRejection.markerPeaksOverflow,
-          );
-        }
-        final listed = _value(peaks);
-        found = suppressPeaks(
-          [
-            for (final TemplatePeak p in listed)
-              PeakCandidate(x: p.x, y: p.y, score: p.score),
-          ],
-          side,
-          side,
-          maxPeaks: _maxPeaks,
-        );
-        // With no peak the best match is asked once, so the result still
-        // reports the best score observed.
-        best = listed.isEmpty
-            ? _value(context.matchTemplate(gray, template)).score
-            : listed.map((p) => p.score).reduce(math.max);
+    // Both frame kinds share one search; only the result keeps the kind.
+    final peaks = context.matchTemplatePeaks(
+      gray,
+      template,
+      recognitionGates.markerScore,
+      _peakCap,
+    );
+    if (peaks case VisionFailed(
+      failure: VisionNativeFailure(status: _nativeOverflow),
+    )) {
+      return InspectionRejected(
+        kind: request.kind,
+        scale: scale,
+        reason: InspectionRejection.markerPeaksOverflow,
+      );
     }
+    final listed = _value(peaks);
+    final found = suppressPeaks(
+      [
+        for (final TemplatePeak p in listed)
+          PeakCandidate(x: p.x, y: p.y, score: p.score),
+      ],
+      side,
+      side,
+      maxPeaks: _maxPeaks,
+    );
+    // With no peak the best match is asked once, so the result still reports
+    // the best score observed.
+    final best = listed.isEmpty
+        ? _value(context.matchTemplate(gray, template)).score
+        : listed.map((p) => p.score).reduce(math.max);
     final qpcMarker = context.qpcNow();
 
     return InspectionRecognised(
