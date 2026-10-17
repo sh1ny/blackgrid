@@ -115,7 +115,7 @@ The boundary SHALL snapshot the target immediately before and immediately after 
 A frame whose blue, green and red bytes are all zero SHALL be released and reported as `blankCapture`, not returned as evidence. The undefined fourth byte SHALL be ignored.
 
 #### Scenario: Black frame from an unsupported display mode
-- **WHEN** the acquired pixels of a 650×50 region are all zero
+- **WHEN** the acquired pixels of a 1140×600 region are all zero
 - **THEN** the result is `blankCapture`, and the frame is released
 
 #### Scenario: Black colour with a non-zero fourth byte
