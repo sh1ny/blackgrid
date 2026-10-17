@@ -11,6 +11,7 @@ import 'dart:typed_data';
 import '../../domain/title_matching.dart' show recognitionGates;
 import 'inspection_evidence.dart';
 import 'inspection_geometry.dart';
+import 'inspection_title_crop.dart';
 import 'marker_template.dart' show markerTemplateName;
 import 'vision_job.dart';
 import 'vision_primitives.dart'
@@ -225,11 +226,20 @@ final class InspectionRecognitionJob
         255,
       ),
     );
+    final bounded = boundTitleMargin(binary);
     final qpcPreprocess = context.qpcNow();
-    final text = _value(context.recognise(binary)).text.trim();
+    // A title without foreground is not sent to OCR, which can invent text
+    // on a blank image; its white crop is still kept as evidence.
+    final (title, text) = switch (bounded) {
+      TitleWithForeground(:final image) => (
+        image,
+        _value(context.recognise(image)).text.trim(),
+      ),
+      BlankTitle() => (binary, ''),
+    };
     final qpcOcr = context.qpcNow();
 
-    final preview = _preview(context, binary);
+    final preview = _preview(context, title);
     return InspectionEvidence(
       markerScore: peak.score,
       markerX: peak.x,

@@ -8,14 +8,14 @@ Paths are relative to the code repo. `job` below means `test/data/vision/inspect
 |---|---|---|---|---|
 | Title text is read from a normalised, thresholded crop | Title recognised | job | best score exactly 0.82 runs title extraction | green |
 | Title text is read from a normalised, thresholded crop | OCR fails natively | job | native OCR failure aborts with the typed failure | green |
-| Title text is read from a normalised, thresholded crop | Short title has an excessive blank right margin | crop; job | bounds the recorded 999-to-595 extent; OCR receives the bounded title image | red |
-| Title text is read from a normalised, thresholded crop | Title reaches the existing crop boundary | crop; job | foreground at the last column retains full width; OCR receives a boundary title unchanged | red |
+| Title text is read from a normalised, thresholded crop | Short title has an excessive blank right margin | crop; job | bounds the recorded 999-to-595 extent; OCR receives the bounded title image | green |
+| Title text is read from a normalised, thresholded crop | Title reaches the existing crop boundary | crop; job | foreground at the last column retains full width; OCR receives a boundary title unchanged | green |
 | Title text is read from a normalised, thresholded crop | Internal spaces and detached punctuation | crop | preserves internal spaces and detached final punctuation | green |
-| Title text is read from a normalised, thresholded crop | No foreground | job | blank title skips OCR and retains white preview | red |
+| Title text is read from a normalised, thresholded crop | No foreground | job | blank title skips OCR and retains white preview | green |
 | Evidence is sendable and bounded | Evidence outlives the frame | job | evidence crop and text survive frame release and isolate transfer | green |
 | Evidence is sendable and bounded | Oversized crop | job | crop above 256 KiB is downscaled and flagged while OCR used full size | green |
 | Evidence is sendable and bounded | Stage timestamps are ordered | job | stage timestamps are non-decreasing | green |
-| Evidence is sendable and bounded | Right margin is bounded before preview generation | job | preview equals bounded OCR input and titleRect retains source geometry | red |
+| Evidence is sendable and bounded | Right margin is bounded before preview generation | job | preview equals bounded OCR input and titleRect retains source geometry | green |
 | OCR title margin is bounded by rendered content | Bounded whitespace remains | crop | rightmost foreground at 19 yields width 28 | green |
 | OCR title margin is bounded by rendered content | Limited room at the boundary | crop | rightmost foreground at 46 retains width 50 | green |
 
@@ -27,7 +27,7 @@ Paths are relative to the code repo. `job` below means `test/data/vision/inspect
 ## 2. Worker job integration and evidence
 
 - [x] 2.1 Extend the existing hand-written runtime fake only as needed to supply deterministic binary title pixels and record the logical pixels OCR receives. Add the red job tests named in the test map, covering both targeted and full-client paths, blank title followed by a readable second peak, and detached preview bytes after narrowed-image frame release. Use top-level factories/shared native control memory for cross-isolate fake control as required by AGENTS.md; use no sleeps. Run the focused job tests and confirm failures are caused by the current whole-width/blank-OCR behavior.
-- [ ] 2.2 Wire the helper between thresholding and the preprocessing timestamp in `InspectionRecognitionJob`, send its image to OCR and preview, and implement D2's blank-text path. Preserve the frame-space title rectangle, typed native failures, later-peak processing and existing publication fences. Clarify the public evidence crop/status documentation for a blank or narrowed image without adding fields or statuses. Run all crop and job tests to green and update their test-map states.
+- [x] 2.2 Wire the helper between thresholding and the preprocessing timestamp in `InspectionRecognitionJob`, send its image to OCR and preview, and implement D2's blank-text path. Preserve the frame-space title rectangle, typed native failures, later-peak processing and existing publication fences. Clarify the public evidence crop/status documentation for a blank or narrowed image without adding fields or statuses. Run all crop and job tests to green and update their test-map states.
 - [ ] 2.3 Rerun the existing green map rows plus geometry, template-cache, whole-request native-failure, worker ownership and preview-cap checks. Update only fake fixtures/expected preprocessing dimensions that legitimately changed; preserve full-size-OCR versus capped-preview assertions and every integrity/ownership check. Verify with `mise exec -- flutter test test/data/vision/inspection_title_crop_test.dart test/data/vision/inspection_geometry_test.dart test/data/vision/inspection_job_test.dart`, and format every changed Dart file with pinned `dart format`.
 
 ## 3. Integration qualification

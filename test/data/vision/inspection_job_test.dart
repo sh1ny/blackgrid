@@ -533,8 +533,15 @@ void main() {
       expect(evidence.text, 'SALEWA FIRST AID KIT');
       expect(evidence.cropWidth * evidence.cropHeight, evidence.crop.length);
       expect(evidence.crop, isNotEmpty);
+      // The crop holds the leftmost columns of each patterned threshold row.
+      final [sourceWidth, ...] = rig.control
+          .callsOf(VisionOp.threshold)
+          .single
+          .args;
       expect(evidence.crop, [
-        for (var i = 0; i < evidence.crop.length; i++) patternByte(i),
+        for (var y = 0; y < evidence.cropHeight; y++)
+          for (var x = 0; x < evidence.cropWidth; x++)
+            patternByte(y * sourceWidth + x),
       ]);
       // Plain owned bytes, not a window onto a larger or foreign buffer.
       expect(evidence.crop.buffer.lengthInBytes, evidence.crop.length);
@@ -552,12 +559,13 @@ void main() {
       patternedThreshold: true,
     );
 
-    // The 141x17 title crop is enlarged to 282x34 = 9588 bytes. Under the
-    // production cap it is kept whole.
+    // The 141x17 title crop is enlarged to 282x34. The pattern's rightmost
+    // black pixel is in column 269, so OCR reads 278x34 = 9452 bytes. Under
+    // the production cap that is kept whole.
     final whole = newRig(script: script);
     final kept = recognised(await whole.recognition(targeted)).evidence.single;
     expect(kept.cropDownscaled, isFalse);
-    expect((kept.cropWidth, kept.cropHeight), (282, 34));
+    expect((kept.cropWidth, kept.cropHeight), (278, 34));
 
     // Under a 256 byte cap it is over the limit.
     final capped = newRig(script: script, jobFactory: smallCropJob);
@@ -570,13 +578,13 @@ void main() {
     expect(evidence.crop.length, evidence.cropWidth * evidence.cropHeight);
     // OCR read the full-size crop, and the preview was an area shrink of it.
     expect(capped.control.callsOf(VisionOp.recognise).single.args.take(3), [
-      282,
+      278,
       34,
       1,
     ]);
     final shrink = capped.control.callsOf(VisionOp.resize).last;
     expect(shrink.args.take(6), [
-      282,
+      278,
       34,
       evidence.cropWidth,
       evidence.cropHeight,
