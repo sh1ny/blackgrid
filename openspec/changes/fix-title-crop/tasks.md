@@ -21,7 +21,7 @@ Paths are relative to the code repo. `job` below means `test/data/vision/inspect
 
 ## 1. Pure title-crop policy
 
-- [ ] 1.1 Add failing tests in `inspection_title_crop_test.dart` for the test-map crop scenarios, plus padded stride with black padding ignored, all-white input, foreground in different rows, one-pixel images, and source-byte preservation. Use very short heights even for the recorded numeric extent. Verify with `mise exec -- flutter test test/data/vision/inspection_title_crop_test.dart` and record the expected missing-helper/red failure before implementation.
+- [x] 1.1 Add failing tests in `inspection_title_crop_test.dart` for the test-map crop scenarios, plus padded stride with black padding ignored, all-white input, foreground in different rows, one-pixel images, and source-byte preservation. Use very short heights even for the recorded numeric extent. Verify with `mise exec -- flutter test test/data/vision/inspection_title_crop_test.dart` and record the expected missing-helper/red failure before implementation.
 - [ ] 1.2 Implement the pure helper/result in `lib/data/vision/inspection_title_crop.dart` following design D1/D2 and the spec's single margin rule. Respect validated logical image dimensions, avoid counting row padding, and produce a tightly packed owned copy only on narrowing; expose blank content without a zero-width image. Add `///` documentation to public declarations. Run the new crop tests to green, format with pinned `dart format`, and update the corresponding test-map states.
 
 ## 2. Worker job integration and evidence
