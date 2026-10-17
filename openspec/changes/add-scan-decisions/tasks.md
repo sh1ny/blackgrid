@@ -29,7 +29,7 @@
 ## 1. ADR and architecture
 
 - [x] 1.1 Write `docs/adr/0017-accepted-scans-feed-the-decision-engine.md` (MADR-short: Status accepted, Date, `Supersedes: 0013 (the decision "No decisions from scans before M4")`). It records design D1-D3 and D6, each with its rejected alternative and reversal cost. ADR-0013 stays unedited. Verify: the file exists, and `docs/adr/README.md` lists it if that file indexes ADRs.
-- [ ] 1.2 Update `openspec/architecture.md`:
+- [x] 1.2 Update `openspec/architecture.md`:
   - add 0017 to the in-force index, with 0013 noted as partly superseded;
   - rewrite the "Not built yet" line (decisions from scans are built; the hotkey, correction and the Map snapshot are not);
   - add a `ScanDecisionFeed` component row;
