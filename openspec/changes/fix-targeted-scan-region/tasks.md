@@ -56,7 +56,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
 
 ## 3. Multi-peak targeted recognition (inspection-recognition)
 
-- [ ] 3.1 Update `test/data/vision/inspection_job_test.dart` over the existing fake `VisionNative` seam:
+- [x] 3.1 Update `test/data/vision/inspection_job_test.dart` over the existing fake `VisionNative` seam:
   - the targeted stage test expects the peak primitive, not the single best match;
   - add a two-peak targeted test (two entries in score order, each with its own title);
   - a 0.8199 targeted test (no evidence, best score reported through the no-peak best-match query, no OCR);
