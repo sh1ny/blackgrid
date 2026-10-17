@@ -8,6 +8,8 @@ The corpus is never committed: the images are game screenshots with unresolved r
 
 The pure parts (corpus and baseline parsing, the targeted region, PNG conversion, per-case evaluation, report building and baseline comparison) live in `test/qualification/support/inspection_corpus.dart`. They are unit-tested offline in `test/qualification/inspection_corpus_support_test.dart`, which needs no bundle and runs in `mise run test`.
 
+To replay recorded live scans against the targeted band without labels, see [REPLAY.md](REPLAY.md).
+
 ## Running
 
 Set both variables, then run the tagged test:
