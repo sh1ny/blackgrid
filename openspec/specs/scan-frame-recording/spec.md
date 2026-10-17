@@ -52,7 +52,7 @@ While recording is on, each scan that ends accepted, rejected or failed SHALL ge
 
 #### Scenario: Scan accepted by the fallback pass
 - **WHEN** Scanner's scan #7 of session `20261010-140307` is accepted by its fallback pass on a 1920x1080 client
-- **THEN** the folder holds `20261010-140307-0007-full.png` (1920x1080) and `20261010-140307-0007-targeted.png` (650x50), and `frames.jsonl` has one line with id `20261010-140307-0007`
+- **THEN** the folder holds `20261010-140307-0007-full.png` (1920x1080) and `20261010-140307-0007-targeted.png` (1140x600), and `frames.jsonl` has one line with id `20261010-140307-0007`
 
 #### Scenario: Superseded scan
 - **WHEN** a scan is superseded before it ends
