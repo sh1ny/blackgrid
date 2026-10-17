@@ -15,7 +15,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import '../support/m1_harness.dart';
+import '../ui/support/scan_ui_support.dart';
 import 'support/fake_scan_ports.dart';
+import 'support/history_wait.dart';
 
 class _EmptyCredentials implements CredentialStore {
   @override
@@ -127,4 +130,36 @@ void main() {
       expect(rig.services.scanner.runtimeDirectory, _Rig.runtimeDirectory);
     },
   );
+
+  test('accepted scan through AppServices selects and records once', () async {
+    final ports = ScanFakePorts();
+    final h = M1Harness(scanPorts: ports);
+    addTearDown(h.dispose);
+    await h.initialize();
+
+    final report = await publishTargetedScan(
+      h.services.scanner,
+      ports,
+      text: 'Alternative component',
+    );
+    expect((report.end as ScanAccepted).itemId, 'item-b');
+    await untilRow(
+      h.services.history,
+      (row) => row.itemId == 'item-b' && row.source == ActivitySource.scan,
+    );
+
+    final selection = h.services.selection;
+    expect(selection.selectedId, 'item-b');
+    expect(selection.scan?.reportId, report.id);
+    expect(h.services.history.rows, hasLength(1));
+    final recorded = h.services.history.rows.single;
+
+    // A phase change notifies the scanner without a new accepted scan.
+    await h.services.scanner.setLiveScan(false);
+    await h.services.scanner.settled;
+
+    expect(selection.scan?.reportId, report.id);
+    expect(h.services.history.rows.single.observedAt, recorded.observedAt);
+    expect(h.services.history.rows, hasLength(1));
+  });
 }

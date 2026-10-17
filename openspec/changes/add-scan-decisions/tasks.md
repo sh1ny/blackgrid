@@ -88,7 +88,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
   - dispose the feed before the scanner.
 
   Verify: every 4.3 row is green.
-- [ ] 4.5 Add `test/application/app_services_scan_test.dart` test `accepted scan through AppServices selects and records once`. It runs the real coordinator with `ScanFakePorts`, publishes one accepted scan, and expects the selection to be the item and history to hold one `scan` row. A second notification (a phase change) must add nothing. Verify that it passes.
+- [x] 4.5 Add `test/application/app_services_scan_test.dart` test `accepted scan through AppServices selects and records once`. It runs the real coordinator with `ScanFakePorts`, publishes one accepted scan, and expects the selection to be the item and history to hold one `scan` row. A second notification (a phase change) must add nothing. Verify that it passes.
 
 ## 5. Precedence fixtures and the decision card
 
