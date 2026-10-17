@@ -127,7 +127,7 @@ flowchart LR
 | Component | Fails / dies mid-operation → | Recovery | Retry safe? | Who finds out |
 |---|---|---|---|---|
 | Region planning | Band off the desktop → `roiOutsideClient` | Fallback pass (eligible per ADR-0013) | Yes | Timing log, Scanner evidence |
-| Targeted peak listing | Native overflow → `markerPeaksOverflow` | Fallback pass (rejection not catalog-only) | Yes | Timing log reason |
+| Targeted peak listing | Native overflow → `markerPeaksOverflow` | Fallback pass (rejection not catalog-only) | Yes | Timing log `noMarker`: the reason is not carried to the outcome (#38) |
 | Targeted job time | Up to 8 OCR calls approaching the 1.5 s deadline → `visionTimeout`, worker `overrun` | Existing ADR-0011 behaviour; the scan fails | No (existing) | Scanner failed report, timing log |
 | Container title accepted in the band | Wrong identity published | None automatic; D3 ranking and the D5 hard rule limit it | n/a | Replay (agent), user live check |
 | Replay | Missing bundle, catalog or folder → skip with reason; malformed line → `FormatException` naming it | Fix input, rerun | Yes (reads only, atomic report) | Agent |
