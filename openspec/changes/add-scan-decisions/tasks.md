@@ -115,7 +115,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
 
 - [x] 6.1 Re-run `rejected scan changes no selection or history` in `test/application/scan_coordinator_flow_test.dart`, along with its accepted-scan sibling, which still holds for the bare coordinator. Verify that both pass and flip the scanner-evidence row green.
 - [x] 6.2 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify that the analyzer reports no issues and every test passes.
-- [ ] 6.3 Run `openspec validate add-scan-decisions --strict`. Verify that it passes.
+- [x] 6.3 Run `openspec validate add-scan-decisions --strict`. Verify that it passes.
 
 ## Workflow follow-up
 
