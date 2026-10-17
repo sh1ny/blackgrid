@@ -1,9 +1,13 @@
 import 'package:blackgrid/application/scan_coordinator.dart';
+import 'package:blackgrid/application/scan_epoch.dart';
+import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../application/support/history_wait.dart';
 import '../support/m1_widget_harness.dart';
 import 'support/scan_ui_support.dart';
 
@@ -85,7 +89,7 @@ void main() {
     );
     expect(h.services.history.rows, isEmpty);
   });
-  testWidgets('decision card unchanged after accepted scan', (tester) async {
+  testWidgets('accepted scan drives the decision card', (tester) async {
     final ports = ScanFakePorts();
     final h = await pumpM1(tester, scanPorts: ports);
     await tester.tap(find.byKey(const Key('nav-scanner')));
@@ -97,17 +101,12 @@ void main() {
       find.widgetWithText(ListTile, 'Synthetic component'),
       () => h.services.history.rows.length == 1,
     );
-    final decision = h.services.selection.decision;
-    final decisionCard = find.byWidgetPredicate(
-      (widget) =>
-          widget is GridPanel && widget.title == 'Current manual inspection',
+    GridPanel titled(String title) => tester.widget<GridPanel>(
+      find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
     );
     expect(
-      find.descendant(
-        of: decisionCard,
-        matching: find.text('Synthetic component'),
-      ),
-      findsWidgets,
+      titled('Current manual inspection').subtitle,
+      contains('not an accepted scan'),
     );
 
     final report = (await tester.runAsync(
@@ -117,30 +116,79 @@ void main() {
         text: 'Alternative component',
       ),
     ))!;
+    await tester.pump();
+    await tester.runAsync(
+      () => untilRow(
+        h.services.history,
+        (row) => row.source == ActivitySource.scan,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect((report.end as ScanAccepted).itemId, 'item-b');
-    expect(
-      tester.widget<Text>(find.byKey(const Key('scan-item'))).data,
-      contains('Alternative component'),
+    final card = find.byWidgetPredicate(
+      (w) => w is GridPanel && w.title == 'Accepted scan',
     );
-    expect(h.services.selection.item!.id, 'item-a');
-    expect(h.services.selection.decision, same(decision));
-    expect(h.services.history.rows.length, 1);
+    expect(card, findsOneWidget);
     expect(
-      find.descendant(
-        of: decisionCard,
-        matching: find.text('Alternative component'),
-      ),
-      findsNothing,
+      tester.widget<GridPanel>(card).subtitle,
+      matches(RegExp(r'^Scanned .+ ago')),
     );
+    expect(h.services.selection.item!.id, 'item-b');
+    expect(h.services.selection.scan, isNotNull);
     expect(
-      find.descendant(
-        of: decisionCard,
-        matching: find.text('Synthetic component'),
-      ),
+      find.descendant(of: card, matching: find.text('Alternative component')),
       findsWidgets,
     );
-    expect(h.services.scans.hasAcceptedScan, isFalse);
+    expect(
+      find.descendant(of: card, matching: find.text('Synthetic component')),
+      findsNothing,
+    );
+    final rows = h.services.history.rows;
+    expect(rows.length, 2);
+    expect(rows.map((row) => (row.itemId, row.source)).toSet(), {
+      ('item-a', ActivitySource.manual),
+      ('item-b', ActivitySource.scan),
+    });
+    final history = find.byWidgetPredicate(
+      (w) => w is GridPanel && w.title == 'Recent item activity',
+    );
+    expect(
+      find.descendant(of: history, matching: find.textContaining(' • Scan\n')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: history,
+        matching: find.textContaining(' • manual\n'),
+      ),
+      findsOneWidget,
+    );
+  });
+  testWidgets('retired scan shows the scan-again message', (tester) async {
+    final h = await pumpM1(tester);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    final selection = h.services.selection;
+    await tester.runAsync(
+      () => selection.selectScan(
+        reportId: 1,
+        itemId: 'item-a',
+        mode: GameMode.pvp,
+        catalogRevision: h.services.catalog.snapshot!.revision,
+        epoch: const ScanEpoch(0, 0),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Accepted scan'), findsOneWidget);
+
+    selection.retireScan();
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Last scan was in an earlier mode or session; scan again'),
+      findsOneWidget,
+    );
+    expect(find.text('Accepted scan'), findsNothing);
   });
 }

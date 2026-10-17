@@ -23,7 +23,7 @@
 | scan-decisions → FIR resets on every new accepted scan | Session change | test/application/scan_decision_feed_test.dart | session change retires the scan and resets FIR | green |
 | scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Prices go stale after a scan | test/application/selection_controller_test.dart | stale Flea quote downgrades the scan to Check, acceptance unchanged | green |
 | scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Mode changes after a scan | test/application/scan_decision_feed_test.dart | mode change retires the scan and records nothing | green |
-| scanner-evidence → Unaccepted scan evidence never produces a recommendation | Accepted scan drives the decision card | test/ui/scanner_screen_test.dart | accepted scan drives the decision card | red |
+| scanner-evidence → Unaccepted scan evidence never produces a recommendation | Accepted scan drives the decision card | test/ui/scanner_screen_test.dart | accepted scan drives the decision card | green |
 | scanner-evidence → Unaccepted scan evidence never produces a recommendation | Rejected scan with a best candidate | test/application/scan_coordinator_flow_test.dart | rejected scan changes no selection or history | green |
 
 ## 1. ADR and architecture
@@ -98,7 +98,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
   - `every precedence rule matches the hand-selected decision`: for each fixture it calls `selectScan`, sets FIR yes for Flea, Trader and Price Unavailable, records the recommendation and reasons, then does the same through `selectManual` and compares
 
   Verify that the tests fail before group 3 is merged, or are written and run red first, then pass.
-- [ ] 5.2 Replace `test/ui/scanner_screen_test.dart:88` (`decision card unchanged after accepted scan`) with `accepted scan drives the decision card`. It publishes a targeted scan for item B after a manual selection of item A, and expects:
+- [x] 5.2 Replace `test/ui/scanner_screen_test.dart:88` (`decision card unchanged after accepted scan`) with `accepted scan drives the decision card`. It publishes a targeted scan for item B after a manual selection of item A, and expects:
   - the card title "Accepted scan" with item B;
   - a "Scanned … ago" subtitle;
   - history holding the manual row plus one `scan` row, with the history panel labelling it as a scan.
