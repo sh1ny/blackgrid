@@ -98,7 +98,7 @@ The `Scan accepted by the fallback pass` row is red because the targeted PNG mus
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify: both exit 0. Record the counts in evidence.md.
+- [x] 7.1 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify: both exit 0. Record the counts in evidence.md.
 - [ ] 7.2 Run `openspec validate fix-targeted-scan-region --strict`. Verify: it reports the change as valid.
 - [ ] 7.3 Record the user-verified checks in evidence.md as **unverified** until the user reports them, and ask the user to run them with the game, with frame recording off:
   - live scans at their resolution, with the share of accepts by pass taken from `scan-timings.jsonl`;
