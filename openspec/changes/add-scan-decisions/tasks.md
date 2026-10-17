@@ -65,7 +65,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
 ## 4. Feed, epoch stamp and wiring
 
 - [x] 4.1 Add the failing test `the epoch is stamped when the scan begins` to `test/application/scan_coordinator_flow_test.dart`. Its reader returns E0 at the trigger and E1 before publication, and the published `ScanReport.epoch` must equal E0 and survive `withoutCrops`. Verify that it fails because the field does not exist.
-- [ ] 4.2 Give `ScanCoordinator` an optional `ScanEpoch Function()? epoch` reader (default constant). Read it in `_begin`, store it on `_Scan`, and copy it to `ScanReport.epoch`. It stays out of `toLogLine`, so log schema v1 is unchanged. Verify: the 4.1 test is green, and the existing coordinator, timing-log and audit tests pass unchanged (the coordinator still imports no selection or history).
+- [x] 4.2 Give `ScanCoordinator` an optional `ScanEpoch Function()? epoch` reader (default constant). Read it in `_begin`, store it on `_Scan`, and copy it to `ScanReport.epoch`. It stays out of `toLogLine`, so log schema v1 is unchanged. Verify: the 4.1 test is green, and the existing coordinator, timing-log and audit tests pass unchanged (the coordinator still imports no selection or history).
 - [ ] 4.3 Add the failing tests to `test/application/scan_decision_feed_test.dart`. The source is a hand-written `FakeAcceptedScanSource` (a `ChangeNotifier` with a settable `lastAccepted`), and the epoch reader is injected; both live in `test/application/support/`. Use the `M1Harness` selection, history and catalog. The tests:
   - `accepted scan replaces a manual selection`
   - `rejected scan with a candidate changes nothing`
