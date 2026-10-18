@@ -60,7 +60,7 @@
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0018-scan-correction-is-transient-selection-state.md` (MADR-short: Status accepted, Date, Supersedes: none). It records design D1-D4 and D8, each with its rejected alternative and reversal cost, and the binding rule that only accepted reports from `AcceptedScanSource` may advance the Map snapshot (change 5). No accepted ADR is edited. Verify: the file exists, and `docs/adr/README.md` lists it if that file indexes ADRs.
+- [x] 1.1 Write `docs/adr/0018-scan-correction-is-transient-selection-state.md` (MADR-short: Status accepted, Date, Supersedes: none). It records design D1-D4 and D8, each with its rejected alternative and reversal cost, and the binding rule that only accepted reports from `AcceptedScanSource` may advance the Map snapshot (change 5). No accepted ADR is edited. Verify: the file exists, and `docs/adr/README.md` lists it if that file indexes ADRs.
 - [ ] 1.2 Update `openspec/architecture.md`:
   - add 0018 to the In-force ADRs index;
   - extend the `ScanDecisionFeed` row with the offer path and `_offered`;
