@@ -121,7 +121,7 @@ Load `flutter-add-widget-test` and `dart-write-documentation` first.
   - search results capped at 8.
 
   Verify that they fail because the card shows no offer.
-- [ ] 5.2 In `ItemDecisionCard`, render the offer as a bounded block next to the shown item, never in its place:
+- [x] 5.2 In `ItemDecisionCard`, render the offer as a bounded block next to the shown item, never in its place:
   - candidate buttons resolved from the live snapshot, with similarity;
   - a `TextField` whose controller is kept equal to `correctionOffer.query` on each notify, keeping cursor and selection while focused, with `onChanged` calling `setCorrectionQuery`;
   - up to 8 results;
