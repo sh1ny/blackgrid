@@ -42,7 +42,7 @@ The proposal gives the scope. What the approach depends on, as the code stands:
 
 ### D3: Fence with an epoch stamped when the scan begins
 
-- **Choice:** a value type `ScanEpoch(int modeTransition, int session)` (`lib/application/scan_epoch.dart`). `ScanCoordinator` takes an optional `ScanEpoch Function()? epoch` reader. `AppServices` passes `() => ScanEpoch(_modeTransition, mapSession.state.sessionEpoch)`, and the reader defaults to a constant. `_begin` stores the reading on `_Scan`, and `_report` copies it to a new `ScanReport.epoch` field (nullable, kept by `withoutCrops`). At consumption the feed requires all of:
+- **Choice:** a value type `ScanEpoch(int modeTransition, int session)` (`lib/application/scan_epoch.dart`). `ScanCoordinator` takes an optional `ScanEpoch Function()? epoch` reader. `AppServices` passes `() => ScanEpoch(_modeTransition, mapSession.state.sessionEpoch)`, and the reader defaults to a constant. `_begin` stores the reading on `_Scan`; a trigger queued behind a capture (`_pending`) is read when it is queued and carries that reading into its `_begin`, so a change during the wait fences it. `_report` copies it to a new `ScanReport.epoch` field (nullable, kept by `withoutCrops`). At consumption the feed requires all of:
   1. `report.epoch == current epoch`;
   2. `report.catalogMode == catalog.mode`;
   3. `catalog.snapshot?.items[report.itemId] != null`.

@@ -325,6 +325,31 @@ void main() {
     expect(rig.logs[0].containsKey('epoch'), isFalse);
   });
 
+  test(
+    'a trigger queued behind capture keeps its trigger-time epoch',
+    () async {
+      const e0 = ScanEpoch(1, 1);
+      const e1 = ScanEpoch(2, 1);
+      var current = e0;
+      await readyRig(epoch: () => current);
+      rig.fire(1000);
+      final first = await rig.capture.calls.at(0);
+      rig.fire(2000);
+      // The mode changes while the newer trigger waits for the capture answer.
+      current = e1;
+      first.succeed(rig.frames.frame());
+      (await rig.capture.calls.at(1)).succeed(rig.frames.frame());
+      final evidence = _ev();
+      (await rig.vision.calls.at(0))
+          .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+      (await rig.matcher.calls.at(0)).complete(_accepted(evidence));
+
+      final report = await rig.published.at(0);
+      expect(report.timeline.trigger, 2000);
+      expect(report.epoch, e0);
+    },
+  );
+
   group('passes', () {
     test('accepted targeted scan requests no fallback', () async {
       await readyRig();

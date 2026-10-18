@@ -1264,10 +1264,14 @@ enum _Stage { waiting, capture, vision, matching }
 /// A trigger waiting for the scan in flight to return from capture, and the
 /// number of older pending triggers it replaced.
 final class _Pending {
-  _Pending(this.trigger, this.replaced);
+  _Pending(this.trigger, this.replaced, this.epoch);
 
   final ScanTrigger trigger;
   final int replaced;
+
+  /// Read when the trigger arrived, not when it starts its scan, so a mode
+  /// or session change during the wait fences its result.
+  final ScanEpoch epoch;
 }
 
 /// One scan in flight: its trigger, the stamps and results gathered so far.
@@ -1437,8 +1441,8 @@ Future<void> _timerWaiter(Duration duration) {
 class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   /// Creates a coordinator. The factories default to the real services;
   /// [runtimeDirectory] defaults to the directory of the running executable.
-  /// [epoch] reads the app's epoch when a scan begins and defaults to a
-  /// constant.
+  /// [epoch] reads the app's epoch when a scan begins, or when its trigger
+  /// is queued behind a capture, and defaults to a constant.
   ScanCoordinator({
     required this.settings,
     required this.catalog,
@@ -2039,6 +2043,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
         _pending = _Pending(
           trigger,
           waiting == null ? 0 : waiting.replaced + 1,
+          _epoch(),
         );
       case _Stage.waiting:
         active.cancel();
@@ -2051,14 +2056,19 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     }
   }
 
-  void _begin(_Activation a, ScanTrigger trigger, {required int replaced}) {
+  void _begin(
+    _Activation a,
+    ScanTrigger trigger, {
+    required int replaced,
+    ScanEpoch? epoch,
+  }) {
     final scan = _Scan(
       activation: a,
       trigger: trigger,
       id: _nextReportId++,
       generation: _scanGeneration,
       replacedTriggers: replaced,
-      epoch: _epoch(),
+      epoch: epoch ?? _epoch(),
     );
     _active = scan;
     _setPhase(scan, ScanPhase.targeted);
@@ -2096,7 +2106,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     _pending = null;
     final a = _current;
     if (next == null || a == null || a.retired || _disposed) return;
-    _begin(a, next.trigger, replaced: next.replaced);
+    _begin(a, next.trigger, replaced: next.replaced, epoch: next.epoch);
   }
 
   void _setPhase(_Scan s, ScanPhase phase) {
