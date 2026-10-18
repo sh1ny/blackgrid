@@ -122,9 +122,7 @@ void main() {
           ['task-a', 'task-b', 'task-c'],
         );
         expect(c.items['item-a']!.quoteAt, fixtureNow);
-        expect(c.sourceTimestamps.values.every((v) => v == null), isTrue);
-        expect(c.sourceFreshAt(fixtureNow), isNull);
-        expect(c.authoritativeAt(fixtureNow), isFalse);
+        expect(c.authoritativeAt(fixtureNow), isTrue);
         final restored = CatalogSnapshot.fromJson(
           Map<String, dynamic>.from(jsonDecode(jsonEncode(c.toJson())) as Map),
         );
@@ -323,12 +321,20 @@ void main() {
       expect(() => CatalogSnapshot.fromJson(j), throwsFormatException);
     },
   );
-  test('missing and mixed source times stay unknown', () {
+  test('live wire shape without dataset timestamps is authoritative at observation', () {
     final j = wireFixture();
-    (j['items'] as Map).remove('updated');
-    expect(fixtureCatalog(wire: j).sourceFreshAt(fixtureNow), isNull);
-    j['items']['updated'] = '2026-10-05T23:59:00Z';
-    expect(fixtureCatalog(wire: j).sourceFreshAt(fixtureNow), isNull);
+    for (final key in catalogDatasets) {
+      expect((j[key] as Map).keys.toSet(), {'data', 'translations'});
+    }
+    expect(fixtureCatalog(wire: j).authoritativeAt(fixtureNow), isTrue);
+  });
+  test('dataset-level updated is ignored', () {
+    final j = wireFixture();
+    j['items']['updated'] = '2020-01-01T00:00:00Z';
+    j['traders']['updated'] = '2020-01-01T00:00:00Z';
+    final c = fixtureCatalog(wire: j);
+    expect(c.sourceTimestamps['items'], DateTime.utc(2026, 10, 5, 23));
+    expect(c.sourceTimestamps['traders'], isNull);
   });
   test('current catalog string edition identities survive normalization', () {
     final j = wireFixture();

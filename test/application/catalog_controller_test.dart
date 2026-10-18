@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
@@ -314,6 +315,27 @@ void main() {
       expect(store.catalogs.keys, containsAll([GameMode.pvp, GameMode.pve]));
     },
   );
+  test('refresh of the live wire shape publishes current', () async {
+    final j = wireFixture();
+    final store = MemoryCatalogStore();
+    final c = CatalogController(
+      store: store,
+      client: CatalogClient(
+        client: MockClient(
+          (r) async =>
+              http.Response(jsonEncode(j[r.url.pathSegments.last]), 200),
+        ),
+        clock: () => fixtureNow,
+      ),
+      clock: () => fixtureNow,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    expect(c.error, isNull);
+    expect(store.commits, 1);
+    expect(c.status, CatalogStatus.current);
+  });
   test('authority transitions and expiration emit notifications', () async {
     var now = fixtureNow;
     final c = CatalogController(
