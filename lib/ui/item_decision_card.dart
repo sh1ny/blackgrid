@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/accepted_scan.dart';
 import '../application/app_services.dart';
+import '../application/scan_correction.dart';
 import '../application/selection_controller.dart';
 import '../domain/decision.dart';
 import 'theme.dart';
@@ -38,17 +39,28 @@ class ItemDecisionCard extends StatelessWidget {
       final item = selection.item;
       final decision = selection.decision;
       final scan = selection.scan;
+      final correction = selection.isHistory ? null : selection.correction;
+      final offer = selection.correctionOffer;
+      final offerBlock = offer == null
+          ? null
+          : _CorrectionOfferBlock(selection: selection, offer: offer);
       return GridPanel(
         title: selection.isHistory
             ? 'History inspection'
             : scan != null
             ? 'Accepted scan'
+            : correction != null
+            ? 'Corrected scan'
             : 'Current manual inspection',
         icon: Icons.center_focus_strong,
         subtitle: selection.isHistory
             ? 'Stored ${modeLabel(selection.inspectionMode)} context • live mode unchanged'
             : scan != null
             ? 'Scanned ${_scanAge(selection, scan)} ago • shared item decision'
+            : correction != null
+            ? 'Corrected from scan #${correction.reportId} • '
+                  '${_correctionAge(selection, correction)} ago • '
+                  'not an accepted scan'
             : 'Shared item decision • not an accepted scan',
         trailing: selection.isHistory
             ? IconButton(
@@ -58,38 +70,70 @@ class ItemDecisionCard extends StatelessWidget {
               )
             : null,
         child: item == null || decision == null
-            ? ListView(
-                children: [
-                  const SizedBox(height: 28),
-                  const Icon(
-                    Icons.inventory_2_outlined,
-                    size: 72,
-                    color: GridColors.muted,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    selection.loadingHistory
-                        ? 'Opening stored-mode catalog…'
-                        : selection.selectedId == null
-                        ? selection.scanRetired
-                              ? 'Last scan was in an earlier mode or session; scan again'
-                              : 'Find an item to inspect'
-                        : 'Identity retained • catalog unavailable',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    selection.error ?? 'Search real item identities, then select one. Requirements, gross values and uncertainty appear here.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              )
+            ? offerBlock != null
+                  ? ListView(
+                      children: [
+                        // The offer replaces only the find-an-item hint; a
+                        // loading or unresolved selection still says so.
+                        if (selection.loadingHistory ||
+                            selection.selectedId != null) ...[
+                          Text(
+                            selection.loadingHistory
+                                ? 'Opening stored-mode catalog…'
+                                : 'Identity retained • catalog unavailable',
+                            key: const Key('correction-offer-status'),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        offerBlock,
+                        if (selection.error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            selection.error!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ],
+                    )
+                  : ListView(
+                      children: [
+                        const SizedBox(height: 28),
+                        const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 72,
+                          color: GridColors.muted,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          selection.loadingHistory
+                              ? 'Opening stored-mode catalog…'
+                              : selection.selectedId == null
+                              ? selection.scanRetired
+                                    ? 'Last scan was in an earlier mode or session; scan again'
+                                    : 'Find an item to inspect'
+                              : 'Identity retained • catalog unavailable',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          selection.error ?? 'Search real item identities, then select one. Requirements, gross values and uncertainty appear here.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    )
             : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (offerBlock != null) ...[
+                      offerBlock,
+                      const SizedBox(height: 12),
+                    ],
                     const Divider(height: 1),
                     const SizedBox(height: 18),
                     LayoutBuilder(
@@ -243,6 +287,13 @@ class ItemDecisionCard extends StatelessWidget {
   String _scanAge(SelectionController selection, AcceptedScan scan) =>
       scanAgeLabel(selection.clock().toUtc().difference(scan.acceptedAt));
 
+  String _correctionAge(
+    SelectionController selection,
+    ScanCorrection correction,
+  ) => scanAgeLabel(
+    selection.clock().toUtc().difference(correction.correctedAt),
+  );
+
   Widget _value(String title, String value, String detail) => Container(
     width: 180,
     padding: const EdgeInsets.all(12),
@@ -271,4 +322,137 @@ class ItemDecisionCard extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// The bounded offer block: the scan's candidates, a search field and results.
+///
+/// It owns the search field's controller and keeps its text equal to the
+/// offer's query whenever the selection notifies, so every mounted card shows
+/// the same text.
+class _CorrectionOfferBlock extends StatefulWidget {
+  const _CorrectionOfferBlock({required this.selection, required this.offer});
+
+  final SelectionController selection;
+  final ScanCorrectionOffer offer;
+
+  @override
+  State<_CorrectionOfferBlock> createState() => _CorrectionOfferBlockState();
+}
+
+class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.offer.query,
+  );
+
+  @override
+  void didUpdateWidget(_CorrectionOfferBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final query = widget.offer.query;
+    if (_controller.text == query) return;
+    final cursor = _controller.selection.baseOffset;
+    _controller.value = TextEditingValue(
+      text: query,
+      selection: TextSelection.collapsed(
+        offset: cursor < 0 ? query.length : cursor.clamp(0, query.length),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selection = widget.selection;
+    final offer = widget.offer;
+    final candidates = selection.correctionCandidates;
+    final results = selection.correctionResults;
+    final theme = Theme.of(context);
+    return Container(
+      key: const Key('correction-offer'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: GridColors.inset,
+        border: Border.all(color: GridColors.gold),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Scan #${offer.reportId} not accepted — pick the item',
+                  style: const TextStyle(
+                    color: GridColors.gold,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const Key('correction-dismiss'),
+                onPressed: selection.dismissCorrection,
+                child: const Text('Dismiss'),
+              ),
+            ],
+          ),
+          Text('Read: ${offer.ocrText}', style: theme.textTheme.bodySmall),
+          if (candidates.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final c in candidates)
+                  OutlinedButton(
+                    key: Key('correction-candidate-${c.item.id}'),
+                    onPressed: () =>
+                        selection.selectCorrection(offer.reportId, c.item.id),
+                    child: Text(
+                      '${c.item.name} • ${c.score.toStringAsFixed(2)}',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          TextField(
+            key: const Key('correction-query'),
+            controller: _controller,
+            onChanged: selection.setCorrectionQuery,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Search the catalog',
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (results.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                'No items match',
+                key: const Key('correction-no-match'),
+                style: theme.textTheme.bodySmall,
+              ),
+            )
+          else
+            for (final item in results)
+              InkWell(
+                key: Key('correction-result-${item.id}'),
+                onTap: () =>
+                    selection.selectCorrection(offer.reportId, item.id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Text(item.name),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
 }

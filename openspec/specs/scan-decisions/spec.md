@@ -6,7 +6,7 @@ Turns an accepted live scan into the current item selection and its keep/sell de
 ## Requirements
 
 ### Requirement: An accepted scan becomes the current selection
-When a scan is published as accepted for item X, the app SHALL make X the current selection: the decision card, needs and sources panels SHALL show X and its decision, on Scanner and on Map. The newest selection SHALL win: an accepted scan, a manual selection and a history selection each replace whatever was shown, in the order they happened.
+When a scan is published as accepted for item X, the app SHALL make X the current selection: the decision card, needs and sources panels SHALL show X and its decision, on Scanner and on Map. The newest selection SHALL win: an accepted scan, a manual selection, a history selection and a picked scan correction each replace whatever was shown, in the order they happened.
 
 #### Scenario: Accepted scan replaces a manual selection
 - **WHEN** the user has manually selected item A and a scan is then accepted for item B
@@ -19,6 +19,10 @@ When a scan is published as accepted for item X, the app SHALL make X the curren
 #### Scenario: Accepted scan while a history row is open
 - **WHEN** the user has a history row for item A open and a scan is accepted for item B
 - **THEN** the history view closes and the decision card shows item B in the live mode
+
+#### Scenario: Accepted scan after a correction
+- **WHEN** the user picked item C from a scan's correction offer and a scan is then accepted for item B
+- **THEN** the decision card shows item B as an accepted scan, no longer labelled as corrected
 
 ### Requirement: Scan decisions come from the shared engine
 The decision for a scanned item SHALL be the shared decision engine's result for that item. The engine SHALL get the current catalog of the live mode, the session's progress for that mode, and FIR unknown unless the user set it for this scan. Every rule of the precedence table SHALL give the same outcome for a scanned item as for the same item selected by hand.
@@ -84,7 +88,7 @@ Each accepted scan that drives a decision SHALL record activity for its item in 
 - **THEN** the decision card shows item B with an error that the scan was not recorded
 
 ### Requirement: FIR resets on every new accepted scan
-Transient FIR SHALL reset to unknown on every accepted scan that drives a decision, even when it is the same item as before. It SHALL also reset on a mode or session change. A FIR value the user sets SHALL apply only to the current scan.
+Transient FIR SHALL reset to unknown on every accepted scan that drives a decision, even when it is the same item as before. It SHALL also reset on a picked scan correction, even when it is the item already shown, and on a mode or session change. A FIR value the user sets SHALL apply only to the current scan or correction.
 
 #### Scenario: Same item scanned again
 - **WHEN** a scan is accepted for item B, the user sets FIR to yes, and a second scan is accepted for item B
@@ -93,6 +97,10 @@ Transient FIR SHALL reset to unknown on every accepted scan that drives a decisi
 #### Scenario: Session change
 - **WHEN** a scan is accepted for item B, the user sets FIR to yes, and the game session then changes
 - **THEN** FIR is unknown
+
+#### Scenario: Correction to the item already shown
+- **WHEN** a scan is accepted for item B, the user sets FIR to yes, and the user then picks B from a later scan's correction offer
+- **THEN** FIR is unknown and the decision is computed with FIR unknown
 
 ### Requirement: Scan advice shows its age and stops being current on a mode or session change
 The selection SHALL keep each accepted scan's item, mode, catalog revision, acceptance time and decision at acceptance unchanged. The card SHALL show the current decision for it and how long ago it was scanned. After a mode or session change the scanned item SHALL no longer be shown as current advice.

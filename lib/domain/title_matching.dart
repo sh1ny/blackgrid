@@ -88,6 +88,32 @@ final class TitleConfirmation {
   String toString() => 'TitleConfirmation($id, $confidence)';
 }
 
+/// The most candidates a [TitleMatch] carries.
+const maxTitleCandidates = 5;
+
+/// One scored catalog item offered as a candidate for a title.
+final class TitleCandidate {
+  /// Creates a candidate for catalog item [id] with single-precision
+  /// similarity [score].
+  const TitleCandidate(this.id, this.score);
+
+  /// Catalog ID of the item.
+  final String id;
+
+  /// Single-precision similarity of the title to the item's name.
+  final double score;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TitleCandidate && other.id == id && other.score == score;
+
+  @override
+  int get hashCode => Object.hash(id, score);
+
+  @override
+  String toString() => 'TitleCandidate($id, $score)';
+}
+
 /// The result of matching one title; either [TitleAccepted] or
 /// [TitleRejected].
 sealed class TitleMatch {
@@ -101,6 +127,7 @@ sealed class TitleMatch {
     required this.confirmedBy,
     required this.mode,
     required this.revision,
+    this.candidates = const [],
   });
 
   /// The title after [normaliseTitle].
@@ -129,6 +156,14 @@ sealed class TitleMatch {
 
   /// Catalog revision of the index that produced this result.
   final String revision;
+
+  /// Up to [maxTitleCandidates] scored items with distinct normalised names.
+  ///
+  /// Ranked by similarity descending, then by ID (ordinal), and drawn from
+  /// the same items as [bestId] after any quantity restriction. When not
+  /// empty, the first is the best and the second, if present, the runner-up.
+  /// Empty for a result rejected before scoring. Unmodifiable.
+  final List<TitleCandidate> candidates;
 }
 
 /// A title accepted as catalog item [bestId].
@@ -144,6 +179,7 @@ final class TitleAccepted extends TitleMatch {
     required super.confirmedBy,
     required super.mode,
     required super.revision,
+    super.candidates,
   });
 }
 
@@ -161,6 +197,7 @@ final class TitleRejected extends TitleMatch {
     super.confirmedBy,
     required super.mode,
     required super.revision,
+    super.candidates,
   });
 
   /// Why the title was rejected.
@@ -568,7 +605,8 @@ TitleConfirmation? confirmTitle(TitleMatchIndex index, String ocrText) {
 /// Checks run in this order: mode mismatch, empty catalog, title too short,
 /// UI chrome, then scoring. Every result carries the normalised title, the
 /// best and runner-up IDs and scores, the margin, the confirming matcher's
-/// pick, and the index's mode and revision.
+/// pick, the ranked candidates, and the index's mode and revision. Results
+/// rejected before scoring carry no candidates.
 TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
   final title = normaliseTitle(ocrText);
   TitleRejected reject(
@@ -579,6 +617,7 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     double runnerUpScore = 0,
     double margin = 0,
     TitleConfirmation? confirmedBy,
+    List<TitleCandidate> candidates = const [],
   }) => TitleRejected(
     reason: reason,
     normalisedTitle: title,
@@ -590,6 +629,7 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     confirmedBy: confirmedBy,
     mode: index.mode,
     revision: index.revision,
+    candidates: candidates,
   );
 
   if (mode != index.mode) return reject(TitleRejectReason.catalogModeMismatch);
@@ -638,6 +678,34 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     }
   }
 
+  // Insertion pass: the top distinct-name entries, score then ID.
+  final ranked = <int>[];
+  for (var i = 0; i < count; i++) {
+    if (restrict && index._lastNumbers[i] != quantity) continue;
+    final twin = ranked.indexWhere((r) => index._names[r] == index._names[i]);
+    if (twin >= 0) {
+      if (index._ids[i].compareTo(index._ids[ranked[twin]]) >= 0) continue;
+      ranked.removeAt(twin);
+    }
+    var at = ranked.length;
+    while (at > 0 && _ranksBefore(index, scores, i, ranked[at - 1])) {
+      at--;
+    }
+    if (at >= maxTitleCandidates) continue;
+    ranked.insert(at, i);
+    if (ranked.length > maxTitleCandidates) ranked.removeLast();
+  }
+  final candidates = List<TitleCandidate>.unmodifiable([
+    for (final r in ranked) TitleCandidate(index._ids[r], scores[r]),
+  ]);
+  assert(
+    candidates.isEmpty ||
+        (candidates[0].id == index._ids[best] &&
+            (candidates.length < 2 ||
+                candidates[1].id == (runner < 0 ? null : index._ids[runner]))),
+    'candidates must start with the best and the runner-up',
+  );
+
   final bestScore = scores[best];
   final runnerScore = runner < 0 ? 0.0 : scores[runner];
   final margin = singleMargin(bestScore, runnerScore);
@@ -660,6 +728,7 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
       runnerUpScore: runnerScore,
       margin: margin,
       confirmedBy: confirmation,
+      candidates: candidates,
     );
   }
   return TitleAccepted(
@@ -672,8 +741,14 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     confirmedBy: confirmation,
     mode: index.mode,
     revision: index.revision,
+    candidates: candidates,
   );
 }
+
+/// Whether item [a] ranks before item [b]: higher score, then smaller ID.
+bool _ranksBefore(TitleMatchIndex index, Float64List scores, int a, int b) =>
+    scores[a] > scores[b] ||
+    (scores[a] == scores[b] && index._ids[a].compareTo(index._ids[b]) < 0);
 
 /// One recognised title candidate offered to [rankOutcome], carrying the
 /// caller's own [evidence] payload.

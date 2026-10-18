@@ -231,6 +231,84 @@ void main() {
     });
   });
 
+  group('candidates', () {
+    test('candidates are the top five distinct names, best then runner-up '
+        'first', () {
+      final title = 'a' * 10;
+      // Edit distance n from the title gives a strictly falling score; the
+      // IDs are out of order so that ranking by score, not ID, is proved.
+      const ids = ['e', 'a', 'g', 'c', 'f', 'b', 'd'];
+      final m = match([
+        for (var n = 0; n < ids.length; n++)
+          item(ids[n], edited(title, n), normalized: edited(title, n)),
+      ], title);
+      expect(m.candidates.map((c) => c.id), ['e', 'a', 'g', 'c', 'f']);
+      final scores = [for (final c in m.candidates) c.score];
+      expect(
+        scores,
+        orderedEquals([...scores]..sort((a, b) => b.compareTo(a))),
+      );
+      expect(scores.toSet(), hasLength(5));
+      expect(m.candidates.first.id, m.bestId);
+      expect(m.candidates.first.score, m.bestScore);
+      expect(m.candidates[1].id, m.runnerUpId);
+      expect(m.candidates[1].score, m.runnerUpScore);
+      expect(
+        () => m.candidates.add(m.candidates.first),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('duplicate normalised names appear once in the candidates', () {
+      final m = match([
+        item('b2', 'Gas analyzer'),
+        item('a1', 'Gas analyzer'),
+        item('c3', 'Gas mask'),
+      ], 'Gas analyzer');
+      expect(m.candidates.map((c) => c.id), ['a1', 'c3']);
+    });
+
+    test('a two-item index gives two candidates', () {
+      final m = match([
+        item('a1', 'Gas analyzer'),
+        item('c3', 'Gas mask'),
+      ], 'Gas analyzer');
+      expect(m.candidates, hasLength(2));
+    });
+
+    test('results rejected before scoring carry no candidates', () {
+      final items = [item('a1', 'Gas analyzer'), item('c3', 'Gas mask')];
+      final results = [
+        match(items, 'AK'),
+        match(items, 'Subject Search'),
+        match(const [], 'Gas analyzer'),
+        match(items, 'Gas analyzer', mode: GameMode.pve),
+      ];
+      expect(
+        [for (final m in results) rejected(m).reason],
+        [
+          TitleRejectReason.titleTooShort,
+          TitleRejectReason.uiChrome,
+          TitleRejectReason.emptyCatalog,
+          TitleRejectReason.catalogModeMismatch,
+        ],
+      );
+      for (final m in results) {
+        expect(m.candidates, isEmpty);
+      }
+    });
+
+    test('quantity restriction limits the candidates', () {
+      final m = match([
+        item('p20', 'Ammo pack (20 pcs)'),
+        item('p200', 'Ammo pack (200 pcs)'),
+        item('q200', 'Ammo box (200 pcs)'),
+        item('p30', 'Ammo pack (30 pcs)'),
+      ], 'Ammo pack (200 pcs)');
+      expect(m.candidates.map((c) => c.id), ['p200', 'q200']);
+    });
+  });
+
   group('single precision', () {
     test('float32 margin of 0.95 vs 0.90 is accepted at the gate', () {
       final title = 'a' * 20;
