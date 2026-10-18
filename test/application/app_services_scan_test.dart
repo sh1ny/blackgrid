@@ -9,6 +9,7 @@ import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,6 +161,38 @@ void main() {
 
     expect(selection.scan?.reportId, report.id);
     expect(h.services.history.rows.single.observedAt, recorded.observedAt);
+    expect(h.services.history.rows, hasLength(1));
+  });
+
+  test('session change through AppServices retires the scan', () async {
+    final ports = ScanFakePorts();
+    final h = M1Harness(scanPorts: ports);
+    addTearDown(h.dispose);
+    await h.initialize();
+    final logs = Directory.systemTemp.createTempSync('blackgrid-app-session-');
+    addTearDown(() => logs.delete(recursive: true));
+
+    await publishTargetedScan(
+      h.services.scanner,
+      ports,
+      text: 'Alternative component',
+    );
+    await untilRow(
+      h.services.history,
+      (row) => row.itemId == 'item-b' && row.source == ActivitySource.scan,
+    );
+    final selection = h.services.selection;
+    selection.setFir(FirState.yes);
+    final session = h.services.mapSession.state.sessionEpoch;
+
+    // A new game-log directory is a new session in the same mode.
+    await h.services.settings.setMapInputs(gameLogDirectory: logs.path);
+
+    expect(h.services.mapSession.state.sessionEpoch, greaterThan(session));
+    expect(h.services.catalog.mode, GameMode.pvp);
+    expect(selection.scan, isNull);
+    expect(selection.scanRetired, isTrue);
+    expect(selection.fir, FirState.unknown);
     expect(h.services.history.rows, hasLength(1));
   });
 }

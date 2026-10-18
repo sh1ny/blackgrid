@@ -207,8 +207,8 @@ void main() {
     await scanLanded('item-b');
 
     epoch.value = const ScanEpoch(2, 1);
+    // AppServices retires the scan itself; the test feed is not called.
     await h.services.setMode(GameMode.pve);
-    feed.epochChanged();
 
     expect(selection.scan, isNull);
     expect(selection.scanRetired, isTrue);
