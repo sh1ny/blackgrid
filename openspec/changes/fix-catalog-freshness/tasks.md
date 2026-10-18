@@ -45,7 +45,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 
 ## 4. Expiry from observation only (D4)
 
-- [ ] 4.1 Write the red controller test for row 7 with `testWidgets` fake time. A `ControlledCatalogClient` returns `decisionCatalog(times: {'items': T - 23 h, ...})` observed at T. Assert `current` after refresh, still `current` after pumping to T + 2 h, and `stale` after pumping to T + 24 h + 1 ms without calling `updateAge`, with `client.calls == 1`. Run it and record the failure. On the current code the timer fires at T + 1 h and nothing demotes at T + 24 h. Run it after 2.2, so the failure is caused by the timer and not by authority.
+- [x] 4.1 Write the red controller test for row 7 with `testWidgets` fake time. A `ControlledCatalogClient` returns `decisionCatalog(times: {'items': T - 23 h, ...})` observed at T. Assert `current` after refresh, still `current` after pumping to T + 2 h, and `stale` after pumping to T + 24 h + 1 ms without calling `updateAge`, with `client.calls == 1`. Run it and record the failure. On the current code the timer fires at T + 1 h and nothing demotes at T + 24 h. Run it after 2.2, so the failure is caused by the timer and not by authority.
 - [ ] 4.2 In `lib/application/catalog_controller.dart:109-121`, arm the timer at `observedAt + 24 h` only and remove the source-time loop. Rerun the whole controller file to green (rows 1, 6, 7, and row 8 rerun as the green check), and flip rows 1 (controller part), 6, 7 and 8.
 
 ## 5. Evidence panel text
