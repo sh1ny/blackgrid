@@ -50,7 +50,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 
 ## 5. Evidence panel text
 
-- [ ] 5.1 Write the red `label` test (row 13) for a new top-level pure function in `lib/ui/evidence_panels.dart` (or a small sibling file). It returns `Items source update: <ISO-8601 UTC>` when the items source time exists and `Items source update: unknown` when it is absent. Run it red.
+- [x] 5.1 Write the red `label` test (row 13) for a new top-level pure function in `lib/ui/evidence_panels.dart` (or a small sibling file). It returns `Items source update: <ISO-8601 UTC>` when the items source time exists and `Items source update: unknown` when it is absent. Run it red.
 - [ ] 5.2 Implement the function and use it in place of the `Source freshness:` line (`evidence_panels.dart:120-123`). Change the subtitle at `evidence_panels.dart:103` from `Observation is not source freshness` to `Catalog age is measured from download`. Run the label test and `test/ui/` to green, and flip row 13.
 
 ## 6. Documentation
