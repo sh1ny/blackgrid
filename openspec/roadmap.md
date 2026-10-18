@@ -30,13 +30,26 @@ Retires risk 6 (input/mode/map/refresh races) from [§12](../docs/IMPLEMENTATION
 5. `add-map-scan-snapshot` - a producer for `SessionScanState`: accepted scan events advance the session-only latest-scan card on Map monotonically, once per generation; Map shows it passively and scanning keeps working while Map is open. Needs change 2.
 6. `qualify-scanner-latency` - a report over `scan-timings.jsonl` for the p95 figures, the reference timing baseline and reference corpus outcomes recorded by the user, and the M4 qualification evidence. Investigates any coverage gap it finds, including the no-flea Weapon case false positive (scans 0012/0013), which shares its title with the flea-listable case. Needs changes 1-5.
 
-## Next: M6 - replacement qualification
+## Next: M4.5 - player-facing polish and own map markers
 
-Clean-machine release bundle with packaged DLLs, models, artwork and notices; full display and mixed-monitor matrix (the M2 corpus covers 3440×1440 only); offline, refresh and auth failures; restart, import and history correctness (risks 3 and 7); [§14](../docs/IMPLEMENTATION_STRATEGY.md#14-definition-of-done) definition of done. Also closes the user-only checks M3 waived and M5 left pending (real saved panels, extract/transit highlights, automatic floors). Also chooses the installer format (MSIX or Inno Setup) and starts GitHub Releases with the packaged installer, plus code signing and CI builds if needed; until then versions are tags with local builds only ([Release versioning](#release-versioning-add-release-versioning)).
+Runs after M4 closes and before M6. M4 stays as planned, so `add-map-scan-snapshot` still lands its Map card first; this milestone then merges the two scan cards. Decided with the user on 2026-10-18 after their live tests on `5d3f7d0`: the Map rail shows information players will not read in a raid, says the same thing twice and uses developer terms, and the markers are placeholder rings. Blackgrid draws its own marker icons. The tarkov.dev set the reference companion uses is MIT in name, but its originals came from the Tarkov wiki (`the-hideout/tarkov-dev` commit `bb40b16`), so their rights are unclear.
+
+**Exit criteria:**
+- The Map rail shows one scan card. Map saved-file inputs sits at the bottom of the rail, collapsed by default. (agent for widget state; user for the in-raid read)
+- Every marker category draws its own Blackgrid-authored icon. Selection, dimming, highlighted exits and saved pins still work. Each icon file has its provenance recorded, and no third-party marker art ships. (agent)
+- Marker preferences is a uniform grid of clickable icon tiles with player-facing labels. Show all, Hide all, search and the quest filters keep working. (agent; user for the look)
+- Player-facing strings use plain language: no raw enum names or internal category keys. Developer detail (scan evidence scores and timings, source authority) sits behind a collapsed Details section or a diagnostics setting. (agent for the string inventory; user for the read)
+
+**Changes** (in order; each about one PR):
+1. `polish-map-rail` - one scan card instead of two (the decision card absorbs the latest-scan card), the Active map picker on its own row, and Map saved-file inputs moved to the bottom and collapsed. Needs M4.
+2. `design-map-marker-icons` - explores how to make our own icons and produces the set. Hand-drawn SVG vectors come first; ChatGPT image generation is allowed for concepts, redrawn as vectors. One icon per marker category in one consistent style, readable at 24 px on the dark map, with colours that keep each category's meaning. The user picks from rendered previews, and each file's provenance is recorded (own work, or AI-assisted with the tool named). Independent.
+3. `add-map-marker-icons` - maps each marker category to its icon and draws it in place of the placeholder ring, keeping selection, dimming, highlighted exits and pins. Adds a check that every bundled map icon has a provenance entry. Needs change 2.
+4. `redo-marker-preferences` - a uniform grid of clickable icon tiles with readable labels, in place of the raw-key chips. Needs change 3.
+5. `plain-language-pass` - rewrites player-facing strings across Scanner, Map, the decision card, Settings and the shell; maps enums and category keys to labels; moves developer detail behind Details or a diagnostics setting. Needs change 1.
 
 ## Later
 
-- Nothing planned beyond M6.
+- M6 - replacement qualification. Clean-machine release bundle with packaged DLLs, models, artwork and notices; full display and mixed-monitor matrix (the M2 corpus covers 3440×1440 only); offline, refresh and auth failures; restart, import and history correctness (risks 3 and 7); [§14](../docs/IMPLEMENTATION_STRATEGY.md#14-definition-of-done) definition of done. Also closes the user-only checks M3 waived and M5 left pending (real saved panels, extract/transit highlights, automatic floors). Also chooses the installer format (MSIX or Inno Setup) and starts GitHub Releases with the packaged installer, plus code signing and CI builds if needed; until then versions are tags with local builds only ([Release versioning](#release-versioning-add-release-versioning)).
 
 ## Release versioning (`add-release-versioning`)
 
