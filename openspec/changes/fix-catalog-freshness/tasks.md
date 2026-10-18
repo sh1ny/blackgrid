@@ -60,7 +60,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 ## 7. Integration checks
 
 - [x] 7.1 Run `mise run analyze` and `mise run test`, and format every changed Dart file with pinned `dart format` (`mise exec -- dart format <files>`). Fix failures without weakening any authority, ownership or validation check. Record both results.
-- [ ] 7.2 Run `openspec validate fix-catalog-freshness --strict` and confirm every test-map row is green.
+- [x] 7.2 Run `openspec validate fix-catalog-freshness --strict` and confirm every test-map row is green.
 
 ## Workflow follow-up
 
