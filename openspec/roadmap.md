@@ -8,7 +8,7 @@ Milestone IDs keep the implementation strategy's numbering (M0–M6), so they ma
 
 ## Now: M4 - complete raid-time Scanner slice
 
-**Outcome:** A mouse release or a global hotkey over an item inspection drives recognition through the mode-correct catalog, session progress and the shared decision engine into Scanner advice, correction and history, while Map is open; accepted scans feed the passive latest-scan card on Map. Scans are fast enough to act on: targeted ≤300 ms p95 from the trigger.
+**Outcome:** A mouse release or a global hotkey over an item inspection drives recognition through the mode-correct catalog, session progress and the shared decision engine into Scanner advice, correction and history, while Map is open; on Map the accepted scan drives the rail's one decision card, with no separate latest-scan panel. Scans are fast enough to act on: targeted ≤300 ms p95 from the trigger.
 
 Retires risk 6 (input/mode/map/refresh races) from [§12](../docs/IMPLEMENTATION_STRATEGY.md#12-risks-and-prototypes) and closes the [§6](../docs/IMPLEMENTATION_STRATEGY.md#6-scanner-strategy) latency and coverage gate.
 
@@ -17,7 +17,7 @@ Retires risk 6 (input/mode/map/refresh races) from [§12](../docs/IMPLEMENTATION
 - An accepted scan, automatic or manual, produces one decision from the shared engine against the mode-correct catalog and session progress. Unaccepted evidence never yields a recommendation; it offers correction. Fixture tests cover every rule of the precedence table for scan input. (agent)
 - Latest-wins bursts, late completions, mode or session changes, correction, history selection and catalog/progress refresh cannot publish a stale decision, record a scan twice or advance the Map snapshot as a new accepted scan. Proven by service tests over the scan, selection and snapshot state. (agent)
 - The global hotkey runs the same pipeline as the mouse trigger; a registration conflict shows the trigger as unavailable and allows rebinding; the hotkey is unregistered on rebinding and shutdown. (agent for state and registration fakes; user for a live hotkey scan)
-- Map shows the latest accepted scan as a passive card, and scanning works with Map open. (agent for state; user live)
+- Map shows the latest accepted scan in its one decision card, with no separate latest-scan panel, and scanning works with Map open. (agent for state; user live)
 - The reference timing baseline is recorded on the named Windows setup. (user)
 - From the timing log of a live session with recording off: targeted ≤300 ms p95 from trigger to decision, fallback visibly underway by about 300 ms, ≤1.5 s p95 total. (user runs it; the agent computes the figures)
 - On the labelled corpus, coverage is at least the reference's and false positives are no worse, compared against the reference's outcomes on the same cases. (agent, once the user has recorded the reference outcomes)
@@ -27,21 +27,21 @@ Retires risk 6 (input/mode/map/refresh races) from [§12](../docs/IMPLEMENTATION
 2. `add-scan-decisions` - an accepted scan selects its item through the mode-correct catalog and session progress, feeds the shared decision engine and records activity history, fenced by scan generation and session/mode epoch. Resets transient FIR on each new scan, applies advice aging, and keeps history selection and refresh from counting as new scans. Lifts ADR-0013's "no decisions from scans before M4". Independent.
 3. `add-scan-correction` - unaccepted and ambiguous evidence offers its best candidates for an explicit transient correction instead of a recommendation (the M2 corpus misses ANA M1 OD Green and the M855A1 ammo pack are ambiguous between close-named variants). A correction changes the displayed decision without masquerading as a new scan. Needs change 2.
 4. `add-scan-hotkey-trigger` - a global `RegisterHotKey` trigger on the capture boundary's input thread, feeding the same scan flow as its own trigger source, with conflict reporting, rebinding and unregistration. Independent.
-5. `add-map-scan-snapshot` - a producer for `SessionScanState`: accepted scan events advance the session-only latest-scan card on Map monotonically, once per generation; Map shows it passively and scanning keeps working while Map is open. Needs change 2.
+5. `add-map-scan-snapshot` - a producer for `SessionScanState`: accepted scan events advance the session-only latest scan on Map monotonically, once per generation, and scanning keeps working while Map is open. The rail's decision card shows it; the stub "Latest accepted scan" panel is removed, not built out (the user decided on 2026-10-18 that two scan cards are redundant). Needs change 2.
 6. `qualify-scanner-latency` - a report over `scan-timings.jsonl` for the p95 figures, the reference timing baseline and reference corpus outcomes recorded by the user, and the M4 qualification evidence. Investigates any coverage gap it finds, including the no-flea Weapon case false positive (scans 0012/0013), which shares its title with the flea-listable case. Needs changes 1-5.
 
 ## Next: M4.5 - player-facing polish and own map markers
 
-Runs after M4 closes and before M6. M4 stays as planned, so `add-map-scan-snapshot` still lands its Map card first; this milestone then merges the two scan cards. Decided with the user on 2026-10-18 after their live tests on `5d3f7d0`: the Map rail shows information players will not read in a raid, says the same thing twice and uses developer terms, and the markers are placeholder rings. Blackgrid draws its own marker icons. The tarkov.dev set the reference companion uses is MIT in name, but its originals came from the Tarkov wiki (`the-hideout/tarkov-dev` commit `bb40b16`), so their rights are unclear.
+Runs after M4 closes and before M6. M4's `add-map-scan-snapshot` already leaves Map with one scan card. Decided with the user on 2026-10-18 after their live tests on `5d3f7d0`: the Map rail shows information players will not read in a raid, says the same thing twice and uses developer terms, and the markers are placeholder rings. Blackgrid draws its own marker icons. The tarkov.dev set the reference companion uses is MIT in name, but its originals came from the Tarkov wiki (`the-hideout/tarkov-dev` commit `bb40b16`), so their rights are unclear.
 
 **Exit criteria:**
-- The Map rail shows one scan card. Map saved-file inputs sits at the bottom of the rail, collapsed by default. (agent for widget state; user for the in-raid read)
+- Map saved-file inputs sits at the bottom of the rail, collapsed by default. (agent for widget state; user for the in-raid read)
 - Every marker category draws its own Blackgrid-authored icon. Selection, dimming, highlighted exits and saved pins still work. Each icon file has its provenance recorded, and no third-party marker art ships. (agent)
 - Marker preferences is a uniform grid of clickable icon tiles with player-facing labels. Show all, Hide all, search and the quest filters keep working. (agent; user for the look)
 - Player-facing strings use plain language: no raw enum names or internal category keys. Developer detail (scan evidence scores and timings, source authority) sits behind a collapsed Details section or a diagnostics setting. (agent for the string inventory; user for the read)
 
 **Changes** (in order; each about one PR):
-1. `polish-map-rail` - one scan card instead of two (the decision card absorbs the latest-scan card), the Active map picker on its own row, and Map saved-file inputs moved to the bottom and collapsed. Needs M4.
+1. `polish-map-rail` - the Active map picker on its own row, and Map saved-file inputs moved to the bottom and collapsed. Needs M4.
 2. `design-map-marker-icons` - explores how to make our own icons and produces the set. Hand-drawn SVG vectors come first; ChatGPT image generation is allowed for concepts, redrawn as vectors. One icon per marker category in one consistent style, readable at 24 px on the dark map, with colours that keep each category's meaning. The user picks from rendered previews, and each file's provenance is recorded (own work, or AI-assisted with the tool named). Independent.
 3. `add-map-marker-icons` - maps each marker category to its icon and draws it in place of the placeholder ring, keeping selection, dimming, highlighted exits and pins. Adds a check that every bundled map icon has a provenance entry. Needs change 2.
 4. `redo-marker-preferences` - a uniform grid of clickable icon tiles with readable labels, in place of the raw-key chips. Needs change 3.
