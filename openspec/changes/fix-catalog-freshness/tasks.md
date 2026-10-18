@@ -25,7 +25,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 | Source-time evidence reflects what the source provides | Items without update times | normalizer | items without updated leave every source time absent and stay authoritative || green |
 | Source-time evidence reflects what the source provides | Malformed item update time | normalizer; controller | malformed item updated fails validation; refresh failure retains last-good || green |
 | Source-time evidence reflects what the source provides | Dataset-level update field is ignored | normalizer | dataset-level updated is ignored || green |
-| Source-time evidence reflects what the source provides | Evidence view with no items update time | label | absent items source time reads unknown | red |
+| Source-time evidence reflects what the source provides | Evidence view with no items update time | label | absent items source time reads unknown || green |
 
 "Red" for the controller expiry row means the test is rewritten: today it passes only because the fixture carries dataset-level times, and it must keep passing with `decisionCatalog`'s new items-only default. The malformed-time row is red for the normalizer part, which is a new assertion; the controller part reuses the existing last-good path.
 
@@ -51,7 +51,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 ## 5. Evidence panel text
 
 - [x] 5.1 Write the red `label` test (row 13) for a new top-level pure function in `lib/ui/evidence_panels.dart` (or a small sibling file). It returns `Items source update: <ISO-8601 UTC>` when the items source time exists and `Items source update: unknown` when it is absent. Run it red.
-- [ ] 5.2 Implement the function and use it in place of the `Source freshness:` line (`evidence_panels.dart:120-123`). Change the subtitle at `evidence_panels.dart:103` from `Observation is not source freshness` to `Catalog age is measured from download`. Run the label test and `test/ui/` to green, and flip row 13.
+- [x] 5.2 Implement the function and use it in place of the `Source freshness:` line (`evidence_panels.dart:120-123`). Change the subtitle at `evidence_panels.dart:103` from `Observation is not source freshness` to `Catalog age is measured from download`. Run the label test and `test/ui/` to green, and flip row 13.
 
 ## 6. Documentation
 
