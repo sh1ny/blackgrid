@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
+import '../domain/settings.dart';
 import 'theme.dart';
 
 /// The evidence line for the newest items source update in [snapshot].
@@ -184,6 +185,11 @@ class SourcePanel extends StatelessWidget {
   );
 }
 
+String _sourceLabel(ActivitySource source) => switch (source) {
+  ActivitySource.scan => 'Scan',
+  _ => source.name,
+};
+
 class HistoryPanel extends StatelessWidget {
   const HistoryPanel({super.key, required this.services});
   final AppServices services;
@@ -197,7 +203,7 @@ class HistoryPanel extends StatelessWidget {
     builder: (context, _) => GridPanel(
       title: 'Recent item activity',
       icon: Icons.history,
-      subtitle: 'Identity activity • not accepted scans',
+      subtitle: 'Item activity • manual picks and accepted scans',
       child: services.history.rows.isEmpty
           ? Center(
               child: Text(
@@ -233,7 +239,7 @@ class HistoryPanel extends StatelessWidget {
                       ),
                       title: Text(name ?? row.itemId),
                       subtitle: Text(
-                        '${modeLabel(row.mode)} • ${row.source.name}\n${row.observedAt.toUtc().toIso8601String()}',
+                        '${modeLabel(row.mode)} • ${_sourceLabel(row.source)}\n${row.observedAt.toUtc().toIso8601String()}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       onTap: () => services.selection.openHistory(row),

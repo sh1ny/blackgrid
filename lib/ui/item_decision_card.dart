@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../application/accepted_scan.dart';
 import '../application/app_services.dart';
+import '../application/selection_controller.dart';
 import '../domain/decision.dart';
 import 'theme.dart';
 
@@ -12,6 +14,13 @@ String recommendationLabel(Recommendation value) => switch (value) {
   Recommendation.trader => 'Trader',
   Recommendation.priceUnavailable => 'Price unavailable',
 };
+
+/// A short age such as `0 s`, `42 s`, `5 min` or `3 h`, for the card.
+String scanAgeLabel(Duration age) {
+  if (age.inMinutes < 1) return '${age.inSeconds} s';
+  if (age.inHours < 1) return '${age.inMinutes} min';
+  return '${age.inHours} h';
+}
 
 class ItemDecisionCard extends StatelessWidget {
   const ItemDecisionCard({
@@ -28,13 +37,18 @@ class ItemDecisionCard extends StatelessWidget {
       final selection = services.selection;
       final item = selection.item;
       final decision = selection.decision;
+      final scan = selection.scan;
       return GridPanel(
         title: selection.isHistory
             ? 'History inspection'
+            : scan != null
+            ? 'Accepted scan'
             : 'Current manual inspection',
         icon: Icons.center_focus_strong,
         subtitle: selection.isHistory
             ? 'Stored ${modeLabel(selection.inspectionMode)} context • live mode unchanged'
+            : scan != null
+            ? 'Scanned ${_scanAge(selection, scan)} ago • shared item decision'
             : 'Shared item decision • not an accepted scan',
         trailing: selection.isHistory
             ? IconButton(
@@ -57,7 +71,9 @@ class ItemDecisionCard extends StatelessWidget {
                     selection.loadingHistory
                         ? 'Opening stored-mode catalog…'
                         : selection.selectedId == null
-                        ? 'Find an item to inspect'
+                        ? selection.scanRetired
+                              ? 'Last scan was in an earlier mode or session; scan again'
+                              : 'Find an item to inspect'
                         : 'Identity retained • catalog unavailable',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge,
@@ -148,7 +164,9 @@ class ItemDecisionCard extends StatelessWidget {
                           children: [
                             Container(
                               width: 185,
-                              height: 220,
+                              constraints: const BoxConstraints(minHeight: 220),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               margin: const EdgeInsets.only(right: 20),
                               decoration: BoxDecoration(
                                 color: GridColors.inset,
@@ -158,7 +176,7 @@ class ItemDecisionCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
                                     Icons.inventory_2_outlined,
@@ -222,6 +240,9 @@ class ItemDecisionCard extends StatelessWidget {
       );
     },
   );
+  String _scanAge(SelectionController selection, AcceptedScan scan) =>
+      scanAgeLabel(selection.clock().toUtc().difference(scan.acceptedAt));
+
   Widget _value(String title, String value, String detail) => Container(
     width: 180,
     padding: const EdgeInsets.all(12),

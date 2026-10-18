@@ -177,7 +177,20 @@ class CustomPin {
   );
 }
 
-enum ActivitySource { manual, importedScan, importedManual }
+/// Where an [ItemActivity] observation came from.
+enum ActivitySource {
+  /// A manual inspection recorded by the user.
+  manual,
+
+  /// An accepted live scan recorded by the app.
+  scan,
+
+  /// A scan observation brought in from a legacy import.
+  importedScan,
+
+  /// A manual observation brought in from a legacy import.
+  importedManual,
+}
 
 class ItemActivity {
   const ItemActivity({

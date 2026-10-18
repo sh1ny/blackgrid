@@ -218,8 +218,9 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
   Future<ItemActivity> recordActivity(
     String itemId,
     GameMode mode,
-    DateTime time,
-  ) => transaction(() async {
+    DateTime time, {
+    ActivitySource source = ActivitySource.manual,
+  }) => transaction(() async {
     if (itemId.isEmpty || mode == GameMode.unknown) {
       throw ArgumentError('Activity requires a known identity and mode.');
     }
@@ -231,7 +232,7 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
     final row = ItemActivity(
       itemId: itemId,
       mode: mode,
-      source: ActivitySource.manual,
+      source: source,
       observedAt: time.toUtc(),
       revision: (old?.revision ?? 0) + 1,
     );

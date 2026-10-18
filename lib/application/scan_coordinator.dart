@@ -29,6 +29,7 @@ import '../domain/catalog.dart';
 import '../domain/title_matching.dart';
 import 'catalog_controller.dart';
 import 'recognition_matcher.dart';
+import 'scan_epoch.dart';
 import 'settings_controller.dart';
 
 /// Where live scanning is in its activation life.
@@ -652,6 +653,16 @@ final class ScanSuperseded extends ScanEnd {
   String get logName => 'superseded';
 }
 
+/// Where accepted scans come from: a [Listenable] that exposes the newest
+/// accepted [ScanReport].
+///
+/// [ScanCoordinator] is the app's source. Consumers such as the decision feed
+/// depend on this interface, so the coordinator never imports them.
+abstract interface class AcceptedScanSource implements Listenable {
+  /// The most recent accepted scan, or null before any scan is accepted.
+  ScanReport? get lastAccepted;
+}
+
 /// Everything known about one finished scan.
 ///
 /// Crop bytes are kept only on the latest and the last accepted published
@@ -670,6 +681,7 @@ final class ScanReport {
     this.fallback,
     this.catalogMode,
     this.catalogRevision,
+    this.epoch,
   });
 
   /// Identifies the report within the session.
@@ -696,6 +708,10 @@ final class ScanReport {
 
   /// Revision of the index the scan matched against, or null.
   final String? catalogRevision;
+
+  /// The epoch read when the scan began, or null for a report built without
+  /// one. It is not part of the timing log line.
+  final ScanEpoch? epoch;
 
   /// The scan's QPC stamps.
   final ScanTimeline timeline;
@@ -759,6 +775,7 @@ final class ScanReport {
     fallback: _stripPass(fallback),
     catalogMode: catalogMode,
     catalogRevision: catalogRevision,
+    epoch: epoch,
     timeline: timeline,
     droppedTriggers: droppedTriggers,
     supersededTriggers: supersededTriggers,
@@ -1247,10 +1264,14 @@ enum _Stage { waiting, capture, vision, matching }
 /// A trigger waiting for the scan in flight to return from capture, and the
 /// number of older pending triggers it replaced.
 final class _Pending {
-  _Pending(this.trigger, this.replaced);
+  _Pending(this.trigger, this.replaced, this.epoch);
 
   final ScanTrigger trigger;
   final int replaced;
+
+  /// Read when the trigger arrived, not when it starts its scan, so a mode
+  /// or session change during the wait fences its result.
+  final ScanEpoch epoch;
 }
 
 /// One scan in flight: its trigger, the stamps and results gathered so far.
@@ -1261,6 +1282,7 @@ final class _Scan {
     required this.id,
     required this.generation,
     required this.replacedTriggers,
+    required this.epoch,
   });
 
   final _Activation activation;
@@ -1273,6 +1295,9 @@ final class _Scan {
 
   /// Older pending triggers dropped before this scan started.
   final int replacedTriggers;
+
+  /// The epoch read when this scan began.
+  final ScanEpoch epoch;
 
   /// Triggers that arrived while this scan ran.
   int supersedingTriggers = 0;
@@ -1413,9 +1438,11 @@ Future<void> _timerWaiter(Duration duration) {
 /// Activations run through one chain of futures, each link bounded, and carry
 /// a token: a stop (switch-off or dispose) retires the activation at once and
 /// closes every constructed service without waiting for the step in flight.
-class ScanCoordinator extends ChangeNotifier {
+class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   /// Creates a coordinator. The factories default to the real services;
   /// [runtimeDirectory] defaults to the directory of the running executable.
+  /// [epoch] reads the app's epoch when a scan begins, or when its trigger
+  /// is queued behind a capture, and defaults to a constant.
   ScanCoordinator({
     required this.settings,
     required this.catalog,
@@ -1432,7 +1459,9 @@ class ScanCoordinator extends ChangeNotifier {
     this.settleDelay = const Duration(milliseconds: 50),
     this.fallbackDelay = const Duration(milliseconds: 200),
     this._recorder,
+    ScanEpoch Function()? epoch,
   }) : _waiter = waiter ?? _timerWaiter,
+       _epoch = epoch ?? _constantEpoch,
        runtimeDirectory =
            runtimeDirectory ?? File(Platform.resolvedExecutable).parent.path {
     catalog.addListener(_syncIndex);
@@ -1476,6 +1505,9 @@ class ScanCoordinator extends ChangeNotifier {
   final ScanPlatformFactory _platformFactory;
   final ScanWaiter _waiter;
   final ScanFrameRecorder? _recorder;
+  final ScanEpoch Function() _epoch;
+
+  static ScanEpoch _constantEpoch() => const ScanEpoch(0, 0);
 
   ScanPlatform? _platform;
   _Activation? _current;
@@ -1575,6 +1607,7 @@ class ScanCoordinator extends ChangeNotifier {
   /// It stays until a newer scan is accepted, so Scanner keeps showing it
   /// while later scans are rejected or fail. Crop bytes are kept for it as
   /// well as for [latest].
+  @override
   ScanReport? get lastAccepted => _lastAccepted;
 
   /// The most recent published scans, newest first, at most [recentLimit].
@@ -2010,6 +2043,7 @@ class ScanCoordinator extends ChangeNotifier {
         _pending = _Pending(
           trigger,
           waiting == null ? 0 : waiting.replaced + 1,
+          _epoch(),
         );
       case _Stage.waiting:
         active.cancel();
@@ -2022,13 +2056,19 @@ class ScanCoordinator extends ChangeNotifier {
     }
   }
 
-  void _begin(_Activation a, ScanTrigger trigger, {required int replaced}) {
+  void _begin(
+    _Activation a,
+    ScanTrigger trigger, {
+    required int replaced,
+    ScanEpoch? epoch,
+  }) {
     final scan = _Scan(
       activation: a,
       trigger: trigger,
       id: _nextReportId++,
       generation: _scanGeneration,
       replacedTriggers: replaced,
+      epoch: epoch ?? _epoch(),
     );
     _active = scan;
     _setPhase(scan, ScanPhase.targeted);
@@ -2066,7 +2106,7 @@ class ScanCoordinator extends ChangeNotifier {
     _pending = null;
     final a = _current;
     if (next == null || a == null || a.retired || _disposed) return;
-    _begin(a, next.trigger, replaced: next.replaced);
+    _begin(a, next.trigger, replaced: next.replaced, epoch: next.epoch);
   }
 
   void _setPhase(_Scan s, ScanPhase phase) {
@@ -2682,6 +2722,7 @@ class ScanCoordinator extends ChangeNotifier {
               : null),
       catalogMode: s.catalogMode,
       catalogRevision: s.catalogRevision,
+      epoch: s.epoch,
       timeline: ScanTimeline(
         trigger: s.trigger.event.qpc,
         published: published,
