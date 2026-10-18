@@ -380,10 +380,18 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       }
     }
   }
-  final times = <String, DateTime?>{};
-  for (final key in catalogDatasets) {
-    times[key] = _time(roots[key]!['updated']);
+  // The live datasets carry no dataset-level time; only items have per-item
+  // `updated` values. Source times are evidence, never authority.
+  DateTime? newestItem;
+  for (final item in items.values) {
+    final time = item.updatedAt;
+    if (time != null && (newestItem == null || time.isAfter(newestItem))) {
+      newestItem = time;
+    }
   }
+  final times = <String, DateTime?>{
+    for (final key in catalogDatasets) key: key == 'items' ? newestItem : null,
+  };
   final revisionBytes = utf8.encode(
     jsonEncode([
       wire.mode.name,

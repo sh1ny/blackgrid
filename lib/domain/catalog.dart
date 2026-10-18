@@ -290,30 +290,31 @@ class CatalogSnapshot {
   final Map<String, CatalogItem> items;
   final Map<String, CatalogTrader> traders;
   final List<ItemRequirement> requirements;
+
+  /// Source-time evidence for each of the six datasets, for display only.
+  ///
+  /// The `items` entry is the newest per-item `updated` value. The other
+  /// datasets carry no source time, so their entries are null. These times
+  /// never grant or revoke [authoritativeAt].
   final Map<String, DateTime?> sourceTimestamps;
   final List<String> localizationErrors;
   final Map<String, int> datasetCounts;
   late final Map<String, List<ItemRequirement>> requirementIndex;
   late final List<(CatalogItem, String)> searchIndex;
-  bool? sourceFreshAt(DateTime now) {
-    if (sourceTimestamps.length != 6 ||
-        sourceTimestamps.values.any((v) => v == null)) {
-      return null;
-    }
-    final times = sourceTimestamps.values.cast<DateTime>().toSet();
-    if (times.length != 1) return null;
-    final age = now.difference(times.single);
-    return !age.isNegative && age <= const Duration(hours: 24);
-  }
 
+  /// Whether this snapshot may back decisions at [now].
+  ///
+  /// Freshness is measured from download time: the snapshot must come from
+  /// the supported source, schema and normalizer for a known mode, and [now]
+  /// must be no earlier than [observedAt] and at most 24 hours after it.
+  /// [sourceTimestamps] play no part.
   bool authoritativeAt(DateTime now) =>
       source == 'json.tarkov.dev' &&
       schemaVersion == 1 &&
       normalizerVersion == 1 &&
       mode != GameMode.unknown &&
       !now.isBefore(observedAt) &&
-      now.difference(observedAt) <= const Duration(hours: 24) &&
-      sourceFreshAt(now) == true;
+      now.difference(observedAt) <= const Duration(hours: 24);
   List<CatalogItem> search(String query) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];

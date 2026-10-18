@@ -43,7 +43,10 @@ Future<void> main(List<String> arguments) async {
           'requirementCount': restored.requirements.length,
           'localizationErrors': restored.localizationErrors,
           'observedAt': restored.observedAt.toUtc().toIso8601String(),
-          'sourceFreshness': restored.sourceFreshAt(DateTime.now().toUtc()),
+          'authoritative': restored.authoritativeAt(DateTime.now().toUtc()),
+          'itemsSourceUpdate': restored.sourceTimestamps['items']
+              ?.toUtc()
+              .toIso8601String(),
           'canonicalSearch': true,
           'durableRoundtrip': true,
         });

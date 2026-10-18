@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
+import '../domain/catalog.dart';
 import '../domain/settings.dart';
 import 'theme.dart';
+
+/// The evidence line for the newest items source update in [snapshot].
+///
+/// The time is display evidence only and never affects catalog authority.
+String itemsSourceUpdateLabel(CatalogSnapshot snapshot) =>
+    'Items source update: '
+    '${snapshot.sourceTimestamps['items']?.toUtc().toIso8601String() ?? 'unknown'}';
 
 class RequirementPanel extends StatelessWidget {
   const RequirementPanel({super.key, required this.services});
@@ -101,7 +109,7 @@ class SourcePanel extends StatelessWidget {
       return GridPanel(
         title: 'Source authority',
         icon: Icons.description_outlined,
-        subtitle: 'Observation is not source freshness',
+        subtitle: 'Catalog age is measured from download',
         child: ListView(
           children: [
             Text(
@@ -119,7 +127,7 @@ class SourcePanel extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               Text(
-                'Source freshness: ${snapshot.sourceFreshAt(DateTime.now().toUtc())?.toString() ?? 'Unknown (absent or mixed timestamps)'}',
+                itemsSourceUpdateLabel(snapshot),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 10),

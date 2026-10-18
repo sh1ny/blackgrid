@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:http/http.dart' as http;
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/data/catalog_client.dart';
+import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
 
@@ -314,6 +316,27 @@ void main() {
       expect(store.catalogs.keys, containsAll([GameMode.pvp, GameMode.pve]));
     },
   );
+  test('refresh of the live wire shape publishes current', () async {
+    final j = wireFixture();
+    final store = MemoryCatalogStore();
+    final c = CatalogController(
+      store: store,
+      client: CatalogClient(
+        client: MockClient(
+          (r) async =>
+              http.Response(jsonEncode(j[r.url.pathSegments.last]), 200),
+        ),
+        clock: () => fixtureNow,
+      ),
+      clock: () => fixtureNow,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    expect(c.error, isNull);
+    expect(store.commits, 1);
+    expect(c.status, CatalogStatus.current);
+  });
   test('authority transitions and expiration emit notifications', () async {
     var now = fixtureNow;
     final c = CatalogController(
@@ -354,6 +377,37 @@ void main() {
       expect(client.calls, 1);
     },
   );
+  testWidgets('old items source time does not shorten the current window', (
+    tester,
+  ) async {
+    var now = fixtureNow;
+    final client = ControlledCatalogClient(
+      (m) async => decisionCatalog(
+        times: {
+          for (final key in catalogDatasets)
+            key: key == 'items'
+                ? fixtureNow.subtract(const Duration(hours: 23))
+                : null,
+        },
+      ),
+    );
+    final c = CatalogController(
+      store: MemoryCatalogStore(),
+      client: client,
+      clock: () => now,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    expect(c.status, CatalogStatus.current);
+    now = fixtureNow.add(const Duration(hours: 2));
+    await tester.pump(const Duration(hours: 2));
+    expect(c.status, CatalogStatus.current);
+    now = fixtureNow.add(const Duration(hours: 24, milliseconds: 1));
+    await tester.pump(const Duration(hours: 22, milliseconds: 1));
+    expect(c.status, CatalogStatus.stale);
+    expect(client.calls, 1);
+  });
   test(
     'disposal fences publication while durable cache still commits',
     () async {

@@ -106,8 +106,7 @@ void main() {
           c.requirements.where((r) => r.kind == RequirementKind.task).length,
           3,
         );
-        expect(c.sourceFreshAt(fixtureNow), isNull);
-        expect(c.authoritativeAt(fixtureNow), isFalse);
+        expect(c.authoritativeAt(fixtureNow), isTrue);
       },
     );
   }

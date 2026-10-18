@@ -6,20 +6,17 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/progress.dart';
 
 final fixtureNow = DateTime.utc(2026, 10, 6);
+// Live wire shape (observed 2026-10-18): dataset envelopes carry only data and
+// translations; the only source times are per-item `updated` values.
 Map<String, dynamic> wireFixture() => Map<String, dynamic>.from(
   jsonDecode(
     File('test/fixtures/m1/catalog/six_datasets.json').readAsStringSync(),
   ) as Map,
 );
 // Minimized shape observed at /{regular,pve,pvp-season}/tasks: three
-// separately gated tasks reuse item and non-item objective IDs. Public dataset
-// envelopes provide data/translations, but no source update timestamp.
+// separately gated tasks reuse item and non-item objective IDs.
 Map<String, dynamic> sharedObjectiveWireFixture() {
   final j = wireFixture();
-  for (final key in catalogDatasets) {
-    (j[key] as Map).remove('updated');
-    j[key]['translations'] = <String>[];
-  }
   final item = j['items']['data']['items']['item-a'] as Map;
   item['lastScan'] = item.remove('lastScanISO');
   final template = j['tasks']['data']['tasks']['task-a'] as Map;
@@ -108,7 +105,11 @@ CatalogSnapshot decisionCatalog({
   },
   requirements: requirements,
   sourceTimestamps:
-      times ?? {for (final key in catalogDatasets) key: fixtureNow},
+      times ??
+      {
+        for (final key in catalogDatasets)
+          key: key == 'items' ? fixtureNow : null,
+      },
 );
 ProgressSnapshot decisionProgress({
   Map<String, EntityProgress> tasks = const {},
