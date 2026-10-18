@@ -1,6 +1,7 @@
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/history_controller.dart';
 import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/application/scan_correction.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/data/catalog_client.dart';
@@ -12,6 +13,7 @@ import 'package:blackgrid/domain/catalog_store.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/title_matching.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -252,4 +254,38 @@ void main() {
       expect(scanned.$2, manual.$2, reason: f.id);
     }
   });
+
+  test(
+    'every precedence rule matches the hand-selected decision for a correction',
+    () async {
+      var reportId = 0;
+      for (final f in _fixtures) {
+        selection.offerCorrection(
+          ScanCorrectionOffer(
+            reportId: ++reportId,
+            epoch: epoch,
+            mode: GameMode.pvp,
+            catalogRevision: snapshot.revision,
+            ocrText: f.id,
+            candidates: [TitleCandidate(f.id, 0.9)],
+            query: f.id,
+          ),
+        );
+        await selection.selectCorrection(reportId, f.id);
+        expect(selection.correction, isNotNull, reason: f.id);
+        expect(selection.scan, isNull, reason: f.id);
+        if (f.firYes) selection.setFir(FirState.yes);
+        final corrected = outcome();
+
+        await selection.selectManual(snapshot.items[f.id]!);
+        expect(selection.correction, isNull, reason: f.id);
+        if (f.firYes) selection.setFir(FirState.yes);
+        final manual = outcome();
+
+        expect(corrected.$1, f.expected, reason: f.id);
+        expect(corrected.$1, manual.$1, reason: f.id);
+        expect(corrected.$2, manual.$2, reason: f.id);
+      }
+    },
+  );
 }

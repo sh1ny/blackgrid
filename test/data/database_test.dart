@@ -80,6 +80,26 @@ void main() {
     expect(rows.single.revision, 2);
     expect(rows.single.observedAt, second.toUtc());
   });
+  test('a manual record after a scan row revises the same row', () async {
+    final db = BlackgridDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final later = fixtureNow.add(const Duration(seconds: 5));
+    await db.recordActivity(
+      'item-a',
+      GameMode.pvp,
+      fixtureNow,
+      source: ActivitySource.scan,
+    );
+    expect((await db.readActivity()).single.revision, 1);
+
+    await db.recordActivity('item-a', GameMode.pvp, later);
+
+    final rows = await db.readActivity();
+    expect(rows, hasLength(1));
+    expect(rows.single.source, ActivitySource.manual);
+    expect(rows.single.revision, 2);
+    expect(rows.single.observedAt, later.toUtc());
+  });
   test(
     'unchanged catalog revision renews observation metadata across restart',
     () async {

@@ -109,7 +109,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
   - **`AppServices`:** pass the epoch reader to selection.
 
   Verify: every `SC` row and both scan-decisions rows are green. `scan_decision_feed_test.dart` and `selection_controller_test.dart` stay green, including the history manual-fallback test at `selection_controller_test.dart:36-58`.
-- [ ] 4.4 Add `a manual record after a scan row revises the same row` to `test/data/database_test.dart` (scan row at revision 1, then a manual record, giving one row at revision 2 with source `manual`). Add `every precedence rule matches the hand-selected decision for a correction` to `test/application/scan_decision_precedence_test.dart`: for each of the six rules, a picked correction gives the same decision as a manual selection with the same catalog, progress and FIR. Verify: both pass, and the database row is green.
+- [x] 4.4 Add `a manual record after a scan row revises the same row` to `test/data/database_test.dart` (scan row at revision 1, then a manual record, giving one row at revision 2 with source `manual`). Add `every precedence rule matches the hand-selected decision for a correction` to `test/application/scan_decision_precedence_test.dart`: for each of the six rules, a picked correction gives the same decision as a manual selection with the same catalog, progress and FIR. Verify: both pass, and the database row is green.
 
 ## 5. Decision card offer on Scanner and Map
 
