@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
+import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
@@ -34,8 +35,8 @@ class RefreshHttp {
   int trackerStatus = 200;
   Map<String, String> trackerHeaders = const {};
 
-  /// When set, tracker requests wait on this completer before answering.
-  Completer<void>? trackerGate;
+  final _heldModes = <GameMode>{};
+  final _heldTracker = <Completer<bool>>[];
 
   /// The number of catalog fetches made for [route] (`regular`, `pve`,
   /// `pvp-season`). A fetch makes one request per dataset, so the `items`
@@ -48,6 +49,25 @@ class RefreshHttp {
   /// The number of requests to the tracker host.
   int get trackerRequests =>
       requests.where((r) => r.url.host == 'api.tarkovtracker.org').length;
+
+  /// The number of tracker fetches made for [mode], or for any mode when it is
+  /// null. A fetch starts with one `/token` request.
+  int trackerFetches([GameMode? mode]) => requests
+      .where((r) => r.url.host == 'api.tarkovtracker.org')
+      .where((r) => r.url.path == '/token')
+      .where((r) => mode == null || _modeOf(r) == mode)
+      .length;
+
+  /// Holds the `/token` request of every later tracker fetch for [mode], in
+  /// request order, until [releaseTracker] answers it.
+  void holdTracker(GameMode mode) => _heldModes.add(mode);
+
+  /// Answers the held tracker fetch number [index] (counting from 0 across all
+  /// modes): valid when [succeed], otherwise a 503.
+  void releaseTracker(int index, {bool succeed = true}) {
+    final gate = _heldTracker[index];
+    if (!gate.isCompleted) gate.complete(succeed);
+  }
 
   /// Holds every catalog response for [route] until [release] is called.
   void holdCatalog(String route) => _catalogGates[route] = Completer<bool>();
@@ -71,17 +91,18 @@ class RefreshHttp {
   Future<void> fetchStarted(String route, {int count = 1}) =>
       _until(() => fetches(route) >= count);
 
-  /// Completes once [count] tracker requests have started.
-  Future<void> trackerStarted({int count = 1}) =>
-      _until(() => trackerRequests >= count);
+  /// Completes once [count] tracker fetches for [mode] have started.
+  Future<void> trackerStarted(GameMode mode, {int count = 1}) =>
+      _until(() => trackerFetches(mode) >= count);
 
   /// Frees every held response so teardown never leaves a request pending.
   void releaseAll() {
     for (final route in _catalogGates.keys.toList()) {
       release(route, succeed: false);
     }
-    final gate = trackerGate;
-    if (gate != null && !gate.isCompleted) gate.complete();
+    for (final gate in _heldTracker) {
+      if (!gate.isCompleted) gate.complete(false);
+    }
   }
 
   Future<void> _until(bool Function() ready) {
@@ -99,7 +120,12 @@ class RefreshHttp {
       return true;
     });
     if (request.url.host == 'api.tarkovtracker.org') {
-      await trackerGate?.future;
+      if (request.url.path == '/token' &&
+          _heldModes.contains(_modeOf(request))) {
+        final gate = Completer<bool>();
+        _heldTracker.add(gate);
+        if (!await gate.future) return http.Response('synthetic', 503);
+      }
       return _tracker(request);
     }
     final segments = request.url.pathSegments;
@@ -116,22 +142,29 @@ class RefreshHttp {
     return http.Response('{}', 404);
   }
 
+  static String _tokenOf(http.Request request) =>
+      (request.headers['Authorization'] ?? '').replaceFirst('Bearer ', '');
+
+  static GameMode _modeOf(http.Request request) =>
+      switch (_tokenOf(request).split('_').first) {
+        'PVE' => GameMode.pve,
+        'SZN' => GameMode.seasonal,
+        _ => GameMode.pvp,
+      };
+
   http.Response _tracker(http.Request request) {
     if (trackerStatus != 200) {
       return http.Response('', trackerStatus, headers: trackerHeaders);
     }
-    final token = (request.headers['Authorization'] ?? '').replaceFirst(
-      'Bearer ',
-      '',
-    );
-    final mode = switch (token.split('_').first) {
-      'PVE' => GameMode.pve,
-      'SZN' => GameMode.seasonal,
-      _ => GameMode.pvp,
-    };
+    final token = _tokenOf(request);
+    final mode = _modeOf(request);
     final body = request.url.path == '/token'
         ? tokenWire(token, mode: mode)
-        : progressWire();
+        : (progressWire()
+            ..['meta'] = {
+              ...progressWire()['meta'] as Map,
+              'gameMode': mode.trackerMode,
+            });
     return http.Response(jsonEncode(body), 200, headers: trackerHeaders);
   }
 }
@@ -193,6 +226,16 @@ class HoldableCredentials implements CredentialStore {
   final _holds = <GameMode, Completer<void>>{};
   Object? readFailure;
 
+  final _readWaiters = <({int count, Completer<void> signal})>[];
+
+  /// Completes once [count] credential reads have started.
+  Future<void> readsStarted(int count) {
+    if (reads.length >= count) return Future.value();
+    final signal = Completer<void>();
+    _readWaiters.add((count: count, signal: signal));
+    return signal.future;
+  }
+
   /// Holds reads for [mode] until [release].
   void hold(GameMode mode) => _holds[mode] = Completer<void>();
 
@@ -209,6 +252,11 @@ class HoldableCredentials implements CredentialStore {
   @override
   Future<String?> readCredential(GameMode mode) async {
     reads.add(mode);
+    _readWaiters.removeWhere((w) {
+      if (reads.length < w.count) return false;
+      w.signal.complete();
+      return true;
+    });
     await _holds[mode]?.future;
     final failure = readFailure;
     if (failure != null) throw failure;
@@ -488,6 +536,174 @@ void main() {
       expect(services.catalog.mode, GameMode.pvp);
       expect(services.catalog.snapshot?.mode, GameMode.pvp);
       expect(services.catalog.status, CatalogStatus.current);
+    });
+  });
+
+  group('progress', () {
+    const pvpToken = 'PVP_synthetic-fixture-only';
+    const pveToken = 'PVE_synthetic-fixture-only';
+    // Completes when the fetch has started, or when the selection has ended
+    // without starting one, so the count assertion that follows fails fast.
+    Future<void> started(GameMode mode, {int count = 1}) => Future.any([
+      net.trackerStarted(mode, count: count),
+      services.automaticRefreshes,
+    ]);
+
+    test('progress: launch with a saved credential', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      net.holdTracker(GameMode.pvp);
+      await rig.launch(GameMode.pvp);
+      // Startup returned while the fetch is still held.
+      await started(GameMode.pvp);
+      expect(net.trackerFetches(GameMode.pvp), 1);
+      net.releaseTracker(0);
+      await services.automaticRefreshes;
+      expect(net.trackerFetches(), 1);
+      expect(services.progress.status, ProgressStatus.current);
+      expect(services.progress.snapshot?.mode, GameMode.pvp);
+    });
+
+    test('progress: no saved credential', () async {
+      await rig.launch(GameMode.pvp);
+      await services.automaticRefreshes;
+      expect(net.trackerRequests, 0);
+      expect(services.progress.status, ProgressStatus.missing);
+    });
+
+    test('progress: unreadable credential', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      rig.credentials.readFailure = StateError('synthetic');
+      await rig.launch(GameMode.pvp);
+      await services.automaticRefreshes;
+      expect(net.trackerRequests, 0);
+      expect(services.progress.status, ProgressStatus.failed);
+      expect(services.progress.error, 'Protected credential unavailable');
+    });
+
+    test('progress: unknown mode makes no request', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      await rig.launch(GameMode.unknown);
+      await services.automaticRefreshes;
+      expect(net.trackerRequests, 0);
+      expect(await services.setMode(GameMode.pvp), isTrue);
+      await services.automaticRefreshes;
+      net.clear();
+      expect(await services.setMode(GameMode.unknown), isTrue);
+      await services.automaticRefreshes;
+      expect(net.trackerRequests, 0);
+      expect(services.progress.status, ProgressStatus.missing);
+    });
+
+    test('progress: selection superseded during the credential read', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      rig.credentials.values[GameMode.pve] = pveToken;
+      rig.credentials.hold(GameMode.pvp);
+      final launched = rig.launch(GameMode.pvp);
+      await rig.credentials.readsStarted(1);
+      final superseded = services.automaticRefreshes;
+      expect(await services.setMode(GameMode.pve), isTrue);
+      // B's refresh has finished before A's credential read ends, so only the
+      // transition fence stops A from starting a second fetch.
+      await services.automaticRefreshes;
+      expect(net.trackerFetches(GameMode.pve), 1);
+      rig.credentials.release(GameMode.pvp);
+      await launched;
+      await superseded;
+      await services.automaticRefreshes;
+      expect(net.trackerFetches(GameMode.pvp), 0);
+      expect(net.trackerFetches(GameMode.pve), 1);
+      expect(services.progress.mode, GameMode.pve);
+      expect(services.progress.status, ProgressStatus.current);
+    });
+
+    test('progress: saving a credential does not refresh', () async {
+      await rig.launch(GameMode.pvp);
+      await services.automaticRefreshes;
+      await services.progress.saveCredential(pvpToken);
+      expect(services.progress.hasCredential, isTrue);
+      expect(net.trackerRequests, 0);
+    });
+
+    test('progress: tracker unavailable at launch', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      net.trackerStatus = 503;
+      await rig.launch(GameMode.pvp);
+      await services.automaticRefreshes;
+      expect(net.trackerFetches(), 1);
+      expect(services.progress.status, ProgressStatus.failed);
+      expect(services.progress.error, 'Tracker transport unavailable');
+    });
+
+    test('progress: tracker answers with a cooldown', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      net.trackerStatus = 429;
+      net.trackerHeaders = {'retry-after': '120'};
+      await rig.launch(GameMode.pvp);
+      await services.automaticRefreshes;
+      expect(net.trackerFetches(), 1);
+      expect(services.progress.status, ProgressStatus.cooldown);
+      expect(
+        services.progress.cooldownUntil,
+        fixtureNow.add(const Duration(seconds: 120)),
+      );
+      await services.progress.refresh();
+      expect(net.trackerFetches(), 1);
+    });
+
+    test('progress: rejected credential', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      net.trackerStatus = 401;
+      await rig.launch(GameMode.pvp);
+      await services.automaticRefreshes;
+      expect(net.trackerFetches(), 1);
+      expect(services.progress.status, ProgressStatus.failed);
+      expect(services.progress.snapshot, isNull);
+    });
+
+    test('progress: switch during the automatic refresh', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      rig.credentials.values[GameMode.pve] = pveToken;
+      net.holdTracker(GameMode.pvp);
+      await rig.launch(GameMode.pvp);
+      await started(GameMode.pvp);
+      expect(net.trackerFetches(GameMode.pvp), 1);
+      final first = services.automaticRefreshes;
+      expect(await services.setMode(GameMode.pve), isTrue);
+      await services.automaticRefreshes;
+      final published = services.progress.snapshot;
+      final version = services.progress.authorityVersion;
+      expect(published?.mode, GameMode.pve);
+      net.releaseTracker(0);
+      await first;
+      expect(services.progress.snapshot, same(published));
+      expect(services.progress.authorityVersion, version);
+      expect(services.progress.status, ProgressStatus.current);
+    });
+
+    test('progress: switch back before the old fetch returns', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      rig.credentials.values[GameMode.pve] = pveToken;
+      net.holdTracker(GameMode.pvp);
+      await rig.launch(GameMode.pvp);
+      await started(GameMode.pvp);
+      expect(net.trackerFetches(GameMode.pvp), 1);
+      final first = services.automaticRefreshes;
+      expect(await services.setMode(GameMode.pve), isTrue);
+      await services.automaticRefreshes;
+      expect(await services.setMode(GameMode.pvp), isTrue);
+      final latest = services.automaticRefreshes;
+      await started(GameMode.pvp, count: 2);
+      expect(net.trackerFetches(GameMode.pvp), 2);
+      // The first fetch returns while the latest one is still in flight.
+      net.releaseTracker(0);
+      await first;
+      expect(services.progress.snapshot, isNull);
+      expect(services.progress.status, ProgressStatus.loading);
+      net.releaseTracker(1);
+      await latest;
+      expect(services.progress.status, ProgressStatus.current);
+      expect(services.progress.snapshot?.mode, GameMode.pvp);
+      expect(net.trackerFetches(GameMode.pvp), 2);
     });
   });
 }
