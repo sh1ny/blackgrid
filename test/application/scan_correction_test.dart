@@ -585,6 +585,18 @@ void main() {
       expect(selection.selectedId, 'f2');
     });
 
+    test('a fenced newer accepted scan still clears the offer', () async {
+      await manual('f3');
+      reject(2);
+
+      // Accepted, but its item is not in the live catalog, so it is fenced.
+      source.publish(acceptedScanReport(id: 3, itemId: 'gone', epoch: e0));
+
+      expect(selection.correctionOffer, isNull);
+      expect(selection.selectedId, 'f3');
+      expect(selection.scan, isNull);
+    });
+
     test('a later failure keeps the offer', () {
       reject(2);
 

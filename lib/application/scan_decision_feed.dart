@@ -83,6 +83,12 @@ class ScanDecisionFeed {
     if (report == null || report.id <= _consumed) return;
     // Raised before the fences, so a fenced scan is never retried.
     _consumed = report.id;
+    // A newer accepted scan clears an older offer even when it is fenced
+    // below, since it is never reconsidered.
+    final offer = selection.correctionOffer;
+    if (offer != null && offer.reportId < report.id) {
+      selection.dismissCorrection();
+    }
     if (report.epoch != _epoch()) {
       debugPrint(
         'Scan ${report.id} fenced (epoch): it began in ${report.epoch}, '
