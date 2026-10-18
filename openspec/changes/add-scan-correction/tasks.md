@@ -16,45 +16,45 @@
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan replaces a manual selection | test/application/scan_decision_feed_test.dart | accepted scan replaces a manual selection | green |
 | scan-decisions → An accepted scan becomes the current selection | Manual selection after a scan | test/application/selection_controller_test.dart | manual selection after a scan stays after refresh | green |
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan while a history row is open | test/application/selection_controller_test.dart | accepted scan closes an open history row into the live mode | green |
-| scan-decisions → An accepted scan becomes the current selection | Accepted scan after a correction | SC | accepted scan after a correction replaces it | red |
+| scan-decisions → An accepted scan becomes the current selection | Accepted scan after a correction | SC | accepted scan after a correction replaces it | green |
 | scan-decisions → FIR resets on every new accepted scan | Same item scanned again | test/application/selection_controller_test.dart | FIR resets when the same item is scanned again | green |
 | scan-decisions → FIR resets on every new accepted scan | Session change | test/application/scan_decision_feed_test.dart | session change retires the scan and resets FIR | green |
-| scan-decisions → FIR resets on every new accepted scan | Correction to the item already shown | SC | correcting to the scanned item resets FIR | red |
-| scan-correction → An unaccepted scan with a title offers a correction | Ambiguous scan with item A shown | SC | ambiguous scan offers a correction and keeps the selection | red |
-| scan-correction → An unaccepted scan with a title offers a correction | Below-similarity scan with nothing shown | SC | below-similarity scan offers a correction with no recommendation | red |
-| scan-correction → An unaccepted scan with a title offers a correction | Rejections that offer nothing | SC | other rejection reasons offer nothing | red |
-| scan-correction → An unaccepted scan with a title offers a correction | Failed scan | SC | failed scan offers nothing | red |
-| scan-correction → An unaccepted scan with a title offers a correction | Empty OCR text | SC | empty OCR text offers nothing | red |
-| scan-correction → An unaccepted scan with a title offers a correction | Mode changed before publication | SC | scan from an older mode offers nothing | red |
-| scan-correction → The offer lists the scan's best candidates | Close-named variants | SC | offer lists close variants in rank order with scores | red |
-| scan-correction → The offer lists the scan's best candidates | More than five candidates | SC | offer lists at most five candidates | red |
-| scan-correction → The offer lists the scan's best candidates | Weak candidates | SC | candidates below .40 are left out | red |
-| scan-correction → The offer lists the scan's best candidates | Candidate gone from the catalog | SC | candidate missing from the live catalog is left out | red |
+| scan-decisions → FIR resets on every new accepted scan | Correction to the item already shown | SC | correcting to the scanned item resets FIR | green |
+| scan-correction → An unaccepted scan with a title offers a correction | Ambiguous scan with item A shown | SC | ambiguous scan offers a correction and keeps the selection | green |
+| scan-correction → An unaccepted scan with a title offers a correction | Below-similarity scan with nothing shown | SC | below-similarity scan offers a correction with no recommendation | green |
+| scan-correction → An unaccepted scan with a title offers a correction | Rejections that offer nothing | SC | other rejection reasons offer nothing | green |
+| scan-correction → An unaccepted scan with a title offers a correction | Failed scan | SC | failed scan offers nothing | green |
+| scan-correction → An unaccepted scan with a title offers a correction | Empty OCR text | SC | empty OCR text offers nothing | green |
+| scan-correction → An unaccepted scan with a title offers a correction | Mode changed before publication | SC | scan from an older mode offers nothing | green |
+| scan-correction → The offer lists the scan's best candidates | Close-named variants | SC | offer lists close variants in rank order with scores | green |
+| scan-correction → The offer lists the scan's best candidates | More than five candidates | SC | offer lists at most five candidates | green |
+| scan-correction → The offer lists the scan's best candidates | Weak candidates | SC | candidates below .40 are left out | green |
+| scan-correction → The offer lists the scan's best candidates | Candidate gone from the catalog | SC | candidate missing from the live catalog is left out | green |
 | scan-correction → The offer searches the catalog from the scan's text | Words in another order | test/domain/catalog_search_test.dart | every word must appear, in any order | green |
-| scan-correction → The offer searches the catalog from the scan's text | Edited text | SC | editing the offer text searches without changing the selection | red |
-| scan-correction → The offer searches the catalog from the scan's text | No results | SC | offer search with no match leaves the selection | red |
-| scan-correction → Picking a correction makes it the current selection | Pick the runner-up | SC | picking the runner-up selects it as a correction | red |
-| scan-correction → Picking a correction makes it the current selection | Pick from search | SC | picking a search result selects it as a correction | red |
-| scan-correction → Picking a correction makes it the current selection | FIR from the earlier item | SC | a pick resets FIR | red |
-| scan-correction → Picking a correction makes it the current selection | History view open | SC | a pick closes an open history view | red |
-| scan-correction → Picking a correction makes it the current selection | History write fails | SC | failed correction write keeps the correction with an error | red |
-| scan-correction → A correction is recorded as manual activity | Correction recorded | SC | a correction records manual activity at the pick time | red |
-| scan-correction → A correction is recorded as manual activity | Correction of an item already in history | test/data/database_test.dart | a manual record after a scan row revises the same row | red |
-| scan-correction → A correction stops being current on a mode or session change | Session change after a correction | SC | session change retires a correction | red |
-| scan-correction → A correction stops being current on a mode or session change | Prices go stale after a correction | SC | stale Flea quote downgrades a correction to Check | red |
-| scan-correction → A correction is never a new accepted scan | Correction after an accepted scan | SC | a correction is never an accepted scan | red |
-| scan-correction → A correction is never a new accepted scan | Refresh after a correction | SC | refresh after a correction records nothing new | red |
-| scan-correction → Only the newest offer is current | Newer offer | SC | a newer offer replaces the older one | red |
-| scan-correction → Only the newest offer is current | Accepted scan clears the offer | SC | an accepted scan clears the offer | red |
-| scan-correction → Only the newest offer is current | Failure keeps the offer | SC | a later failure keeps the offer | red |
-| scan-correction → Only the newest offer is current | Manual selection clears the offer | SC | manual selection clears the offer | red |
-| scan-correction → Only the newest offer is current | Closing a history view keeps the offer | SC | closing a history view keeps the offer | red |
-| scan-correction → Only the newest offer is current | Dismiss | SC | dismiss clears only the offer | red |
-| scan-correction → Only the newest offer is current | Session change | SC | session change clears the offer | red |
-| scan-correction → Only the newest offer is current | Re-notification | SC | a dismissed offer is not offered again | red |
-| scan-correction → A stale pick changes nothing | Offer replaced before the pick | SC | a pick from a replaced offer changes nothing | red |
-| scan-correction → A stale pick changes nothing | Item removed by a catalog refresh | SC | a pick of an item no longer in the catalog changes nothing | red |
-| scan-correction → A stale pick changes nothing | Mode changed before the pick | SC | a pick after a mode change changes nothing | red |
+| scan-correction → The offer searches the catalog from the scan's text | Edited text | SC | editing the offer text searches without changing the selection | green |
+| scan-correction → The offer searches the catalog from the scan's text | No results | SC | offer search with no match leaves the selection | green |
+| scan-correction → Picking a correction makes it the current selection | Pick the runner-up | SC | picking the runner-up selects it as a correction | green |
+| scan-correction → Picking a correction makes it the current selection | Pick from search | SC | picking a search result selects it as a correction | green |
+| scan-correction → Picking a correction makes it the current selection | FIR from the earlier item | SC | a pick resets FIR | green |
+| scan-correction → Picking a correction makes it the current selection | History view open | SC | a pick closes an open history view | green |
+| scan-correction → Picking a correction makes it the current selection | History write fails | SC | failed correction write keeps the correction with an error | green |
+| scan-correction → A correction is recorded as manual activity | Correction recorded | SC | a correction records manual activity at the pick time | green |
+| scan-correction → A correction is recorded as manual activity | Correction of an item already in history | test/data/database_test.dart | a manual record after a scan row revises the same row | green |
+| scan-correction → A correction stops being current on a mode or session change | Session change after a correction | SC | session change retires a correction | green |
+| scan-correction → A correction stops being current on a mode or session change | Prices go stale after a correction | SC | stale Flea quote downgrades a correction to Check | green |
+| scan-correction → A correction is never a new accepted scan | Correction after an accepted scan | SC | a correction is never an accepted scan | green |
+| scan-correction → A correction is never a new accepted scan | Refresh after a correction | SC | refresh after a correction records nothing new | green |
+| scan-correction → Only the newest offer is current | Newer offer | SC | a newer offer replaces the older one | green |
+| scan-correction → Only the newest offer is current | Accepted scan clears the offer | SC | an accepted scan clears the offer | green |
+| scan-correction → Only the newest offer is current | Failure keeps the offer | SC | a later failure keeps the offer | green |
+| scan-correction → Only the newest offer is current | Manual selection clears the offer | SC | manual selection clears the offer | green |
+| scan-correction → Only the newest offer is current | Closing a history view keeps the offer | SC | closing a history view keeps the offer | green |
+| scan-correction → Only the newest offer is current | Dismiss | SC | dismiss clears only the offer | green |
+| scan-correction → Only the newest offer is current | Session change | SC | session change clears the offer | green |
+| scan-correction → Only the newest offer is current | Re-notification | SC | a dismissed offer is not offered again | green |
+| scan-correction → A stale pick changes nothing | Offer replaced before the pick | SC | a pick from a replaced offer changes nothing | green |
+| scan-correction → A stale pick changes nothing | Item removed by a catalog refresh | SC | a pick of an item no longer in the catalog changes nothing | green |
+| scan-correction → A stale pick changes nothing | Mode changed before the pick | SC | a pick after a mode change changes nothing | green |
 | scan-correction → The offer appears with the decision card on Scanner and Map | Offer on Map | CW | Map card shows the offer next to the item and a pick selects it | red |
 | scan-correction → The offer appears with the decision card on Scanner and Map | Navigation keeps the offer | CW | the offer text is shared by the mounted Scanner and Map cards | red |
 
@@ -86,7 +86,7 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-test` first. No sleeps: use `FakeAcceptedScanSource`, `FakeScanEpochReader`, an injected clock, and a completer or failing database for history writes.
 
-- [ ] 4.1 Add the new file `lib/application/scan_correction.dart`, with doc comments:
+- [x] 4.1 Add the new file `lib/application/scan_correction.dart`, with doc comments:
   - the immutable `ScanCorrectionOffer` (report id, epoch, mode, catalog revision, OCR text, candidates, query);
   - `ScanCorrection` (report id, item, mode, catalog revision, `correctedAt`, epoch);
   - the constants `correctionCandidateFloor = .40` and `correctionSearchLimit = 8`;

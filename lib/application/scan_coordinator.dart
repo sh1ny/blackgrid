@@ -653,14 +653,17 @@ final class ScanSuperseded extends ScanEnd {
   String get logName => 'superseded';
 }
 
-/// Where accepted scans come from: a [Listenable] that exposes the newest
-/// accepted [ScanReport].
+/// Where the decision feed reads scan reports from: a [Listenable] that
+/// exposes the newest accepted and the newest published [ScanReport].
 ///
 /// [ScanCoordinator] is the app's source. Consumers such as the decision feed
 /// depend on this interface, so the coordinator never imports them.
 abstract interface class AcceptedScanSource implements Listenable {
   /// The most recent accepted scan, or null before any scan is accepted.
   ScanReport? get lastAccepted;
+
+  /// The most recent published scan of any end, or null before any scan.
+  ScanReport? get latest;
 }
 
 /// Everything known about one finished scan.
@@ -1599,6 +1602,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   ScanPhase get phase => _phase;
 
   /// The latest published scan, with its crop bytes, or null.
+  @override
   ScanReport? get latest => _latest;
 
   /// The most recent accepted scan, with its crop bytes, or null before any
