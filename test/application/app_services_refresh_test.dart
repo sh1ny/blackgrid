@@ -182,6 +182,9 @@ class HoldableDatabase extends BlackgridDatabase {
   /// When true, each `loadCatalog` waits for [releaseLoads].
   bool holdLoads = false;
 
+  /// Modes whose `loadCatalog` calls wait for [releaseLoads].
+  final heldModes = <GameMode>{};
+
   /// When true, `loadCatalog` throws.
   bool failLoads = false;
 
@@ -209,7 +212,7 @@ class HoldableDatabase extends BlackgridDatabase {
       w.signal.complete();
       return true;
     });
-    if (holdLoads) {
+    if (holdLoads || heldModes.contains(mode)) {
       final gate = Completer<void>();
       _gates.add(gate);
       await gate.future;
@@ -410,21 +413,25 @@ void main() {
     });
 
     test('catalog: selection superseded during the cached load', () async {
-      database.holdLoads = true;
+      database.heldModes.add(GameMode.pvp);
+      net.failCatalog('pve');
       final launched = rig.launch(GameMode.pvp);
       await database.loadsStarted(1);
       final superseded = services.automaticRefreshes;
-      final switched = services.setMode(GameMode.pve);
-      await database.loadsStarted(2);
+      expect(await services.setMode(GameMode.pve), isTrue);
+      // B's cached load and automatic fetch end, failing, before A's cached
+      // load does. Only the transition fence then stops A's late callback from
+      // starting a second fetch for B, which would be an automatic retry.
+      await services.automaticRefreshes;
+      expect(net.fetches('pve'), 1);
+      expect(services.catalog.status, CatalogStatus.failed);
       database.releaseLoads();
       await launched;
-      await switched;
       await superseded;
-      await services.automaticRefreshes;
       expect(net.fetches('regular'), 0);
       expect(net.fetches('pve'), 1);
       expect(services.catalog.mode, GameMode.pve);
-      expect(services.catalog.status, CatalogStatus.current);
+      expect(services.catalog.status, CatalogStatus.failed);
     });
 
     test(
