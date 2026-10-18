@@ -62,7 +62,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 
 ## 3. Documentation
 
-- [ ] 3.1 Update `README.md`:
+- [x] 3.1 Update `README.md`:
   - "First steps" step 2: choosing a mode refreshes the catalog automatically, and **Refresh complete catalog** is for a manual retry.
   - "Data sources and freshness" (line 185): replace "refresh is manual" with launch and mode-switch refreshes of the catalog, and of progress when a token is saved, with no automatic retries.
 

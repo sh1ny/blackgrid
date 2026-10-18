@@ -64,7 +64,7 @@ Check the toolchain with `mise exec -- flutter doctor -v`. Warnings about Androi
 ## ⚡ First steps
 
 1. **Close Escape from Tarkov**, then run `mise exec -- flutter run -d windows`.
-2. Open **Settings**, choose the **Live game mode** (PvP, PvE or Seasonal; it starts as Unknown), then **Refresh complete catalog**.
+2. Open **Settings** and choose the **Live game mode** (PvP, PvE or Seasonal; it starts as Unknown). Choosing a mode refreshes the catalog automatically; use **Refresh complete catalog** to retry by hand.
 3. Search items with **Ctrl K**. The Scanner area shows the decision, requirements, sources and history.
 4. Optional: in **Settings**, save a Tracker token for the mode, and set the game log and screenshot directories (empty = auto-detect).
 5. On **Map**, use **Read Latest** after saving a screenshot in game, or **Follow logs** to switch maps automatically. A mode found in the game log replaces the Settings mode while it is detected.
@@ -182,7 +182,7 @@ Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets whe
 | Flea quote | Inside the catalog | 1 h | Decision falls to Check |
 | Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
 
-Every request is a GET with a 30 s deadline and no redirects. There are no automatic retries; refresh is manual.
+Every request is a GET with a 30 s deadline and no redirects. The catalog refreshes once at launch and on each mode switch, and progress does too when a Tracker token is saved for the mode. A failed refresh is not retried automatically; use Refresh or select a mode again.
 </details>
 
 <details>
