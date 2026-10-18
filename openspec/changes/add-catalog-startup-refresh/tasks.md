@@ -67,7 +67,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
   - "Data sources and freshness" (line 185): replace "refresh is manual" with launch and mode-switch refreshes of the catalog, and of progress when a token is saved, with no automatic retries.
 
   Verify with `grep -n "refresh is manual" README.md`, which must return nothing.
-- [ ] 3.2 Update `openspec/architecture.md`:
+- [x] 3.2 Update `openspec/architecture.md`:
   - `AppServices` row: it starts the catalog and progress refresh after each mode selection.
   - Resource bounds "Catalog refresh" row (line 106): automatic on selection, no retry.
 

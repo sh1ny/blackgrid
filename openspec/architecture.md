@@ -45,7 +45,7 @@ flowchart TB
 
 | Component | Responsibility | Owns (state) | Talks to via (contract) |
 |---|---|---|---|
-| `AppServices` (`lib/application/app_services.dart`) | Composition root: opens storage, credentials and the HTTP client, builds the controllers, then disposes them in order (`:181-199`) | Long-lived service graph, mode-transition and map-content generations (`:79,91`) | Constructor injection, `addListener` (`:69-71`) |
+| `AppServices` (`lib/application/app_services.dart`) | Composition root: opens storage, credentials and the HTTP client, builds the controllers, starts the catalog refresh and, with a saved credential, the progress refresh after each mode selection without awaiting them, then disposes them in order (`:181-199`) | Long-lived service graph, mode-transition and map-content generations (`:79,91`) | Constructor injection, `addListener` (`:69-71`) |
 | Shell / UI (`lib/ui/`) | Two-area shell; both screens stay mounted in an `IndexedStack` (`shell.dart:160-171`) | Widget-local view state only | `ListenableBuilder` on controllers |
 | `CatalogController` + `CatalogClient` | Mode-scoped catalog refresh, validation and publication | Published `CatalogSnapshot`, `CatalogStatus` (`catalog_controller.dart:9`) | HTTP GET of 6 required + 4 optional datasets (`catalog_client.dart:23-72`); Drift |
 | `ProgressController` + `TrackerClient` | Read-only Tracker progress per mode and session | Memory-only progress snapshot and session authority (`progress_controller.dart:27,47-56`) | GET `/token`, `/progress` (`tracker_client.dart:43-198`) |
@@ -103,7 +103,7 @@ flowchart TB
 
 | Flow / store | Bound | At the bound | On failure | Who finds out |
 |---|---|---|---|---|
-| Catalog refresh | 30 s per request; one in flight per mode (`catalog_controller.dart:20,76-91`) | Request aborted | Last-good kept, status `failed`/`stale` | Status bar `Catalog <status>` (`shell.dart:207-223`) |
+| Catalog refresh | Automatic once per mode selection, plus manual Refresh; no retry. 30 s per request; one in flight per mode (`catalog_controller.dart:20,76-91`) | Request aborted | Last-good kept, status `failed`/`stale` | Status bar `Catalog <status>` (`shell.dart:207-223`) |
 | Tracker progress | 30 s per request; two sequential requests (`/token`, `/progress`) plus parsing, with no overall deadline (`tracker_client.dart:84,138,179`); 15 min age; 429 cooldown | Snapshot goes stale; cooldown shown | Auth/mode/identity failure clears authority; transport failure keeps stale | Status bar `Progress <status>`; decisions fall to Check |
 | HTTP response bodies (catalog, Tracker) | **No byte cap**; whole bodies are buffered (`catalog_client.dart:30-43`; `tracker_client.dart:80-89`) | — | Timeout or parse failure | Status bar |
 | Legacy import | **No byte or record cap**; whole files are read and the preview materialised (`legacy_import.dart:22-49`; `import_preview.dart:26-30`) | — | A failed commit is rolled back (one transaction, `database.dart:258-302`). If the commit succeeds but the controller reload fails, the dialog still reports failure while the imported data stays committed (`import_dialog.dart:70-84`; `app_services.dart:176-179`) | User, in the import dialog |
