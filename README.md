@@ -178,11 +178,11 @@ Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets whe
 
 | Source | Endpoint | Fresh for | On failure |
 |---|---|---|---|
-| Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}` plus optional `*_en` translations | 24 h, only when all six source timestamps are known and agree | Last good snapshot kept, status `stale` or `failed` |
+| Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}` plus optional `*_en` translations | 24 h from download; source times are shown as evidence only | Last good snapshot kept, status `stale` or `failed` |
 | Flea quote | Inside the catalog | 1 h | Decision falls to Check |
 | Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
 
-Every request is a GET with a 30 s deadline and no redirects. There are no automatic retries; refresh is manual. The public catalog currently has no source timestamps, so a successful refresh is still shown as stale.
+Every request is a GET with a 30 s deadline and no redirects. There are no automatic retries; refresh is manual.
 </details>
 
 <details>

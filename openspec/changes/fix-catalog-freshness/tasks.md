@@ -55,7 +55,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 
 ## 6. Documentation
 
-- [ ] 6.1 Update `README.md:181` (freshness column: `24 h from download`) and remove the stale sentence at `README.md:185` that says a successful refresh still shows stale. Update `openspec/architecture.md:90` so `current` means a fresh fetch observed under 24 h ago, with source times as evidence only, and fix the cited line range. Verify with `git diff --check` and by rereading the changed lines.
+- [x] 6.1 Update `README.md:181` (freshness column: `24 h from download`) and remove the stale sentence at `README.md:185` that says a successful refresh still shows stale. Update `openspec/architecture.md:90` so `current` means a fresh fetch observed under 24 h ago, with source times as evidence only, and fix the cited line range. Verify with `git diff --check` and by rereading the changed lines.
 
 ## 7. Integration checks
 
