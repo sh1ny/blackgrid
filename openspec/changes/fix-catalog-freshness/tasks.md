@@ -18,8 +18,8 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 | Catalog authority is measured from download time | Old source timestamp does not revoke authority | authority | items source time 30 days old does not revoke authority || green |
 | Catalog authority is measured from download time | Observation in the future | authority | future observation is not authoritative || green |
 | Catalog authority is measured from download time | Unsupported source or unknown mode | authority | unsupported source or unknown mode is not authoritative || green |
-| Current catalog status expires 24 h after observation | Expiry at the observation limit | controller | catalog local/source expiry timer notifies without scheduling requests | red |
-| Current catalog status expires 24 h after observation | Old items update time does not shorten the window | controller | old items source time does not shorten the current window | red |
+| Current catalog status expires 24 h after observation | Expiry at the observation limit | controller | catalog local/source expiry timer notifies without scheduling requests || green |
+| Current catalog status expires 24 h after observation | Old items update time does not shorten the window | controller | old items source time does not shorten the current window || green |
 | Current catalog status expires 24 h after observation | Cached snapshot at startup | controller | cached startup stale; candidate invisible until durable commit then current | green |
 | Source-time evidence reflects what the source provides | Newest item update recorded | normalizer | items source time is the newest per-item updated; other datasets absent || green |
 | Source-time evidence reflects what the source provides | Items without update times | normalizer | items without updated leave every source time absent and stay authoritative || green |
@@ -46,7 +46,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 ## 4. Expiry from observation only (D4)
 
 - [x] 4.1 Write the red controller test for row 7 with `testWidgets` fake time. A `ControlledCatalogClient` returns `decisionCatalog(times: {'items': T - 23 h, ...})` observed at T. Assert `current` after refresh, still `current` after pumping to T + 2 h, and `stale` after pumping to T + 24 h + 1 ms without calling `updateAge`, with `client.calls == 1`. Run it and record the failure. On the current code the timer fires at T + 1 h and nothing demotes at T + 24 h. Run it after 2.2, so the failure is caused by the timer and not by authority.
-- [ ] 4.2 In `lib/application/catalog_controller.dart:109-121`, arm the timer at `observedAt + 24 h` only and remove the source-time loop. Rerun the whole controller file to green (rows 1, 6, 7, and row 8 rerun as the green check), and flip rows 1 (controller part), 6, 7 and 8.
+- [x] 4.2 In `lib/application/catalog_controller.dart:109-121`, arm the timer at `observedAt + 24 h` only and remove the source-time loop. Rerun the whole controller file to green (rows 1, 6, 7, and row 8 rerun as the green check), and flip rows 1 (controller part), 6, 7 and 8.
 
 ## 5. Evidence panel text
 

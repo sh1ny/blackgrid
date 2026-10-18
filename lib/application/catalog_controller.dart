@@ -108,13 +108,9 @@ class CatalogController extends ChangeNotifier {
           : CatalogStatus.stale;
       _expiry?.cancel();
       if (status == CatalogStatus.current) {
-        var expires = candidate.observedAt.add(const Duration(hours: 24));
-        for (final time in candidate.sourceTimestamps.values) {
-          if (time != null &&
-              time.add(const Duration(hours: 24)).isBefore(expires)) {
-            expires = time.add(const Duration(hours: 24));
-          }
-        }
+        // Authority is measured from download time only; source times are
+        // evidence and must not move this deadline.
+        final expires = candidate.observedAt.add(const Duration(hours: 24));
         _expiry = Timer(
           expires.difference(_clock()) + const Duration(milliseconds: 1),
           updateAge,
