@@ -74,6 +74,7 @@ class AppServices {
       progress: progress,
       history: history,
       clock: clock,
+      epoch: _currentEpoch,
     );
     importer = LegacyImport(database);
     mapSession = MapSessionController(

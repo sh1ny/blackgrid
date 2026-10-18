@@ -12,6 +12,7 @@ import 'catalog_controller.dart';
 import 'progress_controller.dart';
 import 'accepted_scan.dart';
 import 'history_controller.dart';
+import 'scan_correction.dart';
 import 'scan_epoch.dart';
 
 class SelectionController extends ChangeNotifier {
@@ -21,6 +22,7 @@ class SelectionController extends ChangeNotifier {
     required this.progress,
     required this.history,
     DateTime Function()? clock,
+    this._epoch,
   }) : clock = clock ?? DateTime.now {
     catalog.addListener(_onAuthority);
     progress.addListener(_onAuthority);
@@ -35,12 +37,17 @@ class SelectionController extends ChangeNotifier {
   final ProgressController progress;
   final HistoryController history;
   final DateTime Function() clock;
+
+  /// Reads the app's current epoch, or null when a pick is never fenced by it.
+  final ScanEpoch Function()? _epoch;
   final DecisionEngine _engine = DecisionEngine();
   Timer? _timer;
   String query = '';
   String? _manualId;
   String? _scanItemId;
   AcceptedScan? _scan;
+  ScanCorrection? _correction;
+  ScanCorrectionOffer? _offer;
   ItemActivity? _historyRow;
   CatalogSnapshot? _historyCatalog;
   FirState _fir = FirState.unknown;
@@ -52,7 +59,8 @@ class SelectionController extends ChangeNotifier {
   CatalogSnapshot? get inspectionCatalog =>
       _usesLiveCatalog ? catalog.snapshot ?? _historyCatalog : _historyCatalog;
   CatalogItem? get item => inspectionCatalog?.items[selectedId];
-  String? get selectedId => _historyRow?.itemId ?? _scanItemId ?? _manualId;
+  String? get selectedId =>
+      _historyRow?.itemId ?? _scanItemId ?? _correction?.itemId ?? _manualId;
 
   /// The accepted scan the card shows, or null when another source is current.
   AcceptedScan? get scan => _scan;
@@ -62,6 +70,41 @@ class SelectionController extends ChangeNotifier {
   /// The next select or open clears it.
   bool get scanRetired => _scanRetired;
   bool _scanRetired = false;
+
+  /// The correction the player picked, or null when another source is current.
+  ///
+  /// It is never an [AcceptedScan]: [scan] stays null while it is current.
+  ScanCorrection? get correction => _correction;
+
+  /// The current correction offer, or null when there is none.
+  ScanCorrectionOffer? get correctionOffer => _offer;
+
+  /// The offer's candidates that the live catalog holds, in rank order.
+  ///
+  /// A candidate whose item the live catalog lacks is left out.
+  List<CorrectionCandidate> get correctionCandidates {
+    final items = catalog.snapshot?.items;
+    final offer = _offer;
+    if (items == null || offer == null) return const [];
+    return [
+      for (final candidate in offer.candidates)
+        if (items[candidate.id] case final found?)
+          (item: found, score: candidate.score),
+    ];
+  }
+
+  /// The live catalog items matching the offer's search text, in ID order, at
+  /// most [correctionSearchLimit].
+  List<CatalogItem> get correctionResults {
+    final offer = _offer;
+    if (offer == null) return const [];
+    return catalog.snapshot?.searchWords(
+          offer.query,
+          limit: correctionSearchLimit,
+        ) ??
+        const [];
+  }
+
   List<CatalogItem> get results => catalog.snapshot?.search(query) ?? const [];
   ItemDecision? _decision;
   ItemDecision? get decision => _decision;
@@ -86,6 +129,8 @@ class SelectionController extends ChangeNotifier {
     final generation = ++_generation;
     _manualId = value.id;
     _clearScan();
+    _correction = null;
+    _offer = null;
     _scanRetired = false;
     _historyRow = null;
     _historyCatalog = null;
@@ -119,6 +164,8 @@ class SelectionController extends ChangeNotifier {
     final acceptedAt = clock().toUtc();
     _scanItemId = itemId;
     _scan = null;
+    _correction = null;
+    _offer = null;
     _scanRetired = false;
     _manualId = null;
     _historyRow = null;
@@ -152,22 +199,109 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Drops the scan source when a mode or session change invalidates it.
+  /// Drops the scan or correction source and the offer when a mode or session
+  /// change invalidates them.
   ///
-  /// FIR resets for every source. Only a scan source is cleared, flagged as
-  /// retired and fenced from a pending history write, so a history load in
-  /// flight keeps running.
+  /// FIR resets for every source. Only a scan or correction source is cleared,
+  /// flagged as retired and fenced from a pending history write, so a history
+  /// load in flight keeps running.
   void retireScan() {
-    final wasScan = _scanItemId != null;
+    final wasScan = _scanItemId != null || _correction != null;
     _fir = FirState.unknown;
+    _offer = null;
     if (wasScan) {
       ++_generation;
       _clearScan();
+      _correction = null;
       _scanRetired = true;
       error = null;
     }
     _authority = _fingerprint();
     _project();
+    notifyListeners();
+  }
+
+  /// Shows [offer] as the current correction offer, replacing any older one.
+  ///
+  /// The caller has already fenced it against the current epoch and mode. The
+  /// selection, the decision and the history do not change.
+  void offerCorrection(ScanCorrectionOffer offer) {
+    _offer = offer;
+    notifyListeners();
+  }
+
+  /// Sets the offer's search text without touching the selection or [query].
+  ///
+  /// With no current offer nothing changes.
+  void setCorrectionQuery(String value) {
+    final offer = _offer;
+    if (offer == null || offer.query == value) return;
+    _offer = offer.withQuery(value);
+    notifyListeners();
+  }
+
+  /// Clears the offer and changes nothing else.
+  void dismissCorrection() {
+    if (_offer == null) return;
+    _offer = null;
+    notifyListeners();
+  }
+
+  /// Makes [itemId] the current selection as a correction of scan [reportId].
+  ///
+  /// It applies only while the offer for [reportId] is current, the epoch and
+  /// the live mode are those the offer was made in, and the live catalog holds
+  /// [itemId]. Otherwise nothing changes. A pick closes an open history view,
+  /// resets FIR, clears the offer and records manual activity at the time of
+  /// the pick, taken from [clock]. A failed write keeps the correction and
+  /// replaces the error with the correction's own message.
+  Future<void> selectCorrection(int reportId, String itemId) async {
+    final offer = _offer;
+    if (offer == null || offer.reportId != reportId) {
+      debugPrint('Correction pick for scan $reportId ignored: offer replaced.');
+      return;
+    }
+    final read = _epoch;
+    if (read != null && read() != offer.epoch) {
+      debugPrint('Correction pick for scan $reportId ignored: epoch changed.');
+      return;
+    }
+    final snapshot = catalog.snapshot;
+    if (catalog.mode != offer.mode || snapshot == null) {
+      debugPrint('Correction pick for scan $reportId ignored: mode changed.');
+      return;
+    }
+    if (snapshot.items[itemId] == null) {
+      debugPrint('Correction pick for scan $reportId ignored: $itemId gone.');
+      return;
+    }
+    final generation = ++_generation;
+    final correctedAt = clock().toUtc();
+    _correction = ScanCorrection(
+      reportId: reportId,
+      itemId: itemId,
+      mode: offer.mode,
+      catalogRevision: snapshot.revision,
+      correctedAt: correctedAt,
+      epoch: offer.epoch,
+    );
+    _offer = null;
+    _manualId = null;
+    _clearScan();
+    _scanRetired = false;
+    _historyRow = null;
+    _historyCatalog = null;
+    loadingHistory = false;
+    _fir = FirState.unknown;
+    error = null;
+    _authority = _fingerprint();
+    _project();
+    notifyListeners();
+    final recorded = await history.record(itemId, offer.mode, correctedAt);
+    if (_disposed || generation != _generation) return;
+    if (!recorded) {
+      error = 'Correction was not recorded: local persistence failed.';
+    }
     notifyListeners();
   }
 
@@ -179,6 +313,8 @@ class SelectionController extends ChangeNotifier {
   Future<void> openHistory(ItemActivity row) async {
     final generation = ++_generation;
     _clearScan();
+    _correction = null;
+    _offer = null;
     _scanRetired = false;
     _historyRow = row;
     _historyCatalog = null;
@@ -207,6 +343,7 @@ class SelectionController extends ChangeNotifier {
   void closeHistory() {
     ++_generation;
     _clearScan();
+    _correction = null;
     _scanRetired = false;
     _historyRow = null;
     _historyCatalog = null;

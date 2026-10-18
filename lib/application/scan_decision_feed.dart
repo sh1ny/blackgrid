@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'catalog_controller.dart';
 import 'scan_coordinator.dart';
+import 'scan_correction.dart';
 import 'scan_epoch.dart';
 import 'selection_controller.dart';
 
@@ -24,7 +25,8 @@ class ScanDecisionFeed {
     required this.selection,
     required this.catalog,
     required this._epoch,
-  }) : _consumed = source.lastAccepted?.id ?? 0 {
+  }) : _consumed = source.lastAccepted?.id ?? 0,
+       _offered = source.latest?.id ?? 0 {
     source.addListener(_onSource);
   }
 
@@ -42,7 +44,41 @@ class ScanDecisionFeed {
   /// The highest accepted report id seen so far.
   int _consumed;
 
+  /// The highest report id considered for a correction offer so far.
+  int _offered;
+
+  /// Handles one notification: the accepted scan first, so that it clears any
+  /// offer, then the latest report for a new offer.
   void _onSource() {
+    _applyAccepted();
+    _offerLatest();
+  }
+
+  void _offerLatest() {
+    final report = source.latest;
+    if (report == null || report.id <= _offered) return;
+    // Raised before the fences, so a fenced or dismissed offer never returns.
+    _offered = report.id;
+    final offer = correctionOfferFor(report);
+    if (offer == null) return;
+    if (offer.epoch != _epoch()) {
+      debugPrint(
+        'Offer for scan ${report.id} fenced (epoch): it began in '
+        '${offer.epoch}, now ${_epoch()}.',
+      );
+      return;
+    }
+    if (offer.mode != catalog.mode) {
+      debugPrint(
+        'Offer for scan ${report.id} fenced (mode): matched in '
+        '${offer.mode}, now ${catalog.mode}.',
+      );
+      return;
+    }
+    selection.offerCorrection(offer);
+  }
+
+  void _applyAccepted() {
     final report = source.lastAccepted;
     if (report == null || report.id <= _consumed) return;
     // Raised before the fences, so a fenced scan is never retried.

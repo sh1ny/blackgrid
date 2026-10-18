@@ -94,7 +94,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
 
   Add `ScanReport? get latest` to `AcceptedScanSource`, and a settable `latest` and `publish(report)` to `FakeAcceptedScanSource`. Verify: `mise run analyze` is clean, and every existing test still compiles and passes.
 - [x] 4.2 Write every red `SC` row of the test map in `test/application/scan_correction_test.dart`, plus `accepted scan after a correction replaces it` and `correcting to the scanned item resets FIR`. Verify that they fail because the feed makes no offers and `selectCorrection` does not exist.
-- [ ] 4.3 Implement the following, per design D1, D2, D5, D6 and D7:
+- [x] 4.3 Implement the following, per design D1, D2, D5, D6 and D7:
   - **`SelectionController`:**
     - `correctionOffer`, `correction`, `offerCorrection`, `setCorrectionQuery`, `selectCorrection(reportId, itemId)`, `dismissCorrection` and `correctionResults`;
     - offer clearing in `selectManual`, `selectScan`, `openHistory` and `retireScan`, with `closeHistory` keeping the offer;
