@@ -74,7 +74,7 @@
 
 Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matching` first.
 
-- [ ] 2.1 Add the five red `title_matching_test.dart` tests from the test map (ranked candidates, duplicate names, two-item index, rejected before scoring, quantity restriction). Verify that they fail because `TitleMatch` has no `candidates`; a compile error counts.
+- [x] 2.1 Add the five red `title_matching_test.dart` tests from the test map (ranked candidates, duplicate names, two-item index, rejected before scoring, quantity restriction). Verify that they fail because `TitleMatch` has no `candidates`; a compile error counts.
 - [ ] 2.2 Add `TitleCandidate(id, score)` and `TitleMatch.candidates` (unmodifiable, default `const []`, documented). Add `maxTitleCandidates = 5`. In `matchTitle`, fill the candidates by an insertion pass over `scores` within the same pool as best: distinct normalised names, ranked by score descending, then ID. Assert in debug that `candidates[0]` is the best and `candidates[1]` the runner-up when present. Leave `toLogLine` and `frames.jsonl` unchanged. Verify: the 2.1 rows are green, and the two green rows still pass. `mise run test` passes `scan_report_test.dart` and the timing-log tests unchanged.
 
 ## 3. Offer-aware catalog search
