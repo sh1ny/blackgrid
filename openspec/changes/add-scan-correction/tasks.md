@@ -79,7 +79,7 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 3. Offer-aware catalog search
 
-- [ ] 3.1 Add the red test `every word must appear, in any order` to the new `test/domain/catalog_search_test.dart`, with a small synthetic snapshot: `ANA M1 OD GREEN` finds "ANA Tactical M1 plate carrier (OD Green)", and an extra word excludes it. Also cover blank text giving no results and the 8-result cap in ID order. Verify that it fails because `searchWords` does not exist.
+- [x] 3.1 Add the red test `every word must appear, in any order` to the new `test/domain/catalog_search_test.dart`, with a small synthetic snapshot: `ANA M1 OD GREEN` finds "ANA Tactical M1 plate carrier (OD Green)", and an extra word excludes it. Also cover blank text giving no results and the 8-result cap in ID order. Verify that it fails because `searchWords` does not exist.
 - [ ] 3.2 Add `CatalogSnapshot.searchWords(String text, {int limit})`. It splits `normaliseTitle(text)` into words and keeps items whose existing `searchIndex` text contains every word, in ID order, up to `limit`. `search` is unchanged. Verify: the 3.1 row is green.
 
 ## 4. Correction records, feed offers and selection state
