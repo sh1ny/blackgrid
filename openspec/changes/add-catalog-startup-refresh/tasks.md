@@ -75,7 +75,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 
 ## 4. Integration checks
 
-- [ ] 4.1 Run `mise run analyze`, `mise run test` and `dart format --output=none --set-exit-if-changed lib test`. Verify that all three pass and that every test-map row is green.
+- [x] 4.1 Run `mise run analyze`, `mise run test` and `dart format --output=none --set-exit-if-changed lib test`. Verify that all three pass and that every test-map row is green.
 
 ## Workflow follow-up
 
