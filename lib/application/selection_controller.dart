@@ -106,6 +106,7 @@ class SelectionController extends ChangeNotifier {
   ///
   /// The acceptance time comes from [clock] when this is called, never from the
   /// scan report. It times the record, the history write and the card's age.
+  /// An item missing from the current catalog changes and records nothing.
   Future<void> selectScan({
     required int reportId,
     required String itemId,
@@ -113,6 +114,7 @@ class SelectionController extends ChangeNotifier {
     required String catalogRevision,
     required ScanEpoch epoch,
   }) async {
+    if (catalog.snapshot?.items[itemId] == null) return;
     final generation = ++_generation;
     final acceptedAt = clock().toUtc();
     _scanItemId = itemId;

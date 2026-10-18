@@ -126,6 +126,23 @@ void main() {
       epoch: epoch,
     );
 
+    test('scan of an item missing from the catalog changes nothing', () async {
+      final h = M1Harness();
+      addTearDown(h.dispose);
+      await h.initialize();
+      final s = h.services.selection;
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      var notified = 0;
+      s.addListener(() => notified++);
+
+      await scan(s, 'item-missing');
+
+      expect(notified, 0);
+      expect(s.selectedId, 'item-a');
+      expect(s.scan, isNull);
+      expect(h.services.history.rows.map((row) => row.itemId), ['item-a']);
+    });
+
     test('manual selection after a scan stays after refresh', () async {
       final h = M1Harness();
       addTearDown(h.dispose);
