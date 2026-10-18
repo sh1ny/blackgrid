@@ -13,11 +13,11 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Catalog authority is measured from download time | Live wire shape becomes current | normalizer; controller | live wire shape without dataset timestamps is authoritative at observation; refresh of the live wire shape publishes current | red |
-| Catalog authority is measured from download time | No source timestamp anywhere | authority | no source times: authoritative through 24 h, not at 24 h + 1 ms | red |
-| Catalog authority is measured from download time | Old source timestamp does not revoke authority | authority | items source time 30 days old does not revoke authority | red |
-| Catalog authority is measured from download time | Observation in the future | authority | future observation is not authoritative | red |
-| Catalog authority is measured from download time | Unsupported source or unknown mode | authority | unsupported source or unknown mode is not authoritative | red |
+| Catalog authority is measured from download time | Live wire shape becomes current | normalizer; controller | live wire shape without dataset timestamps is authoritative at observation; refresh of the live wire shape publishes current || green |
+| Catalog authority is measured from download time | No source timestamp anywhere | authority | no source times: authoritative through 24 h, not at 24 h + 1 ms || green |
+| Catalog authority is measured from download time | Old source timestamp does not revoke authority | authority | items source time 30 days old does not revoke authority || green |
+| Catalog authority is measured from download time | Observation in the future | authority | future observation is not authoritative || green |
+| Catalog authority is measured from download time | Unsupported source or unknown mode | authority | unsupported source or unknown mode is not authoritative || green |
 | Current catalog status expires 24 h after observation | Expiry at the observation limit | controller | catalog local/source expiry timer notifies without scheduling requests | red |
 | Current catalog status expires 24 h after observation | Old items update time does not shorten the window | controller | old items source time does not shorten the current window | red |
 | Current catalog status expires 24 h after observation | Cached snapshot at startup | controller | cached startup stale; candidate invisible until durable commit then current | green |
@@ -36,7 +36,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 ## 2. Authority from observation time (D1, D3)
 
 - [x] 2.1 Write the red tests: the `authority` file (rows 2–5), the normalizer live-shape test (row 1), and the controller "refresh of the live wire shape publishes current" test (row 1), which runs `CatalogClient` over a `MockClient` serving `wireFixture()`. Rewrite the existing assertions that encoded the bug: `catalog_normalizer_test.dart:125-127` and `catalog_client_test.dart:109-110` must now expect authority, and replace the "missing and mixed source times stay unknown" test with the row 12 test. Run them and record that they fail because authority is false (the source-time clause).
-- [ ] 2.2 In `lib/domain/catalog.dart`, delete `sourceFreshAt` and its clause in `authoritativeAt`. Keep `schemaVersion`/`normalizerVersion` at 1. Add `///` docs to `authoritativeAt` and `sourceTimestamps` stating the rule (dartdoc per `dart-write-documentation`). In `lib/domain/decision_engine.dart:27-29`, change the warning to `Catalog authority missing or stale`. Update `decision_engine_test.dart:364`: a catalog with no source times now follows observation age only, so assert that it is not forced to Check by the catalog (state the expected recommendation for that fixture). Run `test/domain/` plus the rows from 2.1 to green, and flip rows 1 (normalizer part) to 5.
+- [x] 2.2 In `lib/domain/catalog.dart`, delete `sourceFreshAt` and its clause in `authoritativeAt`. Keep `schemaVersion`/`normalizerVersion` at 1. Add `///` docs to `authoritativeAt` and `sourceTimestamps` stating the rule (dartdoc per `dart-write-documentation`). In `lib/domain/decision_engine.dart:27-29`, change the warning to `Catalog authority missing or stale`. Update `decision_engine_test.dart:364`: a catalog with no source times now follows observation age only, so assert that it is not forced to Check by the catalog (state the expected recommendation for that fixture). Run `test/domain/` plus the rows from 2.1 to green, and flip rows 1 (normalizer part) to 5.
 
 ## 3. Source-time evidence (D2)
 

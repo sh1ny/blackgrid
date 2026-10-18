@@ -360,9 +360,11 @@ void main() {
         ).recommendation,
         Recommendation.check,
       );
+      // Source times are evidence only: a fresh download without them is
+      // not forced to Check by the catalog.
       expect(
         decide(catalog: decisionCatalog(times: const {})).recommendation,
-        Recommendation.check,
+        Recommendation.flea,
       );
     },
   );

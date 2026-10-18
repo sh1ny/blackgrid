@@ -118,7 +118,7 @@ class SourcePanel extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               Text(
-                'Source freshness: ${snapshot.sourceFreshAt(DateTime.now().toUtc())?.toString() ?? 'Unknown (absent or mixed timestamps)'}',
+                'Items source update: ${snapshot.sourceTimestamps['items']?.toIso8601String() ?? 'unknown'}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 10),

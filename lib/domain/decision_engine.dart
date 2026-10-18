@@ -24,9 +24,7 @@ class DecisionEngine {
         progress.authoritativeAt(context.now);
     final warnings = <String>[];
     if (!catalogKnown) {
-      warnings.add(
-        'Catalog authority missing, stale or source freshness unknown',
-      );
+      warnings.add('Catalog authority missing or stale');
     }
     if (!progressKnown) warnings.add('Progress authority missing or stale');
     if (context.fir == FirState.unknown) warnings.add('Instance FIR unknown');
