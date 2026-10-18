@@ -55,7 +55,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 
 Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analysis`.
 
-- [ ] 2.1 Write the progress red tests (rows `progress:` marked red) on the rig from 1.1. For the cooldown row, answer `429` with a `Retry-After`, assert the `cooldown` status and a fixed request count, then call `progress.refresh()` before the deadline and assert no new request. Verify each fails because no automatic tracker request is made.
+- [x] 2.1 Write the progress red tests (rows `progress:` marked red) on the rig from 1.1. For the cooldown row, answer `429` with a `Retry-After`, assert the `cooldown` status and a fixed request count, then call `progress.refresh()` before the deadline and assert no new request. Verify each fails because no automatic tracker request is made.
 - [ ] 2.2 Write the progress guard tests (no saved credential, unreadable credential, unknown mode, saving a credential does not refresh). Verify they pass before the implementation.
 - [ ] 2.3 Implement the progress chain in `_syncMapSession`. When `progress.setMode(mode)` completes and the same transition, disposal and unknown-mode fence holds, call `unawaited(progress.refresh())`, included in that selection's `automaticRefreshes`. There is no status check (design D1). Verify that every `progress:` row passes and flip the red rows to green. Then make the fence always pass, confirm `progress: selection superseded during the credential read` fails, and restore the fence.
 - [ ] 2.4 Run `mise run test` and fix any remaining fallout under the rule in 1.6. Verify that it passes.
