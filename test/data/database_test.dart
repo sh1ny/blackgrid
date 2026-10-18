@@ -58,6 +58,28 @@ void main() {
     await db.close();
     await directory.delete(recursive: true);
   });
+  test('scan activity is one row per item and mode with source scan', () async {
+    final db = BlackgridDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final second = fixtureNow.add(const Duration(seconds: 5));
+    await db.recordActivity(
+      'item-a',
+      GameMode.pvp,
+      fixtureNow,
+      source: ActivitySource.scan,
+    );
+    await db.recordActivity(
+      'item-a',
+      GameMode.pvp,
+      second,
+      source: ActivitySource.scan,
+    );
+    final rows = await db.readActivity();
+    expect(rows, hasLength(1));
+    expect(rows.single.source, ActivitySource.scan);
+    expect(rows.single.revision, 2);
+    expect(rows.single.observedAt, second.toUtc());
+  });
   test(
     'unchanged catalog revision renews observation metadata across restart',
     () async {

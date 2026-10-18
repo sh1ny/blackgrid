@@ -58,17 +58,6 @@ Scanner SHALL show the evidence of the most recent accepted scan or, before any 
 - **WHEN** scan 1 is accepted for item A and later scan 2 is accepted for item B
 - **THEN** Scanner shows item B's evidence and no longer shows item A's
 
-### Requirement: Scan evidence never produces a recommendation
-Publishing a scan, accepted or not, SHALL NOT change the current selection, the decision card, the needs and sources panels, or the history. Keep/sell advice from scans belongs to M4.
-
-#### Scenario: Accepted scan leaves the decision card alone
-- **WHEN** the user has manually selected item A and a scan is accepted for item B
-- **THEN** the decision card still shows item A, and no history entry is added
-
-#### Scenario: Rejected scan with a best candidate
-- **WHEN** a scan is rejected with best candidate C
-- **THEN** no decision, recommendation or history entry for C is shown
-
 ### Requirement: Scanner shows stage timings and recent scans
 Scanner SHALL show the latest scan's stage durations in milliseconds from its trigger, and its total. A stage not reached SHALL be shown as absent, not 0. Scanner SHALL list the 10 most recent published scans, newest first, with end state, item or reason and total time.
 
@@ -152,3 +141,14 @@ When recording turns itself off, Scanner SHALL say why: cap reached, or the writ
 #### Scenario: Write failure
 - **WHEN** recording turned itself off because a write failed
 - **THEN** the switch shows off and Scanner shows the error and the folder path
+
+### Requirement: Unaccepted scan evidence never produces a recommendation
+Publishing a scan that is not accepted, whether rejected or failed, SHALL NOT change the current selection, the decision card, the needs and sources panels, or the history. Only an accepted scan reaches keep/sell advice, through the scan-decisions rules; the evidence panel itself never shows a recommendation.
+
+#### Scenario: Accepted scan drives the decision card
+- **WHEN** the user has manually selected item A and a scan is accepted for item B
+- **THEN** the decision card shows item B, and history gains one entry for B with source `scan`
+
+#### Scenario: Rejected scan with a best candidate
+- **WHEN** a scan is rejected with best candidate C
+- **THEN** no decision, recommendation or history entry for C is shown

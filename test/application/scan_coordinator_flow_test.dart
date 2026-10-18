@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
+import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
@@ -121,7 +122,12 @@ OutcomeRejected<InspectionEvidence> _rejected(
 /// Everything one flow test needs: the coordinator over real settings and
 /// catalog controllers, and hand-written ports that wait for the test.
 final class _Rig {
-  _Rig({required this.settings, required this.catalog, this.onDispose}) {
+  _Rig({
+    required this.settings,
+    required this.catalog,
+    this.onDispose,
+    ScanEpoch Function()? epoch,
+  }) {
     coordinator = ScanCoordinator(
       settings: settings,
       catalog: catalog,
@@ -143,12 +149,14 @@ final class _Rig {
       },
       platformFactory: () => platform = FakeScanPlatform(events),
       waiter: waiter.call,
+      epoch: epoch,
     );
     coordinator.addListener(_observe);
   }
 
   static Future<_Rig> standalone({
     Map<GameMode, CatalogSnapshot> snapshots = const {},
+    ScanEpoch Function()? epoch,
   }) async {
     final db = BlackgridDatabase(NativeDatabase.memory());
     final settings = SettingsController(db);
@@ -162,6 +170,7 @@ final class _Rig {
     return _Rig(
       settings: settings,
       catalog: catalog,
+      epoch: epoch,
       onDispose: () async {
         settings.dispose();
         catalog.dispose();
@@ -277,8 +286,10 @@ void main() {
   Future<_Rig> readyRig({
     GameMode loaded = GameMode.pvp,
     Map<GameMode, CatalogSnapshot>? snapshots,
+    ScanEpoch Function()? epoch,
   }) async {
     rig = await _Rig.standalone(
+      epoch: epoch,
       snapshots:
           snapshots ??
           {
@@ -292,6 +303,52 @@ void main() {
   }
 
   tearDown(() => rig.dispose());
+
+  test('the epoch is stamped when the scan begins', () async {
+    const e0 = ScanEpoch(1, 1);
+    const e1 = ScanEpoch(2, 1);
+    var current = e0;
+    await readyRig(epoch: () => current);
+    rig.fire(1000);
+    (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
+    final evidence = _ev();
+    (await rig.vision.calls.at(0))
+        .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+    final match = await rig.matcher.calls.at(0);
+    current = e1;
+    match.complete(_accepted(evidence));
+
+    final report = await rig.published.at(0);
+    expect(report.epoch, e0);
+    expect(report.withoutCrops().epoch, e0);
+    expect(rig.coordinator.recent.first.epoch, e0);
+    expect(rig.logs[0].containsKey('epoch'), isFalse);
+  });
+
+  test(
+    'a trigger queued behind capture keeps its trigger-time epoch',
+    () async {
+      const e0 = ScanEpoch(1, 1);
+      const e1 = ScanEpoch(2, 1);
+      var current = e0;
+      await readyRig(epoch: () => current);
+      rig.fire(1000);
+      final first = await rig.capture.calls.at(0);
+      rig.fire(2000);
+      // The mode changes while the newer trigger waits for the capture answer.
+      current = e1;
+      first.succeed(rig.frames.frame());
+      (await rig.capture.calls.at(1)).succeed(rig.frames.frame());
+      final evidence = _ev();
+      (await rig.vision.calls.at(0))
+          .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+      (await rig.matcher.calls.at(0)).complete(_accepted(evidence));
+
+      final report = await rig.published.at(0);
+      expect(report.timeline.trigger, 2000);
+      expect(report.epoch, e0);
+    },
+  );
 
   group('passes', () {
     test('accepted targeted scan requests no fallback', () async {
