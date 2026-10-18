@@ -131,7 +131,7 @@ Load `flutter-add-widget-test` and `dart-write-documentation` first.
 
 ## 6. Integration checks
 
-- [ ] 6.1 Run `dart format` on the changed Dart files, then `mise run analyze` and `mise run test`. Verify that both exit 0, and that every Test map row reads green.
+- [x] 6.1 Run `dart format` on the changed Dart files, then `mise run analyze` and `mise run test`. Verify that both exit 0, and that every Test map row reads green.
 - [ ] 6.2 `openspec validate add-scan-correction --strict` passes.
 
 ## Workflow follow-up
