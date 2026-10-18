@@ -73,6 +73,19 @@ class ItemDecisionCard extends StatelessWidget {
             ? offerBlock != null
                   ? ListView(
                       children: [
+                        // The offer replaces only the find-an-item hint; a
+                        // loading or unresolved selection still says so.
+                        if (selection.loadingHistory ||
+                            selection.selectedId != null) ...[
+                          Text(
+                            selection.loadingHistory
+                                ? 'Opening stored-mode catalog…'
+                                : 'Identity retained • catalog unavailable',
+                            key: const Key('correction-offer-status'),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         offerBlock,
                         if (selection.error != null) ...[
                           const SizedBox(height: 12),

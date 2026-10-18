@@ -185,6 +185,34 @@ void main() {
     await _arrange(tester, showAlpha: false);
     expect(find.byKey(const Key('correction-offer')), findsOneWidget);
     expect(find.text('Find an item to inspect'), findsNothing);
+    expect(find.byKey(const Key('correction-offer-status')), findsNothing);
+  });
+
+  testWidgets('an unresolved selection keeps its status beside the offer', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    h.services.catalog.snapshot = _snapshot(_names);
+    final selection = h.services.selection;
+    await tester.runAsync(
+      () =>
+          selection.selectManual(h.services.catalog.snapshot!.items['alpha']!),
+    );
+    // The live catalog loses the selected identity, then an offer arrives.
+    h.services.catalog.snapshot = _snapshot({
+      'bravo': 'Bravo plate',
+      'charlie': 'Charlie plate',
+    });
+    selection.offerCorrection(_offer());
+    await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    expect(selection.selectedId, 'alpha');
+    expect(selection.item, isNull);
+    expect(find.byKey(const Key('correction-offer')), findsOneWidget);
+    expect(
+      find.text('Identity retained • catalog unavailable'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('search results are capped at 8 and an empty search says so', (
