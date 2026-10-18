@@ -8,11 +8,11 @@
 |---|---|---|---|---|
 | item-title-matching → Best and runner-up are chosen deterministically | Duplicate names | test/domain/title_matching_test.dart | duplicate normalised names keep the smaller id and skip runner-up | green |
 | item-title-matching → Best and runner-up are chosen deterministically | Distinct names tie | test/domain/title_matching_test.dart | distinct names at equal score give margin 0 | green |
-| item-title-matching → Best and runner-up are chosen deterministically | Ranked candidates | test/domain/title_matching_test.dart | candidates are the top five distinct names, best then runner-up first | red |
-| item-title-matching → Best and runner-up are chosen deterministically | Duplicate names in the candidates | test/domain/title_matching_test.dart | duplicate normalised names appear once in the candidates | red |
-| item-title-matching → Best and runner-up are chosen deterministically | Fewer candidates than five | test/domain/title_matching_test.dart | a two-item index gives two candidates | red |
-| item-title-matching → Best and runner-up are chosen deterministically | Rejected before scoring | test/domain/title_matching_test.dart | results rejected before scoring carry no candidates | red |
-| item-title-matching → Best and runner-up are chosen deterministically | Quantity restriction | test/domain/title_matching_test.dart | quantity restriction limits the candidates | red |
+| item-title-matching → Best and runner-up are chosen deterministically | Ranked candidates | test/domain/title_matching_test.dart | candidates are the top five distinct names, best then runner-up first | green |
+| item-title-matching → Best and runner-up are chosen deterministically | Duplicate names in the candidates | test/domain/title_matching_test.dart | duplicate normalised names appear once in the candidates | green |
+| item-title-matching → Best and runner-up are chosen deterministically | Fewer candidates than five | test/domain/title_matching_test.dart | a two-item index gives two candidates | green |
+| item-title-matching → Best and runner-up are chosen deterministically | Rejected before scoring | test/domain/title_matching_test.dart | results rejected before scoring carry no candidates | green |
+| item-title-matching → Best and runner-up are chosen deterministically | Quantity restriction | test/domain/title_matching_test.dart | quantity restriction limits the candidates | green |
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan replaces a manual selection | test/application/scan_decision_feed_test.dart | accepted scan replaces a manual selection | green |
 | scan-decisions → An accepted scan becomes the current selection | Manual selection after a scan | test/application/selection_controller_test.dart | manual selection after a scan stays after refresh | green |
 | scan-decisions → An accepted scan becomes the current selection | Accepted scan while a history row is open | test/application/selection_controller_test.dart | accepted scan closes an open history row into the live mode | green |
@@ -30,7 +30,7 @@
 | scan-correction → The offer lists the scan's best candidates | More than five candidates | SC | offer lists at most five candidates | red |
 | scan-correction → The offer lists the scan's best candidates | Weak candidates | SC | candidates below .40 are left out | red |
 | scan-correction → The offer lists the scan's best candidates | Candidate gone from the catalog | SC | candidate missing from the live catalog is left out | red |
-| scan-correction → The offer searches the catalog from the scan's text | Words in another order | test/domain/catalog_search_test.dart | every word must appear, in any order | red |
+| scan-correction → The offer searches the catalog from the scan's text | Words in another order | test/domain/catalog_search_test.dart | every word must appear, in any order | green |
 | scan-correction → The offer searches the catalog from the scan's text | Edited text | SC | editing the offer text searches without changing the selection | red |
 | scan-correction → The offer searches the catalog from the scan's text | No results | SC | offer search with no match leaves the selection | red |
 | scan-correction → Picking a correction makes it the current selection | Pick the runner-up | SC | picking the runner-up selects it as a correction | red |
@@ -75,7 +75,7 @@
 Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matching` first.
 
 - [x] 2.1 Add the five red `title_matching_test.dart` tests from the test map (ranked candidates, duplicate names, two-item index, rejected before scoring, quantity restriction). Verify that they fail because `TitleMatch` has no `candidates`; a compile error counts.
-- [ ] 2.2 Add `TitleCandidate(id, score)` and `TitleMatch.candidates` (unmodifiable, default `const []`, documented). Add `maxTitleCandidates = 5`. In `matchTitle`, fill the candidates by an insertion pass over `scores` within the same pool as best: distinct normalised names, ranked by score descending, then ID. Assert in debug that `candidates[0]` is the best and `candidates[1]` the runner-up when present. Leave `toLogLine` and `frames.jsonl` unchanged. Verify: the 2.1 rows are green, and the two green rows still pass. `mise run test` passes `scan_report_test.dart` and the timing-log tests unchanged.
+- [x] 2.2 Add `TitleCandidate(id, score)` and `TitleMatch.candidates` (unmodifiable, default `const []`, documented). Add `maxTitleCandidates = 5`. In `matchTitle`, fill the candidates by an insertion pass over `scores` within the same pool as best: distinct normalised names, ranked by score descending, then ID. Assert in debug that `candidates[0]` is the best and `candidates[1]` the runner-up when present. Leave `toLogLine` and `frames.jsonl` unchanged. Verify: the 2.1 rows are green, and the two green rows still pass. `mise run test` passes `scan_report_test.dart` and the timing-log tests unchanged.
 
 ## 3. Offer-aware catalog search
 
