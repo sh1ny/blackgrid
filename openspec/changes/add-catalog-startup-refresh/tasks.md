@@ -28,17 +28,17 @@ One catalog fetch is counted as the requests to one dataset path (`/<route>/item
 | catalog-authority → An automatic refresh never publishes into another mode | Switch during the automatic refresh | same | `catalog: switch during the automatic refresh` | green |
 | catalog-authority → An automatic refresh never publishes into another mode | Failure after a switch | same | `catalog: failure after a switch` | green |
 | catalog-authority → An automatic refresh never publishes into another mode | Switch back while the refresh is still in flight | same | `catalog: switch back while the refresh is still in flight` | green |
-| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Launch with a saved credential | same | `progress: launch with a saved credential` | red |
+| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Launch with a saved credential | same | `progress: launch with a saved credential` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | No saved credential | same | `progress: no saved credential` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Unreadable credential | same | `progress: unreadable credential` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Unknown mode makes no request | same | `progress: unknown mode makes no request` | green |
-| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Selection superseded during the credential read | same | `progress: selection superseded during the credential read` | red |
+| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Selection superseded during the credential read | same | `progress: selection superseded during the credential read` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Saving a credential does not refresh | same | `progress: saving a credential does not refresh` | green |
-| progress-authority → A failed automatic progress refresh is not retried | Tracker unavailable at launch | same | `progress: tracker unavailable at launch` | red |
-| progress-authority → A failed automatic progress refresh is not retried | Tracker answers with a cooldown | same | `progress: tracker answers with a cooldown` | red |
-| progress-authority → A failed automatic progress refresh is not retried | Rejected credential | same | `progress: rejected credential` | red |
-| progress-authority → An automatic progress refresh never publishes into another selection | Switch during the automatic refresh | same | `progress: switch during the automatic refresh` | red |
-| progress-authority → An automatic progress refresh never publishes into another selection | Switch back before the old fetch returns | same | `progress: switch back before the old fetch returns` | red |
+| progress-authority → A failed automatic progress refresh is not retried | Tracker unavailable at launch | same | `progress: tracker unavailable at launch` | green |
+| progress-authority → A failed automatic progress refresh is not retried | Tracker answers with a cooldown | same | `progress: tracker answers with a cooldown` | green |
+| progress-authority → A failed automatic progress refresh is not retried | Rejected credential | same | `progress: rejected credential` | green |
+| progress-authority → An automatic progress refresh never publishes into another selection | Switch during the automatic refresh | same | `progress: switch during the automatic refresh` | green |
+| progress-authority → An automatic progress refresh never publishes into another selection | Switch back before the old fetch returns | same | `progress: switch back before the old fetch returns` | green |
 
 ## 1. Automatic catalog refresh
 
@@ -57,7 +57,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 
 - [x] 2.1 Write the progress red tests (rows `progress:` marked red) on the rig from 1.1. For the cooldown row, answer `429` with a `Retry-After`, assert the `cooldown` status and a fixed request count, then call `progress.refresh()` before the deadline and assert no new request. Verify each fails because no automatic tracker request is made.
 - [x] 2.2 Write the progress guard tests (no saved credential, unreadable credential, unknown mode, saving a credential does not refresh). Verify they pass before the implementation.
-- [ ] 2.3 Implement the progress chain in `_syncMapSession`. When `progress.setMode(mode)` completes and the same transition, disposal and unknown-mode fence holds, call `unawaited(progress.refresh())`, included in that selection's `automaticRefreshes`. There is no status check (design D1). Verify that every `progress:` row passes and flip the red rows to green. Then make the fence always pass, confirm `progress: selection superseded during the credential read` fails, and restore the fence.
+- [x] 2.3 Implement the progress chain in `_syncMapSession`. When `progress.setMode(mode)` completes and the same transition, disposal and unknown-mode fence holds, call `unawaited(progress.refresh())`, included in that selection's `automaticRefreshes`. There is no status check (design D1). Verify that every `progress:` row passes and flip the red rows to green. Then make the fence always pass, confirm `progress: selection superseded during the credential read` fails, and restore the fence.
 - [ ] 2.4 Run `mise run test` and fix any remaining fallout under the rule in 1.6. Verify that it passes.
 
 ## 3. Documentation

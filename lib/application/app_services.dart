@@ -158,11 +158,12 @@ class AppServices {
 
   /// Completes when the latest mode selection's background work has finished.
   ///
-  /// The work is both controllers' `setMode` calls and every refresh started
-  /// after them. A selection that starts no refresh completes right after its
-  /// `setMode` calls. Each selection gets its own future, so a caller that
-  /// captured the value before a later switch still observes the earlier
-  /// selection. Failures are reported through the controllers, not here.
+  /// The work is both controllers' `setMode` calls and every catalog and
+  /// progress refresh started after them. A selection that starts no refresh
+  /// completes right after its `setMode` calls. Each selection gets its own
+  /// future, so a caller that captured the value before a later switch still
+  /// observes the earlier selection. Failures are reported through the
+  /// controllers, not here.
   ///
   /// Tests await this instead of sleeping. `initialize` and `setMode` never
   /// wait on it.
@@ -256,6 +257,12 @@ class AppServices {
       _modeChange = Future.wait([progressReady, catalogReady]).then((_) {});
       // The refreshes are never part of _modeChange: startup and a switch must
       // not wait on the network.
+      final progressRefresh = _refreshAfter(
+        progressReady,
+        transition,
+        mode,
+        progress.refresh,
+      );
       final catalogRefresh = _refreshAfter(
         catalogReady,
         transition,
@@ -263,7 +270,7 @@ class AppServices {
         catalog.refresh,
         when: () => catalog.status != CatalogStatus.current,
       );
-      _automaticRefreshes = Future.wait([progressReady, catalogRefresh])
+      _automaticRefreshes = Future.wait([progressRefresh, catalogRefresh])
           .then((_) {}, onError: (Object _) {});
     }
     if (state.sessionEpoch != _appliedSessionEpoch) {
