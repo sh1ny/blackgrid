@@ -55,8 +55,8 @@
 | scan-correction → A stale pick changes nothing | Offer replaced before the pick | SC | a pick from a replaced offer changes nothing | green |
 | scan-correction → A stale pick changes nothing | Item removed by a catalog refresh | SC | a pick of an item no longer in the catalog changes nothing | green |
 | scan-correction → A stale pick changes nothing | Mode changed before the pick | SC | a pick after a mode change changes nothing | green |
-| scan-correction → The offer appears with the decision card on Scanner and Map | Offer on Map | CW | Map card shows the offer next to the item and a pick selects it | red |
-| scan-correction → The offer appears with the decision card on Scanner and Map | Navigation keeps the offer | CW | the offer text is shared by the mounted Scanner and Map cards | red |
+| scan-correction → The offer appears with the decision card on Scanner and Map | Offer on Map | CW | Map card shows the offer next to the item and a pick selects it | green |
+| scan-correction → The offer appears with the decision card on Scanner and Map | Navigation keeps the offer | CW | the offer text is shared by the mounted Scanner and Map cards | green |
 
 ## 1. ADR and architecture
 
@@ -115,7 +115,7 @@ Load `dart-use-pattern-matching`, `dart-write-documentation` and `dart-add-unit-
 
 Load `flutter-add-widget-test` and `dart-write-documentation` first.
 
-- [ ] 5.1 Write the two red `CW` rows in `test/ui/scan_correction_card_test.dart`, with a small synthetic catalog and the shell's mounted `IndexedStack` or both cards pumped together. Also write narrow tests for:
+- [x] 5.1 Write the two red `CW` rows in `test/ui/scan_correction_card_test.dart`, with a small synthetic catalog and the shell's mounted `IndexedStack` or both cards pumped together. Also write narrow tests for:
   - "Corrected scan" as the title, with "Corrected from scan #N", the age and "not an accepted scan" as the subtitle;
   - Dismiss;
   - search results capped at 8.
