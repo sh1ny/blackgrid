@@ -1,3 +1,5 @@
+import 'title_matching.dart' show normaliseTitle;
+
 enum GameMode {
   unknown,
   pvp,
@@ -321,6 +323,28 @@ class CatalogSnapshot {
     return List.unmodifiable(
       searchIndex.where((v) => v.$2.contains(q)).map((v) => v.$1),
     );
+  }
+
+  /// Finds items whose search text holds every word of [text], in any order.
+  ///
+  /// [text] is normalised with [normaliseTitle] and split on whitespace. An
+  /// item matches when its lower-cased ID, name, short name and normalised
+  /// name together contain each word as a substring. Results come in ID order,
+  /// at most [limit] of them, and are empty when [text] holds no words.
+  List<CatalogItem> searchWords(String text, {int limit = 8}) {
+    final words = normaliseTitle(text)
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .toList();
+    if (words.isEmpty || limit <= 0) return const [];
+    final found = <CatalogItem>[];
+    for (final (item, haystack) in searchIndex) {
+      if (words.every(haystack.contains)) {
+        found.add(item);
+        if (found.length >= limit) break;
+      }
+    }
+    return List.unmodifiable(found);
   }
 
   Map<String, Object?> toJson() => {
