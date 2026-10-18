@@ -40,7 +40,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 
 ## 3. Source-time evidence (D2)
 
-- [ ] 3.1 Write the red normalizer tests for rows 9–12. Row 11 uses the string `yesterday` and expects a `FormatException`. Row 12 puts dataset-level `updated: 2020-01-01T00:00:00Z` on `items` and `traders` and expects the items time to come from the items only and traders to be null. Run them and record the failures.
+- [x] 3.1 Write the red normalizer tests for rows 9–12. Row 11 uses the string `yesterday` and expects a `FormatException`. Row 12 puts dataset-level `updated: 2020-01-01T00:00:00Z` on `items` and `traders` and expects the items time to come from the items only and traders to be null. Run them and record the failures.
 - [ ] 3.2 In `lib/data/catalog_normalizer.dart:383-385`, build `times` as `items` = max of the normalised items' `updatedAt` (null when none), the other five null, and stop reading `roots[key]['updated']`. Run the normalizer, client and database tests to green (`CatalogSnapshot.fromJson` round trip included), and flip rows 9–12.
 
 ## 4. Expiry from observation only (D4)
