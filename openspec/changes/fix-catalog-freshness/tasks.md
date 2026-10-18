@@ -21,10 +21,10 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 | Current catalog status expires 24 h after observation | Expiry at the observation limit | controller | catalog local/source expiry timer notifies without scheduling requests | red |
 | Current catalog status expires 24 h after observation | Old items update time does not shorten the window | controller | old items source time does not shorten the current window | red |
 | Current catalog status expires 24 h after observation | Cached snapshot at startup | controller | cached startup stale; candidate invisible until durable commit then current | green |
-| Source-time evidence reflects what the source provides | Newest item update recorded | normalizer | items source time is the newest per-item updated; other datasets absent | red |
-| Source-time evidence reflects what the source provides | Items without update times | normalizer | items without updated leave every source time absent and stay authoritative | red |
-| Source-time evidence reflects what the source provides | Malformed item update time | normalizer; controller | malformed item updated fails validation; refresh failure retains last-good | red |
-| Source-time evidence reflects what the source provides | Dataset-level update field is ignored | normalizer | dataset-level updated is ignored | red |
+| Source-time evidence reflects what the source provides | Newest item update recorded | normalizer | items source time is the newest per-item updated; other datasets absent || green |
+| Source-time evidence reflects what the source provides | Items without update times | normalizer | items without updated leave every source time absent and stay authoritative || green |
+| Source-time evidence reflects what the source provides | Malformed item update time | normalizer; controller | malformed item updated fails validation; refresh failure retains last-good || green |
+| Source-time evidence reflects what the source provides | Dataset-level update field is ignored | normalizer | dataset-level updated is ignored || green |
 | Source-time evidence reflects what the source provides | Evidence view with no items update time | label | absent items source time reads unknown | red |
 
 "Red" for the controller expiry row means the test is rewritten: today it passes only because the fixture carries dataset-level times, and it must keep passing with `decisionCatalog`'s new items-only default. The malformed-time row is red for the normalizer part, which is a new assertion; the controller part reuses the existing last-good path.
@@ -41,7 +41,7 @@ Every row is new or changed behaviour, so every row starts red. The cached-snaps
 ## 3. Source-time evidence (D2)
 
 - [x] 3.1 Write the red normalizer tests for rows 9–12. Row 11 uses the string `yesterday` and expects a `FormatException`. Row 12 puts dataset-level `updated: 2020-01-01T00:00:00Z` on `items` and `traders` and expects the items time to come from the items only and traders to be null. Run them and record the failures.
-- [ ] 3.2 In `lib/data/catalog_normalizer.dart:383-385`, build `times` as `items` = max of the normalised items' `updatedAt` (null when none), the other five null, and stop reading `roots[key]['updated']`. Run the normalizer, client and database tests to green (`CatalogSnapshot.fromJson` round trip included), and flip rows 9–12.
+- [x] 3.2 In `lib/data/catalog_normalizer.dart:383-385`, build `times` as `items` = max of the normalised items' `updatedAt` (null when none), the other five null, and stop reading `roots[key]['updated']`. Run the normalizer, client and database tests to green (`CatalogSnapshot.fromJson` round trip included), and flip rows 9–12.
 
 ## 4. Expiry from observation only (D4)
 
