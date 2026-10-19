@@ -394,6 +394,29 @@ void main() {
       expect(rig.coordinator.status.state, LiveScanState.off);
     });
 
+    test('rebind: rebind and switch-on both waiting on one save', () async {
+      await ready();
+      final gate = rig.db.saveGate = Completer<void>();
+
+      final off = rig.coordinator.setLiveScan(false);
+      await rig.db.saveEntered.future;
+      final rebind = rig.coordinator.setHotkey(ScanHotkey.f10);
+      final on = rig.coordinator.setLiveScan(true);
+      // Both now wait on the held switch-off save.
+      await pumpEventQueue();
+      gate.complete();
+      await Future.wait([off, rebind, on]);
+      await rig.coordinator.settled;
+
+      expect(await rebind, ScanRebindResult.saved);
+      final saved = await rig.db.readSettings();
+      expect(saved.scanHotkey, ScanHotkey.f10);
+      expect(saved.liveScan, isTrue);
+      expect(rig.coordinator.error, isNull);
+      expect(rig.coordinator.hotkeyError, isNull);
+      expect(rig.coordinator.status.state, LiveScanState.ready);
+    });
+
     test('rebind: rebind while off', () async {
       rig = await _Rig.create();
 

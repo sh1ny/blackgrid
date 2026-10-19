@@ -1930,19 +1930,32 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
 
   /// Saves the `liveScan` setting, tracked so later taps wait for it.
   Future<bool> _save({required bool on}) =>
-      _trackedSave(settings.settings.copyWith(liveScan: on));
+      _trackedSave((current) => current.copyWith(liveScan: on));
 
   /// Saves the scan hotkey binding on the same tracked path.
   Future<bool> _saveHotkey(ScanHotkey key) =>
-      _trackedSave(settings.settings.copyWith(scanHotkey: key));
+      _trackedSave((current) => current.copyWith(scanHotkey: key));
 
-  Future<bool> _trackedSave(AppSettings next) async {
-    final save = _saving = settings.save(next);
+  /// Queues [change] behind every tracked save already started, so two
+  /// callers released by the same landed save run one after the other
+  /// instead of the second being refused as busy.
+  Future<bool> _trackedSave(AppSettings Function(AppSettings) change) async {
+    final save = _saving = _queuedSave(_saving, change);
     try {
       return await save;
     } finally {
       if (identical(_saving, save)) _saving = null;
     }
+  }
+
+  /// Applies [change] to the settings as they are once [previous] landed.
+  Future<bool> _queuedSave(
+    Future<bool>? previous,
+    AppSettings Function(AppSettings) change,
+  ) async {
+    // A failed save is its caller's error to report, not this save's.
+    if (previous != null) await previous.then((_) {}, onError: (Object _) {});
+    return settings.save(change(settings.settings));
   }
 
   /// Completes once no save started by [setLiveScan] or [setHotkey] is
