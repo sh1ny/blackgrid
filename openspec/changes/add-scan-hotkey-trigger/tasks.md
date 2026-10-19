@@ -21,29 +21,29 @@ A test name is the scenario name, prefixed by its group where the file has sever
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| scan-triggers → Hotkey trigger records the same target facts | Press over the target window | `windows/capture/unittest.cpp` | `hotkey: press over the target window` | red |
-| scan-triggers → Hotkey trigger records the same target facts | Press over another window | `windows/capture/unittest.cpp` | `hotkey: press over another window` | red |
-| scan-triggers → Hotkey trigger records the same target facts | Press over Blackgrid | `windows/capture/unittest.cpp` | `hotkey: press over blackgrid` | red |
-| scan-triggers → Hotkey trigger records the same target facts | Mouse release keeps its source | `windows/capture/unittest.cpp` | `hook: mouse release keeps its source` | red |
+| scan-triggers → Hotkey trigger records the same target facts | Press over the target window | `windows/capture/unittest.cpp` | `hotkey: press over the target window` | green |
+| scan-triggers → Hotkey trigger records the same target facts | Press over another window | `windows/capture/unittest.cpp` | `hotkey: press over another window` | green |
+| scan-triggers → Hotkey trigger records the same target facts | Press over Blackgrid | `windows/capture/unittest.cpp` | `hotkey: press over blackgrid` | green |
+| scan-triggers → Hotkey trigger records the same target facts | Mouse release keeps its source | `windows/capture/unittest.cpp` | `hook: mouse release keeps its source` | green |
 | scan-triggers → Hotkey trigger records the same target facts | Press over the target window (Dart decode) | `test/data/capture/trigger_source_test.dart` | `drained events carry their trigger source` | red |
-| scan-triggers → Holding the hotkey does not repeat | Key held down | `windows/capture/unittest.cpp` | `swap: registers with MOD_NOREPEAT and no modifier` (+ user-run `selftest.cpp` `hotkey: registered with norepeat`) | red |
-| scan-triggers → Holding the hotkey does not repeat | Two separate presses | `windows/capture/unittest.cpp` | `hotkey: two presses append two events in order` | red |
-| scan-triggers → Hotkey triggers share the bounded queue | Mixed sources in order | `windows/capture/unittest.cpp` | `ring: mixed sources drain in append order` | red |
-| scan-triggers → Hotkey triggers share the bounded queue | Dart isolate is busy | `windows/capture/unittest.cpp` | `hotkey: press appends and signals without waiting` | red |
-| scan-triggers → Hotkey triggers share the bounded queue | Overflow across sources | `windows/capture/unittest.cpp` | `ring: overflow across sources keeps newest 16 and counts 4` | red |
-| scan-triggers → Hotkey registration is explicit and reports conflicts | Register a free key | `windows/capture/unittest.cpp` | `swap: register a free key` | red |
-| scan-triggers → Hotkey registration is explicit and reports conflicts | Key held by another application | `windows/capture/unittest.cpp` | `swap: key held elsewhere returns unavailable with the os code` (+ user-run `selftest.cpp` `hotkey: second registration from another thread conflicts`) | red |
-| scan-triggers → Hotkey registration is explicit and reports conflicts | Request while stopped | `windows/capture/unittest.cpp` | `api: hotkey set while stopped returns not started` | red |
-| scan-triggers → Hotkey registration is explicit and reports conflicts | Unsupported key | `windows/capture/unittest.cpp` | `api: unsupported key returns invalid argument` | red |
-| scan-triggers → Hotkey registration is explicit and reports conflicts | Turned off | `windows/capture/unittest.cpp` | `swap: off unregisters` | red |
+| scan-triggers → Holding the hotkey does not repeat | Key held down | `windows/capture/unittest.cpp` | `swap: registers with MOD_NOREPEAT and no modifier` (+ user-run `selftest.cpp` `hotkey: registered with norepeat`) | green (selftest part user-run, unverified) |
+| scan-triggers → Holding the hotkey does not repeat | Two separate presses | `windows/capture/unittest.cpp` | `hotkey: two presses append two events in order` | green |
+| scan-triggers → Hotkey triggers share the bounded queue | Mixed sources in order | `windows/capture/unittest.cpp` | `ring: mixed sources drain in append order` | green |
+| scan-triggers → Hotkey triggers share the bounded queue | Dart isolate is busy | `windows/capture/unittest.cpp` | `hotkey: press appends and signals without waiting` | green |
+| scan-triggers → Hotkey triggers share the bounded queue | Overflow across sources | `windows/capture/unittest.cpp` | `ring: overflow across sources keeps newest 16 and counts 4` | green |
+| scan-triggers → Hotkey registration is explicit and reports conflicts | Register a free key | `windows/capture/unittest.cpp` | `swap: register a free key` | green |
+| scan-triggers → Hotkey registration is explicit and reports conflicts | Key held by another application | `windows/capture/unittest.cpp` | `swap: key held elsewhere returns unavailable with the os code` (+ user-run `selftest.cpp` `hotkey: second registration from another thread conflicts`) | green (selftest part user-run, unverified) |
+| scan-triggers → Hotkey registration is explicit and reports conflicts | Request while stopped | `windows/capture/unittest.cpp` | `api: hotkey set while stopped returns not started` | green |
+| scan-triggers → Hotkey registration is explicit and reports conflicts | Unsupported key | `windows/capture/unittest.cpp` | `api: unsupported key returns invalid argument` | green |
+| scan-triggers → Hotkey registration is explicit and reports conflicts | Turned off | `windows/capture/unittest.cpp` | `swap: off unregisters` | green |
 | scan-triggers → Hotkey registration is explicit and reports conflicts | Key held by another application (Dart mapping) | `test/data/capture/trigger_source_test.dart` | `setHotkey maps every native status to a typed result` | red |
-| scan-triggers → Rebinding keeps the previous key on failure | Rebind to a free key | `windows/capture/unittest.cpp` | `swap: rebind registers new before releasing old` | red |
-| scan-triggers → Rebinding keeps the previous key on failure | Rebind to a held key | `windows/capture/unittest.cpp` | `swap: refused rebind keeps the old key` | red |
-| scan-triggers → Rebinding keeps the previous key on failure | Same key again | `windows/capture/unittest.cpp` | `swap: same key is a no-op` | red |
-| scan-triggers → Rebinding keeps the previous key on failure | Input thread does not answer | `windows/capture/unittest.cpp` | `request: timeout reserves the slot until answered` | red |
-| scan-triggers → Rebinding keeps the previous key on failure | Late answer after a timeout | `windows/capture/unittest.cpp` | `request: abandoned swap releases only the new key` | red |
+| scan-triggers → Rebinding keeps the previous key on failure | Rebind to a free key | `windows/capture/unittest.cpp` | `swap: rebind registers new before releasing old` | green |
+| scan-triggers → Rebinding keeps the previous key on failure | Rebind to a held key | `windows/capture/unittest.cpp` | `swap: refused rebind keeps the old key` | green |
+| scan-triggers → Rebinding keeps the previous key on failure | Same key again | `windows/capture/unittest.cpp` | `swap: same key is a no-op` | green |
+| scan-triggers → Rebinding keeps the previous key on failure | Input thread does not answer | `windows/capture/unittest.cpp` | `request: timeout reserves the slot until answered` | green |
+| scan-triggers → Rebinding keeps the previous key on failure | Late answer after a timeout | `windows/capture/unittest.cpp` | `request: abandoned swap releases only the new key` | green |
 | scan-triggers → Hook lifecycle is explicit | Start then stop | `test/data/capture/trigger_source_test.dart` | `stop closes the listener and ignores later signals` | green |
-| scan-triggers → Hook lifecycle is explicit | Stop with a hotkey registered | `windows/capture/unittest.cpp` | `thread exit unregisters every hotkey id and completes a pending request` | red |
+| scan-triggers → Hook lifecycle is explicit | Stop with a hotkey registered | `windows/capture/unittest.cpp` | `thread exit unregisters every hotkey id and completes a pending request` | green |
 | scan-triggers → Hook lifecycle is explicit | Second start | `test/data/capture/trigger_source_test.dart` | `a second start returns alreadyStarted` | green |
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | `test/data/capture/trigger_source_test.dart` | `an OS refusal returns unavailable with the win32 code` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | `test/data/capture/trigger_source_test.dart` | `stopTimedOut keeps the listener open and blocks restart` | green |
@@ -139,7 +139,7 @@ Skills: dart-run-static-analysis does not apply. This group is C++ plus one Dart
   - "Stop with a hotkey registered".
 
   They use injected environments (foreground, pid/tid, title, cursor, qpc, signal) and a fake hotkey registrar recording calls and returning scripted results. Verify: `mise run capture:unittest` fails on each new case, for missing symbols or a wrong result.
-- [ ] 2.3 Implement ABI v2 in `windows/capture/`:
+- [x] 2.3 Implement ABI v2 in `windows/capture/`:
   - `capture.h`:
     - `BGC_ABI_VERSION 2`;
     - `bgc_trigger_event` gains `uint32_t source` (`BGC_TRIGGER_MOUSE 0`, `BGC_TRIGGER_HOTKEY 1`) and `uint32_t reserved`, so the struct is 40 bytes;

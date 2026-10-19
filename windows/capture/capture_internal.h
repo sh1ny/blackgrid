@@ -58,6 +58,12 @@ void ring_clear(Ring& ring);
 void ring_cancel_signal(Ring& ring);
 bool ring_signal_pending(Ring& ring);
 
+// The target-window half of the filter, shared by both sources: a foreground
+// window that is not ours and whose title equals the target.
+bool target_window_accepts(HWND foreground, uint32_t foreground_pid,
+                           uint32_t own_pid, TitleReaderFn read_title,
+                           void* title_ctx, const wchar_t* target_title);
+
 // --- Hook procedure core (D2) --------------------------------------------------
 
 struct HookEnv {
@@ -77,6 +83,74 @@ LRESULT hook_proc_core(const HookEnv& env, Ring& ring,
                        const wchar_t* target_title, int nCode, WPARAM wParam,
                        LPARAM lParam);
 
+// --- Hotkey (D1, D2, D5) -------------------------------------------------------
+
+// Everything the WM_HOTKEY branch reads, injectable. It runs on the input
+// thread, the thread that delivers signals, so `signal` is called directly.
+struct HotkeyEnv {
+  HWND (*foreground)();
+  uint32_t (*window_pid)(HWND hwnd, uint32_t* tid);  // 0 when unknown
+  TitleReaderFn read_title;
+  void* title_ctx;
+  bool (*cursor)(POINT* out);  // physical screen point; false when unreadable
+  void (*signal)();
+  int64_t (*qpc)();
+  uint32_t own_pid;
+};
+
+// The whole WM_HOTKEY handling: foreground, own-process and title checks,
+// cursor read, one append with source BGC_TRIGGER_HOTKEY, and the coalesced
+// signal. True when an event was appended. Never waits.
+bool hotkey_core(const HotkeyEnv& env, Ring& ring, const wchar_t* target_title);
+
+// The OS registration boundary, called only on the input thread.
+struct HotkeyRegistrar {
+  bool (*register_key)(int id, uint32_t modifiers, uint32_t vk,
+                       DWORD* win32_error);  // false on refusal
+  void (*unregister_key)(int id);
+};
+const HotkeyRegistrar& hotkey_real_registrar();
+
+// What the input thread holds: ids 1 and 2 (the swap uses the one that is not
+// live). vk[id] is 0 when the id is not registered.
+struct HotkeyState {
+  uint32_t vk[3] = {0, 0, 0};
+  int active = 0;  // id of the live registration, 0 for none
+};
+
+// One rebind request, shared by the caller of bgc_hotkey_set and the input
+// thread. A single lock guards every field, so the caller's timeout marking and
+// the thread's final abandoned check and completion cannot interleave.
+struct HotkeySlot {
+  SRWLOCK lock = SRWLOCK_INIT;
+  HANDLE answered = nullptr;  // manual-reset: the thread completed the request
+  bool reserved = false;      // from the request until the thread is done with it
+  bool abandoned = false;     // the caller stopped waiting
+  bool done = false;          // the thread answered a caller that still waits
+  uint32_t vk = 0;
+  int32_t status = BGC_OK;
+  uint32_t win32_error = 0;
+  HotkeySlot();
+  ~HotkeySlot();
+  HotkeySlot(const HotkeySlot&) = delete;
+  HotkeySlot& operator=(const HotkeySlot&) = delete;
+};
+
+// 0 (off) or VK_F1..VK_F24.
+bool hotkey_vk_valid(uint32_t vk);
+// The caller side of bgc_hotkey_set. `installed` is whether the hook is held;
+// `post` asks the input thread to run hotkey_service and returns false when it
+// cannot. Waits at most timeout_ms.
+typedef bool (*HotkeyPostFn)(void* ctx);
+int32_t hotkey_request(HotkeySlot& slot, bool installed, HotkeyPostFn post,
+                       void* post_ctx, uint32_t vk, uint32_t timeout_ms,
+                       uint32_t* win32_error);
+// The input thread's side: performs the pending request with the two-id swap.
+void hotkey_service(HotkeySlot& slot, const HotkeyRegistrar& registrar,
+                    HotkeyState& state);
+// Forgets a request left over from a thread that ended (a new start).
+void hotkey_slot_reset(HotkeySlot& slot);
+
 // --- Hook lifecycle (D2) -------------------------------------------------------
 
 struct HookInstaller {
@@ -88,8 +162,18 @@ const HookInstaller& hook_real_installer();
 // hMod must name the module containing the hook procedure: in the shipped
 // build that is blackgrid_capture.dll, not the executable.
 HMODULE module_containing(const void* address);
+// Input-thread exit: unregisters every hotkey id still held, completes a
+// pending request with BGC_NOT_STARTED, and only then removes the hook.
+void hotkey_teardown(HotkeySlot& slot, const HotkeyRegistrar& registrar,
+                     HotkeyState& state, const HookInstaller& installer,
+                     HHOOK hook);
 // Same as bgc_hook_start with an injectable installer.
 int32_t hook_start_with(const HookInstaller& installer,
+                        const uint16_t* target_title, void (*signal)(void),
+                        uint32_t* win32_error);
+// ... and an injectable hotkey registrar.
+int32_t hook_start_with(const HookInstaller& installer,
+                        const HotkeyRegistrar& registrar,
                         const uint16_t* target_title, void (*signal)(void),
                         uint32_t* win32_error);
 // True while an installation (or a thread that has not ended) is held.
