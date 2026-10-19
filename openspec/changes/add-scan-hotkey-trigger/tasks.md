@@ -154,7 +154,7 @@ Skills: dart-run-static-analysis does not apply. This group is C++ plus one Dart
   - The hotkey registrar is injectable, like `HookInstaller`.
 
   Verify: every 2.2 case passes under `mise run capture:unittest`, `flutter build windows --release` builds, and the audit test still passes. Flip those rows green.
-- [ ] 2.4 Add user-run real-OS cases to the gated `windows/capture/selftest.cpp`:
+- [x] 2.4 Add user-run real-OS cases to the gated `windows/capture/selftest.cpp`:
   - `hotkey: registered with norepeat` (register F24 on its own thread and check that registration succeeds);
   - `hotkey: second registration from another thread conflicts` (expect `ERROR_HOTKEY_ALREADY_REGISTERED`);
   - unregistration at stop.

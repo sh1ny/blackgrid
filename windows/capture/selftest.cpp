@@ -10,6 +10,7 @@
 #include <wchar.h>
 
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -757,7 +758,8 @@ Outcome abi_argument_validation() {
   CHECK_EQ(bgc_abi(), BGC_ABI_VERSION);
   CHECK_EQ(sizeof(bgc_rect), 16);
   CHECK_EQ(sizeof(bgc_window_snapshot), 592);
-  CHECK_EQ(sizeof(bgc_trigger_event), 32);
+  CHECK_EQ(sizeof(bgc_trigger_event), 40);
+  CHECK_EQ(offsetof(bgc_trigger_event, source), 32);
   CHECK_EQ(sizeof(bgc_capture_result), 1216);
   CHECK_EQ(sizeof(bgc_frame_view), 24);
   bgc_capture_result res = {};
@@ -798,6 +800,70 @@ Outcome real_hook_install_and_remove() {
   return pass();
 }
 
+// --- Real hotkey registration (user-run only) -------------------------------------
+//
+// F24 is registered through the real bgc_hotkey_set on the input thread; the
+// mouse hook stays a fake so these cases only touch the hotkey table.
+
+const uint32_t kVkF24 = 0x87;
+
+// Registers F24 with a null window on a thread of its own and returns the
+// Win32 error (0 on success). A successful registration is released again.
+DWORD register_f24_elsewhere() {
+  DWORD error = 0;
+  std::thread other([&error] {
+    if (RegisterHotKey(nullptr, 9001, MOD_NOREPEAT, kVkF24)) {
+      UnregisterHotKey(nullptr, 9001);
+    } else {
+      error = GetLastError();
+    }
+  });
+  other.join();
+  return error;
+}
+
+Outcome hotkey_registered_with_norepeat() {
+  const uint16_t title[] = {'T', 0};
+  HookInstaller working = {fake_install, fake_uninstall};
+  uint32_t error = 0;
+  CHECK_EQ(hook_start_with(working, title, ignore_signal, &error), BGC_OK);
+  CHECK_EQ(bgc_hotkey_set(kVkF24, &error), BGC_OK);
+  CHECK_EQ(error, 0);
+  // The key is held by the process: nobody else can register it.
+  CHECK_EQ(register_f24_elsewhere(), ERROR_HOTKEY_ALREADY_REGISTERED);
+  CHECK_EQ(bgc_hook_stop(), BGC_OK);
+  return pass();
+}
+
+Outcome hotkey_second_registration_from_another_thread_conflicts() {
+  const uint16_t title[] = {'T', 0};
+  HookInstaller working = {fake_install, fake_uninstall};
+  uint32_t error = 0;
+  CHECK_EQ(hook_start_with(working, title, ignore_signal, &error), BGC_OK);
+  CHECK_EQ(bgc_hotkey_set(kVkF24, &error), BGC_OK);
+  CHECK_EQ(register_f24_elsewhere(), ERROR_HOTKEY_ALREADY_REGISTERED);
+  // The same key again is a no-op success, not a conflict with ourselves.
+  CHECK_EQ(bgc_hotkey_set(kVkF24, &error), BGC_OK);
+  CHECK_EQ(bgc_hotkey_set(0x41, &error), BGC_INVALID_ARGUMENT);
+  CHECK_EQ(register_f24_elsewhere(), ERROR_HOTKEY_ALREADY_REGISTERED);
+  CHECK_EQ(bgc_hook_stop(), BGC_OK);
+  return pass();
+}
+
+Outcome hotkey_unregistered_at_stop() {
+  const uint16_t title[] = {'T', 0};
+  HookInstaller working = {fake_install, fake_uninstall};
+  uint32_t error = 0;
+  CHECK_EQ(bgc_hotkey_set(kVkF24, &error), BGC_NOT_STARTED);
+  CHECK_EQ(hook_start_with(working, title, ignore_signal, &error), BGC_OK);
+  CHECK_EQ(bgc_hotkey_set(kVkF24, &error), BGC_OK);
+  CHECK_EQ(bgc_hook_stop(), BGC_OK);
+  // Stop released it: another thread can take the key now.
+  CHECK_EQ(register_f24_elsewhere(), 0);
+  CHECK_EQ(bgc_hotkey_set(kVkF24, &error), BGC_NOT_STARTED);
+  return pass();
+}
+
 const Case kCases[] = {
     {"guard_requires_exact_no_games_confirmation",
      guard_requires_exact_no_games_confirmation},
@@ -831,6 +897,10 @@ const Case kCases[] = {
     {"exe_name_from_toolhelp_for_own_pid", exe_name_from_toolhelp_for_own_pid},
     {"abi_argument_validation", abi_argument_validation},
     {"real_hook_install_and_remove", real_hook_install_and_remove},
+    {"hotkey: registered with norepeat", hotkey_registered_with_norepeat},
+    {"hotkey: second registration from another thread conflicts",
+     hotkey_second_registration_from_another_thread_conflicts},
+    {"hotkey: unregistered at stop", hotkey_unregistered_at_stop},
     {"captures_own_window_pattern_and_geometry",
      captures_own_window_pattern_and_geometry},
 };
