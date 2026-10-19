@@ -813,6 +813,11 @@ final class ScanReport {
   /// The input that started the scan.
   final TriggerSource trigger;
 
+  /// Whether the scan was started by the scan hotkey rather than the mouse.
+  ///
+  /// It lets the UI label the scan without importing the capture layer.
+  bool get byHotkey => trigger == TriggerSource.hotkey;
+
   /// Native trigger events dropped before this scan's trigger.
   final int droppedTriggers;
 

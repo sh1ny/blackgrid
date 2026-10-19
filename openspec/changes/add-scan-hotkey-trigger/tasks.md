@@ -93,15 +93,15 @@ A test name is the scenario name, prefixed by its group where the file has sever
 | scan-pipeline → A trigger during a wait supersedes the scan at once | Second click during the settle wait | `test/application/scan_coordinator_wait_test.dart` | `second click during the settle wait supersedes at once` | green |
 | scan-pipeline → A trigger during a wait supersedes the scan at once | Hotkey during the settle wait | `test/application/scan_coordinator_wait_test.dart` | `hotkey during the settle wait supersedes and captures at once` | green |
 | scan-pipeline → A trigger during a wait supersedes the scan at once | Click during the fallback wait | `test/application/scan_coordinator_wait_test.dart` | `click during the fallback wait supersedes at once` | green |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Registered hotkey | `test/ui/live_scan_panel_test.dart` | `hotkey: registered hotkey` | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Hotkey held by another application | `test/ui/live_scan_panel_test.dart` | `hotkey: hotkey held by another application` | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Rebind refused | `test/ui/live_scan_panel_test.dart` | `hotkey: rebind refused` | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan off | `test/ui/live_scan_panel_test.dart` | `hotkey: live scan off` | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan starting | `test/ui/live_scan_panel_test.dart` | `hotkey: live scan starting` | red |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Registered hotkey | `test/ui/live_scan_panel_test.dart` | `hotkey: registered hotkey` | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Hotkey held by another application | `test/ui/live_scan_panel_test.dart` | `hotkey: hotkey held by another application` | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Rebind refused | `test/ui/live_scan_panel_test.dart` | `hotkey: rebind refused` | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan off | `test/ui/live_scan_panel_test.dart` | `hotkey: live scan off` | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan starting | `test/ui/live_scan_panel_test.dart` | `hotkey: live scan starting` | green |
 | scanner-evidence → Scanner shows stage timings and recent scans | Timings of an accepted scan | `test/ui/scan_evidence_panel_test.dart` | `timings show stage and total ms` | green |
 | scanner-evidence → Scanner shows stage timings and recent scans | Early failure | `test/ui/scan_evidence_panel_test.dart` | `absent stages are shown as absent, not 0` | green |
 | scanner-evidence → Scanner shows stage timings and recent scans | Recent list bound | `test/ui/scan_evidence_panel_test.dart` | `recent list shows the 10 newest scans, newest first` | green |
-| scanner-evidence → Scanner shows stage timings and recent scans | Hotkey scan in the list | `test/ui/scan_evidence_panel_test.dart` | `recent list labels hotkey scans` | red |
+| scanner-evidence → Scanner shows stage timings and recent scans | Hotkey scan in the list | `test/ui/scan_evidence_panel_test.dart` | `recent list labels hotkey scans` | green |
 
 ## 1. ADR and architecture
 
@@ -212,7 +212,7 @@ Skills: dart-use-pattern-matching (hotkey state sealed type), dart-write-documen
 Skills: flutter-add-widget-test, dart-write-documentation, dart-run-static-analysis.
 
 - [x] 6.1 Write failing widget tests in `test/ui/live_scan_panel_test.dart` (five `hotkey:` rows), driving the hotkey state and rebind results through the existing scan UI support fakes (`test/ui/support/scan_ui_support.dart`). Also write `recent list labels hotkey scans` in `test/ui/scan_evidence_panel_test.dart`. Verify: the tests fail.
-- [ ] 6.2 Implement:
+- [x] 6.2 Implement:
   - the `LiveScanPanel` hotkey row (D8): `scan-hotkey-status` text, and a `scan-hotkey-picker` `DropdownButton<ScanHotkey>` with Off and F1-F24, enabled while live scan is `off` or `ready` and no rebind runs;
   - the unavailable text that says mouse scans still work;
   - the rebind error text;

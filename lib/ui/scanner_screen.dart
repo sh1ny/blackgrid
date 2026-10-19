@@ -18,7 +18,7 @@ const double _shellPadding = 28;
 
 /// Height the live scan and manual controls need at text scale 1. A shorter
 /// desktop column scrolls them inside their panel.
-const double leftHeight = 800;
+const double leftHeight = 920;
 
 /// Minimum height of the scan evidence panel at text scale 1.
 const double evidenceHeight = 520;

@@ -379,7 +379,8 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     final total = published == null || frequency == null
         ? 'no total'
         : _ms(report.timeline.msFromTrigger(published, frequency));
-    return '#${report.id} ${_endLabel(report.end)} · $subject · $total';
+    final via = report.byHotkey ? ' · hotkey' : '';
+    return '#${report.id} ${_endLabel(report.end)} · $subject · $total$via';
   }
 
   String _itemName(String id) => widget.catalog.snapshot?.items[id]?.name ?? id;

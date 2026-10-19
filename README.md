@@ -86,7 +86,7 @@ Build a Release bundle with `mise exec -- flutter build windows`. Ship the whole
 | Maps | [`prepared_map_loader.dart`](lib/maps/prepared_map_loader.dart), [`prepared_map.dart`](lib/maps/prepared_map.dart), [`native_map_scene.dart`](lib/maps/native_map_scene.dart) | Pack loading and native rendering |
 | UI | [`shell.dart`](lib/ui/shell.dart), [`map_screen.dart`](lib/ui/map_screen.dart), [`map_workspace.dart`](lib/ui/map_workspace.dart), [`scanner_screen.dart`](lib/ui/scanner_screen.dart), [`item_decision_card.dart`](lib/ui/item_decision_card.dart), [`settings_dialog.dart`](lib/ui/settings_dialog.dart), [`import_dialog.dart`](lib/ui/import_dialog.dart), [`theme.dart`](lib/ui/theme.dart) | Two-area shell; both areas stay mounted |
 
-Scanner today is manual catalog inspection. Screen capture, mouse and hotkey triggers and item recognition are not built yet; see the [roadmap](openspec/roadmap.md).
+Scanner has a manual catalog inspection and an opt-in **live scan** switch. With it on, a mouse release over the game window, or the scan hotkey, scans the open inspect window at the cursor and shows the evidence it found. The hotkey is **F9** by default; pick any of F1–F24, or Off, next to the switch. Blackgrid holds the key only while live scan is on, and if another application already holds it, mouse scans still work. An accepted scan selects its item and is recorded in history; see the [roadmap](openspec/roadmap.md) for what comes next.
 
 ### Native Windows code (`windows/`)
 
@@ -146,6 +146,8 @@ There is no config file. The **Settings** dialog and the Map area save one JSON 
   "trackerEnabled": false,      // read-only Tracker progress for the current mode
   "gameLogDirectory": "",       // empty = detect from the registry or Steam libraries
   "screenshotDirectory": "",    // empty = Documents\Escape from Tarkov\Screenshots
+  "liveScan": false,            // true = live scan on at start
+  "scanHotkey": "F9",           // off | F1 .. F24; set in Scanner, held only while live scan is on
   "followGameLogs": true        // switch the map from the logs; selectedMap is kept as the fallback
 }
 ```
