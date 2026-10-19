@@ -183,7 +183,7 @@ Skills: dart-use-pattern-matching (sealed `HotkeyResult`), dart-write-documentat
 
 Skills: dart-use-pattern-matching, dart-write-documentation, dart-add-unit-test.
 
-- [ ] 4.1 Write the failing `test/domain/settings_test.dart` cases `scanHotkey: no saved value`, `scanHotkey: saved off` and `scanHotkey: malformed value`. The malformed case uses `"Ctrl+Q"` and `9`, and asserts that the other settings keep their values. Verify: the cases fail.
+- [x] 4.1 Write the failing `test/domain/settings_test.dart` cases `scanHotkey: no saved value`, `scanHotkey: saved off` and `scanHotkey: malformed value`. The malformed case uses `"Ctrl+Q"` and `9`, and asserts that the other settings keep their values. Verify: the cases fail.
 - [ ] 4.2 Add `enum ScanHotkey { off, f1, …, f24 }` with `vk` and `label` (D7), the `AppSettings.scanHotkey` field (default `f9`), `copyWith`, and a `toJson`/`fromJson` that never throws on this key. Verify: 4.1 passes and `mise run test` passes. Flip the rows green.
 
 ## 5. Coordinator: hotkey state, activation, rebind, waits, report and log
