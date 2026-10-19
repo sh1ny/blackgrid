@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:ffi';
 
+import '../../domain/settings.dart';
 import 'capture_failure.dart';
 import 'capture_native.dart';
 import 'capture_snapshot.dart';
 import 'capture_target.dart';
 
-/// One delivered mouse-release trigger.
+/// One delivered trigger, from a mouse release or the hotkey.
 final class ScanTrigger {
   const ScanTrigger(this.event, this.droppedBefore);
 
@@ -16,15 +17,48 @@ final class ScanTrigger {
   final int droppedBefore;
 }
 
-/// Bridges the native mouse-release hook to a non-buffering broadcast stream.
+/// The outcome of [InputTriggerSource.setHotkey].
+sealed class HotkeyResult {
+  const HotkeyResult();
+}
+
+/// The hotkey is registered, or turned off.
+final class HotkeyApplied extends HotkeyResult {
+  const HotkeyApplied();
+}
+
+/// Another application holds the key; [win32] is the OS error code.
+final class HotkeyUnavailable extends HotkeyResult {
+  const HotkeyUnavailable(this.win32);
+
+  final int win32;
+}
+
+/// The input thread did not answer within its window.
+final class HotkeyTimedOut extends HotkeyResult {
+  const HotkeyTimedOut();
+}
+
+/// The hook is not running.
+final class HotkeyNotStarted extends HotkeyResult {
+  const HotkeyNotStarted();
+}
+
+/// Native rejected the key code. Unreachable from [ScanHotkey], kept so the
+/// mapping covers every native status.
+final class HotkeyInvalidArgument extends HotkeyResult {
+  const HotkeyInvalidArgument();
+}
+
+/// Bridges the native input hook (mouse release and hotkey) to a
+/// non-buffering broadcast stream.
 ///
 /// The native thread only signals; the handler drains on the Dart isolate.
 /// Triggers with no listener, or for a paused listener, are dropped, never
 /// queued: the bounded native queue is the only buffer. A listener's next
-/// trigger counts what it missed in [ScanTrigger.droppedBefore]. Nothing under
-/// `lib/application`, `lib/ui` or `lib/main.dart` references this source yet.
-final class MouseReleaseTriggerSource {
-  MouseReleaseTriggerSource(
+/// trigger counts what it missed in [ScanTrigger.droppedBefore].
+final class InputTriggerSource {
+  InputTriggerSource(
     CapturePlatform platform, {
     String targetTitle = captureTargetTitle,
   }) : _platform = platform,
@@ -69,6 +103,24 @@ final class MouseReleaseTriggerSource {
       listener.dropped = 0;
     }
     return null;
+  }
+
+  /// Registers [key] on the running hook thread, or turns the hotkey off for
+  /// [ScanHotkey.off].
+  ///
+  /// While this source is not started, answers [HotkeyNotStarted] without
+  /// calling native, matching the native contract. Every other native status
+  /// maps to its [HotkeyResult].
+  Future<HotkeyResult> setHotkey(ScanHotkey key) async {
+    if (_callable == null) return const HotkeyNotStarted();
+    final raw = _platform.hotkeySet(key.vk);
+    return switch (raw.status) {
+      bgcOk => const HotkeyApplied(),
+      bgcHotkeyUnavailable => HotkeyUnavailable(raw.win32),
+      bgcHotkeyTimedOut => const HotkeyTimedOut(),
+      bgcNotStarted => const HotkeyNotStarted(),
+      _ => const HotkeyInvalidArgument(),
+    };
   }
 
   /// Stops the hook. The listener closes only after native confirms the hook

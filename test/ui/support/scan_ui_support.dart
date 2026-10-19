@@ -6,7 +6,7 @@ import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
-import 'package:blackgrid/data/capture/mouse_release_trigger_source.dart';
+import 'package:blackgrid/data/capture/input_trigger_source.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
@@ -239,7 +239,15 @@ final class ScanFakePorts {
   /// Emits a mouse-release trigger at [qpc].
   void fire(int qpc) => platform!.trigger.emit(
     ScanTrigger(
-      TriggerEvent(x: 10, y: 20, hwnd: 1, pid: 2, tid: 3, qpc: qpc),
+      TriggerEvent(
+        x: 10,
+        y: 20,
+        hwnd: 1,
+        pid: 2,
+        tid: 3,
+        qpc: qpc,
+        source: TriggerSource.mouse,
+      ),
       0,
     ),
   );

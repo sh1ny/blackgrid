@@ -25,7 +25,7 @@ A test name is the scenario name, prefixed by its group where the file has sever
 | scan-triggers → Hotkey trigger records the same target facts | Press over another window | `windows/capture/unittest.cpp` | `hotkey: press over another window` | green |
 | scan-triggers → Hotkey trigger records the same target facts | Press over Blackgrid | `windows/capture/unittest.cpp` | `hotkey: press over blackgrid` | green |
 | scan-triggers → Hotkey trigger records the same target facts | Mouse release keeps its source | `windows/capture/unittest.cpp` | `hook: mouse release keeps its source` | green |
-| scan-triggers → Hotkey trigger records the same target facts | Press over the target window (Dart decode) | `test/data/capture/trigger_source_test.dart` | `drained events carry their trigger source` | red |
+| scan-triggers → Hotkey trigger records the same target facts | Press over the target window (Dart decode) | `test/data/capture/trigger_source_test.dart` | `drained events carry their trigger source` | green |
 | scan-triggers → Holding the hotkey does not repeat | Key held down | `windows/capture/unittest.cpp` | `swap: registers with MOD_NOREPEAT and no modifier` (+ user-run `selftest.cpp` `hotkey: registered with norepeat`) | green (selftest part user-run, unverified) |
 | scan-triggers → Holding the hotkey does not repeat | Two separate presses | `windows/capture/unittest.cpp` | `hotkey: two presses append two events in order` | green |
 | scan-triggers → Hotkey triggers share the bounded queue | Mixed sources in order | `windows/capture/unittest.cpp` | `ring: mixed sources drain in append order` | green |
@@ -36,7 +36,7 @@ A test name is the scenario name, prefixed by its group where the file has sever
 | scan-triggers → Hotkey registration is explicit and reports conflicts | Request while stopped | `windows/capture/unittest.cpp` | `api: hotkey set while stopped returns not started` | green |
 | scan-triggers → Hotkey registration is explicit and reports conflicts | Unsupported key | `windows/capture/unittest.cpp` | `api: unsupported key returns invalid argument` | green |
 | scan-triggers → Hotkey registration is explicit and reports conflicts | Turned off | `windows/capture/unittest.cpp` | `swap: off unregisters` | green |
-| scan-triggers → Hotkey registration is explicit and reports conflicts | Key held by another application (Dart mapping) | `test/data/capture/trigger_source_test.dart` | `setHotkey maps every native status to a typed result` | red |
+| scan-triggers → Hotkey registration is explicit and reports conflicts | Key held by another application (Dart mapping) | `test/data/capture/trigger_source_test.dart` | `setHotkey maps every native status to a typed result` | green |
 | scan-triggers → Rebinding keeps the previous key on failure | Rebind to a free key | `windows/capture/unittest.cpp` | `swap: rebind registers new before releasing old` | green |
 | scan-triggers → Rebinding keeps the previous key on failure | Rebind to a held key | `windows/capture/unittest.cpp` | `swap: refused rebind keeps the old key` | green |
 | scan-triggers → Rebinding keeps the previous key on failure | Same key again | `windows/capture/unittest.cpp` | `swap: same key is a no-op` | green |
@@ -171,7 +171,7 @@ Skills: dart-use-pattern-matching (sealed `HotkeyResult`), dart-write-documentat
   - a layout test, `BgcTriggerEvent is 40 bytes with source at offset 32`, using `sizeOf`/field offsets with no DLL.
 
   Extend `FakeHookPlatform` with `hotkeySet` (scripted results and a call log). Verify: the tests fail because the API is missing.
-- [ ] 3.2 Implement:
+- [x] 3.2 Implement:
   - in `lib/data/capture/capture_native.dart`: `bgcAbiVersion = 2`, the event struct's `source` and `reserved` fields, the `bgc_hotkey_set` lookup, and `CapturePlatform.hotkeySet`;
   - `TriggerEvent.source` (`TriggerSource { mouse, hotkey }`), defaulting nowhere and decoded from the struct;
   - the rename of `MouseReleaseTriggerSource` to `InputTriggerSource` in `input_trigger_source.dart` (D6), with `Future<HotkeyResult> setHotkey(ScanHotkey key)` and the sealed `HotkeyResult`;

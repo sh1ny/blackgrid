@@ -108,8 +108,7 @@ final _captureImport = RegExp(r'''(import|export)\s+['"][^'"]*data/capture/''');
 
 /// Whether [source] imports `data/capture/` or names the trigger source.
 bool reachesCaptureLayer(String source) =>
-    _captureImport.hasMatch(source) ||
-    source.contains('MouseReleaseTriggerSource');
+    _captureImport.hasMatch(source) || source.contains('InputTriggerSource');
 
 /// Whether the file at [path] (any separator) is the allowed importer.
 bool mayReachCaptureLayer(String path) =>
@@ -255,7 +254,7 @@ void main() {
         const sources = <String>[
           "import '../data/capture/capture_service.dart';",
           "import 'package:blackgrid/data/capture/capture_native.dart';",
-          'final s = MouseReleaseTriggerSource(platform);',
+          'final s = InputTriggerSource(platform);',
         ];
         for (final path in const [
           'lib/ui/scanner_screen.dart',

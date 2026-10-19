@@ -45,7 +45,15 @@ TriggerEvent trigger({
   int pid = _pid,
   int tid = _tid,
   int qpc = 500,
-}) => TriggerEvent(x: x, y: y, hwnd: hwnd, pid: pid, tid: tid, qpc: qpc);
+}) => TriggerEvent(
+  x: x,
+  y: y,
+  hwnd: hwnd,
+  pid: pid,
+  tid: tid,
+  qpc: qpc,
+  source: TriggerSource.mouse,
+);
 
 CaptureFailure rejected(CaptureResult result) {
   expect(result, isA<CaptureRejected>(), reason: '$result');
@@ -84,7 +92,7 @@ void main() {
   test('snapshot decode keeps signed negative origins', () {
     expect(sizeOf<BgcRect>(), 16);
     expect(sizeOf<BgcWindowSnapshot>(), 592);
-    expect(sizeOf<BgcTriggerEvent>(), 32);
+    expect(sizeOf<BgcTriggerEvent>(), 40);
     expect(sizeOf<BgcCaptureResult>(), 1216);
     expect(sizeOf<BgcFrameView>(), 24);
     final p = calloc<BgcWindowSnapshot>();

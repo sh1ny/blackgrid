@@ -98,7 +98,10 @@ final class WindowSnapshot {
   }
 }
 
-/// One accepted mouse release, decoded from `bgc_trigger_event`.
+/// Which input produced a [TriggerEvent].
+enum TriggerSource { mouse, hotkey }
+
+/// One accepted trigger (mouse release or hotkey), decoded from `bgc_trigger_event`.
 final class TriggerEvent {
   const TriggerEvent({
     required this.x,
@@ -107,6 +110,7 @@ final class TriggerEvent {
     required this.pid,
     required this.tid,
     required this.qpc,
+    required this.source,
   });
 
   /// Physical screen point, signed.
@@ -118,6 +122,9 @@ final class TriggerEvent {
 
   /// `QueryPerformanceCounter` ticks, on the same clock as capture times.
   final int qpc;
+
+  /// The input that produced this trigger.
+  final TriggerSource source;
 }
 
 /// Which region a capture request plans.

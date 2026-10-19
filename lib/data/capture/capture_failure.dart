@@ -168,7 +168,7 @@ final class AlreadyStarted extends TriggerFailure {
   const AlreadyStarted();
 
   @override
-  String get message => 'The mouse hook is already installed.';
+  String get message => 'The input hook is already installed.';
 }
 
 final class TriggerUnavailable extends TriggerFailure {
@@ -177,14 +177,14 @@ final class TriggerUnavailable extends TriggerFailure {
   final int win32;
 
   @override
-  String get message => 'The mouse hook was refused (Win32 error $win32).';
+  String get message => 'The input hook was refused (Win32 error $win32).';
 }
 
 final class StopTimedOut extends TriggerFailure {
   const StopTimedOut();
 
   @override
-  String get message => 'The mouse hook thread did not stop within 1 s.';
+  String get message => 'The input hook thread did not stop within 1 s.';
 }
 
 /// Outcome of a capture request in the isolate that ran the policy.

@@ -13,7 +13,7 @@ import 'package:blackgrid/data/capture/capture_failure.dart';
 import 'package:blackgrid/data/capture/capture_frame.dart';
 import 'package:blackgrid/data/capture/capture_geometry.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
-import 'package:blackgrid/data/capture/mouse_release_trigger_source.dart';
+import 'package:blackgrid/data/capture/input_trigger_source.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
@@ -352,7 +352,18 @@ final class _Rig {
   );
 
   void fire(int qpc, {int x = 10, int y = 20}) => trigger.emit(
-    ScanTrigger(TriggerEvent(x: x, y: y, hwnd: 1, pid: 2, tid: 3, qpc: qpc), 0),
+    ScanTrigger(
+      TriggerEvent(
+        x: x,
+        y: y,
+        hwnd: 1,
+        pid: 2,
+        tid: 3,
+        qpc: qpc,
+        source: TriggerSource.mouse,
+      ),
+      0,
+    ),
   );
 
   /// Drives a scan to a targeted acceptance and returns its published report.

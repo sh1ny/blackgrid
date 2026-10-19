@@ -19,7 +19,7 @@ import '../data/capture/capture_frame.dart';
 import '../data/capture/capture_native.dart';
 import '../data/capture/capture_service.dart';
 import '../data/capture/capture_snapshot.dart';
-import '../data/capture/mouse_release_trigger_source.dart';
+import '../data/capture/input_trigger_source.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/vision/inspection_recognition.dart';
 import '../data/vision/marker_template.dart';
@@ -1196,7 +1196,7 @@ final class _VisionServicePort implements ScanVisionPort {
 
 final class _NativeScanPlatform implements ScanPlatform, ScanClock {
   _NativeScanPlatform(this._platform)
-    : trigger = _SourceTriggerPort(MouseReleaseTriggerSource(_platform));
+    : trigger = _SourceTriggerPort(InputTriggerSource(_platform));
 
   final CapturePlatform _platform;
 
@@ -1216,7 +1216,7 @@ final class _NativeScanPlatform implements ScanPlatform, ScanClock {
 final class _SourceTriggerPort implements ScanTriggerPort {
   _SourceTriggerPort(this._source);
 
-  final MouseReleaseTriggerSource _source;
+  final InputTriggerSource _source;
 
   @override
   TriggerFailure? start() => _source.start();
