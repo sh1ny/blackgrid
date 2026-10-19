@@ -13,7 +13,7 @@ This change is M4 change 4 (complete raid-time Scanner slice). It serves the exi
 - A failed automatic refresh keeps the last-good snapshot and reports the existing failure. It is not retried: the next attempt is a manual Refresh or the next mode selection. A manual progress refresh during a tracker cooldown makes no request; a new mode selection clears the cooldown, as it does today.
 - A refresh started for one mode never publishes after a switch to another mode. `GameMode.unknown` makes no request, and a selection whose catalog is already `current` (a manual refresh won the race) starts no catalog fetch.
 - A cached catalog still starts `stale` until a refresh succeeds. The spec now states that the app contacts the catalog source, and the tracker when a credential is saved and the integration is enabled, on launch and on each mode switch without user action.
-- Saving a credential does not trigger an automatic progress refresh; that stays manual.
+- Saving a credential, or enabling the Tracker integration, does not trigger an automatic progress refresh; that stays manual.
 
 ## Capabilities
 

@@ -4,6 +4,8 @@
 
 Decides when tracker progress for a mode is fetched without user action and which fetch results may be published, so that decisions do not stay degraded by missing progress while a credential is saved.
 
+Unless a scenario says otherwise, the scenarios in this capability assume the read-only Tracker integration is enabled.
+
 ## ADDED Requirements
 
 ### Requirement: Selecting a known mode with a saved credential starts one progress refresh
