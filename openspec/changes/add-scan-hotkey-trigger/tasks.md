@@ -130,7 +130,7 @@ Skills: dart-run-static-analysis does not apply. This group is C++ plus one Dart
   - a check that `unittest.cpp` mentions none of `hook_real_installer`, `bgc_hook_start`, `RegisterHotKey`, `SetWindowsHookEx`, `BitBlt` or `GetForegroundWindow`, so it can never touch a real window or input.
 
   Verify: `mise run test` runs the audit test and it passes, with the new non-vacuous case red before the bans are added. `mise run capture:unittest` builds and runs an empty suite (after `flutter build windows --release`, which only builds).
-- [ ] 2.2 Write the failing `unittest.cpp` cases from the test map rows for `scan-triggers`:
+- [x] 2.2 Write the failing `unittest.cpp` cases from the test map rows for `scan-triggers`:
   - hotkey target facts (4 rows);
   - no repeat (2);
   - shared queue (3);
