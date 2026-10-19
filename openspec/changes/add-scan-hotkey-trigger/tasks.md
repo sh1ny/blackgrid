@@ -47,51 +47,51 @@ A test name is the scenario name, prefixed by its group where the file has sever
 | scan-triggers → Hook lifecycle is explicit | Second start | `test/data/capture/trigger_source_test.dart` | `a second start returns alreadyStarted` | green |
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | `test/data/capture/trigger_source_test.dart` | `an OS refusal returns unavailable with the win32 code` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | `test/data/capture/trigger_source_test.dart` | `stopTimedOut keeps the listener open and blocks restart` | green |
-| scan-triggers → Hook lifecycle is explicit | Normal startup | `test/application/scan_coordinator_lifecycle_test.dart` | `launch with live scan off starts no worker, hook or vision runtime` (gains: no hotkey set) | red |
+| scan-triggers → Hook lifecycle is explicit | Normal startup | `test/application/app_services_scan_test.dart` | `launch with live scan off starts no worker, hook or vision runtime` (gains: no hotkey set) | green |
 | scan-pipeline → The scan hotkey is a persisted setting | No saved value | `test/domain/settings_test.dart` | `scanHotkey: no saved value` | green |
 | scan-pipeline → The scan hotkey is a persisted setting | Saved off | `test/domain/settings_test.dart` | `scanHotkey: saved off` | green |
 | scan-pipeline → The scan hotkey is a persisted setting | Malformed value | `test/domain/settings_test.dart` | `scanHotkey: malformed value` | green |
-| scan-pipeline → The pipeline publishes the hotkey state | Ready with a free key | `test/application/scan_coordinator_hotkey_test.dart` | `state: ready with a free key` | red |
-| scan-pipeline → The pipeline publishes the hotkey state | Binding off | `test/application/scan_coordinator_hotkey_test.dart` | `state: binding off` | red |
-| scan-pipeline → The pipeline publishes the hotkey state | Live scan off | `test/application/scan_coordinator_hotkey_test.dart` | `state: live scan off` | red |
-| scan-pipeline → The pipeline publishes the hotkey state | Worker loss | `test/application/scan_coordinator_hotkey_test.dart` | `state: worker loss` | red |
-| scan-pipeline → The pipeline publishes the hotkey state | Registration does not answer at activation | `test/application/scan_coordinator_hotkey_test.dart` | `state: registration does not answer at activation` | red |
-| scan-pipeline → Rebinding the hotkey | Rebind while ready | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind while ready` | red |
-| scan-pipeline → Rebinding the hotkey | Rebind to a held key | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind to a held key` | red |
-| scan-pipeline → Rebinding the hotkey | Save fails after registration | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: save fails after registration` | red |
-| scan-pipeline → Rebinding the hotkey | Save fails after leaving an unavailable key | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: save fails after leaving an unavailable key` | red |
-| scan-pipeline → Rebinding the hotkey | Old key taken during a failed save | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: old key taken during a failed save` | red |
-| scan-pipeline → Rebinding the hotkey | Live scan switched off while a rebind saves | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: live scan switched off while a rebind saves` | red |
-| scan-pipeline → Rebinding the hotkey | Rebind while off | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind while off` | red |
-| scan-pipeline → Rebinding the hotkey | Rebind during another rebind | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind during another rebind` | red |
-| scan-pipeline → Rebinding the hotkey | Rebind out of an unavailable state | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind out of an unavailable state` | red |
-| scan-pipeline → Live scan starts only when enabled | Launch with live scan off | `test/application/scan_coordinator_lifecycle_test.dart` | `launch with live scan off starts no worker, hook or vision runtime` (gains: no hotkey set) | red |
-| scan-pipeline → Live scan starts only when enabled | Switching live scan on | `test/application/scan_coordinator_lifecycle_test.dart` | `switch-on saves, then template, vision ready, then hook` (gains: then hotkey) | red |
-| scan-pipeline → Live scan starts only when enabled | Hotkey held by another application | `test/application/scan_coordinator_hotkey_test.dart` | `activation: hotkey held by another application` | red |
+| scan-pipeline → The pipeline publishes the hotkey state | Ready with a free key | `test/application/scan_coordinator_hotkey_test.dart` | `state: ready with a free key` | green |
+| scan-pipeline → The pipeline publishes the hotkey state | Binding off | `test/application/scan_coordinator_hotkey_test.dart` | `state: binding off` | green |
+| scan-pipeline → The pipeline publishes the hotkey state | Live scan off | `test/application/scan_coordinator_hotkey_test.dart` | `state: live scan off` | green |
+| scan-pipeline → The pipeline publishes the hotkey state | Worker loss | `test/application/scan_coordinator_hotkey_test.dart` | `state: worker loss` | green |
+| scan-pipeline → The pipeline publishes the hotkey state | Registration does not answer at activation | `test/application/scan_coordinator_hotkey_test.dart` | `state: registration does not answer at activation` | green |
+| scan-pipeline → Rebinding the hotkey | Rebind while ready | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind while ready` | green |
+| scan-pipeline → Rebinding the hotkey | Rebind to a held key | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind to a held key` | green |
+| scan-pipeline → Rebinding the hotkey | Save fails after registration | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: save fails after registration` | green |
+| scan-pipeline → Rebinding the hotkey | Save fails after leaving an unavailable key | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: save fails after leaving an unavailable key` | green |
+| scan-pipeline → Rebinding the hotkey | Old key taken during a failed save | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: old key taken during a failed save` | green |
+| scan-pipeline → Rebinding the hotkey | Live scan switched off while a rebind saves | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: live scan switched off while a rebind saves` | green |
+| scan-pipeline → Rebinding the hotkey | Rebind while off | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind while off` | green |
+| scan-pipeline → Rebinding the hotkey | Rebind during another rebind | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind during another rebind` | green |
+| scan-pipeline → Rebinding the hotkey | Rebind out of an unavailable state | `test/application/scan_coordinator_hotkey_test.dart` | `rebind: rebind out of an unavailable state` | green |
+| scan-pipeline → Live scan starts only when enabled | Launch with live scan off | `test/application/app_services_scan_test.dart` | `launch with live scan off starts no worker, hook or vision runtime` (gains: no hotkey set) | green |
+| scan-pipeline → Live scan starts only when enabled | Switching live scan on | `test/application/scan_coordinator_lifecycle_test.dart` | `switch-on saves, then template, vision ready, then hook` (gains: then hotkey) | green |
+| scan-pipeline → Live scan starts only when enabled | Hotkey held by another application | `test/application/scan_coordinator_hotkey_test.dart` | `activation: hotkey held by another application` | green |
 | scan-pipeline → Live scan starts only when enabled | Launch with live scan saved on | `test/application/scan_coordinator_lifecycle_test.dart` | `launch with live scan saved on starts exactly one vision service` | green |
-| scan-pipeline → Live scan starts only when enabled | Vision runtime cannot start | `test/application/scan_coordinator_lifecycle_test.dart` | `vision start failure is unavailable without a hook` (gains: no hotkey set) | red |
+| scan-pipeline → Live scan starts only when enabled | Vision runtime cannot start | `test/application/scan_coordinator_lifecycle_test.dart` | `vision start failure is unavailable without a hook` (gains: no hotkey set) | green |
 | scan-pipeline → Live scan starts only when enabled | Marker template is invalid | `test/application/scan_coordinator_lifecycle_test.dart` | `invalid marker template is unavailable before any worker` | green |
-| scan-pipeline → Live scan starts only when enabled | Hook installation refused | `test/application/scan_coordinator_lifecycle_test.dart` | `refused hook is unavailable with OS code and closes vision` (gains: no hotkey set) | red |
-| scan-pipeline → Live scan stops cleanly | Switching live scan off while idle | `test/application/scan_coordinator_lifecycle_test.dart` | `switch-off removes hook and closes both workers` (gains: hotkey state inactive) | red |
-| scan-pipeline → Live scan stops cleanly | Setting cannot be saved when switching off | `test/application/scan_coordinator_lifecycle_test.dart` | `failed switch-off save still stops the pipeline` (gains: hotkey state inactive) | red |
-| scan-pipeline → Live scan stops cleanly | A later save does not reinstall the hook | `test/application/scan_coordinator_lifecycle_test.dart` | `unrelated save after failed switch-off keeps live scan off` (gains: no hotkey set) | red |
-| scan-pipeline → Live scan stops cleanly | Switching off during start | `test/application/scan_coordinator_lifecycle_test.dart` | `switch-off during a hung start is bounded by the close drain` (gains: no hotkey set) | red |
+| scan-pipeline → Live scan starts only when enabled | Hook installation refused | `test/application/scan_coordinator_lifecycle_test.dart` | `refused hook is unavailable with OS code and closes vision` (gains: no hotkey set) | green |
+| scan-pipeline → Live scan stops cleanly | Switching live scan off while idle | `test/application/scan_coordinator_lifecycle_test.dart` | `switch-off removes hook and closes both workers` (gains: hotkey state inactive) | green |
+| scan-pipeline → Live scan stops cleanly | Setting cannot be saved when switching off | `test/application/scan_coordinator_lifecycle_test.dart` | `failed switch-off save still stops the pipeline` (gains: hotkey state inactive) | green |
+| scan-pipeline → Live scan stops cleanly | A later save does not reinstall the hook | `test/application/scan_coordinator_lifecycle_test.dart` | `unrelated save after failed switch-off keeps live scan off` (gains: no hotkey set) | green |
+| scan-pipeline → Live scan stops cleanly | Switching off during start | `test/application/scan_coordinator_lifecycle_test.dart` | `switch-off during a hung start is bounded by the close drain` (gains: no hotkey set) | green |
 | scan-pipeline → Live scan stops cleanly | Switching off with a scan in flight | `test/application/scan_coordinator_flow_test.dart` | `switch-off during vision stage publishes nothing and releases the frame` | green |
-| scan-pipeline → Live scan stops cleanly | Switching off during a rebind | `test/application/scan_coordinator_hotkey_test.dart` | `stop: switching off during a rebind` | red |
-| scan-pipeline → Live scan stops cleanly | Hook thread does not stop | `test/application/scan_coordinator_lifecycle_test.dart` | `stopTimedOut is a visible warning and the next start retries stop` (gains: warning names the hotkey) | red |
+| scan-pipeline → Live scan stops cleanly | Switching off during a rebind | `test/application/scan_coordinator_hotkey_test.dart` | `stop: switching off during a rebind` | green |
+| scan-pipeline → Live scan stops cleanly | Hook thread does not stop | `test/application/scan_coordinator_lifecycle_test.dart` | `stopTimedOut is a visible warning and the next start retries stop` (gains: warning names the hotkey) | green |
 | scan-pipeline → Live scan stops cleanly | Worker drain incomplete at shutdown | `test/application/scan_pipeline_isolate_test.dart` | `dispose with a held native call completes after the drain and ...` | green |
-| scan-pipeline → Each finished scan is logged as one JSON line | Accepted scan line | `test/application/scan_report_test.dart` | `accepted fallback report encodes a v2 line with trigger and per-pass ms` (renamed from the v1 test) | red |
-| scan-pipeline → Each finished scan is logged as one JSON line | Hotkey scan line | `test/application/scan_report_test.dart` | `hotkey report encodes trigger hotkey` | red |
+| scan-pipeline → Each finished scan is logged as one JSON line | Accepted scan line | `test/application/scan_report_test.dart` | `accepted fallback report encodes a v2 line with trigger and per-pass ms` (renamed from the v1 test) | green |
+| scan-pipeline → Each finished scan is logged as one JSON line | Hotkey scan line | `test/application/scan_report_test.dart` | `hotkey report encodes trigger hotkey` | green |
 | scan-pipeline → Each finished scan is logged as one JSON line | Superseded scan line | `test/application/scan_report_test.dart` | `superseded report encodes only the stages reached` | green |
 | scan-pipeline → Targeted capture waits for the inspect window to settle | Fresh trigger | `test/application/scan_coordinator_wait_test.dart` | `fresh trigger waits the remaining 49 ms before the targeted capture` | green |
 | scan-pipeline → Targeted capture waits for the inspect window to settle | Trigger already old | `test/application/scan_coordinator_wait_test.dart` | `a trigger already 120 ms old captures without waiting` | green |
-| scan-pipeline → Targeted capture waits for the inspect window to settle | Hotkey trigger | `test/application/scan_coordinator_wait_test.dart` | `hotkey trigger captures without the settle wait` | red |
+| scan-pipeline → Targeted capture waits for the inspect window to settle | Hotkey trigger | `test/application/scan_coordinator_wait_test.dart` | `hotkey trigger captures without the settle wait` | green |
 | scan-pipeline → Targeted capture waits for the inspect window to settle | Switched off while waiting | `test/application/scan_coordinator_wait_test.dart` | `switch-off during the settle wait requests no capture and publishes nothing` | green |
 | scan-pipeline → Fallback capture waits until 200 ms after the trigger | Quick targeted rejection | `test/application/scan_coordinator_wait_test.dart` | `quick noMarker publishes fallback phase, then waits to trigger + 200 ms` | green |
 | scan-pipeline → Fallback capture waits until 200 ms after the trigger | Slow targeted rejection | `test/application/scan_coordinator_wait_test.dart` | `targeted rejection after 260 ms falls back without waiting` | green |
-| scan-pipeline → Fallback capture waits until 200 ms after the trigger | Quick hotkey rejection | `test/application/scan_coordinator_wait_test.dart` | `quick hotkey noMarker falls back at once` | red |
+| scan-pipeline → Fallback capture waits until 200 ms after the trigger | Quick hotkey rejection | `test/application/scan_coordinator_wait_test.dart` | `quick hotkey noMarker falls back at once` | green |
 | scan-pipeline → A trigger during a wait supersedes the scan at once | Second click during the settle wait | `test/application/scan_coordinator_wait_test.dart` | `second click during the settle wait supersedes at once` | green |
-| scan-pipeline → A trigger during a wait supersedes the scan at once | Hotkey during the settle wait | `test/application/scan_coordinator_wait_test.dart` | `hotkey during the settle wait supersedes and captures at once` | red |
+| scan-pipeline → A trigger during a wait supersedes the scan at once | Hotkey during the settle wait | `test/application/scan_coordinator_wait_test.dart` | `hotkey during the settle wait supersedes and captures at once` | green |
 | scan-pipeline → A trigger during a wait supersedes the scan at once | Click during the fallback wait | `test/application/scan_coordinator_wait_test.dart` | `click during the fallback wait supersedes at once` | green |
 | scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Registered hotkey | `test/ui/live_scan_panel_test.dart` | `hotkey: registered hotkey` | red |
 | scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Hotkey held by another application | `test/ui/live_scan_panel_test.dart` | `hotkey: hotkey held by another application` | red |
@@ -195,7 +195,7 @@ Skills: dart-use-pattern-matching (hotkey state sealed type), dart-write-documen
   - `emit` takes a source.
 
   `FakeSettingsStore` or the existing settings fake must be able to hold or fail saves; reuse what `scan_coordinator_lifecycle_test.dart` uses. Write the failing `test/application/scan_coordinator_hotkey_test.dart` cases for every `state:`, `rebind:`, `activation:` and `stop:` row. Also add the "gains" assertions to the listed lifecycle tests, and the new rows in the wait test (three) and the report test (two). Verify: the new and extended tests fail for the right reason.
-- [ ] 5.2 Implement in `lib/application/scan_coordinator.dart`:
+- [x] 5.2 Implement in `lib/application/scan_coordinator.dart`:
   - the published hotkey state (`inactive` / `disabled` / `registered(key)` / `unavailable(key, reason)`);
   - activation, which registers after `trigger.start()` reading `scanHotkey` after pending saves land, and maps a non-success result to `unavailable`;
   - the transitions to `inactive` on stop, loss and dispose;
