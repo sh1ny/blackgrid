@@ -119,7 +119,7 @@ A test name is the scenario name, prefixed by its group where the file has sever
 
 Skills: dart-run-static-analysis does not apply. This group is C++ plus one Dart audit test (dart-add-unit-test).
 
-- [ ] 2.1 Add the ungated native unit-test target and its guards:
+- [x] 2.1 Add the ungated native unit-test target and its guards:
   - `windows/capture/unittest.cpp`, an `EXCLUDE_FROM_ALL` CMake target `blackgrid_capture_unittest` in `windows/capture/CMakeLists.txt` built from the same sources;
   - `windows/capture/unittest.ps1`, mirroring `selftest.ps1` but without the game gate;
   - a `mise.toml` task `capture:unittest`.
