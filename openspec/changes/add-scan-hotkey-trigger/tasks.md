@@ -222,7 +222,7 @@ Skills: flutter-add-widget-test, dart-write-documentation, dart-run-static-analy
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `mise run analyze`, `mise run test`, `mise exec -- dart format --output=none --set-exit-if-changed lib test`, `flutter build windows --release` (build only, never launched) and `mise run capture:unittest`, and confirm that every test-map row is green. The `selftest.cpp` parts of rows (2.4) are listed as user-run and unverified. Run `openspec validate add-scan-hotkey-trigger --strict`.
+- [x] 7.1 Run `mise run analyze`, `mise run test`, `mise exec -- dart format --output=none --set-exit-if-changed lib test`, `flutter build windows --release` (build only, never launched) and `mise run capture:unittest`, and confirm that every test-map row is green. The `selftest.cpp` parts of rows (2.4) are listed as user-run and unverified. Run `openspec validate add-scan-hotkey-trigger --strict`.
 
 ## Workflow follow-up
 
