@@ -293,9 +293,15 @@ class RefreshRig {
   final credentials = HoldableCredentials();
   late final AppServices services;
 
-  /// Selects [mode] in the settings and initializes the app.
-  Future<void> launch(GameMode mode) async {
-    await services.settings.setMode(mode);
+  /// Selects [mode] in the settings, with the read-only Tracker integration
+  /// enabled unless [trackerEnabled] is false, and initializes the app.
+  Future<void> launch(GameMode mode, {bool trackerEnabled = true}) async {
+    await services.settings.save(
+      services.settings.settings.copyWith(
+        mode: mode,
+        trackerEnabled: trackerEnabled,
+      ),
+    );
     await services.initialize();
   }
 
@@ -585,6 +591,39 @@ void main() {
       expect(net.trackerRequests, 0);
       expect(services.progress.status, ProgressStatus.failed);
       expect(services.progress.error, 'Protected credential unavailable');
+    });
+
+    test('progress: tracker integration disabled', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      await rig.launch(GameMode.pvp, trackerEnabled: false);
+      await services.automaticRefreshes;
+      expect(services.progress.hasCredential, isTrue);
+      expect(net.trackerRequests, 0);
+      expect(await services.setMode(GameMode.pve), isTrue);
+      await services.automaticRefreshes;
+      expect(net.trackerRequests, 0);
+    });
+
+    test('progress: enabling the integration does not refresh', () async {
+      rig.credentials.values[GameMode.pvp] = pvpToken;
+      await rig.launch(GameMode.pvp, trackerEnabled: false);
+      await services.automaticRefreshes;
+      // A refresh publishes `loading` before its first await, so a refresh
+      // started by the save is seen here even before its request is sent.
+      final statuses = <ProgressStatus>[];
+      void record() => statuses.add(services.progress.status);
+      services.progress.addListener(record);
+      addTearDown(() => services.progress.removeListener(record));
+      expect(
+        await services.settings.save(
+          services.settings.settings.copyWith(trackerEnabled: true),
+        ),
+        isTrue,
+      );
+      await services.automaticRefreshes;
+      expect(services.settings.settings.trackerEnabled, isTrue);
+      expect(statuses, isNot(contains(ProgressStatus.loading)));
+      expect(net.trackerRequests, 0);
     });
 
     test('progress: unknown mode makes no request', () async {

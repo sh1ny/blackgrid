@@ -257,11 +257,14 @@ class AppServices {
       _modeChange = Future.wait([progressReady, catalogReady]).then((_) {});
       // The refreshes are never part of _modeChange: startup and a switch must
       // not wait on the network.
+      // The Tracker preference gates progress as it gates the manual Refresh
+      // buttons; ProgressController.refresh does not read it.
       final progressRefresh = _refreshAfter(
         progressReady,
         transition,
         mode,
         progress.refresh,
+        when: () => settings.settings.trackerEnabled,
       );
       final catalogRefresh = _refreshAfter(
         catalogReady,

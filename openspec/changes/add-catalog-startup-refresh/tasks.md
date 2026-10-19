@@ -31,7 +31,8 @@ One catalog fetch is counted as the requests to one dataset path (`/<route>/item
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Launch with a saved credential | same | `progress: launch with a saved credential` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | No saved credential | same | `progress: no saved credential` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Unreadable credential | same | `progress: unreadable credential` | green |
-| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Tracker integration disabled | same | `progress: tracker integration disabled` | red |
+| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Tracker integration disabled | same | `progress: tracker integration disabled` | green |
+| progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Saving a credential does not refresh (enabling the integration) | same | `progress: enabling the integration does not refresh` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Unknown mode makes no request | same | `progress: unknown mode makes no request` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Selection superseded during the credential read | same | `progress: selection superseded during the credential read` | green |
 | progress-authority → Selecting a known mode with a saved credential starts one progress refresh | Saving a credential does not refresh | same | `progress: saving a credential does not refresh` | green |
@@ -63,7 +64,7 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-run-static-analy
 
 ## 2b. Tracker integration switch (PR #44 review, amendment)
 
-- [ ] 2.5 Gate the automatic progress refresh on `settings.settings.trackerEnabled`. Make the rig enable the integration for the progress rows that expect a request, write `progress: tracker integration disabled` and confirm it fails before the gate (a tracker request is made), then add the gate and verify every `progress:` row passes. Update the README and `openspec/architecture.md` sentences that name the progress refresh trigger. Verify `mise run analyze` and `mise run test` pass.
+- [x] 2.5 Gate the automatic progress refresh on `settings.settings.trackerEnabled`. Make the rig enable the integration for the progress rows that expect a request, write `progress: tracker integration disabled` and confirm it fails before the gate (a tracker request is made), then add the gate and verify every `progress:` row passes. Write the guard `progress: enabling the integration does not refresh` (launch with a saved credential and the integration off, await `automaticRefreshes`, save `trackerEnabled: true`, assert no tracker request) and confirm it fails when a refresh is wired to the settings change. Update the README and `openspec/architecture.md` sentences that name the progress refresh trigger. Verify `mise run analyze` and `mise run test` pass.
 
 ## 3. Documentation
 

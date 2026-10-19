@@ -45,7 +45,7 @@ flowchart TB
 
 | Component | Responsibility | Owns (state) | Talks to via (contract) |
 |---|---|---|---|
-| `AppServices` (`lib/application/app_services.dart`) | Composition root: opens storage, credentials and the HTTP client, builds the controllers, starts the catalog refresh and, with a saved credential, the progress refresh after each mode selection without awaiting them, then disposes them in order (`:181-199`) | Long-lived service graph, mode-transition and map-content generations (`:79,91`) | Constructor injection, `addListener` (`:69-71`) |
+| `AppServices` (`lib/application/app_services.dart`) | Composition root: opens storage, credentials and the HTTP client, builds the controllers, starts the catalog refresh and, with a saved credential and the Tracker integration enabled, the progress refresh after each mode selection without awaiting them, then disposes them in order (`:181-199`) | Long-lived service graph, mode-transition and map-content generations (`:79,91`) | Constructor injection, `addListener` (`:69-71`) |
 | Shell / UI (`lib/ui/`) | Two-area shell; both screens stay mounted in an `IndexedStack` (`shell.dart:160-171`) | Widget-local view state only | `ListenableBuilder` on controllers |
 | `CatalogController` + `CatalogClient` | Mode-scoped catalog refresh, validation and publication | Published `CatalogSnapshot`, `CatalogStatus` (`catalog_controller.dart:9`) | HTTP GET of 6 required + 4 optional datasets (`catalog_client.dart:23-72`); Drift |
 | `ProgressController` + `TrackerClient` | Read-only Tracker progress per mode and session | Memory-only progress snapshot and session authority (`progress_controller.dart:27,47-56`) | GET `/token`, `/progress` (`tracker_client.dart:43-198`) |

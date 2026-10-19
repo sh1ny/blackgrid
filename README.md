@@ -182,7 +182,7 @@ Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets whe
 | Flea quote | Inside the catalog | 1 h | Decision falls to Check |
 | Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
 
-Every request is a GET with a 30 s deadline and no redirects. The catalog refreshes once at launch and on each mode switch, and progress does too when a Tracker token is saved for the mode. A failed refresh is not retried automatically; use Refresh or select a mode again.
+Every request is a GET with a 30 s deadline and no redirects. The catalog refreshes once at launch and on each mode switch, and progress does too when a Tracker token is saved for the mode and the Tracker integration is enabled. A failed refresh is not retried automatically; use Refresh or select a mode again.
 </details>
 
 <details>
