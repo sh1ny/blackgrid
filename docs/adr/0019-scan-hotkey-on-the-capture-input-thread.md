@@ -1,0 +1,53 @@
+# 0019 - Scan hotkey on the capture input thread: `RegisterHotKey` while live scan is ready, no waits, transactional rebind, capture ABI v2 and timing log v2
+
+- Status: accepted
+- Date: 2026-10-19 (M4 change `add-scan-hotkey-trigger`)
+- Supersedes: none. It carries out ADR-0010's planned reuse of the input thread, and settles the hotkey-wait question that ADR-0014 and ADR-0016 deferred to M4.
+- Source: change `add-scan-hotkey-trigger` (design D1, D3, D4, D5, D7, D10); [implementation strategy §7](../IMPLEMENTATION_STRATEGY.md#7-windows-integration-strategy)
+
+## Context and problem
+
+ADR-0010 built one native input thread and one 16-event ring for the mouse hook, and said "Hotkeys (M4) will reuse the hook thread and ring". ADR-0014 (the "Differences from the fork" bullet on the fallback wait) and ADR-0016 (the "M4 hotkey" consequence) both left "whether the M4 hotkey keeps the fallback wait" to M4. ADR-0016 also noted that the centred region needs no cursor beyond the in-client guard, so a hotkey trigger can use it unchanged.
+
+The reference fork registers `RegisterHotKey` on its main window with F9 by default, `MOD_NOREPEAT` and no modifiers, accepting only F1-F24 and Delete to disable. Its swap is transactional (test-register under a temporary id, keep the old key on failure), and a hotkey press skips both the debounce and the fallback wait. RatScanner uses a `WH_KEYBOARD_LL` hook instead. The user's ceiling for game interaction is the fork's profile: match it or do less.
+
+## Decision
+
+- **The hotkey lives on the existing input thread (D1).** The thread registers it with `RegisterHotKey(NULL, id, MOD_NOREPEAT, vk)` and no modifier, so `WM_HOTKEY` lands in its queue. The `GetMessageW` loop gains a `WM_HOTKEY` branch and a rebind branch (`WM_APP + 1`). Before the loop exits, the thread unregisters every hotkey id it holds, then unhooks. A native `hotkey_core` runs on that thread, reads the foreground window, skips Blackgrid's own pid, requires an exact target-title match (`InternalGetWindowText`), reads `GetCursorPos`, the pid, tid and QPC, and appends a hotkey event to the shared ring under the ring lock, with the same drop and coalescing rules. It calls the signal directly, because it already runs on the thread that delivers signals. A press over any other window appends nothing.
+- **Registered only while live scan is `ready` (D3).** Activation registers the saved binding after `trigger.start()` succeeds and before publishing `ready`. A refused key leaves live scan `ready` with the hotkey state `unavailable(key, reason)`; mouse scans keep working. Stop, worker loss and dispose release the key through the hook stop. Nothing is registered while live scan is off, which is less than the fork does (it holds F9 at all times) and keeps ADR-0013's "no hook unless a trigger consumer starts it".
+- **Hotkey scans skip both waits (D4).** The coordinator reads `trigger.event.source`. For `hotkey`, the 50 ms settle wait and the 200 ms fallback wait are zero. For `mouse`, ADR-0014's waits are unchanged, and supersession during a wait is unchanged. The inspect window is already open when the key is pressed, so a wait would be pure latency.
+- **The rebind is one native request that swaps transactionally, and Dart saves after the OS accepts (D5).**
+  - The export `int32_t bgc_hotkey_set(uint32_t vk, uint32_t* win32_error)` takes `vk` 0 (off) or `VK_F1`..`VK_F24`. Under `g_api_lock` it needs a held installation (`BGC_NOT_STARTED` otherwise), writes a request into a static slot, posts `WM_APP + 1` and waits on an event for at most 1 s.
+  - The thread registers the new key under the id it is not using and releases the old id only on success. A refused key leaves the old registration and returns `BGC_HOTKEY_UNAVAILABLE` with `GetLastError()`. The same key is a no-op success, and off unregisters.
+  - On timeout the call returns `BGC_HOTKEY_TIMED_OUT`, marks the request `abandoned` and the slot stays reserved, so later calls return `BGC_HOTKEY_TIMED_OUT` at once until the thread answers. The slot is static, so a late answer never writes to a freed stack. The thread checks `abandoned` before releasing the old id (for a key, after the new one registers): if abandoned, it releases the new id and leaves the old one, so a late answer never leaves the OS holding a key the coordinator did not accept. Thread exit completes a pending request with `BGC_NOT_STARTED`.
+  - `ScanCoordinator.setHotkey(key)` runs one rebind at a time. With live scan `ready` it calls the trigger port and saves only after the OS accepts; with live scan not `ready` it only saves. A failed save restores the previous registration (`off` when the prior state was `unavailable` or `disabled`, otherwise the prior key); if that restore is itself refused, the new key is released with `setHotkey(off)` and the state becomes `unavailable(old, reason)`, so the published state never disagrees with the OS. Hotkey saves go through the coordinator's tracked save path (`_saving` / `_savesLanded`), so they and live-scan saves wait for each other instead of being refused as busy. Every step after an `await` is fenced on the activation token.
+- **The binding is a closed enum `ScanHotkey` in the settings JSON (D7).** `enum ScanHotkey { off, f1, ..., f24 }` with `vk` (0 or `0x70 + n - 1`) and `label`. The JSON key is `scanHotkey`, with value `"off"` or `"F1"`..`"F24"`, default `f9`. A missing, mistyped or unknown value reads as `f9` and never throws, so a bad value cannot lose the user's other settings. No Drift migration.
+- **The audit bans keyboard hooks and key-state reads in `windows/capture/` (D10).** Added as separate identifiers: `WH_KEYBOARD_LL`, `WH_KEYBOARD`, `GetAsyncKeyState`, `GetKeyState`, `GetKeyboardState`, `keybd_event`, `RegisterRawInputDevices`, `GetRawInputData`, `GetRawInputBuffer`. The non-vacuous test asserts a source with `SetWindowsHookExW(WH_KEYBOARD_LL, ...)` is reported. `RegisterHotKey`, `UnregisterHotKey` and `GetCursorPos` are allowed, and `SendInput` stays banned.
+- **Capture ABI v2.** `BGC_ABI_VERSION` becomes 2. `bgc_trigger_event` gains `uint32_t source` (`BGC_TRIGGER_MOUSE 0`, `BGC_TRIGGER_HOTKEY 1`) and `uint32_t reserved`, growing from 32 to 40 bytes. New status codes: `BGC_HOTKEY_UNAVAILABLE 11` and `BGC_HOTKEY_TIMED_OUT 12`. New export: `bgc_hotkey_set`. A stale `blackgrid_capture.dll` fails the `bgc_abi()` check and live scan goes `unavailable` with a version reason.
+- **Timing log v2.** The line adds `"trigger":"mouse"|"hotkey"` and bumps `"v"` to 2, as ADR-0013 requires for a key change. `ScanReport` carries the trigger source. History and decisions are unchanged: an accepted scan is an `ActivitySource.scan` whichever trigger started it (ADR-0017).
+- **Dart side.** `MouseReleaseTriggerSource` is renamed `InputTriggerSource` (`lib/data/capture/input_trigger_source.dart`), since one thread and one ring deliver both sources. `TriggerEvent` gains `TriggerSource source`, and `setHotkey` returns a sealed `HotkeyResult` that mirrors every native status.
+
+## Rejected alternatives
+
+- **Registering on the Flutter runner's window and forwarding `WM_HOTKEY` over a method channel (the fork's pattern):** it puts a trigger on the platform thread, outside the ring, loses the shared ordering and drop counting, adds a second integration pattern beside ADR-0010's DLL, and ties the hotkey's lifetime to the window rather than live scan.
+- **A `WH_KEYBOARD_LL` hook (RatScanner):** it sees every keystroke system-wide, more than the user's ceiling requires. Strategy §7 chose `RegisterHotKey`.
+- **A second native thread for hotkeys:** a second lifecycle and stop timeout for nothing gained.
+- **Dart reading the foreground window and cursor after the drain:** it adds the drain's latency, so the facts describe a later moment than the press, and it puts window queries on the UI isolate against ADR-0010's "native facts, Dart policy".
+- **Registering at app start, independent of live scan (the fork):** it takes F9 from the game and every other app while scanning is off, and needs a native thread against ADR-0013's "no hook unless a trigger consumer starts it".
+- **Keeping both waits for hotkey scans:** the waits exist because the inspect window opens after the mouse release (ADR-0014); with a hotkey the window is already open.
+- **Unregister the old key, then register the new one:** it leaves a window with no key, and loses the old key if another app takes it in between.
+- **Save first, then register:** the saved binding could name a key the OS refused.
+- **Storing a raw virtual-key code:** any integer would round-trip, so the F1-F24 rule would need revalidating at every use and the stored value would be opaque.
+- **Leaving the timing log at v1 and inferring the source from timings:** the latency report must split hotkey from mouse scans, and inference is fragile.
+- **Leaving the audit unchanged:** nothing would stop a later change from swapping the hotkey for a keystroke-seeing hook.
+- **A separate `HotkeyTriggerSource` port merged in the coordinator:** two Dart objects over one native installation and two streams whose ordering the ring already provides.
+
+## Consequences
+
+- **F9 is swallowed system-wide while live scan is `ready`,** including over the game, and a press while another window is in front is consumed without a trigger. It can be rebound or turned off, and it is not held while live scan is off.
+- **Hotkey scans are faster by up to 250 ms** (no settle, no fallback wait) against the 300 ms p95 target. The cursor serves only the in-client guard; a cursor outside the client fails `roiOutsideClient` and goes to the fallback pass.
+- **`bgc_hotkey_set` blocks the UI isolate for up to 1 s** (typically microseconds), the same precedent as `bgc_hook_start`. A stuck thread surfaces as `hotkeyTimedOut`; live scan off and on restarts the thread, and a stop that also times out reports that the hotkey may stay held until the thread ends.
+- **No watchdog.** Registrations do not expire as low-level hooks can. Modifiers, keys beyond F1-F24 and legacy import of the fork's key are not built.
+- **The ABI v2 bump** requires a matching DLL in every bundle. The timing log v2 is read by no in-repo reader today; `qualify-scanner-latency` is written against it.
+- **Game interaction.** `RegisterHotKey`, `GetCursorPos`, `GetForegroundWindow` and `InternalGetWindowText` open no handle, read no memory and send no input, and match the fork's profile. The live hotkey scan is verified by the user only.
+- **Reversal cost:** medium. The ABI export and event layout, and the stored `scanHotkey` format, are consumed by later changes; the waits and the audit list are low.
