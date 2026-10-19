@@ -106,7 +106,7 @@ A test name is the scenario name, prefixed by its group where the file has sever
 ## 1. ADR and architecture
 
 - [x] 1.1 Write `docs/adr/0019-scan-hotkey-on-the-capture-input-thread.md` in MADR-short form (Status: accepted, today's date, Supersedes: none). Record design D1, D3, D4, D5, D7 and D10, capture ABI v2 and timing log v2. Note that it settles the hotkey-wait question ADR-0014 and ADR-0016 deferred to M4, and carries out ADR-0010's planned reuse of the input thread. Add its row to the in-force index in `openspec/architecture.md`, and update `docs/adr/README.md` if it lists ADRs. Verify: the file exists, the index row links it, and `openspec validate add-scan-hotkey-trigger --strict` passes.
-- [ ] 1.2 Update `openspec/architecture.md` for the built state this change delivers:
+- [x] 1.2 Update `openspec/architecture.md` for the built state this change delivers:
   - the Capture DLL row: ABI v2, the hotkey on the input thread, the shared ring;
   - the capture worker and trigger source row: `InputTriggerSource`;
   - the `ScanCoordinator` row: hotkey state, rebind, waits by trigger source, log v2;
