@@ -4,6 +4,7 @@ import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/live_scan_panel.dart';
 import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
@@ -152,6 +153,112 @@ void main() {
     expect(_switchValue(tester), isFalse);
     expect(rig.coordinator.status.state, LiveScanState.off);
     expect(find.textContaining('preference was not saved'), findsOneWidget);
+  });
+
+  group('hotkey:', () {
+    const statusKey = Key('scan-hotkey-status');
+    const pickerKey = Key('scan-hotkey-picker');
+
+    String hotkeyStatus(WidgetTester tester) =>
+        tester.widget<Text>(find.byKey(statusKey)).data!;
+    DropdownButton<ScanHotkey> picker(WidgetTester tester) =>
+        tester.widget<DropdownButton<ScanHotkey>>(find.byKey(pickerKey));
+
+    testWidgets('registered hotkey', (tester) async {
+      final rig = await _pump(tester);
+      await tester.runAsync(rig.ready);
+      await tester.pump();
+
+      expect(hotkeyStatus(tester), contains('F9'));
+      expect(hotkeyStatus(tester), contains('scans at the cursor'));
+      expect(picker(tester).value, ScanHotkey.f9);
+      expect(picker(tester).onChanged, isNotNull);
+    });
+
+    testWidgets('hotkey held by another application', (tester) async {
+      final rig = await _pump(tester);
+      rig.ports.heldKeys.add(ScanHotkey.f9);
+      await tester.runAsync(rig.ready);
+      await tester.pump();
+
+      final text = hotkeyStatus(tester);
+      expect(text, contains('F9'));
+      expect(text, contains('unavailable'));
+      expect(text, contains('Win32 error 1409'));
+      expect(text, contains('mouse scans still work'));
+      expect(picker(tester).onChanged, isNotNull);
+    });
+
+    testWidgets('rebind refused', (tester) async {
+      final rig = await _pump(tester);
+      await tester.runAsync(rig.ready);
+      rig.ports.platform!.trigger.heldKeys.add(ScanHotkey.f10);
+      await tester.pump();
+
+      await tester.tap(find.byKey(pickerKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('F10').last);
+      await _until(tester, () => rig.coordinator.hotkeyError != null);
+      await tester.runAsync(() => rig.coordinator.settled);
+      await tester.pump();
+
+      expect(
+        find.textContaining('F10 could not be registered'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Win32 error 1409'), findsWidgets);
+      expect(picker(tester).value, ScanHotkey.f9);
+      expect(hotkeyStatus(tester), contains('F9'));
+    });
+
+    testWidgets('live scan off', (tester) async {
+      await _pump(tester);
+
+      expect(hotkeyStatus(tester), contains('F9'));
+      expect(hotkeyStatus(tester), contains('while live scan is on'));
+      expect(picker(tester).value, ScanHotkey.f9);
+      expect(picker(tester).onChanged, isNotNull);
+    });
+
+    testWidgets('live scan starting', (tester) async {
+      final rig = await _pump(tester);
+      final gate = Completer<MarkerTemplateResult>();
+      final loader = rig.ports.markerLoader;
+      rig.ports.markerGate = gate.future;
+      await tester.tap(find.byKey(_switchKey));
+      await _until(
+        tester,
+        () => rig.coordinator.status.state == LiveScanState.starting,
+      );
+
+      expect(picker(tester).onChanged, isNull);
+      expect(hotkeyStatus(tester), contains('while live scan is on'));
+
+      gate.complete(await loader(''));
+      await _until(
+        tester,
+        () => rig.coordinator.status.state == LiveScanState.ready,
+      );
+      expect(picker(tester).onChanged, isNotNull);
+    });
+
+    testWidgets('picker offers Off and F1 to F24', (tester) async {
+      await _pump(tester);
+      final labels = [for (final item in picker(tester).items!) item.value];
+      expect(labels, ScanHotkey.values);
+    });
+
+    testWidgets('binding off while ready says the hotkey is off', (
+      tester,
+    ) async {
+      final rig = await _pump(tester);
+      await tester.runAsync(rig.ready);
+      await tester.runAsync(() => rig.coordinator.setHotkey(ScanHotkey.off));
+      await tester.pump();
+
+      expect(hotkeyStatus(tester), 'Scan hotkey off');
+      expect(picker(tester).value, ScanHotkey.off);
+    });
   });
 
   testWidgets('record status shows written, dropped and folder', (

@@ -221,8 +221,15 @@ final class ScanFakePorts {
   };
 
   /// The platform factory.
-  ScanPlatformFactory get platformFactory =>
-      () => platform = FakeScanPlatform(events);
+  ScanPlatformFactory get platformFactory => () {
+    final created = FakeScanPlatform(events);
+    created.trigger.heldKeys.addAll(heldKeys);
+    return platform = created;
+  };
+
+  /// Keys another application holds from the moment the platform opens, so a
+  /// test can start live scan with its saved hotkey refused.
+  final Set<ScanHotkey> heldKeys = {};
 
   /// The waiter to hand to the coordinator: it never waits.
   ScanWaiter get waiter => immediateScanWaiter;

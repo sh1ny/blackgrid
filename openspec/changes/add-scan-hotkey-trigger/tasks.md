@@ -211,7 +211,7 @@ Skills: dart-use-pattern-matching (hotkey state sealed type), dart-write-documen
 
 Skills: flutter-add-widget-test, dart-write-documentation, dart-run-static-analysis.
 
-- [ ] 6.1 Write failing widget tests in `test/ui/live_scan_panel_test.dart` (five `hotkey:` rows), driving the hotkey state and rebind results through the existing scan UI support fakes (`test/ui/support/scan_ui_support.dart`). Also write `recent list labels hotkey scans` in `test/ui/scan_evidence_panel_test.dart`. Verify: the tests fail.
+- [x] 6.1 Write failing widget tests in `test/ui/live_scan_panel_test.dart` (five `hotkey:` rows), driving the hotkey state and rebind results through the existing scan UI support fakes (`test/ui/support/scan_ui_support.dart`). Also write `recent list labels hotkey scans` in `test/ui/scan_evidence_panel_test.dart`. Verify: the tests fail.
 - [ ] 6.2 Implement:
   - the `LiveScanPanel` hotkey row (D8): `scan-hotkey-status` text, and a `scan-hotkey-picker` `DropdownButton<ScanHotkey>` with Off and F1-F24, enabled while live scan is `off` or `ready` and no rebind runs;
   - the unavailable text that says mouse scans still work;
