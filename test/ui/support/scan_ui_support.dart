@@ -236,21 +236,22 @@ final class ScanFakePorts {
   FakeScanVision get vision => visions.last;
   FakeScanClock get clock => platform!.clock;
 
-  /// Emits a mouse-release trigger at [qpc].
-  void fire(int qpc) => platform!.trigger.emit(
-    ScanTrigger(
-      TriggerEvent(
-        x: 10,
-        y: 20,
-        hwnd: 1,
-        pid: 2,
-        tid: 3,
-        qpc: qpc,
-        source: TriggerSource.mouse,
-      ),
-      0,
-    ),
-  );
+  /// Emits a trigger at [qpc], a mouse release unless [source] says otherwise.
+  void fire(int qpc, {TriggerSource source = TriggerSource.mouse}) =>
+      platform!.trigger.emit(
+        ScanTrigger(
+          TriggerEvent(
+            x: 10,
+            y: 20,
+            hwnd: 1,
+            pid: 2,
+            tid: 3,
+            qpc: qpc,
+            source: source,
+          ),
+          0,
+        ),
+      );
 
   /// Answers capture call [n] with a frame, with the clock at [at].
   Future<void> captureOk(int n, {int? at}) async {

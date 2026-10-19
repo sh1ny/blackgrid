@@ -190,7 +190,7 @@ Skills: dart-use-pattern-matching, dart-write-documentation, dart-add-unit-test.
 
 Skills: dart-use-pattern-matching (hotkey state sealed type), dart-write-documentation, dart-add-unit-test, dart-run-static-analysis.
 
-- [ ] 5.1 Extend the fakes in `test/application/support/fake_scan_ports.dart`:
+- [x] 5.1 Extend the fakes in `test/application/support/fake_scan_ports.dart`:
   - `FakeScanTrigger` gains `setHotkey`, with scripted results, a call log, and an optional `Completer` hold;
   - `emit` takes a source.
 

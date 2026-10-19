@@ -100,6 +100,8 @@ void main() {
       expect(rig.events, isEmpty);
       expect(rig.visionDirectories, isEmpty);
       expect(rig.services.scanner.status.state, LiveScanState.off);
+      expect(rig.events.where((e) => e.startsWith('hotkey.')), isEmpty);
+      expect(rig.services.scanner.hotkeyState, const ScanHotkeyInactive());
     },
   );
 

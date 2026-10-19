@@ -6,7 +6,6 @@ import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
 import 'package:blackgrid/data/catalog_client.dart';
-import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/data/vision/vision_image.dart';
@@ -20,6 +19,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'support/fake_scan_ports.dart';
+import 'support/gated_database.dart';
 
 class _NoCatalogStore implements CatalogStore {
   @override
@@ -47,7 +47,7 @@ class _Rig {
   _Rig._(this.db, this.settings, this.catalog);
 
   static Future<_Rig> create({bool liveScanSaved = false}) async {
-    final db = _GatedDatabase(NativeDatabase.memory());
+    final db = GatedDatabase(NativeDatabase.memory());
     if (liveScanSaved) {
       await db.saveSettings(AppSettings(liveScan: true));
     }
@@ -62,7 +62,7 @@ class _Rig {
     return _Rig._(db, settings, catalog);
   }
 
-  final _GatedDatabase db;
+  final GatedDatabase db;
   final SettingsController settings;
   final CatalogController catalog;
 
@@ -220,6 +220,7 @@ void main() {
       'vision.start',
       'platform.open',
       'hook.start',
+      'hotkey.f9',
     ]);
     expect(rig.states, [
       LiveScanState.off,
@@ -228,6 +229,10 @@ void main() {
     ]);
     expect(rig.coordinator.switchOn, isTrue);
     expect(rig.coordinator.error, isNull);
+    expect(
+      rig.coordinator.hotkeyState,
+      const ScanHotkeyRegistered(ScanHotkey.f9),
+    );
   });
 
   test('vision start failure is unavailable without a hook', () async {
@@ -245,6 +250,8 @@ void main() {
     expect(status.reason, contains('tesseract.dll'));
     expect(rig.platformOpens, 0);
     expect(rig.events, isNot(contains('hook.start')));
+    expect(rig.events.where((e) => e.startsWith('hotkey.')), isEmpty);
+    expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
     expect(rig.visions.single.closeCalls, 1);
     expect(
       (await rig.db.readSettings()).liveScan,
@@ -301,6 +308,8 @@ void main() {
     expect(rig.visions.single.closeCalls, 1);
     expect(rig.captures.single.closeCalls, 1);
     expect(rig.trigger.hasListener, isFalse);
+    expect(rig.trigger.hotkeyCalls.length, 0);
+    expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
   });
 
   test(
@@ -331,6 +340,8 @@ void main() {
     expect(rig.trigger.stopCalls, 1);
     expect(rig.trigger.installed, isFalse);
     expect(rig.trigger.hasListener, isFalse);
+    expect(rig.trigger.registered, isNull);
+    expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
     expect(rig.visions.single.closeCalls, 1);
     expect(rig.captures.single.closeCalls, 1);
     expect(
@@ -361,6 +372,7 @@ void main() {
       expect(rig.visions.single.closeCalls, 1);
       expect(rig.captures.single.closeCalls, 1);
       expect(rig.settings.settings.liveScan, isTrue);
+      expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
       await rig.restoreSaves();
     });
 
@@ -398,6 +410,8 @@ void main() {
     expect(rig.events, eventsBefore, reason: 'nothing started or installed');
     expect(rig.visions, hasLength(1));
     expect(rig.trigger.startCalls, 1);
+    expect(rig.trigger.hotkeyCalls.items, [ScanHotkey.f9]);
+    expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
   });
 
   group('failed switch-on save', () {
@@ -568,6 +582,7 @@ void main() {
 
         expect(rig.coordinator.status.state, LiveScanState.off);
         expect(rig.events, isNot(contains('hook.start')));
+        expect(rig.events.where((e) => e.startsWith('hotkey.')), isEmpty);
         expect(rig.platformOpens, 0);
         expect(
           rig.coordinator.status.stopWarning,
@@ -635,6 +650,11 @@ void main() {
 
         expect(rig.coordinator.status.state, LiveScanState.off);
         expect(rig.coordinator.status.stopWarning, contains('did not stop'));
+        expect(
+          rig.coordinator.status.stopWarning,
+          contains('hotkey may stay held until the input thread ends'),
+        );
+        expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
         rig.events.clear();
 
         // The retry happens before the template or the vision runtime.
@@ -843,25 +863,4 @@ void main() {
       heldClose.complete(null);
     });
   });
-}
-
-/// A database whose settings writes can be held at [saveGate].
-class _GatedDatabase extends BlackgridDatabase {
-  _GatedDatabase(super.executor);
-
-  /// When set, settings writes wait for it before writing.
-  Completer<void>? saveGate;
-
-  /// Completes when a held settings write starts waiting.
-  final Completer<void> saveEntered = Completer<void>();
-
-  @override
-  Future<void> saveSettings(AppSettings settings) async {
-    final gate = saveGate;
-    if (gate != null) {
-      if (!saveEntered.isCompleted) saveEntered.complete();
-      await gate.future;
-    }
-    await super.saveSettings(settings);
-  }
 }

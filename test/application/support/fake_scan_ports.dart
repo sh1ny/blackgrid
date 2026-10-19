@@ -9,6 +9,7 @@ import 'package:blackgrid/data/capture/input_trigger_source.dart';
 import 'package:blackgrid/data/vision/inspection_recognition.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:ffi/ffi.dart';
 
@@ -494,6 +495,23 @@ final class FakeScanTrigger implements ScanTriggerPort {
   int disposeCalls = 0;
   bool installed = false;
 
+  /// Results of successive `setHotkey` calls, used before the fake models the
+  /// OS by itself.
+  final List<HotkeyResult> hotkeyResults = [];
+
+  /// Every key `setHotkey` was asked for, in order.
+  final CallLog<ScanHotkey> hotkeyCalls = CallLog<ScanHotkey>();
+
+  /// Keys another application holds: registering one is refused.
+  final Set<ScanHotkey> heldKeys = {};
+
+  /// The key the fake OS holds for the process, or null.
+  ScanHotkey? registered;
+
+  /// When set, `setHotkey` answers only once this completes, like an input
+  /// thread that has not replied yet.
+  Completer<void>? hotkeyHold;
+
   final StreamController<ScanTrigger> _controller =
       StreamController<ScanTrigger>.broadcast(sync: true);
 
@@ -517,8 +535,33 @@ final class FakeScanTrigger implements ScanTriggerPort {
     stopCalls++;
     events.add('hook.stop');
     final failure = stopResults.isEmpty ? null : stopResults.removeAt(0);
-    if (failure == null) installed = false;
+    if (failure == null) {
+      installed = false;
+      registered = null;
+    }
     return failure;
+  }
+
+  @override
+  Future<HotkeyResult> setHotkey(ScanHotkey key) async {
+    events.add('hotkey.${key.name}');
+    hotkeyCalls.add(key);
+    final gate = hotkeyHold;
+    if (gate != null) await gate.future;
+    final HotkeyResult result;
+    if (hotkeyResults.isNotEmpty) {
+      result = hotkeyResults.removeAt(0);
+    } else if (!installed) {
+      result = const HotkeyNotStarted();
+    } else if (heldKeys.contains(key)) {
+      result = const HotkeyUnavailable(1409);
+    } else {
+      result = const HotkeyApplied();
+    }
+    if (result is HotkeyApplied && installed) {
+      registered = key == ScanHotkey.off ? null : key;
+    }
+    return result;
   }
 
   @override
