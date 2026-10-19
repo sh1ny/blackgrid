@@ -113,7 +113,7 @@ A failed automatic catalog refresh SHALL keep the last-good snapshot and SHALL N
 - **THEN** exactly one more fetch is made
 
 ### Requirement: An automatic refresh never publishes into another mode
-A catalog refresh started for one mode SHALL NOT publish its result, success or failure, once a different mode is selected. A switch back to a mode whose refresh is still in flight SHALL join that refresh, not start a concurrent second fetch.
+A catalog refresh started for one mode SHALL NOT publish its result, success or failure, while a different mode is selected. A switch back to a mode whose refresh is still in flight SHALL join that refresh, not start a concurrent second fetch, and the joined result is published for the rejoined selection.
 
 #### Scenario: Switch during the automatic refresh
 - **WHEN** the automatic refresh for mode A is in flight and the user switches to mode B, and A's fetch then succeeds
