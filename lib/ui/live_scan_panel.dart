@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../application/scan_coordinator.dart';
+import '../domain/settings.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
 import 'theme.dart';
 
-/// The live scan switch with the pipeline status, any stop warning, the last
-/// save error and the timing log status, and the switch that records scan
-/// frames with its session status.
+/// The live scan switch with the pipeline status, the scan hotkey with its
+/// state, rebind control and rebind error, any stop warning, the last save
+/// error and the timing log status, and the switch that records scan frames
+/// with its session status.
 ///
 /// It listens to [scanner] and [timingLog] and holds no state of its own, so
 /// the switch always shows the session's intent.
@@ -31,6 +35,7 @@ class LiveScanPanel extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge([
         scanner,
+        scanner.settings,
         timingLog.status,
         scanner.recordingStatus,
       ]),
@@ -92,6 +97,31 @@ class LiveScanPanel extends StatelessWidget {
                     ? errorStyle
                     : null,
               ),
+            Text(_hotkeyText(scanner), key: const Key('scan-hotkey-status')),
+            DropdownButton<ScanHotkey>(
+              key: const Key('scan-hotkey-picker'),
+              isExpanded: true,
+              // The binding still in force: a refused rebind leaves it.
+              value: scanner.settings.settings.scanHotkey,
+              items: [
+                for (final key in ScanHotkey.values)
+                  DropdownMenuItem(value: key, child: Text(key.label)),
+              ],
+              onChanged:
+                  (status.state == LiveScanState.off ||
+                          status.state == LiveScanState.ready) &&
+                      !scanner.hotkeyRebinding
+                  ? (key) {
+                      if (key != null) unawaited(scanner.setHotkey(key));
+                    }
+                  : null,
+            ),
+            if (scanner.hotkeyError case final hotkeyError?)
+              Text(
+                hotkeyError,
+                key: const Key('scan-hotkey-error'),
+                style: errorStyle,
+              ),
             if (warning != null)
               Text(warning, key: const Key('live-scan-warning')),
             if (error != null)
@@ -106,6 +136,20 @@ class LiveScanPanel extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// The hotkey line: the state the pipeline published, or the saved binding
+  /// while no hotkey is registered.
+  static String _hotkeyText(ScanCoordinator scanner) {
+    final saved = scanner.settings.settings.scanHotkey;
+    return switch (scanner.hotkeyState) {
+      ScanHotkeyRegistered(:final key) => '${key.label} scans at the cursor',
+      ScanHotkeyUnavailable(:final key, :final reason) =>
+        '${key.label} unavailable: $reason (mouse scans still work)',
+      ScanHotkeyDisabled() => 'Scan hotkey off',
+      ScanHotkeyInactive() when saved == ScanHotkey.off => 'Scan hotkey off',
+      ScanHotkeyInactive() => '${saved.label} is used while live scan is on',
+    };
   }
 
   static String _statusText(LiveScanStatus status) => switch (status.state) {

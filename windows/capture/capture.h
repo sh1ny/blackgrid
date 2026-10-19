@@ -14,7 +14,7 @@
 #endif
 
 // Bumped whenever a signature, struct layout, status code or semantic changes.
-#define BGC_ABI_VERSION 1
+#define BGC_ABI_VERSION 2
 
 // Status codes. 0 is success; every other value is a typed outcome.
 #define BGC_OK 0
@@ -28,6 +28,12 @@
 #define BGC_NOT_STARTED 8          // stop without a held installation
 #define BGC_FRAME_RELEASED 9       // stale, released or unknown frame id
 #define BGC_NOT_FOUND 10           // no process with that id in the listing
+#define BGC_HOTKEY_UNAVAILABLE 11  // hotkey refused by the OS; win32_error is set
+#define BGC_HOTKEY_TIMED_OUT 12    // input thread did not answer within 1 s
+
+// Trigger sources, in bgc_trigger_event.source.
+#define BGC_TRIGGER_MOUSE 0
+#define BGC_TRIGGER_HOTKEY 1
 
 // Bounds, checked natively as well as in Dart.
 #define BGC_RING_CAPACITY 16
@@ -61,15 +67,19 @@ typedef struct bgc_window_snapshot {
   uint16_t title[BGC_TITLE_CHARS];  // InternalGetWindowText, NUL-terminated
 } bgc_window_snapshot;  // 592 bytes
 
-// One mouse release accepted by the hook filter.
+// One trigger accepted by the input thread: a mouse release over the target
+// window, or a press of the registered hotkey over it.
 typedef struct bgc_trigger_event {
-  int32_t x;        // physical screen point (MSLLHOOKSTRUCT.pt), signed
+  int32_t x;        // physical screen point (mouse: MSLLHOOKSTRUCT.pt, hotkey:
+                    // the cursor at the press), signed
   int32_t y;
   uint64_t hwnd;    // foreground window at the release
   uint32_t pid;
   uint32_t tid;
   int64_t qpc;      // QueryPerformanceCounter at the callback
-} bgc_trigger_event;  // 32 bytes
+  uint32_t source;  // BGC_TRIGGER_MOUSE or BGC_TRIGGER_HOTKEY
+  uint32_t reserved;  // 0
+} bgc_trigger_event;  // 40 bytes; source at offset 32
 
 // Result of one bgc_capture call. pre and post are taken immediately before
 // and after the BitBlt. all_zero covers the B, G and R bytes only.
@@ -111,6 +121,19 @@ BGC_API int32_t bgc_hook_stop(void);
 // receives the number of events dropped since the previous drain.
 BGC_API uint32_t bgc_hook_drain(bgc_trigger_event* events, uint32_t capacity,
                                 uint32_t* dropped);
+
+// --- Scan hotkey (D1, D5) ---
+// Registers the hotkey on the input thread, with no modifier and no key
+// repeat. vk is 0 (off) or VK_F1..VK_F24 (0x70..0x87); anything else returns
+// BGC_INVALID_ARGUMENT and changes nothing. Without a held installation it
+// returns BGC_NOT_STARTED. A different key is registered before the old one is
+// released; a key another application holds returns BGC_HOTKEY_UNAVAILABLE
+// with *win32_error set and leaves the old key registered. The same key is a
+// no-op success. If the input thread has not answered within 1 s it returns
+// BGC_HOTKEY_TIMED_OUT and the request slot stays reserved: later calls return
+// BGC_HOTKEY_TIMED_OUT at once until the thread answers, and a late swap is
+// rolled back by the thread.
+BGC_API int32_t bgc_hotkey_set(uint32_t vk, uint32_t* win32_error);
 
 // --- Snapshot and capture (D3, D6) ---
 // BGC_OK or BGC_TARGET_GONE (snapshot zeroed).

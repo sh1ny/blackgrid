@@ -69,3 +69,7 @@ run = "dart run tool/release/release.dart build"
 [tasks."capture:selftest"]
 description = "Build and run the native capture self-test (needs BLACKGRID_NO_GAMES_RUNNING=1; refuses while a game is running)"
 run = "pwsh -NoProfile -File windows/capture/selftest.ps1"
+
+[tasks."capture:unittest"]
+description = "Build and run the native capture unit test (injected environments and fakes only; no game gate)"
+run = "pwsh -NoProfile -File windows/capture/unittest.ps1"

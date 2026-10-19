@@ -1,5 +1,6 @@
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
+import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
@@ -409,5 +410,30 @@ void main() {
     expect(row, contains('Accepted'));
     expect(row, contains(scanItemName));
     expect(row, contains('180 ms'));
+  });
+
+  testWidgets('recent list labels hotkey scans', (tester) async {
+    final rig = await _pump(tester);
+    await tester.runAsync(() async {
+      final ports = rig.ports;
+      for (final (index, source) in [
+        TriggerSource.hotkey,
+        TriggerSource.mouse,
+      ].indexed) {
+        ports.fire(1000 + index * 1000, source: source);
+        await ports.captureOk(index);
+        final evidence = scanEvidence();
+        await ports.visionDeliver(
+          index,
+          scanRecognised(InspectionFrameKind.targeted, [evidence]),
+        );
+        (await rig.matcher.calls.at(index)).complete(scanAccepted(evidence));
+        await reportPublished(rig.coordinator, index + 1);
+      }
+    });
+    await tester.pump();
+
+    expect(_text(tester, 'scan-recent-1'), contains('hotkey'));
+    expect(_text(tester, 'scan-recent-2'), isNot(contains('hotkey')));
   });
 }

@@ -41,10 +41,10 @@ void main() {
   });
 
   test('abi and struct sizes match capture.h', () {
-    // open() already verified the sidecar and bgc_abi() == 1.
+    // open() already verified the sidecar and bgc_abi() == 2.
     expect(sizeOf<BgcRect>(), 16);
     expect(sizeOf<BgcWindowSnapshot>(), 592);
-    expect(sizeOf<BgcTriggerEvent>(), 32);
+    expect(sizeOf<BgcTriggerEvent>(), 40);
     expect(sizeOf<BgcCaptureResult>(), 1216);
     expect(sizeOf<BgcFrameView>(), 24);
   }, skip: skip);

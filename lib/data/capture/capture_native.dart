@@ -8,9 +8,9 @@ import 'capture_failure.dart';
 import 'capture_frame.dart';
 import 'capture_snapshot.dart';
 
-// --- Mirror of windows/capture/capture.h (ABI version 1) ---
+// --- Mirror of windows/capture/capture.h (ABI version 2) ---
 
-const int bgcAbiVersion = 1;
+const int bgcAbiVersion = 2;
 
 const int bgcOk = 0;
 const int bgcTargetGone = 1;
@@ -23,6 +23,11 @@ const int bgcStopTimedOut = 7;
 const int bgcNotStarted = 8;
 const int bgcFrameReleased = 9;
 const int bgcNotFound = 10;
+const int bgcHotkeyUnavailable = 11;
+const int bgcHotkeyTimedOut = 12;
+
+const int bgcTriggerMouse = 0;
+const int bgcTriggerHotkey = 1;
 
 const int bgcRingCapacity = 16;
 const int bgcFrameSlots = 4;
@@ -64,7 +69,7 @@ final class BgcWindowSnapshot extends Struct {
   external Array<Uint16> title;
 }
 
-/// `bgc_trigger_event`, 32 bytes.
+/// `bgc_trigger_event`, 40 bytes.
 final class BgcTriggerEvent extends Struct {
   @Int32()
   external int x;
@@ -78,6 +83,10 @@ final class BgcTriggerEvent extends Struct {
   external int tid;
   @Int64()
   external int qpc;
+  @Uint32()
+  external int source;
+  @Uint32()
+  external int reserved;
 }
 
 /// `bgc_capture_result`, 1216 bytes.
@@ -140,7 +149,14 @@ TriggerEvent decodeTriggerEvent(BgcTriggerEvent e) => TriggerEvent(
   pid: e.pid,
   tid: e.tid,
   qpc: e.qpc,
+  source: decodeTriggerSource(e.source),
 );
+
+/// Maps the native `source` field. `BGC_TRIGGER_HOTKEY` is [TriggerSource.hotkey];
+/// `BGC_TRIGGER_MOUSE` and any unknown value are [TriggerSource.mouse], the
+/// source every event had before ABI 2.
+TriggerSource decodeTriggerSource(int source) =>
+    source == bgcTriggerHotkey ? TriggerSource.hotkey : TriggerSource.mouse;
 
 // --- Platform seam ---
 
@@ -188,6 +204,15 @@ final class TriggerDrain {
   final int dropped;
 }
 
+/// What one `bgc_hotkey_set` returned: the native [status] and, for
+/// `BGC_HOTKEY_UNAVAILABLE`, the OS error code in [win32].
+final class RawHotkeyStatus {
+  const RawHotkeyStatus(this.status, [this.win32 = 0]);
+
+  final int status;
+  final int win32;
+}
+
 /// Everything Dart needs from the native capture library. Production uses
 /// [NativeCapturePlatform]; tests and the worker factory supply fakes.
 abstract interface class CapturePlatform {
@@ -218,6 +243,10 @@ abstract interface class CapturePlatform {
   TriggerFailure? hookStop();
 
   TriggerDrain hookDrain();
+
+  /// Registers [vk] (0 turns the hotkey off, 0x70..0x87 is F1..F24) on the
+  /// running input thread. Blocks up to the native 1 s answer window.
+  RawHotkeyStatus hotkeySet(int vk);
 }
 
 /// Builds a platform inside the isolate that will use it. Must be a top-level
@@ -343,6 +372,11 @@ final class NativeCapturePlatform implements CapturePlatform {
             Uint32 Function(Pointer<BgcTriggerEvent>, Uint32, Pointer<Uint32>),
             int Function(Pointer<BgcTriggerEvent>, int, Pointer<Uint32>)
           >('bgc_hook_drain'),
+      _hotkeySet = _library
+          .lookupFunction<
+            Int32 Function(Uint32, Pointer<Uint32>),
+            int Function(int, Pointer<Uint32>)
+          >('bgc_hotkey_set'),
       _snapshot = _library
           .lookupFunction<
             Int32 Function(Uint64, Pointer<BgcWindowSnapshot>),
@@ -398,6 +432,7 @@ final class NativeCapturePlatform implements CapturePlatform {
   _hookStart;
   final int Function() _hookStop;
   final int Function(Pointer<BgcTriggerEvent>, int, Pointer<Uint32>) _hookDrain;
+  final int Function(int, Pointer<Uint32>) _hotkeySet;
   final int Function(int, Pointer<BgcWindowSnapshot>) _snapshot;
   final int Function(int, Pointer<Uint16>, int) _processName;
   final int Function(int, Pointer<BgcRect>, Pointer<BgcCaptureResult>) _capture;
@@ -508,6 +543,17 @@ final class NativeCapturePlatform implements CapturePlatform {
       bgcStopTimedOut => const StopTimedOut(),
       _ => null,
     };
+  }
+
+  @override
+  RawHotkeyStatus hotkeySet(int vk) {
+    final win32 = calloc<Uint32>();
+    try {
+      final status = _hotkeySet(vk, win32);
+      return RawHotkeyStatus(status, win32.value);
+    } finally {
+      calloc.free(win32);
+    }
   }
 
   @override

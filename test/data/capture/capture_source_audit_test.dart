@@ -11,6 +11,17 @@ const _banned = <String>[
   'PostMessage',
   'SendMessage',
   'PrintWindow',
+  // Keyboard hooks and key-state reads exceed the hotkey's footprint (D10).
+  // Each is its own identifier: the pattern needs a word boundary after it.
+  'WH_KEYBOARD_LL',
+  'WH_KEYBOARD',
+  'GetAsyncKeyState',
+  'GetKeyState',
+  'GetKeyboardState',
+  'keybd_event',
+  'RegisterRawInputDevices',
+  'GetRawInputData',
+  'GetRawInputBuffer',
 ];
 
 final _rawPrefix = RegExp(r'(?:^|[^A-Za-z0-9_])(?:u8|[LuU])?R$');
@@ -97,8 +108,7 @@ final _captureImport = RegExp(r'''(import|export)\s+['"][^'"]*data/capture/''');
 
 /// Whether [source] imports `data/capture/` or names the trigger source.
 bool reachesCaptureLayer(String source) =>
-    _captureImport.hasMatch(source) ||
-    source.contains('MouseReleaseTriggerSource');
+    _captureImport.hasMatch(source) || source.contains('InputTriggerSource');
 
 /// Whether the file at [path] (any separator) is the allowed importer.
 bool mayReachCaptureLayer(String path) =>
@@ -127,6 +137,56 @@ void main() {
       File('${tmp.path}/a.cpp')
           .writeAsStringSync('void f(){ PostThreadMessageW(0,0,0,0); }');
       expect(auditSources(tmp), isEmpty);
+    });
+
+    test('keyboard hooks and key-state reads are reported (D10)', () {
+      expect(
+        bannedIdentifiers(
+          'HHOOK h = SetWindowsHookExW(WH_KEYBOARD_LL, proc, mod, 0);',
+        ),
+        ['WH_KEYBOARD_LL'],
+      );
+      const calls = <String>[
+        'WH_KEYBOARD',
+        'GetAsyncKeyState',
+        'GetKeyState',
+        'GetKeyboardState',
+        'keybd_event',
+        'RegisterRawInputDevices',
+        'GetRawInputData',
+        'GetRawInputBuffer',
+      ];
+      for (final name in calls) {
+        expect(bannedIdentifiers('x = $name(1);'), [name], reason: name);
+      }
+      expect(bannedIdentifiers('keybd_event(0, 0, 0, 0);'), ['keybd_event']);
+      // The hotkey registration, the cursor read and the mouse hook stay
+      // allowed; SendInput stays banned.
+      expect(
+        bannedIdentifiers(
+          'RegisterHotKey(0, 1, MOD_NOREPEAT, VK_F9); UnregisterHotKey(0, 1); '
+          'GetCursorPos(&p); SetWindowsHookExW(WH_MOUSE_LL, p, m, 0);',
+        ),
+        isEmpty,
+      );
+      expect(bannedIdentifiers('SendInput(1, &i, 40);'), ['SendInput']);
+    });
+
+    test('the native unit test touches no real window, hook or capture', () {
+      final file = File('windows/capture/unittest.cpp');
+      expect(file.existsSync(), isTrue);
+      final text = file.readAsStringSync();
+      const forbidden = <String>[
+        'hook_real_installer',
+        'bgc_hook_start',
+        'RegisterHotKey',
+        'SetWindowsHookEx',
+        'BitBlt',
+        'GetForegroundWindow',
+      ];
+      for (final name in forbidden) {
+        expect(text.contains(name), isFalse, reason: name);
+      }
     });
 
     test('comment markers inside literals do not hide a banned call', () {
@@ -194,7 +254,7 @@ void main() {
         const sources = <String>[
           "import '../data/capture/capture_service.dart';",
           "import 'package:blackgrid/data/capture/capture_native.dart';",
-          'final s = MouseReleaseTriggerSource(platform);',
+          'final s = InputTriggerSource(platform);',
         ];
         for (final path in const [
           'lib/ui/scanner_screen.dart',

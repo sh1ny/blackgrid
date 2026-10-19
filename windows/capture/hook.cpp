@@ -14,6 +14,13 @@ bool hook_filter_accepts(int nCode, WPARAM msg, HWND foreground,
                          TitleReaderFn read_title, void* title_ctx,
                          const wchar_t* target_title) {
   if (nCode < 0 || msg != WM_LBUTTONUP) return false;
+  return target_window_accepts(foreground, foreground_pid, own_pid, read_title,
+                               title_ctx, target_title);
+}
+
+bool target_window_accepts(HWND foreground, uint32_t foreground_pid,
+                           uint32_t own_pid, TitleReaderFn read_title,
+                           void* title_ctx, const wchar_t* target_title) {
   if (foreground == nullptr || foreground_pid == 0) return false;
   // Our own windows are never read: the title read must not touch a UI thread
   // that may be blocked.
@@ -110,12 +117,202 @@ LRESULT hook_proc_core(const HookEnv& env, Ring& ring,
       event.pid = pid;
       event.tid = tid;
       event.qpc = env.qpc();
+      event.source = BGC_TRIGGER_MOUSE;
       // ring_append has left its critical section by the time it returns, so
       // the wake-up is requested outside the lock.
       if (ring_append(ring, event)) env.post_signal();
     }
   }
   return env.call_next(nCode, wParam, lParam);
+}
+
+// --- Hotkey core (D2) ----------------------------------------------------------------
+
+bool hotkey_core(const HotkeyEnv& env, Ring& ring,
+                 const wchar_t* target_title) {
+  HWND foreground = env.foreground();
+  uint32_t tid = 0;
+  uint32_t pid = foreground != nullptr ? env.window_pid(foreground, &tid) : 0;
+  if (!target_window_accepts(foreground, pid, env.own_pid, env.read_title,
+                             env.title_ctx, target_title)) {
+    return false;
+  }
+  POINT point = {};
+  if (!env.cursor(&point)) return false;
+  bgc_trigger_event event = {};
+  event.x = point.x;
+  event.y = point.y;
+  event.hwnd = reinterpret_cast<uint64_t>(foreground);
+  event.pid = pid;
+  event.tid = tid;
+  event.qpc = env.qpc();
+  event.source = BGC_TRIGGER_HOTKEY;
+  // This runs on the thread that delivers signals, so the wake-up is a direct
+  // call instead of a posted message. The ring lock is already released.
+  if (ring_append(ring, event) && env.signal != nullptr) env.signal();
+  return true;
+}
+
+// --- Hotkey request slot and swap (D5) -------------------------------------------------
+
+HotkeySlot::HotkeySlot() {
+  answered = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+}
+HotkeySlot::~HotkeySlot() {
+  if (answered != nullptr) CloseHandle(answered);
+}
+
+bool hotkey_vk_valid(uint32_t vk) {
+  return vk == 0 || (vk >= 0x70 && vk <= 0x87);  // off, or VK_F1..VK_F24
+}
+
+int32_t hotkey_request(HotkeySlot& slot, bool installed, HotkeyPostFn post,
+                       void* post_ctx, uint32_t vk, uint32_t timeout_ms,
+                       uint32_t* win32_error) {
+  if (win32_error != nullptr) *win32_error = 0;
+  if (!hotkey_vk_valid(vk)) return BGC_INVALID_ARGUMENT;
+  if (!installed) return BGC_NOT_STARTED;
+
+  AcquireSRWLockExclusive(&slot.lock);
+  if (slot.reserved) {  // an earlier request is still unanswered
+    ReleaseSRWLockExclusive(&slot.lock);
+    return BGC_HOTKEY_TIMED_OUT;
+  }
+  slot.reserved = true;
+  slot.abandoned = false;
+  slot.done = false;
+  slot.vk = vk;
+  slot.status = BGC_OK;
+  slot.win32_error = 0;
+  ResetEvent(slot.answered);
+  ReleaseSRWLockExclusive(&slot.lock);
+
+  if (!post(post_ctx)) {  // nothing was queued: the thread cannot answer
+    AcquireSRWLockExclusive(&slot.lock);
+    slot.reserved = false;
+    ReleaseSRWLockExclusive(&slot.lock);
+    return BGC_NOT_STARTED;
+  }
+
+  WaitForSingleObject(slot.answered, timeout_ms);
+  // One lock decides between "answered" and "gave up", so a timeout never
+  // reports hotkeyTimedOut for a swap the thread kept.
+  AcquireSRWLockExclusive(&slot.lock);
+  int32_t status;
+  if (slot.done) {
+    status = slot.status;
+    if (win32_error != nullptr) *win32_error = slot.win32_error;
+    slot.reserved = false;
+  } else {
+    slot.abandoned = true;
+    status = BGC_HOTKEY_TIMED_OUT;
+  }
+  ReleaseSRWLockExclusive(&slot.lock);
+  return status;
+}
+
+namespace {
+
+// Completes the request; the caller holds slot.lock. An abandoned request has
+// no caller any more, so it only frees the slot.
+void complete_locked(HotkeySlot& slot, int32_t status, DWORD error) {
+  if (slot.abandoned) {
+    slot.reserved = false;
+    return;
+  }
+  slot.status = status;
+  slot.win32_error = error;
+  slot.done = true;
+  SetEvent(slot.answered);
+}
+
+void release_id(const HotkeyRegistrar& registrar, HotkeyState& state, int id) {
+  if (id == 0 || state.vk[id] == 0) return;
+  registrar.unregister_key(id);
+  state.vk[id] = 0;
+}
+
+}  // namespace
+
+void hotkey_service(HotkeySlot& slot, const HotkeyRegistrar& registrar,
+                    HotkeyState& state) {
+  AcquireSRWLockExclusive(&slot.lock);
+  if (!slot.reserved || slot.done) {  // nothing pending
+    ReleaseSRWLockExclusive(&slot.lock);
+    return;
+  }
+  if (slot.abandoned) {  // the caller is gone: change nothing
+    slot.reserved = false;
+    ReleaseSRWLockExclusive(&slot.lock);
+    return;
+  }
+  const uint32_t vk = slot.vk;
+  ReleaseSRWLockExclusive(&slot.lock);
+
+  const int old_id = state.active;
+  const uint32_t old_vk = old_id != 0 ? state.vk[old_id] : 0;
+
+  if (vk == old_vk) {  // the same key, or off while off: nothing to do
+    AcquireSRWLockExclusive(&slot.lock);
+    complete_locked(slot, BGC_OK, 0);
+    ReleaseSRWLockExclusive(&slot.lock);
+    return;
+  }
+
+  if (vk == 0) {  // off: release the live key unless the caller gave up
+    AcquireSRWLockExclusive(&slot.lock);
+    if (!slot.abandoned) {
+      release_id(registrar, state, old_id);
+      state.active = 0;
+    }
+    complete_locked(slot, BGC_OK, 0);
+    ReleaseSRWLockExclusive(&slot.lock);
+    return;
+  }
+
+  // Register the new key under the id the live key is not using.
+  const int new_id = old_id == 1 ? 2 : 1;
+  DWORD error = 0;
+  if (!registrar.register_key(new_id, MOD_NOREPEAT, vk, &error)) {
+    AcquireSRWLockExclusive(&slot.lock);
+    complete_locked(slot, BGC_HOTKEY_UNAVAILABLE,
+                    error != 0 ? error : ERROR_GEN_FAILURE);
+    ReleaseSRWLockExclusive(&slot.lock);
+    return;
+  }
+  state.vk[new_id] = vk;
+
+  // The final abandoned check, the release of one key and the completion share
+  // one critical section with the caller's timeout marking.
+  AcquireSRWLockExclusive(&slot.lock);
+  if (slot.abandoned) {
+    release_id(registrar, state, new_id);  // only the new key; the old stays
+  } else {
+    release_id(registrar, state, old_id);
+    state.active = new_id;
+  }
+  complete_locked(slot, BGC_OK, 0);
+  ReleaseSRWLockExclusive(&slot.lock);
+}
+
+void hotkey_slot_reset(HotkeySlot& slot) {
+  AcquireSRWLockExclusive(&slot.lock);
+  slot.reserved = false;
+  slot.abandoned = false;
+  slot.done = false;
+  ResetEvent(slot.answered);
+  ReleaseSRWLockExclusive(&slot.lock);
+}
+
+void hotkey_teardown(HotkeySlot& slot, const HotkeyRegistrar& registrar,
+                     HotkeyState& state, const HookInstaller& installer,
+                     HHOOK hook) {
+  for (int id = 1; id <= 2; id++) release_id(registrar, state, id);
+  state.active = 0;
+  AcquireSRWLockExclusive(&slot.lock);
+  if (slot.reserved && !slot.done) complete_locked(slot, BGC_NOT_STARTED, 0);
+  ReleaseSRWLockExclusive(&slot.lock);
+  installer.uninstall(hook);  // the hotkeys are gone before the hook is
 }
 
 // --- Real environment and lifecycle ------------------------------------------------
@@ -129,6 +326,10 @@ std::atomic<bool> g_guard{false};
 std::atomic<DWORD> g_thread_id{0};
 HANDLE g_thread = nullptr;  // guarded by g_api_lock
 SRWLOCK g_api_lock = SRWLOCK_INIT;
+HotkeySlot g_hotkey_slot;
+// The longest bgc_hotkey_set waits for the input thread (D5).
+const uint32_t kHotkeyWaitMs = 1000;
+const UINT kRebindMessage = WM_APP + 1;
 
 bool real_read_title(void*, HWND hwnd, wchar_t* buf, int cap) {
   // InternalGetWindowText reads the title without sending a window message.
@@ -153,6 +354,27 @@ int64_t real_qpc() {
   LARGE_INTEGER v;
   QueryPerformanceCounter(&v);
   return v.QuadPart;
+}
+// Called on the input thread itself, which is the thread that delivers signals.
+void real_signal_direct() {
+  void (*signal)(void) = g_signal;
+  if (signal != nullptr) signal();
+}
+bool real_cursor(POINT* out) { return GetCursorPos(out) != FALSE; }
+
+bool real_register_key(int id, uint32_t modifiers, uint32_t vk, DWORD* error) {
+  // A null window: WM_HOTKEY lands in the calling (input) thread's queue.
+  if (!RegisterHotKey(nullptr, id, modifiers, vk)) {
+    *error = GetLastError();
+    return false;
+  }
+  return true;
+}
+void real_unregister_key(int id) { UnregisterHotKey(nullptr, id); }
+
+bool real_post_rebind(void*) {
+  DWORD tid = g_thread_id.load();
+  return tid != 0 && PostThreadMessageW(tid, kRebindMessage, 0, 0);
 }
 
 LRESULT CALLBACK low_level_mouse_proc(int nCode, WPARAM wParam, LPARAM lParam) {
@@ -183,6 +405,7 @@ void real_uninstall(HHOOK hook) { UnhookWindowsHookEx(hook); }
 
 struct ThreadStart {
   HookInstaller installer;
+  HotkeyRegistrar registrar;
   HANDLE ready;
   bool ok;
   DWORD error;
@@ -191,6 +414,7 @@ struct ThreadStart {
 DWORD WINAPI hook_thread(LPVOID param) {
   ThreadStart* start = static_cast<ThreadStart*>(param);
   const HookInstaller installer = start->installer;
+  const HotkeyRegistrar registrar = start->registrar;
   HANDLE ready = start->ready;
 
   MSG msg;  // forces the thread's message queue into existence
@@ -209,13 +433,30 @@ DWORD WINAPI hook_thread(LPVOID param) {
   }
   SetEvent(ready);
 
+  HotkeyState hotkeys;  // touched by this thread only
+  HotkeyEnv hotkey_env = {};
+  hotkey_env.foreground = real_foreground;
+  hotkey_env.window_pid = real_window_pid;
+  hotkey_env.read_title = real_read_title;
+  hotkey_env.cursor = real_cursor;
+  hotkey_env.signal = real_signal_direct;
+  hotkey_env.qpc = real_qpc;
+  hotkey_env.own_pid = GetCurrentProcessId();
+
   while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
     if (msg.message == WM_APP) {
-      void (*signal)(void) = g_signal;
-      if (signal != nullptr) signal();
+      real_signal_direct();
+    } else if (msg.message == kRebindMessage) {
+      hotkey_service(g_hotkey_slot, registrar, hotkeys);
+    } else if (msg.message == WM_HOTKEY) {
+      // Only the live id: a press queued before a release is ignored.
+      if (hotkeys.active != 0 && msg.wParam == static_cast<WPARAM>(hotkeys.active)) {
+        hotkey_core(hotkey_env, g_ring, g_target);
+      }
     }
   }
-  installer.uninstall(hook);
+  // Hotkeys first, then the hook; a pending rebind completes NOT_STARTED.
+  hotkey_teardown(g_hotkey_slot, registrar, hotkeys, installer, hook);
   g_thread_id.store(0);
   // A thread that ends late (after a stop timed out) releases the guard here.
   g_guard.store(false);
@@ -241,9 +482,23 @@ const HookInstaller& hook_real_installer() {
   return installer;
 }
 
+const HotkeyRegistrar& hotkey_real_registrar() {
+  static const HotkeyRegistrar registrar = {real_register_key,
+                                            real_unregister_key};
+  return registrar;
+}
+
 bool hook_guard_held() { return g_guard.load(); }
 
 int32_t hook_start_with(const HookInstaller& installer,
+                        const uint16_t* target_title, void (*signal)(void),
+                        uint32_t* win32_error) {
+  return hook_start_with(installer, hotkey_real_registrar(), target_title,
+                         signal, win32_error);
+}
+
+int32_t hook_start_with(const HookInstaller& installer,
+                        const HotkeyRegistrar& registrar,
                         const uint16_t* target_title, void (*signal)(void),
                         uint32_t* win32_error) {
   if (target_title == nullptr || target_title[0] == 0) {
@@ -272,9 +527,11 @@ int32_t hook_start_with(const HookInstaller& installer,
   }
   g_signal = signal;
   ring_clear(g_ring);
+  hotkey_slot_reset(g_hotkey_slot);  // no thread holds a request any more
 
   ThreadStart start = {};
   start.installer = installer;
+  start.registrar = registrar;
   start.ready = CreateEventW(nullptr, TRUE, FALSE, nullptr);
   if (start.ready == nullptr) {
     if (win32_error != nullptr) *win32_error = GetLastError();
@@ -342,4 +599,17 @@ BGC_API int32_t bgc_hook_stop(void) {
 BGC_API uint32_t bgc_hook_drain(bgc_trigger_event* events, uint32_t capacity,
                                 uint32_t* dropped) {
   return bgc::ring_drain(bgc::g_ring, events, capacity, dropped);
+}
+
+BGC_API int32_t bgc_hotkey_set(uint32_t vk, uint32_t* win32_error) {
+  using namespace bgc;
+  AcquireSRWLockExclusive(&g_api_lock);
+  // A held installation whose thread is still running.
+  bool installed =
+      g_thread != nullptr && WaitForSingleObject(g_thread, 0) == WAIT_TIMEOUT;
+  int32_t status =
+      hotkey_request(g_hotkey_slot, installed, real_post_rebind, nullptr, vk,
+                     kHotkeyWaitMs, win32_error);
+  ReleaseSRWLockExclusive(&g_api_lock);
+  return status;
 }

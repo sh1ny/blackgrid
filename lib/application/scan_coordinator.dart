@@ -19,13 +19,14 @@ import '../data/capture/capture_frame.dart';
 import '../data/capture/capture_native.dart';
 import '../data/capture/capture_service.dart';
 import '../data/capture/capture_snapshot.dart';
-import '../data/capture/mouse_release_trigger_source.dart';
+import '../data/capture/input_trigger_source.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/vision/inspection_recognition.dart';
 import '../data/vision/marker_template.dart';
 import '../data/vision/vision_job.dart';
 import '../data/vision/vision_service.dart';
 import '../domain/catalog.dart';
+import '../domain/settings.dart';
 import '../domain/title_matching.dart';
 import 'catalog_controller.dart';
 import 'recognition_matcher.dart';
@@ -86,6 +87,95 @@ final class LiveScanStatus {
 
   @override
   int get hashCode => Object.hash(state, reason, reasonCode, stopWarning);
+}
+
+/// What the OS holds for the scan hotkey, as the coordinator last learned it.
+///
+/// The state changes only through activation, rebinding, stop, worker loss and
+/// dispose. After a stop that reported [ScanFailureCode.stopTimedOut] the
+/// stuck input thread may still hold the key while the state is
+/// [ScanHotkeyInactive], as the stop warning says.
+sealed class ScanHotkeyState {
+  const ScanHotkeyState();
+}
+
+/// Live scan is not `ready`; no hotkey is registered.
+final class ScanHotkeyInactive extends ScanHotkeyState {
+  /// Creates the state.
+  const ScanHotkeyInactive();
+
+  @override
+  bool operator ==(Object other) => other is ScanHotkeyInactive;
+
+  @override
+  int get hashCode => (ScanHotkeyInactive).hashCode;
+}
+
+/// Live scan is `ready` and the binding is [ScanHotkey.off].
+final class ScanHotkeyDisabled extends ScanHotkeyState {
+  /// Creates the state.
+  const ScanHotkeyDisabled();
+
+  @override
+  bool operator ==(Object other) => other is ScanHotkeyDisabled;
+
+  @override
+  int get hashCode => (ScanHotkeyDisabled).hashCode;
+}
+
+/// The OS accepted [key] and holds it for this process.
+final class ScanHotkeyRegistered extends ScanHotkeyState {
+  /// Creates the state.
+  const ScanHotkeyRegistered(this.key);
+
+  /// The registered key.
+  final ScanHotkey key;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ScanHotkeyRegistered && other.key == key;
+
+  @override
+  int get hashCode => Object.hash(ScanHotkeyRegistered, key);
+}
+
+/// The OS did not give [key] to this process; mouse scans still work.
+final class ScanHotkeyUnavailable extends ScanHotkeyState {
+  /// Creates the state.
+  const ScanHotkeyUnavailable(this.key, this.reason);
+
+  /// The saved key that could not be registered.
+  final ScanHotkey key;
+
+  /// A human-readable reason, including the OS code when there is one.
+  final String reason;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ScanHotkeyUnavailable &&
+      other.key == key &&
+      other.reason == reason;
+
+  @override
+  int get hashCode => Object.hash(ScanHotkeyUnavailable, key, reason);
+}
+
+/// How a call to [ScanCoordinator.setHotkey] ended.
+enum ScanRebindResult {
+  /// The key is in force and saved.
+  saved,
+
+  /// Another rebind was running; nothing changed.
+  busy,
+
+  /// The OS refused the key; the old registration and binding are kept.
+  refused,
+
+  /// The preference could not be saved; the old registration was restored.
+  notSaved,
+
+  /// Live scan stopped or the coordinator was disposed during the rebind.
+  stopped,
 }
 
 /// Which part of a scan is running.
@@ -679,6 +769,7 @@ final class ScanReport {
     required this.timeline,
     required this.droppedTriggers,
     required this.supersededTriggers,
+    this.trigger = TriggerSource.mouse,
     this.winningPass,
     this.targeted,
     this.fallback,
@@ -718,6 +809,14 @@ final class ScanReport {
 
   /// The scan's QPC stamps.
   final ScanTimeline timeline;
+
+  /// The input that started the scan.
+  final TriggerSource trigger;
+
+  /// Whether the scan was started by the scan hotkey rather than the mouse.
+  ///
+  /// It lets the UI label the scan without importing the capture layer.
+  bool get byHotkey => trigger == TriggerSource.hotkey;
 
   /// Native trigger events dropped before this scan's trigger.
   final int droppedTriggers;
@@ -782,10 +881,13 @@ final class ScanReport {
     timeline: timeline,
     droppedTriggers: droppedTriggers,
     supersededTriggers: supersededTriggers,
+    trigger: trigger,
   );
 
-  /// The version 1 timing log line (ADR-0013), without `droppedLines`, which
+  /// The version 2 timing log line (ADR-0013), without `droppedLines`, which
   /// the timing log adds.
+  ///
+  /// `trigger` names the input that started the scan, `mouse` or `hotkey`.
   ///
   /// Every `ms` value is a double in milliseconds from the trigger, rounded to
   /// 0.1 ms, except `trigger`, which is the integer 0. A stage not reached, a
@@ -827,8 +929,9 @@ final class ScanReport {
     final targetedLine = passLine(ScanPass.targeted, targeted);
     final fallbackLine = passLine(ScanPass.fallback, fallback);
     return {
-      'v': 1,
+      'v': 2,
       'utc': utc.toUtc().toIso8601String(),
+      'trigger': trigger.name,
       'end': end.logName,
       if (end case ScanAccepted(:final itemId)) 'item': itemId,
       if (switch (end) {
@@ -1006,13 +1109,17 @@ abstract interface class ScanVisionPort {
   ScanFailure? get unavailableReason;
 }
 
-/// The mouse-release hook as the coordinator uses it.
+/// The input hook (mouse release and scan hotkey) as the coordinator uses it.
 abstract interface class ScanTriggerPort {
   /// Installs the hook. Null means started.
   TriggerFailure? start();
 
   /// Removes the hook. A [StopTimedOut] means the hook thread may still run.
   TriggerFailure? stop();
+
+  /// Registers [key] on the running input thread, or releases the hotkey for
+  /// [ScanHotkey.off]. A refused key keeps the old registration.
+  Future<HotkeyResult> setHotkey(ScanHotkey key);
 
   /// Stops the hook and closes [triggers].
   Future<TriggerFailure?> dispose();
@@ -1196,7 +1303,7 @@ final class _VisionServicePort implements ScanVisionPort {
 
 final class _NativeScanPlatform implements ScanPlatform, ScanClock {
   _NativeScanPlatform(this._platform)
-    : trigger = _SourceTriggerPort(MouseReleaseTriggerSource(_platform));
+    : trigger = _SourceTriggerPort(InputTriggerSource(_platform));
 
   final CapturePlatform _platform;
 
@@ -1216,13 +1323,16 @@ final class _NativeScanPlatform implements ScanPlatform, ScanClock {
 final class _SourceTriggerPort implements ScanTriggerPort {
   _SourceTriggerPort(this._source);
 
-  final MouseReleaseTriggerSource _source;
+  final InputTriggerSource _source;
 
   @override
   TriggerFailure? start() => _source.start();
 
   @override
   TriggerFailure? stop() => _source.stop();
+
+  @override
+  Future<HotkeyResult> setHotkey(ScanHotkey key) => _source.setHotkey(key);
 
   @override
   Future<TriggerFailure?> dispose() => _source.dispose();
@@ -1554,6 +1664,132 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   /// The last save error to show, or null.
   String? get error => _error;
 
+  ScanHotkeyState _hotkeyState = const ScanHotkeyInactive();
+  bool _rebinding = false;
+  String? _hotkeyError;
+
+  /// What the OS holds for the scan hotkey.
+  ScanHotkeyState get hotkeyState => _hotkeyState;
+
+  /// Whether a hotkey rebind is running.
+  bool get hotkeyRebinding => _rebinding;
+
+  /// Why the latest rebind did not take effect, naming the key and the OS
+  /// reason or saying the preference was not saved; null after a rebind that
+  /// succeeded and until the first one.
+  String? get hotkeyError => _hotkeyError;
+
+  /// Rebinds the scan hotkey to [key].
+  ///
+  /// While live scan is `ready`, the new key is registered first and saved
+  /// only after the OS accepts it. A refused key keeps the old registration
+  /// and saved binding and sets [hotkeyError]. A failed save restores the
+  /// previous registration: the prior key, or none when the prior state was
+  /// [ScanHotkeyUnavailable] or [ScanHotkeyDisabled]. When live scan is not
+  /// `ready` the call only saves.
+  ///
+  /// One rebind runs at a time; another call meanwhile returns
+  /// [ScanRebindResult.busy] and changes nothing. The save runs on the same
+  /// tracked path as the live scan saves, so neither is refused as busy by the
+  /// other. A stop during the rebind ends it with [ScanRebindResult.stopped]
+  /// and makes no further native call.
+  Future<ScanRebindResult> setHotkey(ScanHotkey key) async {
+    if (_disposed) return ScanRebindResult.stopped;
+    if (_rebinding) return ScanRebindResult.busy;
+    _rebinding = true;
+    _hotkeyError = null;
+    _notify();
+    try {
+      return await _rebind(key);
+    } finally {
+      _rebinding = false;
+      _notify();
+    }
+  }
+
+  Future<ScanRebindResult> _rebind(ScanHotkey key) async {
+    await _savesLanded();
+    if (_disposed) return ScanRebindResult.stopped;
+    final a = _current;
+    final trigger = _platform?.trigger;
+    if (a == null ||
+        trigger == null ||
+        _stale(a) ||
+        !a.hookInstalled ||
+        _state != LiveScanState.ready) {
+      // Not ready: nothing is registered, so only the binding changes.
+      final saved = await _saveHotkey(key);
+      if (_disposed) return ScanRebindResult.stopped;
+      if (saved) return ScanRebindResult.saved;
+      _hotkeyError = _hotkeyNotSaved;
+      return ScanRebindResult.notSaved;
+    }
+
+    final previous = _hotkeyState;
+    final result = await trigger.setHotkey(key);
+    if (_stale(a)) return ScanRebindResult.stopped;
+    if (result is! HotkeyApplied) {
+      _hotkeyError =
+          '${key.label} could not be registered: ${_hotkeyReason(result)}';
+      return ScanRebindResult.refused;
+    }
+    _hotkeyState = _registrationState(key);
+    _notify();
+
+    final saved = await _saveHotkey(key);
+    if (_stale(a)) {
+      // The stop released the keys and published `inactive`; only the save
+      // outcome is left to report.
+      if (!saved) _hotkeyError = _hotkeyNotSaved;
+      return ScanRebindResult.stopped;
+    }
+    if (saved) return ScanRebindResult.saved;
+
+    _hotkeyError = _hotkeyNotSaved;
+    final restoreKey = switch (previous) {
+      ScanHotkeyRegistered(:final key) => key,
+      ScanHotkeyUnavailable() ||
+      ScanHotkeyDisabled() ||
+      ScanHotkeyInactive() => ScanHotkey.off,
+    };
+    final restored = await trigger.setHotkey(restoreKey);
+    if (_stale(a)) return ScanRebindResult.notSaved;
+    if (restored is HotkeyApplied) {
+      _hotkeyState = previous;
+    } else if (restoreKey != ScanHotkey.off) {
+      // Another application took the old key meanwhile: release the new one,
+      // so the published state matches what the OS holds.
+      final released = await trigger.setHotkey(ScanHotkey.off);
+      if (_stale(a)) return ScanRebindResult.notSaved;
+      if (released is HotkeyApplied) {
+        _hotkeyState = ScanHotkeyUnavailable(
+          restoreKey,
+          _hotkeyReason(restored),
+        );
+      }
+    }
+    _notify();
+    return ScanRebindResult.notSaved;
+  }
+
+  static const String _hotkeyNotSaved =
+      'The scan hotkey was not changed: the preference was not saved.';
+
+  static ScanHotkeyState _registrationState(ScanHotkey key) => switch (key) {
+    ScanHotkey.off => const ScanHotkeyDisabled(),
+    _ => ScanHotkeyRegistered(key),
+  };
+
+  /// A human-readable reason for a hotkey request that was not applied.
+  static String _hotkeyReason(HotkeyResult result) => switch (result) {
+    HotkeyApplied() => 'applied',
+    HotkeyUnavailable(:final win32) =>
+      'another application may hold it (Win32 error $win32)',
+    HotkeyTimedOut() => 'the input thread timed out',
+    HotkeyNotStarted() => 'the input hook is not started',
+    HotkeyInvalidArgument() => 'the key code was rejected',
+  };
+
   /// The activation state with its reason and any stop warning.
   LiveScanStatus get status => LiveScanStatus(
     _state,
@@ -1693,10 +1929,18 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   }
 
   /// Saves the `liveScan` setting, tracked so later taps wait for it.
-  Future<bool> _save({required bool on}) async {
-    final save = _saving = settings.save(
-      settings.settings.copyWith(liveScan: on),
-    );
+  Future<bool> _save({required bool on}) =>
+      _trackedSave((current) => current.copyWith(liveScan: on));
+
+  /// Saves the scan hotkey binding on the same tracked path.
+  Future<bool> _saveHotkey(ScanHotkey key) =>
+      _trackedSave((current) => current.copyWith(scanHotkey: key));
+
+  /// Queues [change] behind every tracked save already started, so two
+  /// callers released by the same landed save run one after the other
+  /// instead of the second being refused as busy.
+  Future<bool> _trackedSave(AppSettings Function(AppSettings) change) async {
+    final save = _saving = _queuedSave(_saving, change);
     try {
       return await save;
     } finally {
@@ -1704,7 +1948,18 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     }
   }
 
-  /// Completes once no save started by [setLiveScan] is running.
+  /// Applies [change] to the settings as they are once [previous] landed.
+  Future<bool> _queuedSave(
+    Future<bool>? previous,
+    AppSettings Function(AppSettings) change,
+  ) async {
+    // A failed save is its caller's error to report, not this save's.
+    if (previous != null) await previous.then((_) {}, onError: (Object _) {});
+    return settings.save(change(settings.settings));
+  }
+
+  /// Completes once no save started by [setLiveScan] or [setHotkey] is
+  /// running.
   Future<void> _savesLanded() async {
     for (var running = _saving; running != null; running = _saving) {
       // A failed save is the tap's own error to report, not this wait's.
@@ -1807,6 +2062,8 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   void _unhook(_Activation a) {
     unawaited(a.sub?.cancel());
     a.sub = null;
+    // The hook stop releases the hotkey with it.
+    _hotkeyState = const ScanHotkeyInactive();
     if (!a.hookInstalled) return;
     a.hookInstalled = false;
     final failure = _platform?.trigger.stop();
@@ -1815,9 +2072,15 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       _hookWarning = null;
     } else {
       _hookStuck = true;
-      _hookWarning = failure.message;
+      _hookWarning = _stopWarning(failure);
     }
   }
+
+  /// The warning for a hook stop that did not complete: the stuck input
+  /// thread may still hold the scan hotkey.
+  static String _stopWarning(TriggerFailure failure) =>
+      '${failure.message} The scan hotkey may stay held until the input '
+      'thread ends.';
 
   Future<void> _closeServices(_Activation a) => a.closing ??= _doClose(a);
 
@@ -1889,7 +2152,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     if (_hookStuck) {
       final failure = _platform?.trigger.stop();
       if (failure != null) {
-        _hookWarning = failure.message;
+        _hookWarning = _stopWarning(failure);
         await _fail(a, scanFailureFromTrigger(const AlreadyStarted()));
         return;
       }
@@ -1980,6 +2243,23 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     a.clock = platform.clock;
     a.qpcFrequency = platform.clock.qpcFrequency();
     a.hookInstalled = true;
+
+    // 4. The saved hotkey, read once pending saves have landed. A refused
+    // hotkey leaves live scan ready.
+    await _savesLanded();
+    if (_stale(a)) return;
+    final key = settings.settings.scanHotkey;
+    final ScanHotkeyState hotkey;
+    if (key == ScanHotkey.off) {
+      hotkey = const ScanHotkeyDisabled();
+    } else {
+      final result = await platform.trigger.setHotkey(key);
+      if (_stale(a)) return;
+      hotkey = result is HotkeyApplied
+          ? ScanHotkeyRegistered(key)
+          : ScanHotkeyUnavailable(key, _hotkeyReason(result));
+    }
+    _hotkeyState = hotkey;
     a.sub = platform.trigger.triggers.listen(_onTrigger);
     _set(LiveScanState.ready);
   }
@@ -2023,7 +2303,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
 
   int _now(_Activation a) => a.clock?.qpcNow() ?? 0;
 
-  /// Handles one mouse-release trigger while the pipeline is ready.
+  /// Handles one trigger (mouse release or hotkey) while the pipeline is ready.
   ///
   /// With no scan in flight the trigger starts one. Otherwise it supersedes
   /// the scan in flight, and how the new scan starts depends on the stage the
@@ -2121,7 +2401,11 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
 
   Future<void> _flow(_Scan s) async {
     // Targeted pass, once the inspect window had time to settle.
-    if (!await _waitUntil(s, settleDelay)) return _endSuperseded(s);
+    // A hotkey press finds the inspect window already open: no waits.
+    final hotkey = s.trigger.event.source == TriggerSource.hotkey;
+    if (!await _waitUntil(s, hotkey ? Duration.zero : settleDelay)) {
+      return _endSuperseded(s);
+    }
     ScanFailure? targetedFailure;
     OutcomeRejected<InspectionEvidence>? targetedRejection;
     switch (await _runPass(s, ScanPass.targeted)) {
@@ -2162,7 +2446,9 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
 
     // Fallback pass: the phase is published before the capture request.
     _setPhase(s, ScanPhase.fallback);
-    if (!await _waitUntil(s, fallbackDelay)) return _endSuperseded(s);
+    if (!await _waitUntil(s, hotkey ? Duration.zero : fallbackDelay)) {
+      return _endSuperseded(s);
+    }
     switch (await _runPass(s, ScanPass.fallback)) {
       case _PassAbandoned():
         return _endSuperseded(s);
@@ -2743,6 +3029,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       ),
       droppedTriggers: s.trigger.droppedBefore,
       supersededTriggers: s.replacedTriggers + s.supersedingTriggers,
+      trigger: s.trigger.event.source,
     );
   }
 

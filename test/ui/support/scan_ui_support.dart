@@ -6,7 +6,7 @@ import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
-import 'package:blackgrid/data/capture/mouse_release_trigger_source.dart';
+import 'package:blackgrid/data/capture/input_trigger_source.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
@@ -221,8 +221,15 @@ final class ScanFakePorts {
   };
 
   /// The platform factory.
-  ScanPlatformFactory get platformFactory =>
-      () => platform = FakeScanPlatform(events);
+  ScanPlatformFactory get platformFactory => () {
+    final created = FakeScanPlatform(events);
+    created.trigger.heldKeys.addAll(heldKeys);
+    return platform = created;
+  };
+
+  /// Keys another application holds from the moment the platform opens, so a
+  /// test can start live scan with its saved hotkey refused.
+  final Set<ScanHotkey> heldKeys = {};
 
   /// The waiter to hand to the coordinator: it never waits.
   ScanWaiter get waiter => immediateScanWaiter;
@@ -236,13 +243,22 @@ final class ScanFakePorts {
   FakeScanVision get vision => visions.last;
   FakeScanClock get clock => platform!.clock;
 
-  /// Emits a mouse-release trigger at [qpc].
-  void fire(int qpc) => platform!.trigger.emit(
-    ScanTrigger(
-      TriggerEvent(x: 10, y: 20, hwnd: 1, pid: 2, tid: 3, qpc: qpc),
-      0,
-    ),
-  );
+  /// Emits a trigger at [qpc], a mouse release unless [source] says otherwise.
+  void fire(int qpc, {TriggerSource source = TriggerSource.mouse}) =>
+      platform!.trigger.emit(
+        ScanTrigger(
+          TriggerEvent(
+            x: 10,
+            y: 20,
+            hwnd: 1,
+            pid: 2,
+            tid: 3,
+            qpc: qpc,
+            source: source,
+          ),
+          0,
+        ),
+      );
 
   /// Answers capture call [n] with a frame, with the clock at [at].
   Future<void> captureOk(int n, {int? at}) async {

@@ -181,4 +181,7 @@ final class FakeCapturePlatform implements CapturePlatform {
 
   @override
   TriggerDrain hookDrain() => const TriggerDrain([], 0);
+
+  @override
+  RawHotkeyStatus hotkeySet(int vk) => const RawHotkeyStatus(bgcOk);
 }

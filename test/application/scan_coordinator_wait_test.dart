@@ -96,9 +96,16 @@ final class _Rig {
 
   /// Drives the targeted pass of the scan to a `noMarker` rejection, with the
   /// clock at [rejectedAt] when the match completes.
-  Future<void> rejectTargeted({required int rejectedAt}) async {
-    await waiter.requests.at(0);
-    waiter.release(0);
+  ///
+  /// With [settled] false the scan made no settle wait, as a hotkey scan.
+  Future<void> rejectTargeted({
+    required int rejectedAt,
+    bool settled = true,
+  }) async {
+    if (settled) {
+      await waiter.requests.at(0);
+      waiter.release(0);
+    }
     (await capture.calls.at(0)).succeed(ports.frames.frame());
     final evidence = scanEvidence();
     (await ports.vision.calls.at(0))
@@ -164,6 +171,17 @@ void main() {
       expect(rig.waiter.requests.length, 0);
     });
 
+    test('hotkey trigger captures without the settle wait', () async {
+      rig.now(_t1 + _ms);
+      rig.ports.fire(_t1, source: TriggerSource.hotkey);
+
+      final call = await rig.capture.calls.at(0);
+      expect(rig.waiter.requests.length, 0, reason: 'no wait of any length');
+      expect(call.mode, CaptureMode.targeted);
+      expect(call.trigger.source, TriggerSource.hotkey);
+      expect(rig.coordinator.phase, ScanPhase.targeted);
+    });
+
     test('switch-off during the settle wait requests no capture and publishes '
         'nothing', () async {
       rig.now(_t1 + _ms);
@@ -199,6 +217,17 @@ void main() {
         expect(fallback.mode, CaptureMode.fallback);
       },
     );
+
+    test('quick hotkey noMarker falls back at once', () async {
+      rig.now(_t1 + _ms);
+      rig.ports.fire(_t1, source: TriggerSource.hotkey);
+      await rig.rejectTargeted(rejectedAt: _t1 + 80 * _ms, settled: false);
+
+      final fallback = await rig.capture.calls.at(1);
+      expect(fallback.mode, CaptureMode.fallback);
+      expect(rig.waiter.requests.length, 0, reason: 'neither wait is made');
+      expect(rig.coordinator.phase, ScanPhase.fallback);
+    });
 
     test(
       'targeted rejection after 260 ms falls back without waiting',
@@ -243,6 +272,36 @@ void main() {
       expect(rig.logs.length, 1);
       expect(rig.logs[0]['end'], 'superseded');
     });
+
+    test(
+      'hotkey during the settle wait supersedes and captures at once',
+      () async {
+        rig.now(_t1 + _ms);
+        rig.ports.fire(_t1);
+        expect(rig.waiter.requests.length, 1);
+        const t2 = _t1 + 20 * _ms;
+        rig.now(t2);
+        rig.ports.fire(t2, source: TriggerSource.hotkey);
+
+        final call = await rig.capture.calls.at(0);
+        expect(call.trigger.qpc, t2);
+        expect(call.trigger.source, TriggerSource.hotkey);
+        expect(call.mode, CaptureMode.targeted);
+        expect(
+          rig.waiter.requests.length,
+          1,
+          reason: 'the hotkey scan waits not',
+        );
+
+        rig.waiter.release(0);
+        await rig.coordinator.settled;
+        expect(rig.capture.calls.length, 1, reason: 'scan 1 requests nothing');
+        expect(rig.coordinator.latest, isNull);
+        expect(rig.logs.length, 1);
+        expect(rig.logs[0]['end'], 'superseded');
+        expect(rig.logs[0]['trigger'], 'mouse');
+      },
+    );
 
     test('click during the fallback wait supersedes at once', () async {
       rig.now(_t1 + _ms);

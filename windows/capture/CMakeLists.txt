@@ -24,3 +24,14 @@ target_compile_options(blackgrid_capture_selftest PRIVATE /W4 /EHsc /permissive-
 target_compile_definitions(blackgrid_capture_selftest PRIVATE BLACKGRID_CAPTURE_EXPORTS)
 set_property(TARGET blackgrid_capture_selftest PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 target_link_libraries(blackgrid_capture_selftest PRIVATE user32 gdi32)
+
+# Native unit test (hotkey change): the same sources, injected environments and
+# fakes only. It opens no window, hook, hotkey or capture, so it has no game
+# gate. Never built by default and never installed.
+add_executable(blackgrid_capture_unittest EXCLUDE_FROM_ALL
+  unittest.cpp ${BLACKGRID_CAPTURE_SOURCES})
+target_compile_features(blackgrid_capture_unittest PRIVATE cxx_std_20)
+target_compile_options(blackgrid_capture_unittest PRIVATE /W4 /EHsc /permissive-)
+target_compile_definitions(blackgrid_capture_unittest PRIVATE BLACKGRID_CAPTURE_EXPORTS)
+set_property(TARGET blackgrid_capture_unittest PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_link_libraries(blackgrid_capture_unittest PRIVATE user32 gdi32)
