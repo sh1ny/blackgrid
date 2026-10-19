@@ -35,7 +35,7 @@ None. The core wiring holds against the code: `_modeTransition` (app_services.da
 
 ## Verdict
 
-VERDICT: APPROVE_WITH_CHANGES
+Round 1 verdict (superseded by round 2 below): APPROVE_WITH_CHANGES
 
 ## Required Changes
 
@@ -44,7 +44,7 @@ VERDICT: APPROVE_WITH_CHANGES
 3. progress-authority delta, scenario "Tracker unavailable at launch": change the expected error to "Tracker transport unavailable", or state the status only (`failed`) without the message.
 4. design.md, Risks / Trade-offs: add that `app_services_test.dart` "saved log context outranks fallback…" uses a throwing client as a no-HTTP guard that this change silently disables. Require the task to replace it with a request-recording client that answers the catalog requests, and to assert that every request goes to the catalog source (`json.tarkov.dev`) for a mode the test selects and none goes to the tracker (no credential is saved), with the assertion made after awaiting the last selection's `automaticRefreshes` future. (Amended in the re-check run: the original wording "only catalog-source requests for `pve`" was wrong; see Re-check, item 4. Amended again in the third run: the allowed routes must also include `regular`, for the saved `pvp` selection made before the log is read; see the third run.)
 
-CHANGES_APPLIED: yes
+Round 1 changes applied (re-checked in the fourth run): yes
 
 ## Re-check (round 1, second run)
 
@@ -81,6 +81,63 @@ Reviewer: fresh-context subagent (specwright-reviewer, Claude Code). Scope: Requ
 
 4. **Silenced no-HTTP guard: PASS.** The author took the second fix the third run offered: the bullet drops the route check and asserts hosts only. Every recorded request must go to `json.tarkov.dev` (catalog_client.dart:25) and none to `api.tarkovtracker.org` (tracker_client.dart:69). It does this after awaiting the last selection's `automaticRefreshes`. Every selection the test can make (`regular`, `pve`, `pvp-season`) fetches from the catalog host, so the order of the cached load and the log read no longer changes the result. Requests from an earlier selection that arrive after the assertion also go to the catalog host, so they cannot falsify it. The bullet explains the race correctly (app_services_test.dart:76-82, app_services.dart:191-193). The edit adds no new defect. Required Change 4 is applied.
 
-Result: Required Changes 1-4 and S1-S6 hold. `CHANGES_APPLIED: yes`.
+Result: Required Changes 1-4 and S1-S6 hold. Round 1 changes applied: yes.
+
+---
+
+# Review (round 2: behaviour-change amendment 0a88b8f)
+
+## Metadata
+
+- **Round:** 2
+- **Prior round:** round 1 APPROVE_WITH_CHANGES. Required Changes 1-4 were applied and re-checked in the fourth run. Commit 0a88b8f then amended the specs as a behaviour change (PR #44 Codex P1): the automatic progress refresh makes no tracker request while the read-only Tracker integration (`AppSettings.trackerEnabled`, default false) is off, and enabling it starts no refresh. This voided the round 1 verdict, so this round reviews the amended contents in full.
+- **Reviewer:** fresh-context subagent (specwright-reviewer, Claude Code)
+- **Reviewed:** `git show 0a88b8f`; current proposal.md, design.md (D1, T4 diagram, Risks), tasks.md (test map, 2.5), specs/progress-authority/spec.md, specs/catalog-authority/spec.md (checked for any tracker or progress coupling: none). Main specs under openspec/specs (no existing progress or tracker capability, so nothing conflicts) and openspec/architecture.md. Source: lib/application/app_services.dart (`initialize` :195-215, `_syncMapSession` :230-285, `_refreshAfter` :290-304), progress_controller.dart (`setMode` :58-75, `refresh` :124-139, `_refresh` session fence :157,164,180), settings_controller.dart (`save` :25-42), lib/domain/settings.dart (`trackerEnabled = false` :47), lib/ui/settings_dialog.dart (switch :179-200, Refresh progress :242-252), lib/ui/evidence_panels.dart:173-177, map_session_controller.dart (`_onPreferences` :168-180), test/application/app_services_refresh_test.dart (rig `launch`, `progress: saving a credential does not refresh` :643-649). The working tree also holds uncommitted task 2.5 work: the gate at app_services.dart:260-267, the rig's `trackerEnabled` parameter, the new test, and README and architecture.md edits. I read it only as evidence that the design can be implemented. This verdict does not cover it. `openspec validate add-catalog-startup-refresh --strict` passes. Skills loaded: dart-add-unit-test, dart-write-documentation, dart-run-static-analysis.
+
+<!-- This verdict covers only the contents reviewed. Editing proposal, specs or design afterward (other than applying Required Changes) voids it. -->
+
+## Findings
+
+### Critical (blocking)
+
+None. The amendment holds against the code on the points the request asked me to check:
+
+- **Ordering of the settings read vs. the credential read.** The gate is a `when` predicate that `_refreshAfter` evaluates inside `ready.then`, that is, after `progress.setMode` has finished its credential read (app_services.dart:296-300). It is not captured when the selection starts. `initialize` awaits `settings.load()` before any `_syncMapSession` can act, because `_syncMapSession` returns early until `_mapsInitialized` is set (:196-210, :231). So a launch never reads the default `false` before the saved value loads. The same holds on `reloadAfterImport`, which reloads settings first.
+- **Switching off mid-session.** The dialog saves the setting and then calls `services.progress.setMode(services.catalog.mode)` directly (settings_dialog.dart:189-199). That call goes around `_syncMapSession`. It does not bump `_modeTransition` and never reaches `_refreshAfter`, so it starts no automatic refresh. `_invalidate` bumps `_session` (progress_controller.dart:47-56), so an automatic fetch already in flight is dropped by the session fence (:157,164,180), and the progress snapshot is cleared. If the switch is turned off while a selection's credential read is still running, the read's result is dropped (session mismatch, :66). When that selection's `ready` then completes, the `_refreshAfter` callback sees `trackerEnabled == false` and starts nothing. No request is made after the switch goes off. A request already sent before then is not cancelled, and the spec does not require that.
+- **Settings save does not create a selection.** A preference save notifies `MapSessionController._onPreferences`, which reacts only to map, log and screenshot fields (map_session_controller.dart:168-180). Toggling `trackerEnabled` does not change `effectiveMode`, so `_syncMapSession` opens no transition. Enabling the switch therefore starts no refresh, as the amended scenario requires.
+- **Manual parity.** Both manual progress Refresh buttons are already disabled while the switch is off (settings_dialog.dart:244-247, evidence_panels.dart:173-177). D1 keeps the check out of `ProgressController.refresh()`, which matches the existing UI-level gate, and the controller's unit tests stay independent of settings.
+
+### Moderate
+
+**M1. The scenarios that expect a tracker request no longer state their precondition, and with the default settings they are false.** The requirement now says a refresh starts only "while the read-only Tracker integration is enabled", and `trackerEnabled` defaults to `false` (settings.dart:47). The scenarios that assert a request were not amended. These are "Launch with a saved credential" ("exactly one tracker fetch is made"), "Selection superseded during the credential read" ("exactly one is made for B"), "Tracker unavailable at launch", "Tracker answers with a cooldown", "Rejected credential", "Switch during the automatic refresh" and "Switch back before the old fetch returns". Read on its own, each of them describes a fresh install or a default-settings launch, where the code makes no request. The rig in task 2.5 hides this by defaulting to `trackerEnabled: true`, but the archived capability spec would state behaviour that the default configuration does not have. A later test written from the archived spec would fail. Fix: state the precondition once (Required Change 1).
+
+**M2. The new WHEN branch "or enables the Tracker integration" has no test.** The amendment widened the scenario "Saving a credential does not refresh" to "the user saves a valid credential for the selected mode, or enables the Tracker integration". But the test-map row and the existing test (app_services_refresh_test.dart:643-649) cover only saving a credential, and task 2.5 adds no step for enabling. Today the code is correct, because toggling the setting creates no selection. But that branch is exactly the regression a later "refresh when the user turns the integration on" convenience would introduce, for example a `settings` listener in `AppServices`, and nothing would catch it. Fix: Required Change 2.
+
+### Suggestions
+
+- **S1. Say when the gate is read.** The code reads `trackerEnabled` when the credential read ends, not when the selection starts. So a user who enables the switch during a selection's credential read, a window of milliseconds at launch or a mode switch, gets that selection's refresh. That fits the requirement wording ("reads a saved tracker credential for it while ... enabled"), and I see no practical harm. One clause in D1 ("evaluated when `progress.setMode` completes") would stop a later reader from treating this as a contradiction of the "enables the Tracker integration" scenario, or from "fixing" it by capturing the value at selection start. Capturing it at selection start would let a selection whose credential read started before the user switched the integration off still send a request.
+- **S2. The proposal's last bullet ("Saving a credential does not trigger an automatic progress refresh") could add "or enabling the Tracker integration"**, so the proposal matches the amended scenario. The scenario title could also become "Saving a credential or enabling the integration does not refresh". If the title changes, rename the test and the test-map row to match.
+
+## Verdict
+
+VERDICT: APPROVE_WITH_CHANGES
+
+## Required Changes
+
+1. specs/progress-authority/spec.md, requirement "Selecting a known mode with a saved credential starts one progress refresh": state the precondition for every scenario that expects a tracker request. Either append to the requirement body: "Unless a scenario says otherwise, the scenarios in this capability assume the read-only Tracker integration is enabled." Or add "with the Tracker integration enabled" to the WHEN of "Launch with a saved credential" and "Selection superseded during the credential read". The scenarios in the other two requirements of the same file also need covering, so the first option is the smaller edit. If the sentence goes into one requirement only, place it under the spec's `## Purpose` or repeat it in each requirement.
+2. tasks.md, task 2.5 and the test map: add a guard step for the "enables the Tracker integration" branch. Launch with a saved credential and `trackerEnabled: false`, await `automaticRefreshes`, then save the settings with `trackerEnabled: true` and assert that `net.trackerRequests` is still 0. Put it either as a second case inside `progress: saving a credential does not refresh`, or as a new row `progress: enabling the integration does not refresh` (state `green`). Also confirm that it fails when a refresh is wired to the settings change.
+
+CHANGES_APPLIED: yes
+
+## Re-check (round 2, second run)
+
+Reviewer: fresh-context subagent (specwright-reviewer, Claude Code). Scope: round 2 Required Changes 1-2 and suggestions S1-S2 only, against the uncommitted `git diff` of proposal.md, design.md, tasks.md and specs/progress-authority/spec.md, and the new test in test/application/app_services_refresh_test.dart:607-627. `openspec validate add-catalog-startup-refresh --strict` passes. Skills loaded: dart-add-unit-test, dart-write-documentation, dart-run-static-analysis.
+
+1. **Spec precondition: PASS.** The sentence sits under `## Purpose`, so it covers all three requirements. The two scenarios that do not assume the integration is on, "Tracker integration disabled" and "... or enables the Tracker integration", say so in their own WHEN, so "unless a scenario says otherwise" fits both.
+2. **Guard for enabling the integration: PASS.** The test-map row (`green`) and the step in task 2.5 are present. The test is sound without a sleep. `ProgressController._refresh` publishes `loading` before its first await (progress_controller.dart:147-149), and `SettingsController.save` notifies only after `_settings` holds the new value (settings_controller.dart:32,40). So any refresh wired to the settings change is caught by the `loading` listener even before its request is sent, and the `net.trackerRequests == 0` check backs that up. The coordinator reports that the mutation check failed as expected. I did not run it again.
+
+Suggestions: **S1 PASS.** D1 now says the gate is evaluated when `progress.setMode` completes, which matches `_refreshAfter` (app_services.dart:296-300). **S2 PASS.** The proposal bullet now covers enabling the integration.
+
+Result: round 2 Required Changes 1-2 hold. CHANGES_APPLIED is set to yes on the single line above.
 
 ## Rebuttals
