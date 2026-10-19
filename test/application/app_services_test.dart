@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/application/app_services.dart';
@@ -10,6 +11,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+
+import '../fixtures/m1/catalog/fixture.dart';
 
 class _EmptyCredentials implements CredentialStore {
   @override
@@ -61,13 +64,21 @@ void main() {
         'Session mode: Pve\r\n'
         'application|scene preset path:maps/laboratory.bundle\r\n',
       );
+      // Records every request. Catalog datasets are answered, so the automatic
+      // refresh runs. No credential is saved, so the tracker must stay silent.
+      final wire = wireFixture();
+      final requests = <http.Request>[];
       final services = AppServices(
         database: BlackgridDatabase(NativeDatabase.memory()),
         credentials: _EmptyCredentials(),
-        client: MockClient(
-          (_) async =>
-              throw StateError('Saved Map inputs must not request HTTP'),
-        ),
+        clock: () => fixtureNow,
+        client: MockClient((request) async {
+          requests.add(request);
+          final key = request.url.pathSegments.last;
+          return wire.containsKey(key)
+              ? http.Response(jsonEncode(wire[key]), 200)
+              : http.Response('{}', 404);
+        }),
       );
       addTearDown(() async {
         await services.dispose();
@@ -119,6 +130,16 @@ void main() {
       expect(services.progress.mode, GameMode.seasonal);
       expect(services.settings.settings.selectedMap, 'shoreline');
       expect(services.scans.hasAcceptedScan, isFalse);
+      // Saved Map inputs must not reach the tracker. Which catalog routes were
+      // fetched depends on whether the cached load or the log read finishes
+      // first, so only the hosts are asserted.
+      await services.automaticRefreshes;
+      expect(requests, isNotEmpty);
+      expect(requests.map((r) => r.url.host), everyElement('json.tarkov.dev'));
+      expect(
+        requests.where((r) => r.url.host == 'api.tarkovtracker.org'),
+        isEmpty,
+      );
     },
   );
   test(

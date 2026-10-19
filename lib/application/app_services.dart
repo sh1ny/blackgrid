@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import '../data/catalog_client.dart';
@@ -153,6 +154,21 @@ class AppServices {
   final scans = const SessionScanState();
   bool _disposed = false;
   int _modeTransition = 0;
+  Future<void> _automaticRefreshes = Future.value();
+
+  /// Completes when the latest mode selection's background work has finished.
+  ///
+  /// The work is both controllers' `setMode` calls and every catalog and
+  /// progress refresh started after them. A selection that starts no refresh
+  /// completes right after its `setMode` calls. Each selection gets its own
+  /// future, so a caller that captured the value before a later switch still
+  /// observes the earlier selection. Failures are reported through the
+  /// controllers, not here.
+  ///
+  /// Tests await this instead of sleeping. `initialize` and `setMode` never
+  /// wait on it.
+  @visibleForTesting
+  Future<void> get automaticRefreshes => _automaticRefreshes;
 
   /// The epoch a scan begins in and is fenced against.
   ScanEpoch _currentEpoch() =>
@@ -235,8 +251,30 @@ class AppServices {
       ++_modeTransition;
       epochChanged = true;
       // Both invalidate synchronously, before either asynchronous read ends.
-      _modeChange = Future.wait([progress.setMode(mode), catalog.setMode(mode)])
-          .then((_) {});
+      final transition = _modeTransition;
+      final progressReady = progress.setMode(mode);
+      final catalogReady = catalog.setMode(mode);
+      _modeChange = Future.wait([progressReady, catalogReady]).then((_) {});
+      // The refreshes are never part of _modeChange: startup and a switch must
+      // not wait on the network.
+      // The Tracker preference gates progress as it gates the manual Refresh
+      // buttons; ProgressController.refresh does not read it.
+      final progressRefresh = _refreshAfter(
+        progressReady,
+        transition,
+        mode,
+        progress.refresh,
+        when: () => settings.settings.trackerEnabled,
+      );
+      final catalogRefresh = _refreshAfter(
+        catalogReady,
+        transition,
+        mode,
+        catalog.refresh,
+        when: () => catalog.status != CatalogStatus.current,
+      );
+      _automaticRefreshes = Future.wait([progressRefresh, catalogRefresh])
+          .then((_) {}, onError: (Object _) {});
     }
     if (state.sessionEpoch != _appliedSessionEpoch) {
       _appliedSessionEpoch = state.sessionEpoch;
@@ -245,6 +283,25 @@ class AppServices {
     // After the mode block, so a combined change retires once.
     if (epochChanged) scanFeed.epochChanged();
   }
+
+  /// Starts [refresh] once [ready] completes, while the selection that made
+  /// transition [transition] is still current, [mode] is known and [when]
+  /// holds. Completes when the refresh, if any, has finished.
+  Future<void> _refreshAfter(
+    Future<void> ready,
+    int transition,
+    GameMode mode,
+    Future<void> Function() refresh, {
+    bool Function()? when,
+  }) => ready.then((_) {
+    if (_disposed ||
+        transition != _modeTransition ||
+        mode == GameMode.unknown ||
+        !(when?.call() ?? true)) {
+      return null;
+    }
+    return refresh();
+  });
 
   Future<bool> setMode(GameMode mode) async {
     if (!await settings.setMode(mode) || _disposed) return false;
