@@ -9,10 +9,10 @@ This change is M4 change 4 (complete raid-time Scanner slice). It serves the exi
 ## What Changes
 
 - When `catalog.setMode` completes for a known mode, `AppServices` starts one `catalog.refresh()` without waiting on it. This happens at launch and on every mode switch. Startup and `AppServices.setMode` still wait only on the local reads, never on the network.
-- When `progress.setMode` completes for a known mode and a saved credential was read, `AppServices` starts one `progress.refresh()` the same way. Without a credential, no request is made.
+- When `progress.setMode` completes for a known mode, a saved credential was read and the read-only Tracker integration is enabled, `AppServices` starts one `progress.refresh()` the same way. Without a credential, or with the integration disabled, no request is made.
 - A failed automatic refresh keeps the last-good snapshot and reports the existing failure. It is not retried: the next attempt is a manual Refresh or the next mode selection. A manual progress refresh during a tracker cooldown makes no request; a new mode selection clears the cooldown, as it does today.
 - A refresh started for one mode never publishes after a switch to another mode. `GameMode.unknown` makes no request, and a selection whose catalog is already `current` (a manual refresh won the race) starts no catalog fetch.
-- A cached catalog still starts `stale` until a refresh succeeds. The spec now states that the app contacts the catalog source, and the tracker when a credential is saved, on launch and on each mode switch without user action.
+- A cached catalog still starts `stale` until a refresh succeeds. The spec now states that the app contacts the catalog source, and the tracker when a credential is saved and the integration is enabled, on launch and on each mode switch without user action.
 - Saving a credential does not trigger an automatic progress refresh; that stays manual.
 
 ## Capabilities

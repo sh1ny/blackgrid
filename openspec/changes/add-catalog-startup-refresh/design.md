@@ -28,7 +28,7 @@ See `proposal.md` for the problem. The current state:
 
 ### D1: The composition root starts the refresh after each controller's `setMode`
 
-- **Choice:** In `_syncMapSession`, chain onto each controller's `setMode` future separately: when it completes, and the selection is still current (`!_disposed`, `_modeTransition` unchanged since this block bumped it, `mode != GameMode.unknown`), call `unawaited(catalog.refresh())` or `unawaited(progress.refresh())`. The catalog call is also skipped when `catalog.status` is already `CatalogStatus.current`: a manual refresh published during the cached read, so a second fetch would only add a chance of downgrading a fresh catalog to `stale` on a transient failure. Progress needs no such check, because `progress.refresh()` cannot run before the credential read sets `_credential`. `_modeChange` stays the `Future.wait` of the two `setMode` futures only, so `initialize()` and `setMode()` never wait on the network.
+- **Choice:** In `_syncMapSession`, chain onto each controller's `setMode` future separately: when it completes, and the selection is still current (`!_disposed`, `_modeTransition` unchanged since this block bumped it, `mode != GameMode.unknown`), call `unawaited(catalog.refresh())` or `unawaited(progress.refresh())`. The catalog call is also skipped when `catalog.status` is already `CatalogStatus.current`: a manual refresh published during the cached read, so a second fetch would only add a chance of downgrading a fresh catalog to `stale` on a transient failure. Progress needs no such check, because `progress.refresh()` cannot run before the credential read sets `_credential`. Progress is instead skipped while `settings.settings.trackerEnabled` is false, the same preference that disables the manual progress Refresh buttons (`settings_dialog.dart:243-250`, `evidence_panels.dart:175`); `ProgressController.refresh()` itself does not read it (amended after PR review, 2026-10-19). `_modeChange` stays the `Future.wait` of the two `setMode` futures only, so `initialize()` and `setMode()` never wait on the network.
 - **Rejected:** a `refreshOnSelect` flag inside each controller's `setMode`, because it hides a network call inside a method that callers await for local state, and couples the controllers' unit tests to the policy. Wiring behaviour across controllers belongs to the composition root (ADR-0002).
 - **Rejected:** one refresh after `Future.wait` of both `setMode` calls, because a slow credential read would delay the catalog refresh, and a failed read in one would hold up the other.
 - **Reversal cost:** low. The change is a few lines in one method.
@@ -92,7 +92,7 @@ flowchart LR
     AS -->|setMode, awaited| CC[CatalogController]
     AS -->|setMode, awaited| PC[ProgressController]
     AS -.->|refresh, unawaited| CC
-    AS -.->|refresh, unawaited, credential only| PC
+    AS -.->|refresh, unawaited, credential and Tracker enabled only| PC
     CC --> CDN[(json.tarkov.dev)]
     PC --> TR[(tracker)]
     UI[Refresh buttons] --> CC
@@ -157,7 +157,7 @@ No new writer is added to controller state; automatic and manual refreshes both 
 - [`test/application/app_services_test.dart:64-70` uses a client that throws "Saved Map inputs must not request HTTP" as its no-network check. After this change the automatic `pve` catalog refresh calls it, the controller swallows the error, and the test keeps passing while no longer proving what its message says] → The task replaces that client with one that records requests and answers catalog dataset requests. The test first awaits the last selection's `automaticRefreshes` future, then asserts that every recorded request goes to the catalog host `json.tarkov.dev` and none goes to the tracker host `api.tarkovtracker.org` (no credential is saved there). It does not assert routes: depending on whether the cached load or the log read finishes first, the saved `pvp` selection may fetch before the log moves the mode to `pve` (`app_services_test.dart:76-82`, `app_services.dart:191-193`), and the later switch to `seasonal` fetches `pvp-season`.
 - [Existing tests assume no request until a manual refresh, or count requests] → Run the suite. Update each failing assertion only where it states the old "no automatic refresh" behaviour, and record each update in the task. `M1Harness.initialize` keeps its manual `refresh()`, which now joins or repeats harmlessly. Unknown-mode "no request" tests must still pass unchanged.
 - [Status shows `loading` right after launch instead of `stale`] → Decisions are degraded in both, so nothing changes for the user. Wherever the UI already shows the catalog or progress status, it now shows `loading` during the refresh. Unverified assumption: no view breaks on `loading` at launch, since a manual refresh already produces the same state.
-- [Launch traffic to two external services without user action] → The spec states it. Progress is contacted only when the user saved a credential.
+- [Launch traffic to two external services without user action] → The spec states it. Progress is contacted only when the user saved a credential and enabled the Tracker integration.
 
 ## ADRs
 
