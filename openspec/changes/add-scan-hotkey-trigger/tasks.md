@@ -165,7 +165,7 @@ Skills: dart-run-static-analysis does not apply. This group is C++ plus one Dart
 
 Skills: dart-use-pattern-matching (sealed `HotkeyResult`), dart-write-documentation, dart-add-unit-test, dart-run-static-analysis.
 
-- [ ] 3.1 Write failing tests in `test/data/capture/trigger_source_test.dart`:
+- [x] 3.1 Write failing tests in `test/data/capture/trigger_source_test.dart`:
   - `drained events carry their trigger source`;
   - `setHotkey maps every native status to a typed result`, which covers OK for a key and for off, `HOTKEY_UNAVAILABLE` with win32, `HOTKEY_TIMED_OUT`, `NOT_STARTED` and `INVALID_ARGUMENT`;
   - a layout test, `BgcTriggerEvent is 40 bytes with source at offset 32`, using `sizeOf`/field offsets with no DLL.

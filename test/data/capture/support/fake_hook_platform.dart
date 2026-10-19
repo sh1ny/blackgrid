@@ -15,6 +15,12 @@ final class FakeHookPlatform implements CapturePlatform {
   /// Drains returned in order; empty afterwards.
   final List<TriggerDrain> drains = [];
 
+  /// Results of `hotkeySet`, consumed in order; `ok` once empty.
+  final List<RawHotkeyStatus> hotkeyResults = [];
+
+  /// Every virtual-key code passed to `hotkeySet`, in call order.
+  final List<int> hotkeyCalls = [];
+
   bool guardHeld = false;
   final List<String> startTitles = [];
   int startCalls = 0;
@@ -52,6 +58,14 @@ final class FakeHookPlatform implements CapturePlatform {
   TriggerDrain hookDrain() {
     drainCalls++;
     return drains.isEmpty ? const TriggerDrain([], 0) : drains.removeAt(0);
+  }
+
+  @override
+  RawHotkeyStatus hotkeySet(int vk) {
+    hotkeyCalls.add(vk);
+    return hotkeyResults.isEmpty
+        ? const RawHotkeyStatus(bgcOk)
+        : hotkeyResults.removeAt(0);
   }
 
   @override
