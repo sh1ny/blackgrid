@@ -48,9 +48,9 @@ A test name is the scenario name, prefixed by its group where the file has sever
 | scan-triggers → Hook lifecycle is explicit | Installation refused by the OS | `test/data/capture/trigger_source_test.dart` | `an OS refusal returns unavailable with the win32 code` | green |
 | scan-triggers → Hook lifecycle is explicit | Hook thread does not end in time | `test/data/capture/trigger_source_test.dart` | `stopTimedOut keeps the listener open and blocks restart` | green |
 | scan-triggers → Hook lifecycle is explicit | Normal startup | `test/application/scan_coordinator_lifecycle_test.dart` | `launch with live scan off starts no worker, hook or vision runtime` (gains: no hotkey set) | red |
-| scan-pipeline → The scan hotkey is a persisted setting | No saved value | `test/domain/settings_test.dart` | `scanHotkey: no saved value` | red |
-| scan-pipeline → The scan hotkey is a persisted setting | Saved off | `test/domain/settings_test.dart` | `scanHotkey: saved off` | red |
-| scan-pipeline → The scan hotkey is a persisted setting | Malformed value | `test/domain/settings_test.dart` | `scanHotkey: malformed value` | red |
+| scan-pipeline → The scan hotkey is a persisted setting | No saved value | `test/domain/settings_test.dart` | `scanHotkey: no saved value` | green |
+| scan-pipeline → The scan hotkey is a persisted setting | Saved off | `test/domain/settings_test.dart` | `scanHotkey: saved off` | green |
+| scan-pipeline → The scan hotkey is a persisted setting | Malformed value | `test/domain/settings_test.dart` | `scanHotkey: malformed value` | green |
 | scan-pipeline → The pipeline publishes the hotkey state | Ready with a free key | `test/application/scan_coordinator_hotkey_test.dart` | `state: ready with a free key` | red |
 | scan-pipeline → The pipeline publishes the hotkey state | Binding off | `test/application/scan_coordinator_hotkey_test.dart` | `state: binding off` | red |
 | scan-pipeline → The pipeline publishes the hotkey state | Live scan off | `test/application/scan_coordinator_hotkey_test.dart` | `state: live scan off` | red |
@@ -184,7 +184,7 @@ Skills: dart-use-pattern-matching (sealed `HotkeyResult`), dart-write-documentat
 Skills: dart-use-pattern-matching, dart-write-documentation, dart-add-unit-test.
 
 - [x] 4.1 Write the failing `test/domain/settings_test.dart` cases `scanHotkey: no saved value`, `scanHotkey: saved off` and `scanHotkey: malformed value`. The malformed case uses `"Ctrl+Q"` and `9`, and asserts that the other settings keep their values. Verify: the cases fail.
-- [ ] 4.2 Add `enum ScanHotkey { off, f1, …, f24 }` with `vk` and `label` (D7), the `AppSettings.scanHotkey` field (default `f9`), `copyWith`, and a `toJson`/`fromJson` that never throws on this key. Verify: 4.1 passes and `mise run test` passes. Flip the rows green.
+- [x] 4.2 Add `enum ScanHotkey { off, f1, …, f24 }` with `vk` and `label` (D7), the `AppSettings.scanHotkey` field (default `f9`), `copyWith`, and a `toJson`/`fromJson` that never throws on this key. Verify: 4.1 passes and `mise run test` passes. Flip the rows green.
 
 ## 5. Coordinator: hotkey state, activation, rebind, waits, report and log
 

@@ -38,6 +38,58 @@ const markerCategories = <String>[
   'CustomPins',
 ];
 
+/// The key that triggers a scan, or [off] for no hotkey.
+///
+/// Persisted as `"off"` or `"F1"` to `"F24"`.
+enum ScanHotkey {
+  /// No scan hotkey.
+  off,
+  f1,
+  f2,
+  f3,
+  f4,
+  f5,
+  f6,
+  f7,
+  f8,
+  f9,
+  f10,
+  f11,
+  f12,
+  f13,
+  f14,
+  f15,
+  f16,
+  f17,
+  f18,
+  f19,
+  f20,
+  f21,
+  f22,
+  f23,
+  f24;
+
+  /// The Windows virtual-key code, `0x70` (VK_F1) to `0x87` (VK_F24).
+  ///
+  /// Zero for [off].
+  int get vk => this == off ? 0 : 0x6F + index;
+
+  /// The display and persisted name: `Off` or `F1` to `F24`.
+  String get label => this == off ? 'Off' : 'F$index';
+
+  /// Reads a persisted [value], returning [f9] when it is missing, not a
+  /// string or not a known key. Never throws.
+  static ScanHotkey fromStored(Object? value) {
+    for (final key in values) {
+      if (value == key.stored) return key;
+    }
+    return f9;
+  }
+
+  /// The persisted JSON value: `off` or `F1` to `F24`.
+  String get stored => this == off ? 'off' : label;
+}
+
 class AppSettings {
   AppSettings({
     this.mode = GameMode.unknown,
@@ -49,6 +101,7 @@ class AppSettings {
     this.screenshotDirectory = '',
     this.followGameLogs = true,
     this.liveScan = false,
+    this.scanHotkey = ScanHotkey.f9,
   }) : markerFilters = Map.unmodifiable(markerFilters);
   final GameMode mode;
   final String selectedMap;
@@ -62,6 +115,9 @@ class AppSettings {
   /// Whether the live scanner starts with the application. Off by default.
   final bool liveScan;
 
+  /// The key that triggers a scan. F9 by default.
+  final ScanHotkey scanHotkey;
+
   AppSettings copyWith({
     GameMode? mode,
     String? selectedMap,
@@ -72,6 +128,7 @@ class AppSettings {
     String? screenshotDirectory,
     bool? followGameLogs,
     bool? liveScan,
+    ScanHotkey? scanHotkey,
   }) => AppSettings(
     mode: mode ?? this.mode,
     selectedMap: selectedMap ?? this.selectedMap,
@@ -82,6 +139,7 @@ class AppSettings {
     screenshotDirectory: screenshotDirectory ?? this.screenshotDirectory,
     followGameLogs: followGameLogs ?? this.followGameLogs,
     liveScan: liveScan ?? this.liveScan,
+    scanHotkey: scanHotkey ?? this.scanHotkey,
   );
   Map<String, Object?> toJson() => {
     'mode': mode.name,
@@ -93,6 +151,7 @@ class AppSettings {
     'screenshotDirectory': screenshotDirectory,
     'followGameLogs': followGameLogs,
     'liveScan': liveScan,
+    'scanHotkey': scanHotkey.stored,
   };
   factory AppSettings.fromJson(Map<String, Object?> json) {
     final mode = GameMode.values.firstWhere((m) => m.name == json['mode']);
@@ -114,6 +173,7 @@ class AppSettings {
       screenshotDirectory: json['screenshotDirectory'] as String? ?? '',
       followGameLogs: json['followGameLogs'] as bool? ?? true,
       liveScan: json['liveScan'] as bool? ?? false,
+      scanHotkey: ScanHotkey.fromStored(json['scanHotkey']),
     );
   }
 }
