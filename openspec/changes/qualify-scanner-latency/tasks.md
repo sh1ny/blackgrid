@@ -17,20 +17,20 @@
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Best and runner-up are chosen deterministically | Duplicate names | test/domain/title_matching_test.dart | duplicate normalised names keep the smaller id and skip runner-up | red |
+| Best and runner-up are chosen deterministically | Duplicate names | test/domain/title_matching_test.dart | duplicate normalised names keep the smaller id and skip runner-up | green |
 | Best and runner-up are chosen deterministically | Distinct names tie | test/domain/title_matching_test.dart | distinct names at equal score give margin 0 | green |
 | Best and runner-up are chosen deterministically | Ranked candidates | test/domain/title_matching_test.dart | candidates are the top five distinct names, best then runner-up | green |
-| Best and runner-up are chosen deterministically | Duplicate names in the candidates | test/domain/title_matching_test.dart | duplicate normalised names appear once in the candidates | red |
-| Best and runner-up are chosen deterministically | Same display name in the candidates | test/domain/title_matching_test.dart | same display name items follow the best, runner-up unchanged | red |
+| Best and runner-up are chosen deterministically | Duplicate names in the candidates | test/domain/title_matching_test.dart | duplicate normalised names appear once in the candidates | green |
+| Best and runner-up are chosen deterministically | Same display name in the candidates | test/domain/title_matching_test.dart | same display name items follow the best, runner-up unchanged | green |
 | Best and runner-up are chosen deterministically | Fewer candidates than five | test/domain/title_matching_test.dart | a two-item index gives two candidates | green |
 | Best and runner-up are chosen deterministically | Rejected before scoring | test/domain/title_matching_test.dart | results rejected before scoring carry no candidates | green |
 | Best and runner-up are chosen deterministically | Quantity restriction | test/domain/title_matching_test.dart | quantity restriction limits the candidates | green |
-| A best candidate sharing its display name is ambiguous | Weapon case variants | test/domain/title_matching_test.dart | Weapon case variants are ambiguous | red |
-| A best candidate sharing its display name is ambiguous | Equal normalised names | test/domain/title_matching_test.dart | equal normalised names sharing a display name are ambiguous | red |
-| A best candidate sharing its display name is ambiguous | Unique display name | test/domain/title_matching_test.dart | a unique display name is accepted as before | red |
-| A best candidate sharing its display name is ambiguous | Shared name below the gate | test/domain/title_matching_test.dart | a shared name below the gate stays belowSimilarity | red |
-| Same-name items are listed among the candidates | Two variants | test/domain/title_matching_test.dart | same-name variants lead the candidates | red |
-| Same-name items are listed among the candidates | More same-name items than fit | test/domain/title_matching_test.dart | a 50-item same-name group lists the best and four by id | red |
+| A best candidate sharing its display name is ambiguous | Weapon case variants | test/domain/title_matching_test.dart | Weapon case variants are ambiguous | green |
+| A best candidate sharing its display name is ambiguous | Equal normalised names | test/domain/title_matching_test.dart | equal normalised names sharing a display name are ambiguous | green |
+| A best candidate sharing its display name is ambiguous | Unique display name | test/domain/title_matching_test.dart | a unique display name is accepted as before | green |
+| A best candidate sharing its display name is ambiguous | Shared name below the gate | test/domain/title_matching_test.dart | a shared name below the gate stays belowSimilarity | green |
+| Same-name items are listed among the candidates | Two variants | test/domain/title_matching_test.dart | same-name variants lead the candidates | green |
+| Same-name items are listed among the candidates | More same-name items than fit | test/domain/title_matching_test.dart | a 50-item same-name group lists the best and four by id | green |
 | Same-name candidates are told apart in the offer | Weapon case variants | test/ui/scan_correction_card_test.dart | same-name candidates show flea status and id suffix | red |
 | Same-name candidates are told apart in the offer | Only one listed same-name item | test/ui/scan_correction_card_test.dart | a lone same-name candidate shows name and score only | red |
 | Same-name candidates are told apart in the offer | Unknown flea status | test/ui/scan_correction_card_test.dart | unknown flea status shows flea unknown | red |
@@ -135,7 +135,7 @@
   - the 50-item group.
 
   Rewrite "duplicate normalised names keep the smaller id and skip runner-up" so it expects `ambiguous` with best `a1`, and `b2` not the runner-up. Rewrite "duplicate normalised names appear once in the candidates" with differing raw names, per the modified scenario. Confirm they fail.
-- [ ] 4.2 Implement D4 in `lib/domain/title_matching.dart`:
+- [x] 4.2 Implement D4 in `lib/domain/title_matching.dart`:
   - display-name groups built once in `TitleMatchIndex.build`;
   - after-gate conversion to `ambiguous`;
   - the same-name candidate listing, capped at 5;

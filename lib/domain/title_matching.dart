@@ -162,6 +162,11 @@ sealed class TitleMatch {
   /// Ranked by similarity descending, then by ID (ordinal), and drawn from
   /// the same items as [bestId] after any quantity restriction. When not
   /// empty, the first is the best and the second, if present, the runner-up.
+  ///
+  /// When the best shares its display name (its normalised raw name) with
+  /// other items, the best is followed by those items in ID order, each with
+  /// its own similarity and even when their normalised names are equal, then
+  /// by the usual ranking; the second candidate need not be the runner-up.
   /// Empty for a result rejected before scoring. Unmodifiable.
   final List<TitleCandidate> candidates;
 }
@@ -509,12 +514,15 @@ final class TitleMatchIndex {
     this._nameCompact,
     this._rawRunes,
     this._lastNumbers,
+    this._sameName,
   );
 
   /// Builds the index for [snapshot], items in ID order.
   ///
   /// A candidate name is the normalised `normalizedName` (kebab-case becomes
-  /// spaces), or the normalised name when that is blank.
+  /// spaces), or the normalised name when that is blank. An item's display
+  /// name is its normalised raw name; items sharing one form a same-name
+  /// group, built here once in a single pass.
   factory TitleMatchIndex.build(CatalogSnapshot snapshot) {
     final items = snapshot.items.values.toList()
       ..sort((a, b) => a.id.compareTo(b.id));
@@ -524,6 +532,7 @@ final class TitleMatchIndex {
     final nameCompact = <Int32List>[];
     final rawRunes = <Int32List>[];
     final lastNumbers = Int32List(items.length);
+    final byDisplayName = <String, List<int>>{};
     for (final item in items) {
       var candidate = normaliseTitle(item.normalizedName);
       if (candidate.isEmpty) candidate = normaliseTitle(item.name);
@@ -534,6 +543,20 @@ final class TitleMatchIndex {
       nameCompact.add(_withoutSpaces(runes));
       rawRunes.add(_runes(_mapCyrillic(item.name).toLowerCase()));
       lastNumbers[ids.length - 1] = _lastNumber(item.name) ?? -1;
+      final display = normaliseTitle(item.name);
+      if (display.isNotEmpty) {
+        (byDisplayName[display] ??= <int>[]).add(ids.length - 1);
+      }
+    }
+    final sameName = <int, Int32List>{};
+    for (final group in byDisplayName.values) {
+      if (group.length < 2) continue;
+      for (final position in group) {
+        sameName[position] = Int32List.fromList([
+          for (final other in group)
+            if (other != position) other,
+        ]);
+      }
     }
     return TitleMatchIndex._(
       snapshot.mode,
@@ -544,6 +567,7 @@ final class TitleMatchIndex {
       nameCompact,
       rawRunes,
       lastNumbers,
+      sameName,
     );
   }
 
@@ -559,6 +583,11 @@ final class TitleMatchIndex {
   final List<Int32List> _nameCompact;
   final List<Int32List> _rawRunes;
   final Int32List _lastNumbers;
+
+  /// For each index position whose display name another item shares, the
+  /// other positions with that name, in ID order. Positions with a unique
+  /// display name are absent.
+  final Map<int, Int32List> _sameName;
 
   /// Number of indexed items.
   int get length => _ids.length;
@@ -607,6 +636,12 @@ TitleConfirmation? confirmTitle(TitleMatchIndex index, String ocrText) {
 /// best and runner-up IDs and scores, the margin, the confirming matcher's
 /// pick, the ranked candidates, and the index's mode and revision. Results
 /// rejected before scoring carry no candidates.
+///
+/// A best candidate that the gates would accept, but whose display name
+/// (the normalised raw name) another indexed item shares, is rejected
+/// `ambiguous` instead, keeping its best, runner-up and margin. A best
+/// candidate sharing its display name lists its same-name items right after
+/// it in the candidates, whatever the result.
 TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
   final title = normaliseTitle(ocrText);
   TitleRejected reject(
@@ -695,13 +730,30 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     ranked.insert(at, i);
     if (ranked.length > maxTitleCandidates) ranked.removeLast();
   }
+  // Same-name items follow the best, in ID order, then the usual ranking.
+  final sameName = best < 0 ? null : index._sameName[best];
+  final listed = <int>[];
+  if (sameName == null) {
+    listed.addAll(ranked);
+  } else {
+    listed.add(best);
+    for (final other in sameName) {
+      if (listed.length >= maxTitleCandidates) break;
+      listed.add(other);
+    }
+    for (final r in ranked) {
+      if (listed.length >= maxTitleCandidates) break;
+      if (!listed.contains(r)) listed.add(r);
+    }
+  }
   final candidates = List<TitleCandidate>.unmodifiable([
-    for (final r in ranked) TitleCandidate(index._ids[r], scores[r]),
+    for (final r in listed) TitleCandidate(index._ids[r], scores[r]),
   ]);
   assert(
     candidates.isEmpty ||
         (candidates[0].id == index._ids[best] &&
-            (candidates.length < 2 ||
+            (sameName != null ||
+                candidates.length < 2 ||
                 candidates[1].id == (runner < 0 ? null : index._ids[runner]))),
     'candidates must start with the best and the runner-up',
   );
@@ -719,9 +771,9 @@ TitleMatch matchTitle(TitleMatchIndex index, String ocrText, GameMode mode) {
     quantityAgrees: wantsQuantity && index._lastNumbers[best] == quantity,
   );
   final runnerId = runner < 0 ? null : index._ids[runner];
-  if (reason != null) {
+  if (reason != null || sameName != null) {
     return reject(
-      reason,
+      reason ?? TitleRejectReason.ambiguous,
       bestId: index._ids[best],
       bestScore: bestScore,
       runnerUpId: runnerId,
