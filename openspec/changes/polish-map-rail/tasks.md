@@ -33,7 +33,7 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
 
 ## 1. Collapsible panel widget
 
-- [ ] 1.1 Write `test/ui/collapsible_grid_panel_test.dart` before the widget exists. These are extra tests, with no test map row. They prove that:
+- [x] 1.1 Write `test/ui/collapsible_grid_panel_test.dart` before the widget exists. These are extra tests, with no test map row. They prove that:
   - the child is not built while collapsed and is built when expanded;
   - tapping the header calls `onExpandedChanged` with the negated flag;
   - the header carries `toggleKey`;
