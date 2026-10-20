@@ -342,45 +342,28 @@ class MapScreen extends StatelessWidget {
           children: [
             SizedBox(
               height: 145 * scale,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GridPanel(
-                      title: 'Latest accepted scan',
-                      icon: Icons.center_focus_weak,
-                      child: Text(
-                        services.scans.status,
-                        style: const TextStyle(color: GridColors.muted),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GridPanel(
-                      title: 'Active map',
-                      icon: Icons.map_outlined,
-                      child: DropdownButtonFormField<String>(
-                        // Shows the displayed map, including a log-detected one.
-                        key: ValueKey(map),
-                        initialValue: map,
-                        isExpanded: true,
-                        items: supportedMaps
-                            .map(
-                              (id) => DropdownMenuItem(
-                                value: id,
-                                child: Text(mapLabel(id)),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: services.settings.busy
-                            ? null
-                            : (id) {
-                                if (id != null) services.settings.setMap(id);
-                              },
-                      ),
-                    ),
-                  ),
-                ],
+              child: GridPanel(
+                title: 'Active map',
+                icon: Icons.map_outlined,
+                child: DropdownButtonFormField<String>(
+                  // Shows the displayed map, including a log-detected one.
+                  key: ValueKey(map),
+                  initialValue: map,
+                  isExpanded: true,
+                  items: supportedMaps
+                      .map(
+                        (id) => DropdownMenuItem(
+                          value: id,
+                          child: Text(mapLabel(id)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: services.settings.busy
+                      ? null
+                      : (id) {
+                          if (id != null) services.settings.setMap(id);
+                        },
+                ),
               ),
             ),
             const SizedBox(height: 12),

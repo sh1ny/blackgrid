@@ -1,8 +1,10 @@
+import 'package:blackgrid/application/accepted_scan.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
@@ -276,6 +278,123 @@ void main() {
       expect(s.loadingHistory, isFalse);
       expect(s.historyRow, isNotNull);
       expect(s.item!.id, 'item-a');
+    });
+  });
+
+  group('showScan', () {
+    late M1Harness h;
+    late SelectionController s;
+    late ScanEpoch epoch;
+    late List<String> debugLines;
+    late DebugPrintCallback originalDebugPrint;
+
+    setUp(() async {
+      h = M1Harness();
+      await h.initialize();
+      epoch = const ScanEpoch(0, 0);
+      s = SelectionController(
+        database: h.services.database,
+        catalog: h.services.catalog,
+        progress: h.services.progress,
+        history: h.services.history,
+        epoch: () => epoch,
+      );
+      debugLines = [];
+      originalDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) => debugLines.add(message ?? '');
+    });
+
+    tearDown(() async {
+      debugPrint = originalDebugPrint;
+      s.dispose();
+      await h.dispose();
+    });
+
+    Future<AcceptedScan> accept(String id) async {
+      await s.selectScan(
+        reportId: 1,
+        itemId: id,
+        mode: GameMode.pvp,
+        catalogRevision: s.catalog.snapshot!.revision,
+        epoch: epoch,
+      );
+      return s.scan!;
+    }
+
+    AcceptedScan variant(
+      AcceptedScan of, {
+      String? itemId,
+      GameMode? mode,
+      ScanEpoch? epoch,
+    }) => AcceptedScan(
+      reportId: of.reportId,
+      itemId: itemId ?? of.itemId,
+      mode: mode ?? of.mode,
+      catalogRevision: of.catalogRevision,
+      acceptedAt: of.acceptedAt,
+      epoch: epoch ?? of.epoch,
+      decisionAtAcceptance: of.decisionAtAcceptance,
+    );
+
+    test('showScan restores the scan without recording', () async {
+      final accepted = await accept('item-b');
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      await s.openHistory(h.services.history.rows.first);
+      expect(s.isHistory, isTrue);
+      final rowsBefore = h.services.history.rows.length;
+
+      s.showScan(accepted);
+
+      expect(s.selectedId, 'item-b');
+      expect(s.item!.id, 'item-b');
+      expect(s.decision, isNotNull);
+      expect(s.scan, same(accepted));
+      expect(s.scan!.acceptedAt, accepted.acceptedAt);
+      expect(s.isHistory, isFalse);
+      expect(s.historyRow, isNull);
+      expect(s.scanRetired, isFalse);
+      expect(s.correction, isNull);
+      expect(s.correctionOffer, isNull);
+      expect(h.services.history.rows.length, rowsBefore);
+      expect(debugLines, isEmpty);
+    });
+
+    test('showScan resets FIR', () async {
+      final accepted = await accept('item-b');
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      s.setFir(FirState.yes);
+
+      s.showScan(accepted);
+
+      expect(s.fir, FirState.unknown);
+      expect(
+        s.decision!.recommendation,
+        accepted.decisionAtAcceptance.recommendation,
+      );
+    });
+
+    test('showScan refuses a stale epoch, mode or missing item', () async {
+      final accepted = await accept('item-b');
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      s.setFir(FirState.yes);
+      final rows = h.services.history.rows.map((row) => row.itemId).toList();
+      final stale = [
+        variant(accepted, epoch: const ScanEpoch(99, 99)),
+        variant(accepted, mode: GameMode.pve),
+        variant(accepted, itemId: 'item-missing'),
+      ];
+
+      var refused = 0;
+      for (final record in stale) {
+        s.showScan(record);
+        refused++;
+        expect(debugLines, hasLength(refused));
+        expect(s.selectedId, 'item-a');
+        expect(s.item!.id, 'item-a');
+        expect(s.scan, isNull);
+        expect(s.fir, FirState.yes);
+        expect(h.services.history.rows.map((row) => row.itemId), rows);
+      }
     });
   });
 }

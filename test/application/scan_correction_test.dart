@@ -4,6 +4,7 @@ import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/scan_decision_feed.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
+import 'package:blackgrid/application/session_scan_state.dart';
 import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/catalog_normalizer.dart';
@@ -88,6 +89,7 @@ void main() {
   late SelectionController selection;
   late FakeAcceptedScanSource source;
   late FakeScanEpochReader epoch;
+  late SessionScanState scans;
   late ScanDecisionFeed feed;
   late DateTime now;
 
@@ -125,16 +127,19 @@ void main() {
       epoch: epoch.call,
     );
     source = FakeAcceptedScanSource();
+    scans = SessionScanState();
     feed = ScanDecisionFeed(
       source: source,
       selection: selection,
       catalog: catalog,
+      scans: scans,
       epoch: epoch.call,
     );
   });
 
   tearDown(() async {
     feed.dispose();
+    scans.dispose();
     selection.dispose();
     history.dispose();
     catalog.dispose();
@@ -535,10 +540,13 @@ void main() {
       );
       addTearDown(s.dispose);
       final localSource = FakeAcceptedScanSource();
+      final localScans = SessionScanState();
+      addTearDown(localScans.dispose);
       final localFeed = ScanDecisionFeed(
         source: localSource,
         selection: s,
         catalog: h.services.catalog,
+        scans: localScans,
         epoch: epoch.call,
       );
       addTearDown(localFeed.dispose);

@@ -242,26 +242,29 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Map keeps a broad workspace beside the status rail without accepting a scan',
-    (tester) async {
-      final h = await pumpMapFixture(tester);
-      final workspace = tester.getRect(
-        find.byWidgetPredicate((w) => w is GridPanel && w.title == 'SHORELINE'),
-      );
-      final active = tester.getRect(
-        find.byWidgetPredicate(
-          (w) => w is GridPanel && w.title == 'Active map',
-        ),
-      );
-      expect(workspace.width, greaterThan(1912 * .6));
-      expect(active.left, greaterThan(workspace.right));
-      expect(h.services.maps.scene, isNotNull);
-      expect(find.text('No accepted scan this session'), findsOneWidget);
-      expect(h.services.scans.hasAcceptedScan, isFalse);
-      expect(tester.takeException(), isNull);
-    },
-  );
+  testWidgets('Map rail has no latest-scan panel', (tester) async {
+    final h = await pumpMapFixture(tester);
+    final workspace = tester.getRect(
+      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'SHORELINE'),
+    );
+    final active = tester.getRect(
+      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Active map'),
+    );
+    expect(workspace.width, greaterThan(1912 * .6));
+    expect(active.left, greaterThan(workspace.right));
+    expect(h.services.maps.scene, isNotNull);
+    expect(find.text('Latest accepted scan'), findsNothing);
+    expect(find.text('No accepted scan this session'), findsNothing);
+    expect(active, isNotNull);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+      ),
+      findsOneWidget,
+    );
+    expect(h.services.scans.hasAcceptedScan, isFalse);
+    expect(tester.takeException(), isNull);
+  });
 
   for (final map in ['shoreline', 'thelab']) {
     testWidgets(

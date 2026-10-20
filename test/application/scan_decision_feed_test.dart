@@ -1,8 +1,11 @@
 import 'package:blackgrid/application/scan_decision_feed.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
+import 'package:blackgrid/application/selection_controller.dart';
+import 'package:blackgrid/application/session_scan_state.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/domain/title_matching.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,6 +19,7 @@ void main() {
   late M1Harness h;
   late FakeAcceptedScanSource source;
   late FakeScanEpochReader epoch;
+  late SessionScanState scans;
   late ScanDecisionFeed feed;
   late DateTime now;
   late List<String> debugLines;
@@ -27,8 +31,10 @@ void main() {
     await h.initialize();
     source = FakeAcceptedScanSource();
     epoch = FakeScanEpochReader(e0);
+    scans = SessionScanState();
     feed = ScanDecisionFeed(
       source: source,
+      scans: scans,
       selection: h.services.selection,
       catalog: h.services.catalog,
       epoch: epoch.call,
@@ -41,6 +47,7 @@ void main() {
   tearDown(() async {
     debugPrint = originalDebugPrint;
     feed.dispose();
+    scans.dispose();
     await h.dispose();
   });
 
@@ -213,5 +220,161 @@ void main() {
     expect(selection.scan, isNull);
     expect(selection.scanRetired, isTrue);
     expect(h.services.history.rows.map((row) => row.mode), [GameMode.pvp]);
+  });
+
+  group('latest scan', () {
+    test('accepted scan advances the latest scan without a pump', () {
+      expect(scans.latest, isNull);
+
+      acceptScan(1, 'item-b');
+
+      final latest = scans.latest;
+      expect(latest, isNotNull);
+      expect(latest!.itemId, 'item-b');
+      expect(latest, same(h.services.selection.scan));
+      expect(latest.acceptedAt, fixtureNow.toUtc());
+    });
+
+    test('manual, history and correction leave the latest scan', () async {
+      // AppServices' selection checks picks against the app's own epoch, so
+      // this test drives a selection that reads the test epoch instead.
+      feed.dispose();
+      final selection = SelectionController(
+        database: h.db,
+        catalog: h.services.catalog,
+        progress: h.services.progress,
+        history: h.services.history,
+        clock: () => now,
+        epoch: epoch.call,
+      );
+      addTearDown(selection.dispose);
+      final localFeed = ScanDecisionFeed(
+        source: source,
+        selection: selection,
+        catalog: h.services.catalog,
+        scans: scans,
+        epoch: epoch.call,
+      );
+      addTearDown(localFeed.dispose);
+      acceptScan(1, 'item-b');
+      await scanLanded('item-b');
+      final latest = scans.latest!;
+      expect(latest, same(selection.scan));
+      var notified = 0;
+      scans.addListener(() => notified++);
+
+      now = now.add(const Duration(minutes: 1));
+      await selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      );
+      expect(scans.latest, same(latest));
+
+      await selection.openHistory(h.services.history.rows.first);
+      expect(selection.isHistory, isTrue);
+      expect(scans.latest, same(latest));
+
+      // A later scan is rejected and offers a correction to another item.
+      source.publish(
+        rejectedScanReport(
+          id: 2,
+          epoch: e0,
+          candidates: const [TitleCandidate('item-a', 0.9)],
+        ),
+      );
+      expect(selection.correctionOffer, isNotNull);
+      expect(scans.latest, same(latest));
+      await selection.selectCorrection(2, 'item-a');
+      expect(selection.correction?.itemId, 'item-a');
+
+      expect(scans.latest, same(latest));
+      expect(scans.latest!.acceptedAt, latest.acceptedAt);
+      expect(notified, 0);
+    });
+
+    test('refresh and age tick leave the latest scan', () async {
+      acceptScan(1, 'item-b');
+      await scanLanded('item-b');
+      final latest = scans.latest!;
+      var notified = 0;
+      scans.addListener(() => notified++);
+
+      now = now.add(const Duration(minutes: 5));
+      await h.services.catalog.refresh();
+      await h.services.progress.refresh();
+      h.services.catalog.updateAge();
+      h.services.progress.updateAge();
+
+      expect(scans.latest, same(latest));
+      expect(notified, 0);
+    });
+
+    test('fenced scans do not advance the latest scan', () async {
+      acceptScan(1, 'item-b');
+      await scanLanded('item-b');
+      final latest = scans.latest!;
+
+      acceptScan(2, 'item-missing');
+      acceptScan(3, 'item-a', mode: GameMode.pve);
+      epoch.value = const ScanEpoch(1, 2);
+      acceptScan(4, 'item-a');
+
+      expect(scans.latest, same(latest));
+    });
+
+    test('rejected scan does not advance the latest scan', () async {
+      acceptScan(1, 'item-b');
+      await scanLanded('item-b');
+      final latest = scans.latest!;
+
+      source.publish(
+        rejectedScanReport(
+          id: 2,
+          epoch: e0,
+          candidates: const [TitleCandidate('item-a', 0.9)],
+        ),
+      );
+
+      expect(scans.latest, same(latest));
+    });
+
+    test('repeated notification keeps the first acceptance time', () async {
+      final report = acceptedScanReport(id: 1, itemId: 'item-b', epoch: e0);
+      source.accept(report);
+      await scanLanded('item-b');
+      final first = scans.latest!.acceptedAt;
+
+      now = now.add(const Duration(minutes: 5));
+      source.accept(report);
+      source.notify();
+
+      expect(scans.latest?.itemId, 'item-b');
+      expect(scans.latest?.acceptedAt, first);
+    });
+
+    test('same item scanned again takes the second acceptance time', () async {
+      acceptScan(1, 'item-b');
+      await scanLanded('item-b');
+      final first = scans.latest!.acceptedAt;
+
+      now = now.add(const Duration(minutes: 5));
+      acceptScan(2, 'item-b');
+
+      expect(scans.latest?.itemId, 'item-b');
+      expect(scans.latest?.reportId, 2);
+      expect(scans.latest?.acceptedAt, isNot(first));
+      expect(scans.latest?.acceptedAt, now.toUtc());
+    });
+
+    test('epochChanged clears the latest scan', () async {
+      acceptScan(1, 'item-b');
+      await scanLanded('item-b');
+      expect(scans.latest, isNotNull);
+
+      epoch.value = const ScanEpoch(2, 1);
+      feed.epochChanged();
+
+      expect(scans.latest, isNull);
+      expect(scans.hasAcceptedScan, isFalse);
+    });
   });
 }

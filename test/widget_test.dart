@@ -1,4 +1,5 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,7 +15,19 @@ void main() {
       expect(find.text('Database'), findsNothing);
       expect(find.text('Progression'), findsNothing);
       expect(find.text('Tools'), findsNothing);
-      expect(find.text('No accepted scan this session'), findsOneWidget);
+      expect(find.text('Latest accepted scan'), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is GridPanel && w.title == 'Active map',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+        ),
+        findsOneWidget,
+      );
       expect(h.requests, isEmpty);
       expect(tester.takeException(), isNull);
     },

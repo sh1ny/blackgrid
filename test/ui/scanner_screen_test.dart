@@ -38,7 +38,19 @@ void main() {
       await tester.tap(find.byKey(const Key('nav-map')));
       await tester.pumpAndSettle();
       expect(h.services.selection.decision, same(decision));
-      expect(find.text('No accepted scan this session'), findsOneWidget);
+      expect(find.text('Latest accepted scan'), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is GridPanel && w.title == 'Active map',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
       expect(
