@@ -36,22 +36,22 @@
 | Same-name candidates are told apart in the offer | Unknown flea status | test/ui/scan_correction_card_test.dart | unknown flea status shows flea unknown | red |
 | Same-name candidates are told apart in the offer | Variant found through the search | test/ui/scan_correction_card_test.dart | a search row in a same-name group is labelled | red |
 | Same-name candidates are told apart in the offer | Picking a variant | test/ui/scan_correction_card_test.dart | picking the no-flea variant selects it | red |
-| The report reads timing log files over a UTC window | Two files, one window | test/qualification/scan_latency_report_test.dart | two files are read over one window | red |
-| The report reads timing log files over a UTC window | Malformed and unknown lines | test/qualification/scan_latency_report_test.dart | malformed and unsupported lines are skipped by reason | red |
+| The report reads timing log files over a UTC window | Two files, one window | test/qualification/scan_latency_report_test.dart | two files are read over one window | green |
+| The report reads timing log files over a UTC window | Malformed and unknown lines | test/qualification/scan_latency_report_test.dart | malformed and unsupported lines are skipped by reason | green |
 | The report reads timing log files over a UTC window | Missing file | test/qualification/scan_latency_cli_test.dart | a missing input exits non-zero and writes nothing | red |
-| Only v3 lines with recording off drive verdicts | Recording-on lines excluded | test/qualification/scan_latency_report_test.dart | recording-on lines are excluded and counted | red |
-| Only v3 lines with recording off drive verdicts | Only v2 lines | test/qualification/scan_latency_report_test.dart | v2 lines give proxies and indeterminate verdicts | red |
-| Figures are computed per trigger source | Nearest rank | test/qualification/scan_latency_report_test.dart | nearest-rank p50, p95 and max over twenty samples | red |
-| Figures are computed per trigger source | Superseded scans | test/qualification/scan_latency_report_test.dart | superseded scans are counted, not sampled | red |
-| Figures are computed per trigger source | No hotkey scans | test/qualification/scan_latency_report_test.dart | an empty hotkey stratum is indeterminate | red |
-| The report states the targeted share of accepts | Most accepts targeted | test/qualification/scan_latency_report_test.dart | targeted share above half passes | red |
-| The report states the targeted share of accepts | Half targeted | test/qualification/scan_latency_report_test.dart | targeted share of exactly half fails | red |
-| The report states each latency figure against its target | All figures pass | test/qualification/scan_latency_report_test.dart | all latency figures pass under target | red |
-| The report states each latency figure against its target | Targeted decision too slow | test/qualification/scan_latency_report_test.dart | slow targeted decision fails | red |
-| The report states each latency figure against its target | Failed scan counts toward total | test/qualification/scan_latency_report_test.dart | a failed fallback scan is a total sample | red |
-| The report states each latency figure against its target | Accepted scan without a decision | test/qualification/scan_latency_report_test.dart | an accept without decided is counted, not sampled | red |
-| Too few samples give no verdict | Small sample | test/qualification/scan_latency_report_test.dart | fewer than twenty samples is indeterminate | red |
-| Too few samples give no verdict | Exactly twenty | test/qualification/scan_latency_report_test.dart | exactly twenty samples gives a verdict | red |
+| Only v3 lines with recording off drive verdicts | Recording-on lines excluded | test/qualification/scan_latency_report_test.dart | recording-on lines are excluded and counted | green |
+| Only v3 lines with recording off drive verdicts | Only v2 lines | test/qualification/scan_latency_report_test.dart | v2 lines give proxies and indeterminate verdicts | green |
+| Figures are computed per trigger source | Nearest rank | test/qualification/scan_latency_report_test.dart | nearest-rank p50, p95 and max over twenty samples | green |
+| Figures are computed per trigger source | Superseded scans | test/qualification/scan_latency_report_test.dart | superseded scans are counted, not sampled | green |
+| Figures are computed per trigger source | No hotkey scans | test/qualification/scan_latency_report_test.dart | an empty hotkey stratum is indeterminate | green |
+| The report states the targeted share of accepts | Most accepts targeted | test/qualification/scan_latency_report_test.dart | targeted share above half passes | green |
+| The report states the targeted share of accepts | Half targeted | test/qualification/scan_latency_report_test.dart | targeted share of exactly half fails | green |
+| The report states each latency figure against its target | All figures pass | test/qualification/scan_latency_report_test.dart | all latency figures pass under target | green |
+| The report states each latency figure against its target | Targeted decision too slow | test/qualification/scan_latency_report_test.dart | slow targeted decision fails | green |
+| The report states each latency figure against its target | Failed scan counts toward total | test/qualification/scan_latency_report_test.dart | a failed fallback scan is a total sample | green |
+| The report states each latency figure against its target | Accepted scan without a decision | test/qualification/scan_latency_report_test.dart | an accept without decided is counted, not sampled | green |
+| Too few samples give no verdict | Small sample | test/qualification/scan_latency_report_test.dart | fewer than twenty samples is indeterminate | green |
+| Too few samples give no verdict | Exactly twenty | test/qualification/scan_latency_report_test.dart | exactly twenty samples gives a verdict | green |
 | The report is written as JSON and as a readable summary | Report written | test/qualification/scan_latency_cli_test.dart | report json and console table carry the verdicts | red |
 | The report is written as JSON and as a readable summary | Output exists | test/qualification/scan_latency_cli_test.dart | an existing output is kept without --force | red |
 | Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted scan records start, stages, publication and decision in order | red |
@@ -109,7 +109,7 @@
 ## 3. Scan latency report
 
 - [x] 3.1 Write `test/qualification/scan_latency_report_test.dart` over small synthetic JSONL strings built in the test, one per report-spec row. These are plain unit tests with no `qualification` tag, like `m0_statistics_test.dart`. Confirm they fail because the library does not exist.
-- [ ] 3.2 Implement `tool/qualification/scan_latency_report.dart` (D3):
+- [x] 3.2 Implement `tool/qualification/scan_latency_report.dart` (D3):
   - pure parse, classify and summarise;
   - per-trigger strata;
   - `nearestRankQuantile` from `statistics.dart`;
