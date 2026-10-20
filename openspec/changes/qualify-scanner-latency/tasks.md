@@ -154,7 +154,7 @@
 
 ## 5. Integration check
 
-- [ ] 5.1 Run `dart format`, `mise run analyze` and `mise run test`. Verify that all pass with no new analyzer issues and every test-map row is green.
+- [x] 5.1 Run `dart format`, `mise run analyze` and `mise run test`. Verify that all pass with no new analyzer issues and every test-map row is green.
 
 ## 6. M4 qualification protocol and evidence
 
