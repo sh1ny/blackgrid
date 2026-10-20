@@ -2,7 +2,6 @@
 library;
 
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
@@ -23,6 +22,7 @@ import 'package:blackgrid/domain/catalog_store.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -273,6 +273,7 @@ final class _Rig {
 
 /// The stamps of [pass] in stage order, absent ones as null.
 List<int?> _stages(PassTimeline pass) => [
+  pass.started,
   pass.captureRequested,
   pass.acquireStart,
   pass.acquireEnd,
@@ -1093,10 +1094,18 @@ void main() {
   });
 
   group('timings', () {
-    test('accepted targeted timeline is complete and ordered', () async {
+    test('accepted targeted scan records start, stages, publication and decision in order', () async {
       await readyRig();
-      rig.clock.now = 1010;
+      // The feed marks the decision from inside the publish notification.
+      rig.coordinator.addListener(() {
+        final latest = rig.coordinator.latest;
+        if (latest == null) return;
+        rig.clock.now = 21090;
+        rig.coordinator.markDecided(latest.id);
+      });
+      rig.clock.now = 1005;
       rig.fire(1000);
+      rig.clock.now = 1010;
       final capture = await rig.capture.calls.at(0);
       rig.clock.now = 1040;
       capture.succeed(rig.frames.frame(qpcBefore: 1020, qpcAfter: 1030));
@@ -1134,6 +1143,7 @@ void main() {
       expect(timeline.fallback, isNull);
       final targeted = timeline.targeted!;
       expect(_stages(targeted), [
+        1005,
         1010,
         1020,
         1030,
@@ -1157,7 +1167,14 @@ void main() {
       expect(ordered, orderedEquals([...ordered]..sort()));
       final ms = rig.logs[0]['ms']! as Map<String, Object?>;
       expect(ms.containsKey('fallback'), isFalse);
-      expect((ms['targeted']! as Map).length, 13);
+      expect((ms['targeted']! as Map).length, 14);
+      expect((ms['targeted']! as Map).keys.first, 'started');
+      // Decision is stamped after publication and logged on the same line.
+      expect(ms['published'], 0.0);
+      expect(ms['decided'], 2.0);
+      expect(rig.logs.length, 1);
+      expect(rig.logs[0]['v'], 3);
+      expect(rig.logs[0]['recording'], false);
       expect(rig.platform!.clock.frequencyReads, 1);
     });
 
@@ -1223,9 +1240,103 @@ void main() {
       expect(report.timeline.published, isNotNull);
       final ms = rig.logs[0]['ms']! as Map<String, Object?>;
       expect((ms['targeted']! as Map).keys, [
+        'started',
         'captureRequested',
         'captureAnswered',
       ]);
+      expect(ms.containsKey('decided'), isFalse);
+    });
+
+    test(
+      'a listener that throws still leaves one log line without decided',
+      () async {
+        await readyRig();
+        final reported = <FlutterErrorDetails>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = reported.add;
+        addTearDown(() => FlutterError.onError = previous);
+        rig.coordinator.addListener(() {
+          if (rig.coordinator.latest != null) throw StateError('feed failed');
+        });
+
+        final report = await rig.acceptTargeted(0, 1000);
+
+        expect(report.end, isA<ScanAccepted>());
+        expect(reported, hasLength(1));
+        expect(reported.single.exception, isA<StateError>());
+        expect(rig.logs.length, 1);
+        final ms = rig.logs[0]['ms']! as Map<String, Object?>;
+        expect(ms.containsKey('published'), isTrue);
+        expect(ms.containsKey('decided'), isFalse);
+      },
+    );
+
+    test('markDecided ignores another report id, a repeat and a call outside publication', () async {
+      await readyRig();
+      var marking = true;
+      rig.coordinator.addListener(() {
+        final latest = rig.coordinator.latest;
+        if (!marking || latest == null) return;
+        rig.clock.now = 11000;
+        rig.coordinator.markDecided(latest.id + 1);
+        rig.clock.now = 21000;
+        rig.coordinator.markDecided(latest.id);
+        rig.clock.now = 31000;
+        rig.coordinator.markDecided(latest.id);
+      });
+
+      final first = await rig.acceptTargeted(0, 1000);
+      // Only the matching first call stamps: 21000 is 2 ms after trigger.
+      expect((rig.logs[0]['ms']! as Map)['decided'], 2.0);
+
+      // A call while the next scan is in flight, not publishing, is ignored.
+      marking = false;
+      rig.fire(2000);
+      final capture = await rig.capture.calls.at(1);
+      rig.coordinator.markDecided(first.id);
+      rig.coordinator.markDecided(first.id + 1);
+      capture.succeed(rig.frames.frame());
+      final evidence = _ev();
+      (await rig.vision.calls.at(1))
+          .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+      (await rig.matcher.calls.at(1)).complete(_accepted(evidence));
+      final second = await rig.published.at(1);
+
+      expect(second.id, isNot(first.id));
+      expect(rig.logs.length, 2);
+      expect((rig.logs[1]['ms']! as Map).containsKey('decided'), isFalse);
+    });
+
+    test('fallback start precedes its capture request', () async {
+      await readyRig();
+      rig.clock.now = 1000;
+      rig.fire(1000);
+      (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
+      final targetedEv = _ev(text: 'Salewa Frst', base: 1100);
+      (await rig.vision.calls.at(0))
+          .deliver(_recognised(InspectionFrameKind.targeted, [targetedEv]));
+      // The targeted pass ends rejected; the fallback begins at this stamp.
+      rig.clock.now = 1201000;
+      (await rig.matcher.calls.at(0))
+          .complete(_rejected(OutcomeRejectReason.belowSimilarity, targetedEv));
+      // The fallback capture is requested later, once its wait is over.
+      final fallbackCall = await rig.capture.calls.at(1);
+      fallbackCall.succeed(rig.frames.frame());
+      final fallbackEv = _ev(base: 1300);
+      (await rig.vision.calls.at(1))
+          .deliver(_recognised(InspectionFrameKind.fullClient, [fallbackEv]));
+      (await rig.matcher.calls.at(1)).complete(_accepted(fallbackEv));
+
+      final report = await rig.published.at(0);
+      final targeted = report.timeline.targeted!;
+      final fallback = report.timeline.fallback!;
+      expect(fallback.started, 1201000);
+      expect(fallback.captureRequested, isNotNull);
+      expect(fallback.started, lessThanOrEqualTo(fallback.captureRequested!));
+      expect(targeted.started, 1000);
+      final fallbackMs = (rig.logs[0]['ms']! as Map)['fallback']! as Map;
+      expect(fallbackMs.keys.first, 'started');
+      expect(fallbackMs['started'], 120.0);
     });
   });
 

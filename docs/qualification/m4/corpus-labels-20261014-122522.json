@@ -1,0 +1,317 @@
+{
+  "recording": "20261014-122522",
+  "client": {
+    "width": 3440,
+    "height": 1440
+  },
+  "status": "confirmed",
+  "confirmedBy": "user, 2026-10-20, after a brief review on the phone",
+  "proposedBy": "agent, 2026-10-20, from the recording and openspec/changes/archive/2026-10-17-fix-title-crop/evidence.md",
+  "counts": {
+    "cases": 50,
+    "items": 35,
+    "rejects": 15
+  },
+  "cases": [
+    {
+      "id": "20261014-122522-0001",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0002",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0003",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0004",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0005",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0006",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0007",
+      "expected": "5c0e722886f7740458316a57",
+      "name": "ANA Tactical M1 plate carrier (OD Green)",
+      "source": "named in fix-title-crop evidence (expected ID scored 1.0)"
+    },
+    {
+      "id": "20261014-122522-0008",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0009",
+      "expected": "5e4bfc1586f774264f7582d3",
+      "name": "MSA Gallet TC 800 High Cut combat helmet (Black)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0010",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0011",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0012",
+      "expected": "6a997c6e21aaf68dc6045d88",
+      "name": "Weapon case",
+      "source": "user-confirmed 2026-10-17 (no-flea Weapon case); frame shows CANNOT BE LISTED ON FLEA MARKET"
+    },
+    {
+      "id": "20261014-122522-0013",
+      "expected": "6a997c6e21aaf68dc6045d88",
+      "name": "Weapon case",
+      "source": "user-confirmed 2026-10-17 (no-flea Weapon case)"
+    },
+    {
+      "id": "20261014-122522-0014",
+      "expected": "5c925fa22e221601da359b7b",
+      "name": "9x19mm AP 6.3",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0015",
+      "expected": "64c196ad26a15b84aa07132f",
+      "name": "AK-12 5.45x39 sound suppressor",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0016",
+      "expected": "5dcbd56fdbd3d91b3e5468d5",
+      "name": "Desert Tech MDR 7.62x51 assault rifle",
+      "source": "user-labelled base rifle (fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0017",
+      "expected": "5dcbd56fdbd3d91b3e5468d5",
+      "name": "Desert Tech MDR 7.62x51 assault rifle",
+      "source": "user-labelled base rifle (fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0018",
+      "expected": "5d1b3a5d86f774252167ba22",
+      "name": "Pile of meds",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0019",
+      "expected": "56dff061d2720bb5668b4567",
+      "name": "5.45x39mm BT gs",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0020",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0021",
+      "expected": "5c0d688c86f77413ae3407b2",
+      "name": "9x39mm BP gs",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0022",
+      "expected": "57a0e5022459774d1673f889",
+      "name": "9x39mm SP-6 gs",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0023",
+      "expected": "55d482194bdc2d1d4e8b456b",
+      "name": "AK-74 5.45x39 6L31 60-round magazine",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0024",
+      "expected": "5b7c2d1d5acfc43d1028532a",
+      "name": "SA58/FAL 7.62x51 MMW polymer 20-round magazine",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0025",
+      "expected": "5b7c2d1d5acfc43d1028532a",
+      "name": "SA58/FAL 7.62x51 MMW polymer 20-round magazine",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0026",
+      "expected": "5c94bbff86f7747ee735c08f",
+      "name": "TerraGroup Labs access keycard",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0027",
+      "expected": "5c94bbff86f7747ee735c08f",
+      "name": "TerraGroup Labs access keycard",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0028",
+      "expected": "5e2aee0a86f774755a234b62",
+      "name": "Cyclon rechargeable battery",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0029",
+      "expected": "5447a9cd4bdc2dbd208b4567",
+      "name": "Colt M4A1 5.56x45 assault rifle",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0030",
+      "expected": "5447a9cd4bdc2dbd208b4567",
+      "name": "Colt M4A1 5.56x45 assault rifle",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0031",
+      "expected": "6272370ee4013c5d7e31f418",
+      "name": "Olight Baldr Pro tactical flashlight with laser",
+      "source": "named in fix-title-crop evidence; correct after the crop fix"
+    },
+    {
+      "id": "20261014-122522-0032",
+      "expected": "57da93632459771cb65bf83f",
+      "name": "KAC QDSS NT4 5.56x45 sound suppressor (Black)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0033",
+      "expected": "57da93632459771cb65bf83f",
+      "name": "KAC QDSS NT4 5.56x45 sound suppressor (Black)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0034",
+      "expected": "65293c7a17e14363030ad308",
+      "name": "AR-10 7.62x51 Lancer L7AWM 25-round magazine",
+      "source": "named in fix-title-crop evidence; correct after the crop fix"
+    },
+    {
+      "id": "20261014-122522-0035",
+      "expected": "5c88f24b2e22160bc12c69a6",
+      "name": "SVD 7.62x54R 20-round magazine",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0036",
+      "expected": "5c88f24b2e22160bc12c69a6",
+      "name": "SVD 7.62x54R 20-round magazine",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0037",
+      "expected": "57372bd3245977670b7cd243",
+      "name": "5.45x39mm BS gs ammo pack (30 pcs)",
+      "source": "named in fix-title-crop evidence; frame title read by agent: (30 pcs)"
+    },
+    {
+      "id": "20261014-122522-0038",
+      "expected": "648984e3f09d032aa9399d53",
+      "name": "7.62x51mm M993 ammo pack (20 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0039",
+      "expected": "657023decfc010a0f50069ec",
+      "name": ".357 Magnum FMJ ammo pack (25 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0040",
+      "expected": "657024f01419851aef03e715",
+      "name": "5.56x45mm M995 ammo pack (50 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0041",
+      "expected": "6570254fcfc010a0f5006a22",
+      "name": "7.62x51mm M61 ammo pack (20 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0043",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0045",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0046",
+      "expected": "5c12619186f7743f871c8a32",
+      "name": "9x39mm SPP gs ammo pack (8 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0048",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0049",
+      "expected": "6570257cc5d7d4cb4d078579",
+      "name": "7.62x54mm R PS gzh ammo pack (20 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0050",
+      "expected": "65702566bfc87b3a3409324d",
+      "name": "7.62x51mm TCW SP ammo pack (20 pcs)",
+      "source": "recorded accept; counted correct in the fix-title-crop baseline (26 correct = 30 accepts - 4 named false positives)"
+    },
+    {
+      "id": "20261014-122522-0051",
+      "expected": "65702652cfc010a0f5006a53",
+      "name": "5.56x45mm M855A1 ammo pack (100 pcs)",
+      "source": "named in fix-title-crop evidence; frame title read by agent: (100 pcs)"
+    },
+    {
+      "id": "20261014-122522-0052",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    },
+    {
+      "id": "20261014-122522-0053",
+      "expected": "reject",
+      "name": null,
+      "source": "recorded noMarker; one of the 15 rejects (counts match fix-title-crop evidence)"
+    }
+  ]
+}

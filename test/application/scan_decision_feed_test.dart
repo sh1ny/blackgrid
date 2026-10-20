@@ -194,6 +194,29 @@ void main() {
     expect(debugLines.where((line) => line.contains('catalog')), hasLength(1));
   });
 
+  test('a fenced accepted scan is not marked decided', () async {
+    // Fenced by epoch, by mode and by catalog: none reports a decision.
+    epoch.value = const ScanEpoch(2, 1);
+    acceptScan(1, 'item-b');
+    acceptScan(2, 'item-b', stamped: epoch.value, mode: GameMode.pve);
+    acceptScan(3, 'item-missing', stamped: epoch.value);
+    // A rejected publish never reports one either.
+    source.notify();
+    expect(source.decided, isEmpty);
+    expect(h.services.selection.scan, isNull);
+
+    // An applied scan reports its own id, once, and only after the selection
+    // holds it.
+    int? scanAtMark;
+    source.onDecided = (_) => scanAtMark = h.services.selection.scan?.reportId;
+    acceptScan(4, 'item-b', stamped: epoch.value);
+    expect(source.decided, [4]);
+    expect(scanAtMark, 4);
+    source.notify();
+    expect(source.decided, [4]);
+    await scanLanded('item-b');
+  });
+
   test('session change retires the scan and resets FIR', () async {
     final selection = h.services.selection;
     acceptScan(1, 'item-b');

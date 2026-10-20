@@ -205,17 +205,31 @@ void main() {
     test(
       'duplicate normalised names keep the smaller id and skip runner-up',
       () {
-        final m = accepted(
+        final m = rejected(
           match([
             item('b2', 'Gas analyzer'),
             item('a1', 'Gas analyzer'),
           ], 'Gas analyzer'),
         );
+        expect(m.reason, TitleRejectReason.ambiguous);
         expect(m.bestId, 'a1');
         expect(m.bestScore, 1.0);
         expect(m.runnerUpId, isNull);
       },
     );
+
+    test('same display name items follow the best, runner-up unchanged', () {
+      final m = rejected(
+        match([
+          item('b2', 'Gas analyzer'),
+          item('a1', 'Gas analyzer'),
+          item('c3', 'Gas mask'),
+        ], 'Gas analyzer'),
+      );
+      expect(m.bestId, 'a1');
+      expect(m.runnerUpId, 'c3');
+      expect(m.candidates.map((c) => c.id), ['a1', 'b2', 'c3']);
+    });
 
     test('distinct names at equal score give margin 0', () {
       final m = rejected(
@@ -228,6 +242,54 @@ void main() {
       expect(m.runnerUpScore, f32(0.8));
       expect(m.margin, 0.0);
       expect(m.reason, TitleRejectReason.ambiguous);
+    });
+  });
+
+  group('shared display names', () {
+    test('Weapon case variants are ambiguous', () {
+      final m = rejected(
+        match([
+          item('w1', 'Weapon case', normalized: 'weapon-case'),
+          item('w2', 'Weapon case', normalized: 'weapon-case-1'),
+        ], 'Weaponcase'),
+      );
+      expect(m.reason, TitleRejectReason.ambiguous);
+      expect(m.bestId, 'w1');
+      expect(m.runnerUpId, 'w2');
+      expect(m.margin, greaterThanOrEqualTo(recognitionGates.margin));
+    });
+
+    test('equal normalised names sharing a display name are ambiguous', () {
+      final m = rejected(
+        match([
+          item('b2', 'Gas analyzer'),
+          item('a1', 'Gas analyzer'),
+        ], 'Gas analyzer'),
+      );
+      expect(m.reason, TitleRejectReason.ambiguous);
+      expect(m.bestId, 'a1');
+      expect(m.runnerUpId, isNull);
+    });
+
+    test('a unique display name is accepted as before', () {
+      final m = accepted(
+        match([
+          item('i1', 'Item case'),
+          item('w1', 'Weapon case'),
+        ], 'Weapon case'),
+      );
+      expect(m.bestId, 'w1');
+    });
+
+    test('a shared name below the gate stays belowSimilarity', () {
+      final m = rejected(
+        match([
+          item('x1', 'one', normalized: 'bbbbbaaaaa'),
+          item('x2', 'one', normalized: 'bbbbbaaaaa-1'),
+        ], 'aaaaaaaaaa'),
+      );
+      expect(m.bestScore, f32(0.5));
+      expect(m.reason, TitleRejectReason.belowSimilarity);
     });
   });
 
@@ -261,11 +323,53 @@ void main() {
 
     test('duplicate normalised names appear once in the candidates', () {
       final m = match([
-        item('b2', 'Gas analyzer'),
-        item('a1', 'Gas analyzer'),
+        item('b2', 'Gas Analyzer (old)', normalized: 'gas analyzer'),
+        item('a1', 'Gas analyzer', normalized: 'gas analyzer'),
         item('c3', 'Gas mask'),
       ], 'Gas analyzer');
       expect(m.candidates.map((c) => c.id), ['a1', 'c3']);
+    });
+
+    test('same-name variants lead the candidates', () {
+      // The variant with the smaller ID is the slug with the suffix.
+      final m = rejected(
+        match([
+          item('v1', 'Weapon case', normalized: 'weapon-case-1'),
+          item('v2', 'Weapon case', normalized: 'weapon-case'),
+          item('v3', 'Item case'),
+        ], 'Weapon case'),
+      );
+      expect(m.candidates.map((c) => c.id), ['v2', 'v1', 'v3']);
+      expect(m.candidates[0].score, 1.0);
+      expect(m.candidates[1].score, closeTo(0.909, 0.001));
+      expect(
+        m.candidates[2].score,
+        f32(referenceSimilarity('weapon case', 'item case')),
+      );
+      expect(m.runnerUpId, 'v1');
+    });
+
+    test('a 50-item same-name group lists the best and four by id', () {
+      final m = rejected(
+        match([
+          for (var n = 0; n < 50; n++)
+            item(
+              'g${n.toString().padLeft(2, '0')}',
+              'Weapon case',
+              // The last ID holds the base slug and so is the best.
+              normalized: n == 49 ? 'weapon-case' : 'weapon-case-$n',
+            ),
+          item('z1', 'Item case'),
+        ], 'Weapon case'),
+      );
+      expect(m.bestId, 'g49');
+      expect(m.candidates.map((c) => c.id), [
+        'g49',
+        'g00',
+        'g01',
+        'g02',
+        'g03',
+      ]);
     });
 
     test('a two-item index gives two candidates', () {

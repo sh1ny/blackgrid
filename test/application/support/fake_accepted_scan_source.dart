@@ -18,6 +18,19 @@ final class FakeAcceptedScanSource extends ChangeNotifier
   @override
   ScanReport? get latest => _latest;
 
+  /// Every report id the feed marked decided, in call order.
+  final List<int> decided = [];
+
+  /// Runs inside [markDecided], so a test can inspect what the feed has done
+  /// by the time it reports a decision.
+  void Function(int reportId)? onDecided;
+
+  @override
+  void markDecided(int reportId) {
+    decided.add(reportId);
+    onDecided?.call(reportId);
+  }
+
   /// Sets [latest] without notifying.
   set latest(ScanReport? report) => _latest = report;
 
