@@ -131,6 +131,92 @@ class GridPanel extends StatelessWidget {
   );
 }
 
+/// A [GridPanel]-style bordered panel whose body can be collapsed.
+///
+/// The whole header row is one button that asks the parent to flip
+/// [expanded]. The panel is stateless: the parent owns the flag. The [child]
+/// is built only while expanded, and there is no animation.
+class CollapsibleGridPanel extends StatelessWidget {
+  /// Creates a collapsible panel.
+  const CollapsibleGridPanel({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.expanded,
+    required this.onExpandedChanged,
+    this.toggleKey,
+    required this.child,
+  });
+
+  /// The header title, also used as the semantic label of the header button.
+  final String title;
+
+  /// The gold icon shown at the start of the header.
+  final IconData icon;
+
+  /// Whether the [child] is shown.
+  final bool expanded;
+
+  /// Called with the negated [expanded] value when the header is tapped.
+  final ValueChanged<bool> onExpandedChanged;
+
+  /// The key applied to the header [InkWell], for locating it in tests.
+  final Key? toggleKey;
+
+  /// The body, built only while [expanded] is `true`.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: GridColors.surface,
+    shape: RoundedRectangleBorder(
+      side: const BorderSide(color: GridColors.border),
+      borderRadius: BorderRadius.circular(5),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            button: true,
+            expanded: expanded,
+            label: title,
+            onTap: () => onExpandedChanged(!expanded),
+            excludeSemantics: true,
+            child: InkWell(
+              key: toggleKey,
+              onTap: () => onExpandedChanged(!expanded),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: GridColors.gold, size: 26),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  Icon(
+                    expanded ? Icons.expand_less : Icons.expand_more,
+                    color: GridColors.gold,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (expanded) ...[
+            const SizedBox(height: 15),
+            Flexible(fit: FlexFit.loose, child: child),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
 @Preview(name: 'Blackgrid independent visual tokens', size: Size(500, 280))
 Widget themePreview() => MaterialApp(
   theme: blackgridTheme(),
