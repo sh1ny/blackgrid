@@ -62,7 +62,7 @@ A title whose normalised length is below 3 SHALL be rejected as `titleTooShort`.
 - **THEN** the result is `uiChrome`, even if a catalog item's name contains "search"
 
 ### Requirement: Best and runner-up are chosen deterministically
-The matcher SHALL score every candidate. A candidate whose normalised name equals the current best's SHALL count as a duplicate: it SHALL not become the runner-up, and the smaller ID (ordinal) SHALL be kept as best. The margin SHALL be the best score minus the runner-up score; an exact tie between different names SHALL give margin 0. Every scored result SHALL also carry up to 5 candidates with distinct normalised names, ranked by similarity descending then ID (ordinal), each with its ID and similarity, drawn from the same candidates as the best (after any quantity restriction). The first SHALL be the best and the second the runner-up.
+The matcher SHALL score every candidate. A candidate whose normalised name equals the current best's SHALL count as a duplicate: it SHALL not become the runner-up, and the smaller ID (ordinal) SHALL be kept as best. The margin SHALL be the best score minus the runner-up score; an exact tie between different names SHALL give margin 0. Every scored result SHALL also carry up to 5 candidates with distinct normalised names, ranked by similarity descending then ID (ordinal), each with its ID and similarity, drawn from the same candidates as the best (after any quantity restriction). The first SHALL be the best and the second the runner-up, except when the best shares its display name: then the candidates SHALL follow the same-name listing rule, and the runner-up and margin SHALL stay as computed here.
 
 #### Scenario: Duplicate names
 - **WHEN** two items with IDs "b2" and "a1" both normalise to "gas analyzer" and the title is "Gas analyzer"
@@ -77,8 +77,12 @@ The matcher SHALL score every candidate. A candidate whose normalised name equal
 - **THEN** the result's candidates are the five scoring .9 to .5 in that order, the first is the best and the second is the runner-up
 
 #### Scenario: Duplicate names in the candidates
-- **WHEN** items "b2" and "a1" both normalise to "gas analyzer", item "c3" normalises to "gas mask", and the title is "Gas analyzer"
+- **WHEN** items "b2" and "a1" both normalise to "gas analyzer" but are named "Gas analyzer" and "Gas Analyzer (old)", item "c3" normalises to "gas mask", and the title is "Gas analyzer"
 - **THEN** the candidates are "a1" then "c3", and "b2" is not among them
+
+#### Scenario: Same display name in the candidates
+- **WHEN** items "b2" and "a1" are both named "Gas analyzer", item "c3" is named "Gas mask", and the title is "Gas analyzer"
+- **THEN** the candidates are "a1", "b2", then "c3", and the runner-up is still "c3"
 
 #### Scenario: Fewer candidates than five
 - **WHEN** the index holds two items
@@ -193,3 +197,33 @@ Candidates SHALL be ranked by acceptance, then similarity, then marker score, th
 #### Scenario: Index from another mode
 - **WHEN** an outcome is requested with an index whose mode differs from the caller's current mode
 - **THEN** the result is rejection `catalogModeMismatch`, and no candidate is accepted
+
+### Requirement: A best candidate sharing its display name is ambiguous
+An item's display name SHALL be its raw name normalised as titles are. When the best candidate would be accepted and another indexed item has the same display name, the result SHALL be `ambiguous` instead, keeping its best, runner-up and margin. A result below the similarity gate SHALL stay `belowSimilarity`. Items whose display names differ SHALL be matched as before.
+
+#### Scenario: Weapon case variants
+- **WHEN** the catalog holds "Weapon case" with normalised name "weapon-case" and "Weapon case" with normalised name "weapon-case-1", and the title reads "Weaponcase"
+- **THEN** the result is `ambiguous`, not accepted, and no item ID is accepted
+
+#### Scenario: Equal normalised names
+- **WHEN** items "b2" and "a1" are both named "Gas analyzer" with equal normalised names, and the title is "Gas analyzer"
+- **THEN** the best is "a1", "b2" is not the runner-up, and the result is `ambiguous`
+
+#### Scenario: Unique display name
+- **WHEN** the catalog holds "Item case" and "Weapon case" once each, and the title reads "Weapon case"
+- **THEN** the Weapon case is accepted, as before
+
+#### Scenario: Shared name below the gate
+- **WHEN** the best candidate shares its display name and its similarity is .50
+- **THEN** the result is `belowSimilarity`
+
+### Requirement: Same-name items are listed among the candidates
+When the best candidate shares its display name, the result's candidates SHALL list the best first, then every other indexed item with that display name in ID order, each with its own similarity, then the remaining candidates by the usual ranking, at most 5 in all. Same-name items SHALL be listed even when their normalised names are equal.
+
+#### Scenario: Two variants
+- **WHEN** a title reading "Weapon case" matches the two Weapon case items at 1.0 and .909, and "Item case" scores .80
+- **THEN** the candidates are the "weapon-case" item at 1.0, the "weapon-case-1" item at .909, then "Item case" at .80
+
+#### Scenario: More same-name items than fit
+- **WHEN** the best candidate shares its display name with 49 other items
+- **THEN** the candidates are the best and the first 4 other same-name items in ID order, and no other candidate
