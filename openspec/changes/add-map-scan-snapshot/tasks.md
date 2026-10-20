@@ -36,7 +36,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 
 ## 2. Feed producer and AppServices wiring
 
-- [ ] 2.1 Add the feed tests from the test map to `test/application/scan_decision_feed_test.dart`, with a `SessionScanState` passed to the feed in `setUp`. The first one asserts `latest` straight after `source.accept`, with no pump (the design's synchronous-prefix risk). Fenced: wrong epoch, wrong mode, item missing from the catalog. Rejected: a non-accepted `latest` report. Run them to confirm they fail.
+- [x] 2.1 Add the feed tests from the test map to `test/application/scan_decision_feed_test.dart`, with a `SessionScanState` passed to the feed in `setUp`. The first one asserts `latest` straight after `source.accept`, with no pump (the design's synchronous-prefix risk). Fenced: wrong epoch, wrong mode, item missing from the catalog. Rejected: a non-accepted `latest` report. Run them to confirm they fail.
 - [ ] 2.2 Give `ScanDecisionFeed` a required `SessionScanState scans` parameter. After `selectScan`, advance with `selection.scan` when its `reportId` equals the applied report's id. `epochChanged()` calls `retireScan()`, then `scans.clear()` (D1). Update the other constructions in `test/application/scan_correction_test.dart` (`:128`, `:538`). Verify that 2.1 passes; flip the rows green.
 - [ ] 2.3 In `AppServices`, build `scans` as a `SessionScanState` (no longer `const`), pass it to the feed and dispose it in `dispose`. In `test/application/app_services_scan_test.dart`, add "latest scan starts empty with scan history present". Extend "session change through AppServices retires the scan" to assert `scans.hasAcceptedScan` is true before the change and false after it. Verify with `mise run test`; flip the rows green.
 
