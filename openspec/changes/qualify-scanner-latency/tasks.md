@@ -108,7 +108,7 @@
 
 ## 3. Scan latency report
 
-- [ ] 3.1 Write `test/qualification/scan_latency_report_test.dart` over small synthetic JSONL strings built in the test, one per report-spec row. These are plain unit tests with no `qualification` tag, like `m0_statistics_test.dart`. Confirm they fail because the library does not exist.
+- [x] 3.1 Write `test/qualification/scan_latency_report_test.dart` over small synthetic JSONL strings built in the test, one per report-spec row. These are plain unit tests with no `qualification` tag, like `m0_statistics_test.dart`. Confirm they fail because the library does not exist.
 - [ ] 3.2 Implement `tool/qualification/scan_latency_report.dart` (D3):
   - pure parse, classify and summarise;
   - per-trigger strata;
