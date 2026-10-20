@@ -129,7 +129,7 @@
 
 ## 4. Shared display names in matching and correction
 
-- [ ] 4.1 Write the failing matcher tests in `test/domain/title_matching_test.dart`:
+- [x] 4.1 Write the failing matcher tests in `test/domain/title_matching_test.dart`:
   - the new rows;
   - the Weapon case fixture: names, `normalizedName` `weapon-case`/`weapon-case-1`, title "Weaponcase";
   - the 50-item group.
