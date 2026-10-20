@@ -53,14 +53,16 @@ The live hotkey and Map checks are recorded in `EVIDENCE.md` from what you saw.
 
 ## 3. Run the latency report
 
-The timing log is in `%LOCALAPPDATA%\Blackgrid\logs\`: `scan-timings.jsonl` and, after a rotation, `scan-timings.1.jsonl`. Pass both. The report works offline on the files and never touches the app or the game.
+The timing log is in `%LOCALAPPDATA%\Blackgrid\logs\`: `scan-timings.jsonl` and, after a rotation, `scan-timings.1.jsonl`. Pass the rotated file only when it exists: the report stops if a named file is missing. The commands below do that. The report works offline on the files and never touches the app or the game.
 
 ```powershell
-mise run qualification:scan-latency -- --since 2026-10-21T18:00:00Z --out docs\qualification\m4\latency-report.json "$env:LOCALAPPDATA\Blackgrid\logs\scan-timings.jsonl" "$env:LOCALAPPDATA\Blackgrid\logs\scan-timings.1.jsonl"
+$logs = "$env:LOCALAPPDATA\Blackgrid\logs"
+$files = @("$logs\scan-timings.jsonl") + @(Get-Item "$logs\scan-timings.1.jsonl" -ErrorAction SilentlyContinue | ForEach-Object FullName)
+mise run qualification:scan-latency -- --since 2026-10-21T18:00:00Z --out docs\qualification\m4\latency-report.json @files
 ```
 
 - `--until <utc>` closes the window; `--force` overwrites an existing `--out` file.
-- The report gives, per trigger (`mouse` and `hotkey`, never pooled): counts by end state and winning pass, the targeted share of accepts, and nearest-rank N, p50, p95 and max for targeted trigger-to-decision, trigger-to-`fallback underway` and total trigger-to-publication. Each has a verdict: `pass`, `fail`, or `indeterminate` below 20 samples. It also shows the fallback capture request p95 as "real fallback work began", for information.
+- The report gives, per trigger (`mouse` and `hotkey`, never pooled): counts by end state and winning pass, the targeted share of accepts, and nearest-rank N, p50, p95 and max for targeted trigger-to-decision, trigger-to-`fallback underway` and total trigger to decision (to publication for a scan with no decision). Each has a verdict: `pass`, `fail`, or `indeterminate` below 20 samples. It also shows the fallback capture request p95 as "real fallback work began", for information.
 - Lines with recording on are excluded and counted. Lines older than v3 are shown as proxies and never drive a verdict.
 
 Either send the report file and the two log files to the agent, or record the verdicts in `EVIDENCE.md` yourself. The report holds no pixels, OCR text or item IDs.
@@ -75,7 +77,7 @@ Record the reference companion's timing on the same named setup, following the p
 
 ## 5. Corpus and reference outcomes
 
-1. Restore the labelled corpus to `F:\Dev\Dart\blackgrid-corpus\inspection` (or another folder outside Git), in the layout of [the M2 corpus runner](../m2/CORPUS.md#corpus-layout): `corpus.json`, `catalog.json` and the PNGs. The corpus can be rebuilt from the surviving recording with `mise run qualification:build-corpus` once you have confirmed the labels in `corpus-labels-20261014-122522.json`.
+1. Restore the labelled corpus to `F:\Dev\Dart\blackgrid-corpus\inspection` (or another folder outside Git), in the layout of [the M2 corpus runner](../m2/CORPUS.md#corpus-layout): `corpus.json`, `catalog.json` and the PNGs. The corpus was rebuilt there on 2026-10-20 from the surviving recording and the confirmed labels in `corpus-labels-20261014-122522.json` (see `EVIDENCE.md`, Corpus). `mise run qualification:build-corpus` rebuilds it again if needed.
 2. Run the reference companion on the same cases and write its outcomes into `baseline.json` in that folder: an item ID or `reject` per case ([CORPUS.md, `baseline.json`](../m2/CORPUS.md#baselinejson)). Do not copy Blackgrid's outcomes into it.
 3. Tell the agent the folder. The agent runs the offline comparison with the game closed:
 

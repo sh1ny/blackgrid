@@ -192,4 +192,4 @@
 - The user runs the live session, records the reference timing baseline and restores the corpus with the reference's outcomes. The agent then runs the report and the corpus comparison and updates `EVIDENCE.md`. That can be done at M4 **close** without reopening this change.
 - At M4 close, the user decides whether the coverage criterion is amended for same-name groups (design Open Questions).
 - Follow-up idea (user chose 2026-10-20 to keep this plan): the inspect window shows a "CANNOT BE LISTED ON FLEA MARKET" banner on no-flea items (frames 20261014-122522-0012 and -0037). Detecting it could resolve same-name pairs whose flea status differs without a correction click. Candidate for M4.5 or a follow-up change; groups with equal flea status still need the ambiguous rule.
-- The corpus labels in `docs/qualification/m4/corpus-labels-20261014-122522.json` stay `proposed` until the user confirms them; task 6.3 is blocked until then.
+- The corpus labels in `docs/qualification/m4/corpus-labels-20261014-122522.json` were confirmed by the user on 2026-10-20; the corpus was rebuilt and run (tasks 6.3 and 6.4, `EVIDENCE.md`).

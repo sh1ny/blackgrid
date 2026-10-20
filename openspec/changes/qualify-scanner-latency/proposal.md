@@ -30,7 +30,7 @@ It needs changes 1-6, all merged.
 - **Scan latency report.** A new offline command, `tool/qualification/scan_latency.dart`, with a mise task. It reads `scan-timings.jsonl` and `scan-timings.1.jsonl` (v2 and v3) over a UTC window. It reports:
   - counts by trigger, pass and end;
   - the targeted share of accepts;
-  - nearest-rank p50 and p95 for targeted trigger-to-decision, trigger-to-`fallback underway` and total trigger-to-publication.
+  - nearest-rank p50 and p95 for targeted trigger-to-decision, trigger-to-`fallback underway` and total trigger to decision (to publication for a scan with no decision).
 
   It reports each figure against its target as pass, fail or indeterminate. Lines with recording on are excluded and counted. v2 lines use stated proxies and are marked as such.
 - **Shared display names are ambiguous.** When the best candidate's display name is shared by another catalog item, the match ends `ambiguous` instead of accepted. The same-name items are listed as candidates. The scan then offers a correction instead of a recommendation that may name the wrong variant.
