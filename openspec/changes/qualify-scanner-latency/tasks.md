@@ -68,7 +68,7 @@
 
 ## 1. ADRs
 
-- [ ] 1.1 Write `docs/adr/0020-scan-timing-log-v3.md` (design D1, D2):
+- [x] 1.1 Write `docs/adr/0020-scan-timing-log-v3.md` (design D1, D2):
   - pass `started`;
   - `decided` reported back through `AcceptedScanSource.markDecided` with the report-id check;
   - the sticky `recording` flag;
