@@ -16,7 +16,7 @@ import 'pin_editor.dart';
 import 'theme.dart';
 
 class _MapInputStatus extends StatefulWidget {
-  const _MapInputStatus({required this.services});
+  const _MapInputStatus({super.key, required this.services});
   final AppServices services;
   @override
   State<_MapInputStatus> createState() => _MapInputStatusState();
@@ -193,9 +193,21 @@ class _MapInputStatusState extends State<_MapInputStatus> {
   );
 }
 
-class MapScreen extends StatelessWidget {
+class MapScreen extends StatefulWidget {
   const MapScreen({super.key, required this.services});
   final AppServices services;
+
+  @override
+  State<MapScreen> createState() => _MapScreenState();
+}
+
+class _MapScreenState extends State<MapScreen> {
+  AppServices get services => widget.services;
+
+  /// Whether Map saved-file inputs is expanded. It lives above the
+  /// [LayoutBuilder] so it survives layout changes and tab switches, and it
+  /// is deliberately not persisted: every launch starts collapsed.
+  bool _inputsExpanded = false;
 
   Future<void> _showPins(BuildContext context) => showModalBottomSheet<void>(
     context: context,
@@ -367,12 +379,6 @@ class MapScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            GridPanel(
-              title: 'Map saved-file inputs',
-              icon: Icons.folder_open_outlined,
-              child: _MapInputStatus(services: services),
-            ),
-            const SizedBox(height: 12),
             SizedBox(
               height: 300 * scale,
               child: ItemDecisionCard(services: services, compact: true),
@@ -489,6 +495,19 @@ class MapScreen extends StatelessWidget {
                   services: services,
                   storageKey: 'map-results',
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            CollapsibleGridPanel(
+              title: 'Map saved-file inputs',
+              icon: Icons.folder_open_outlined,
+              expanded: _inputsExpanded,
+              onExpandedChanged: (value) =>
+                  setState(() => _inputsExpanded = value),
+              toggleKey: const Key('map-inputs-toggle'),
+              child: _MapInputStatus(
+                key: const Key('map-input-status'),
+                services: services,
               ),
             ),
           ],

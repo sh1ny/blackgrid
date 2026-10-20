@@ -16,18 +16,18 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Rail order puts raid-time sections first | Wide layout order | test/ui/map_rail_test.dart | wide rail orders Active map, card, markers, search, inputs | red |
-| Rail order puts raid-time sections first | Compact layout order | test/ui/map_rail_test.dart | compact rail keeps the same order with inputs last | red |
+| Rail order puts raid-time sections first | Wide layout order | test/ui/map_rail_test.dart | wide rail orders Active map, card, markers, search, inputs | green |
+| Rail order puts raid-time sections first | Compact layout order | test/ui/map_rail_test.dart | compact rail keeps the same order with inputs last | green |
 | Rail order puts raid-time sections first | Active map row stays alone | test/ui/map_rail_test.dart | Active map row stays alone with an accepted scan | green |
-| Map saved-file inputs starts collapsed | Collapsed on first show | test/ui/map_rail_test.dart | inputs section starts collapsed | red |
-| Map saved-file inputs starts collapsed | Expanding shows the inputs | test/ui/map_rail_test.dart | expanding shows status, Follow logs and a working Read Latest | red |
-| Map saved-file inputs starts collapsed | Collapsing keeps settings | test/ui/map_rail_test.dart | expand then collapse keeps Follow logs and the maps | red |
-| Map saved-file inputs starts collapsed | Pending screenshot while collapsed | test/ui/map_rail_test.dart | pending screenshot keeps the section collapsed | red |
-| Collapsed section does no periodic work | No ticking while collapsed | test/ui/map_rail_test.dart | collapsed section does not mount the saved-file status | red |
-| Collapsed section does no periodic work | Age resumes on expand | test/ui/map_rail_test.dart | expanding shows the saved evidence age | red |
-| Expansion state lasts for the session only | Survives a tab switch | test/ui/map_rail_test.dart | expansion survives Scanner and back | red |
-| Expansion state lasts for the session only | Survives a layout change | test/ui/map_rail_test.dart | expansion survives the compact breakpoint | red |
-| Expansion state lasts for the session only | New launch starts collapsed | test/ui/map_rail_test.dart | a new app starts collapsed | red |
+| Map saved-file inputs starts collapsed | Collapsed on first show | test/ui/map_rail_test.dart | inputs section starts collapsed | green |
+| Map saved-file inputs starts collapsed | Expanding shows the inputs | test/ui/map_rail_test.dart | expanding shows status, Follow logs and a working Read Latest | green |
+| Map saved-file inputs starts collapsed | Collapsing keeps settings | test/ui/map_rail_test.dart | expand then collapse keeps Follow logs and the maps | green |
+| Map saved-file inputs starts collapsed | Pending screenshot while collapsed | test/ui/map_rail_test.dart | pending screenshot keeps the section collapsed | green |
+| Collapsed section does no periodic work | No ticking while collapsed | test/ui/map_rail_test.dart | collapsed section does not mount the saved-file status | green |
+| Collapsed section does no periodic work | Age resumes on expand | test/ui/map_rail_test.dart | expanding shows the saved evidence age | green |
+| Expansion state lasts for the session only | Survives a tab switch | test/ui/map_rail_test.dart | expansion survives Scanner and back | green |
+| Expansion state lasts for the session only | Survives a layout change | test/ui/map_rail_test.dart | expansion survives the compact breakpoint | green |
+| Expansion state lasts for the session only | New launch starts collapsed | test/ui/map_rail_test.dart | a new app starts collapsed | green |
 
 "Active map row stays alone" starts green. `add-map-scan-snapshot` already delivered it, and this change only pins it with a test.
 
@@ -69,7 +69,7 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
   - no "Latest accepted scan" text is shown.
 
   Verify that `mise run test -- test/ui/map_rail_test.dart` fails on the red rows for the right reason (the order assertion fails, or `Key('map-inputs-toggle')` is not found) and that the green row passes.
-- [ ] 2.2 Change `lib/ui/map_screen.dart`:
+- [x] 2.2 Change `lib/ui/map_screen.dart`:
   - `MapScreen` becomes a `StatefulWidget` owning `_inputsExpanded = false` (design D1).
   - Reorder the rail (design D4).
   - Wrap `_MapInputStatus(key: const Key('map-input-status'), ...)` in a `CollapsibleGridPanel` titled "Map saved-file inputs" with `toggleKey: const Key('map-inputs-toggle')` (designs D2 and D3).
