@@ -20,14 +20,14 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 | The latest scan is session-only and clears on a mode or session change | Mode change clears it | test/application/scan_decision_feed_test.dart | epochChanged clears the latest scan | green |
 | The latest scan is session-only and clears on a mode or session change | Session change clears it | test/application/app_services_scan_test.dart | session change through AppServices retires the scan | green |
 | The decision card can return to the latest scan | Return after a manual selection | test/application/selection_controller_test.dart | showScan restores the scan without recording | green |
-| The decision card can return to the latest scan | Return closes history | test/ui/latest_scan_card_test.dart | Back to latest scan closes history on Map and Scanner | red |
+| The decision card can return to the latest scan | Return closes history | test/ui/latest_scan_card_test.dart | Back to latest scan closes history on Map and Scanner | green |
 | The decision card can return to the latest scan | Return resets FIR | test/application/selection_controller_test.dart | showScan resets FIR | green |
-| The decision card can return to the latest scan | No action while the latest scan is shown | test/ui/latest_scan_card_test.dart | no Back action while the latest scan is shown | red |
-| The decision card can return to the latest scan | No action without a latest scan | test/ui/latest_scan_card_test.dart | no Back action without or after clearing a latest scan | red |
+| The decision card can return to the latest scan | No action while the latest scan is shown | test/ui/latest_scan_card_test.dart | no Back action while the latest scan is shown | green |
+| The decision card can return to the latest scan | No action without a latest scan | test/ui/latest_scan_card_test.dart | no Back action without or after clearing a latest scan | green |
 | The decision card can return to the latest scan | Stale return is refused | test/application/selection_controller_test.dart | showScan refuses a stale epoch, mode or missing item | green |
 | Map shows scans in its one decision card | No separate panel | test/ui/map_screen_test.dart | Map rail has no latest-scan panel | red |
-| Map shows scans in its one decision card | Scan accepted with Map open | test/ui/latest_scan_card_test.dart | a scan accepted with Map open shows on Map's card | red |
-| Map shows scans in its one decision card | Scan fenced with Map open | test/ui/latest_scan_card_test.dart | a fenced scan with Map open changes nothing | red |
+| Map shows scans in its one decision card | Scan accepted with Map open | test/ui/latest_scan_card_test.dart | a scan accepted with Map open shows on Map's card | green |
+| Map shows scans in its one decision card | Scan fenced with Map open | test/ui/latest_scan_card_test.dart | a fenced scan with Map open changes nothing | green |
 
 ## 1. Snapshot state
 
@@ -48,7 +48,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 ## 4. Card action and Map rail
 
 - [x] 4.1 Write `test/ui/latest_scan_card_test.dart`, using `pumpM1` (add an optional `scanPorts` parameter if it lacks one) to drive real accepted scans through `publishTargetedScan`. Map rows: Back closes history and shows the scan on Map and on Scanner; no Back while the latest scan is shown; no Back with no scan and after a session change; a scan accepted with Map open shows as "Accepted scan" on Map's card and in `scans.latest`; a scan fenced with Map open (mode switched mid-scan) changes neither. Confirm that they fail.
-- [ ] 4.2 In `ItemDecisionCard`, listen to `selection` and `scans`, and show "Back to latest scan" in `trailing` (beside the history close button) per D4. The tooltip names the item. The tap calls `selection.showScan(services.scans.latest!)`. Verify that 4.1 passes; flip the rows green.
+- [x] 4.2 In `ItemDecisionCard`, listen to `selection` and `scans`, and show "Back to latest scan" in `trailing` (beside the history close button) per D4. The tooltip names the item. The tap calls `selection.showScan(services.scans.latest!)`. Verify that 4.1 passes; flip the rows green.
 - [ ] 4.3 Remove the "Latest accepted scan" panel from `lib/ui/map_screen.dart`; the Active map panel keeps the first row alone. Replace the stub-text assertions in `test/ui/map_screen_test.dart:260`, `test/ui/scanner_screen_test.dart:41` and `test/widget_test.dart:17` (do not just delete them): no "Latest accepted scan" text, with the Active map panel and the decision card present ("Map rail has no latest-scan panel"). Verify with `mise run test`; flip the row green.
 
 ## 5. Docs and verification

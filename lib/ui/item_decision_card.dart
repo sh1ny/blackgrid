@@ -33,9 +33,12 @@ class ItemDecisionCard extends StatelessWidget {
   final bool compact;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: services.selection,
+    listenable: Listenable.merge([services.selection, services.scans]),
     builder: (context, _) {
       final selection = services.selection;
+      final latest = services.scans.latest;
+      final backToLatest =
+          latest != null && selection.scan?.reportId != latest.reportId;
       final item = selection.item;
       final decision = selection.decision;
       final scan = selection.scan;
@@ -62,13 +65,7 @@ class ItemDecisionCard extends StatelessWidget {
                   '${_correctionAge(selection, correction)} ago • '
                   'not an accepted scan'
             : 'Shared item decision • not an accepted scan',
-        trailing: selection.isHistory
-            ? IconButton(
-                tooltip: 'Close history inspection',
-                onPressed: selection.closeHistory,
-                icon: const Icon(Icons.close),
-              )
-            : null,
+        trailing: _trailing(selection, backToLatest ? latest : null),
         child: item == null || decision == null
             ? offerBlock != null
                   ? ListView(
@@ -284,6 +281,47 @@ class ItemDecisionCard extends StatelessWidget {
       );
     },
   );
+
+  /// The history close button and the return-to-latest-scan action, if any.
+  Widget? _trailing(SelectionController selection, AcceptedScan? latest) {
+    final close = selection.isHistory
+        ? IconButton(
+            tooltip: 'Close history inspection',
+            onPressed: selection.closeHistory,
+            icon: const Icon(Icons.close),
+          )
+        : null;
+    if (latest == null) return close;
+    final name =
+        services.catalog.snapshot?.items[latest.itemId]?.name ?? latest.itemId;
+    final back = Tooltip(
+      message: 'Back to latest scan: $name',
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: () {
+          // Read at tap time: the latest scan may have moved or cleared.
+          final current = services.scans.latest;
+          if (current != null) selection.showScan(current);
+        },
+        icon: const Icon(Icons.undo, size: 18),
+        // Bounded so a wide font cannot starve the title and subtitle.
+        label: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 150),
+          child: const Text(
+            'Back to latest scan',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+    if (close == null) return back;
+    return Row(mainAxisSize: MainAxisSize.min, children: [back, close]);
+  }
+
   String _scanAge(SelectionController selection, AcceptedScan scan) =>
       scanAgeLabel(selection.clock().toUtc().difference(scan.acceptedAt));
 
