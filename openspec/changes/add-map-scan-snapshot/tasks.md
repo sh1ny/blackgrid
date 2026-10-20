@@ -54,7 +54,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 ## 5. Docs and verification
 
 - [x] 5.1 Update `openspec/architecture.md`: the "Not built yet" note (line 71), the components table (the `ScanDecisionFeed` row, plus `SessionScanState` as the snapshot owner), a state-ownership row for the latest accepted scan, the §9 row (line 140) and line 168. Note that `selection.scan` can now be a returned record, not only a newly accepted scan. Verify by reading the diff: no remaining "stub" or "not built" claim about the Map snapshot.
-- [ ] 5.2 Run `dart format`, `mise run analyze` and `mise run test`. Verify that all pass with no new analyzer issues, and that every test-map row is green.
+- [x] 5.2 Run `dart format`, `mise run analyze` and `mise run test`. Verify that all pass with no new analyzer issues, and that every test-map row is green.
 
 ## Workflow follow-up
 
