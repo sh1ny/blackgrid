@@ -76,7 +76,7 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
   - Change no string, fixed height or `_MapInputStatus` code.
 
   Verify that every row of the test map passes, and flip the red rows green.
-- [ ] 2.3 Update the existing tests that reach the section's content to call `expandMapInputs` first:
+- [x] 2.3 Update the existing tests that reach the section's content to call `expandMapInputs` first:
   - `test/ui/map_screen_test.dart`: the Read Latest tests at `:17` and `:88`, and the manual map authority test at `:216`;
   - any other test that `mise run test` shows failing on a `Logs:`, `Manual map`, `Follow logs` or `Read Latest` finder.
 

@@ -47,6 +47,7 @@ void main() {
         ),
       );
       await settleMapFixture(tester, h);
+      await expandMapInputs(tester);
       final read = find.text('Read Latest');
       await tester.ensureVisible(read);
       await tester.pumpAndSettle();
@@ -219,6 +220,7 @@ void main() {
       final h = await pumpMapFixture(tester);
       await tester.runAsync(() => h.services.settings.setMap('thelab'));
       await settleMapFixture(tester, h);
+      await expandMapInputs(tester);
       expect(find.text('Manual map · The Lab'), findsOneWidget);
       final follow = find.widgetWithText(SwitchListTile, 'Follow logs');
       await tester.ensureVisible(follow);
