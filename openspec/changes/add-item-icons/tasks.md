@@ -88,7 +88,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 3. Database schema 3
 
-- [ ] 3.1 Write failing migration tests in `test/data/migration_test.dart`: 2→3 and 1→3, each keeping preferences, activity and the active catalog and creating `item_icon_records`. Keep the existing v1→v2 test passing. Verify they fail because schema 3 is missing.
+- [x] 3.1 Write failing migration tests in `test/data/migration_test.dart`: 2→3 and 1→3, each keeping preferences, activity and the active catalog and creating `item_icon_records`. Keep the existing v1→v2 test passing. Verify they fail because schema 3 is missing.
 - [ ] 3.2 Add the `ItemIconRecords` table (D2 columns), set `schemaVersion` to 3, and chain `onUpgrade` 1→2→3 with any other range still throwing. Regenerate with `dart run build_runner build`, dump `drift_schemas/drift_schema_v3.json` and generate `test/data/generated/schema_v3.dart` with `drift_dev`. Verify: the group 3 tests pass and `mise run analyze` is clean.
 - [ ] 3.3 Add `BlackgridDatabase` methods for the cache: read all icon rows, upsert one, delete some, and update `lastShownAt`. Each write is a transaction (ADR-0003). Verify with a round-trip test in `test/data/database_test.dart`.
 

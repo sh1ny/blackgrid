@@ -9,10 +9,11 @@ import 'package:drift_dev/api/migrations_native.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:test/test.dart';
 
+import '../fixtures/m1/catalog/fixture.dart';
 import 'generated/schema.dart';
 
 void main() {
-  test('committed v1 schema migrates additively to v2 retaining preferences and activity', () async {
+  test('committed v1 schema migrates additively through v2 retaining preferences and activity', () async {
     final verifier = SchemaVerifier(GeneratedHelper());
     final schema = await verifier.schemaAt(1);
     addTearDown(schema.close);
@@ -36,7 +37,7 @@ void main() {
     );
     final db = BlackgridDatabase(schema.newConnection());
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 2);
+    await verifier.migrateAndValidate(db, 3);
     expect(
       await db
           .customSelect(
@@ -58,6 +59,60 @@ void main() {
     expect(retained.revision, 7);
     expect((await db.select(db.importRecords).get()), isEmpty);
   });
+  for (final from in [1, 2]) {
+    test(
+      'committed v$from schema migrates to v3 keeping data and creating item_icon_records',
+      () async {
+        final verifier = SchemaVerifier(GeneratedHelper());
+        final schema = await verifier.schemaAt(from);
+        addTearDown(schema.close);
+        final raw = schema.rawDatabase;
+        raw.execute('INSERT INTO preferences(id,payload) VALUES (?,?)', [
+          1,
+          jsonEncode(
+            AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson(),
+          ),
+        ]);
+        raw.execute(
+          'INSERT INTO activity_records(item_id,mode,source,observed_at,revision) VALUES (?,?,?,?,?)',
+          ['synthetic-item', 'pve', 'importedManual', 1791244800, 7],
+        );
+        final catalog = fixtureCatalog();
+        final key = 'json.tarkov.dev:${catalog.mode.name}';
+        raw.execute(
+          'INSERT INTO catalog_records(id,cache_key,revision,payload) VALUES (?,?,?,?)',
+          [1, key, catalog.revision, jsonEncode(catalog.toJson())],
+        );
+        raw.execute(
+          'INSERT INTO active_catalogs(cache_key,record_id) VALUES (?,?)',
+          [key, 1],
+        );
+        final db = BlackgridDatabase(schema.newConnection());
+        addTearDown(db.close);
+        await verifier.migrateAndValidate(db, 3);
+        expect(
+          await db
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'item_icon_records'",
+              )
+              .get(),
+          hasLength(1),
+        );
+        expect((await db.readSettings()).selectedMap, 'woods');
+        final retained = (await db.readActivity()).single;
+        expect(retained.itemId, 'synthetic-item');
+        expect(retained.revision, 7);
+        final loaded = await db.loadCatalog(catalog.mode);
+        expect(loaded, isNotNull);
+        expect(loaded!.revision, catalog.revision);
+        expect(loaded.items.keys, catalog.items.keys);
+        expect(
+          await db.customSelect('SELECT 1 FROM item_icon_records').get(),
+          isEmpty,
+        );
+      },
+    );
+  }
   test(
     'newer schema refuses without downgrade reset deletion or byte mutation',
     () async {
