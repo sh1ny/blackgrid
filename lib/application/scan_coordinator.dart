@@ -2795,6 +2795,9 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       ScanRejected(:final outcome) => outcome?.evidence,
       ScanFailed() || ScanSuperseded() => null,
     };
+    // _conclude hands a scan that ends with recording on to the recorder, and
+    // may copy an extra frame for it, after its line is written.
+    if (_recordingOn) s.recording = true;
     final report = _report(s, end, winner: winner, published: _now(a));
     // The notification is synchronous: the decision feed applies the scan and
     // calls markDecided before _publish returns. The line is logged after it.

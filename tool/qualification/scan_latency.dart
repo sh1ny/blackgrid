@@ -76,6 +76,17 @@ Future<int> runScanLatency(
         return 1;
       }
     }
+    // --force must never replace a log the report reads. Only an existing
+    // output can be one of them.
+    if (outputPath != null && File(outputPath).existsSync()) {
+      final target = File(outputPath).resolveSymbolicLinksSync();
+      for (final path in files) {
+        if (File(path).resolveSymbolicLinksSync() == target) {
+          err.writeln('Output would overwrite a log file: $outputPath');
+          return 1;
+        }
+      }
+    }
 
     final accumulator = LatencyAccumulator(
       since: since,

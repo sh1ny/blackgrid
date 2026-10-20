@@ -183,6 +183,24 @@ void main() {
     expect(outputUntouched(), isTrue);
   });
 
+  test('a write that fails midway leaves no partial output', () {
+    // An exclusive lock makes copying the second image fail after the first
+    // one is written.
+    final locked = File(
+      '$recording/$_id2-full.png',
+    ).openSync(mode: FileMode.append)..lockSync(FileLock.exclusive);
+    addTearDown(locked.closeSync);
+
+    expect(run(), 1);
+    expect(err.toString(), contains('File error'));
+    expect(Directory(output).existsSync(), isFalse);
+
+    Directory(output).createSync();
+    expect(run(), 1);
+    expect(Directory(output).existsSync(), isTrue, reason: 'it was not ours');
+    expect(Directory(output).listSync(), isEmpty);
+  });
+
   test('a wrong argument count is a usage error', () {
     expect(runBuildCorpus([recording], out: out, err: err), 2);
   });

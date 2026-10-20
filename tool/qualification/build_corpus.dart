@@ -75,14 +75,23 @@ int runBuildCorpus(
       });
     }
 
-    final directory = Directory(outputPath)..createSync(recursive: true);
-    for (final (source, name) in copies) {
-      source.copySync('${directory.path}${Platform.pathSeparator}$name');
+    final directory = Directory(outputPath);
+    final created = !directory.existsSync();
+    directory.createSync(recursive: true);
+    try {
+      for (final (source, name) in copies) {
+        source.copySync('${directory.path}${Platform.pathSeparator}$name');
+      }
+      File('${directory.path}${Platform.pathSeparator}corpus.json')
+          .writeAsStringSync(
+            '${const JsonEncoder.withIndent('  ').convert({'cases': built})}\n',
+          );
+    } on FileSystemException {
+      // The folder was absent or empty, so everything in it is ours. Leave
+      // it as it was, or the next run refuses it as not empty.
+      _removeOutput(directory, created: created, err: err);
+      rethrow;
     }
-    File('${directory.path}${Platform.pathSeparator}corpus.json')
-        .writeAsStringSync(
-          '${const JsonEncoder.withIndent('  ').convert({'cases': built})}\n',
-        );
     out.writeln('Corpus written: $outputPath (${built.length} cases)');
     return 0;
   } on _Refusal catch (error) {
@@ -191,6 +200,26 @@ void _checkOutput(String path) {
   }
   if (Directory(path).listSync().isNotEmpty) {
     throw _Refusal('Output folder is not empty: $path');
+  }
+}
+
+/// Best effort: deletes [directory] when this run [created] it, else only
+/// its contents.
+void _removeOutput(
+  Directory directory, {
+  required bool created,
+  required StringSink err,
+}) {
+  try {
+    if (created) {
+      directory.deleteSync(recursive: true);
+    } else {
+      for (final entry in directory.listSync()) {
+        entry.deleteSync(recursive: true);
+      }
+    }
+  } on FileSystemException catch (error) {
+    err.writeln('Could not remove the partial output: ${error.message}');
   }
 }
 

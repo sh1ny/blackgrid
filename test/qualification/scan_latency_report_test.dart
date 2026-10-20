@@ -141,6 +141,15 @@ void main() {
     });
   });
 
+  test('a non-integer version is skipped as unsupported', () {
+    final asDouble = targetedAccept(100).replaceFirst('"v":3', '"v":3.0');
+    expect(asDouble, contains('"v":3.0'));
+    final r = report([asDouble, targetedAccept(100)]);
+    final counts = r.toJson()['counts']! as Map<String, Object?>;
+    expect(counts['inWindow'], 1);
+    expect((counts['skipped']! as Map)['unsupportedVersion'], 1);
+  });
+
   test('a v3 line without a recording flag is skipped as malformed', () {
     final withoutFlag = jsonDecode(targetedAccept(100)) as Map<String, Object?>
       ..remove('recording');

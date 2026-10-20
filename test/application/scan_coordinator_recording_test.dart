@@ -988,6 +988,29 @@ void main() {
       expect(rig.frames.viewCalls, 1);
     });
 
+    test(
+      'recording turned on before a targeted accept ends marks the line',
+      () async {
+        rig = await _Rig.create();
+        rig.fire(1000);
+        (await rig.nextCapture()).succeed(rig.pixelFrame());
+        final ev = _ev();
+        (await rig.nextVision()).deliver(
+          _recognised(InspectionFrameKind.targeted, ev),
+        );
+        final match = await rig.nextMatch();
+        // The targeted frame was not copied; the extra capture after the
+        // accept is, and the line is already written by then.
+        await rig.startRecording();
+        match.complete(_accepted(ev));
+        await rig.nextPublished();
+
+        expect(rig.logs.length, 1);
+        expect(rig.logs[0]['recording'], true);
+        (await rig.nextCapture()).succeed(rig.pixelFrame(seed: 2));
+      },
+    );
+
     test('a scan with recording off throughout is not marked', () async {
       rig = await _Rig.create();
       await rig.acceptTargeted();

@@ -96,6 +96,22 @@ void main() {
     expect(await report.readAsString(), isNot('keep me'));
   });
 
+  test('--out naming an input log is refused even with --force', () async {
+    final input = File('${directory.path}/scan-timings.jsonl');
+    await input.writeAsString('${_accept(100)}\n');
+
+    final code = await run([
+      input.path,
+      '--out',
+      '${directory.path}/./scan-timings.jsonl',
+      '--force',
+    ]);
+
+    expect(code, 1);
+    expect(err.toString(), contains('log file'));
+    expect(await input.readAsString(), '${_accept(100)}\n');
+  });
+
   test('a usage error exits non-zero', () async {
     expect(await run(['--since', 'nonsense', 'a.jsonl']), isNot(0));
     expect(await run([]), isNot(0));

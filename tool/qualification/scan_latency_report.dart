@@ -147,7 +147,8 @@ ParsedLine parseLine(String line) {
   }
   if (decoded is! Map) return malformed;
   final version = decoded['v'];
-  if (version != 2 && version != 3) {
+  // A JSON 3.0 equals 3 but is a double, so check the type too.
+  if (version is! int || (version != 2 && version != 3)) {
     return const SkippedLine(SkipReason.unsupportedVersion);
   }
   final utcText = decoded['utc'];
@@ -165,7 +166,7 @@ ParsedLine parseLine(String line) {
   final pass = decoded['pass'];
   final dropped = decoded['droppedTriggers'];
   return ScanLine(
-    version: version as int,
+    version: version,
     utc: utc.toUtc(),
     trigger: trigger as String,
     end: end,
