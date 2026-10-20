@@ -150,7 +150,7 @@
   - picking the no-flea row selects it.
 
   Then implement D5 in `lib/ui/item_decision_card.dart`: compare display names with `normaliseTitle` (S4) across candidates and search results, and label shared rows `'<name> · <flea status> · <last 6 of id>'`. Verify that the tests pass, and flip the rows green.
-- [ ] 4.4 Run the offline corpus support tests (`test/qualification/inspection_corpus_support_test.dart`) and `test/qualification/targeted_region_replay_support_test.dart`. Verify that both pass unchanged.
+- [x] 4.4 Run the offline corpus support tests (`test/qualification/inspection_corpus_support_test.dart`) and `test/qualification/targeted_region_replay_support_test.dart`. Verify that both pass unchanged.
 
 ## 5. Integration check
 
