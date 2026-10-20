@@ -101,4 +101,13 @@ void main() {
     expect(await run([]), isNot(0));
     expect(await run(['--bogus']), isNot(0));
   });
+
+  test('a bound without Z or an offset is a usage error', () async {
+    final input = File('${directory.path}/scan-timings.jsonl');
+    await input.writeAsString('${_accept(100)}\n');
+
+    expect(await run(['--since', '2026-10-21T18:00:00', input.path]), 2);
+    expect(err.toString(), contains('UTC'));
+    expect(await run(['--until', '2026-10-21T20:00:00+02:00', input.path]), 0);
+  });
 }

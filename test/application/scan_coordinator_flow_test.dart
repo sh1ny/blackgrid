@@ -1271,6 +1271,42 @@ void main() {
       },
     );
 
+    test('markDecided ignores another report id, a repeat and a call outside publication', () async {
+      await readyRig();
+      var marking = true;
+      rig.coordinator.addListener(() {
+        final latest = rig.coordinator.latest;
+        if (!marking || latest == null) return;
+        rig.clock.now = 11000;
+        rig.coordinator.markDecided(latest.id + 1);
+        rig.clock.now = 21000;
+        rig.coordinator.markDecided(latest.id);
+        rig.clock.now = 31000;
+        rig.coordinator.markDecided(latest.id);
+      });
+
+      final first = await rig.acceptTargeted(0, 1000);
+      // Only the matching first call stamps: 21000 is 2 ms after trigger.
+      expect((rig.logs[0]['ms']! as Map)['decided'], 2.0);
+
+      // A call while the next scan is in flight, not publishing, is ignored.
+      marking = false;
+      rig.fire(2000);
+      final capture = await rig.capture.calls.at(1);
+      rig.coordinator.markDecided(first.id);
+      rig.coordinator.markDecided(first.id + 1);
+      capture.succeed(rig.frames.frame());
+      final evidence = _ev();
+      (await rig.vision.calls.at(1))
+          .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+      (await rig.matcher.calls.at(1)).complete(_accepted(evidence));
+      final second = await rig.published.at(1);
+
+      expect(second.id, isNot(first.id));
+      expect(rig.logs.length, 2);
+      expect((rig.logs[1]['ms']! as Map).containsKey('decided'), isFalse);
+    });
+
     test('fallback start precedes its capture request', () async {
       await readyRig();
       rig.clock.now = 1000;

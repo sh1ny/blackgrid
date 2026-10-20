@@ -33,8 +33,11 @@ Future<int> runScanLatency(
     final files = <String>[];
     DateTime bound(String option, String? value) {
       final parsed = value == null ? null : DateTime.tryParse(value);
-      if (parsed == null) {
-        throw _UsageError('$option needs a UTC timestamp, got "$value"');
+      // Without Z or an offset, DateTime.parse reads local time.
+      if (parsed == null || !parsed.isUtc) {
+        throw _UsageError(
+          '$option needs a UTC timestamp with Z or an offset, got "$value"',
+        );
       }
       return parsed;
     }

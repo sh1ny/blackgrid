@@ -2,7 +2,7 @@
 
 One row per M4 exit criterion ([roadmap](../../../openspec/roadmap.md)), with who verifies it, the result and its source. The live steps are in [PROTOCOL.md](PROTOCOL.md) and belong to the user. A criterion the user has not reported reads `unverified`, never passed.
 
-Agent checks were run offline on `feat/qualify-scanner-latency`, 2026-10-20: `mise run analyze` found no issues and `mise run test` passed 1556 tests.
+Agent checks were run offline on `feat/qualify-scanner-latency`, 2026-10-20: `mise run analyze` found no issues and `mise run test` passed 1558 tests.
 
 ## Exit criteria
 
