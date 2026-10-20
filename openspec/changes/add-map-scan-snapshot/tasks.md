@@ -42,7 +42,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 
 ## 3. Return to the latest scan
 
-- [ ] 3.1 Add the three `showScan` tests from the test map to `test/application/selection_controller_test.dart`. Restore: after a manual selection, `selectedId`, `item` and `decision` are those of the scan's item, `scan` is the same instance, its `acceptedAt` is unchanged and history has no new row. FIR: reset to unknown. Stale: a different epoch, mode or missing item changes nothing and logs once. Confirm that they fail.
+- [x] 3.1 Add the three `showScan` tests from the test map to `test/application/selection_controller_test.dart`. Restore: after a manual selection, `selectedId`, `item` and `decision` are those of the scan's item, `scan` is the same instance, its `acceptedAt` is unchanged and history has no new row. FIR: reset to unknown. Stale: a different epoch, mode or missing item changes nothing and logs once. Confirm that they fail.
 - [ ] 3.2 Implement `SelectionController.showScan(AcceptedScan)` per D2. It sets `_scanItemId` and `_scan`, re-projects so that `item` and `decision` follow the id (review suggestion 1), bumps `_generation`, clears manual, correction, offer, history and `scanRetired`, resets FIR and records nothing. Document it. Verify that 3.1 passes; flip the rows green.
 
 ## 4. Card action and Map rail
