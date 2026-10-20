@@ -173,7 +173,7 @@
   - Mark the corpus row `unverified (corpus not restored; reference outcomes not recorded)`, with D6's judging rule written out.
 
   Verify that no user-verified row reads passed.
-- [ ] 6.3 Rebuild the labelled corpus from the surviving recording. The original `F:\Dev\Dart\blackgrid-corpus\inspection` was deleted; its source recording is `%LOCALAPPDATA%\Blackgrid\scan-frames\20261014-122522`.
+- [x] 6.3 Rebuild the labelled corpus from the surviving recording. The original `F:\Dev\Dart\blackgrid-corpus\inspection` was deleted; its source recording is `%LOCALAPPDATA%\Blackgrid\scan-frames\20261014-122522`.
   - Write `tool/qualification/build_corpus.dart` with the mise task `qualification:build-corpus`. It takes a recording folder, a labels file and an output folder, and writes `corpus.json` plus copies of the full frames, as `docs/qualification/m2/CORPUS.md` describes. It refuses a non-empty output folder and refuses labels whose `status` is not `confirmed`, and every recorded line must have exactly one label.
   - Add plain unit tests over a 2-case synthetic recording (tiny PNG stand-ins).
   - The labels are `docs/qualification/m4/corpus-labels-20261014-122522.json`. They were proposed by the agent on 2026-10-20 from the recording and the fix-title-crop evidence, and stay `proposed` until the user confirms them; only the user's confirmation sets `confirmed`.

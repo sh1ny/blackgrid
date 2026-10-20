@@ -28,6 +28,8 @@ Agent checks were run offline on `feat/qualify-scanner-latency`, 2026-10-20: `mi
 
 The original corpus folder `F:\Dev\Dart\blackgrid-corpus\inspection` was deleted. Its source recording, `%LOCALAPPDATA%\Blackgrid\scan-frames\20261014-122522`, survives: 50 lines in `frames.jsonl`, none with a null image or clipped.
 
+**Rebuilt (agent, 2026-10-20).** The labels in [`corpus-labels-20261014-122522.json`](corpus-labels-20261014-122522.json) were proposed by the agent from the recording and the `fix-title-crop` evidence. The user confirmed them on 2026-10-20 after a brief review on the phone. `mise run qualification:build-corpus -- <recording> docs/qualification/m4/corpus-labels-20261014-122522.json F:\Dev\Dart\blackgrid-corpus\inspection` wrote `corpus.json` with 50 cases (35 items, 15 rejects) and the 50 full frames. `catalog.json` is the cached `json.tarkov.dev:seasonal` snapshot (revision `84555bf4…d986`, observed 2026-10-19, 5,480 items), exported as `docs/qualification/m2/REPLAY.md` describes, from a scratch copy of `blackgrid.sqlite` opened read-only. The recording was made in that mode. No `baseline.json` exists: the reference's outcomes are not recorded.
+
 ## Latency report
 
 Not run: no live v3 session exists yet (PROTOCOL steps 2-3).
