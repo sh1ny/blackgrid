@@ -41,7 +41,7 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
   - the title and icon render as in `GridPanel`.
 
   Verify that `mise run test -- test/ui/collapsible_grid_panel_test.dart` fails to compile because `CollapsibleGridPanel` does not exist.
-- [ ] 1.2 Add `CollapsibleGridPanel` to `lib/ui/theme.dart` (design D2):
+- [x] 1.2 Add `CollapsibleGridPanel` to `lib/ui/theme.dart` (design D2):
   - `title`, `icon`, `expanded`, `onExpandedChanged`, optional `toggleKey` and `child`;
   - the same frame and header as `GridPanel`, plus a chevron;
   - the header is one `InkWell` keyed with `toggleKey`, with `Semantics(button: true, expanded: ...)`;
