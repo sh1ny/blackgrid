@@ -58,7 +58,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 1. ADR, notices and plan amendment
 
-- [ ] 1.1 Write `docs/adr/0022-item-icons-runtime-cache.md` (MADR-short, `Status: accepted`, today's date). It records what design.md's ADRs section lists:
+- [x] 1.1 Write `docs/adr/0022-item-icons-runtime-cache.md` (MADR-short, `Status: accepted`, today's date). It records what design.md's ADRs section lists:
   - the host allow-list;
   - the folder, the table and the hashed, content-addressed names;
   - the 30-day revalidation, the per-link 24 h failure wait, the 64 MB budget, the 256 KiB / 15 s / 4-in-flight bounds;
