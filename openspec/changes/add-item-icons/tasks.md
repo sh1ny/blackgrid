@@ -72,7 +72,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
   - Change the HTTP response bodies row in Resource bounds to say icon bodies are capped at 256 KiB.
   - Add an item-icon cache row (64 MB, LRU).
   - Mention `ItemIconCache` where components and state ownership are listed.
-- [ ] 1.3 Add a dated amendment note under KTD8 in `docs/plans/2026-10-06-0242-feat-m1-manual-item-decisions-plan.md`. It says item icons are now downloaded at runtime per ADR-0022 and that the plan's other rules stand. Verify: the note is directly under the KTD8 line and links ADR-0022.
+- [x] 1.3 Add a dated amendment note under KTD8 in `docs/plans/2026-10-06-0242-feat-m1-manual-item-decisions-plan.md`. It says item icons are now downloaded at runtime per ADR-0022 and that the plan's other rules stand. Verify: the note is directly under the KTD8 line and links ADR-0022.
 - [ ] 1.4 Add an item-icon entry to `THIRD_PARTY_NOTICES.md`, beside the Remote data paragraph:
   - item icons are Battlestate Games renders hosted by tarkov.dev (`assets.tarkov.dev`);
   - they are downloaded at runtime at the user's direction into the user's local cache;
