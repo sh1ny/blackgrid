@@ -46,6 +46,10 @@ run = "dart run tool/qualification/m0.dart validate"
 description = "Generate M0 qualification report from recorded evidence"
 run = "dart run tool/qualification/m0.dart report"
 
+[tasks."qualification:scan-latency"]
+description = "Report M4 scan latency from timing logs; pass --since/--until/--out/--force and log files after --"
+run = "dart run tool/qualification/scan_latency.dart"
+
 [tasks."vision:fetch"]
 description = "Fetch pinned third-party vision inputs into the verified cache"
 run = "dart run tool/vision/fetch_runtime.dart"

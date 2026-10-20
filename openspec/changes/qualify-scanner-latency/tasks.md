@@ -38,7 +38,7 @@
 | Same-name candidates are told apart in the offer | Picking a variant | test/ui/scan_correction_card_test.dart | picking the no-flea variant selects it | red |
 | The report reads timing log files over a UTC window | Two files, one window | test/qualification/scan_latency_report_test.dart | two files are read over one window | green |
 | The report reads timing log files over a UTC window | Malformed and unknown lines | test/qualification/scan_latency_report_test.dart | malformed and unsupported lines are skipped by reason | green |
-| The report reads timing log files over a UTC window | Missing file | test/qualification/scan_latency_cli_test.dart | a missing input exits non-zero and writes nothing | red |
+| The report reads timing log files over a UTC window | Missing file | test/qualification/scan_latency_cli_test.dart | a missing input exits non-zero and writes nothing | green |
 | Only v3 lines with recording off drive verdicts | Recording-on lines excluded | test/qualification/scan_latency_report_test.dart | recording-on lines are excluded and counted | green |
 | Only v3 lines with recording off drive verdicts | Only v2 lines | test/qualification/scan_latency_report_test.dart | v2 lines give proxies and indeterminate verdicts | green |
 | Figures are computed per trigger source | Nearest rank | test/qualification/scan_latency_report_test.dart | nearest-rank p50, p95 and max over twenty samples | green |
@@ -52,8 +52,8 @@
 | The report states each latency figure against its target | Accepted scan without a decision | test/qualification/scan_latency_report_test.dart | an accept without decided is counted, not sampled | green |
 | Too few samples give no verdict | Small sample | test/qualification/scan_latency_report_test.dart | fewer than twenty samples is indeterminate | green |
 | Too few samples give no verdict | Exactly twenty | test/qualification/scan_latency_report_test.dart | exactly twenty samples gives a verdict | green |
-| The report is written as JSON and as a readable summary | Report written | test/qualification/scan_latency_cli_test.dart | report json and console table carry the verdicts | red |
-| The report is written as JSON and as a readable summary | Output exists | test/qualification/scan_latency_cli_test.dart | an existing output is kept without --force | red |
+| The report is written as JSON and as a readable summary | Report written | test/qualification/scan_latency_cli_test.dart | report json and console table carry the verdicts | green |
+| The report is written as JSON and as a readable summary | Output exists | test/qualification/scan_latency_cli_test.dart | an existing output is kept without --force | green |
 | Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted scan records start, stages, publication and decision in order | red |
 | Every scan records stage timings | Fallback wins | test/application/scan_coordinator_flow_test.dart | fallback start precedes its capture request | red |
 | Every scan records stage timings | Fallback start before its wait | test/application/scan_coordinator_wait_test.dart | fallback start is stamped before the fallback wait | red |
@@ -119,7 +119,7 @@
 
   Verify that 3.1 passes, and flip its rows green.
 - [x] 3.3 Add the informational fallback `captureRequested` p95 per trigger (review S1). It has no verdict and is labelled "real fallback work began". Test it in the same file. Verify it passes.
-- [ ] 3.4 Write `test/qualification/scan_latency_cli_test.dart`. It runs the CLI's `main` function in-process on temporary files and covers the missing-file, report-written and output-exists rows. Then implement `tool/qualification/scan_latency.dart`:
+- [x] 3.4 Write `test/qualification/scan_latency_cli_test.dart`. It runs the CLI's `main` function in-process on temporary files and covers the missing-file, report-written and output-exists rows. Then implement `tool/qualification/scan_latency.dart`:
   - `--since`, `--until`, `--out`, `--force` and file arguments;
   - the JSON output;
   - the console table;
