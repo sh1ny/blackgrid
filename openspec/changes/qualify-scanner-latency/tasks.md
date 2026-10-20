@@ -158,7 +158,7 @@
 
 ## 6. M4 qualification protocol and evidence
 
-- [ ] 6.1 Write `docs/qualification/m4/PROTOCOL.md` (D6). It holds:
+- [x] 6.1 Write `docs/qualification/m4/PROTOCOL.md` (D6). It holds:
   - the named setup block;
   - recording off;
   - at least 40 mouse and 20 hotkey scans of mixed items, including a Weapon case, with a note that shared-name scans pay the full fallback before the offer (S3);
