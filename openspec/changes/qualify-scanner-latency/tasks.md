@@ -118,7 +118,7 @@
   - skip and exclusion counts.
 
   Verify that 3.1 passes, and flip its rows green.
-- [ ] 3.3 Add the informational fallback `captureRequested` p95 per trigger (review S1). It has no verdict and is labelled "real fallback work began". Test it in the same file. Verify it passes.
+- [x] 3.3 Add the informational fallback `captureRequested` p95 per trigger (review S1). It has no verdict and is labelled "real fallback work began". Test it in the same file. Verify it passes.
 - [ ] 3.4 Write `test/qualification/scan_latency_cli_test.dart`. It runs the CLI's `main` function in-process on temporary files and covers the missing-file, report-written and output-exists rows. Then implement `tool/qualification/scan_latency.dart`:
   - `--since`, `--until`, `--out`, `--force` and file arguments;
   - the JSON output;
