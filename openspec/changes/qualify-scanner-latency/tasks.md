@@ -167,7 +167,7 @@
   - restoring the corpus and writing the reference's outcomes to `baseline.json` (`docs/qualification/m2/CORPUS.md`).
 
   It says agents never run the live steps. Verify by reading it against the M4 exit criteria in `openspec/roadmap.md`: each user-verified criterion has a step.
-- [ ] 6.2 Write `docs/qualification/m4/EVIDENCE.md`: one row per M4 exit criterion, with its verifier, its result and its source.
+- [x] 6.2 Write `docs/qualification/m4/EVIDENCE.md`: one row per M4 exit criterion, with its verifier, its result and its source.
   - Fill the agent-verified rows from this change and changes 1-6. Cite the archived change evidence and the tests.
   - Mark every user-verified row `unverified`.
   - Mark the corpus row `unverified (corpus not restored; reference outcomes not recorded)`, with D6's judging rule written out.
