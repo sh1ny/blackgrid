@@ -104,7 +104,7 @@
 
   Update doc comments, including the `toLogLine` key list. Update the fake `AcceptedScanSource` implementations in the tests. Verify that the 2.1 tests pass, and flip their rows green.
 - [x] 2.3 Add a test proving that a listener throwing inside the publish notify still leaves exactly one log line, with no `decided` (design Failure table). Verify it passes.
-- [ ] 2.4 Update the `ScanCoordinator` and `ScanDecisionFeed` rows of `openspec/architecture.md` (v3, `markDecided`, log after publish). Verify by reading the diff: no remaining "schema v2" claim for the live line.
+- [x] 2.4 Update the `ScanCoordinator` and `ScanDecisionFeed` rows of `openspec/architecture.md` (v3, `markDecided`, log after publish). Verify by reading the diff: no remaining "schema v2" claim for the live line.
 
 ## 3. Scan latency report
 
