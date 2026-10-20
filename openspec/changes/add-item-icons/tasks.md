@@ -94,7 +94,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 4. Bounded icon client
 
-- [ ] 4.1 Write failing tests in `test/data/item_icon_client_test.dart` for the client rows:
+- [x] 4.1 Write failing tests in `test/data/item_icon_client_test.dart` for the client rows:
   - redirect `302` is `IconFailed` and is not followed;
   - oversize by `Content-Length` and by a streamed body over 256 KiB;
   - a `200` HTML body;
