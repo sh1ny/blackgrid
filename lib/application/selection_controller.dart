@@ -199,6 +199,45 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Makes [scan] the current selection again, shown as an accepted scan.
+  ///
+  /// The same immutable record is kept, so its acceptance time and decision at
+  /// acceptance do not change. Nothing is recorded to history. It applies only
+  /// while the record's epoch is the current one, its mode is the live mode and
+  /// the live catalog holds its item. Otherwise nothing changes and one line is
+  /// logged. On success it closes an open history view, clears the manual
+  /// source, correction, offer and retired flag, and resets FIR to unknown.
+  void showScan(AcceptedScan scan) {
+    final read = _epoch;
+    if (read != null && read() != scan.epoch) {
+      debugPrint('Show scan ${scan.reportId} ignored: epoch changed.');
+      return;
+    }
+    if (catalog.mode != scan.mode) {
+      debugPrint('Show scan ${scan.reportId} ignored: mode changed.');
+      return;
+    }
+    if (catalog.snapshot?.items[scan.itemId] == null) {
+      debugPrint('Show scan ${scan.reportId} ignored: ${scan.itemId} gone.');
+      return;
+    }
+    ++_generation;
+    _scanItemId = scan.itemId;
+    _scan = scan;
+    _manualId = null;
+    _correction = null;
+    _offer = null;
+    _scanRetired = false;
+    _historyRow = null;
+    _historyCatalog = null;
+    loadingHistory = false;
+    _fir = FirState.unknown;
+    error = null;
+    _authority = _fingerprint();
+    _project();
+    notifyListeners();
+  }
+
   /// Drops the scan or correction source and the offer when a mode or session
   /// change invalidates them.
   ///

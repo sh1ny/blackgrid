@@ -19,12 +19,12 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 | The latest scan is session-only and clears on a mode or session change | Empty at startup | test/application/app_services_scan_test.dart | latest scan starts empty with scan history present | green |
 | The latest scan is session-only and clears on a mode or session change | Mode change clears it | test/application/scan_decision_feed_test.dart | epochChanged clears the latest scan | green |
 | The latest scan is session-only and clears on a mode or session change | Session change clears it | test/application/app_services_scan_test.dart | session change through AppServices retires the scan | green |
-| The decision card can return to the latest scan | Return after a manual selection | test/application/selection_controller_test.dart | showScan restores the scan without recording | red |
+| The decision card can return to the latest scan | Return after a manual selection | test/application/selection_controller_test.dart | showScan restores the scan without recording | green |
 | The decision card can return to the latest scan | Return closes history | test/ui/latest_scan_card_test.dart | Back to latest scan closes history on Map and Scanner | red |
-| The decision card can return to the latest scan | Return resets FIR | test/application/selection_controller_test.dart | showScan resets FIR | red |
+| The decision card can return to the latest scan | Return resets FIR | test/application/selection_controller_test.dart | showScan resets FIR | green |
 | The decision card can return to the latest scan | No action while the latest scan is shown | test/ui/latest_scan_card_test.dart | no Back action while the latest scan is shown | red |
 | The decision card can return to the latest scan | No action without a latest scan | test/ui/latest_scan_card_test.dart | no Back action without or after clearing a latest scan | red |
-| The decision card can return to the latest scan | Stale return is refused | test/application/selection_controller_test.dart | showScan refuses a stale epoch, mode or missing item | red |
+| The decision card can return to the latest scan | Stale return is refused | test/application/selection_controller_test.dart | showScan refuses a stale epoch, mode or missing item | green |
 | Map shows scans in its one decision card | No separate panel | test/ui/map_screen_test.dart | Map rail has no latest-scan panel | red |
 | Map shows scans in its one decision card | Scan accepted with Map open | test/ui/latest_scan_card_test.dart | a scan accepted with Map open shows on Map's card | red |
 | Map shows scans in its one decision card | Scan fenced with Map open | test/ui/latest_scan_card_test.dart | a fenced scan with Map open changes nothing | red |
@@ -43,7 +43,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 ## 3. Return to the latest scan
 
 - [x] 3.1 Add the three `showScan` tests from the test map to `test/application/selection_controller_test.dart`. Restore: after a manual selection, `selectedId`, `item` and `decision` are those of the scan's item, `scan` is the same instance, its `acceptedAt` is unchanged and history has no new row. FIR: reset to unknown. Stale: a different epoch, mode or missing item changes nothing and logs once. Confirm that they fail.
-- [ ] 3.2 Implement `SelectionController.showScan(AcceptedScan)` per D2. It sets `_scanItemId` and `_scan`, re-projects so that `item` and `decision` follow the id (review suggestion 1), bumps `_generation`, clears manual, correction, offer, history and `scanRetired`, resets FIR and records nothing. Document it. Verify that 3.1 passes; flip the rows green.
+- [x] 3.2 Implement `SelectionController.showScan(AcceptedScan)` per D2. It sets `_scanItemId` and `_scan`, re-projects so that `item` and `decision` follow the id (review suggestion 1), bumps `_generation`, clears manual, correction, offer, history and `scanRetired`, resets FIR and records nothing. Document it. Verify that 3.1 passes; flip the rows green.
 
 ## 4. Card action and Map rail
 
