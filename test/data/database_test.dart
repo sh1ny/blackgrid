@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/data/database.dart';
@@ -58,6 +59,34 @@ void main() {
     await db.close();
     await directory.delete(recursive: true);
   });
+  test(
+    'committing the same revision again replaces an icon-less projection',
+    () async {
+      final withIcons = fixtureCatalog();
+      final stored = Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(withIcons.toJson())) as Map,
+      );
+      for (final item in (stored['items'] as Map).values) {
+        (item as Map).remove('iconLink');
+      }
+      final iconless = CatalogSnapshot.fromJson(stored);
+      expect(iconless.revision, withIcons.revision);
+      final db = BlackgridDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.commitCatalog(iconless);
+      expect(
+        (await db.loadCatalog(GameMode.pvp))!.items['item-a']!.iconLink,
+        isNull,
+      );
+      await db.commitCatalog(withIcons);
+      final loaded = (await db.loadCatalog(GameMode.pvp))!;
+      expect(loaded.revision, withIcons.revision);
+      expect(
+        loaded.items['item-a']!.iconLink,
+        'https://assets.tarkov.dev/item-a-icon.webp',
+      );
+    },
+  );
   test('scan activity is one row per item and mode with source scan', () async {
     final db = BlackgridDatabase(NativeDatabase.memory());
     addTearDown(db.close);

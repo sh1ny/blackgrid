@@ -16,7 +16,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | Icon links come only from the catalog and only from assets.tarkov.dev | An item id that is unsafe in a file name writes nothing outside the cache folder | test/application/item_icon_cache_test.dart | names files from hashes so unsafe item ids stay inside the folder | red |
 | Icon links come only from the catalog and only from assets.tarkov.dev | A malformed link value is dropped | test/data/catalog_normalizer_test.dart | drops non-string, empty or unparseable icon links without rejecting the catalog | green |
 | Stored catalogs from before icon links still load | An older projection loads without icons | test/data/catalog_normalizer_test.dart | a stored projection without iconLink keys still loads | green |
-| Stored catalogs from before icon links still load | The next refresh adds icon links | test/data/database_test.dart | committing the same revision again replaces an icon-less projection | red |
+| Stored catalogs from before icon links still load | The next refresh adds icon links | test/data/database_test.dart | committing the same revision again replaces an icon-less projection | green |
 | Icons download only for shown items | Showing an uncached item downloads its icon once | test/application/item_icon_cache_test.dart | first acquire of an uncached item sends one GET and becomes ready | red |
 | Icons download only for shown items | A catalog refresh downloads nothing | test/application/app_services_item_icons_test.dart | committing a catalog with icon links sends no icon request | red |
 | Icons download only for shown items | An item without a picture sends no request | test/application/item_icon_cache_test.dart | an item with no icon link stays generic and sends nothing | red |
@@ -84,7 +84,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 - [x] 2.1 Write failing tests in `test/data/catalog_normalizer_test.dart` for the five link and projection rows of the test map: valid kept; scheme, host, port, query and fragment dropped; placeholder dropped; malformed dropped without rejecting the catalog; old projection loads. Verify they fail on the missing field, not on a fixture error.
 - [x] 2.2 Add `String? iconLink` to `CatalogItem` (`lib/domain/catalog.dart`, constructor, `toJson`, `fromJson`) and one shared validator used by the normalizer and `fromJson` (D1). Read `iconLink` in `normalizeCatalog` (`lib/data/catalog_normalizer.dart`) without changing `schemaVersion` or `normalizerVersion`. Add `iconLink` to a few items in `test/fixtures/m1/catalog/six_datasets.json`. Verify: the group 2 tests pass, the existing `schemaVersion = 2` rejection test still passes, and the rows go green.
-- [ ] 2.3 Write a test in `test/data/database_test.dart` that commits an icon-less projection, then commits the same revision with icon links, and checks that `loadCatalog` returns the links. Verify it passes (the behaviour exists at `lib/data/database.dart:129-148`) and flip the row green.
+- [x] 2.3 Write a test in `test/data/database_test.dart` that commits an icon-less projection, then commits the same revision with icon links, and checks that `loadCatalog` returns the links. Verify it passes (the behaviour exists at `lib/data/database.dart:129-148`) and flip the row green.
 
 ## 3. Database schema 3
 
