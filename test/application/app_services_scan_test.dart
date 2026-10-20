@@ -185,6 +185,7 @@ void main() {
     );
     final selection = h.services.selection;
     selection.setFir(FirState.yes);
+    expect(h.services.scans.hasAcceptedScan, isTrue);
     final session = h.services.mapSession.state.sessionEpoch;
 
     // A new game-log directory is a new session in the same mode.
@@ -196,5 +197,38 @@ void main() {
     expect(selection.scanRetired, isTrue);
     expect(selection.fir, FirState.unknown);
     expect(h.services.history.rows, hasLength(1));
+    expect(h.services.scans.hasAcceptedScan, isFalse);
+    expect(h.services.scans.latest, isNull);
+  });
+
+  test('latest scan starts empty with scan history present', () async {
+    final ports = ScanFakePorts();
+    final first = M1Harness(scanPorts: ports);
+    addTearDown(first.dispose);
+    await first.initialize();
+    await publishTargetedScan(
+      first.services.scanner,
+      ports,
+      text: 'Alternative component',
+    );
+    await untilRow(
+      first.services.history,
+      (row) => row.itemId == 'item-b' && row.source == ActivitySource.scan,
+    );
+    expect(first.services.scans.hasAcceptedScan, isTrue);
+
+    // A restart over the same database holds the scan row but no latest scan.
+    final second = M1Harness(database: first.db, scanPorts: ScanFakePorts());
+    addTearDown(second.dispose);
+    await second.initialize();
+
+    expect(
+      second.services.history.rows.any(
+        (row) => row.itemId == 'item-b' && row.source == ActivitySource.scan,
+      ),
+      isTrue,
+    );
+    expect(second.services.scans.latest, isNull);
+    expect(second.services.scans.hasAcceptedScan, isFalse);
   });
 }

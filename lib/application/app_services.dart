@@ -115,6 +115,7 @@ class AppServices {
       source: scanner,
       selection: selection,
       catalog: catalog,
+      scans: scans,
       epoch: _currentEpoch,
     );
     _appliedSessionEpoch = mapSession.state.sessionEpoch;
@@ -335,6 +336,7 @@ class AppServices {
       }
       await mapSession.close();
     } finally {
+      scans.dispose();
       selection.dispose();
       progress.dispose();
       catalog.dispose();
