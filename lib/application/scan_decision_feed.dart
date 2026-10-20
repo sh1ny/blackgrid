@@ -133,7 +133,11 @@ class ScanDecisionFeed {
       // selectScan sets the scan before its first await, so it is readable
       // here. A scan the projection could not decide leaves none.
       final scan = selection.scan;
-      if (scan != null && scan.reportId == report.id) scans.advance(scan);
+      if (scan != null && scan.reportId == report.id) {
+        scans.advance(scan);
+        // The decision is applied: the source stamps it before it logs.
+        source.markDecided(report.id);
+      }
     }
   }
 

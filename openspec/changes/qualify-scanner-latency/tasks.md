@@ -54,17 +54,17 @@
 | Too few samples give no verdict | Exactly twenty | test/qualification/scan_latency_report_test.dart | exactly twenty samples gives a verdict | green |
 | The report is written as JSON and as a readable summary | Report written | test/qualification/scan_latency_cli_test.dart | report json and console table carry the verdicts | green |
 | The report is written as JSON and as a readable summary | Output exists | test/qualification/scan_latency_cli_test.dart | an existing output is kept without --force | green |
-| Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted scan records start, stages, publication and decision in order | red |
-| Every scan records stage timings | Fallback wins | test/application/scan_coordinator_flow_test.dart | fallback start precedes its capture request | red |
-| Every scan records stage timings | Fallback start before its wait | test/application/scan_coordinator_wait_test.dart | fallback start is stamped before the fallback wait | red |
-| Every scan records stage timings | Scan ended early | test/application/scan_coordinator_flow_test.dart | early capture failure leaves later stages absent | red |
-| Every scan records stage timings | Accepted scan that drives no decision | test/application/scan_decision_feed_test.dart | a fenced accepted scan is not marked decided | red |
-| Each finished scan is logged as one JSON line | Accepted scan line | test/application/scan_report_test.dart | accepted fallback report encodes v3 with started and decided | red |
-| Each finished scan is logged as one JSON line | Hotkey scan line | test/application/scan_report_test.dart | hotkey report encodes trigger hotkey | red |
-| Each finished scan is logged as one JSON line | Recording on | test/application/scan_coordinator_recording_test.dart | recording on at scan start marks the line | red |
-| Each finished scan is logged as one JSON line | Recording turned on mid-scan | test/application/scan_coordinator_recording_test.dart | recording turned on mid-scan marks the line | red |
-| Each finished scan is logged as one JSON line | Rejected scan line | test/application/scan_report_test.dart | rejected report has fallback started and no decided | red |
-| Each finished scan is logged as one JSON line | Superseded scan line | test/application/scan_report_test.dart | superseded report encodes only the stages reached | red |
+| Every scan records stage timings | Accepted targeted scan timings | test/application/scan_coordinator_flow_test.dart | accepted targeted scan records start, stages, publication and decision in order | green |
+| Every scan records stage timings | Fallback wins | test/application/scan_coordinator_flow_test.dart | fallback start precedes its capture request | green |
+| Every scan records stage timings | Fallback start before its wait | test/application/scan_coordinator_wait_test.dart | fallback start is stamped before the fallback wait | green |
+| Every scan records stage timings | Scan ended early | test/application/scan_coordinator_flow_test.dart | early capture failure leaves later stages absent | green |
+| Every scan records stage timings | Accepted scan that drives no decision | test/application/scan_decision_feed_test.dart | a fenced accepted scan is not marked decided | green |
+| Each finished scan is logged as one JSON line | Accepted scan line | test/application/scan_report_test.dart | accepted fallback report encodes v3 with started and decided | green |
+| Each finished scan is logged as one JSON line | Hotkey scan line | test/application/scan_report_test.dart | hotkey report encodes trigger hotkey | green |
+| Each finished scan is logged as one JSON line | Recording on | test/application/scan_coordinator_recording_test.dart | recording on at scan start marks the line | green |
+| Each finished scan is logged as one JSON line | Recording turned on mid-scan | test/application/scan_coordinator_recording_test.dart | recording turned on mid-scan marks the line | green |
+| Each finished scan is logged as one JSON line | Rejected scan line | test/application/scan_report_test.dart | rejected report has fallback started and no decided | green |
+| Each finished scan is logged as one JSON line | Superseded scan line | test/application/scan_report_test.dart | superseded report encodes only the stages reached | green |
 
 ## 1. ADRs
 
@@ -94,7 +94,7 @@
   - in `scan_decision_feed_test.dart`, the fenced row, with a fake source that records `markDecided` calls.
 
   Confirm they fail for the missing keys or method.
-- [ ] 2.2 Implement D1 and D2:
+- [x] 2.2 Implement D1 and D2:
   - `PassTimeline.started`, stamped in `_begin` and at the fallback phase change, outside `_setPhase`;
   - `AcceptedScanSource.markDecided(int reportId)`, implemented by `ScanCoordinator` with the id check;
   - `ScanDecisionFeed._applyAccepted` calls it where it advances `SessionScanState`;

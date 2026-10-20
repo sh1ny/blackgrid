@@ -424,6 +424,7 @@ ScanFailure? scanFailureFromMarkerTemplate(MarkerTemplateResult result) =>
 final class PassTimeline {
   /// Creates a pass timeline.
   const PassTimeline({
+    this.started,
     this.captureRequested,
     this.acquireStart,
     this.acquireEnd,
@@ -438,6 +439,10 @@ final class PassTimeline {
     this.matchStarted,
     this.matchFinished,
   });
+
+  /// The pass began: its phase (`targeted`, or `fallback underway`) was
+  /// published, before any wait for its capture.
+  final int? started;
 
   /// The coordinator asked the capture service for a frame.
   final int? captureRequested;
@@ -480,6 +485,7 @@ final class PassTimeline {
 
   /// A copy with the given stamps replaced.
   PassTimeline copyWith({
+    int? started,
     int? captureRequested,
     int? acquireStart,
     int? acquireEnd,
@@ -490,6 +496,7 @@ final class PassTimeline {
     int? matchStarted,
     int? matchFinished,
   }) => PassTimeline(
+    started: started ?? this.started,
     captureRequested: captureRequested ?? this.captureRequested,
     acquireStart: acquireStart ?? this.acquireStart,
     acquireEnd: acquireEnd ?? this.acquireEnd,
@@ -517,6 +524,7 @@ final class PassTimeline {
       InspectionRejected() => null,
     };
     return PassTimeline(
+      started: started,
       captureRequested: captureRequested,
       acquireStart: acquireStart,
       acquireEnd: acquireEnd,
@@ -535,6 +543,7 @@ final class PassTimeline {
 
   /// The reached stages by log key, in stage order.
   Map<String, int> get _stamps => {
+    'started': ?started,
     'captureRequested': ?captureRequested,
     'acquireStart': ?acquireStart,
     'acquireEnd': ?acquireEnd,
@@ -754,6 +763,14 @@ abstract interface class AcceptedScanSource implements Listenable {
 
   /// The most recent published scan of any end, or null before any scan.
   ScanReport? get latest;
+
+  /// Reports that the decision for the scan [reportId] has been applied.
+  ///
+  /// The consumer calls it synchronously from the notification that published
+  /// the report, once the scan is the current selection. A scan it fenced is
+  /// never reported. The source ignores a call for any scan other than the one
+  /// being published.
+  void markDecided(int reportId);
 }
 
 /// Everything known about one finished scan.
@@ -770,6 +787,7 @@ final class ScanReport {
     required this.droppedTriggers,
     required this.supersededTriggers,
     this.trigger = TriggerSource.mouse,
+    this.recording = false,
     this.winningPass,
     this.targeted,
     this.fallback,
@@ -812,6 +830,10 @@ final class ScanReport {
 
   /// The input that started the scan.
   final TriggerSource trigger;
+
+  /// Whether frame recording touched the scan: it was on when the scan
+  /// started, or a frame of the scan was copied for recording.
+  final bool recording;
 
   /// Whether the scan was started by the scan hotkey rather than the mouse.
   ///
@@ -882,12 +904,17 @@ final class ScanReport {
     droppedTriggers: droppedTriggers,
     supersededTriggers: supersededTriggers,
     trigger: trigger,
+    recording: recording,
   );
 
-  /// The version 2 timing log line (ADR-0013), without `droppedLines`, which
+  /// The version 3 timing log line (ADR-0013), without `droppedLines`, which
   /// the timing log adds.
   ///
   /// `trigger` names the input that started the scan, `mouse` or `hotkey`.
+  /// `recording` is [recording]. Under `ms`, each pass holds `started` and its
+  /// other stages, and `decided` is present only when [decided], the stamp of
+  /// the moment the scan's decision was applied, is given. Version 3 only
+  /// adds keys to version 2.
   ///
   /// Every `ms` value is a double in milliseconds from the trigger, rounded to
   /// 0.1 ms, except `trigger`, which is the integer 0. A stage not reached, a
@@ -895,7 +922,7 @@ final class ScanReport {
   /// rounded to 4 decimals. Candidates (best, then runner-up) are listed under
   /// the winning pass only, because the ranked outcome spans both passes. The
   /// line holds no pixels or crop bytes.
-  Map<String, Object?> toLogLine(int qpcFrequency) {
+  Map<String, Object?> toLogLine(int qpcFrequency, {int? decided}) {
     final winner = switch (outcome) {
       OutcomeAccepted(:final evidence) => evidence,
       OutcomeRejected(:final evidence) => evidence,
@@ -929,9 +956,10 @@ final class ScanReport {
     final targetedLine = passLine(ScanPass.targeted, targeted);
     final fallbackLine = passLine(ScanPass.fallback, fallback);
     return {
-      'v': 2,
+      'v': 3,
       'utc': utc.toUtc().toIso8601String(),
       'trigger': trigger.name,
+      'recording': recording,
       'end': end.logName,
       if (end case ScanAccepted(:final itemId)) 'item': itemId,
       if (switch (end) {
@@ -948,6 +976,8 @@ final class ScanReport {
         'trigger': 0,
         if (published != null)
           'published': timeline.msFromTrigger(published, qpcFrequency),
+        if (decided != null)
+          'decided': timeline.msFromTrigger(decided, qpcFrequency),
         'targeted': ?targetedMs,
         'fallback': ?fallbackMs,
       },
@@ -1416,6 +1446,13 @@ final class _Scan {
   int supersedingTriggers = 0;
   _Stage stage = _Stage.capture;
   bool ended = false;
+
+  /// When the scan's decision was applied, or null. Set only while the scan is
+  /// being published.
+  int? decided;
+
+  /// Whether recording touched the scan; once true it stays true.
+  bool recording = false;
 
   final Completer<void> _cancelled = Completer<void>();
 
@@ -2303,6 +2340,16 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
 
   int _now(_Activation a) => a.clock?.qpcNow() ?? 0;
 
+  /// The scan whose report is being published right now, or null.
+  _Scan? _publishing;
+
+  @override
+  void markDecided(int reportId) {
+    final s = _publishing;
+    if (s == null || s.id != reportId || s.decided != null) return;
+    s.decided = _now(s.activation);
+  }
+
   /// Handles one trigger (mouse release or hotkey) while the pipeline is ready.
   ///
   /// With no scan in flight the trigger starts one. Otherwise it supersedes
@@ -2355,6 +2402,8 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       epoch: epoch ?? _epoch(),
     );
     _active = scan;
+    scan.recording = _recordingOn;
+    scan.stamp(ScanPass.targeted, (t) => t.copyWith(started: _now(a)));
     _setPhase(scan, ScanPhase.targeted);
     unawaited(_run(scan));
   }
@@ -2444,7 +2493,9 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
         }
     }
 
-    // Fallback pass: the phase is published before the capture request.
+    // Fallback pass: the phase is published before the capture request. Its
+    // start is stamped here, not in _setPhase, which skips an unchanged phase.
+    s.stamp(ScanPass.fallback, (t) => t.copyWith(started: _now(s.activation)));
     _setPhase(s, ScanPhase.fallback);
     if (!await _waitUntil(s, hotkey ? Duration.zero : fallbackDelay)) {
       return _endSuperseded(s);
@@ -2745,8 +2796,15 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       ScanFailed() || ScanSuperseded() => null,
     };
     final report = _report(s, end, winner: winner, published: _now(a));
-    _log(a, report);
-    _publish(report);
+    // The notification is synchronous: the decision feed applies the scan and
+    // calls markDecided before _publish returns. The line is logged after it.
+    _publishing = s;
+    try {
+      _publish(report);
+    } finally {
+      _publishing = null;
+    }
+    _log(a, report, decided: s.decided);
     // A worker that reports itself unavailable ends the activation.
     final lost = [s.targetedReport?.failure, s.fallbackReport?.failure]
         .whereType<ScanFailure>()
@@ -2817,6 +2875,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   }
 
   void _copyForRecording(_Scan s, ScanPass pass, CaptureFrame frame) {
+    s.recording = true;
     final copy = _copyPixels(s, frame, full: pass == ScanPass.fallback);
     if (copy == null) return;
     switch (pass) {
@@ -3030,6 +3089,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       droppedTriggers: s.trigger.droppedBefore,
       supersededTriggers: s.replacedTriggers + s.supersedingTriggers,
       trigger: s.trigger.event.source,
+      recording: s.recording,
     );
   }
 
@@ -3056,9 +3116,9 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     return fallback != null ? ScanPass.fallback : ScanPass.targeted;
   }
 
-  void _log(_Activation a, ScanReport report) {
+  void _log(_Activation a, ScanReport report, {int? decided}) {
     try {
-      appendLogLine(report.toLogLine(a.qpcFrequency));
+      appendLogLine(report.toLogLine(a.qpcFrequency, decided: decided));
     } on Object catch (error) {
       debugPrint('Scan log line failed: $error');
     }
