@@ -8,16 +8,16 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Only an accepted scan that drives a decision advances the latest scan | Accepted scan advances the latest scan | test/application/scan_decision_feed_test.dart | accepted scan advances the latest scan without a pump | red |
-| Only an accepted scan that drives a decision advances the latest scan | Other selections leave it unchanged | test/application/scan_decision_feed_test.dart | manual, history and correction leave the latest scan | red |
-| Only an accepted scan that drives a decision advances the latest scan | Refresh and age update leave it unchanged | test/application/scan_decision_feed_test.dart | refresh and age tick leave the latest scan | red |
-| Only an accepted scan that drives a decision advances the latest scan | Fenced scan does not advance it | test/application/scan_decision_feed_test.dart | fenced scans do not advance the latest scan | red |
-| Only an accepted scan that drives a decision advances the latest scan | Unaccepted scan does not advance it | test/application/scan_decision_feed_test.dart | rejected scan does not advance the latest scan | red |
+| Only an accepted scan that drives a decision advances the latest scan | Accepted scan advances the latest scan | test/application/scan_decision_feed_test.dart | accepted scan advances the latest scan without a pump | green |
+| Only an accepted scan that drives a decision advances the latest scan | Other selections leave it unchanged | test/application/scan_decision_feed_test.dart | manual, history and correction leave the latest scan | green |
+| Only an accepted scan that drives a decision advances the latest scan | Refresh and age update leave it unchanged | test/application/scan_decision_feed_test.dart | refresh and age tick leave the latest scan | green |
+| Only an accepted scan that drives a decision advances the latest scan | Fenced scan does not advance it | test/application/scan_decision_feed_test.dart | fenced scans do not advance the latest scan | green |
+| Only an accepted scan that drives a decision advances the latest scan | Unaccepted scan does not advance it | test/application/scan_decision_feed_test.dart | rejected scan does not advance the latest scan | green |
 | The latest scan advances once per scan and never goes back | Newer scan replaces older | test/application/session_scan_state_test.dart | a newer report replaces the latest scan | green |
-| The latest scan advances once per scan and never goes back | Repeated notification | test/application/scan_decision_feed_test.dart | repeated notification keeps the first acceptance time | red |
-| The latest scan advances once per scan and never goes back | Same item scanned again | test/application/scan_decision_feed_test.dart | same item scanned again takes the second acceptance time | red |
+| The latest scan advances once per scan and never goes back | Repeated notification | test/application/scan_decision_feed_test.dart | repeated notification keeps the first acceptance time | green |
+| The latest scan advances once per scan and never goes back | Same item scanned again | test/application/scan_decision_feed_test.dart | same item scanned again takes the second acceptance time | green |
 | The latest scan is session-only and clears on a mode or session change | Empty at startup | test/application/app_services_scan_test.dart | latest scan starts empty with scan history present | red |
-| The latest scan is session-only and clears on a mode or session change | Mode change clears it | test/application/scan_decision_feed_test.dart | epochChanged clears the latest scan | red |
+| The latest scan is session-only and clears on a mode or session change | Mode change clears it | test/application/scan_decision_feed_test.dart | epochChanged clears the latest scan | green |
 | The latest scan is session-only and clears on a mode or session change | Session change clears it | test/application/app_services_scan_test.dart | session change through AppServices retires the scan | red |
 | The decision card can return to the latest scan | Return after a manual selection | test/application/selection_controller_test.dart | showScan restores the scan without recording | red |
 | The decision card can return to the latest scan | Return closes history | test/ui/latest_scan_card_test.dart | Back to latest scan closes history on Map and Scanner | red |
@@ -37,7 +37,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 ## 2. Feed producer and AppServices wiring
 
 - [x] 2.1 Add the feed tests from the test map to `test/application/scan_decision_feed_test.dart`, with a `SessionScanState` passed to the feed in `setUp`. The first one asserts `latest` straight after `source.accept`, with no pump (the design's synchronous-prefix risk). Fenced: wrong epoch, wrong mode, item missing from the catalog. Rejected: a non-accepted `latest` report. Run them to confirm they fail.
-- [ ] 2.2 Give `ScanDecisionFeed` a required `SessionScanState scans` parameter. After `selectScan`, advance with `selection.scan` when its `reportId` equals the applied report's id. `epochChanged()` calls `retireScan()`, then `scans.clear()` (D1). Update the other constructions in `test/application/scan_correction_test.dart` (`:128`, `:538`). Verify that 2.1 passes; flip the rows green.
+- [x] 2.2 Give `ScanDecisionFeed` a required `SessionScanState scans` parameter. After `selectScan`, advance with `selection.scan` when its `reportId` equals the applied report's id. `epochChanged()` calls `retireScan()`, then `scans.clear()` (D1). Update the other constructions in `test/application/scan_correction_test.dart` (`:128`, `:538`). Verify that 2.1 passes; flip the rows green.
 - [ ] 2.3 In `AppServices`, build `scans` as a `SessionScanState` (no longer `const`), pass it to the feed and dispose it in `dispose`. In `test/application/app_services_scan_test.dart`, add "latest scan starts empty with scan history present". Extend "session change through AppServices retires the scan" to assert `scans.hasAcceptedScan` is true before the change and false after it. Verify with `mise run test`; flip the rows green.
 
 ## 3. Return to the latest scan

@@ -7,6 +7,7 @@ import 'scan_coordinator.dart';
 import 'scan_correction.dart';
 import 'scan_epoch.dart';
 import 'selection_controller.dart';
+import 'session_scan_state.dart';
 
 /// Carries each accepted scan from the scanner into the selection.
 ///
@@ -24,6 +25,7 @@ class ScanDecisionFeed {
     required this.source,
     required this.selection,
     required this.catalog,
+    required this.scans,
     required this._epoch,
   }) : _consumed = source.lastAccepted?.id ?? 0,
        _offered = source.latest?.id ?? 0 {
@@ -38,6 +40,9 @@ class ScanDecisionFeed {
 
   /// The live catalog the fences check against.
   final CatalogController catalog;
+
+  /// The session's latest accepted scan, which only this feed advances.
+  final SessionScanState scans;
 
   final ScanEpoch Function() _epoch;
 
@@ -125,12 +130,19 @@ class ScanDecisionFeed {
           epoch: epoch,
         ),
       );
+      // selectScan sets the scan before its first await, so it is readable
+      // here. A scan the projection could not decide leaves none.
+      final scan = selection.scan;
+      if (scan != null && scan.reportId == report.id) scans.advance(scan);
     }
   }
 
-  /// Retires the scan on selection after a mode transition or a session
-  /// change.
-  void epochChanged() => selection.retireScan();
+  /// Retires the scan on selection and clears the latest accepted scan after
+  /// a mode transition or a session change.
+  void epochChanged() {
+    selection.retireScan();
+    scans.clear();
+  }
 
   /// Stops listening to the source.
   void dispose() => source.removeListener(_onSource);
