@@ -31,7 +31,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 
 ## 1. Snapshot state
 
-- [ ] 1.1 Write `test/application/session_scan_state_test.dart`: empty at construction; `advance` takes a higher report id ("a newer report replaces the latest scan"), ignores an equal or lower one, notifies only on change; `clear` empties it and keeps the mark, so `advance(#7)`, `clear()`, `advance(#5)` leaves it empty and `advance(#8)` takes it (review suggestion 3). Verify that it fails because the API does not exist.
+- [x] 1.1 Write `test/application/session_scan_state_test.dart`: empty at construction; `advance` takes a higher report id ("a newer report replaces the latest scan"), ignores an equal or lower one, notifies only on change; `clear` empties it and keeps the mark, so `advance(#7)`, `clear()`, `advance(#5)` leaves it empty and `advance(#8)` takes it (review suggestion 3). Verify that it fails because the API does not exist.
 - [ ] 1.2 Rewrite `lib/application/session_scan_state.dart` as a documented `ChangeNotifier` with `AcceptedScan? latest`, `hasAcceptedScan`, `advance` and `clear` (design D1, D3). Remove `status`. Verify that 1.1 passes; flip its row green.
 
 ## 2. Feed producer and AppServices wiring
