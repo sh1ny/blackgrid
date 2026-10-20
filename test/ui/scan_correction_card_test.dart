@@ -11,26 +11,33 @@ import '../fixtures/m1/catalog/fixture.dart';
 import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
 
-CatalogItem _item(String id, String name) => CatalogItem(
-  id: id,
-  name: name,
-  normalizedName: name.toLowerCase(),
-  width: 1,
-  height: 1,
-  noFlea: false,
-  minLevelForFlea: 0,
-  fleaPrice: 400,
-  quoteAt: fixtureNow,
-  sellOffers: const [
-    CashOffer(traderId: 'trader-a', currency: 'RUB', price: 120),
-  ],
-);
+CatalogItem _item(String id, String name, {bool? noFlea = false}) =>
+    CatalogItem(
+      id: id,
+      name: name,
+      normalizedName: name.toLowerCase(),
+      width: 1,
+      height: 1,
+      noFlea: noFlea,
+      minLevelForFlea: 0,
+      fleaPrice: 400,
+      quoteAt: fixtureNow,
+      sellOffers: const [
+        CashOffer(traderId: 'trader-a', currency: 'RUB', price: 120),
+      ],
+    );
 
-CatalogSnapshot _snapshot(Map<String, String> names) => CatalogSnapshot(
+CatalogSnapshot _snapshot(
+  Map<String, String> names, {
+  Map<String, CatalogItem> extra = const {},
+}) => CatalogSnapshot(
   mode: GameMode.pvp,
   revision: 'card-revision',
   observedAt: fixtureNow,
-  items: {for (final e in names.entries) e.key: _item(e.key, e.value)},
+  items: {
+    for (final e in names.entries) e.key: _item(e.key, e.value),
+    ...extra,
+  },
   traders: const {
     'trader-a': CatalogTrader(id: 'trader-a', name: 'Synthetic Alpha'),
   },
@@ -69,11 +76,12 @@ const _names = {
 Future<M1Harness> _arrange(
   WidgetTester tester, {
   Map<String, String> names = _names,
+  Map<String, CatalogItem> extra = const {},
   ScanCorrectionOffer? offer,
   bool showAlpha = true,
 }) async {
   final h = await pumpM1(tester);
-  h.services.catalog.snapshot = _snapshot(names);
+  h.services.catalog.snapshot = _snapshot(names, extra: extra);
   final selection = h.services.selection;
   if (showAlpha) {
     await tester.runAsync(
@@ -237,5 +245,120 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('correction-no-match')), findsOneWidget);
     expect(find.text('No items match'), findsOneWidget);
+  });
+
+  group('same-name candidates', () {
+    // IDs end in the suffixes the offer shows.
+    const flea = 'weapon-4b423c';
+    const noFlea = 'weapon-045d88';
+
+    ScanCorrectionOffer weaponOffer({
+      String text = 'zzzz',
+      List<TitleCandidate> candidates = const [
+        TitleCandidate(flea, 1.0),
+        TitleCandidate(noFlea, .909),
+      ],
+    }) => _offer(text: text, candidates: candidates);
+
+    Map<String, CatalogItem> weapons({bool? secondNoFlea = true}) => {
+      flea: _item(flea, 'Weapon case'),
+      noFlea: _item(noFlea, 'Weapon case', noFlea: secondNoFlea),
+    };
+
+    testWidgets('same-name candidates show flea status and id suffix', (
+      tester,
+    ) async {
+      await _arrange(tester, extra: weapons(), offer: weaponOffer());
+      final first = find.text('Weapon case · flea · 4b423c • 1.00');
+      final second = find.text('Weapon case · no flea · 045d88 • 0.91');
+      expect(first, findsOneWidget);
+      expect(second, findsOneWidget);
+      final order = [
+        for (final w in tester.widgetList(
+          find.byWidgetPredicate(
+            (w) => w.key.toString().startsWith("[<'correction-candidate-"),
+          ),
+        ))
+          (w.key! as ValueKey<String>).value,
+      ];
+      expect(order, [
+        'correction-candidate-$flea',
+        'correction-candidate-$noFlea',
+      ]);
+    });
+
+    testWidgets('a lone same-name candidate shows name and score only', (
+      tester,
+    ) async {
+      await _arrange(
+        tester,
+        extra: {
+          flea: _item(flea, 'Weapon case'),
+          'item-case': _item('item-case', 'Item case'),
+        },
+        offer: weaponOffer(
+          candidates: const [
+            TitleCandidate(flea, 1.0),
+            TitleCandidate('item-case', .8),
+          ],
+        ),
+      );
+      expect(find.text('Weapon case • 1.00'), findsOneWidget);
+      expect(find.text('Item case • 0.80'), findsOneWidget);
+      expect(find.textContaining('flea'), findsNothing);
+    });
+
+    testWidgets('unknown flea status shows flea unknown', (tester) async {
+      await _arrange(
+        tester,
+        extra: weapons(secondNoFlea: null),
+        offer: weaponOffer(),
+      );
+      expect(
+        find.text('Weapon case · flea unknown · 045d88 • 0.91'),
+        findsOneWidget,
+      );
+      expect(find.text('Weapon case · flea · 045d88 • 0.91'), findsNothing);
+    });
+
+    testWidgets('a search row in a same-name group is labelled', (
+      tester,
+    ) async {
+      String id(int n) => 'wc0000${n.toString().padLeft(2, '0')}';
+      await _arrange(
+        tester,
+        extra: {
+          for (var n = 0; n < 12; n++)
+            id(n): _item(id(n), 'Weapon case', noFlea: n.isOdd),
+        },
+        offer: _offer(
+          text: 'weapon case',
+          candidates: [for (var n = 0; n < 5; n++) TitleCandidate(id(n), 1.0)],
+        ),
+      );
+      // The sixth variant is not a candidate; the search finds it.
+      expect(find.byKey(Key('correction-candidate-${id(5)}')), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(Key('correction-result-${id(5)}')),
+          matching: find.text('Weapon case · no flea · 000005'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Weapon case · flea · 000000 • 1.00'), findsOneWidget);
+    });
+
+    testWidgets('picking the no-flea variant selects it', (tester) async {
+      final h = await _arrange(tester, extra: weapons(), offer: weaponOffer());
+      final pick = find.byKey(const Key('correction-candidate-$noFlea'));
+      await tester.ensureVisible(pick);
+      await tester.pumpAndSettle();
+      await tester.runAsync(() => tester.tap(pick));
+      await tester.pumpAndSettle();
+      expect(h.services.selection.selectedId, noFlea);
+      expect(h.services.selection.correction?.reportId, 7);
+      expect(find.text('Corrected scan'), findsOneWidget);
+      expect(find.text('Weapon case'), findsOneWidget);
+    });
   });
 }

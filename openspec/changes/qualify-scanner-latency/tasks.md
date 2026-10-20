@@ -31,11 +31,11 @@
 | A best candidate sharing its display name is ambiguous | Shared name below the gate | test/domain/title_matching_test.dart | a shared name below the gate stays belowSimilarity | green |
 | Same-name items are listed among the candidates | Two variants | test/domain/title_matching_test.dart | same-name variants lead the candidates | green |
 | Same-name items are listed among the candidates | More same-name items than fit | test/domain/title_matching_test.dart | a 50-item same-name group lists the best and four by id | green |
-| Same-name candidates are told apart in the offer | Weapon case variants | test/ui/scan_correction_card_test.dart | same-name candidates show flea status and id suffix | red |
-| Same-name candidates are told apart in the offer | Only one listed same-name item | test/ui/scan_correction_card_test.dart | a lone same-name candidate shows name and score only | red |
-| Same-name candidates are told apart in the offer | Unknown flea status | test/ui/scan_correction_card_test.dart | unknown flea status shows flea unknown | red |
-| Same-name candidates are told apart in the offer | Variant found through the search | test/ui/scan_correction_card_test.dart | a search row in a same-name group is labelled | red |
-| Same-name candidates are told apart in the offer | Picking a variant | test/ui/scan_correction_card_test.dart | picking the no-flea variant selects it | red |
+| Same-name candidates are told apart in the offer | Weapon case variants | test/ui/scan_correction_card_test.dart | same-name candidates show flea status and id suffix | green |
+| Same-name candidates are told apart in the offer | Only one listed same-name item | test/ui/scan_correction_card_test.dart | a lone same-name candidate shows name and score only | green |
+| Same-name candidates are told apart in the offer | Unknown flea status | test/ui/scan_correction_card_test.dart | unknown flea status shows flea unknown | green |
+| Same-name candidates are told apart in the offer | Variant found through the search | test/ui/scan_correction_card_test.dart | a search row in a same-name group is labelled | green |
+| Same-name candidates are told apart in the offer | Picking a variant | test/ui/scan_correction_card_test.dart | picking the no-flea variant selects it | green |
 | The report reads timing log files over a UTC window | Two files, one window | test/qualification/scan_latency_report_test.dart | two files are read over one window | green |
 | The report reads timing log files over a UTC window | Malformed and unknown lines | test/qualification/scan_latency_report_test.dart | malformed and unsupported lines are skipped by reason | green |
 | The report reads timing log files over a UTC window | Missing file | test/qualification/scan_latency_cli_test.dart | a missing input exits non-zero and writes nothing | green |
@@ -142,7 +142,7 @@
   - the candidates assert relaxed only for that case.
 
   Update the doc comments. Verify that 4.1 passes, and that `title_matching_benchmark_test.dart` (`mise run test:qualification` if available, else note as not run) still meets ≤ 20 ms p95. Flip the rows green.
-- [ ] 4.3 Write the failing widget tests in `test/ui/scan_correction_card_test.dart`:
+- [x] 4.3 Write the failing widget tests in `test/ui/scan_correction_card_test.dart`:
   - Weapon case variants labelled;
   - lone same-name candidate unlabelled;
   - `flea unknown`;

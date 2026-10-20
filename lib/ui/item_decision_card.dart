@@ -4,7 +4,9 @@ import '../application/accepted_scan.dart';
 import '../application/app_services.dart';
 import '../application/scan_correction.dart';
 import '../application/selection_controller.dart';
+import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../domain/title_matching.dart' show normaliseTitle;
 import 'theme.dart';
 
 String recommendationLabel(Recommendation value) => switch (value) {
@@ -408,6 +410,10 @@ class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
     final offer = widget.offer;
     final candidates = selection.correctionCandidates;
     final results = selection.correctionResults;
+    final shared = _sharedDisplayNames([
+      for (final c in candidates) c.item,
+      ...results,
+    ]);
     final theme = Theme.of(context);
     return Container(
       key: const Key('correction-offer'),
@@ -451,7 +457,8 @@ class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
                     onPressed: () =>
                         selection.selectCorrection(offer.reportId, c.item.id),
                     child: Text(
-                      '${c.item.name} • ${c.score.toStringAsFixed(2)}',
+                      '${_rowLabel(c.item, shared)} • '
+                      '${c.score.toStringAsFixed(2)}',
                     ),
                   ),
               ],
@@ -486,11 +493,42 @@ class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
                     selection.selectCorrection(offer.reportId, item.id),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(item.name),
+                  child: Text(_rowLabel(item, shared)),
                 ),
               ),
         ],
       ),
     );
   }
+}
+
+/// The display names that two or more different [items] share.
+///
+/// An item listed twice, as a candidate and as a search result, counts once.
+Set<String> _sharedDisplayNames(Iterable<CatalogItem> items) {
+  final idsByName = <String, Set<String>>{};
+  for (final item in items) {
+    (idsByName[normaliseTitle(item.name)] ??= <String>{}).add(item.id);
+  }
+  return {
+    for (final MapEntry(:key, :value) in idsByName.entries)
+      if (value.length > 1) key,
+  };
+}
+
+/// The row text for [item]: its name, followed by its flea status and the
+/// last 6 characters of its ID when another listed row shares its display
+/// name (a member of [shared]).
+///
+/// An unknown flea status reads `flea unknown`, never `flea`.
+String _rowLabel(CatalogItem item, Set<String> shared) {
+  if (!shared.contains(normaliseTitle(item.name))) return item.name;
+  final status = switch (item.noFlea) {
+    false => 'flea',
+    true => 'no flea',
+    null => 'flea unknown',
+  };
+  final id = item.id;
+  final suffix = id.length > 6 ? id.substring(id.length - 6) : id;
+  return '${item.name} · $status · $suffix';
 }
