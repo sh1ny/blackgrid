@@ -1,0 +1,192 @@
+{
+  "window": {
+    "since": "2026-10-20T15:22:00.000Z",
+    "until": "2026-10-20T15:27:44.000Z"
+  },
+  "files": [
+    "C:\\Users\\bgshi\\AppData\\Local\\Blackgrid\\logs\\scan-timings.jsonl"
+  ],
+  "counts": {
+    "inWindow": 142,
+    "outsideWindow": 0,
+    "skipped": {
+      "malformed": 0,
+      "unsupportedVersion": 1318,
+      "noValidUtc": 0
+    },
+    "excludedRecording": 0,
+    "v3Lines": 142,
+    "v2Lines": 0
+  },
+  "targets": {
+    "targetedSharePercent": 50.0,
+    "targetedDecidedMs": 300,
+    "fallbackStartedMs": 300,
+    "totalMs": 1500,
+    "minimumSamples": 20
+  },
+  "strata": {
+    "mouse": {
+      "scans": {
+        "total": 121,
+        "byEnd": {
+          "rejected": 36,
+          "accepted": 63,
+          "superseded": 22
+        },
+        "byPass": {
+          "targeted": 48,
+          "fallback": 24
+        },
+        "droppedTriggers": 0
+      },
+      "acceptedWithoutDecision": 0,
+      "targetedShare": {
+        "n": 63,
+        "targetedAccepts": 47,
+        "percent": 74.60317460317461,
+        "target": 50.0,
+        "verdict": "pass"
+      },
+      "targetedDecided": {
+        "n": 47,
+        "p50": 116.4,
+        "p95": 139.6,
+        "max": 150.4,
+        "target": 300,
+        "verdict": "pass"
+      },
+      "fallbackStarted": {
+        "n": 52,
+        "p50": 134.7,
+        "p95": 169.1,
+        "max": 175.2,
+        "target": 300,
+        "verdict": "pass"
+      },
+      "total": {
+        "n": 52,
+        "p50": 480.6,
+        "p95": 572.4,
+        "max": 614.9,
+        "target": 1500,
+        "verdict": "pass"
+      },
+      "fallbackWorkBegan": {
+        "label": "real fallback work began",
+        "n": 52,
+        "p50": 200.6,
+        "p95": 201.7,
+        "max": 203.3
+      }
+    },
+    "hotkey": {
+      "scans": {
+        "total": 21,
+        "byEnd": {
+          "rejected": 4,
+          "accepted": 17
+        },
+        "byPass": {
+          "fallback": 2,
+          "targeted": 17
+        },
+        "droppedTriggers": 0
+      },
+      "acceptedWithoutDecision": 0,
+      "targetedShare": {
+        "n": 17,
+        "targetedAccepts": 17,
+        "percent": 100.0,
+        "target": 50.0,
+        "verdict": "indeterminate",
+        "reason": "fewer than 20 samples"
+      },
+      "targetedDecided": {
+        "n": 17,
+        "p50": 62.8,
+        "p95": 78.0,
+        "max": 78.0,
+        "target": 300,
+        "verdict": "indeterminate",
+        "reason": "fewer than 20 samples"
+      },
+      "fallbackStarted": {
+        "n": 4,
+        "p50": 61.7,
+        "p95": 72.0,
+        "max": 72.0,
+        "target": 300,
+        "verdict": "indeterminate",
+        "reason": "fewer than 20 samples"
+      },
+      "total": {
+        "n": 4,
+        "p50": 214.7,
+        "p95": 332.3,
+        "max": 332.3,
+        "target": 1500,
+        "verdict": "indeterminate",
+        "reason": "fewer than 20 samples"
+      },
+      "fallbackWorkBegan": {
+        "label": "real fallback work began",
+        "n": 4,
+        "p50": 61.7,
+        "p95": 72.0,
+        "max": 72.0
+      }
+    }
+  },
+  "v2Proxy": {
+    "proxy": true,
+    "note": "Proxies from v2 lines; they never change a verdict. Decided is published; fallback underway is the targeted pass last stage.",
+    "lines": 0,
+    "mouse": {
+      "decided": {
+        "proxy": true,
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "fallbackUnderway": {
+        "proxy": true,
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "total": {
+        "proxy": true,
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      }
+    },
+    "hotkey": {
+      "decided": {
+        "proxy": true,
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "fallbackUnderway": {
+        "proxy": true,
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "total": {
+        "proxy": true,
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      }
+    }
+  }
+}
