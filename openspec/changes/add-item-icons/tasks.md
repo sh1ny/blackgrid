@@ -67,7 +67,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
   - a rejected alternative and the reversal cost.
 
   Verify: the file exists and `docs/adr/README.md` lists it, if that README indexes ADRs.
-- [ ] 1.2 Update `openspec/architecture.md`. Verify: `grep -n 0022 openspec/architecture.md` shows the row.
+- [x] 1.2 Update `openspec/architecture.md`. Verify: `grep -n 0022 openspec/architecture.md` shows the row.
   - Add ADR-0022 to the in-force index.
   - Change the HTTP response bodies row in Resource bounds to say icon bodies are capped at 256 KiB.
   - Add an item-icon cache row (64 MB, LRU).
