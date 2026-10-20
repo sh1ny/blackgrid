@@ -84,7 +84,7 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
 
 ## 3. Integration checks
 
-- [ ] 3.1 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify that both pass, with no new analyzer warnings.
+- [x] 3.1 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify that both pass, with no new analyzer warnings.
 
 ## Workflow follow-up
 
