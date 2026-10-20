@@ -180,7 +180,7 @@
   - Build the corpus to `F:\Dev\Dart\blackgrid-corpus\inspection`, outside Git.
 
   Verify that the tests pass and that the built `corpus.json` has 50 cases (35 items, 15 rejects). If the labels are still `proposed`, record "blocked: labels await user confirmation" in `EVIDENCE.md` instead.
-- [ ] 6.4 If the corpus folder is available (`BLACKGRID_CORPUS_DIR` set and present), run `mise run test:qualification` for `inspection_corpus_test.dart` with the release bundle. Record in `EVIDENCE.md`:
+- [x] 6.4 If the corpus folder is available (`BLACKGRID_CORPUS_DIR` set and present), run `mise run test:qualification` for `inspection_corpus_test.dart` with the release bundle. Record in `EVIDENCE.md`:
   - the unmodified result;
   - same-name regressions listed separately, per D6;
   - an investigation note for each other miss or false positive (cases 0012/0013 expected to become `ambiguous` with the no-flea Weapon case among the candidates).
