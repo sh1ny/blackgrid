@@ -52,7 +52,7 @@ Every collapsed-state assertion calls `showMapInputsHeader` first, so no absence
 
 ## 2. Map rail order and collapsed inputs
 
-- [ ] 2.1 Add `showMapInputsHeader` and `expandMapInputs` to `test/support/map_widget_harness.dart`, as described above. Write the red tests in `test/ui/map_rail_test.dart` for every `red` row of the test map:
+- [x] 2.1 Add `showMapInputsHeader` and `expandMapInputs` to `test/support/map_widget_harness.dart`, as described above. Write the red tests in `test/ui/map_rail_test.dart` for every `red` row of the test map:
   - **Order:** compare `tester.getRect(...).top` of the five sections, found by their titles, after scrolling each into view, in the wide layout (`1912×823`) and in the compact layout (`760×900`).
   - **Collapsed on first show:** after `showMapInputsHeader`, no `Logs:`/`Screenshots:` text, no Follow logs `SwitchListTile`, no `Read Latest`, and `find.byKey(Key('map-input-status'))` finds nothing.
   - **Expanding:** Read Latest reads the fixture screenshot, as in `test/ui/map_screen_test.dart:17-60`.

@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/data/database.dart';
+import 'package:blackgrid/data/raid_panel_ocr.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
@@ -16,17 +18,21 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../ui/support/scan_ui_support.dart';
 import 'm1_harness.dart';
 
 /// A small prepared pack decoded by the production loader and resource owner.
 /// Marker positions are independent game coordinates, not mocked projections.
 class MapWidgetHarness {
-  MapWidgetHarness._(this.services);
+  MapWidgetHarness._(this.services, this._scanLogs);
   final AppServices services;
+  final Directory? _scanLogs;
 
   static Future<MapWidgetHarness> create({
     String? sourceCategory,
     List<Map<String, int>>? hazardOutline,
+    ScanFakePorts? scanPorts,
+    RaidPanelOcr? panelOcr,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -80,6 +86,9 @@ class MapWidgetHarness {
       },
     );
     final wire = wireFixture();
+    final scanLogs = scanPorts == null
+        ? null
+        : Directory.systemTemp.createTempSync('blackgrid-map-scan-');
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
       credentials: MemoryCredentials(),
@@ -95,14 +104,26 @@ class MapWidgetHarness {
           value == null ? 404 : 200,
         );
       }),
+      panelOcr: panelOcr,
+      scanLogDirectory: scanLogs,
+      scanRuntimeDirectory: scanPorts == null ? null : r'C:\fake\bundle',
+      scanMarkerLoader: scanPorts?.loader,
+      scanCaptureFactory: scanPorts?.captureFactory,
+      scanVisionFactory: scanPorts?.visionFactory,
+      scanPlatformFactory: scanPorts?.platformFactory,
+      scanWaiter: scanPorts?.waiter,
     );
     await services.initialize();
     await services.setMode(GameMode.pvp);
     await services.catalog.refresh();
-    return MapWidgetHarness._(services);
+    return MapWidgetHarness._(services, scanLogs);
   }
 
-  Future<void> dispose() => services.dispose();
+  Future<void> dispose() async {
+    await services.dispose();
+    final logs = _scanLogs;
+    if (logs != null && logs.existsSync()) logs.deleteSync(recursive: true);
+  }
 }
 
 ByteData _jsonBytes(Object value) =>
@@ -214,6 +235,8 @@ Future<MapWidgetHarness> pumpMapFixture(
   double scale = 1,
   String? sourceCategory,
   List<Map<String, int>>? hazardOutline,
+  ScanFakePorts? scanPorts,
+  RaidPanelOcr? panelOcr,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -225,6 +248,8 @@ Future<MapWidgetHarness> pumpMapFixture(
     () => MapWidgetHarness.create(
       sourceCategory: sourceCategory,
       hazardOutline: hazardOutline,
+      scanPorts: scanPorts,
+      panelOcr: panelOcr,
     ),
   ))!;
   addTearDown(harness.dispose);
@@ -249,5 +274,52 @@ Future<void> settleMapFixture(
     );
     await tester.pump();
   }
+  await tester.pumpAndSettle();
+}
+
+/// The header button of the collapsible Map saved-file inputs section.
+Finder get mapInputsHeader => find.byKey(const Key('map-inputs-toggle'));
+
+/// Scrolls the Map rail until [target] is built, then brings it into view and
+/// asserts it was found.
+///
+/// The rail is a lazy list, so the sections near its end are not built until
+/// it is scrolled. The rail position is moved directly because a drag at the
+/// center of a tall rail can miss the visible window.
+Future<void> scrollMapRailTo(WidgetTester tester, Finder target) async {
+  final position = tester
+      .state<ScrollableState>(
+        find
+            .descendant(
+              of: find.byKey(const PageStorageKey('map-rail-scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      )
+      .position;
+  while (target.evaluate().isEmpty &&
+      position.pixels < position.maxScrollExtent) {
+    position.jumpTo(
+      (position.pixels + 200).clamp(0, position.maxScrollExtent).toDouble(),
+    );
+    await tester.pump();
+  }
+  expect(target, findsOneWidget);
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+}
+
+/// Scrolls the Map rail to the saved-file inputs header and asserts it is
+/// built.
+///
+/// Assertions about the section's absence must call this first so that they
+/// cannot pass vacuously.
+Future<void> showMapInputsHeader(WidgetTester tester) =>
+    scrollMapRailTo(tester, mapInputsHeader);
+
+/// Brings the saved-file inputs header into view, taps it and pumps.
+Future<void> expandMapInputs(WidgetTester tester) async {
+  await showMapInputsHeader(tester);
+  await tester.tap(mapInputsHeader);
   await tester.pumpAndSettle();
 }
