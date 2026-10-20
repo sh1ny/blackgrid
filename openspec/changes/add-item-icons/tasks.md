@@ -36,9 +36,9 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | A failed icon request is not retried for 24 hours | A new icon link clears the wait | test/application/item_icon_cache_test.dart | a new icon link inside the wait sends one request to the new link | red |
 | A failed icon request is not retried for 24 hours | A failure for one item does not block another | test/application/item_icon_cache_test.dart | one item's failure wait does not block another item | red |
 | Icon downloads are bounded | A redirect is a failure | test/data/item_icon_client_test.dart; test/application/item_icon_cache_test.dart | a 302 is IconFailed and not followed; client failures start the wait | red |
-| Icon downloads are bounded | An oversized body is a failure | test/data/item_icon_client_test.dart | a body over 256 KiB aborts as IconFailed (by Content-Length and by streaming) | red |
-| Icon downloads are bounded | A body that is not an image is a failure | test/data/item_icon_client_test.dart | a 200 HTML body is IconFailed | red |
-| Icon downloads are bounded | A hung request times out | test/data/item_icon_client_test.dart | a stalled request aborts at the injected timeout as IconFailed | red |
+| Icon downloads are bounded | An oversized body is a failure | test/data/item_icon_client_test.dart | a body over 256 KiB aborts as IconFailed (by Content-Length and by streaming) | green |
+| Icon downloads are bounded | A body that is not an image is a failure | test/data/item_icon_client_test.dart | a 200 HTML body is IconFailed | green |
+| Icon downloads are bounded | A hung request times out | test/data/item_icon_client_test.dart | a stalled request aborts at the injected timeout as IconFailed | green |
 | Icon downloads are bounded | More than four shown items wait their turn | test/application/item_icon_cache_test.dart | six shown items run at most four requests at once and download each once | red |
 | A download nothing shows any more is cancelled | A newer scan cancels the older scan's download | test/application/item_icon_cache_test.dart; test/ui/item_icon_test.dart | releasing the last lease aborts without a wait; switching the widget's item releases the old lease | red |
 | A download nothing shows any more is cancelled | A cancelled item downloads when shown again | test/application/item_icon_cache_test.dart | a cancelled item sends one new request when acquired again | red |
@@ -100,7 +100,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
   - a `200` HTML body;
   - a stalled request at an injected short timeout (`StallingHttpClient`, `aborts == 1`);
   - plus extra tests: a `200` WebP, PNG and JPEG gives `IconFetched` with the etag; a `304` with `If-None-Match` sent gives `IconNotModified`; an external cancel gives `IconCancelled`; the `User-Agent` header is set.
-- [ ] 4.2 Implement `ItemIconClient` in `lib/data/item_icon_client.dart` with the sealed `ItemIconFetchResult` (D5): `AbortableRequest`, `followRedirects = false`, an injected timeout (default 15 s), the 256 KiB cap, signature sniffing, an optional etag and a cancel signal. Verify: the group 4 tests pass and the client rows go green.
+- [x] 4.2 Implement `ItemIconClient` in `lib/data/item_icon_client.dart` with the sealed `ItemIconFetchResult` (D5): `AbortableRequest`, `followRedirects = false`, an injected timeout (default 15 s), the 256 KiB cap, signature sniffing, an optional etag and a cancel signal. Verify: the group 4 tests pass and the client rows go green.
 
 ## 5. Icon cache service
 
