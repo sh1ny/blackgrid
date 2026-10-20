@@ -151,7 +151,7 @@ class AppServices {
   late final ProgressController progress;
   late final SelectionController selection;
   late final LegacyImport importer;
-  final scans = const SessionScanState();
+  final scans = SessionScanState();
   bool _disposed = false;
   int _modeTransition = 0;
   Future<void> _automaticRefreshes = Future.value();

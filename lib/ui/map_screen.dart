@@ -349,7 +349,7 @@ class MapScreen extends StatelessWidget {
                       title: 'Latest accepted scan',
                       icon: Icons.center_focus_weak,
                       child: Text(
-                        services.scans.status,
+                        'No accepted scan this session',
                         style: const TextStyle(color: GridColors.muted),
                       ),
                     ),

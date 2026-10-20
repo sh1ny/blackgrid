@@ -13,7 +13,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 | Only an accepted scan that drives a decision advances the latest scan | Refresh and age update leave it unchanged | test/application/scan_decision_feed_test.dart | refresh and age tick leave the latest scan | red |
 | Only an accepted scan that drives a decision advances the latest scan | Fenced scan does not advance it | test/application/scan_decision_feed_test.dart | fenced scans do not advance the latest scan | red |
 | Only an accepted scan that drives a decision advances the latest scan | Unaccepted scan does not advance it | test/application/scan_decision_feed_test.dart | rejected scan does not advance the latest scan | red |
-| The latest scan advances once per scan and never goes back | Newer scan replaces older | test/application/session_scan_state_test.dart | a newer report replaces the latest scan | red |
+| The latest scan advances once per scan and never goes back | Newer scan replaces older | test/application/session_scan_state_test.dart | a newer report replaces the latest scan | green |
 | The latest scan advances once per scan and never goes back | Repeated notification | test/application/scan_decision_feed_test.dart | repeated notification keeps the first acceptance time | red |
 | The latest scan advances once per scan and never goes back | Same item scanned again | test/application/scan_decision_feed_test.dart | same item scanned again takes the second acceptance time | red |
 | The latest scan is session-only and clears on a mode or session change | Empty at startup | test/application/app_services_scan_test.dart | latest scan starts empty with scan history present | red |
@@ -32,7 +32,7 @@ The selection method is `showScan(AcceptedScan)`, as in design D2. The proposal'
 ## 1. Snapshot state
 
 - [x] 1.1 Write `test/application/session_scan_state_test.dart`: empty at construction; `advance` takes a higher report id ("a newer report replaces the latest scan"), ignores an equal or lower one, notifies only on change; `clear` empties it and keeps the mark, so `advance(#7)`, `clear()`, `advance(#5)` leaves it empty and `advance(#8)` takes it (review suggestion 3). Verify that it fails because the API does not exist.
-- [ ] 1.2 Rewrite `lib/application/session_scan_state.dart` as a documented `ChangeNotifier` with `AcceptedScan? latest`, `hasAcceptedScan`, `advance` and `clear` (design D1, D3). Remove `status`. Verify that 1.1 passes; flip its row green.
+- [x] 1.2 Rewrite `lib/application/session_scan_state.dart` as a documented `ChangeNotifier` with `AcceptedScan? latest`, `hasAcceptedScan`, `advance` and `clear` (design D1, D3). Remove `status`. Verify that 1.1 passes; flip its row green.
 
 ## 2. Feed producer and AppServices wiring
 
