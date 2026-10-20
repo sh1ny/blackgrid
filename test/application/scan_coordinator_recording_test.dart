@@ -939,6 +939,62 @@ void main() {
       }
     });
 
+    test('recording on at scan start marks the line', () async {
+      rig = await _Rig.create();
+      await rig.startRecording();
+      rig.fire(1000);
+      final capture = await rig.nextCapture();
+      // Recording ends before the frame arrives, so nothing is copied: only
+      // the state at the scan's start can mark the line.
+      await rig.coordinator.setRecording(false);
+      expect(rig.state, ScanRecordingState.off);
+      capture.succeed(rig.pixelFrame());
+      final ev = _ev();
+      (await rig.nextVision()).deliver(
+        _recognised(InspectionFrameKind.targeted, ev),
+      );
+      (await rig.nextMatch()).complete(_accepted(ev));
+      await rig.nextPublished();
+
+      expect(rig.logs.length, 1);
+      expect(rig.logs[0]['v'], 3);
+      expect(rig.logs[0]['recording'], true);
+      expect(rig.frames.viewCalls, 0, reason: 'no frame was copied');
+    });
+
+    test('recording turned on mid-scan marks the line', () async {
+      rig = await _Rig.create();
+      rig.fire(1000);
+      (await rig.nextCapture()).succeed(rig.pixelFrame());
+      final read = _ev(score: 0.55);
+      (await rig.nextVision()).deliver(
+        _recognised(InspectionFrameKind.targeted, read),
+      );
+      (await rig.nextMatch()).complete(
+        _rejected(OutcomeRejectReason.belowSimilarity, read),
+      );
+      // Recording turns on before the fallback pass, whose frame is copied.
+      await rig.startRecording();
+      (await rig.nextCapture()).succeed(rig.pixelFrame(seed: 2));
+      final ev = _ev();
+      (await rig.nextVision()).deliver(
+        _recognised(InspectionFrameKind.fullClient, ev),
+      );
+      (await rig.nextMatch()).complete(_accepted(ev));
+      await rig.nextPublished();
+
+      expect(rig.logs.length, 1);
+      expect(rig.logs[0]['recording'], true);
+      expect(rig.frames.viewCalls, 1);
+    });
+
+    test('a scan with recording off throughout is not marked', () async {
+      rig = await _Rig.create();
+      await rig.acceptTargeted();
+
+      expect(rig.logs[0]['recording'], false);
+    });
+
     test('timing log line keys are the same with recording on', () async {
       rig = await _Rig.create();
       await rig.acceptTargeted();
@@ -1010,22 +1066,26 @@ void main() {
       },
     );
 
-    test('targeted acceptance publishes before the extra capture', () async {
-      rig = await _Rig.create();
-      await rig.startRecording();
-      await rig.acceptTargeted();
-      await rig.nextCapture();
+    test(
+      'targeted acceptance publishes and logs before the extra capture',
+      () async {
+        rig = await _Rig.create();
+        await rig.startRecording();
+        await rig.acceptTargeted();
+        await rig.nextCapture();
 
-      final order = rig.events
-          .where(
-            (e) => e == 'log' || e == 'published' || e == 'capture.fallback',
-          )
-          .toList();
-      expect(order, ['log', 'published', 'capture.fallback']);
-      expect(rig.coordinator.latest!.end, isA<ScanAccepted>());
-      expect(rig.logs.length, 1);
-      expect(rig.logs[0]['end'], 'accepted');
-    });
+        final order = rig.events
+            .where(
+              (e) => e == 'log' || e == 'published' || e == 'capture.fallback',
+            )
+            .toList();
+        // The line follows publication, so it can hold the decision stamp.
+        expect(order, ['published', 'log', 'capture.fallback']);
+        expect(rig.coordinator.latest!.end, isA<ScanAccepted>());
+        expect(rig.logs.length, 1);
+        expect(rig.logs[0]['end'], 'accepted');
+      },
+    );
 
     test('extra captureTimeout fails the pending scan captureBusy and records fullFailure', () async {
       rig = await _Rig.create();

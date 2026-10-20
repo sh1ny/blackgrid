@@ -87,7 +87,7 @@
 
 ## 2. Timing log v3 in the coordinator
 
-- [ ] 2.1 Write the failing tests:
+- [x] 2.1 Write the failing tests:
   - in `test/application/scan_report_test.dart`, the v3 line rows, updating the existing `"v":2` assertions to 3;
   - in `scan_coordinator_flow_test.dart` and `scan_coordinator_wait_test.dart`, the stage rows. The fallback-start test uses the fake clock and asserts an exact `started` (S2c) and a `captureRequested` of at least 200 ms;
   - in `scan_coordinator_recording_test.dart`, the recording rows;

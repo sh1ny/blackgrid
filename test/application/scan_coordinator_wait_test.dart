@@ -1,6 +1,8 @@
 @Timeout(Duration(seconds: 5))
 library;
 
+import 'dart:async';
+
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/settings_controller.dart';
@@ -217,6 +219,36 @@ void main() {
         expect(fallback.mode, CaptureMode.fallback);
       },
     );
+
+    test('fallback start is stamped before the fallback wait', () async {
+      rig.now(_t1 + _ms);
+      rig.ports.fire(_t1);
+      // The targeted pass ends rejected 120 ms after the trigger.
+      await rig.rejectTargeted(rejectedAt: _t1 + 120 * _ms);
+      await rig.waiter.requests.at(1);
+      expect(rig.waiter.requests[1], const Duration(milliseconds: 80));
+      expect(rig.capture.calls.length, 1, reason: 'no fallback capture yet');
+
+      // The wait ends at 200 ms; the fallback capture is requested then.
+      final published = Completer<void>();
+      rig.coordinator.addListener(() {
+        if (rig.coordinator.latest != null && !published.isCompleted) {
+          published.complete();
+        }
+      });
+      rig.now(_t1 + 200 * _ms);
+      rig.waiter.release(1);
+      (await rig.capture.calls.at(1)).fail(const TargetGone());
+      await published.future;
+
+      final timeline = rig.coordinator.latest!.timeline;
+      expect(timeline.targeted!.started, _t1 + _ms);
+      expect(timeline.fallback!.started, _t1 + 120 * _ms);
+      expect(timeline.fallback!.captureRequested, _t1 + 200 * _ms);
+      final fallbackMs = (rig.logs.single['ms']! as Map)['fallback']! as Map;
+      expect(fallbackMs['started'], 120.0);
+      expect(fallbackMs['captureRequested'], 200.0);
+    });
 
     test('quick hotkey noMarker falls back at once', () async {
       rig.now(_t1 + _ms);

@@ -68,136 +68,136 @@ void _expectNoBytes(Object? node) {
 
 void main() {
   group('ScanReport.toLogLine', () {
-    test(
-      'accepted fallback report encodes a v2 line with trigger and per-pass ms',
-      () {
-        final targetedEntry = _entry(base: 20, score: 0.88, text: 'Salewa');
-        final fallbackEntry = _entry(base: 120);
-        final targeted = _recognised(targetedEntry);
-        final fallback = InspectionRecognised(
-          kind: InspectionFrameKind.fullClient,
-          scale: 1,
-          bestMarkerScore: 0.93,
-          evidence: [fallbackEntry],
-        );
-        final accepted = TitleAccepted(
-          bestId: 'kit',
-          normalisedTitle: 'salewa first aid kit',
-          bestScore: 0.97,
-          runnerUpId: 'bolts',
-          runnerUpScore: 0.31,
-          margin: 0.66,
-          confirmedBy: null,
-          mode: GameMode.pvp,
-          revision: 'r1',
-        );
-        final report = ScanReport(
-          id: 7,
-          utc: DateTime.utc(2026, 10, 10, 12, 30, 15),
-          end: ScanAccepted(
-            itemId: 'kit',
-            outcome: OutcomeAccepted<InspectionEvidence>(
-              accepted,
-              fallbackEntry,
-            ),
-          ),
-          winningPass: ScanPass.fallback,
-          targeted: PassReport(recognition: targeted),
-          fallback: PassReport(recognition: fallback),
-          catalogMode: GameMode.pvp,
-          catalogRevision: 'r1',
-          timeline: ScanTimeline(
-            trigger: _trigger,
-            published: _t(200),
-            targeted: PassTimeline(
-              captureRequested: _t(1),
-              acquireStart: _t(2),
-              acquireEnd: _t(10),
-              captureAnswered: _t(11),
-              visionSubmitted: _t(12),
-              jobStarted: _t(13),
-              jobFinished: _t(30),
-              matchStarted: _t(31),
-              matchFinished: _t(35),
-            ).withEvidenceStamps(targeted),
-            fallback: PassTimeline(
-              captureRequested: _t(100),
-              acquireStart: _t(101),
-              acquireEnd: _t(110),
-              captureAnswered: _t(111),
-              visionSubmitted: _t(112),
-              jobStarted: _t(113),
-              jobFinished: _t(150),
-              matchStarted: _t(151),
-              matchFinished: _t(160),
-            ).withEvidenceStamps(fallback, winner: fallbackEntry),
-          ),
-          droppedTriggers: 2,
-          supersededTriggers: 1,
-        );
+    test('accepted fallback report encodes v3 with started and decided', () {
+      final targetedEntry = _entry(base: 20, score: 0.88, text: 'Salewa');
+      final fallbackEntry = _entry(base: 120);
+      final targeted = _recognised(targetedEntry);
+      final fallback = InspectionRecognised(
+        kind: InspectionFrameKind.fullClient,
+        scale: 1,
+        bestMarkerScore: 0.93,
+        evidence: [fallbackEntry],
+      );
+      final accepted = TitleAccepted(
+        bestId: 'kit',
+        normalisedTitle: 'salewa first aid kit',
+        bestScore: 0.97,
+        runnerUpId: 'bolts',
+        runnerUpScore: 0.31,
+        margin: 0.66,
+        confirmedBy: null,
+        mode: GameMode.pvp,
+        revision: 'r1',
+      );
+      final report = ScanReport(
+        id: 7,
+        utc: DateTime.utc(2026, 10, 10, 12, 30, 15),
+        end: ScanAccepted(
+          itemId: 'kit',
+          outcome: OutcomeAccepted<InspectionEvidence>(accepted, fallbackEntry),
+        ),
+        winningPass: ScanPass.fallback,
+        targeted: PassReport(recognition: targeted),
+        fallback: PassReport(recognition: fallback),
+        catalogMode: GameMode.pvp,
+        catalogRevision: 'r1',
+        timeline: ScanTimeline(
+          trigger: _trigger,
+          published: _t(200),
+          targeted: PassTimeline(
+            started: _t(0),
+            captureRequested: _t(1),
+            acquireStart: _t(2),
+            acquireEnd: _t(10),
+            captureAnswered: _t(11),
+            visionSubmitted: _t(12),
+            jobStarted: _t(13),
+            jobFinished: _t(30),
+            matchStarted: _t(31),
+            matchFinished: _t(35),
+          ).withEvidenceStamps(targeted),
+          fallback: PassTimeline(
+            started: _t(35),
+            captureRequested: _t(100),
+            acquireStart: _t(101),
+            acquireEnd: _t(110),
+            captureAnswered: _t(111),
+            visionSubmitted: _t(112),
+            jobStarted: _t(113),
+            jobFinished: _t(150),
+            matchStarted: _t(151),
+            matchFinished: _t(160),
+          ).withEvidenceStamps(fallback, winner: fallbackEntry),
+        ),
+        droppedTriggers: 2,
+        supersededTriggers: 1,
+      );
 
-        final line = report.toLogLine(_frequency);
+      final line = report.toLogLine(_frequency, decided: _t(205));
 
-        expect(line['v'], 2);
-        expect(line['trigger'], 'mouse');
-        expect(line['utc'], '2026-10-10T12:30:15.000Z');
-        expect(line['end'], 'accepted');
-        expect(line['item'], 'kit');
-        expect(line['pass'], 'fallback');
-        expect(line['droppedTriggers'], 2);
-        expect(line['supersededTriggers'], 1);
-        expect(line.containsKey('reason'), isFalse);
+      expect(line['v'], 3);
+      expect(line['recording'], false);
+      expect(line['trigger'], 'mouse');
+      expect(line['utc'], '2026-10-10T12:30:15.000Z');
+      expect(line['end'], 'accepted');
+      expect(line['item'], 'kit');
+      expect(line['pass'], 'fallback');
+      expect(line['droppedTriggers'], 2);
+      expect(line['supersededTriggers'], 1);
+      expect(line.containsKey('reason'), isFalse);
 
-        final ms = line['ms']! as Map<String, Object?>;
-        expect(ms['trigger'], 0);
-        expect(ms['published'], 200.0);
-        expect(ms['targeted'], <String, Object?>{
-          'captureRequested': 1.0,
-          'acquireStart': 2.0,
-          'acquireEnd': 10.0,
-          'captureAnswered': 11.0,
-          'visionSubmitted': 12.0,
-          'jobStarted': 13.0,
-          // The targeted pass keeps its own evidence stamps.
-          'marker': 21.0,
-          'title': 22.0,
-          'preprocess': 23.0,
-          'ocr': 24.0,
-          'jobFinished': 30.0,
-          'matchStarted': 31.0,
-          'matchFinished': 35.0,
-        });
-        expect(ms['fallback'], <String, Object?>{
-          'captureRequested': 100.0,
-          'acquireStart': 101.0,
-          'acquireEnd': 110.0,
-          'captureAnswered': 111.0,
-          'visionSubmitted': 112.0,
-          'jobStarted': 113.0,
-          'marker': 121.0,
-          'title': 122.0,
-          'preprocess': 123.0,
-          'ocr': 124.0,
-          'jobFinished': 150.0,
-          'matchStarted': 151.0,
-          'matchFinished': 160.0,
-        });
+      final ms = line['ms']! as Map<String, Object?>;
+      expect(ms['trigger'], 0);
+      expect(ms['published'], 200.0);
+      expect(ms['decided'], 205.0);
+      expect(ms['targeted'], <String, Object?>{
+        'started': 0.0,
+        'captureRequested': 1.0,
+        'acquireStart': 2.0,
+        'acquireEnd': 10.0,
+        'captureAnswered': 11.0,
+        'visionSubmitted': 12.0,
+        'jobStarted': 13.0,
+        // The targeted pass keeps its own evidence stamps.
+        'marker': 21.0,
+        'title': 22.0,
+        'preprocess': 23.0,
+        'ocr': 24.0,
+        'jobFinished': 30.0,
+        'matchStarted': 31.0,
+        'matchFinished': 35.0,
+      });
+      expect(ms['fallback'], <String, Object?>{
+        'started': 35.0,
+        'captureRequested': 100.0,
+        'acquireStart': 101.0,
+        'acquireEnd': 110.0,
+        'captureAnswered': 111.0,
+        'visionSubmitted': 112.0,
+        'jobStarted': 113.0,
+        'marker': 121.0,
+        'title': 122.0,
+        'preprocess': 123.0,
+        'ocr': 124.0,
+        'jobFinished': 150.0,
+        'matchStarted': 151.0,
+        'matchFinished': 160.0,
+      });
 
-        final targetedLine = line['targeted']! as Map<String, Object?>;
-        expect(targetedLine['bestMarker'], 0.88);
-        expect(targetedLine['text'], 'Salewa');
-        expect(targetedLine.containsKey('candidates'), isFalse);
-        final fallbackLine = line['fallback']! as Map<String, Object?>;
-        expect(fallbackLine['text'], 'Salewa First Aid Kit');
-        expect(fallbackLine['candidates'], [
-          {'id': 'kit', 'score': 0.97},
-          {'id': 'bolts', 'score': 0.31},
-        ]);
+      final targetedLine = line['targeted']! as Map<String, Object?>;
+      expect(targetedLine['bestMarker'], 0.88);
+      expect(targetedLine['text'], 'Salewa');
+      expect(targetedLine.containsKey('candidates'), isFalse);
+      final fallbackLine = line['fallback']! as Map<String, Object?>;
+      expect(fallbackLine['text'], 'Salewa First Aid Kit');
+      expect(fallbackLine['candidates'], [
+        {'id': 'kit', 'score': 0.97},
+        {'id': 'bolts', 'score': 0.31},
+      ]);
 
-        _expectNoBytes(line);
-        expect(jsonDecode(jsonEncode(line)), isA<Map<String, Object?>>());
-      },
-    );
+      _expectNoBytes(line);
+      expect(jsonDecode(jsonEncode(line)), isA<Map<String, Object?>>());
+    });
 
     test('hotkey report encodes trigger hotkey', () {
       final entry = _entry(base: 20);
@@ -229,7 +229,7 @@ void main() {
 
       final line = report.toLogLine(_frequency);
 
-      expect(line['v'], 2);
+      expect(line['v'], 3);
       expect(line['trigger'], 'hotkey');
       expect(line['end'], 'accepted');
       expect(line['pass'], 'targeted');
@@ -246,6 +246,7 @@ void main() {
         timeline: ScanTimeline(
           trigger: _trigger,
           targeted: PassTimeline(
+            started: _t(0),
             captureRequested: _t(1),
             captureAnswered: _t(40),
             visionSubmitted: _t(41),
@@ -257,7 +258,7 @@ void main() {
 
       final line = report.toLogLine(_frequency);
 
-      expect(line['v'], 2);
+      expect(line['v'], 3);
       expect(line['end'], 'superseded');
       for (final key in ['item', 'reason', 'pass', 'fallback']) {
         expect(line.containsKey(key), isFalse, reason: key);
@@ -265,13 +266,64 @@ void main() {
       final ms = line['ms']! as Map<String, Object?>;
       expect(ms['trigger'], 0);
       expect(ms.containsKey('published'), isFalse);
+      expect(ms.containsKey('decided'), isFalse);
       expect(ms.containsKey('fallback'), isFalse);
       expect(ms['targeted'], <String, Object?>{
+        'started': 0.0,
         'captureRequested': 1.0,
         'captureAnswered': 40.0,
         'visionSubmitted': 41.0,
       });
       _expectNoBytes(line);
+    });
+
+    test('rejected report has fallback started and no decided', () {
+      final targetedEntry = _entry(base: 20, score: 0.5);
+      final fallbackEntry = _entry(base: 130, score: 0.6);
+      final report = ScanReport(
+        id: 10,
+        utc: DateTime.utc(2026, 10, 10),
+        end: ScanRejected(
+          reason: ScanRejectReason.ambiguous,
+          outcome: OutcomeRejected<InspectionEvidence>(
+            OutcomeRejectReason.ambiguous,
+            evidence: fallbackEntry,
+            match: const TitleRejected(
+              reason: TitleRejectReason.ambiguous,
+              normalisedTitle: 'weapons case',
+              bestId: 'case',
+              bestScore: 1,
+              mode: GameMode.pvp,
+              revision: 'r1',
+            ),
+          ),
+        ),
+        winningPass: ScanPass.fallback,
+        targeted: PassReport(recognition: _recognised(targetedEntry)),
+        fallback: PassReport(recognition: _recognised(fallbackEntry)),
+        timeline: ScanTimeline(
+          trigger: _trigger,
+          published: _t(300),
+          targeted: PassTimeline(started: _t(0), captureRequested: _t(50)),
+          fallback: PassTimeline(started: _t(120), captureRequested: _t(200)),
+        ),
+        droppedTriggers: 0,
+        supersededTriggers: 0,
+        recording: true,
+      );
+
+      final line = report.toLogLine(_frequency);
+
+      expect(line['v'], 3);
+      expect(line['recording'], true);
+      expect(line['end'], 'rejected');
+      final ms = line['ms']! as Map<String, Object?>;
+      expect(ms.containsKey('decided'), isFalse);
+      expect(ms['published'], 300.0);
+      final fallbackMs = ms['fallback']! as Map<String, Object?>;
+      expect(fallbackMs['started'], 120.0);
+      expect(report.withoutCrops().recording, isTrue);
+      jsonEncode(line);
     });
 
     test('a pass without a marker has no sub-stage stamps', () {
