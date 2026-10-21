@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
@@ -58,6 +60,34 @@ void main() {
     await db.close();
     await directory.delete(recursive: true);
   });
+  test(
+    'committing the same revision again replaces an icon-less projection',
+    () async {
+      final withIcons = fixtureCatalog();
+      final stored = Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(withIcons.toJson())) as Map,
+      );
+      for (final item in (stored['items'] as Map).values) {
+        (item as Map).remove('iconLink');
+      }
+      final iconless = CatalogSnapshot.fromJson(stored);
+      expect(iconless.revision, withIcons.revision);
+      final db = BlackgridDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.commitCatalog(iconless);
+      expect(
+        (await db.loadCatalog(GameMode.pvp))!.items['item-a']!.iconLink,
+        isNull,
+      );
+      await db.commitCatalog(withIcons);
+      final loaded = (await db.loadCatalog(GameMode.pvp))!;
+      expect(loaded.revision, withIcons.revision);
+      expect(
+        loaded.items['item-a']!.iconLink,
+        'https://assets.tarkov.dev/item-a-icon.webp',
+      );
+    },
+  );
   test('scan activity is one row per item and mode with source scan', () async {
     final db = BlackgridDatabase(NativeDatabase.memory());
     addTearDown(db.close);
@@ -221,4 +251,73 @@ void main() {
       await db.close();
     },
   );
+  test('item icon rows round-trip upsert touch and delete', () async {
+    final db = BlackgridDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final shown = DateTime.utc(2026, 10, 1, 12);
+    final validated = DateTime.utc(2026, 10, 2, 8);
+    expect(await db.readItemIcons(), isEmpty);
+    await db.upsertItemIcon(
+      ItemIconRecordsCompanion.insert(
+        itemId: 'item-a',
+        iconLink: 'https://example.invalid/a.webp',
+        lastShownAt: shown,
+        fileName: const Value('a.webp'),
+        byteSize: const Value(42),
+        etag: const Value('"e1"'),
+        validatedAt: Value(validated),
+      ),
+    );
+    await db.upsertItemIcon(
+      ItemIconRecordsCompanion.insert(
+        itemId: 'item-b',
+        iconLink: 'https://example.invalid/b.webp',
+        lastShownAt: shown,
+        failedUntil: Value(validated),
+        failedLink: const Value('https://example.invalid/b.webp'),
+      ),
+    );
+    var rows = {for (final r in await db.readItemIcons()) r.itemId: r};
+    expect(rows.keys, unorderedEquals(['item-a', 'item-b']));
+    final a = rows['item-a']!;
+    expect(a.iconLink, 'https://example.invalid/a.webp');
+    expect(a.fileName, 'a.webp');
+    expect(a.byteSize, 42);
+    expect(a.etag, '"e1"');
+    expect(a.validatedAt?.toUtc(), validated);
+    expect(a.lastShownAt.toUtc(), shown);
+    expect(a.failedUntil, isNull);
+    expect(a.failedLink, isNull);
+    final b = rows['item-b']!;
+    expect(b.fileName, isNull);
+    expect(b.byteSize, 0);
+    expect(b.failedUntil?.toUtc(), validated);
+    expect(b.failedLink, 'https://example.invalid/b.webp');
+
+    await db.upsertItemIcon(
+      ItemIconRecordsCompanion.insert(
+        itemId: 'item-a',
+        iconLink: 'https://example.invalid/a2.webp',
+        lastShownAt: shown,
+      ),
+    );
+    final replaced = (await db.readItemIcons()).singleWhere(
+      (r) => r.itemId == 'item-a',
+    );
+    expect(replaced.iconLink, 'https://example.invalid/a2.webp');
+    expect(replaced.fileName, isNull);
+
+    final later = shown.add(const Duration(days: 1));
+    await db.touchItemIcon('item-b', later);
+    await db.touchItemIcon('missing', later);
+    rows = {for (final r in await db.readItemIcons()) r.itemId: r};
+    expect(rows['item-b']!.lastShownAt.toUtc(), later);
+    expect(rows['item-a']!.lastShownAt.toUtc(), shown);
+    expect(rows, hasLength(2));
+
+    await db.deleteItemIcons(['item-a', 'missing']);
+    expect((await db.readItemIcons()).single.itemId, 'item-b');
+    await db.deleteItemIcons(const []);
+    expect(await db.readItemIcons(), hasLength(1));
+  });
 }

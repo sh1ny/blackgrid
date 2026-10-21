@@ -1673,6 +1673,585 @@ class ImportRecordsCompanion extends UpdateCompanion<ImportRecord> {
   }
 }
 
+class $ItemIconRecordsTable extends ItemIconRecords
+    with TableInfo<$ItemIconRecordsTable, ItemIconRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ItemIconRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iconLinkMeta = const VerificationMeta(
+    'iconLink',
+  );
+  @override
+  late final GeneratedColumn<String> iconLink = GeneratedColumn<String>(
+    'icon_link',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _byteSizeMeta = const VerificationMeta(
+    'byteSize',
+  );
+  @override
+  late final GeneratedColumn<int> byteSize = GeneratedColumn<int>(
+    'byte_size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _etagMeta = const VerificationMeta('etag');
+  @override
+  late final GeneratedColumn<String> etag = GeneratedColumn<String>(
+    'etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _validatedAtMeta = const VerificationMeta(
+    'validatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> validatedAt = GeneratedColumn<DateTime>(
+    'validated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastShownAtMeta = const VerificationMeta(
+    'lastShownAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastShownAt = GeneratedColumn<DateTime>(
+    'last_shown_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _failedUntilMeta = const VerificationMeta(
+    'failedUntil',
+  );
+  @override
+  late final GeneratedColumn<DateTime> failedUntil = GeneratedColumn<DateTime>(
+    'failed_until',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _failedLinkMeta = const VerificationMeta(
+    'failedLink',
+  );
+  @override
+  late final GeneratedColumn<String> failedLink = GeneratedColumn<String>(
+    'failed_link',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    itemId,
+    iconLink,
+    fileName,
+    byteSize,
+    etag,
+    validatedAt,
+    lastShownAt,
+    failedUntil,
+    failedLink,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'item_icon_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ItemIconRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('icon_link')) {
+      context.handle(
+        _iconLinkMeta,
+        iconLink.isAcceptableOrUnknown(data['icon_link']!, _iconLinkMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_iconLinkMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    }
+    if (data.containsKey('byte_size')) {
+      context.handle(
+        _byteSizeMeta,
+        byteSize.isAcceptableOrUnknown(data['byte_size']!, _byteSizeMeta),
+      );
+    }
+    if (data.containsKey('etag')) {
+      context.handle(
+        _etagMeta,
+        etag.isAcceptableOrUnknown(data['etag']!, _etagMeta),
+      );
+    }
+    if (data.containsKey('validated_at')) {
+      context.handle(
+        _validatedAtMeta,
+        validatedAt.isAcceptableOrUnknown(
+          data['validated_at']!,
+          _validatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_shown_at')) {
+      context.handle(
+        _lastShownAtMeta,
+        lastShownAt.isAcceptableOrUnknown(
+          data['last_shown_at']!,
+          _lastShownAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastShownAtMeta);
+    }
+    if (data.containsKey('failed_until')) {
+      context.handle(
+        _failedUntilMeta,
+        failedUntil.isAcceptableOrUnknown(
+          data['failed_until']!,
+          _failedUntilMeta,
+        ),
+      );
+    }
+    if (data.containsKey('failed_link')) {
+      context.handle(
+        _failedLinkMeta,
+        failedLink.isAcceptableOrUnknown(data['failed_link']!, _failedLinkMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {itemId};
+  @override
+  ItemIconRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ItemIconRecord(
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      iconLink: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_link'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      ),
+      byteSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}byte_size'],
+      )!,
+      etag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etag'],
+      ),
+      validatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}validated_at'],
+      ),
+      lastShownAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_shown_at'],
+      )!,
+      failedUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}failed_until'],
+      ),
+      failedLink: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}failed_link'],
+      ),
+    );
+  }
+
+  @override
+  $ItemIconRecordsTable createAlias(String alias) {
+    return $ItemIconRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ItemIconRecord extends DataClass implements Insertable<ItemIconRecord> {
+  final String itemId;
+  final String iconLink;
+  final String? fileName;
+  final int byteSize;
+  final String? etag;
+  final DateTime? validatedAt;
+  final DateTime lastShownAt;
+  final DateTime? failedUntil;
+  final String? failedLink;
+  const ItemIconRecord({
+    required this.itemId,
+    required this.iconLink,
+    this.fileName,
+    required this.byteSize,
+    this.etag,
+    this.validatedAt,
+    required this.lastShownAt,
+    this.failedUntil,
+    this.failedLink,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['item_id'] = Variable<String>(itemId);
+    map['icon_link'] = Variable<String>(iconLink);
+    if (!nullToAbsent || fileName != null) {
+      map['file_name'] = Variable<String>(fileName);
+    }
+    map['byte_size'] = Variable<int>(byteSize);
+    if (!nullToAbsent || etag != null) {
+      map['etag'] = Variable<String>(etag);
+    }
+    if (!nullToAbsent || validatedAt != null) {
+      map['validated_at'] = Variable<DateTime>(validatedAt);
+    }
+    map['last_shown_at'] = Variable<DateTime>(lastShownAt);
+    if (!nullToAbsent || failedUntil != null) {
+      map['failed_until'] = Variable<DateTime>(failedUntil);
+    }
+    if (!nullToAbsent || failedLink != null) {
+      map['failed_link'] = Variable<String>(failedLink);
+    }
+    return map;
+  }
+
+  ItemIconRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ItemIconRecordsCompanion(
+      itemId: Value(itemId),
+      iconLink: Value(iconLink),
+      fileName: fileName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileName),
+      byteSize: Value(byteSize),
+      etag: etag == null && nullToAbsent ? const Value.absent() : Value(etag),
+      validatedAt: validatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validatedAt),
+      lastShownAt: Value(lastShownAt),
+      failedUntil: failedUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(failedUntil),
+      failedLink: failedLink == null && nullToAbsent
+          ? const Value.absent()
+          : Value(failedLink),
+    );
+  }
+
+  factory ItemIconRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ItemIconRecord(
+      itemId: serializer.fromJson<String>(json['itemId']),
+      iconLink: serializer.fromJson<String>(json['iconLink']),
+      fileName: serializer.fromJson<String?>(json['fileName']),
+      byteSize: serializer.fromJson<int>(json['byteSize']),
+      etag: serializer.fromJson<String?>(json['etag']),
+      validatedAt: serializer.fromJson<DateTime?>(json['validatedAt']),
+      lastShownAt: serializer.fromJson<DateTime>(json['lastShownAt']),
+      failedUntil: serializer.fromJson<DateTime?>(json['failedUntil']),
+      failedLink: serializer.fromJson<String?>(json['failedLink']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'itemId': serializer.toJson<String>(itemId),
+      'iconLink': serializer.toJson<String>(iconLink),
+      'fileName': serializer.toJson<String?>(fileName),
+      'byteSize': serializer.toJson<int>(byteSize),
+      'etag': serializer.toJson<String?>(etag),
+      'validatedAt': serializer.toJson<DateTime?>(validatedAt),
+      'lastShownAt': serializer.toJson<DateTime>(lastShownAt),
+      'failedUntil': serializer.toJson<DateTime?>(failedUntil),
+      'failedLink': serializer.toJson<String?>(failedLink),
+    };
+  }
+
+  ItemIconRecord copyWith({
+    String? itemId,
+    String? iconLink,
+    Value<String?> fileName = const Value.absent(),
+    int? byteSize,
+    Value<String?> etag = const Value.absent(),
+    Value<DateTime?> validatedAt = const Value.absent(),
+    DateTime? lastShownAt,
+    Value<DateTime?> failedUntil = const Value.absent(),
+    Value<String?> failedLink = const Value.absent(),
+  }) => ItemIconRecord(
+    itemId: itemId ?? this.itemId,
+    iconLink: iconLink ?? this.iconLink,
+    fileName: fileName.present ? fileName.value : this.fileName,
+    byteSize: byteSize ?? this.byteSize,
+    etag: etag.present ? etag.value : this.etag,
+    validatedAt: validatedAt.present ? validatedAt.value : this.validatedAt,
+    lastShownAt: lastShownAt ?? this.lastShownAt,
+    failedUntil: failedUntil.present ? failedUntil.value : this.failedUntil,
+    failedLink: failedLink.present ? failedLink.value : this.failedLink,
+  );
+  ItemIconRecord copyWithCompanion(ItemIconRecordsCompanion data) {
+    return ItemIconRecord(
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      iconLink: data.iconLink.present ? data.iconLink.value : this.iconLink,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      byteSize: data.byteSize.present ? data.byteSize.value : this.byteSize,
+      etag: data.etag.present ? data.etag.value : this.etag,
+      validatedAt: data.validatedAt.present
+          ? data.validatedAt.value
+          : this.validatedAt,
+      lastShownAt: data.lastShownAt.present
+          ? data.lastShownAt.value
+          : this.lastShownAt,
+      failedUntil: data.failedUntil.present
+          ? data.failedUntil.value
+          : this.failedUntil,
+      failedLink: data.failedLink.present
+          ? data.failedLink.value
+          : this.failedLink,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItemIconRecord(')
+          ..write('itemId: $itemId, ')
+          ..write('iconLink: $iconLink, ')
+          ..write('fileName: $fileName, ')
+          ..write('byteSize: $byteSize, ')
+          ..write('etag: $etag, ')
+          ..write('validatedAt: $validatedAt, ')
+          ..write('lastShownAt: $lastShownAt, ')
+          ..write('failedUntil: $failedUntil, ')
+          ..write('failedLink: $failedLink')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    itemId,
+    iconLink,
+    fileName,
+    byteSize,
+    etag,
+    validatedAt,
+    lastShownAt,
+    failedUntil,
+    failedLink,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ItemIconRecord &&
+          other.itemId == this.itemId &&
+          other.iconLink == this.iconLink &&
+          other.fileName == this.fileName &&
+          other.byteSize == this.byteSize &&
+          other.etag == this.etag &&
+          other.validatedAt == this.validatedAt &&
+          other.lastShownAt == this.lastShownAt &&
+          other.failedUntil == this.failedUntil &&
+          other.failedLink == this.failedLink);
+}
+
+class ItemIconRecordsCompanion extends UpdateCompanion<ItemIconRecord> {
+  final Value<String> itemId;
+  final Value<String> iconLink;
+  final Value<String?> fileName;
+  final Value<int> byteSize;
+  final Value<String?> etag;
+  final Value<DateTime?> validatedAt;
+  final Value<DateTime> lastShownAt;
+  final Value<DateTime?> failedUntil;
+  final Value<String?> failedLink;
+  final Value<int> rowid;
+  const ItemIconRecordsCompanion({
+    this.itemId = const Value.absent(),
+    this.iconLink = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.byteSize = const Value.absent(),
+    this.etag = const Value.absent(),
+    this.validatedAt = const Value.absent(),
+    this.lastShownAt = const Value.absent(),
+    this.failedUntil = const Value.absent(),
+    this.failedLink = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ItemIconRecordsCompanion.insert({
+    required String itemId,
+    required String iconLink,
+    this.fileName = const Value.absent(),
+    this.byteSize = const Value.absent(),
+    this.etag = const Value.absent(),
+    this.validatedAt = const Value.absent(),
+    required DateTime lastShownAt,
+    this.failedUntil = const Value.absent(),
+    this.failedLink = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : itemId = Value(itemId),
+       iconLink = Value(iconLink),
+       lastShownAt = Value(lastShownAt);
+  static Insertable<ItemIconRecord> custom({
+    Expression<String>? itemId,
+    Expression<String>? iconLink,
+    Expression<String>? fileName,
+    Expression<int>? byteSize,
+    Expression<String>? etag,
+    Expression<DateTime>? validatedAt,
+    Expression<DateTime>? lastShownAt,
+    Expression<DateTime>? failedUntil,
+    Expression<String>? failedLink,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (itemId != null) 'item_id': itemId,
+      if (iconLink != null) 'icon_link': iconLink,
+      if (fileName != null) 'file_name': fileName,
+      if (byteSize != null) 'byte_size': byteSize,
+      if (etag != null) 'etag': etag,
+      if (validatedAt != null) 'validated_at': validatedAt,
+      if (lastShownAt != null) 'last_shown_at': lastShownAt,
+      if (failedUntil != null) 'failed_until': failedUntil,
+      if (failedLink != null) 'failed_link': failedLink,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ItemIconRecordsCompanion copyWith({
+    Value<String>? itemId,
+    Value<String>? iconLink,
+    Value<String?>? fileName,
+    Value<int>? byteSize,
+    Value<String?>? etag,
+    Value<DateTime?>? validatedAt,
+    Value<DateTime>? lastShownAt,
+    Value<DateTime?>? failedUntil,
+    Value<String?>? failedLink,
+    Value<int>? rowid,
+  }) {
+    return ItemIconRecordsCompanion(
+      itemId: itemId ?? this.itemId,
+      iconLink: iconLink ?? this.iconLink,
+      fileName: fileName ?? this.fileName,
+      byteSize: byteSize ?? this.byteSize,
+      etag: etag ?? this.etag,
+      validatedAt: validatedAt ?? this.validatedAt,
+      lastShownAt: lastShownAt ?? this.lastShownAt,
+      failedUntil: failedUntil ?? this.failedUntil,
+      failedLink: failedLink ?? this.failedLink,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (iconLink.present) {
+      map['icon_link'] = Variable<String>(iconLink.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (byteSize.present) {
+      map['byte_size'] = Variable<int>(byteSize.value);
+    }
+    if (etag.present) {
+      map['etag'] = Variable<String>(etag.value);
+    }
+    if (validatedAt.present) {
+      map['validated_at'] = Variable<DateTime>(validatedAt.value);
+    }
+    if (lastShownAt.present) {
+      map['last_shown_at'] = Variable<DateTime>(lastShownAt.value);
+    }
+    if (failedUntil.present) {
+      map['failed_until'] = Variable<DateTime>(failedUntil.value);
+    }
+    if (failedLink.present) {
+      map['failed_link'] = Variable<String>(failedLink.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItemIconRecordsCompanion(')
+          ..write('itemId: $itemId, ')
+          ..write('iconLink: $iconLink, ')
+          ..write('fileName: $fileName, ')
+          ..write('byteSize: $byteSize, ')
+          ..write('etag: $etag, ')
+          ..write('validatedAt: $validatedAt, ')
+          ..write('lastShownAt: $lastShownAt, ')
+          ..write('failedUntil: $failedUntil, ')
+          ..write('failedLink: $failedLink, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$BlackgridDatabase extends GeneratedDatabase {
   _$BlackgridDatabase(QueryExecutor e) : super(e);
   $BlackgridDatabaseManager get managers => $BlackgridDatabaseManager(this);
@@ -1684,6 +2263,9 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
   late final $CatalogRecordsTable catalogRecords = $CatalogRecordsTable(this);
   late final $ActiveCatalogsTable activeCatalogs = $ActiveCatalogsTable(this);
   late final $ImportRecordsTable importRecords = $ImportRecordsTable(this);
+  late final $ItemIconRecordsTable itemIconRecords = $ItemIconRecordsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1695,6 +2277,7 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     catalogRecords,
     activeCatalogs,
     importRecords,
+    itemIconRecords,
   ];
 }
 
@@ -2984,6 +3567,309 @@ typedef $$ImportRecordsTableProcessedTableManager =
       ImportRecord,
       PrefetchHooks Function()
     >;
+typedef $$ItemIconRecordsTableCreateCompanionBuilder =
+    ItemIconRecordsCompanion Function({
+      required String itemId,
+      required String iconLink,
+      Value<String?> fileName,
+      Value<int> byteSize,
+      Value<String?> etag,
+      Value<DateTime?> validatedAt,
+      required DateTime lastShownAt,
+      Value<DateTime?> failedUntil,
+      Value<String?> failedLink,
+      Value<int> rowid,
+    });
+typedef $$ItemIconRecordsTableUpdateCompanionBuilder =
+    ItemIconRecordsCompanion Function({
+      Value<String> itemId,
+      Value<String> iconLink,
+      Value<String?> fileName,
+      Value<int> byteSize,
+      Value<String?> etag,
+      Value<DateTime?> validatedAt,
+      Value<DateTime> lastShownAt,
+      Value<DateTime?> failedUntil,
+      Value<String?> failedLink,
+      Value<int> rowid,
+    });
+
+class $$ItemIconRecordsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ItemIconRecordsTable> {
+  $$ItemIconRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconLink => $composableBuilder(
+    column: $table.iconLink,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get byteSize => $composableBuilder(
+    column: $table.byteSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get etag => $composableBuilder(
+    column: $table.etag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get validatedAt => $composableBuilder(
+    column: $table.validatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastShownAt => $composableBuilder(
+    column: $table.lastShownAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get failedUntil => $composableBuilder(
+    column: $table.failedUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get failedLink => $composableBuilder(
+    column: $table.failedLink,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ItemIconRecordsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ItemIconRecordsTable> {
+  $$ItemIconRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get iconLink => $composableBuilder(
+    column: $table.iconLink,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get byteSize => $composableBuilder(
+    column: $table.byteSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get etag => $composableBuilder(
+    column: $table.etag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get validatedAt => $composableBuilder(
+    column: $table.validatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastShownAt => $composableBuilder(
+    column: $table.lastShownAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get failedUntil => $composableBuilder(
+    column: $table.failedUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get failedLink => $composableBuilder(
+    column: $table.failedLink,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ItemIconRecordsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ItemIconRecordsTable> {
+  $$ItemIconRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get iconLink =>
+      $composableBuilder(column: $table.iconLink, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get byteSize =>
+      $composableBuilder(column: $table.byteSize, builder: (column) => column);
+
+  GeneratedColumn<String> get etag =>
+      $composableBuilder(column: $table.etag, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get validatedAt => $composableBuilder(
+    column: $table.validatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastShownAt => $composableBuilder(
+    column: $table.lastShownAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get failedUntil => $composableBuilder(
+    column: $table.failedUntil,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get failedLink => $composableBuilder(
+    column: $table.failedLink,
+    builder: (column) => column,
+  );
+}
+
+class $$ItemIconRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ItemIconRecordsTable,
+          ItemIconRecord,
+          $$ItemIconRecordsTableFilterComposer,
+          $$ItemIconRecordsTableOrderingComposer,
+          $$ItemIconRecordsTableAnnotationComposer,
+          $$ItemIconRecordsTableCreateCompanionBuilder,
+          $$ItemIconRecordsTableUpdateCompanionBuilder,
+          (
+            ItemIconRecord,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $ItemIconRecordsTable,
+              ItemIconRecord
+            >,
+          ),
+          ItemIconRecord,
+          PrefetchHooks Function()
+        > {
+  $$ItemIconRecordsTableTableManager(
+    _$BlackgridDatabase db,
+    $ItemIconRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ItemIconRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ItemIconRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ItemIconRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> itemId = const Value.absent(),
+                Value<String> iconLink = const Value.absent(),
+                Value<String?> fileName = const Value.absent(),
+                Value<int> byteSize = const Value.absent(),
+                Value<String?> etag = const Value.absent(),
+                Value<DateTime?> validatedAt = const Value.absent(),
+                Value<DateTime> lastShownAt = const Value.absent(),
+                Value<DateTime?> failedUntil = const Value.absent(),
+                Value<String?> failedLink = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ItemIconRecordsCompanion(
+                itemId: itemId,
+                iconLink: iconLink,
+                fileName: fileName,
+                byteSize: byteSize,
+                etag: etag,
+                validatedAt: validatedAt,
+                lastShownAt: lastShownAt,
+                failedUntil: failedUntil,
+                failedLink: failedLink,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String itemId,
+                required String iconLink,
+                Value<String?> fileName = const Value.absent(),
+                Value<int> byteSize = const Value.absent(),
+                Value<String?> etag = const Value.absent(),
+                Value<DateTime?> validatedAt = const Value.absent(),
+                required DateTime lastShownAt,
+                Value<DateTime?> failedUntil = const Value.absent(),
+                Value<String?> failedLink = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ItemIconRecordsCompanion.insert(
+                itemId: itemId,
+                iconLink: iconLink,
+                fileName: fileName,
+                byteSize: byteSize,
+                etag: etag,
+                validatedAt: validatedAt,
+                lastShownAt: lastShownAt,
+                failedUntil: failedUntil,
+                failedLink: failedLink,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ItemIconRecordsTable, ItemIconRecord>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $ItemIconRecordsTable,
+                    ItemIconRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ItemIconRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ItemIconRecordsTable,
+      ItemIconRecord,
+      $$ItemIconRecordsTableFilterComposer,
+      $$ItemIconRecordsTableOrderingComposer,
+      $$ItemIconRecordsTableAnnotationComposer,
+      $$ItemIconRecordsTableCreateCompanionBuilder,
+      $$ItemIconRecordsTableUpdateCompanionBuilder,
+      (
+        ItemIconRecord,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ItemIconRecordsTable,
+          ItemIconRecord
+        >,
+      ),
+      ItemIconRecord,
+      PrefetchHooks Function()
+    >;
 
 class $BlackgridDatabaseManager {
   final _$BlackgridDatabase _db;
@@ -3000,4 +3886,6 @@ class $BlackgridDatabaseManager {
       $$ActiveCatalogsTableTableManager(_db, _db.activeCatalogs);
   $$ImportRecordsTableTableManager get importRecords =>
       $$ImportRecordsTableTableManager(_db, _db.importRecords);
+  $$ItemIconRecordsTableTableManager get itemIconRecords =>
+      $$ItemIconRecordsTableTableManager(_db, _db.itemIconRecords);
 }

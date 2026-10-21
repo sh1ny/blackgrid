@@ -60,10 +60,16 @@ class CatalogItem {
     this.fleaPrice,
     this.quoteAt,
     this.updatedAt,
+    this.iconLink,
     Iterable<CashOffer> sellOffers = const [],
   }) : sellOffers = List.unmodifiable(sellOffers);
   final String id, name, normalizedName;
   final String? shortName;
+
+  /// The item's picture URL on `assets.tarkov.dev`, or null for no picture.
+  ///
+  /// Only values accepted by [acceptedIconLink] are stored here.
+  final String? iconLink;
   final num? width, height, fleaPrice;
   final bool? noFlea;
   final int? minLevelForFlea;
@@ -94,6 +100,7 @@ class CatalogItem {
     'fleaPrice': fleaPrice,
     'quoteAt': quoteAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
+    if (iconLink != null) 'iconLink': iconLink,
     'sellOffers': sellOffers.map((v) => v.toJson()).toList(),
   };
   factory CatalogItem.fromJson(Map<String, dynamic> j) => CatalogItem(
@@ -108,10 +115,39 @@ class CatalogItem {
     fleaPrice: j['fleaPrice'] as num?,
     quoteAt: _date(j['quoteAt']),
     updatedAt: _date(j['updatedAt']),
+    iconLink: acceptedIconLink(j['iconLink']),
     sellOffers: (j['sellOffers'] as List).map(
       (v) => CashOffer.fromJson(Map<String, dynamic>.from(v as Map)),
     ),
   );
+}
+
+/// Returns [value] when it is an acceptable item-icon link, otherwise null.
+///
+/// A link is acceptable when it is a string that parses as an absolute
+/// `https` URL on `assets.tarkov.dev`, with no user info, explicit port, query
+/// or fragment (even an empty `?` or `#`), and is not the
+/// `/unknown-item-icon.jpg` placeholder, which means the item has no picture.
+/// A value of any other type, or one that does not parse, yields null; it
+/// never throws.
+String? acceptedIconLink(Object? value) {
+  // Uri drops a default port (`:443`), so the raw text is checked as well to
+  // reject any explicit port or user info.
+  if (value is! String || !value.startsWith('https://assets.tarkov.dev/')) {
+    return null;
+  }
+  final uri = Uri.tryParse(value);
+  if (uri == null ||
+      uri.scheme != 'https' ||
+      uri.host != 'assets.tarkov.dev' ||
+      uri.hasPort ||
+      uri.userInfo.isNotEmpty ||
+      uri.hasQuery ||
+      uri.hasFragment ||
+      uri.path == '/unknown-item-icon.jpg') {
+    return null;
+  }
+  return value;
 }
 
 class CatalogTrader {

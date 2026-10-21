@@ -375,6 +375,91 @@ void main() {
       ['edge_of_darkness', 'eod_tue_edition'],
     );
   });
+  const goodLink = 'https://assets.tarkov.dev/item-a-icon.webp';
+  String? iconLinkAfter(Object? value) {
+    final j = wireFixture();
+    (j['items']['data']['items']['item-a'] as Map)['iconLink'] = value;
+    return fixtureCatalog(wire: j).items['item-a']!.iconLink;
+  }
+
+  test('keeps an https assets.tarkov.dev icon link', () {
+    expect(iconLinkAfter(goodLink), goodLink);
+    final c = fixtureCatalog();
+    expect(c.items['item-a']!.iconLink, goodLink);
+    expect(c.items['item-b']!.iconLink, isNull);
+    final restored = CatalogSnapshot.fromJson(
+      Map<String, dynamic>.from(jsonDecode(jsonEncode(c.toJson())) as Map),
+    );
+    expect(restored.items['item-a']!.iconLink, goodLink);
+  });
+  test('drops icon links on another scheme, host, port, query or fragment', () {
+    for (final link in [
+      'http://assets.tarkov.dev/a.webp',
+      'ftp://assets.tarkov.dev/a.webp',
+      'https://evil.example/a.webp',
+      'https://assets.tarkov.dev.evil.example/a.webp',
+      'https://user@assets.tarkov.dev/a.webp',
+      'https://assets.tarkov.dev:8443/a.webp',
+      'https://assets.tarkov.dev:443/a.webp',
+      'https://assets.tarkov.dev/a.webp?x=1',
+      'https://assets.tarkov.dev/a.webp?',
+      'https://assets.tarkov.dev/a.webp#frag',
+      'https://assets.tarkov.dev/a.webp#',
+      '//assets.tarkov.dev/a.webp',
+      '/a.webp',
+    ]) {
+      expect(iconLinkAfter(link), isNull, reason: link);
+    }
+    final j = wireFixture();
+    (j['items']['data']['items']['item-a'] as Map)['iconLink'] =
+        'https://evil.example/a.webp';
+    final tampered = fixtureCatalog(wire: j).toJson();
+    ((tampered['items'] as Map)['item-a'] as Map)['iconLink'] =
+        'https://evil.example/a.webp';
+    expect(
+      CatalogSnapshot.fromJson(
+        Map<String, dynamic>.from(jsonDecode(jsonEncode(tampered)) as Map),
+      ).items['item-a']!.iconLink,
+      isNull,
+    );
+  });
+  test('treats the unknown-item-icon placeholder as no picture', () {
+    expect(
+      iconLinkAfter('https://assets.tarkov.dev/unknown-item-icon.jpg'),
+      isNull,
+    );
+  });
+  test('drops non-string, empty or unparseable icon links without rejecting the catalog', () {
+    for (final value in [
+      42,
+      true,
+      <String>[],
+      <String, Object?>{},
+      '',
+      ' ',
+      'http://[bad',
+    ]) {
+      expect(iconLinkAfter(value), isNull, reason: '$value');
+    }
+    final j = wireFixture();
+    (j['items']['data']['items']['item-a'] as Map)['iconLink'] = 42;
+    final c = fixtureCatalog(wire: j);
+    expect(c.items.keys, containsAll(['item-a', 'item-b']));
+    expect(c.items['item-a']!.shortName, 'Component');
+  });
+  test('a stored projection without iconLink keys still loads', () {
+    final stored = Map<String, dynamic>.from(
+      jsonDecode(jsonEncode(fixtureCatalog().toJson())) as Map,
+    );
+    for (final item in (stored['items'] as Map).values) {
+      (item as Map).remove('iconLink');
+    }
+    final restored = CatalogSnapshot.fromJson(stored);
+    expect(restored.items['item-a']!.iconLink, isNull);
+    expect(restored.items['item-a']!.shortName, 'Component');
+    expect(restored.schemaVersion, 1);
+    expect(restored.normalizerVersion, 1);
+  });
   test('purchase-only cash offers are not sale offers', () {
     final j = wireFixture();
     final i = j['items']['data']['items']['item-a'] as Map;

@@ -891,6 +891,8 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.6 / 
 
 **Remote data:** production GETs use [json.tarkov.dev](https://json.tarkov.dev/endpoints) and the read-only [Tracker API](https://api.tarkovtracker.org/openapi.json). Hosting and API availability are not blanket redistribution licenses for game data, artwork or private progress. Credentials and personal progress are not included in repository fixtures, local history, notices or diagnostics. Future asset selection and public distribution retain their own rights gates.
 
+**Item icons:** item icons are Battlestate Games renders hosted by tarkov.dev (`assets.tarkov.dev`). Blackgrid downloads an item's icon at runtime, at the user's direction, only when the item is shown, into the user's local cache (`%LOCALAPPDATA%\Blackgrid\item-icons\`; [ADR-0022](docs/adr/0022-item-icons-runtime-cache.md)). The icons are not shipped with Blackgrid, not committed to this repository, and not covered by Blackgrid's licence.
+
 ## Verbatim selected package licenses
 
 ### Map vector packages: vector_graphics and vector_graphics_compiler

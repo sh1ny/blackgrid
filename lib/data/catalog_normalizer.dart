@@ -125,6 +125,7 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       fleaPrice: _number(j['avg24hPrice']),
       quoteAt: _time(j['lastScanISO'] ?? j['lastScan']),
       updatedAt: _time(j['updated']),
+      iconLink: acceptedIconLink(j['iconLink']),
       sellOffers: offers,
     );
   }

@@ -7,6 +7,7 @@ import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
 import '../domain/title_matching.dart' show normaliseTitle;
+import 'item_icon.dart';
 import 'theme.dart';
 
 String recommendationLabel(Recommendation value) => switch (value) {
@@ -137,13 +138,32 @@ class ItemDecisionCard extends StatelessWidget {
                     const SizedBox(height: 18),
                     LayoutBuilder(
                       builder: (context, constraints) {
+                        final inline = compact || constraints.maxWidth < 560;
+                        final name = Text(
+                          item.name,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        );
                         final detail = Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              item.name,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
+                            if (inline)
+                              Row(
+                                key: const Key('item-title-row'),
+                                children: [
+                                  ItemIcon(
+                                    key: ValueKey(item.id),
+                                    cache: services.itemIcons,
+                                    itemId: item.id,
+                                    iconLink: item.iconLink,
+                                    size: 30,
+                                    color: GridColors.gold,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(child: name),
+                                ],
+                              )
+                            else
+                              name,
                             const SizedBox(height: 5),
                             SelectableText(
                               item.id,
@@ -199,7 +219,7 @@ class ItemDecisionCard extends StatelessWidget {
                             ),
                           ],
                         );
-                        if (compact || constraints.maxWidth < 560) {
+                        if (inline) {
                           return detail;
                         }
                         return Row(
@@ -221,8 +241,11 @@ class ItemDecisionCard extends StatelessWidget {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
-                                    Icons.inventory_2_outlined,
+                                  ItemIcon(
+                                    key: ValueKey(item.id),
+                                    cache: services.itemIcons,
+                                    itemId: item.id,
+                                    iconLink: item.iconLink,
                                     size: 68,
                                     color: GridColors.gold,
                                   ),
@@ -239,14 +262,6 @@ class ItemDecisionCard extends StatelessWidget {
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodySmall,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Identity only • no artwork',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: GridColors.muted,
-                                    ),
                                   ),
                                 ],
                               ),

@@ -64,6 +64,21 @@ class ImportRecords extends Table {
   Set<Column> get primaryKey => {digest};
 }
 
+/// One cached item icon: its source link, stored file and revalidation state.
+class ItemIconRecords extends Table {
+  TextColumn get itemId => text()();
+  TextColumn get iconLink => text()();
+  TextColumn get fileName => text().nullable()();
+  IntColumn get byteSize => integer().withDefault(const Constant(0))();
+  TextColumn get etag => text().nullable()();
+  DateTimeColumn get validatedAt => dateTime().nullable()();
+  DateTimeColumn get lastShownAt => dateTime()();
+  DateTimeColumn get failedUntil => dateTime().nullable()();
+  TextColumn get failedLink => text().nullable()();
+  @override
+  Set<Column> get primaryKey => {itemId};
+}
+
 @DriftDatabase(
   tables: [
     Preferences,
@@ -72,6 +87,7 @@ class ImportRecords extends Table {
     CatalogRecords,
     ActiveCatalogs,
     ImportRecords,
+    ItemIconRecords,
   ],
 )
 class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
@@ -79,15 +95,18 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      if (from != 1 || to != 2) {
+      if (from < 1 || to != 3 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
-      await transaction(() => m.createTable(importRecords));
+      await transaction(() async {
+        if (from < 2) await m.createTable(importRecords);
+        if (from < 3) await m.createTable(itemIconRecords);
+      });
     },
     beforeOpen: (details) async {
       if (details.versionBefore != null &&
@@ -250,6 +269,32 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       ),
     );
   }
+
+  /// Reads every cached item icon row.
+  Future<List<ItemIconRecord>> readItemIcons() => select(itemIconRecords).get();
+
+  /// Inserts [row], or fully replaces the existing row for the same item id.
+  ///
+  /// Columns absent from [row] take their defaults, not the old values.
+  Future<void> upsertItemIcon(ItemIconRecordsCompanion row) => transaction(
+    () async =>
+        into(itemIconRecords).insert(row, mode: InsertMode.insertOrReplace),
+  );
+
+  /// Deletes the icon rows for [itemIds] in one transaction.
+  Future<void> deleteItemIcons(Iterable<String> itemIds) {
+    final ids = itemIds.toList();
+    return transaction(() async {
+      await (delete(itemIconRecords)..where((r) => r.itemId.isIn(ids))).go();
+    });
+  }
+
+  /// Sets the last-shown time of the icon row for [itemId] to [lastShownAt].
+  Future<void> touchItemIcon(String itemId, DateTime lastShownAt) =>
+      transaction(() async {
+        await (update(itemIconRecords)..where((r) => r.itemId.equals(itemId)))
+            .write(ItemIconRecordsCompanion(lastShownAt: Value(lastShownAt)));
+      });
 
   Future<bool> wasImported(String digest) async =>
       await (select(
