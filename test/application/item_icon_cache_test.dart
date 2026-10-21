@@ -463,6 +463,32 @@ void main() {
       row.release();
     });
 
+    test('a cached file that cannot be read downloads again', () async {
+      final file = await seed('a');
+      // An exclusive lock through another handle makes reads fail on
+      // Windows while the file still exists.
+      final lock = file.openSync(mode: FileMode.append)
+        ..lockSync(FileLock.exclusive);
+      var locked = true;
+      addTearDown(() {
+        if (locked) lock.closeSync();
+      });
+      final cache = await openCache();
+      final lease = cache.acquire('a', linkFor('a'));
+      expect(lease.value, isA<GenericItemIcon>());
+      expect(client.calls, hasLength(1));
+      expect(client.calls.single.etag, isNull);
+
+      lock
+        ..unlockSync()
+        ..closeSync();
+      locked = false;
+      client.calls.single.complete(fetched(webp(8)));
+      final ready = await whenReady(lease);
+      expect(ready.file.readAsBytesSync(), webp(8));
+      lease.release();
+    }, testOn: 'windows');
+
     test(
       'a 304 for a file deleted with no new acquire downloads it again',
       () async {

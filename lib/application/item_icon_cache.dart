@@ -274,12 +274,13 @@ class ItemIconCache {
     }
   }
 
-  /// Resets a row whose file has vanished, so the item downloads again.
+  /// Resets a row whose file has vanished or cannot be read, so the item
+  /// downloads again.
   void _checkFile(String itemId, String link) {
     final row = _rows[itemId];
     final name = row?.fileName;
     if (row == null || name == null || row.iconLink != link) return;
-    if (_fileFor(name).existsSync()) return;
+    if (_readable(_fileFor(name))) return;
     _rows[itemId] = row.copyWith(
       fileName: const Value(null),
       byteSize: 0,
@@ -287,6 +288,24 @@ class ItemIconCache {
       validatedAt: const Value(null),
     );
     _enqueue(() => _persist(itemId));
+  }
+
+  /// Whether [file] exists and its first byte can be read.
+  ///
+  /// A file can exist yet refuse reads, for example under a changed ACL;
+  /// the image would then never draw.
+  static bool _readable(File file) {
+    try {
+      final handle = file.openSync();
+      try {
+        handle.readSync(1);
+      } finally {
+        handle.closeSync();
+      }
+      return true;
+    } on FileSystemException {
+      return false;
+    }
   }
 
   /// Refreshes `lastShownAt` at most once an hour per item.
