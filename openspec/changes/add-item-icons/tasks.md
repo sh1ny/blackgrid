@@ -141,7 +141,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 8. Integration check
 
-- [ ] 8.1 Run `dart format .`, `mise run analyze` and `mise run test`. Verify all three are clean, every test map row is green, and `openspec validate add-item-icons --strict` passes.
+- [x] 8.1 Run `dart format .`, `mise run analyze` and `mise run test`. Verify all three are clean, every test map row is green, and `openspec validate add-item-icons --strict` passes.
 
 ## Workflow follow-up
 
