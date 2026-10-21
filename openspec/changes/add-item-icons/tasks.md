@@ -40,7 +40,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | Icon downloads are bounded | A body that is not an image is a failure | test/data/item_icon_client_test.dart | a 200 HTML body is IconFailed | green |
 | Icon downloads are bounded | A hung request times out | test/data/item_icon_client_test.dart | a stalled request aborts at the injected timeout as IconFailed | green |
 | Icon downloads are bounded | More than four shown items wait their turn | test/application/item_icon_cache_test.dart | six shown items run at most four requests at once and download each once | green |
-| A download nothing shows any more is cancelled | A newer scan cancels the older scan's download | test/application/item_icon_cache_test.dart; test/ui/item_icon_test.dart | releasing the last lease aborts without a wait; switching the widget's item releases the old lease | red |
+| A download nothing shows any more is cancelled | A newer scan cancels the older scan's download | test/application/item_icon_cache_test.dart; test/ui/item_icon_test.dart | releasing the last lease aborts without a wait; switching the widget's item releases the old lease | green |
 | A download nothing shows any more is cancelled | A cancelled item downloads when shown again | test/application/item_icon_cache_test.dart | a cancelled item sends one new request when acquired again | green |
 | A download nothing shows any more is cancelled | A download still shown elsewhere is not cancelled | test/application/item_icon_cache_test.dart | releasing one of two leases keeps the download | green |
 | The icon cache stays within 64 MB | Below the budget nothing is evicted | test/application/item_icon_cache_test.dart | storing under the injected budget evicts nothing | green |
@@ -49,10 +49,10 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | An interrupted icon write leaves no partial icon | Stray files are removed at start | test/application/item_icon_cache_test.dart | open removes files no row names before any acquire is admitted | green |
 | The decision card shows the item's icon | Scanner shows the icon | test/ui/item_icon_surfaces_test.dart | Scanner decision card shows the cached item icon in wide and narrow layouts | red |
 | The decision card shows the item's icon | Map's compact card shows the icon | test/ui/item_icon_surfaces_test.dart | Map compact decision card shows the cached item icon | red |
-| The decision card shows the item's icon | The generic icon shows while loading or offline | test/ui/item_icon_test.dart | shows the generic icon while loading and after a failure | red |
-| The decision card shows the item's icon | An undecodable icon falls back | test/ui/item_icon_test.dart | an undecodable file shows the generic icon without an error | red |
-| The previous item's icon is never shown for a new item | A new scan shows the generic icon until its own icon is ready | test/ui/item_icon_test.dart | switching item shows generic until the new icon is ready | red |
-| The previous item's icon is never shown for a new item | A late download for the old item does not reach the new one | test/ui/item_icon_test.dart | a late completion for the old item never draws on the new one | red |
+| The decision card shows the item's icon | The generic icon shows while loading or offline | test/ui/item_icon_test.dart | shows the generic icon while loading and after a failure | green |
+| The decision card shows the item's icon | An undecodable icon falls back | test/ui/item_icon_test.dart | an undecodable file shows the generic icon without an error | green |
+| The previous item's icon is never shown for a new item | A new scan shows the generic icon until its own icon is ready | test/ui/item_icon_test.dart | switching item shows generic until the new icon is ready | green |
+| The previous item's icon is never shown for a new item | A late download for the old item does not reach the new one | test/ui/item_icon_test.dart | a late completion for the old item never draws on the new one | green |
 | History rows show the item's icon | A row shows its item's icon | test/ui/item_icon_surfaces_test.dart | a history row shows its item's cached icon | red |
 | History rows show the item's icon | A row from another mode stays generic | test/ui/item_icon_surfaces_test.dart | a history row from another mode stays generic and acquires nothing | red |
 
@@ -131,7 +131,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 ## 7. UI
 
 - [x] 7.1 Write failing widget tests in `test/ui/item_icon_test.dart` for the widget rows: generic while loading and after a failure; generic on an undecodable file; generic then the new icon when switching item; a late completion for the old item never drawn; switching item releases the old lease. Use a fake cache with controllable leases and a tiny real WebP fixture written to a temp file. Run file I/O and decoding in `tester.runAsync` where needed.
-- [ ] 7.2 Implement the `ItemIcon` widget in `lib/ui/item_icon.dart` per D4. Verify: the group 7.1 tests pass and the rows go green.
+- [x] 7.2 Implement the `ItemIcon` widget in `lib/ui/item_icon.dart` per D4. Verify: the group 7.1 tests pass and the rows go green.
 - [ ] 7.3 Write failing tests in `test/ui/item_icon_surfaces_test.dart`:
   - the Scanner card shows the icon in wide and narrow layouts, without `Identity only • no artwork`;
   - the Map compact card shows the icon next to the name;

@@ -1,0 +1,119 @@
+import 'package:flutter/material.dart';
+
+import '../application/item_icon_cache.dart';
+
+/// Key of the generic placeholder icon, for tests.
+const genericItemIconKey = Key('item-icon-generic');
+
+/// Key of the drawn icon image, for tests.
+const readyItemIconKey = Key('item-icon-image');
+
+/// Shows the icon of one item, or a generic icon when none is available.
+///
+/// The widget holds a lease from [cache] for [itemId] and [iconLink], and
+/// releases it when the item changes or the widget goes away. It never keeps
+/// the previous item's image while a new item loads. Callers should also key
+/// it by [itemId] so a new item always gets a new element.
+class ItemIcon extends StatefulWidget {
+  /// Creates an icon of [size] logical pixels for [itemId].
+  ///
+  /// [color] tints the generic icon only.
+  const ItemIcon({
+    super.key,
+    required this.cache,
+    required this.itemId,
+    required this.iconLink,
+    required this.size,
+    this.color,
+  });
+
+  /// Where icons come from.
+  final ItemIconCache cache;
+
+  /// The item whose icon is shown.
+  final String itemId;
+
+  /// The icon's link, or null when the item has none.
+  final String? iconLink;
+
+  /// Width and height of the icon.
+  final double size;
+
+  /// The color of the generic icon.
+  final Color? color;
+
+  @override
+  State<ItemIcon> createState() => _ItemIconState();
+}
+
+class _ItemIconState extends State<ItemIcon> {
+  late ItemIconLease _lease;
+
+  @override
+  void initState() {
+    super.initState();
+    _acquire();
+  }
+
+  @override
+  void didUpdateWidget(ItemIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.itemId != widget.itemId ||
+        oldWidget.iconLink != widget.iconLink ||
+        !identical(oldWidget.cache, widget.cache)) {
+      _release();
+      _acquire();
+    }
+  }
+
+  @override
+  void dispose() {
+    _release();
+    super.dispose();
+  }
+
+  void _acquire() {
+    _lease = widget.cache.acquire(widget.itemId, widget.iconLink);
+    _lease.addListener(_onChanged);
+  }
+
+  void _release() {
+    _lease.removeListener(_onChanged);
+    _lease.release();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Widget _generic() => Icon(
+    Icons.inventory_2_outlined,
+    key: genericItemIconKey,
+    size: widget.size,
+    color: widget.color,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    return SizedBox.square(
+      dimension: size,
+      child: switch (_lease.value) {
+        GenericItemIcon() => _generic(),
+        ReadyItemIcon(:final file) => Image.file(
+          file,
+          key: ValueKey(file.path),
+          width: size,
+          height: size,
+          cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+          fit: BoxFit.contain,
+          excludeFromSemantics: true,
+          errorBuilder: (_, _, _) => _generic(),
+          frameBuilder: (_, child, frame, _) => frame == null
+              ? _generic()
+              : KeyedSubtree(key: readyItemIconKey, child: child),
+        ),
+      },
+    );
+  }
+}
