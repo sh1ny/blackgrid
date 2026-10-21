@@ -9,9 +9,22 @@ import '../support/stalling_http_client.dart';
 
 const _cap = 256 * 1024;
 
-final _webp = <int>[...'RIFF'.codeUnits, 1, 2, 3, 4, ...'WEBP'.codeUnits, 9];
-final _png = <int>[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 7];
-final _jpeg = <int>[0xFF, 0xD8, 0xFF, 0xE0, 5];
+/// The four little-endian bytes of [n], as a RIFF size field.
+List<int> _le32(int n) => [for (var i = 0; i < 4; i++) (n >> (8 * i)) & 0xFF];
+
+/// A RIFF/WebP body of [length] bytes whose size field matches it.
+List<int> _webpOf(int length) => [
+  ...'RIFF'.codeUnits,
+  ..._le32(length - 8),
+  ...'WEBP'.codeUnits,
+  ...List.filled(length - 12, 9),
+];
+
+const _iend = [0, 0, 0, 0, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82];
+
+final _webp = _webpOf(13);
+final _png = <int>[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 7, ..._iend];
+final _jpeg = <int>[0xFF, 0xD8, 0xFF, 0xE0, 5, 0xFF, 0xD9];
 
 final _link = Uri.https('assets.tarkov.dev', '/abc-icon.webp');
 
@@ -169,7 +182,7 @@ void main() {
       });
 
       test('a body of exactly 256 KiB is accepted', () async {
-        final bytes = [..._webp, ...List.filled(_cap - _webp.length, 0)];
+        final bytes = _webpOf(_cap);
         final client = ItemIconClient(
           client: MockClient((_) async => http.Response.bytes(bytes, 200)),
         );
@@ -189,6 +202,20 @@ void main() {
       );
       final result = await client.fetch(_link);
       expect((result as IconFailed).kind, IconFailureKind.notImage);
+    });
+
+    test('a truncated body is not an image', () async {
+      for (final bytes in [
+        _webpOf(40).sublist(0, 30),
+        _png.sublist(0, _png.length - 4),
+        _jpeg.sublist(0, _jpeg.length - 2),
+      ]) {
+        final client = ItemIconClient(
+          client: MockClient((_) async => http.Response.bytes(bytes, 200)),
+        );
+        final result = await client.fetch(_link);
+        expect((result as IconFailed).kind, IconFailureKind.notImage);
+      }
     });
 
     test('an empty or truncated-signature 200 body is IconFailed', () async {

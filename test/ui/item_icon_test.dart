@@ -178,6 +178,35 @@ void main() {
     expect(cache.leasesFor('a').last.released, isFalse);
   });
 
+  testWidgets('an icon on a hidden tab acquires nothing until shown', (
+    tester,
+  ) async {
+    Widget tabs(int index) => MaterialApp(
+      home: IndexedStack(
+        index: index,
+        children: [
+          const SizedBox(),
+          ItemIcon(
+            cache: cache,
+            itemId: 'a',
+            iconLink: 'https://example.test/a.webp',
+            size: 24,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpWidget(tabs(0));
+    expect(cache.acquires, isEmpty);
+
+    await tester.pumpWidget(tabs(1));
+    expect(cache.acquires, hasLength(1));
+    expect(cache.leasesFor('a').single.released, isFalse);
+
+    await tester.pumpWidget(tabs(0));
+    expect(cache.leasesFor('a').single.released, isTrue);
+    expect(find.byKey(genericItemIconKey, skipOffstage: false), findsOneWidget);
+  });
+
   testWidgets(
     'a lease change during another icon build is applied after the frame',
     (tester) async {

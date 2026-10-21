@@ -25,6 +25,27 @@ enum IconFormat {
     [0xFF, 0xD8, 0xFF, ...] => IconFormat.jpg,
     _ => null,
   };
+
+  /// Whether [b], already sniffed as [format], reaches the format's end.
+  ///
+  /// A cut-off body keeps its signature but loses its end: a WebP's RIFF
+  /// size then exceeds the body, a PNG lacks its `IEND` chunk, and a JPEG
+  /// lacks its end-of-image marker.
+  static bool isComplete(IconFormat format, List<int> b) => switch (format) {
+    webp =>
+      b.length >= 8 &&
+          (b[4] | b[5] << 8 | b[6] << 16 | b[7] << 24) + 8 <= b.length,
+    png => _endsWith(b, const [0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82]),
+    jpg => _endsWith(b, const [0xFF, 0xD9]),
+  };
+
+  static bool _endsWith(List<int> b, List<int> tail) {
+    if (b.length < tail.length) return false;
+    for (var i = 0; i < tail.length; i++) {
+      if (b[b.length - tail.length + i] != tail[i]) return false;
+    }
+    return true;
+  }
 }
 
 /// Why an icon request failed.
@@ -159,7 +180,9 @@ class ItemIconClient {
     }
     final bytes = body.takeBytes();
     final format = IconFormat.sniff(bytes);
-    if (format == null) return const IconFailed(IconFailureKind.notImage);
+    if (format == null || !IconFormat.isComplete(format, bytes)) {
+      return const IconFailed(IconFailureKind.notImage);
+    }
     return IconFetched(bytes, format, etag: response.headers['etag']);
   }
 }

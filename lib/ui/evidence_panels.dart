@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
@@ -213,6 +214,8 @@ class HistoryPanel extends StatelessWidget {
             )
           : ListView.builder(
               key: const PageStorageKey('history-scroll'),
+              // Rows past the edge would otherwise request their icons.
+              scrollCacheExtent: const ScrollCacheExtent.pixels(0),
               itemCount: services.history.rows.length,
               itemBuilder: (context, index) {
                 final row = services.history.rows[index];

@@ -12,7 +12,8 @@ const readyItemIconKey = Key('item-icon-image');
 /// Shows the icon of one item, or a generic icon when none is available.
 ///
 /// The widget holds a lease from [cache] for [itemId] and [iconLink], and
-/// releases it when the item changes or the widget goes away. It never keeps
+/// releases it when the item changes, the widget is hidden or it goes away.
+/// A hidden widget holds no lease, so it requests nothing. It never keeps
 /// the previous item's image while a new item loads. Callers should also key
 /// it by [itemId] so a new item always gets a new element.
 class ItemIcon extends StatefulWidget {
@@ -48,20 +49,28 @@ class ItemIcon extends StatefulWidget {
 }
 
 class _ItemIconState extends State<ItemIcon> {
-  late ItemIconLease _lease;
+  /// The held lease, or null while the icon is hidden, such as on a tab an
+  /// [IndexedStack] does not show.
+  ItemIconLease? _lease;
 
   @override
-  void initState() {
-    super.initState();
-    _acquire();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = Visibility.of(context);
+    if (visible && _lease == null) {
+      _acquire();
+    } else if (!visible && _lease != null) {
+      _release();
+    }
   }
 
   @override
   void didUpdateWidget(ItemIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.itemId != widget.itemId ||
-        oldWidget.iconLink != widget.iconLink ||
-        !identical(oldWidget.cache, widget.cache)) {
+    if (_lease != null &&
+        (oldWidget.itemId != widget.itemId ||
+            oldWidget.iconLink != widget.iconLink ||
+            !identical(oldWidget.cache, widget.cache))) {
       _release();
       _acquire();
     }
@@ -69,18 +78,20 @@ class _ItemIconState extends State<ItemIcon> {
 
   @override
   void dispose() {
-    _release();
+    if (_lease != null) _release();
     super.dispose();
   }
 
   void _acquire() {
-    _lease = widget.cache.acquire(widget.itemId, widget.iconLink);
-    _lease.addListener(_onChanged);
+    _lease = widget.cache.acquire(widget.itemId, widget.iconLink)
+      ..addListener(_onChanged);
   }
 
   void _release() {
-    _lease.removeListener(_onChanged);
-    _lease.release();
+    _lease!
+      ..removeListener(_onChanged)
+      ..release();
+    _lease = null;
   }
 
   /// Rebuilds for a new view, after the frame if the change came mid-build.
@@ -111,7 +122,7 @@ class _ItemIconState extends State<ItemIcon> {
     final size = widget.size;
     return SizedBox.square(
       dimension: size,
-      child: switch (_lease.value) {
+      child: switch (_lease?.value ?? const GenericItemIcon()) {
         GenericItemIcon() => _generic(),
         ReadyItemIcon(:final file) => Image.file(
           file,
