@@ -13,40 +13,40 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | Icon links come only from the catalog and only from assets.tarkov.dev | A valid asset link is kept | test/data/catalog_normalizer_test.dart | keeps an https assets.tarkov.dev icon link | green |
 | Icon links come only from the catalog and only from assets.tarkov.dev | A link on another host, scheme or with a query is dropped | test/data/catalog_normalizer_test.dart | drops icon links on another scheme, host, port, query or fragment | green |
 | Icon links come only from the catalog and only from assets.tarkov.dev | The unknown-item placeholder means no picture | test/data/catalog_normalizer_test.dart | treats the unknown-item-icon placeholder as no picture | green |
-| Icon links come only from the catalog and only from assets.tarkov.dev | An item id that is unsafe in a file name writes nothing outside the cache folder | test/application/item_icon_cache_test.dart | names files from hashes so unsafe item ids stay inside the folder | red |
+| Icon links come only from the catalog and only from assets.tarkov.dev | An item id that is unsafe in a file name writes nothing outside the cache folder | test/application/item_icon_cache_test.dart | names files from hashes so unsafe item ids stay inside the folder | green |
 | Icon links come only from the catalog and only from assets.tarkov.dev | A malformed link value is dropped | test/data/catalog_normalizer_test.dart | drops non-string, empty or unparseable icon links without rejecting the catalog | green |
 | Stored catalogs from before icon links still load | An older projection loads without icons | test/data/catalog_normalizer_test.dart | a stored projection without iconLink keys still loads | green |
 | Stored catalogs from before icon links still load | The next refresh adds icon links | test/data/database_test.dart | committing the same revision again replaces an icon-less projection | green |
-| Icons download only for shown items | Showing an uncached item downloads its icon once | test/application/item_icon_cache_test.dart | first acquire of an uncached item sends one GET and becomes ready | red |
+| Icons download only for shown items | Showing an uncached item downloads its icon once | test/application/item_icon_cache_test.dart | first acquire of an uncached item sends one GET and becomes ready | green |
 | Icons download only for shown items | A catalog refresh downloads nothing | test/application/app_services_item_icons_test.dart | committing a catalog with icon links sends no icon request | red |
-| Icons download only for shown items | An item without a picture sends no request | test/application/item_icon_cache_test.dart | an item with no icon link stays generic and sends nothing | red |
-| One download per item at a time | The card and a history row share one download | test/application/item_icon_cache_test.dart | two leases on one item share one request | red |
-| One download per item at a time | Showing the item again during a download starts no second one | test/application/item_icon_cache_test.dart | re-acquiring during a held download sends no second request | red |
-| Cached icons have no time-based expiry | An old icon is used without a download | test/application/item_icon_cache_test.dart | a 400-day-old icon validated 10 days ago is used without a request | red |
-| Cached icons have no time-based expiry | A changed icon link replaces the cached icon | test/application/item_icon_cache_test.dart | a new icon link downloads once and removes the old file unless it is the same file | red |
-| Cached icons have no time-based expiry | A missing icon file is downloaded again | test/application/item_icon_cache_test.dart | a recorded icon whose file is gone downloads again | red |
-| Shown icons are revalidated at most every 30 days | Revalidation inside 30 days sends nothing | test/application/item_icon_cache_test.dart | an icon validated 29 days ago is not revalidated | red |
-| Shown icons are revalidated at most every 30 days | An unchanged icon costs a 304 | test/application/item_icon_cache_test.dart | a 30-day-old icon revalidates with If-None-Match and a 304 keeps the file | red |
-| Shown icons are revalidated at most every 30 days | A changed icon replaces the cached one | test/application/item_icon_cache_test.dart | a 200 revalidation replaces the icon and stores the new etag | red |
-| Shown icons are revalidated at most every 30 days | A 200 with identical bytes keeps the cached file | test/application/item_icon_cache_test.dart | a 200 revalidation with identical bytes keeps the file and sends nothing next time | red |
-| Shown icons are revalidated at most every 30 days | A failed revalidation keeps the cached icon | test/application/item_icon_cache_test.dart | a failed revalidation keeps the cached icon ready | red |
-| A failed icon request is not retried for 24 hours | Showing a failed item again sends nothing | test/application/item_icon_cache_test.dart | a 404 item shown 50 times in 23 hours sends one request | red |
-| A failed icon request is not retried for 24 hours | The wait survives a restart | test/application/item_icon_cache_test.dart | a reopened cache keeps the failure wait | red |
-| A failed icon request is not retried for 24 hours | After 24 hours one new attempt is made | test/application/item_icon_cache_test.dart | after 24 hours a failed item gets exactly one new request | red |
-| A failed icon request is not retried for 24 hours | A new icon link clears the wait | test/application/item_icon_cache_test.dart | a new icon link inside the wait sends one request to the new link | red |
-| A failed icon request is not retried for 24 hours | A failure for one item does not block another | test/application/item_icon_cache_test.dart | one item's failure wait does not block another item | red |
-| Icon downloads are bounded | A redirect is a failure | test/data/item_icon_client_test.dart; test/application/item_icon_cache_test.dart | a 302 is IconFailed and not followed; client failures start the wait | red |
+| Icons download only for shown items | An item without a picture sends no request | test/application/item_icon_cache_test.dart | an item with no icon link stays generic and sends nothing | green |
+| One download per item at a time | The card and a history row share one download | test/application/item_icon_cache_test.dart | two leases on one item share one request | green |
+| One download per item at a time | Showing the item again during a download starts no second one | test/application/item_icon_cache_test.dart | re-acquiring during a held download sends no second request | green |
+| Cached icons have no time-based expiry | An old icon is used without a download | test/application/item_icon_cache_test.dart | a 400-day-old icon validated 10 days ago is used without a request | green |
+| Cached icons have no time-based expiry | A changed icon link replaces the cached icon | test/application/item_icon_cache_test.dart | a new icon link downloads once and removes the old file unless it is the same file | green |
+| Cached icons have no time-based expiry | A missing icon file is downloaded again | test/application/item_icon_cache_test.dart | a recorded icon whose file is gone downloads again | green |
+| Shown icons are revalidated at most every 30 days | Revalidation inside 30 days sends nothing | test/application/item_icon_cache_test.dart | an icon validated 29 days ago is not revalidated | green |
+| Shown icons are revalidated at most every 30 days | An unchanged icon costs a 304 | test/application/item_icon_cache_test.dart | a 30-day-old icon revalidates with If-None-Match and a 304 keeps the file | green |
+| Shown icons are revalidated at most every 30 days | A changed icon replaces the cached one | test/application/item_icon_cache_test.dart | a 200 revalidation replaces the icon and stores the new etag | green |
+| Shown icons are revalidated at most every 30 days | A 200 with identical bytes keeps the cached file | test/application/item_icon_cache_test.dart | a 200 revalidation with identical bytes keeps the file and sends nothing next time | green |
+| Shown icons are revalidated at most every 30 days | A failed revalidation keeps the cached icon | test/application/item_icon_cache_test.dart | a failed revalidation keeps the cached icon ready | green |
+| A failed icon request is not retried for 24 hours | Showing a failed item again sends nothing | test/application/item_icon_cache_test.dart | a 404 item shown 50 times in 23 hours sends one request | green |
+| A failed icon request is not retried for 24 hours | The wait survives a restart | test/application/item_icon_cache_test.dart | a reopened cache keeps the failure wait | green |
+| A failed icon request is not retried for 24 hours | After 24 hours one new attempt is made | test/application/item_icon_cache_test.dart | after 24 hours a failed item gets exactly one new request | green |
+| A failed icon request is not retried for 24 hours | A new icon link clears the wait | test/application/item_icon_cache_test.dart | a new icon link inside the wait sends one request to the new link | green |
+| A failed icon request is not retried for 24 hours | A failure for one item does not block another | test/application/item_icon_cache_test.dart | one item's failure wait does not block another item | green |
+| Icon downloads are bounded | A redirect is a failure | test/data/item_icon_client_test.dart; test/application/item_icon_cache_test.dart | a 302 is IconFailed and not followed; client failures start the wait | green |
 | Icon downloads are bounded | An oversized body is a failure | test/data/item_icon_client_test.dart | a body over 256 KiB aborts as IconFailed (by Content-Length and by streaming) | green |
 | Icon downloads are bounded | A body that is not an image is a failure | test/data/item_icon_client_test.dart | a 200 HTML body is IconFailed | green |
 | Icon downloads are bounded | A hung request times out | test/data/item_icon_client_test.dart | a stalled request aborts at the injected timeout as IconFailed | green |
-| Icon downloads are bounded | More than four shown items wait their turn | test/application/item_icon_cache_test.dart | six shown items run at most four requests at once and download each once | red |
+| Icon downloads are bounded | More than four shown items wait their turn | test/application/item_icon_cache_test.dart | six shown items run at most four requests at once and download each once | green |
 | A download nothing shows any more is cancelled | A newer scan cancels the older scan's download | test/application/item_icon_cache_test.dart; test/ui/item_icon_test.dart | releasing the last lease aborts without a wait; switching the widget's item releases the old lease | red |
-| A download nothing shows any more is cancelled | A cancelled item downloads when shown again | test/application/item_icon_cache_test.dart | a cancelled item sends one new request when acquired again | red |
-| A download nothing shows any more is cancelled | A download still shown elsewhere is not cancelled | test/application/item_icon_cache_test.dart | releasing one of two leases keeps the download | red |
-| The icon cache stays within 64 MB | Below the budget nothing is evicted | test/application/item_icon_cache_test.dart | storing under the injected budget evicts nothing | red |
-| The icon cache stays within 64 MB | Above the budget the least recently shown icons go first | test/application/item_icon_cache_test.dart | over budget evicts least recently shown and keeps the new icon | red |
-| An interrupted icon write leaves no partial icon | A crash mid-write leaves nothing shown | test/application/item_icon_cache_test.dart | open removes a leftover tmp file and the item downloads when shown | red |
-| An interrupted icon write leaves no partial icon | Stray files are removed at start | test/application/item_icon_cache_test.dart | open removes files no row names before any acquire is admitted | red |
+| A download nothing shows any more is cancelled | A cancelled item downloads when shown again | test/application/item_icon_cache_test.dart | a cancelled item sends one new request when acquired again | green |
+| A download nothing shows any more is cancelled | A download still shown elsewhere is not cancelled | test/application/item_icon_cache_test.dart | releasing one of two leases keeps the download | green |
+| The icon cache stays within 64 MB | Below the budget nothing is evicted | test/application/item_icon_cache_test.dart | storing under the injected budget evicts nothing | green |
+| The icon cache stays within 64 MB | Above the budget the least recently shown icons go first | test/application/item_icon_cache_test.dart | over budget evicts least recently shown and keeps the new icon | green |
+| An interrupted icon write leaves no partial icon | A crash mid-write leaves nothing shown | test/application/item_icon_cache_test.dart | open removes a leftover tmp file and the item downloads when shown | green |
+| An interrupted icon write leaves no partial icon | Stray files are removed at start | test/application/item_icon_cache_test.dart | open removes files no row names before any acquire is admitted | green |
 | The decision card shows the item's icon | Scanner shows the icon | test/ui/item_icon_surfaces_test.dart | Scanner decision card shows the cached item icon in wide and narrow layouts | red |
 | The decision card shows the item's icon | Map's compact card shows the icon | test/ui/item_icon_surfaces_test.dart | Map compact decision card shows the cached item icon | red |
 | The decision card shows the item's icon | The generic icon shows while loading or offline | test/ui/item_icon_test.dart | shows the generic icon while loading and after a failure | red |
@@ -105,7 +105,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 ## 5. Icon cache service
 
 - [x] 5.1 Write failing tests in `test/application/item_icon_cache_test.dart` for every cache row of the test map. Use a fake client that records calls and completes them on demand (completers), a mutable clock, an in-memory database, a temp folder, and an injected budget small enough for tiny fixtures. Restart tests reopen a new cache on the same database and folder. Verify each fails for the missing cache.
-- [ ] 5.2 Implement `ItemIconCache` in `lib/application/item_icon_cache.dart` per D3 and D6:
+- [x] 5.2 Implement `ItemIconCache` in `lib/application/item_icon_cache.dart` per D3 and D6:
   - `open()` loads the index and runs the sweep (`*.tmp` files and files no row names) before it returns, and earlier `acquire`s give `generic`;
   - leases expose `ValueListenable<ItemIconView>`, with per-item reference counts and shared in-flight work;
   - a FIFO queue with 4 slots;
