@@ -78,6 +78,19 @@ class FakeItemIconClient implements ItemIconClient {
   Iterable<FakeCall> get open => calls.where((c) => !c.isDone);
 }
 
+/// A database whose icon upserts throw while [failUpserts] is set.
+class FlakyDatabase extends BlackgridDatabase {
+  FlakyDatabase(super.executor);
+
+  bool failUpserts = false;
+
+  @override
+  Future<void> upsertItemIcon(ItemIconRecordsCompanion row) {
+    if (failUpserts) return Future.error(StateError('upsert failed'));
+    return super.upsertItemIcon(row);
+  }
+}
+
 const _base = 'https://assets.tarkov.dev';
 String linkFor(String id) => '$_base/$id-icon.webp';
 
@@ -116,7 +129,7 @@ Future<ReadyItemIcon> whenReady(ItemIconLease lease) {
 }
 
 void main() {
-  late BlackgridDatabase db;
+  late FlakyDatabase db;
   late Directory root;
   late Directory dir;
   late FakeItemIconClient client;
@@ -124,7 +137,7 @@ void main() {
   var now = fixtureNow;
 
   setUp(() async {
-    db = BlackgridDatabase(NativeDatabase.memory());
+    db = FlakyDatabase(NativeDatabase.memory());
     root = await Directory.systemTemp.createTemp('blackgrid-icons-');
     dir = Directory('${root.path}${Platform.pathSeparator}icons')..createSync();
     client = FakeItemIconClient();
@@ -449,6 +462,62 @@ void main() {
       card.release();
       row.release();
     });
+
+    test(
+      'a 304 for a file deleted with no new acquire downloads it again',
+      () async {
+        final file = await seed(
+          'a',
+          etag: '"e1"',
+          validatedAt: now.subtract(const Duration(days: 30)),
+        );
+        final cache = await openCache();
+        final lease = cache.acquire('a', linkFor('a'));
+        expect(client.calls.single.etag, '"e1"');
+
+        file.deleteSync();
+        client.calls.single.complete(const IconNotModified());
+        await Future.any([client.waitForCalls(2), itemIconCacheIdle(cache)]);
+        expect(client.calls, hasLength(2));
+        expect(client.calls[1].etag, isNull);
+        expect(lease.value, isA<GenericItemIcon>());
+
+        client.calls[1].complete(fetched(webp(6)));
+        final ready = await whenReady(lease);
+        expect(ready.file.existsSync(), isTrue);
+        lease.release();
+      },
+    );
+
+    test(
+      'a 304 whose write fails records no failure and sends nothing more',
+      () async {
+        final file = await seed(
+          'a',
+          etag: '"e1"',
+          validatedAt: now.subtract(const Duration(days: 30)),
+        );
+        final cache = await openCache();
+        final card = cache.acquire('a', linkFor('a'));
+        db.failUpserts = true;
+        client.calls.single.complete(const IconNotModified());
+        await itemIconCacheIdle(cache);
+        // No new revalidation while the database keeps failing.
+        expect(client.calls, hasLength(1));
+        expect(card.value, isA<ReadyItemIcon>());
+
+        // Without a failure wait, a vanished file downloads again at once.
+        db.failUpserts = false;
+        file.deleteSync();
+        final row = cache.acquire('a', linkFor('a'));
+        expect(client.calls, hasLength(2));
+        expect(client.calls[1].etag, isNull);
+        client.calls[1].complete(fetched(webp(7)));
+        await whenReady(row);
+        card.release();
+        row.release();
+      },
+    );
 
     test(
       'a 200 revalidation replaces the icon and stores the new etag',

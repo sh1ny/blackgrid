@@ -469,8 +469,11 @@ class ItemIconCache {
   /// A 304: refreshes the validation time without touching the file.
   ///
   /// A 304 is never a failure. When the file it confirms has gone meanwhile,
-  /// this records nothing, and the caller's drive sends a plain GET.
+  /// this resets the row, and the caller's drive sends a plain GET. A failed
+  /// write keeps the new time in memory, so the item is not revalidated
+  /// again until the next session.
   Future<void> _validated(String itemId, String link) async {
+    _checkFile(itemId, link);
     final row = _rows[itemId];
     if (row == null || row.fileName == null || row.iconLink != link) return;
     final updated = row.copyWith(
@@ -478,11 +481,11 @@ class ItemIconCache {
       failedUntil: const Value(null),
       failedLink: const Value(null),
     );
+    _rows[itemId] = updated;
     try {
       await _database!.upsertItemIcon(updated.toCompanion(false));
-      _rows[itemId] = updated;
     } on Object {
-      _recordFailure(itemId, link);
+      // Icons are cosmetic: the stored row is only older than memory.
     }
   }
 
