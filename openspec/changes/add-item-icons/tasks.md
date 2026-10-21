@@ -130,7 +130,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 7. UI
 
-- [ ] 7.1 Write failing widget tests in `test/ui/item_icon_test.dart` for the widget rows: generic while loading and after a failure; generic on an undecodable file; generic then the new icon when switching item; a late completion for the old item never drawn; switching item releases the old lease. Use a fake cache with controllable leases and a tiny real WebP fixture written to a temp file. Run file I/O and decoding in `tester.runAsync` where needed.
+- [x] 7.1 Write failing widget tests in `test/ui/item_icon_test.dart` for the widget rows: generic while loading and after a failure; generic on an undecodable file; generic then the new icon when switching item; a late completion for the old item never drawn; switching item releases the old lease. Use a fake cache with controllable leases and a tiny real WebP fixture written to a temp file. Run file I/O and decoding in `tester.runAsync` where needed.
 - [ ] 7.2 Implement the `ItemIcon` widget in `lib/ui/item_icon.dart` per D4. Verify: the group 7.1 tests pass and the rows go green.
 - [ ] 7.3 Write failing tests in `test/ui/item_icon_surfaces_test.dart`:
   - the Scanner card shows the icon in wide and narrow layouts, without `Identity only • no artwork`;
