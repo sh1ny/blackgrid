@@ -7,54 +7,7 @@ import 'package:blackgrid/ui/item_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// A 1x1 lossless WebP.
-final _webp = base64Decode('UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==');
-
-/// A 1x1 PNG.
-final _png = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA'
-  '60e6kgAAAABJRU5ErkJggg==',
-);
-
-/// A lease the test drives by hand.
-class FakeLease extends ChangeNotifier implements ItemIconLease {
-  FakeLease(this.itemId);
-
-  @override
-  final String itemId;
-
-  ItemIconView _view = const GenericItemIcon();
-  bool released = false;
-
-  @override
-  ItemIconView get value => _view;
-
-  set value(ItemIconView view) {
-    _view = view;
-    notifyListeners();
-  }
-
-  @override
-  void release() => released = true;
-}
-
-class FakeItemIconCache implements ItemIconCache {
-  final List<FakeLease> leases = [];
-
-  List<FakeLease> leasesFor(String itemId) =>
-      leases.where((l) => l.itemId == itemId).toList();
-
-  @override
-  ItemIconLease acquire(String itemId, String? iconLink) {
-    final lease = FakeLease(itemId);
-    leases.add(lease);
-    return lease;
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('${invocation.memberName}');
-}
+import '../support/fake_item_icon_cache.dart';
 
 void main() {
   late Directory dir;
@@ -127,7 +80,7 @@ void main() {
   });
 
   testWidgets('draws a ready WebP icon once it decodes', (tester) async {
-    final file = write('a.webp', _webp);
+    final file = write('a.webp', tinyWebp);
     await tester.pumpWidget(host('a'));
 
     await showFile(tester, 'a', file);
@@ -137,7 +90,7 @@ void main() {
   });
 
   testWidgets('draws a ready PNG icon once it decodes', (tester) async {
-    final file = write('a.png', _png);
+    final file = write('a.png', tinyPng);
     await tester.pumpWidget(host('a'));
 
     await showFile(tester, 'a', file);
@@ -162,8 +115,8 @@ void main() {
   testWidgets('switching item shows generic until the new icon is ready', (
     tester,
   ) async {
-    final fileA = write('a.webp', _webp);
-    final fileB = write('b.webp', _webp);
+    final fileA = write('a.webp', tinyWebp);
+    final fileB = write('b.webp', tinyWebp);
     await tester.pumpWidget(host('a'));
     await showFile(tester, 'a', fileA);
     expect(drawn(), findsOneWidget);
@@ -183,7 +136,7 @@ void main() {
   testWidgets('a late completion for the old item never draws on the new one', (
     tester,
   ) async {
-    final fileA = write('a.webp', _webp);
+    final fileA = write('a.webp', tinyWebp);
     await tester.pumpWidget(host('a'));
     await tester.pumpWidget(host('b'));
     final oldLease = cache.leasesFor('a').single;
