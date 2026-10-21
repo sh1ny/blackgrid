@@ -104,7 +104,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 5. Icon cache service
 
-- [ ] 5.1 Write failing tests in `test/application/item_icon_cache_test.dart` for every cache row of the test map. Use a fake client that records calls and completes them on demand (completers), a mutable clock, an in-memory database, a temp folder, and an injected budget small enough for tiny fixtures. Restart tests reopen a new cache on the same database and folder. Verify each fails for the missing cache.
+- [x] 5.1 Write failing tests in `test/application/item_icon_cache_test.dart` for every cache row of the test map. Use a fake client that records calls and completes them on demand (completers), a mutable clock, an in-memory database, a temp folder, and an injected budget small enough for tiny fixtures. Restart tests reopen a new cache on the same database and folder. Verify each fails for the missing cache.
 - [ ] 5.2 Implement `ItemIconCache` in `lib/application/item_icon_cache.dart` per D3 and D6:
   - `open()` loads the index and runs the sweep (`*.tmp` files and files no row names) before it returns, and earlier `acquire`s give `generic`;
   - leases expose `ValueListenable<ItemIconView>`, with per-item reference counts and shared in-flight work;
