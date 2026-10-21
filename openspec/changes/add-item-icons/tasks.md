@@ -122,7 +122,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 
 ## 6. Wiring
 
-- [ ] 6.1 Write failing tests in `test/application/app_services_item_icons_test.dart`. Verify they fail before wiring:
+- [x] 6.1 Write failing tests in `test/application/app_services_item_icons_test.dart`. Verify they fail before wiring:
   - committing a catalog with icon links sends no icon request;
   - `AppServices` without `itemIcons` uses the disabled cache and sends no icon GET;
   - `dispose()` aborts an in-flight icon request before the client closes.
