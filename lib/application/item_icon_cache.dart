@@ -469,9 +469,9 @@ class ItemIconCache {
   /// A 304: refreshes the validation time without touching the file.
   ///
   /// A 304 is never a failure. When the file it confirms has gone meanwhile,
-  /// this resets the row, and the caller's drive sends a plain GET. A failed
-  /// write keeps the new time in memory, so the item is not revalidated
-  /// again until the next session.
+  /// this resets the row, and the caller's drive sends a plain GET.
+  /// A failed write keeps the new time in memory, so the item is not
+  /// revalidated again until the next session.
   Future<void> _validated(String itemId, String link) async {
     _checkFile(itemId, link);
     final row = _rows[itemId];
