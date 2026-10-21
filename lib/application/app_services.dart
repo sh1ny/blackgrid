@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import '../data/catalog_client.dart';
@@ -10,6 +10,7 @@ import '../data/database.dart';
 import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
 import '../data/game_paths.dart';
+import '../data/item_icon_client.dart';
 import '../data/raid_panel_ocr.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
@@ -20,6 +21,7 @@ import '../maps/native_map_scene.dart';
 import '../maps/prepared_map_loader.dart';
 import 'catalog_controller.dart';
 import 'history_controller.dart';
+import 'item_icon_cache.dart';
 import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'progress_controller.dart';
@@ -41,6 +43,7 @@ class AppServices {
     GamePathDiscovery? pathDiscovery,
     Directory? scanLogDirectory,
     Directory? scanFramesDirectory,
+    ItemIconCache? itemIcons,
     String? scanRuntimeDirectory,
     ScanMarkerLoader? scanMarkerLoader,
     ScanCaptureFactory? scanCaptureFactory,
@@ -49,7 +52,8 @@ class AppServices {
     ScanWaiter? scanWaiter,
     Duration scanSettleDelay = const Duration(milliseconds: 50),
     Duration scanFallbackDelay = const Duration(milliseconds: 200),
-  }) : _client = client {
+  }) : _client = client,
+       itemIcons = itemIcons ?? ItemIconCache.disabled() {
     final loader = PreparedMapPackLoader();
     maps =
         mapController ??
@@ -125,6 +129,9 @@ class AppServices {
   }
   final BlackgridDatabase database;
   final http.Client _client;
+
+  /// Downloads and stores item icons; disabled unless one is passed in.
+  final ItemIconCache itemIcons;
   late final SettingsController settings;
   late final MapController maps;
   late final MapSessionController mapSession;
@@ -176,10 +183,13 @@ class AppServices {
       ScanEpoch(_modeTransition, mapSession.state.sessionEpoch);
   static Future<AppServices> open() async {
     final paths = await LocalPaths.resolve();
+    final database = BlackgridDatabase.open(paths.database);
+    final client = http.Client();
     final result = AppServices(
-      database: BlackgridDatabase.open(paths.database),
+      database: database,
       credentials: DpapiCredentialStore(paths.credentials),
-      client: http.Client(),
+      client: client,
+      itemIcons: await _openItemIcons(paths, database, client),
       pathDiscovery: GamePathDiscovery(),
       scanLogDirectory: paths.logs,
       scanFramesDirectory: paths.scanFrames,
@@ -193,7 +203,28 @@ class AppServices {
     }
   }
 
+  /// Builds the real icon cache, or the disabled one when the folder cannot
+  /// be created, so a cosmetic feature never fails start-up.
+  static Future<ItemIconCache> _openItemIcons(
+    LocalPaths paths,
+    BlackgridDatabase database,
+    http.Client client,
+  ) async {
+    try {
+      await paths.itemIcons.create(recursive: true);
+    } on FileSystemException catch (error) {
+      debugPrint('Item icons disabled: cannot create folder ($error)');
+      return ItemIconCache.disabled();
+    }
+    return ItemIconCache(
+      database: database,
+      client: ItemIconClient(client: client),
+      directory: paths.itemIcons,
+    );
+  }
+
   Future<void> initialize() async {
+    await itemIcons.open();
     await settings.load();
     if (!_mapsInitialized) {
       await maps.initialize(
@@ -343,8 +374,12 @@ class AppServices {
       maps.dispose();
       settings.dispose();
       history.dispose();
-      _client.close();
-      await database.close();
+      try {
+        await itemIcons.dispose();
+      } finally {
+        _client.close();
+        await database.close();
+      }
     }
   }
 }

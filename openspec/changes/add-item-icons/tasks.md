@@ -18,7 +18,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | Stored catalogs from before icon links still load | An older projection loads without icons | test/data/catalog_normalizer_test.dart | a stored projection without iconLink keys still loads | green |
 | Stored catalogs from before icon links still load | The next refresh adds icon links | test/data/database_test.dart | committing the same revision again replaces an icon-less projection | green |
 | Icons download only for shown items | Showing an uncached item downloads its icon once | test/application/item_icon_cache_test.dart | first acquire of an uncached item sends one GET and becomes ready | green |
-| Icons download only for shown items | A catalog refresh downloads nothing | test/application/app_services_item_icons_test.dart | committing a catalog with icon links sends no icon request | red |
+| Icons download only for shown items | A catalog refresh downloads nothing | test/application/app_services_item_icons_test.dart | committing a catalog with icon links sends no icon request | green |
 | Icons download only for shown items | An item without a picture sends no request | test/application/item_icon_cache_test.dart | an item with no icon link stays generic and sends nothing | green |
 | One download per item at a time | The card and a history row share one download | test/application/item_icon_cache_test.dart | two leases on one item share one request | green |
 | One download per item at a time | Showing the item again during a download starts no second one | test/application/item_icon_cache_test.dart | re-acquiring during a held download sends no second request | green |
@@ -126,7 +126,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
   - committing a catalog with icon links sends no icon request;
   - `AppServices` without `itemIcons` uses the disabled cache and sends no icon GET;
   - `dispose()` aborts an in-flight icon request before the client closes.
-- [ ] 6.2 Add `LocalPaths.itemIcons`. Make `AppServices` take an optional `ItemIconCache? itemIcons` (default disabled), with `open()` building the real cache on `paths.itemIcons` and degrading to disabled if the folder cannot be created (one `debugPrint`). `initialize()` awaits `itemIcons.open()`, and `dispose()` disposes the cache before `_client.close()`. Verify: the group 6 tests pass, and `test/data/local_paths_test.dart` covers the new path.
+- [x] 6.2 Add `LocalPaths.itemIcons`. Make `AppServices` take an optional `ItemIconCache? itemIcons` (default disabled), with `open()` building the real cache on `paths.itemIcons` and degrading to disabled if the folder cannot be created (one `debugPrint`). `initialize()` awaits `itemIcons.open()`, and `dispose()` disposes the cache before `_client.close()`. Verify: the group 6 tests pass, and `test/data/local_paths_test.dart` covers the new path.
 
 ## 7. UI
 

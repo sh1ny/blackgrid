@@ -17,6 +17,10 @@ class LocalPaths {
   Directory get scanFrames =>
       Directory('${root.path}${Platform.pathSeparator}scan-frames');
 
+  /// Directory for cached item icons, created by the icon cache when it opens.
+  Directory get itemIcons =>
+      Directory('${root.path}${Platform.pathSeparator}item-icons');
+
   static Future<LocalPaths> resolve() async {
     if (!Platform.isWindows) {
       throw UnsupportedError('Blackgrid supports Windows desktop only.');

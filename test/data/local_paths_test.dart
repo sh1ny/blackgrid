@@ -15,6 +15,14 @@ void main() {
     );
   });
 
+  test('item icons directory lives under the data root', () {
+    final root = Directory('data-root');
+    expect(
+      LocalPaths(root).itemIcons.path,
+      '${root.path}${Platform.pathSeparator}item-icons',
+    );
+  });
+
   test('resolve does not need the logs directory', () async {
     final data = Directory.systemTemp.createTempSync('blackgrid-paths-');
     addTearDown(() => data.deleteSync(recursive: true));

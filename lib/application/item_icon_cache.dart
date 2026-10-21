@@ -109,6 +109,7 @@ class ItemIconCache {
   final Map<String, _Item> _items = {};
   final Queue<_Op> _queue = Queue();
   final List<Completer<void>> _idleWaiters = [];
+  final Set<Future<void>> _fetches = {};
   Future<void> _writes = Future.value();
   int _running = 0;
   int _pendingWrites = 0;
@@ -175,7 +176,8 @@ class ItemIconCache {
     return lease;
   }
 
-  /// Cancels every request, then waits for the queued writes to finish.
+  /// Cancels every request, then waits for the cancelled fetches to unwind and
+  /// the queued writes to finish.
   ///
   /// Afterwards [acquire] gives the generic icon and nothing is sent. Leases
   /// still held may be released safely.
@@ -186,6 +188,9 @@ class ItemIconCache {
       _cancelOp(item);
     }
     _queue.clear();
+    // The abort reaches the client only when each fetch has unwound, and the
+    // caller closes the shared client right after this returns.
+    await Future.wait(_fetches.toList());
     await _writes;
     _notifyIdle();
   }
@@ -295,7 +300,9 @@ class ItemIconCache {
       final op = _queue.removeFirst();
       op.running = true;
       _running++;
-      unawaited(_run(op));
+      late final Future<void> fetch;
+      fetch = _run(op).whenComplete(() => _fetches.remove(fetch));
+      _fetches.add(fetch);
     }
   }
 
