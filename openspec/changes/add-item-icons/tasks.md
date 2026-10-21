@@ -47,14 +47,14 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
 | The icon cache stays within 64 MB | Above the budget the least recently shown icons go first | test/application/item_icon_cache_test.dart | over budget evicts least recently shown and keeps the new icon | green |
 | An interrupted icon write leaves no partial icon | A crash mid-write leaves nothing shown | test/application/item_icon_cache_test.dart | open removes a leftover tmp file and the item downloads when shown | green |
 | An interrupted icon write leaves no partial icon | Stray files are removed at start | test/application/item_icon_cache_test.dart | open removes files no row names before any acquire is admitted | green |
-| The decision card shows the item's icon | Scanner shows the icon | test/ui/item_icon_surfaces_test.dart | Scanner decision card shows the cached item icon in wide and narrow layouts | red |
-| The decision card shows the item's icon | Map's compact card shows the icon | test/ui/item_icon_surfaces_test.dart | Map compact decision card shows the cached item icon | red |
+| The decision card shows the item's icon | Scanner shows the icon | test/ui/item_icon_surfaces_test.dart | Scanner decision card shows the cached item icon in wide and narrow layouts | green |
+| The decision card shows the item's icon | Map's compact card shows the icon | test/ui/item_icon_surfaces_test.dart | Map compact decision card shows the cached item icon | green |
 | The decision card shows the item's icon | The generic icon shows while loading or offline | test/ui/item_icon_test.dart | shows the generic icon while loading and after a failure | green |
 | The decision card shows the item's icon | An undecodable icon falls back | test/ui/item_icon_test.dart | an undecodable file shows the generic icon without an error | green |
 | The previous item's icon is never shown for a new item | A new scan shows the generic icon until its own icon is ready | test/ui/item_icon_test.dart | switching item shows generic until the new icon is ready | green |
 | The previous item's icon is never shown for a new item | A late download for the old item does not reach the new one | test/ui/item_icon_test.dart | a late completion for the old item never draws on the new one | green |
-| History rows show the item's icon | A row shows its item's icon | test/ui/item_icon_surfaces_test.dart | a history row shows its item's cached icon | red |
-| History rows show the item's icon | A row from another mode stays generic | test/ui/item_icon_surfaces_test.dart | a history row from another mode stays generic and acquires nothing | red |
+| History rows show the item's icon | A row shows its item's icon | test/ui/item_icon_surfaces_test.dart | a history row shows its item's cached icon | green |
+| History rows show the item's icon | A row from another mode stays generic | test/ui/item_icon_surfaces_test.dart | a history row from another mode stays generic and acquires nothing | green |
 
 ## 1. ADR, notices and plan amendment
 
@@ -137,7 +137,7 @@ Dart work follows AGENTS.md, section "Dart and Flutter code".
   - the Map compact card shows the icon next to the name;
   - a history row shows its icon;
   - a row from another mode stays generic and acquires nothing.
-- [ ] 7.4 Use `ItemIcon` keyed by item id in `ItemDecisionCard`: the wide image box (in place of the Material icon, with the label removed), and a small icon beside the name in the compact and narrow detail. Use it in `HistoryPanel` rows when the row's mode equals the catalog mode and the item resolves, otherwise keep the generic icon. Verify: the 7.3 tests pass, the rows go green, and the existing `scanner_screen_test.dart`, `map_screen_test.dart` and `latest_scan_card_test.dart` still pass.
+- [x] 7.4 Use `ItemIcon` keyed by item id in `ItemDecisionCard`: the wide image box (in place of the Material icon, with the label removed), and a small icon beside the name in the compact and narrow detail. Use it in `HistoryPanel` rows when the row's mode equals the catalog mode and the item resolves, otherwise keep the generic icon. Verify: the 7.3 tests pass, the rows go green, and the existing `scanner_screen_test.dart`, `map_screen_test.dart` and `latest_scan_card_test.dart` still pass.
 
 ## 8. Integration check
 

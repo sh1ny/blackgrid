@@ -4,6 +4,7 @@ import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/settings.dart';
+import 'item_icon.dart';
 import 'theme.dart';
 
 /// The evidence line for the newest items source update in [snapshot].
@@ -215,9 +216,12 @@ class HistoryPanel extends StatelessWidget {
               itemCount: services.history.rows.length,
               itemBuilder: (context, index) {
                 final row = services.history.rows[index];
-                final name = services.catalog.mode == row.mode
-                    ? services.catalog.snapshot?.items[row.itemId]?.name
+                // Only the current catalog may name an item or supply its
+                // icon; a row from another mode gets neither.
+                final item = services.catalog.mode == row.mode
+                    ? services.catalog.snapshot?.items[row.itemId]
                     : null;
+                final name = item?.name;
                 final selected = services.selection.historyRow?.key == row.key;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
@@ -233,10 +237,19 @@ class HistoryPanel extends StatelessWidget {
                     ),
                     child: ListTile(
                       dense: true,
-                      leading: const Icon(
-                        Icons.inventory_2_outlined,
-                        color: GridColors.muted,
-                      ),
+                      leading: item == null
+                          ? const Icon(
+                              Icons.inventory_2_outlined,
+                              color: GridColors.muted,
+                            )
+                          : ItemIcon(
+                              key: ValueKey(item.id),
+                              cache: services.itemIcons,
+                              itemId: item.id,
+                              iconLink: item.iconLink,
+                              size: 24,
+                              color: GridColors.muted,
+                            ),
                       title: Text(name ?? row.itemId),
                       subtitle: Text(
                         '${modeLabel(row.mode)} • ${_sourceLabel(row.source)}\n${row.observedAt.toUtc().toIso8601String()}',
