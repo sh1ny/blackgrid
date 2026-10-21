@@ -251,9 +251,11 @@ class ItemIconCache {
     final link = _currentLink(item);
     final op = item.op;
     if (op != null) {
-      if (op.link == link || op.settling) return;
+      if (op.cancelled || op.link == link || op.settling) return;
       if (item.leases.any((l) => l.link == op.link)) return;
       _cancelOp(item);
+      // A running op is still unwinding; its result drives the item again.
+      if (item.op != null) return;
     }
     final row = _rows[item.id];
     if (_waiting(row, link)) return;
@@ -331,16 +333,20 @@ class ItemIconCache {
     _onResult(op, result);
   }
 
-  /// Frees the op's slot, which a cancelled op holds until its fetch returns.
+  /// Frees the op's slot and its item, which a cancelled op holds until its
+  /// fetch returns.
   void _onResult(_Op op, ItemIconFetchResult result) {
     op.running = false;
     _running--;
+    final item = op.item;
     if (op.cancelled) {
+      if (identical(item.op, op)) item.op = null;
+      if (!_disposed) _drive(item);
+      _forget(item);
       _pump();
       _notifyIdle();
       return;
     }
-    final item = op.item;
     if (_disposed) {
       if (identical(item.op, op)) item.op = null;
       _notifyIdle();
@@ -365,13 +371,14 @@ class ItemIconCache {
 
   void _cancelOp(_Item item) {
     final op = item.op;
-    if (op == null || op.settling) return;
-    item.op = null;
+    if (op == null || op.settling || op.cancelled) return;
     op.cancelled = true;
     if (op.running) {
-      // The slot stays taken until the fetch unwinds; see [_onResult].
+      // A cancelled op stays the item's op until its fetch returns, so it
+      // keeps its slot and the item sends nothing else; see [_onResult].
       if (!op.cancel.isCompleted) op.cancel.complete();
     } else {
+      item.op = null;
       _queue.remove(op);
     }
     _pump();

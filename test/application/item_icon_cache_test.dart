@@ -651,6 +651,46 @@ void main() {
       },
     );
 
+    test(
+      'an item acquired again waits for its cancelled request to return',
+      () async {
+        client.answerCancel = false;
+        final cache = await openCache();
+        cache.acquire('a', linkFor('a')).release();
+        final again = cache.acquire('a', linkFor('a'));
+        await Future<void>.value();
+        expect(client.calls, hasLength(1));
+        expect(client.calls.single.cancelled, isTrue);
+
+        client.calls.single.complete(const IconCancelled());
+        await client.waitForCalls(2);
+        client.calls.last.complete(fetched(webp(4)));
+        await whenReady(again);
+        expect(client.maxActive, 1);
+      },
+    );
+
+    test(
+      'a new link waits for the cancelled request of the old link',
+      () async {
+        client.answerCancel = false;
+        final cache = await openCache();
+        final old = cache.acquire('a', '$_base/a-old.webp');
+        final current = cache.acquire('a', '$_base/a-new.webp');
+        old.release();
+        await Future<void>.value();
+        expect(client.calls, hasLength(1));
+        expect(client.calls.single.cancelled, isTrue);
+
+        client.calls.single.complete(const IconCancelled());
+        await client.waitForCalls(2);
+        expect(client.calls.last.link.toString(), '$_base/a-new.webp');
+        client.calls.last.complete(fetched(webp(5)));
+        await whenReady(current);
+        expect(client.maxActive, 1);
+      },
+    );
+
     test('releasing the last lease aborts without a wait', () async {
       final cache = await openCache();
       final lease = cache.acquire('a', linkFor('a'));
