@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../application/item_icon_cache.dart';
 
@@ -82,8 +83,20 @@ class _ItemIconState extends State<ItemIcon> {
     _lease.release();
   }
 
+  /// Rebuilds for a new view, after the frame if the change came mid-build.
+  ///
+  /// The cache publishes to every lease of an item from `acquire`, which
+  /// another [ItemIcon] may call while it is being built.
   void _onChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final scheduler = SchedulerBinding.instance;
+    if (scheduler.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      scheduler.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+    setState(() {});
   }
 
   Widget _generic() => Icon(

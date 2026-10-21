@@ -408,6 +408,40 @@ void main() {
       expect(client.calls, hasLength(1));
     });
 
+    test('a 304 after the file vanished mid-revalidation downloads it again without a wait', () async {
+      final file = await seed(
+        'a',
+        etag: '"e1"',
+        validatedAt: now.subtract(const Duration(days: 30)),
+      );
+      final cache = await openCache();
+      final card = cache.acquire('a', linkFor('a'));
+      expect(client.calls.single.etag, '"e1"');
+
+      file.deleteSync();
+      final row = cache.acquire('a', linkFor('a'));
+      expect(row.value, isA<GenericItemIcon>());
+      expect(client.calls, hasLength(1));
+
+      client.calls.single.complete(const IconNotModified());
+      // Idle with no second call means the 304 ended the work, as a failure.
+      await Future.any([client.waitForCalls(2), itemIconCacheIdle(cache)]);
+      expect(client.calls, hasLength(2));
+      expect(client.calls[1].link.toString(), linkFor('a'));
+      expect(client.calls[1].etag, isNull);
+
+      client.calls[1].complete(fetched(webp(5)));
+      final ready = await whenReady(row);
+      expect(ready.file.existsSync(), isTrue);
+      await itemIconCacheIdle(cache);
+      final stored = await rowFor('a');
+      expect(stored!.failedUntil, isNull);
+      expect(stored.failedLink, isNull);
+      expect(client.calls, hasLength(2));
+      card.release();
+      row.release();
+    });
+
     test(
       'a 200 revalidation replaces the icon and stores the new etag',
       () async {

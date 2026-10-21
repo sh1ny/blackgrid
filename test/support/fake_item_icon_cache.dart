@@ -47,6 +47,10 @@ class FakeItemIconCache implements ItemIconCache {
   /// Every `(itemId, iconLink)` pair that was acquired, in order.
   final List<(String, String?)> acquires = [];
 
+  /// Runs inside [acquire], before the new lease is returned, like the real
+  /// cache publishing to the item's other leases.
+  void Function(String itemId)? onAcquire;
+
   /// The leases handed out for [itemId].
   List<FakeLease> leasesFor(String itemId) =>
       leases.where((l) => l.itemId == itemId).toList();
@@ -54,6 +58,7 @@ class FakeItemIconCache implements ItemIconCache {
   @override
   ItemIconLease acquire(String itemId, String? iconLink) {
     acquires.add((itemId, iconLink));
+    onAcquire?.call(itemId);
     final lease = FakeLease(itemId);
     leases.add(lease);
     return lease;

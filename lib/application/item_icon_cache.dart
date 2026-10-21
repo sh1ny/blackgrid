@@ -445,13 +445,12 @@ class ItemIconCache {
   }
 
   /// A 304: refreshes the validation time without touching the file.
+  ///
+  /// A 304 is never a failure. When the file it confirms has gone meanwhile,
+  /// this records nothing, and the caller's drive sends a plain GET.
   Future<void> _validated(String itemId, String link) async {
     final row = _rows[itemId];
-    if (row == null || row.fileName == null || row.iconLink != link) {
-      _recordFailure(itemId, link);
-      await _persist(itemId);
-      return;
-    }
+    if (row == null || row.fileName == null || row.iconLink != link) return;
     final updated = row.copyWith(
       validatedAt: Value(_clock()),
       failedUntil: const Value(null),

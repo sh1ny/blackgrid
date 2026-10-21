@@ -177,4 +177,46 @@ void main() {
     expect(cache.leasesFor('a').first.released, isTrue);
     expect(cache.leasesFor('a').last.released, isFalse);
   });
+
+  testWidgets(
+    'a lease change during another icon build is applied after the frame',
+    (tester) async {
+      Widget icon(String key) => ItemIcon(
+        key: ValueKey(key),
+        cache: cache,
+        itemId: 'a',
+        iconLink: 'https://example.test/a.webp',
+        size: 24,
+      );
+      // The second icon is built during layout, in its own build scope, as a
+      // lazily built history row is; the first icon is outside that scope.
+      Widget icons(int count) => MaterialApp(
+        home: Column(
+          children: [
+            icon('card'),
+            LayoutBuilder(
+              builder: (_, _) =>
+                  count > 1 ? icon('row') : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpWidget(icons(1));
+      final shown = cache.leasesFor('a').single;
+      final file = write('a.webp', tinyWebp);
+      await tester.runAsync(() async {
+        shown.value = ReadyItemIcon(file);
+        await tester.pump();
+      });
+
+      // The real cache publishes to the item's other leases from inside
+      // acquire, which the second icon calls while it is being built.
+      cache.onAcquire = (_) => shown.value = const GenericItemIcon();
+      await tester.pumpWidget(icons(2));
+      expect(tester.takeException(), isNull);
+
+      await tester.pump();
+      expect(generic(), findsNWidgets(2));
+    },
+  );
 }
