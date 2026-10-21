@@ -34,6 +34,10 @@ class FakeCall {
 class FakeItemIconClient implements ItemIconClient {
   final calls = <FakeCall>[];
   int maxActive = 0;
+
+  /// Whether a cancel answers the call at once; false models a transport
+  /// that is slow to honour aborts, so the test completes the call itself.
+  bool answerCancel = true;
   int _active = 0;
   final _waiters = <(int, Completer<void>)>[];
 
@@ -54,7 +58,7 @@ class FakeItemIconClient implements ItemIconClient {
     maxActive = math.max(maxActive, _active);
     cancel?.then<void>((_) {
       call.cancelled = true;
-      call.complete(const IconCancelled());
+      if (answerCancel) call.complete(const IconCancelled());
     });
     call.result.whenComplete(() => _active--);
     for (final (count, waiter) in List.of(_waiters)) {
@@ -129,6 +133,10 @@ void main() {
   });
 
   tearDown(() async {
+    // A call a test left open would hold dispose forever.
+    for (final call in client.calls) {
+      call.complete(const IconCancelled());
+    }
     for (final cache in caches) {
       await cache.dispose();
     }
@@ -624,6 +632,25 @@ void main() {
       expect(client.calls, hasLength(6));
     });
 
+    test(
+      'a cancelled request keeps its slot until its fetch returns',
+      () async {
+        client.answerCancel = false;
+        final cache = await openCache(maxConcurrent: 1);
+        cache.acquire('a', linkFor('a')).release();
+        final b = cache.acquire('b', linkFor('b'));
+        await Future<void>.value();
+        expect(client.calls, hasLength(1));
+        expect(client.calls.single.cancelled, isTrue);
+
+        client.calls.single.complete(const IconCancelled());
+        await client.waitForCalls(2);
+        client.calls.last.complete(fetched(webp(2)));
+        await whenReady(b);
+        expect(client.maxActive, 1);
+      },
+    );
+
     test('releasing the last lease aborts without a wait', () async {
       final cache = await openCache();
       final lease = cache.acquire('a', linkFor('a'));
@@ -787,6 +814,26 @@ void main() {
         expect(client.calls, hasLength(1));
       },
     );
+
+    test('a cache that cannot open stays generic and sends nothing', () async {
+      // A file where the folder should be makes opening fail.
+      final blocked = File('${root.path}${Platform.pathSeparator}blocked')
+        ..writeAsStringSync('');
+      final cache = ItemIconCache(
+        database: db,
+        client: client,
+        directory: Directory(blocked.path),
+        clock: () => now,
+      );
+      caches.add(cache);
+
+      await cache.open();
+      final lease = cache.acquire('a', linkFor('a'));
+
+      expect(lease.value, isA<GenericItemIcon>());
+      lease.release();
+      expect(client.calls, isEmpty);
+    });
 
     test('a disabled cache is generic and sends nothing', () async {
       final cache = ItemIconCache.disabled();

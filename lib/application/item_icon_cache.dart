@@ -119,9 +119,22 @@ class ItemIconCache {
   /// Loads the index and removes stray files before any acquire is admitted.
   ///
   /// An acquire before this completes gives the generic icon and sends
-  /// nothing.
+  /// nothing. When the index or the folder cannot be read, this completes
+  /// normally and the cache stays generic, so icons never stop start-up.
   Future<void> open() async {
     if (!_enabled || _opened || _disposed) return;
+    try {
+      await _load();
+    } on Object catch (error) {
+      debugPrint('Item icons disabled: cannot open the cache ($error)');
+      _rows.clear();
+      return;
+    }
+    if (_disposed) return;
+    _opened = true;
+  }
+
+  Future<void> _load() async {
     final database = _database!;
     final directory = _directory!;
     final stored = await database.readItemIcons();
@@ -146,8 +159,6 @@ class ItemIconCache {
         await _delete(entity);
       }
     }
-    if (_disposed) return;
-    _opened = true;
   }
 
   /// Holds the icon of [itemId] for [iconLink] until the lease is released.
@@ -320,10 +331,15 @@ class ItemIconCache {
     _onResult(op, result);
   }
 
+  /// Frees the op's slot, which a cancelled op holds until its fetch returns.
   void _onResult(_Op op, ItemIconFetchResult result) {
-    if (op.cancelled) return;
     op.running = false;
     _running--;
+    if (op.cancelled) {
+      _pump();
+      _notifyIdle();
+      return;
+    }
     final item = op.item;
     if (_disposed) {
       if (identical(item.op, op)) item.op = null;
@@ -353,8 +369,7 @@ class ItemIconCache {
     item.op = null;
     op.cancelled = true;
     if (op.running) {
-      op.running = false;
-      _running--;
+      // The slot stays taken until the fetch unwinds; see [_onResult].
       if (!op.cancel.isCompleted) op.cancel.complete();
     } else {
       _queue.remove(op);

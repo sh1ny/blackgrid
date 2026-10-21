@@ -134,6 +134,32 @@ void main() {
     expect(client.sentIconRequest, isFalse);
   });
 
+  test('an icon cache that cannot open does not stop start-up', () async {
+    final client = _RecordingClient();
+    final database = BlackgridDatabase(NativeDatabase.memory());
+    // A file where the icon folder should be makes the cache's open fail.
+    final blocked = File('${root.path}/item-icons')..writeAsStringSync('');
+    final services = AppServices(
+      database: database,
+      credentials: _NoCredentials(),
+      clock: () => fixtureNow,
+      client: client,
+      itemIcons: ItemIconCache(
+        database: database,
+        client: ItemIconClient(client: client),
+        directory: Directory(blocked.path),
+      ),
+    );
+    addTearDown(services.dispose);
+
+    await services.initialize();
+
+    final lease = services.itemIcons.acquire('item-a', _iconLink);
+    addTearDown(lease.release);
+    expect(lease.value, const GenericItemIcon());
+    expect(client.sentIconRequest, isFalse);
+  });
+
   test(
     'dispose aborts an in-flight icon request before the client closes',
     () async {
