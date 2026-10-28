@@ -35,6 +35,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/map_markers/manifest.json
+    - assets/map_markers/compiled/
     - assets/maps/
     - assets/maps/versions/d5a0f9ae11c0591f1de72efb97b582ff79842594936dc42327a83213ec98d8d2/
     - assets/maps/versions/d5a0f9ae11c0591f1de72efb97b582ff79842594936dc42327a83213ec98d8d2/artwork/customs/
