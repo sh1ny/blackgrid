@@ -53,3 +53,56 @@ The user can also ask for changes, or bring their own drawings or ChatGPT concep
 The `solid` crown was redrawn as a solid skull: a rounded cranium over a narrower jaw, with the eyes, nose and two tooth gaps cut out. Its provenance is unchanged: `ai-assisted` with Claude Code (claude-opus-5-5), no concept source, and the hash was refreshed after re-attesting it. Shown on the sheet, the user approved it: "As my egyptian friends would say....Berfect!"
 
 Round 2 draws all 19 keys in the `solid` style. `CultistSpawns` shares the boss colour with `BossSpawns`, so it gets a distinct shape (a hooded figure) instead of a second skull.
+
+## Round 2: the release set (2026-10-28)
+
+All 19 keys are drawn in the `solid` style in [`assets/map_markers/`](../../../assets/map_markers/), with a `scope: release` manifest. The six round-1 glyphs carry over unchanged, skull included. The other 13 are new hand-coded path data. Every file is `ai-assisted` with Claude Code (claude-opus-5-5), with no concept source.
+
+### Glyphs that share a colour
+
+Shape is what tells apart keys that share a role. These are the distinctions to judge at 24 px:
+
+| Role | Key | Glyph |
+|---|---|---|
+| exit | `PmcExtracts` | Door frame with one arrow out |
+| exit | `ScavExtracts` | Arrow up out of a tray |
+| exit | `SharedExtracts` | Door frame with two arrows out |
+| exit | `Transits` | Two opposed arrows |
+| spawn | `PmcSpawns` | One person |
+| spawn | `ScavSpawns` | A group of two people |
+| boss | `BossSpawns` | Skull |
+| boss | `CultistSpawns` | Hooded figure with a dark face |
+| danger | `Hazards` | Warning triangle with a cut-out `!` |
+| danger | `HazardZones` | Broken ring around a small triangle |
+| danger | `stationaryWeapons` | Mounted gun on a tripod |
+| quest | `QuestItems` | Four-point star |
+| quest | `QuestObjectives` | Flag |
+| loot | `lootContainers` | Crate with a lid and a latch |
+| loot | `lootLoose` | Tied pouch |
+| utility | `locks` | Padlock |
+| utility | `Switches` | Lever switch |
+| utility | `BtrStops` | Armoured vehicle |
+| pin | `CustomPins` | Map pin |
+
+### Palette for the user to decide
+
+Contrast is measured against the marker background `#090F0D`. Every role passes the 3:1 floor and sits outside the reserved cyan band (170°-190°).
+
+| Role | Colour | Contrast | Hue | Keys | Today on the map |
+|---|---|---|---|---|---|
+| `exit` | `#48D28B` | 10.0:1 | 149° | Extracts, `Transits` | Green (unchanged) |
+| `danger` | `#FF5252` | 6.1:1 | 0° | `Hazards`, `HazardZones`, `stationaryWeapons` | Red, hazards only |
+| `boss` | `#E57CE5` | 7.7:1 | 300° | `BossSpawns`, `CultistSpawns` | Gold |
+| `spawn` | `#C9CDBF` | 11.9:1 | grey (12% saturation) | `PmcSpawns`, `ScavSpawns` | Gold |
+| `quest` | `#DCC05A` | 10.8:1 | 47° | `QuestItems`, `QuestObjectives` | Gold (unchanged) |
+| `loot` | `#E8A04A` | 8.8:1 | 33° | `lootContainers`, `lootLoose` | Gold |
+| `utility` | `#B7A6F0` | 9.0:1 | 254° | `locks`, `Switches`, `BtrStops` | Gold |
+| `pin` | `#40C4FF` | 9.7:1 | 199° | `CustomPins` | Light blue (unchanged) |
+
+Decisions for the user:
+- **`stationaryWeapons` moves from gold to the danger red.** Today red means hazards only, so this widens its meaning to "something that can kill you". Keep it, or give stationary weapons another role?
+- **The hues for `boss`, `spawn`, `loot` and `utility`.** Today these keys are all gold; any of them can be retuned within the rules.
+- **`pin` sits at 199°**, close to the cyan highlight band. The sheet shows a pin next to its highlighted state for judging the separation.
+- **The colour-blind row.** Under deuteranopia, exit green and danger red both turn olive, so only shape separates them there.
+
+**Approval:** pending the user's review.
