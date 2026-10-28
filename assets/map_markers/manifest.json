@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "scope": "release",
+  "background": "#090F0D",
+  "badge": { "diameter": 24, "selectedDiameter": 30, "glyph": 16, "ring": 2 },
+  "roles": {
+    "exit": "#48D28B",
+    "danger": "#FF5252",
+    "boss": "#E57CE5",
+    "spawn": "#C9CDBF",
+    "quest": "#DCC05A",
+    "loot": "#E8A04A",
+    "utility": "#B7A6F0",
+    "pin": "#40C4FF"
+  },
+  "icons": [
+    {
+      "key": "QuestItems",
+      "file": "quest_items.svg",
+      "role": "quest",
+      "sha256": "b90d320203bc4603c64cb7958aec2258531d822c4d850acc97820eae6e1233ad",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "QuestObjectives",
+      "file": "quest_objectives.svg",
+      "role": "quest",
+      "sha256": "315498fe9c9746425245b86408d52c32705de36e64f9332abafcc949ab5ebc88",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "PmcExtracts",
+      "file": "pmc_extracts.svg",
+      "role": "exit",
+      "sha256": "8ae6b4e4e21f871fb5d25e6ad0b1e071b50043e2d1f7186002eb9adeb11c2ed3",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "ScavExtracts",
+      "file": "scav_extracts.svg",
+      "role": "exit",
+      "sha256": "c6b9c7aa75dcf137ea664bb796330260917fc82660eb0693f5979053d40021dc",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "SharedExtracts",
+      "file": "shared_extracts.svg",
+      "role": "exit",
+      "sha256": "0bbab0c47e5253a01fed10ac517523aa273a51c8434eb0e4f002ba92a25650a1",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "Transits",
+      "file": "transits.svg",
+      "role": "exit",
+      "sha256": "2989d11074575027e543fc2616bf4f0bf3aeef1d5456c706a66b9527d10c17e8",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "Hazards",
+      "file": "hazards.svg",
+      "role": "danger",
+      "sha256": "3ca7aca880dc26a06f6311be4801807326f009856f7c032c27ad210b4ea896e0",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "HazardZones",
+      "file": "hazard_zones.svg",
+      "role": "danger",
+      "sha256": "c11528e3406c77356175702a871aad4941fe1c5cd2d4bc3f4bd8e5c717289548",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "Switches",
+      "file": "switches.svg",
+      "role": "utility",
+      "sha256": "d8a57e86e09258e95489af1c858e4f5dd363cfdd7499c51b11c6c0927a0d0d37",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "PmcSpawns",
+      "file": "pmc_spawns.svg",
+      "role": "spawn",
+      "sha256": "eb07984e3f4271688eb9145af5ed2993610c017643f8b49e495a667d853ab86c",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "ScavSpawns",
+      "file": "scav_spawns.svg",
+      "role": "spawn",
+      "sha256": "b54c3ce907bbfd398b10c46d633660ffc1b97a3476a51842a98e786c9b7c36cd",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "BossSpawns",
+      "file": "boss_spawns.svg",
+      "role": "boss",
+      "sha256": "1317974995b7c6511406b802b567b420ade5ed6fbefbba31105602bcb6cf172e",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "CultistSpawns",
+      "file": "cultist_spawns.svg",
+      "role": "boss",
+      "sha256": "c2a592ce636a15d19e59d58faeb7610e7e88abe0087de4b8dff839cfafdffcc7",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "BtrStops",
+      "file": "btr_stops.svg",
+      "role": "utility",
+      "sha256": "8ce6b1afbb7d1c1a8872e502edf3e41c11ae17e84d20ed25e920e14c92eca5e6",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "lootContainers",
+      "file": "loot_containers.svg",
+      "role": "loot",
+      "sha256": "1bc509bb3cdc571e6b18890a195faec9a1b53496a2af4d025b6fa0d56a56e687",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "lootLoose",
+      "file": "loot_loose.svg",
+      "role": "loot",
+      "sha256": "768443523914e081bae6a50a9346d026e5ab6088229359e42998ebb31361cca6",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "locks",
+      "file": "locks.svg",
+      "role": "utility",
+      "sha256": "51fe65dbe2e6c0e84f68e78896650322c89d65257777cb8f37050e1d061ec5b8",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "stationaryWeapons",
+      "file": "stationary_weapons.svg",
+      "role": "danger",
+      "sha256": "af7921f945d87f4d9c25c3aff7e8c21fe0acbe26030faa38ae3415736fc5ef93",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "CustomPins",
+      "file": "custom_pins.svg",
+      "role": "pin",
+      "sha256": "87bfe557e74fce894675c0281a8168d59b7e40fa6f8d668c905df6632718786d",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    }
+  ]
+}
