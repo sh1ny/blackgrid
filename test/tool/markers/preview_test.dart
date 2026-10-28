@@ -217,6 +217,59 @@ void main() {
     },
   );
 
+  test('--out naming an input file, however spelled, writes nothing', () {
+    final set = newSet();
+    final sep = Platform.pathSeparator;
+    final icon = '${set.dir.path}$sep${iconFileName('Hazards')}';
+    final inputs = {
+      set.manifestPath: File(set.manifestPath).readAsBytesSync(),
+      icon: File(icon).readAsBytesSync(),
+    };
+
+    for (final out in [
+      set.manifestPath,
+      icon,
+      '${set.dir.path}$sep.${sep}manifest.json',
+      '${set.dir.path}${sep}x$sep..$sep${iconFileName('Hazards')}',
+    ]) {
+      final err = StringBuffer();
+      final code = runCli(
+        [set.manifestPath, '--out', out],
+        out: StringBuffer(),
+        err: err,
+      );
+
+      expect(code, 1, reason: out);
+      expect(err.toString(), contains('input'), reason: out);
+      expect(File('$out.tmp').existsSync(), isFalse, reason: out);
+    }
+    inputs.forEach((path, bytes) {
+      expect(File(path).readAsBytesSync(), bytes, reason: path);
+    });
+  });
+
+  test('--out through a directory link to an input set writes nothing', () {
+    final set = newSet();
+    final sep = Platform.pathSeparator;
+    final alias = Link('${work.path}${sep}alias');
+    try {
+      alias.createSync(set.dir.path);
+    } on FileSystemException catch (e) {
+      markTestSkipped('cannot create a link here: ${e.message}');
+      return;
+    }
+    final before = File(set.manifestPath).readAsBytesSync();
+
+    final code = runCli(
+      [set.manifestPath, '--out', '${alias.path}${sep}manifest.json'],
+      out: StringBuffer(),
+      err: StringBuffer(),
+    );
+
+    expect(code, 1);
+    expect(File(set.manifestPath).readAsBytesSync(), before);
+  });
+
   test('usage errors exit 2 with a usage line', () {
     final set = newSet();
     for (final args in [

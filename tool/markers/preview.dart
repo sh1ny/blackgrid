@@ -11,7 +11,9 @@
 /// anything is validated or written. A usage error exits 2.
 ///
 /// The sheet is written to `<out>.tmp` and renamed onto `<out>`, so a failed
-/// run never replaces a previous sheet. It inlines every glyph once as a
+/// run never replaces a previous sheet. When either path resolves, through
+/// symbolic links and `.`/`..` segments, to a manifest or icon file of an
+/// input set, the run exits 1 and writes nothing. It inlines every glyph once as a
 /// `<symbol>` and has no external URL, script or font.
 ///
 /// Glyphs are tinted by alpha, the HTML equivalent of the app's `srcIn`
@@ -127,12 +129,48 @@ int runCli(List<String> args, {StringSink? out, StringSink? err}) {
   }
   if (failed) return 1;
 
+  final inputs = {
+    for (final (index, set) in sets.indexed) ...[
+      _realPath(manifests[index]),
+      for (final icon in set.icons)
+        _realPath('${set.directory.path}${Platform.pathSeparator}${icon.file}'),
+    ],
+  };
+  for (final path in [target, '$target.tmp']) {
+    if (inputs.contains(_realPath(path))) {
+      stderrSink.writeln('refusing to write $path: it is an input file');
+      return 1;
+    }
+  }
+
   final temporary = File('$target.tmp');
   temporary.parent.createSync(recursive: true);
   temporary.writeAsStringSync(renderPreview(sets));
   temporary.renameSync(target);
   stdoutSink.writeln('wrote $target (${sets.length} set(s))');
   return 0;
+}
+
+/// Resolves [path] through symbolic links, including those of its nearest
+/// existing ancestor when [path] does not exist yet, for comparison only.
+String _realPath(String path) {
+  final separators = RegExp(r'[\\/]');
+  // Normalise `.` and `..` first, then resolve the nearest existing entry.
+  var rest = <String>[];
+  var current = Uri.file(File(path).absolute.path).normalizePath().toFilePath();
+  while (FileSystemEntity.typeSync(current) == FileSystemEntityType.notFound) {
+    final parent = File(current).parent.path;
+    if (parent == current) break;
+    final name = current.substring(parent.length).replaceAll(separators, '');
+    rest = [name, ...rest];
+    current = parent;
+  }
+  final resolved =
+      FileSystemEntity.typeSync(current) == FileSystemEntityType.notFound
+      ? current
+      : File(current).resolveSymbolicLinksSync();
+  final real = [resolved, ...rest].join(Platform.pathSeparator);
+  return Platform.isWindows ? real.toLowerCase() : real;
 }
 
 /// Renders the contact sheet for [sets] as one HTML document.

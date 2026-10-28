@@ -303,6 +303,25 @@ void main() {
       );
     });
 
+    test('form: an oversized malformed file reports both failures', () {
+      final svg =
+          '$head><path d="M0 0h1v1z" fill="#fff">'
+          '<!-- ${'x' * 8300} --></svg>';
+      final result = withSvg(svg);
+      expectFailure(
+        result,
+        rule: 'form',
+        subject: 'transits.svg',
+        contains: ['${svg.length} bytes', '8192'],
+      );
+      expectFailure(
+        result,
+        rule: 'form',
+        subject: 'transits.svg',
+        contains: ['malformed'],
+      );
+    });
+
     test('form: malformed XML and compiler warning fail', () {
       expectFailure(
         withSvg('$head><path d="M0 0h1v1z" fill="#fff"></svg>'),

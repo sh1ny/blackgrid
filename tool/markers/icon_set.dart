@@ -526,8 +526,14 @@ String _checkForm(
   _Fail fail,
 ) {
   final problems = <String>[];
-  if (bytes.length > _maxSvgBytes) {
-    problems.add('size ${bytes.length} bytes exceeds the $_maxSvgBytes limit');
+  // Reported now: the decode and parse failures below return early.
+  final oversized = bytes.length > _maxSvgBytes;
+  if (oversized) {
+    fail(
+      'form',
+      file,
+      'size ${bytes.length} bytes exceeds the $_maxSvgBytes limit',
+    );
   }
   final String text;
   try {
@@ -553,7 +559,7 @@ String _checkForm(
   for (final problem in problems) {
     fail('form', file, problem);
   }
-  if (problems.isNotEmpty) return text;
+  if (oversized || problems.isNotEmpty) return text;
 
   try {
     if (compile(text, file).isEmpty) {
