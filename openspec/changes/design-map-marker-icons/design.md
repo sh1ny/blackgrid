@@ -188,7 +188,7 @@ Manifest precedent:
   - **Unpicked candidates** stay in `docs/` as the design record (small SVGs). They are never bundled.
   - **Agent authorship.** The agent hand-codes SVG path data. Such files are `ai-assisted` with the agent's tool named.
   - **User authorship.** The user may hand-draw an icon (`hand-authored`).
-  - **ChatGPT concepts.** The user may also generate concept images with ChatGPT image generation. The agent cannot drive ChatGPT. A concept image is then redrawn as vectors. Its prompt is saved under `docs/design/map-marker-icons/prompts/`, and the concept image itself is not committed.
+  - **ChatGPT concepts.** The user may also generate concept images with ChatGPT image generation. The agent cannot drive ChatGPT. A concept image is then redrawn as vectors. Its prompt is saved in a `prompts/` folder beside the set's manifest, so `concept.promptRecord` resolves inside the manifest's directory tree (D4, review S8). The concept image itself is not committed.
   - **No third-party reference.** No author opens, traces or describes to a tool any third-party marker set (tarkov.dev, the Tarkov wiki, the game's own UI). Prompts must not name them as a style reference. The provenance record is the author's attestation of this.
   - **Design record.** `docs/design/map-marker-icons/README.md` records each round, the directions shown, the user's pick and words, and the final palette.
 - **Rejected:** drawing the full 19-icon set straight away in one style. A rejected style would throw away 19 icons instead of 6.
