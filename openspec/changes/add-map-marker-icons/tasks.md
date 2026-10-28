@@ -23,11 +23,11 @@ Every implementer packet carries AGENTS.md's "Dart and Flutter code" section and
 | map-marker-icons → The bundled icons are the compiled release set | Compiled files in step | test/tool/markers/compile_test.dart | `the committed release set's compiled files are in step` | green |
 | map-marker-icons → The bundled icons are the compiled release set | SVG edited without recompiling | test/tool/markers/compile_test.dart | `compiledSetFailures names a stale compiled file` | green |
 | map-marker-icons → The bundled icons are the compiled release set | Orphan compiled file | test/tool/markers/compile_test.dart | `compiledSetFailures names labels.vec as unexpected` | green |
-| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Bundled icons match the recorded set | test/tool/vision/check_bundle_test.dart | `map-marker-icons passes on a bundle holding the manifest and every compiled icon` | red |
-| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Unlisted icon file in the bundle | test/tool/vision/check_bundle_test.dart | `map-marker-icons names an unlisted .vec, .svg or .png as unexpected` | red |
-| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Altered bundled icon | test/tool/vision/check_bundle_test.dart | `map-marker-icons names an altered compiled icon or manifest` | red |
-| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Release set fails its own check | test/tool/vision/check_bundle_test.dart | `map-marker-icons reports the set check's failures for a stale hash and exits 1` | red |
-| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Icons missing from the bundle | test/tool/vision/check_bundle_test.dart | `map-marker-icons names a missing directory or compiled icon` | red |
+| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Bundled icons match the recorded set | test/tool/vision/check_bundle_test.dart | `map-marker-icons passes on a bundle holding the manifest and every compiled icon` | green |
+| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Unlisted icon file in the bundle | test/tool/vision/check_bundle_test.dart | `map-marker-icons names an unlisted .vec, .svg or .png as unexpected` | green |
+| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Altered bundled icon | test/tool/vision/check_bundle_test.dart | `map-marker-icons names an altered compiled icon or manifest` | green |
+| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Release set fails its own check | test/tool/vision/check_bundle_test.dart | `map-marker-icons reports the set check's failures for a stale hash and exits 1` | green |
+| release-bundle-integrity → Bundled map marker icons are project-authored and recorded | Icons missing from the bundle | test/tool/vision/check_bundle_test.dart | `map-marker-icons names a missing directory or compiled icon` | green |
 
 ## 1. Compiled release set (design D1)
 
@@ -77,7 +77,7 @@ Every implementer packet carries AGENTS.md's "Dart and Flutter code" section and
   - `--report` refusing the marker manifest path (review S2).
 
   Verify they fail on the current `checkBundle`.
-- [ ] 4.2 Implement the `map-marker-icons` step in `tool/vision/check_bundle.dart`, with a `markerManifestPath` parameter, a `--marker-icons` flag and the help text. Compile each icon once through a memoising `IconCompiler` passed to `checkIconSet`, and reuse those bytes for the comparison (review S1). Add the marker manifest to the report's protected files. Verify that `test/tool/vision/check_bundle_test.dart` passes, that it is not noticeably slower (compare the `flutter test` time for the file before and after), and flip the bundle rows green.
+- [x] 4.2 Implement the `map-marker-icons` step in `tool/vision/check_bundle.dart`, with a `markerManifestPath` parameter, a `--marker-icons` flag and the help text. Compile each icon once through a memoising `IconCompiler` passed to `checkIconSet`, and reuse those bytes for the comparison (review S1). Add the marker manifest to the report's protected files. Verify that `test/tool/vision/check_bundle_test.dart` passes, that it is not noticeably slower (compare the `flutter test` time for the file before and after), and flip the bundle rows green.
 
 ## 5. Docs and integration
 

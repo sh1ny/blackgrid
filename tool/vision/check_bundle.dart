@@ -12,6 +12,7 @@ import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:blackgrid/data/vision/marker_template.dart'
     show markerMetadataPath;
 
+import '../markers/icon_set.dart';
 import 'make_marker_template.dart' show footprintFor;
 import 'pe.dart';
 
@@ -19,6 +20,10 @@ const defaultInventoryPath = 'tool/vision/bundle_inventory.json';
 const defaultLockPath = 'windows/vision/third_party.lock.json';
 const defaultNoticesPath = 'THIRD_PARTY_NOTICES.md';
 const defaultAllowListPath = 'tool/vision/system_allowlist.json';
+const defaultMarkerManifestPath = 'assets/map_markers/manifest.json';
+
+/// Where the Flutter build places the map marker assets in a bundle.
+const bundledMarkerDirectory = 'data/flutter_assets/assets/map_markers';
 
 const helpText =
     '''
@@ -33,8 +38,10 @@ Options:
   --lock <path>       default $defaultLockPath
   --notices <path>    default $defaultNoticesPath
   --allowlist <path>  default $defaultAllowListPath
+  --marker-icons <path>  map marker manifest, default $defaultMarkerManifestPath
 
-Steps: inventory, bindings, pins, imports, runtimeVersions, notices.
+Steps: inventory, bindings, pins, imports, runtimeVersions, notices,
+map-marker-icons.
 Exit codes: 0 all steps passed, 1 a step failed, 2 usage or input error.
 ''';
 
@@ -109,6 +116,7 @@ BundleReport checkBundle({
   String lockPath = defaultLockPath,
   String noticesPath = defaultNoticesPath,
   String allowListPath = defaultAllowListPath,
+  String markerManifestPath = defaultMarkerManifestPath,
 }) {
   final inventory = _readJson(inventoryPath, 'inventory')! as Map;
   if (inventory['format'] != 1) {
@@ -385,6 +393,14 @@ BundleReport checkBundle({
   }
   steps.add(StepResult('notices', noteFailures));
 
+  // Step 7: bundled map marker icons (design D5).
+  steps.add(
+    StepResult(
+      'map-marker-icons',
+      markerIconFailures(markerManifestPath, bundleDir),
+    ),
+  );
+
   final files = <Map<String, Object?>>[
     for (final e in entries)
       if (bytesOf(e.path) != null)
@@ -398,6 +414,84 @@ BundleReport checkBundle({
         },
   ];
   return BundleReport(root, steps, files);
+}
+
+/// Failures of the bundled map marker icons.
+///
+/// The repository set at [markerManifestPath] must pass the set check as a
+/// release set; otherwise its failures are the only ones reported. The
+/// bundle's `assets/map_markers/` must then hold the same manifest bytes and
+/// one compiled file per icon, each equal to compiling the icon's checked
+/// SVG, and nothing else. Each icon is compiled once.
+List<String> markerIconFailures(
+  String markerManifestPath,
+  Directory bundleDir,
+) {
+  final compiled = <(String, String), Uint8List>{};
+  Uint8List compile(String xml, String name) =>
+      compiled.putIfAbsent((name, xml), () => compileIconSvg(xml, name));
+
+  final IconSet set;
+  switch (checkIconSet(markerManifestPath, compile: compile)) {
+    case IconSetInvalid(:final failures):
+      return [for (final f in failures) formatFailure(f)];
+    case IconSetValid(set: final valid)
+        when valid.scope != IconSetScope.release:
+      return ['$markerManifestPath: scope must be release for a bundle'];
+    case IconSetValid(set: final valid):
+      set = valid;
+  }
+
+  final root = bundleDir.absolute.path.replaceAll(r'\', '/');
+  final markerDir = Directory('$root/$bundledMarkerDirectory');
+  if (!markerDir.existsSync()) return ['$bundledMarkerDirectory is missing'];
+
+  final failures = <String>[];
+  final expected = <String>{'manifest.json', 'compiled'};
+  final manifest = '$bundledMarkerDirectory/manifest.json';
+  final bundledManifest = File('${markerDir.path}/manifest.json');
+  if (!bundledManifest.existsSync()) {
+    failures.add('$manifest is missing');
+  } else if (!_sameBytes(
+    bundledManifest.readAsBytesSync(),
+    File(markerManifestPath).readAsBytesSync(),
+  )) {
+    failures.add('$manifest differs from the repository manifest');
+  }
+  for (final icon in set.icons) {
+    final name =
+        'compiled/${icon.file.replaceFirst(RegExp(r'\.svg$'), '.vec')}';
+    expected.add(name);
+    final path = '$bundledMarkerDirectory/$name';
+    final file = File('${markerDir.path}/$name');
+    if (!file.existsSync()) {
+      failures.add('$path is missing');
+    } else if (!_sameBytes(
+      file.readAsBytesSync(),
+      compile(icon.svg, icon.file),
+    )) {
+      failures.add('$path differs from compiling ${icon.file}');
+    }
+  }
+  final prefix = markerDir.path.replaceAll(r'\', '/').length + 1;
+  for (final entity in markerDir.listSync(
+    recursive: true,
+    followLinks: false,
+  )) {
+    final rel = entity.path.replaceAll(r'\', '/').substring(prefix);
+    if (!expected.contains(rel)) {
+      failures.add('$bundledMarkerDirectory/$rel is unexpected');
+    }
+  }
+  return failures;
+}
+
+bool _sameBytes(List<int> a, List<int> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 /// Failures of the marker template's provenance in its metadata [bytes]: the
@@ -591,6 +685,7 @@ Future<int> runCli(
   var lock = defaultLockPath;
   var notices = defaultNoticesPath;
   var allow = defaultAllowListPath;
+  var markerIcons = defaultMarkerManifestPath;
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
     String value() {
@@ -613,6 +708,8 @@ Future<int> runCli(
           notices = value();
         case '--allowlist':
           allow = value();
+        case '--marker-icons':
+          markerIcons = value();
         default:
           if (a.startsWith('--') || bundle != null) {
             throw FormatException('unexpected argument $a');
@@ -641,6 +738,7 @@ Future<int> runCli(
       lockPath: lock,
       noticesPath: notices,
       allowListPath: allow,
+      markerManifestPath: markerIcons,
     );
   } on FormatException catch (e) {
     stderrSink.writeln('error: ${e.message}');
@@ -659,7 +757,7 @@ Future<int> runCli(
     // The check is read-only over the bundle and its committed inputs.
     final unsafe = unsafeOutputReason(
       report,
-      protectedFiles: [inventory, lock, notices, allow],
+      protectedFiles: [inventory, lock, notices, allow, markerIcons],
       protectedDirectories: [dir.path],
     );
     if (unsafe != null) {
