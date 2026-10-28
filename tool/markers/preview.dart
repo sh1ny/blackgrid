@@ -153,11 +153,41 @@ int runCli(List<String> args, {StringSink? out, StringSink? err}) {
 
 /// Resolves [path] through symbolic links, including those of its nearest
 /// existing ancestor when [path] does not exist yet, for comparison only.
+///
+/// `..` follows the platform: Windows collapses it lexically before any
+/// link is followed, while POSIX applies it to the directory a link
+/// resolved to, so there each existing segment is resolved before the next
+/// one is applied.
 String _realPath(String path) {
+  final absolute = File(path).absolute.path;
+  if (Platform.isWindows) {
+    final normal = Uri.file(absolute).normalizePath().toFilePath();
+    return _resolveExisting(normal).toLowerCase();
+  }
+  var current = '/';
+  for (final segment in absolute.split('/')) {
+    if (segment.isEmpty || segment == '.') continue;
+    if (segment == '..') {
+      current = File(current).parent.path;
+      continue;
+    }
+    final next = current == '/' ? '/$segment' : '$current/$segment';
+    try {
+      current = File(next).resolveSymbolicLinksSync();
+    } on FileSystemException {
+      // Missing, or a dangling link: nothing to follow from here on.
+      current = next;
+    }
+  }
+  return current;
+}
+
+/// Resolves the longest existing prefix of the normalised [path] through
+/// symbolic links and appends the segments that do not exist yet.
+String _resolveExisting(String path) {
   final separators = RegExp(r'[\\/]');
-  // Normalise `.` and `..` first, then resolve the nearest existing entry.
   var rest = <String>[];
-  var current = Uri.file(File(path).absolute.path).normalizePath().toFilePath();
+  var current = path;
   while (FileSystemEntity.typeSync(current) == FileSystemEntityType.notFound) {
     final parent = File(current).parent.path;
     if (parent == current) break;
@@ -169,8 +199,7 @@ String _realPath(String path) {
       FileSystemEntity.typeSync(current) == FileSystemEntityType.notFound
       ? current
       : File(current).resolveSymbolicLinksSync();
-  final real = [resolved, ...rest].join(Platform.pathSeparator);
-  return Platform.isWindows ? real.toLowerCase() : real;
+  return [resolved, ...rest].join(Platform.pathSeparator);
 }
 
 /// Renders the contact sheet for [sets] as one HTML document.

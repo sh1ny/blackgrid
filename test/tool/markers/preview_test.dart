@@ -270,6 +270,28 @@ void main() {
     expect(File(set.manifestPath).readAsBytesSync(), before);
   });
 
+  test(
+    '--out through a link then .. reaching an input writes nothing',
+    () {
+      final set = newSet();
+      final sub = Directory('${set.dir.path}/sub')..createSync();
+      final alias = Link('${work.path}/alias')..createSync(sub.path);
+      final before = File(set.manifestPath).readAsBytesSync();
+
+      final code = runCli(
+        [set.manifestPath, '--out', '${alias.path}/../manifest.json'],
+        out: StringBuffer(),
+        err: StringBuffer(),
+      );
+
+      expect(code, 1);
+      expect(File(set.manifestPath).readAsBytesSync(), before);
+    },
+    // Windows collapses `..` before following a link, so the alias there
+    // names work/manifest.json, not an input.
+    testOn: '!windows',
+  );
+
   test('usage errors exit 2 with a usage line', () {
     final set = newSet();
     for (final args in [
