@@ -54,7 +54,7 @@ Every implementer packet carries AGENTS.md's "Dart and Flutter code" section and
 
 ## 3. Painter and composition (design D2, D3, D4)
 
-- [ ] 3.1 Write `test/ui/map_marker_painting_test.dart` with the `paints` matcher, as `test/maps/map_scene_test.dart` uses it. Drive the map workspace with a small synthetic prepared map: one `PmcExtracts` marker, one `HazardZones` marker with an outline, one marker with an unknown filter key and one saved pin. Inject a `MapMarkerIcons` built from synthetic `.vec` bytes. Cover:
+- [x] 3.1 Write `test/ui/map_marker_painting_test.dart` with the `paints` matcher, as `test/maps/map_scene_test.dart` uses it. Drive the map workspace with a small synthetic prepared map: one `PmcExtracts` marker, one `HazardZones` marker with an outline, one marker with an unknown filter key and one saved pin. Inject a `MapMarkerIcons` built from synthetic `.vec` bytes. Cover:
   - a loaded badge: a background disc, a ring in the role colour, and a glyph `drawImageRect` of 16 × 16 with no centre dot;
   - the hazard zone polygon painted before its badge;
   - the gold fallback dot for the unknown key;
