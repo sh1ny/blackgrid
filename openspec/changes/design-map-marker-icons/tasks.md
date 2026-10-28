@@ -64,7 +64,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 
 ## 3. Set checker: icon form and compile
 
-- [ ] 3.1 Write failing tests for the form rows (valid glyph, forbidden content, unlisted attribute, default/inherited paint, second colour or view box, oversized, compile). Confirm they fail for the right reason.
+- [x] 3.1 Write failing tests for the form rows (valid glyph, forbidden content, unlisted attribute, default/inherited paint, second colour or view box, oversized, compile). Confirm they fail for the right reason.
 - [ ] 3.2 Implement the form rule:
   - the D2 closed per-element allow-list, with `on*`, `style`, `id` and foreign namespaces rejected;
   - the effective-paint walk from the root `svg` through `g` (note S7);
