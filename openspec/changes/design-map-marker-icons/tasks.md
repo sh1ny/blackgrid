@@ -20,11 +20,11 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Every marker category has exactly one icon | Complete set passes | test/tool/markers/icon_set_test.dart | `coverage: release set with all 19 keys is valid` | red |
-| Every marker category has exactly one icon | Missing category fails | test/tool/markers/icon_set_test.dart | `coverage: missing BtrStops is named` | red |
-| Every marker category has exactly one icon | Candidate subset passes coverage | test/tool/markers/icon_set_test.dart | `coverage: candidate set with 6 keys passes coverage, other rules still apply` | red |
-| Every marker category has exactly one icon | Unknown or duplicate icon fails | test/tool/markers/icon_set_test.dart | `coverage: Labels and duplicate PmcExtracts are named` | red |
-| Every marker category has exactly one icon | (key list tied to the app) | test/tool/markers/icon_set_test.dart | `coverage: key list equals markerCategories minus Labels` | red |
+| Every marker category has exactly one icon | Complete set passes | test/tool/markers/icon_set_test.dart | `coverage: release set with all 19 keys is valid` | green |
+| Every marker category has exactly one icon | Missing category fails | test/tool/markers/icon_set_test.dart | `coverage: missing BtrStops is named` | green |
+| Every marker category has exactly one icon | Candidate subset passes coverage | test/tool/markers/icon_set_test.dart | `coverage: candidate set with 6 keys passes coverage, other rules still apply` | green |
+| Every marker category has exactly one icon | Unknown or duplicate icon fails | test/tool/markers/icon_set_test.dart | `coverage: Labels and duplicate PmcExtracts are named` | green |
+| Every marker category has exactly one icon | (key list tied to the app) | test/tool/markers/icon_set_test.dart | `coverage: key list equals markerCategories minus Labels` | green |
 | Icon files use the restricted single-tint vector form | Valid glyph passes and compiles | test/tool/markers/icon_set_test.dart | `form: path and circle glyph in tint passes and compiles non-empty` | red |
 | Icon files use the restricted single-tint vector form | Forbidden content fails | test/tool/markers/icon_set_test.dart | `form: image, text and href are named` | red |
 | Icon files use the restricted single-tint vector form | Unlisted attribute fails | test/tool/markers/icon_set_test.dart | `form: onload and unlisted attributes are named` | red |
@@ -54,7 +54,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 ## 2. Set checker: manifest model and coverage
 
 - [x] 2.1 Write failing tests for the coverage rows, including the key-list row, in `test/tool/markers/icon_set_test.dart`, with temp-dir fixtures. Run `flutter test test/tool/markers/icon_set_test.dart` and confirm they fail because the library is missing.
-- [ ] 2.2 Implement `tool/markers/icon_set.dart`:
+- [x] 2.2 Implement `tool/markers/icon_set.dart`:
   - the key constant (D1);
   - manifest parsing with unknown-field rejection, the scope, and the file-name rules (lower snake case, beside the manifest, no subpaths);
   - the sealed `IconSetResult` (`valid`/`invalid`) and `IconSetFailure` (rule, key or file, value);
