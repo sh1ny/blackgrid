@@ -105,4 +105,4 @@ Decisions for the user:
 - **`pin` sits at 199°**, close to the cyan highlight band. The sheet shows a pin next to its highlighted state for judging the separation.
 - **The colour-blind row.** Under deuteranopia, exit green and danger red both turn olive, so only shape separates them there.
 
-**Approval:** pending the user's review.
+**Approval (2026-10-28):** the user reviewed the release sheet and approved the set and the palette as proposed. Their words: "looks good". So `stationaryWeapons` moves to the danger red, and every role keeps the colour in the table above.
