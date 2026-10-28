@@ -53,7 +53,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 
 ## 2. Set checker: manifest model and coverage
 
-- [ ] 2.1 Write failing tests for the coverage rows, including the key-list row, in `test/tool/markers/icon_set_test.dart`, with temp-dir fixtures. Run `flutter test test/tool/markers/icon_set_test.dart` and confirm they fail because the library is missing.
+- [x] 2.1 Write failing tests for the coverage rows, including the key-list row, in `test/tool/markers/icon_set_test.dart`, with temp-dir fixtures. Run `flutter test test/tool/markers/icon_set_test.dart` and confirm they fail because the library is missing.
 - [ ] 2.2 Implement `tool/markers/icon_set.dart`:
   - the key constant (D1);
   - manifest parsing with unknown-field rejection, the scope, and the file-name rules (lower snake case, beside the manifest, no subpaths);
