@@ -32,14 +32,14 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 | Icon files use the restricted single-tint vector form | Second colour or wrong view box fails | test/tool/markers/icon_set_test.dart | `form: second colour and wrong viewBox are named` | green |
 | Icon files use the restricted single-tint vector form | Oversized file fails | test/tool/markers/icon_set_test.dart | `form: file over 8 KiB is named with its size` | green |
 | Icon files use the restricted single-tint vector form | File that does not compile fails | test/tool/markers/icon_set_test.dart | `form: malformed XML and compiler warning fail` | green |
-| Category colours keep their meaning and contrast | Valid palette passes | test/tool/markers/icon_set_test.dart | `palette: starting D7 palette passes` | red |
-| Category colours keep their meaning and contrast | Required role broken fails | test/tool/markers/icon_set_test.dart | `palette: ScavExtracts outside exit role is named` | red |
-| Category colours keep their meaning and contrast | Reserved hue or low contrast fails | test/tool/markers/icon_set_test.dart | `palette: hue 185 and contrast 2.4 are named; grey below 10% saturation passes` | red |
-| Every icon file carries a complete provenance record | Complete matching record passes | test/tool/markers/icon_set_test.dart | `provenance: ai-assisted record with tool and matching hash passes` | red |
-| Every icon file carries a complete provenance record | Missing or stale record fails | test/tool/markers/icon_set_test.dart | `provenance: missing and stale records are named` | red |
-| Every icon file carries a complete provenance record | Incomplete record fails | test/tool/markers/icon_set_test.dart | `provenance: ai-assisted without tools and concept without prompt record are named` | red |
-| No third-party marker art enters the set | Project-authored record passes | test/tool/markers/icon_set_test.dart | `origin: hand-authored and ai-assisted project records pass` | red |
-| No third-party marker art enters the set | Third-party or unknown origin fails | test/tool/markers/icon_set_test.dart | `origin: tarkov.dev origin and traced method are named` | red |
+| Category colours keep their meaning and contrast | Valid palette passes | test/tool/markers/icon_set_test.dart | `palette: starting D7 palette passes` | green |
+| Category colours keep their meaning and contrast | Required role broken fails | test/tool/markers/icon_set_test.dart | `palette: ScavExtracts outside exit role is named` | green |
+| Category colours keep their meaning and contrast | Reserved hue or low contrast fails | test/tool/markers/icon_set_test.dart | `palette: hue 185 and contrast 2.4 are named; grey below 10% saturation passes` | green |
+| Every icon file carries a complete provenance record | Complete matching record passes | test/tool/markers/icon_set_test.dart | `provenance: ai-assisted record with tool and matching hash passes` | green |
+| Every icon file carries a complete provenance record | Missing or stale record fails | test/tool/markers/icon_set_test.dart | `provenance: missing and stale records are named` | green |
+| Every icon file carries a complete provenance record | Incomplete record fails | test/tool/markers/icon_set_test.dart | `provenance: ai-assisted without tools and concept without prompt record are named` | green |
+| No third-party marker art enters the set | Project-authored record passes | test/tool/markers/icon_set_test.dart | `origin: hand-authored and ai-assisted project records pass` | green |
+| No third-party marker art enters the set | Third-party or unknown origin fails | test/tool/markers/icon_set_test.dart | `origin: tarkov.dev origin and traced method are named` | green |
 | Preview sheet shows every icon in every state | Sheet covers every category and state | test/tool/markers/preview_test.dart | `sheet has every key x state x background and no external URL` | red |
 | Preview sheet shows every icon in every state | Candidate sets compared side by side | test/tool/markers/preview_test.dart | `two candidate sets render side by side under their names` | red |
 | Preview sheet shows every icon in every state | Too many candidate sets writes no sheet | test/tool/markers/preview_test.dart | `five sets exit non-zero and write nothing` | red |
@@ -76,7 +76,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 ## 4. Set checker: palette, provenance, origin and CLI
 
 - [x] 4.1 Write failing tests for the palette, provenance and origin rows. Confirm they fail for the right reason.
-- [ ] 4.2 Implement:
+- [x] 4.2 Implement:
   - the palette rule: WCAG contrast ≥ 3:1 against `background`; the reserved hue [170°, 190°] applies only at saturation ≥ 10%; the required roles for extract keys, `Hazards`/`HazardZones` and `CustomPins`;
   - the provenance rule: SHA-256 over raw bytes, required fields, `tools` required for `ai-assisted`, and a `promptRecord` that must exist inside the manifest's directory tree (note S8);
   - the origin rule: origin `project`, method `hand-authored` or `ai-assisted`.
