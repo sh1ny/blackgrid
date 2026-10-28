@@ -185,6 +185,25 @@ void main() {
       }
     });
 
+    test(
+      'form: processing instructions are named, the XML declaration passes',
+      () {
+        const glyph = '<path d="M0 0h1v1z" fill="#fff"/></svg>';
+        expectFailure(
+          withSvg(
+            '<?xml-stylesheet href="https://example.test/x.css"?>$head>$glyph',
+          ),
+          rule: 'form',
+          subject: 'transits.svg',
+          contains: ['xml-stylesheet'],
+        );
+        expect(
+          withSvg('<?xml version="1.0" encoding="UTF-8"?>$head>$glyph'),
+          isA<IconSetValid>(),
+        );
+      },
+    );
+
     test('form: onload and unlisted attributes are named', () {
       expectFailure(
         withSvg('$head onload="x()"><path d="M0 0h1v1z" fill="#fff"/></svg>'),

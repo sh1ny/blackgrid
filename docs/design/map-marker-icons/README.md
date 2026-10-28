@@ -6,7 +6,7 @@ This is the record of how Blackgrid's own map marker icons were designed: each s
 
 No author opens, traces or describes to a tool any third-party marker set. That covers tarkov.dev, the Tarkov wiki and the game's own UI. Prompts for image-generation tools must not name them as a style reference. Each icon's provenance record in its manifest is the author's attestation of this.
 
-A concept image from an image-generation tool (for example ChatGPT) is redrawn as vectors. Its prompt is saved under `docs/design/map-marker-icons/prompts/`, and the concept image itself is not committed.
+A concept image from an image-generation tool (for example ChatGPT) is redrawn as vectors. Its prompt is saved in a `prompts/` folder beside the set's manifest (for the release set, `assets/map_markers/prompts/`), and the icon's `concept.promptRecord` names it relative to the manifest. The checker only accepts a prompt record inside the manifest's own folder, so the record travels with its set. The concept image itself is not committed.
 
 ## Regenerating the preview sheet
 
@@ -93,7 +93,7 @@ Contrast is measured against the marker background `#090F0D`. Every role passes 
 | `exit` | `#48D28B` | 10.0:1 | 149° | Extracts, `Transits` | Green (unchanged) |
 | `danger` | `#FF5252` | 6.1:1 | 0° | `Hazards`, `HazardZones`, `stationaryWeapons` | Red, hazards only |
 | `boss` | `#E57CE5` | 7.7:1 | 300° | `BossSpawns`, `CultistSpawns` | Gold |
-| `spawn` | `#C9CDBF` | 11.9:1 | grey (12% saturation) | `PmcSpawns`, `ScavSpawns` | Gold |
+| `spawn` | `#C9CDBF` | 11.9:1 | 77° (12% saturation, so it counts as a hue, not grey) | `PmcSpawns`, `ScavSpawns` | Gold |
 | `quest` | `#DCC05A` | 10.8:1 | 47° | `QuestItems`, `QuestObjectives` | Gold (unchanged) |
 | `loot` | `#E8A04A` | 8.8:1 | 33° | `lootContainers`, `lootLoose` | Gold |
 | `utility` | `#B7A6F0` | 9.0:1 | 254° | `locks`, `Switches`, `BtrStops` | Gold |

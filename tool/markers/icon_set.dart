@@ -546,6 +546,9 @@ String _checkForm(
   if (document.doctypeElement != null) {
     problems.add('DOCTYPE declarations are not allowed');
   }
+  for (final node in document.children.whereType<XmlProcessing>()) {
+    problems.add('processing instruction <?${node.target}?> is not allowed');
+  }
   _checkRoot(document.rootElement, problems);
   for (final problem in problems) {
     fail('form', file, problem);
@@ -639,6 +642,8 @@ void _checkElement(
         problems.add('text content in <$name> is not allowed');
       case XmlCDATA():
         problems.add('CDATA in <$name> is not allowed');
+      case XmlProcessing(:final target):
+        problems.add('processing instruction <?$target?> is not allowed');
       default:
     }
   }
