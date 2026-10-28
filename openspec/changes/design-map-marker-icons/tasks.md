@@ -48,7 +48,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 
 ## 1. ADR, byte-exact paths and architecture index
 
-- [ ] 1.1 Write `docs/adr/0023-project-authored-map-marker-icons.md` in MADR-short form: Status accepted, today's date, Source this change. It records D2 (form, tinting), D3 (manifest, provenance, `-text`), D4 and D7 (palette rules), the no-third-party-art rule, the rejected alternatives, and the change-4 fallback-glyph note from the design's ADRs section. Add its row to the in-force index in `openspec/architecture.md`. Verify that the file exists and that the index row links to it.
+- [x] 1.1 Write `docs/adr/0023-project-authored-map-marker-icons.md` in MADR-short form: Status accepted, today's date, Source this change. It records D2 (form, tinting), D3 (manifest, provenance, `-text`), D4 and D7 (palette rules), the no-third-party-art rule, the rejected alternatives, and the change-4 fallback-glyph note from the design's ADRs section. Add its row to the in-force index in `openspec/architecture.md`. Verify that the file exists and that the index row links to it.
 - [ ] 1.2 Add `assets/map_markers/** -text` and `docs/design/map-marker-icons/candidates/** -text` to `.gitattributes` under the existing hash-bound block. Verify with `git check-attr text -- assets/map_markers/x.svg docs/design/map-marker-icons/candidates/a/x.svg`, which must report `unset` for both.
 
 ## 2. Set checker: manifest model and coverage
