@@ -25,13 +25,13 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 | Every marker category has exactly one icon | Candidate subset passes coverage | test/tool/markers/icon_set_test.dart | `coverage: candidate set with 6 keys passes coverage, other rules still apply` | green |
 | Every marker category has exactly one icon | Unknown or duplicate icon fails | test/tool/markers/icon_set_test.dart | `coverage: Labels and duplicate PmcExtracts are named` | green |
 | Every marker category has exactly one icon | (key list tied to the app) | test/tool/markers/icon_set_test.dart | `coverage: key list equals markerCategories minus Labels` | green |
-| Icon files use the restricted single-tint vector form | Valid glyph passes and compiles | test/tool/markers/icon_set_test.dart | `form: path and circle glyph in tint passes and compiles non-empty` | red |
-| Icon files use the restricted single-tint vector form | Forbidden content fails | test/tool/markers/icon_set_test.dart | `form: image, text and href are named` | red |
-| Icon files use the restricted single-tint vector form | Unlisted attribute fails | test/tool/markers/icon_set_test.dart | `form: onload and unlisted attributes are named` | red |
-| Icon files use the restricted single-tint vector form | Default or inherited paint fails | test/tool/markers/icon_set_test.dart | `form: default black fill fails, root and g inherited tint passes` | red |
-| Icon files use the restricted single-tint vector form | Second colour or wrong view box fails | test/tool/markers/icon_set_test.dart | `form: second colour and wrong viewBox are named` | red |
-| Icon files use the restricted single-tint vector form | Oversized file fails | test/tool/markers/icon_set_test.dart | `form: file over 8 KiB is named with its size` | red |
-| Icon files use the restricted single-tint vector form | File that does not compile fails | test/tool/markers/icon_set_test.dart | `form: malformed XML and compiler warning fail` | red |
+| Icon files use the restricted single-tint vector form | Valid glyph passes and compiles | test/tool/markers/icon_set_test.dart | `form: path and circle glyph in tint passes and compiles non-empty` | green |
+| Icon files use the restricted single-tint vector form | Forbidden content fails | test/tool/markers/icon_set_test.dart | `form: image, text and href are named` | green |
+| Icon files use the restricted single-tint vector form | Unlisted attribute fails | test/tool/markers/icon_set_test.dart | `form: onload and unlisted attributes are named` | green |
+| Icon files use the restricted single-tint vector form | Default or inherited paint fails | test/tool/markers/icon_set_test.dart | `form: default black fill fails, root and g inherited tint passes` | green |
+| Icon files use the restricted single-tint vector form | Second colour or wrong view box fails | test/tool/markers/icon_set_test.dart | `form: second colour and wrong viewBox are named` | green |
+| Icon files use the restricted single-tint vector form | Oversized file fails | test/tool/markers/icon_set_test.dart | `form: file over 8 KiB is named with its size` | green |
+| Icon files use the restricted single-tint vector form | File that does not compile fails | test/tool/markers/icon_set_test.dart | `form: malformed XML and compiler warning fail` | green |
 | Category colours keep their meaning and contrast | Valid palette passes | test/tool/markers/icon_set_test.dart | `palette: starting D7 palette passes` | red |
 | Category colours keep their meaning and contrast | Required role broken fails | test/tool/markers/icon_set_test.dart | `palette: ScavExtracts outside exit role is named` | red |
 | Category colours keep their meaning and contrast | Reserved hue or low contrast fails | test/tool/markers/icon_set_test.dart | `palette: hue 185 and contrast 2.4 are named; grey below 10% saturation passes` | red |
@@ -65,7 +65,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 ## 3. Set checker: icon form and compile
 
 - [x] 3.1 Write failing tests for the form rows (valid glyph, forbidden content, unlisted attribute, default/inherited paint, second colour or view box, oversized, compile). Confirm they fail for the right reason.
-- [ ] 3.2 Implement the form rule:
+- [x] 3.2 Implement the form rule:
   - the D2 closed per-element allow-list, with `on*`, `style`, `id` and foreign namespaces rejected;
   - the effective-paint walk from the root `svg` through `g` (note S7);
   - the 8 KiB cap and the `0 0 24 24` view box;
