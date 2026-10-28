@@ -68,7 +68,7 @@ Every implementer packet carries AGENTS.md's "Dart and Flutter code" section and
 
 ## 4. Bundle check step (design D5)
 
-- [ ] 4.1 Add map-marker cases to `test/tool/vision/check_bundle_test.dart`. The `_Fixture` copies the committed manifest and compiled files into `data/flutter_assets/assets/map_markers/` of its synthetic bundle, so the existing cases keep passing. The marker cases cover:
+- [x] 4.1 Add map-marker cases to `test/tool/vision/check_bundle_test.dart`. The `_Fixture` copies the committed manifest and compiled files into `data/flutter_assets/assets/map_markers/` of its synthetic bundle, so the existing cases keep passing. The marker cases cover:
   - a passing bundle;
   - an unlisted `compiled/skull_alt.vec`, `.svg` and `.png`;
   - an altered compiled icon, and an altered bundled manifest;
