@@ -82,7 +82,7 @@ Every implementer packet carries AGENTS.md's "Dart and Flutter code" section and
 ## 5. Docs and integration
 
 - [ ] 5.1 Update `openspec/architecture.md`'s `MapController + lib/maps/` row with the marker icon loader (`MapMarkerIcons`, bundled `assets/map_markers/manifest.json` and `compiled/*.vec`) and the bundle check's map-marker step. Update `docs/design/map-marker-icons/README.md` with a short "In the app" note: compiled files, the 16 px glyph at every size, highlighted markers keep the selected size, and `prompts/` is not bundled. Verify by reading the diff.
-- [ ] 5.2 Commit the carried-over `openspec/specwright.yaml` edit (the retired `kintsugimira` reviewer removed) as its own `chore` commit on this branch. Verify that `git show --stat HEAD` lists only that file.
+- [x] 5.2 Commit the carried-over `openspec/specwright.yaml` edit (the retired `kintsugimira` reviewer removed) as its own `chore` commit on this branch. Verify that `git show --stat HEAD` lists only that file.
 - [ ] 5.3 Run `dart format .`, `mise run analyze` and `mise run test`. Verify that all three are clean and every Test map row is green.
 - [ ] 5.4 Record the user check as unverified in the PR description: the in-raid look of the icons on the map, including highlighted size, dimmed look and 24 px readability. Agents do not perform it (AGENTS.md). Verify that the PR body lists it under user checks.
 
