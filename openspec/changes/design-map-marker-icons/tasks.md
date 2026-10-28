@@ -82,7 +82,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
   - the origin rule: origin `project`, method `hand-authored` or `ai-assisted`.
 
   Verify that the rows pass and flip them green.
-- [ ] 4.3 Add the CLI `tool/markers/check.dart <manifest>`. It prints one failure per line, prints the expected hash for stale records, and exits 1 on failure and 0 when valid. Add a test that runs `main` on a valid and an invalid fixture and asserts the exit code and output. Document the command in the tool's library doc comment.
+- [x] 4.3 Add the CLI `tool/markers/check.dart <manifest>`. It prints one failure per line, prints the expected hash for stale records, and exits 1 on failure and 0 when valid. Add a test that runs `main` on a valid and an invalid fixture and asserts the exit code and output. Document the command in the tool's library doc comment.
 
 ## 5. Preview generator
 
