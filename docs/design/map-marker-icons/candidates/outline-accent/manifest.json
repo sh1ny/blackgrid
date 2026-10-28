@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "scope": "candidate",
+  "background": "#090F0D",
+  "badge": { "diameter": 24, "selectedDiameter": 30, "glyph": 16, "ring": 2 },
+  "roles": {
+    "exit": "#48D28B",
+    "danger": "#FF5252",
+    "boss": "#E57CE5",
+    "quest": "#DCC05A",
+    "loot": "#E8A04A"
+  },
+  "icons": [
+    {
+      "key": "PmcExtracts",
+      "file": "pmc_extracts.svg",
+      "role": "exit",
+      "sha256": "4826bcdb0dc2fbda9b23ad182563796e18f49e3120d1f5bccb805e65222c45e7",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "Transits",
+      "file": "transits.svg",
+      "role": "exit",
+      "sha256": "4f1664845382b3bef29c8fe6bcd1e3d8f05785526d1598212835d4be1cc557b7",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "Hazards",
+      "file": "hazards.svg",
+      "role": "danger",
+      "sha256": "d81a5c5186792c0d9d4fefdf8f7cdefa21d386e5c3253de2a5ec68ad6e5d4d0c",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "BossSpawns",
+      "file": "boss_spawns.svg",
+      "role": "boss",
+      "sha256": "b90d5ae0fd3d6b136a42e967d62f9a087337cbc0710b0d1836c1134778a69420",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "lootContainers",
+      "file": "loot_containers.svg",
+      "role": "loot",
+      "sha256": "8c9f1100d7afc94d7f1c3ad3e0dee513aad65fe55314647df378d5c5f9aca86b",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    },
+    {
+      "key": "QuestItems",
+      "file": "quest_items.svg",
+      "role": "quest",
+      "sha256": "8c65de7387a43fcc05d27b2b220610fbf385997bbda3b881c32a0550656593fb",
+      "provenance": {
+        "author": "Blackgrid project",
+        "origin": "project",
+        "method": "ai-assisted",
+        "tools": ["Claude Code (claude-opus-5-5)"],
+        "concept": { "source": "none" },
+        "date": "2026-10-28"
+      }
+    }
+  ]
+}
