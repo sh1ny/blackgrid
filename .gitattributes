@@ -5,3 +5,5 @@ assets/maps/** -text
 test/fixtures/m3/** -text
 assets/vision/** -text
 tool/vision/fonts/** -text
+assets/map_markers/** -text
+docs/design/map-marker-icons/candidates/** -text
