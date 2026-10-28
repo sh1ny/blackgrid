@@ -17,6 +17,7 @@ import '../data/scan_timing_log.dart';
 import '../data/tracker_client.dart';
 import '../domain/catalog.dart';
 import '../domain/credential_store.dart';
+import '../maps/map_marker_icons.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map_loader.dart';
 import 'catalog_controller.dart';
@@ -44,6 +45,7 @@ class AppServices {
     Directory? scanLogDirectory,
     Directory? scanFramesDirectory,
     ItemIconCache? itemIcons,
+    MapMarkerIcons? markerIcons,
     String? scanRuntimeDirectory,
     ScanMarkerLoader? scanMarkerLoader,
     ScanCaptureFactory? scanCaptureFactory,
@@ -53,7 +55,8 @@ class AppServices {
     Duration scanSettleDelay = const Duration(milliseconds: 50),
     Duration scanFallbackDelay = const Duration(milliseconds: 200),
   }) : _client = client,
-       itemIcons = itemIcons ?? ItemIconCache.disabled() {
+       itemIcons = itemIcons ?? ItemIconCache.disabled(),
+       markerIcons = markerIcons ?? MapMarkerIcons.disabled() {
     final loader = PreparedMapPackLoader();
     maps =
         mapController ??
@@ -132,6 +135,9 @@ class AppServices {
 
   /// Downloads and stores item icons; disabled unless one is passed in.
   final ItemIconCache itemIcons;
+
+  /// Loads the map marker badge icons; disabled unless one is passed in.
+  final MapMarkerIcons markerIcons;
   late final SettingsController settings;
   late final MapController maps;
   late final MapSessionController mapSession;
@@ -190,6 +196,7 @@ class AppServices {
       credentials: DpapiCredentialStore(paths.credentials),
       client: client,
       itemIcons: await _openItemIcons(paths, database, client),
+      markerIcons: MapMarkerIcons(),
       pathDiscovery: GamePathDiscovery(),
       scanLogDirectory: paths.logs,
       scanFramesDirectory: paths.scanFrames,
@@ -225,6 +232,8 @@ class AppServices {
 
   Future<void> initialize() async {
     await itemIcons.open();
+    // Cosmetic and never throws: start-up does not wait for the badge glyphs.
+    unawaited(markerIcons.open());
     await settings.load();
     if (!_mapsInitialized) {
       await maps.initialize(
@@ -372,6 +381,7 @@ class AppServices {
       progress.dispose();
       catalog.dispose();
       maps.dispose();
+      markerIcons.dispose();
       settings.dispose();
       history.dispose();
       try {
