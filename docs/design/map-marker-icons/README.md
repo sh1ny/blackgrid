@@ -35,7 +35,7 @@ Three candidate directions cover the same six representative keys: `PmcExtracts`
 
 | Direction | Style | Glyphs |
 |---|---|---|
-| [`solid`](candidates/solid/) | Filled silhouettes; details are cut out of the shape | Door frame with an arrow out; two opposed arrows; warning triangle with a cut-out `!`; crown on a bar; crate with a lid and a latch; four-point star |
+| [`solid`](candidates/solid/) | Filled silhouettes; details are cut out of the shape | Door frame with an arrow out; two opposed arrows; warning triangle with a cut-out `!`; crown on a bar, later a skull (see the pick below); crate with a lid and a latch; four-point star |
 | [`outline`](candidates/outline/) | 2 px round-joined strokes | The same subjects drawn as line art, with a filled dot on the `!` |
 | [`outline-accent`](candidates/outline-accent/) | A 2 px outline frame plus one solid accent | Door frame with a solid arrow; ring with a solid arrow through it; triangle with a solid `!`; crown outline on a solid bar; crate with a solid lid; ring with a solid star |
 
@@ -48,4 +48,8 @@ All 18 files are hand-coded SVG path data, `ai-assisted` with Claude Code (claud
 
 The user can also ask for changes, or bring their own drawings or ChatGPT concepts.
 
-**Pick:** pending the user's review.
+**Pick (2026-10-28):** `solid`, with a skull instead of the crown for `BossSpawns`. The user's words: "I like the solid version, but can we do some sort of skulls for the bosses?"
+
+The `solid` crown was redrawn as a solid skull: a rounded cranium over a narrower jaw, with the eyes, nose and two tooth gaps cut out. Its provenance is unchanged: `ai-assisted` with Claude Code (claude-opus-5-5), no concept source, and the hash was refreshed after re-attesting it. Shown on the sheet, the user approved it: "As my egyptian friends would say....Berfect!"
+
+Round 2 draws all 19 keys in the `solid` style. `CultistSpawns` shares the boss colour with `BossSpawns`, so it gets a distinct shape (a hooded figure) instead of a second skull.
