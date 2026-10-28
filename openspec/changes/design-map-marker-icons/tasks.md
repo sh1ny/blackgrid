@@ -86,7 +86,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 
 ## 5. Preview generator
 
-- [ ] 5.1 Write failing tests for the preview rows in `test/tool/markers/preview_test.dart`. Confirm they fail because the generator is missing.
+- [x] 5.1 Write failing tests for the preview rows in `test/tool/markers/preview_test.dart`. Confirm they fail because the generator is missing.
 - [ ] 5.2 Implement `tool/markers/preview.dart <manifest>... [--out <path>]`, default `build/marker-previews/index.html`:
   - validate every set first; refuse invalid input or more than 4 sets, writing nothing;
   - inline each glyph once as a `<symbol>`;
