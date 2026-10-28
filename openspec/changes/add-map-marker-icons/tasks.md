@@ -37,7 +37,7 @@ Every implementer packet carries AGENTS.md's "Dart and Flutter code" section and
 
 ## 2. Marker icon loader and badge style (design D2, D4, D6)
 
-- [ ] 2.1 Write `test/maps/map_marker_icons_test.dart`. Use an injected `load` that serves a manifest and `.vec` bytes compiled in the test from tiny synthetic SVGs with `compileIconSvg`, with no production asset sizes. Wrap the async decode in `tester.runAsync`. Cover:
+- [x] 2.1 Write `test/maps/map_marker_icons_test.dart`. Use an injected `load` that serves a manifest and `.vec` bytes compiled in the test from tiny synthetic SVGs with `compileIconSvg`, with no production asset sizes. Wrap the async decode in `tester.runAsync`. Cover:
   - `markerBadgeStyle` over all eight selected/highlighted/dimmed permutations, with and without a role colour;
   - the fallback colour table before the manifest loads;
   - `icon()` returning `null` for an unknown key;
