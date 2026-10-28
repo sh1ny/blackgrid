@@ -113,7 +113,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 ## 8. Integration checks
 
 - [x] 8.1 Run `dart format` on the new files, then `mise run analyze` and `mise run test`. Both must pass with every test-map row green.
-- [ ] 8.2 Run `openspec validate design-map-marker-icons --strict`. Confirm that `git status` shows no file under `build/` staged, and that `pubspec.yaml` is unchanged.
+- [x] 8.2 Run `openspec validate design-map-marker-icons --strict`. Confirm that `git status` shows no file under `build/` staged, and that `pubspec.yaml` is unchanged.
 
 ## Workflow follow-up
 
