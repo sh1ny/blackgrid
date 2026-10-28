@@ -75,7 +75,7 @@ Each group also follows the "Dart and Flutter code" section of `AGENTS.md`.
 
 ## 4. Set checker: palette, provenance, origin and CLI
 
-- [ ] 4.1 Write failing tests for the palette, provenance and origin rows. Confirm they fail for the right reason.
+- [x] 4.1 Write failing tests for the palette, provenance and origin rows. Confirm they fail for the right reason.
 - [ ] 4.2 Implement:
   - the palette rule: WCAG contrast ≥ 3:1 against `background`; the reserved hue [170°, 190°] applies only at saturation ≥ 10%; the required roles for extract keys, `Hazards`/`HazardZones` and `CustomPins`;
   - the provenance rule: SHA-256 over raw bytes, required fields, `tools` required for `ai-assisted`, and a `promptRecord` that must exist inside the manifest's directory tree (note S8);
