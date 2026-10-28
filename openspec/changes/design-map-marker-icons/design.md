@@ -67,6 +67,7 @@ Manifest precedent:
     - An element or attribute not listed here fails the check, naming the file, element and attribute.
     - Namespace declarations other than the SVG namespace fail too.
     - This rejects, among others: `style`, `class`, `id`, `href`, `xlink:*`, `xml:base`, every `on*` event attribute, `image`, `text`, `font`, `filter`, `mask`, `use`, `script`, `foreignObject` and gradients.
+    - Outside elements, a DOCTYPE, any processing instruction other than the XML declaration, CDATA and non-whitespace text fail too.
 
     | Element | Geometry attributes |
     |---|---|
@@ -83,7 +84,7 @@ Manifest precedent:
     - Every element may carry these paint attributes: `fill`, `stroke`, `stroke-width`, `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `fill-rule`, `clip-rule` and `opacity`.
     - `fill` and `stroke` take only `#FFFFFF`, `#fff`, `white` or `none`.
   - **Effective paint.**
-    - The check resolves each shape's effective `fill` and `stroke` through its `g` ancestors and the SVG defaults (`fill` black, `stroke` none).
+    - The check resolves each shape's effective `fill` and `stroke` through its ancestors, from the root `svg` through each `g`, and the SVG defaults (`fill` black, `stroke` none).
     - Any effective colour other than the tint fails, so a shape that relies on the default black fails.
     - A shape whose effective fill and stroke are both `none` paints nothing and is allowed.
   - Size cap: 8 KiB per file.
@@ -150,8 +151,8 @@ Manifest precedent:
     - It also fails a role whose hue is in [170°, 190°] and whose HSL saturation is at least 10%.
     - A colour below 10% saturation counts as grey and is outside the band, because its hue is undefined.
   - **Prompt record paths.**
-    - A `promptRecord` path resolves relative to the manifest's directory and must stay inside the repository.
-    - The check therefore gives the same answer from any working directory, including in tests that use temporary directories.
+    - A `promptRecord` path resolves relative to the manifest's directory and must stay inside that directory tree. Absolute paths, drive letters and `..` segments fail, and the resolved path (symlinks followed) must lie under the manifest's directory.
+    - The check therefore gives the same answer from any working directory, including in tests that use temporary directories, and a set's prompt records travel with the set (D6).
   - Required roles: every key containing `Extract` → `exit`; `Hazards`, `HazardZones` → `danger`; `CustomPins` → `pin`.
   - `tool/markers/check.dart <manifest>` prints every failure, one per line, and exits 1 on any failure and 0 otherwise.
 - **Rejected:** folding the check into `tool/vision/check_bundle.dart` now. That tool checks bundled files against the bundle inventory, and these icons are not bundled until change 4. Change 4 calls this library from the bundle check instead of duplicating it.
@@ -287,7 +288,7 @@ sequenceDiagram
 
 | Component | Fails / dies mid-operation → | Recovery | Retry safe? | Who finds out |
 |---|---|---|---|---|
-| Set checker | Exits 1 with one line per failure | Fix the file or record and rerun | Yes, read-only | Author at the CLI, and `mise run test` through the committed-set test (task group 4) before any push (`pr.validate`) |
+| Set checker | Exits 1 with one line per failure | Fix the file or record and rerun | Yes, read-only | Author at the CLI, and `mise run test` through the committed-set test (task group 7) before any push (`pr.validate`) |
 | Preview generator: invalid input | Exits 1, prints failures, writes nothing | Fix and rerun | Yes | Author |
 | Preview generator: killed mid-write | Leaves `index.html.tmp`; `index.html` stays the previous complete sheet | Rerun overwrites the tmp file | Yes | Author: no new sheet appears |
 | Vector compiler throws on an SVG | Recorded as a compile failure for that file | Fix the SVG | Yes | Author and test |
