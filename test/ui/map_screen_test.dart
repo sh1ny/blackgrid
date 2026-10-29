@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/map_session.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
+import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
 import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
 
-Finder get _savedPins => find.textContaining('saved pin records');
+Finder get _savedPins => find.textContaining('saved pins');
 
 Finder _tile(String key) => find.byKey(ValueKey('marker-tile-$key'));
 
@@ -165,7 +166,10 @@ void main() {
       expect(evidence.extractNames, isEmpty);
       expect(evidence.transitNames, isEmpty);
       expect(h.services.mapSession.state.raidHighlightIds, isEmpty);
-      expect(find.text('Raid panel: ${evidence.state.name}'), findsOneWidget);
+      expect(
+        find.text('Raid panel: ${raidPanelStateLabel(evidence.state)}'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Filename sample:'), findsNothing);
       await tester.runAsync(screenshot.delete);
       await tester.ensureVisible(find.text('Read Latest'));
@@ -181,7 +185,9 @@ void main() {
       expect(h.services.mapSession.state.raidEvidence, same(evidence));
       expect(h.services.mapSession.state.raidHighlightIds, isEmpty);
       expect(
-        find.text('Previous raid panel: ${evidence.state.name}'),
+        find.text(
+          'Previous raid panel: ${raidPanelStateLabel(evidence.state)}',
+        ),
         findsOneWidget,
       );
       expect(find.text('No saved screenshots found.'), findsOneWidget);

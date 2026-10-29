@@ -20,7 +20,7 @@ Test files:
 | player-facing-text → Developer wording stays out of the open view | Search field hint | test/ui/shell_test.dart | search hint asks for an item name without canonical | green |
 | player-facing-text → Developer wording stays out of the open view | Searching by ID still works | test/ui/shell_test.dart | search still finds an item by its tarkov.dev id | green |
 | player-facing-text → Developer wording stays out of the open view | Name does not resolve | test/ui/history_panel_test.dart | a row whose item has no name shows its id | green |
-| player-facing-text → Developer wording stays out of the open view | Term check over the UI sources | test/ui/plain_language_source_test.dart | no scanned literal contains a banned term | red |
+| player-facing-text → Developer wording stays out of the open view | Term check over the UI sources | test/ui/plain_language_source_test.dart | no scanned literal contains a banned term | green |
 | player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | a row observed today shows its local time without ISO | green |
 | player-facing-text → Times are shown in local time | Earlier day | test/ui/labels_test.dart | localTimeLabel gives date and time for an earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/data_sources_panel_test.dart | a missing flea quote time reads unknown | green |
@@ -32,7 +32,7 @@ Test files:
 | player-facing-text → Data sources panel reads in plain language | Current item data | test/ui/data_sources_panel_test.dart | current item data says up to date with its local time and hides the URL | green |
 | player-facing-text → Data sources panel reads in plain language | No catalog | test/ui/data_sources_panel_test.dart | no catalog says item data is not downloaded yet | green |
 | player-facing-text → Data sources panel reads in plain language | Tracker in cooldown | test/ui/data_sources_panel_test.dart | cooldown is said in the open and its end time only in Details | green |
-| player-facing-text → Raw enum names are never interpolated into UI text | Clean sources | test/ui/plain_language_source_test.dart | lib/ui has no raw enum name in text | red |
+| player-facing-text → Raw enum names are never interpolated into UI text | Clean sources | test/ui/plain_language_source_test.dart | lib/ui has no raw enum name in text | green |
 | player-facing-text → Raw enum names are never interpolated into UI text | A regression | test/ui/plain_language_source_test.dart | check A flags a status name chain | green |
 | player-facing-text → Raw enum names are never interpolated into UI text | A destructured regression | test/ui/plain_language_source_test.dart | check A flags a destructured reason name | green |
 | player-facing-text → Raw enum names are never interpolated into UI text | Keys are not text | test/ui/plain_language_source_test.dart | check A ignores names inside keys and item names | green |
@@ -55,7 +55,7 @@ Test files:
 | scanner-evidence → A later unaccepted scan is shown as a note | Accepted again | test/ui/scan_evidence_panel_test.dart | a newer acceptance removes the note | green |
 | map-rail → Map saved-file inputs starts collapsed | Collapsed on first show | test/ui/map_rail_test.dart | inputs section starts collapsed | green |
 | map-rail → Map saved-file inputs starts collapsed | Expanding shows the inputs | test/ui/map_rail_test.dart | expanding shows status, Follow logs and a working Read Latest | green |
-| map-rail → Map saved-file inputs starts collapsed | Status lines use labels | test/ui/map_rail_test.dart | expanded status lines use labels, not state names | red |
+| map-rail → Map saved-file inputs starts collapsed | Status lines use labels | test/ui/map_rail_test.dart | expanded status lines use labels, not state names | green |
 | map-rail → Map saved-file inputs starts collapsed | Collapsing keeps settings | test/ui/map_rail_test.dart | expand then collapse keeps Follow logs and the maps | green |
 | map-rail → Map saved-file inputs starts collapsed | Pending screenshot while collapsed | test/ui/map_rail_test.dart | pending screenshot keeps the section collapsed | green |
 
@@ -95,11 +95,11 @@ Every group follows AGENTS.md "Dart and Flutter code" and loads the skills `dart
 
 ## 7. Map rail and workspace, then the whole-tree checks
 
-- [ ] 7.1 Write "expanded status lines use labels, not state names" in `test/ui/map_rail_test.dart`. Verify it fails.
-- [ ] 7.2 Rewrite `lib/ui/map_screen.dart` (Logs, Screenshots and Raid panel lines through `mapInputStatusLabel` and `raidPanelStateLabel`, local times, the subtitle, "N saved pins") and `lib/ui/map_workspace.dart` (any banned term). Verify 7.1 passes and flip it green, and re-run the green map-rail riders.
-- [ ] 7.3 Reword the warning and reason strings in `lib/domain/decision_engine.dart` per the D7 decision row (text only: no state, rule or order change), and update the tests that pin them (`test/domain/decision_engine_test.dart`, `test/application/scan_decision_precedence_test.dart` and any other). Strings not in the D7 decision row keep their wording, including the ones `requirement-rows` pins. Keep the updated assertions in the domain test, and pin the catalog and flea-eligibility warnings there too. Verify `mise run test` is green.
-- [ ] 7.4 Add the whole-tree tests to `test/ui/plain_language_source_test.dart`: "lib/ui has no raw enum name in text" (Check A over `lib/ui/**/*.dart`) and "no scanned literal contains a banned term" (Check B over `lib/ui/**`, the six controller files, `lib/domain/decision_engine.dart` and what the import dialog shows from `lib/data/legacy_import.dart`: `ImportAccounting(` literals, the `sourceReason` literals and `FormatException(` messages; interpolation code removed but nested literals still matched, per D6). Upgrade the Check B literal extraction in `test/ui/support/plain_language_check.dart` to a quote- and brace-aware scanner and add the D6 interpolation samples to its sample tests. Fix any remaining hit by rewording, never with an allow-list entry for a player-facing literal. Verify both pass, and flip "Clean sources" and "Term check over the UI sources" green.
-- [ ] 7.5 Integration check: `mise run analyze` and `mise run test` green, every Test map row green, and `openspec validate plain-language-pass --strict` passes.
+- [x] 7.1 Write "expanded status lines use labels, not state names" in `test/ui/map_rail_test.dart`. Verify it fails.
+- [x] 7.2 Rewrite `lib/ui/map_screen.dart` (Logs, Screenshots and Raid panel lines through `mapInputStatusLabel` and `raidPanelStateLabel`, local times, the subtitle, "N saved pins") and `lib/ui/map_workspace.dart` (any banned term). Verify 7.1 passes and flip it green, and re-run the green map-rail riders.
+- [x] 7.3 Reword the warning and reason strings in `lib/domain/decision_engine.dart` per the D7 decision row (text only: no state, rule or order change), and update the tests that pin them (`test/domain/decision_engine_test.dart`, `test/application/scan_decision_precedence_test.dart` and any other). Strings not in the D7 decision row keep their wording, including the ones `requirement-rows` pins. Keep the updated assertions in the domain test, and pin the catalog and flea-eligibility warnings there too. Verify `mise run test` is green.
+- [x] 7.4 Add the whole-tree tests to `test/ui/plain_language_source_test.dart`: "lib/ui has no raw enum name in text" (Check A over `lib/ui/**/*.dart`) and "no scanned literal contains a banned term" (Check B over `lib/ui/**`, the six controller files, `lib/domain/decision_engine.dart` and what the import dialog shows from `lib/data/legacy_import.dart`: `ImportAccounting(` literals, the `sourceReason` literals and `FormatException(` messages; interpolation code removed but nested literals still matched, per D6). Upgrade the Check B literal extraction in `test/ui/support/plain_language_check.dart` to a quote- and brace-aware scanner and add the D6 interpolation samples to its sample tests. Fix any remaining hit by rewording, never with an allow-list entry for a player-facing literal. Verify both pass, and flip "Clean sources" and "Term check over the UI sources" green.
+- [x] 7.5 Integration check: `mise run analyze` and `mise run test` green, every Test map row green, and `openspec validate plain-language-pass --strict` passes.
 
 ## Workflow follow-up
 

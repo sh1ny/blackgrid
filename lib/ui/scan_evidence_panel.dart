@@ -273,8 +273,8 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
   List<Widget> _noteDetails(BuildContext context, ScanReport report) {
     final entry = shownEvidence(report);
     final code = switch (report.end) {
-      ScanRejected(:final reason) => reason.name,
-      ScanFailed(:final failure) => failure.code.name,
+      ScanRejected(:final reason) => reason.logCode,
+      ScanFailed(:final failure) => failure.code.logCode,
       ScanAccepted() || ScanSuperseded() => null,
     };
     return [
@@ -321,16 +321,16 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
           Text('Item ID: $itemId', key: const Key('scan-item-id')),
         ],
         ScanRejected(:final reason, :final fallbackFailure) => [
-          Text('Code: ${reason.name}', key: const Key('scan-reason-code')),
+          Text('Code: ${reason.logCode}', key: const Key('scan-reason-code')),
           if (fallbackFailure case final ScanFailure failure)
             Text(
-              'Wider scan failure: ${failure.code.name}',
+              'Wider scan failure: ${failure.code.logCode}',
               key: const Key('scan-fallback-failure'),
             ),
         ],
         ScanFailed(:final failure) => [
           Text(
-            'Code: ${failure.code.name}',
+            'Code: ${failure.code.logCode}',
             key: const Key('scan-reason-code'),
           ),
           Text(failure.message, key: const Key('scan-failure-message')),

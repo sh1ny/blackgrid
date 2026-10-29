@@ -24,10 +24,12 @@ class DecisionEngine {
         progress.authoritativeAt(context.now);
     final warnings = <String>[];
     if (!catalogKnown) {
-      warnings.add('Catalog authority missing or stale');
+      warnings.add('Item data missing or out of date');
     }
-    if (!progressKnown) warnings.add('Progress authority missing or stale');
-    if (context.fir == FirState.unknown) warnings.add('Instance FIR unknown');
+    if (!progressKnown) warnings.add('Tracker progress missing or out of date');
+    if (context.fir == FirState.unknown) {
+      warnings.add('Found in raid unknown for this item');
+    }
     final requirements =
         catalog?.requirementIndex[item.id] ?? const <ItemRequirement>[];
     final reasons = <NeedReason>[];
@@ -88,7 +90,9 @@ class DecisionEngine {
       context.fir,
     );
     if (eligible == null) {
-      warnings.add('Flea restriction, level or instance eligibility unknown');
+      warnings.add(
+        'Not known whether this item can be sold on the flea market',
+      );
     }
     final quote = item.quoteAt;
     final marketKnown =
@@ -96,7 +100,7 @@ class DecisionEngine {
         !quote.isAfter(context.now) &&
         context.now.difference(quote) <= const Duration(hours: 1);
     if (!marketKnown && eligible != false) {
-      warnings.add('Market quote missing, future or older than one hour');
+      warnings.add('Flea price time unknown or more than an hour old');
     }
     final unresolved = reasons.any((r) => r.state == NeedState.unresolved);
     final Recommendation recommendation;
@@ -158,12 +162,12 @@ class DecisionEngine {
     if (p == null) {
       return reason(
         NeedState.unresolved,
-        'progress or catalog authority unknown',
+        'Tracker progress or item data unknown',
       );
     }
     final gate = _gate(r, p);
     if (gate == NeedState.irrelevant) {
-      return reason(gate, 'not applicable to player', 0);
+      return reason(gate, 'does not apply to you', 0);
     }
     EntityProgress? parent;
     if (r.kind == RequirementKind.task) {
@@ -195,7 +199,7 @@ class DecisionEngine {
     if (r.ambiguousProgressIdentity) {
       return reason(
         NeedState.unresolved,
-        'objective progress identity shared by multiple task owners',
+        'several tasks share this progress, so it cannot be told apart',
       );
     }
     final entries = r.progressIds
@@ -220,7 +224,7 @@ class DecisionEngine {
         r.count! < 0) {
       return reason(
         NeedState.unresolved,
-        'requirement progress or quantity unknown',
+        'progress or amount needed is unknown',
       );
     }
     if (r.count == 0) {
@@ -229,7 +233,10 @@ class DecisionEngine {
     num? remaining;
     for (final e in entries) {
       if (e!.count == null || !e.count!.isFinite || e.count! < 0) {
-        return reason(NeedState.unresolved, 'observed remainder unknown');
+        return reason(
+          NeedState.unresolved,
+          'how many you still need is unknown',
+        );
       }
       final value = (r.count! - e.count!).clamp(0, r.count!);
       if (remaining == null || value > remaining) remaining = value;
@@ -240,36 +247,34 @@ class DecisionEngine {
     if (r.foundInRaid == null) {
       return reason(
         NeedState.unresolved,
-        'requirement FIR rule unknown',
+        'whether it must be found in raid is unknown',
         remaining,
       );
     }
     if (r.foundInRaid == true && fir == FirState.no) {
       return reason(
         NeedState.irrelevant,
-        'this non-FIR instance cannot meet the FIR requirement',
+        'needs a found-in-raid item; this one is not',
         remaining,
       );
     }
     if (r.foundInRaid == true && fir == FirState.unknown) {
       return reason(
         NeedState.unresolved,
-        'FIR requirement; instance FIR unknown',
+        'needs a found-in-raid item; unknown for this one',
         remaining,
       );
     }
     if (gate == NeedState.unresolved) {
       return reason(
         gate,
-        'prerequisite, player, trader, skill or station gate unknown',
+        'not known yet whether you can do this (level, trader, skill or another requirement)',
         remaining,
       );
     }
     return reason(
       gate,
-      gate == NeedState.future
-          ? 'known future unmet need'
-          : 'actionable unmet need',
+      gate == NeedState.future ? 'needed later' : 'needed now',
       remaining,
     );
   }

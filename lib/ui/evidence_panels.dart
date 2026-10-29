@@ -89,7 +89,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
             : reasons.isEmpty
             ? const Center(
                 child: Text(
-                  'No catalog requirement references. Progress authority may still be unknown.',
+                  'No catalog requirement references. Tracker progress may still be unknown.',
                 ),
               )
             : _rows(context, reasons, open),

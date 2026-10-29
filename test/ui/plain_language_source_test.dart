@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/plain_language_check.dart';
@@ -98,11 +100,113 @@ final d = Foo(debugLabel: 'canonical');
       expect(_linesB("a('Canon' 'ical');"), [1]);
     });
 
+    test('check B matches literals nested inside an interpolation', () {
+      expect(_linesB(r"a('${a ? 'canonical item' : ''}');"), [1]);
+      expect(_linesB(r"""a('${a ? "identity" : b}');"""), [1]);
+    });
+
+    test('check B drops interpolation code before matching', () {
+      expect(_linesB(r"a('${p?.authorityVersion}:');"), isEmpty);
+      expect(_linesB(r"a('$canonicalName done');"), isEmpty);
+      expect(_linesB(r"a('${f({'k': 1}).identity} ok');"), isEmpty);
+      expect(_linesB(r"a('${f('x')} canonical');"), [1]);
+    });
+
+    test(
+      'check B treats a raw string dollar and an escaped dollar as text',
+      () {
+        expect(_linesB(r"a(r'cost $canonical');"), [1]);
+        expect(_linesB(r"a('cost \$canonical');"), [1]);
+        expect(_linesB(r"a(r'${authority}');"), [1]);
+      },
+    );
+
+    test('check B reads triple-quoted strings from their first line', () {
+      const source = """
+final a = 1;
+final b = '''
+first line
+the canonical item
+''';
+""";
+      expect(_linesB(source), [2]);
+    });
+
+    test('check B ignores apostrophes in trailing comments', () {
+      expect(_linesB("a(); // don't say 'canonical'"), isEmpty);
+      expect(_linesB("a(\"it's\", 'canonical');"), [1]);
+    });
+
     test('check B ignores banned words outside literals', () {
       expect(
         findBannedTermHits('lib/ui/sample.dart', 'final canonical = 1;'),
         isEmpty,
       );
     });
+
+    test('legacy import scoping keeps only the text the dialog shows', () {
+      const source = '''
+final x = row['normalizedX'];
+final id = json['CanonicalItemId'];
+final why = 'Entry wins';
+ImportAccounting(kind: 'pin', reason: 'a canonical pin');
+throw const FormatException('Bad identity');
+final sourceReason = a
+    ? 'one authority'
+    : 'two';
+final after = 'normalized';
+''';
+      final hits = findBannedTermHits(
+        'lib/data/legacy_import.dart',
+        scopeLegacyImportSource(source),
+      );
+      expect([for (final h in hits) h.line], [4, 5, 7]);
+    });
+  });
+
+  group('whole tree', () {
+    test('lib/ui has no raw enum name in text', () {
+      final hits = [
+        for (final file in _dartFiles('lib/ui'))
+          ...findEnumNameHits(file.path, file.readAsStringSync()),
+      ];
+      expect(hits, isEmpty, reason: hits.join('\n'));
+    });
+
+    test('no scanned literal contains a banned term', () {
+      final hits = [
+        for (final file in [
+          ..._dartFiles('lib/ui'),
+          for (final name in _controllers)
+            File('lib/application/${name}_controller.dart'),
+          File('lib/domain/decision_engine.dart'),
+        ])
+          ...findBannedTermHits(file.path, file.readAsStringSync()),
+        ...findBannedTermHits(
+          'lib/data/legacy_import.dart',
+          scopeLegacyImportSource(
+            File('lib/data/legacy_import.dart').readAsStringSync(),
+          ),
+        ),
+      ];
+      expect(hits, isEmpty, reason: hits.join('\n'));
+    });
   });
 }
+
+const _controllers = [
+  'selection',
+  'settings',
+  'progress',
+  'catalog',
+  'map',
+  'history',
+];
+
+List<File> _dartFiles(String directory) =>
+    Directory(directory)
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .toList()
+      ..sort((a, b) => a.path.compareTo(b.path));

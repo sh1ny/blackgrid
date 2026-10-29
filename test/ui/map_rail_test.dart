@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/data/raid_panel_ocr.dart';
+import 'package:blackgrid/domain/map_session.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/app.dart';
+import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
@@ -291,6 +293,53 @@ void main() {
         () => !h.services.mapSession.state.processingScreenshot,
       );
     }
+  });
+
+  testWidgets('expanded status lines use labels, not state names', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    final root = (await tester.runAsync(
+      () => Directory.systemTemp.createTemp('blackgrid-map-logs-'),
+    ))!;
+    addTearDown(() => root.delete(recursive: true));
+    await tester.runAsync(() async {
+      final session = Directory(
+        '${root.path}${Platform.pathSeparator}log_2026.10.01_10-00-00',
+      );
+      await session.create();
+      await File('${session.path}${Platform.pathSeparator}application.log')
+          .create();
+      await h.services.settings.setMapInputs(
+        gameLogDirectory: root.path,
+        screenshotDirectory:
+            '${root.path}${Platform.pathSeparator}no-such-screenshots',
+      );
+    });
+    await _until(
+      tester,
+      () =>
+          h.services.mapSession.state.logStatus == MapInputStatus.watching &&
+          h.services.mapSession.state.screenshotStatus ==
+              MapInputStatus.missing,
+    );
+    await expandMapInputs(tester);
+    // The status is the text before the first folder separator.
+    String lineOf(String prefix) {
+      final text = tester.widget<Text>(find.textContaining(prefix)).data!;
+      return text.split(' · ').first;
+    }
+
+    expect(
+      lineOf('Logs:'),
+      'Logs: ${mapInputStatusLabel(MapInputStatus.watching)}',
+    );
+    expect(lineOf('Logs:'), isNot('Logs: watching'));
+    expect(
+      lineOf('Screenshots:'),
+      'Screenshots: ${mapInputStatusLabel(MapInputStatus.missing)}',
+    );
+    expect(lineOf('Screenshots:'), isNot('Screenshots: missing'));
   });
 
   testWidgets('collapsed section does not mount the saved-file status', (

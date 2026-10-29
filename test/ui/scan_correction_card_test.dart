@@ -299,7 +299,7 @@ void main() {
       );
       expect(find.text('Weapon case • 1.00'), findsOneWidget);
       expect(find.text('Item case • 0.80'), findsOneWidget);
-      expect(find.textContaining('flea'), findsNothing);
+      expect(find.textContaining('· flea'), findsNothing);
     });
 
     testWidgets('unknown flea status shows flea unknown', (tester) async {

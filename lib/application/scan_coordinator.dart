@@ -634,6 +634,20 @@ final class PassReport {
   final ScanFailure? failure;
 }
 
+/// The raw code of a [ScanFailureCode], as written in the timing log and shown
+/// in the scanner's Details.
+extension ScanFailureCodeText on ScanFailureCode {
+  /// The code text, unchanged from the enum value name.
+  String get logCode => name;
+}
+
+/// The raw code of a [ScanRejectReason], as written in the timing log and shown
+/// in the scanner's Details.
+extension ScanRejectReasonText on ScanRejectReason {
+  /// The code text, unchanged from the enum value name.
+  String get logCode => name;
+}
+
 /// Why a scan was rejected: the ranked outcome's reason, or a pipeline reason.
 enum ScanRejectReason {
   /// No marker evidence in either pass.
