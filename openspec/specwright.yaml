@@ -73,7 +73,6 @@ pr:
   reviewers:
     chatgpt-codex-connector: { role: required, request: "@codex review" }
     kody-ai: { role: advisory, timeout: 15m }
-    kintsugimira: { role: advisory, timeout: 10m }
   # Account that posts the requests. Default: review_request.login, else
   # github.login.
   request_as: sh1ny

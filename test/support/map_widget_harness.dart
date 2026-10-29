@@ -8,6 +8,7 @@ import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/raid_panel_ocr.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/maps/map_marker_icons.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
 import 'package:blackgrid/ui/app.dart';
@@ -33,6 +34,8 @@ class MapWidgetHarness {
     List<Map<String, int>>? hazardOutline,
     ScanFakePorts? scanPorts,
     RaidPanelOcr? panelOcr,
+    MapMarkerIcons? markerIcons,
+    List<Map<String, Object?>> extraMarkers = const [],
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -69,11 +72,13 @@ class MapWidgetHarness {
                 'shoreline',
                 sourceCategory: sourceCategory,
                 hazardOutline: hazardOutline,
+                extraMarkers: extraMarkers,
               ),
               _map(
                 'thelab',
                 sourceCategory: sourceCategory,
                 hazardOutline: hazardOutline,
+                extraMarkers: extraMarkers,
               ),
             ],
           });
@@ -105,6 +110,7 @@ class MapWidgetHarness {
         );
       }),
       panelOcr: panelOcr,
+      markerIcons: markerIcons,
       scanLogDirectory: scanLogs,
       scanRuntimeDirectory: scanPorts == null ? null : r'C:\fake\bundle',
       scanMarkerLoader: scanPorts?.loader,
@@ -133,6 +139,7 @@ Map<String, Object?> _map(
   String id, {
   String? sourceCategory,
   List<Map<String, int>>? hazardOutline,
+  List<Map<String, Object?>> extraMarkers = const [],
 }) => {
   'id': id,
   'name': id == 'thelab' ? 'Fixture Labs' : 'Fixture Shoreline',
@@ -192,6 +199,7 @@ Map<String, Object?> _map(
       ),
       'outline': ?hazardOutline,
     },
+    ...extraMarkers,
   ],
   'attribution': {'author': 'Deterministic test fixture'},
 };

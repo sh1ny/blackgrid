@@ -10,6 +10,7 @@ import '../application/map_controller.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_marker_query.dart';
 import '../domain/settings.dart';
+import '../maps/map_marker_icons.dart';
 import '../maps/prepared_map.dart';
 import 'pin_editor.dart';
 import 'theme.dart';
@@ -392,6 +393,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                               CustomPaint(
                                 painter: _MapPainter(
                                   maps,
+                                  widget.services.markerIcons,
                                   pins,
                                   showPins:
                                       widget
@@ -560,14 +562,16 @@ class _MarkerDetails extends StatelessWidget {
 class _MapPainter extends CustomPainter {
   _MapPainter(
     this.maps,
+    this.markerIcons,
     this.pins, {
     required this.showPins,
     required this.selectedMarker,
     required this.selectedPin,
     required this.selectMarker,
     required this.selectPin,
-  }) : super(repaint: maps);
+  }) : super(repaint: Listenable.merge([maps, markerIcons]));
   final MapController maps;
+  final MapMarkerIcons markerIcons;
   final List<CustomPin> pins;
   final bool showPins;
   final String? selectedMarker;
@@ -578,6 +582,8 @@ class _MapPainter extends CustomPainter {
   final _edge = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 2;
+  final _ring = Paint()..style = PaintingStyle.stroke;
+  final _glyphPaint = Paint()..filterQuality = FilterQuality.medium;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -617,20 +623,13 @@ class _MapPainter extends CustomPainter {
         canvas.drawPath(path, _edge);
       }
       if (!markerBounds.contains(point)) continue;
-      _glyph(
+      _badge(
         canvas,
         point,
-        (projected.linkedHighlighted || projected.raidHighlighted
-                ? Colors.cyanAccent
-                : marker.filterKey.contains('Extract')
-                ? GridColors.green
-                : marker.category == 'hazards'
-                ? Colors.redAccent
-                : GridColors.gold)
-            .withValues(alpha: projected.dimmed ? .22 : 1),
-        marker.id == selectedMarker ||
-            projected.linkedHighlighted ||
-            projected.raidHighlighted,
+        filterKey: marker.filterKey,
+        selected: marker.id == selectedMarker,
+        highlighted: projected.linkedHighlighted || projected.raidHighlighted,
+        dimmed: projected.dimmed,
       );
     }
     final player = maps.playerViewportPoint;
@@ -660,24 +659,64 @@ class _MapPainter extends CustomPainter {
           final matches =
               searchTerms.isEmpty ||
               searchTerms.any(pin.label.toLowerCase().contains);
-          _glyph(
+          _badge(
             canvas,
             Offset(point.x, point.y),
-            Colors.lightBlueAccent.withValues(alpha: matches ? 1 : .22),
-            pin.id == selectedPin,
+            filterKey: 'CustomPins',
+            selected: pin.id == selectedPin,
+            highlighted: false,
+            dimmed: !matches,
           );
         }
       }
     }
   }
 
-  void _glyph(Canvas canvas, Offset point, Color color, bool selected) {
-    _fill.color = GridColors.inset;
-    canvas.drawCircle(point, selected ? 12 : 9, _fill);
-    _edge.color = color;
-    canvas.drawCircle(point, selected ? 12 : 9, _edge);
-    _fill.color = color;
-    canvas.drawCircle(point, 3, _fill);
+  /// Draws one marker badge: a disc, a ring in the state colour and the
+  /// category glyph tinted to match, or a centre dot when there is no glyph.
+  void _badge(
+    Canvas canvas,
+    Offset point, {
+    required String filterKey,
+    required bool selected,
+    required bool highlighted,
+    required bool dimmed,
+  }) {
+    final geometry = markerIcons.geometry;
+    final icon = markerIcons.icon(filterKey);
+    final style = markerBadgeStyle(
+      role: markerIcons.colourFor(filterKey),
+      selected: selected,
+      highlighted: highlighted,
+      dimmed: dimmed,
+      geometry: geometry,
+    );
+    Color faded(Color colour) =>
+        colour.withValues(alpha: colour.a * style.opacity);
+    final colour = faded(style.colour);
+    final radius = style.diameter / 2 - geometry.ring / 2;
+    _fill.color = faded(markerIcons.background);
+    canvas.drawCircle(point, radius, _fill);
+    _ring
+      ..color = colour
+      ..strokeWidth = geometry.ring;
+    canvas.drawCircle(point, radius, _ring);
+    final glyph = icon?.glyph;
+    if (glyph == null) {
+      _fill.color = colour;
+      canvas.drawCircle(point, 3, _fill);
+      return;
+    }
+    canvas.drawImageRect(
+      glyph,
+      Rect.fromLTWH(0, 0, glyph.width.toDouble(), glyph.height.toDouble()),
+      Rect.fromCenter(
+        center: point,
+        width: geometry.glyph,
+        height: geometry.glyph,
+      ),
+      _glyphPaint..colorFilter = ColorFilter.mode(colour, BlendMode.srcIn),
+    );
   }
 
   @override

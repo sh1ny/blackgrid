@@ -13,6 +13,9 @@ const _nupkgUrl = 'https://example.test/Tesseract/5.2.0';
 const _modelUrl = 'https://example.test/eng.traineddata';
 const _markerGray = 'data/vision/marker/inspection_marker.gray';
 const _markerJson = 'data/vision/marker/inspection_marker.json';
+const _markerSetDir = 'assets/map_markers';
+const _bundledMarkerDir = 'data/flutter_assets/assets/map_markers';
+const _markerStep = 'map-marker-icons';
 const _screenshotSha =
     '4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3';
 
@@ -77,6 +80,31 @@ class _Fixture {
     );
     writeManifest();
     writeLockAndNotices();
+    copyMarkerSet();
+  }
+
+  /// Copies the committed manifest and compiled icons into the bundle.
+  void copyMarkerSet() {
+    write(
+      '$_bundledMarkerDir/manifest.json',
+      File('$_markerSetDir/manifest.json').readAsBytesSync(),
+    );
+    for (final f in Directory('$_markerSetDir/compiled').listSync()) {
+      if (f is! File) continue;
+      write(
+        '$_bundledMarkerDir/compiled/${f.uri.pathSegments.last}',
+        f.readAsBytesSync(),
+      );
+    }
+  }
+
+  /// Copies the committed manifest and SVGs (no compiled icons) to a temp set.
+  String copyRepoSet(String name) {
+    final dir = Directory('${root.path}/$name')..createSync();
+    for (final f in Directory(_markerSetDir).listSync().whereType<File>()) {
+      f.copySync('${dir.path}/${f.uri.pathSegments.last}');
+    }
+    return '${dir.path}/manifest.json';
   }
 
   final Directory root;
@@ -243,10 +271,12 @@ class _Fixture {
     noticesPath,
   ];
 
-  Future<({int code, Map<String, Object?>? report, String err})> run() async {
+  Future<({int code, Map<String, Object?>? report, String err})> run([
+    List<String> extra = const [],
+  ]) async {
     final out = StringBuffer();
     final err = StringBuffer();
-    final code = await runCli(args, out: out, err: err);
+    final code = await runCli([...args, ...extra], out: out, err: err);
     final f = File(reportPath);
     return (
       code: code,
@@ -285,6 +315,7 @@ void main() {
       'imports',
       'runtimeVersions',
       'notices',
+      _markerStep,
     ]);
     expect(_step(report, 'inventory')['ok'], isTrue);
     final files = (report['files']! as List).cast<Map<String, Object?>>();
@@ -559,6 +590,132 @@ void main() {
       expect(File(fx.reportPath).existsSync(), isTrue);
     },
   );
+
+  group('bundled map marker icons', () {
+    String bundled(String rel) => '$_bundledMarkerDir/$rel';
+
+    test('map-marker-icons passes on a bundle holding the manifest and every '
+        'compiled icon', () async {
+      final r = await fx.run();
+      expect(r.code, 0, reason: '${r.err} ${r.report}');
+      expect(_step(r.report!, _markerStep)['ok'], isTrue);
+      expect(_failures(r.report!, _markerStep), isEmpty);
+      expect(r.report!['result'], 'pass');
+    });
+
+    test('map-marker-icons names an unlisted .vec, .svg or .png as '
+        'unexpected', () async {
+      fx.write(bundled('compiled/skull_alt.vec'), [1]);
+      fx.write(bundled('skull_alt.svg'), [2]);
+      fx.write(bundled('compiled/skull_alt.png'), [3]);
+      Directory('${fx.bundle.path}/${bundled('extra')}').createSync();
+      final r = await fx.run();
+      expect(r.code, 1);
+      final text = _failures(r.report!, _markerStep);
+      for (final name in [
+        'compiled/skull_alt.vec',
+        'skull_alt.svg',
+        'compiled/skull_alt.png',
+        'extra',
+      ]) {
+        expect(text, contains('${bundled(name)} is unexpected'));
+      }
+      expect(_step(r.report!, 'inventory')['ok'], isTrue);
+    });
+
+    test(
+      'map-marker-icons names an altered compiled icon or manifest',
+      () async {
+        final icon = bundled('compiled/hazards.vec');
+        fx.write(icon, [...fx.read(icon), 0]);
+        final r = await fx.run();
+        expect(r.code, 1);
+        final text = _failures(r.report!, _markerStep);
+        expect(text, contains(icon));
+        expect(text, contains('differs'));
+        expect(text, isNot(contains('manifest.json')));
+
+        final fx2 = _Fixture();
+        addTearDown(fx2.dispose);
+        final manifest = bundled('manifest.json');
+        fx2.write(manifest, [...fx2.read(manifest), 0x0a]);
+        final r2 = await fx2.run();
+        expect(r2.code, 1);
+        final text2 = _failures(r2.report!, _markerStep);
+        expect(text2, contains(manifest));
+        expect(text2, contains('differs'));
+      },
+    );
+
+    test("map-marker-icons reports the set check's failures for a stale hash "
+        'and exits 1', () async {
+      final manifest = fx.copyRepoSet('stale_set');
+      final file = File(manifest);
+      final json = jsonDecode(file.readAsStringSync()) as Map<String, Object?>;
+      final icons = (json['icons']! as List).cast<Map<String, Object?>>();
+      final stale = icons.first['sha256']! as String;
+      icons.first['sha256'] = '0' * 64;
+      file.writeAsStringSync(jsonEncode(json));
+      final r = await fx.run(['--marker-icons', manifest]);
+      expect(r.code, 1);
+      final failures = (_step(r.report!, _markerStep)['failures']! as List)
+          .cast<String>();
+      expect(failures, hasLength(1));
+      expect(failures.single, startsWith('provenance: quest_items.svg: stale'));
+      expect(failures.single, contains('0' * 64));
+      expect(failures.single, contains(stale));
+    });
+
+    test(
+      'map-marker-icons names a missing directory or compiled icon',
+      () async {
+        final icon = bundled('compiled/locks.vec');
+        File('${fx.bundle.path}/$icon').deleteSync();
+        final r = await fx.run();
+        expect(r.code, 1);
+        expect(_failures(r.report!, _markerStep), contains('$icon is missing'));
+
+        final fx2 = _Fixture();
+        addTearDown(fx2.dispose);
+        Directory('${fx2.bundle.path}/$_bundledMarkerDir')
+            .deleteSync(recursive: true);
+        final r2 = await fx2.run();
+        expect(r2.code, 1);
+        expect(
+          _failures(r2.report!, _markerStep),
+          contains('$_bundledMarkerDir is missing'),
+        );
+      },
+    );
+
+    test(
+      'map-marker-icons refuses a report path equal to the marker manifest',
+      () async {
+        final manifest = fx.copyRepoSet('report_set');
+        final before = File(manifest).readAsBytesSync();
+        final out = StringBuffer();
+        final err = StringBuffer();
+        final code = await runCli(
+          [
+            ...fx.args.take(1),
+            '--lock',
+            fx.lockPath,
+            '--notices',
+            fx.noticesPath,
+            '--marker-icons',
+            manifest,
+            '--report',
+            manifest,
+          ],
+          out: out,
+          err: err,
+        );
+        expect(code, 2);
+        expect(err.toString(), contains('refusing report path'));
+        expect(File(manifest).readAsBytesSync(), before);
+      },
+    );
+  });
 
   group('marker provenance', () {
     Uint8List meta(Map<String, Object?> overrides) => utf8.encode(

@@ -8,6 +8,14 @@ No author opens, traces or describes to a tool any third-party marker set. That 
 
 A concept image from an image-generation tool (for example ChatGPT) is redrawn as vectors. Its prompt is saved in a `prompts/` folder beside the set's manifest (for the release set, `assets/map_markers/prompts/`), and the icon's `concept.promptRecord` names it relative to the manifest. The checker only accepts a prompt record inside the manifest's own folder, so the record travels with its set. The concept image itself is not committed.
 
+## In the app
+
+The change `add-map-marker-icons` draws the release set on the map.
+- **Compiled files.** The app bundles `manifest.json` and `compiled/*.vec`, not the SVGs. After editing an SVG, rerun `mise exec -- dart run tool/markers/compile.dart` and commit the `.vec` files; a test fails while a compiled file is out of step with its SVG. The release bundle check (`map-marker-icons` step) also compares the bundled files with a fresh compile.
+- **Glyph size.** The glyph is drawn at 16 px at every badge size, as on the sheet.
+- **Highlighted markers.** A highlighted marker keeps the map's enlarged selected size (30 px), where the sheet drew it at 24 px.
+- **Prompt records.** `prompts/` is not bundled. Prompt records are design records, not app assets.
+
 ## Regenerating the preview sheet
 
 The preview is a self-contained HTML file. Open it in any browser; no app or game is involved.
