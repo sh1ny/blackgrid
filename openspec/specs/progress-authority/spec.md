@@ -20,7 +20,7 @@ After the app selects a known mode, at launch or by switching, and reads a saved
 
 #### Scenario: Unreadable credential
 - **WHEN** reading the saved credential for the selected mode fails
-- **THEN** no tracker request is made and the progress status is `failed` with "Protected credential unavailable"
+- **THEN** no tracker request is made and the progress status is `failed` with "Tracker token unavailable"
 
 #### Scenario: Tracker integration disabled
 - **WHEN** the selected known mode has a saved credential and the read-only Tracker integration is disabled
