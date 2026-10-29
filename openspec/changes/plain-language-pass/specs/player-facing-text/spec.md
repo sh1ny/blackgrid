@@ -90,7 +90,7 @@ The Scanner panel that showed source authority SHALL be titled "Data sources". I
 - **THEN** the panel says item data is up to date and was updated at 09:05, and shows no source URL until Details is expanded
 
 #### Scenario: No catalog
-- **WHEN** no complete catalog is available
+- **WHEN** no complete catalog is available and the catalog status is missing (no download running or failed)
 - **THEN** the panel says item data is not downloaded yet
 
 #### Scenario: Tracker in cooldown
