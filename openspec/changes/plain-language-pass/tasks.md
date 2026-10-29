@@ -14,24 +14,24 @@ Test files:
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | footer says item data is out of date when the catalog is stale | red |
-| player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | an imported scan row says Imported scan | red |
+| player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | an imported scan row says Imported scan | green |
 | player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | green |
 | player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/decision_card_text_test.dart | unknown found in raid is said in words | red |
 | player-facing-text → Developer wording stays out of the open view | Search field hint | test/ui/shell_test.dart | search hint asks for an item name without canonical | red |
 | player-facing-text → Developer wording stays out of the open view | Searching by ID still works | test/ui/shell_test.dart | search still finds an item by its tarkov.dev id | green |
 | player-facing-text → Developer wording stays out of the open view | Name does not resolve | test/ui/history_panel_test.dart | a row whose item has no name shows its id | green |
 | player-facing-text → Developer wording stays out of the open view | Term check over the UI sources | test/ui/plain_language_source_test.dart | no scanned literal contains a banned term | red |
-| player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | a row observed today shows its local time without ISO | red |
+| player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | a row observed today shows its local time without ISO | green |
 | player-facing-text → Times are shown in local time | Earlier day | test/ui/labels_test.dart | localTimeLabel gives date and time for an earlier day | green |
-| player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/data_sources_panel_test.dart | a missing flea quote time reads unknown | red |
+| player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/data_sources_panel_test.dart | a missing flea quote time reads unknown | green |
 | player-facing-text → Details sections start collapsed | Collapsed at launch | test/ui/scanner_screen_test.dart | scan evidence Details starts collapsed with no score or timing | green |
 | player-facing-text → Details sections start collapsed | Expanding shows the detail | test/ui/details_section_test.dart | tapping the Details title builds the content | green |
 | player-facing-text → Details sections start collapsed | Survives a tab switch | test/ui/shell_test.dart | scan evidence Details stays expanded across Map and back | green |
 | player-facing-text → Details sections start collapsed | Survives a layout change | test/ui/scanner_screen_test.dart | scan evidence Details stays expanded across the compact breakpoint | green |
 | player-facing-text → Details sections start collapsed | New launch | test/ui/scanner_screen_test.dart | a new app starts with Details collapsed | green |
-| player-facing-text → Data sources panel reads in plain language | Current item data | test/ui/data_sources_panel_test.dart | current item data says up to date with its local time and hides the URL | red |
-| player-facing-text → Data sources panel reads in plain language | No catalog | test/ui/data_sources_panel_test.dart | no catalog says item data is not downloaded yet | red |
-| player-facing-text → Data sources panel reads in plain language | Tracker in cooldown | test/ui/data_sources_panel_test.dart | cooldown is said in the open and its end time only in Details | red |
+| player-facing-text → Data sources panel reads in plain language | Current item data | test/ui/data_sources_panel_test.dart | current item data says up to date with its local time and hides the URL | green |
+| player-facing-text → Data sources panel reads in plain language | No catalog | test/ui/data_sources_panel_test.dart | no catalog says item data is not downloaded yet | green |
+| player-facing-text → Data sources panel reads in plain language | Tracker in cooldown | test/ui/data_sources_panel_test.dart | cooldown is said in the open and its end time only in Details | green |
 | player-facing-text → Raw enum names are never interpolated into UI text | Clean sources | test/ui/plain_language_source_test.dart | lib/ui has no raw enum name in text | red |
 | player-facing-text → Raw enum names are never interpolated into UI text | A regression | test/ui/plain_language_source_test.dart | check A flags a status name chain | green |
 | player-facing-text → Raw enum names are never interpolated into UI text | A destructured regression | test/ui/plain_language_source_test.dart | check A flags a destructured reason name | green |
@@ -81,8 +81,8 @@ Every group follows AGENTS.md "Dart and Flutter code" and loads the skills `dart
 
 ## 4. Data sources panel and history
 
-- [ ] 4.1 Write `test/ui/data_sources_panel_test.dart` ("current item data says up to date with its local time and hides the URL", "no catalog says item data is not downloaded yet", "cooldown is said in the open and its end time only in Details", "a missing flea quote time reads unknown") and `test/ui/history_panel_test.dart` ("an imported scan row says Imported scan", "a row observed today shows its local time without ISO", plus the green rider "a row whose item has no name shows its id"). Build expected times with `localTimeLabel` from the same instant (design Flow & State Gaps). Verify the red ones fail.
-- [ ] 4.2 Rework `SourcePanel` in `lib/ui/evidence_panels.dart` into "Data sources" (D4) and `HistoryPanel` (subtitle, empty text, `activitySourceLabel`, `localTimeLabel`). Keep `itemsSourceUpdateLabel` behind Details and update `test/ui/evidence_source_time_label_test.dart` only if its text moves. Verify 4.1 passes and flip its rows green.
+- [x] 4.1 Write `test/ui/data_sources_panel_test.dart` ("current item data says up to date with its local time and hides the URL", "no catalog says item data is not downloaded yet", "cooldown is said in the open and its end time only in Details", "a missing flea quote time reads unknown") and `test/ui/history_panel_test.dart` ("an imported scan row says Imported scan", "a row observed today shows its local time without ISO", plus the green rider "a row whose item has no name shows its id"). Build expected times with `localTimeLabel` from the same instant (design Flow & State Gaps). Verify the red ones fail.
+- [x] 4.2 Rework `SourcePanel` in `lib/ui/evidence_panels.dart` into "Data sources" (D4) and `HistoryPanel` (subtitle, empty text, `activitySourceLabel`, `localTimeLabel`). Keep `itemsSourceUpdateLabel` behind Details and update `test/ui/evidence_source_time_label_test.dart` only if its text moves. Verify 4.1 passes and flip its rows green.
 
 ## 5. Decision card, shell, manual controls and live scan panel
 

@@ -3,10 +3,11 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
+import '../application/progress_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
-import '../domain/settings.dart';
 import 'item_icon.dart';
+import 'labels.dart';
 import 'requirement_rows.dart';
 import 'theme.dart';
 
@@ -193,13 +194,21 @@ class _RequirementRow extends StatelessWidget {
   }
 }
 
+/// Where the item data, prices and tracker progress come from, and how old
+/// each is.
+///
+/// The open view says what a player needs; the source URL, UTC times, the
+/// freshness limits and the cooldown end time sit behind Details.
 class SourcePanel extends StatelessWidget {
+  /// Creates the panel over [services].
   const SourcePanel({
     super.key,
     required this.services,
     required this.detailsExpanded,
     required this.onDetailsExpandedChanged,
   });
+
+  /// The services whose data sources the panel describes.
   final AppServices services;
 
   /// Whether the Details section is expanded; owned by the screen.
@@ -207,6 +216,7 @@ class SourcePanel extends StatelessWidget {
 
   /// Called when the Details section asks to expand or collapse.
   final ValueChanged<bool> onDetailsExpandedChanged;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([
@@ -228,67 +238,56 @@ class SourcePanel extends StatelessWidget {
           ? CatalogStatus.missing
           : CatalogStatus.stale;
       final progress = services.progress;
-      final quote = services.selection.item?.quoteAt;
+      final quote = selection.item?.quoteAt;
+      final now = DateTime.now();
+      final small = Theme.of(context).textTheme.bodySmall;
+      final progressSnapshot = progress.snapshot;
+      final cooldownUntil = progress.cooldownUntil;
       return GridPanel(
-        title: 'Source authority',
+        title: 'Data sources',
         icon: Icons.description_outlined,
-        subtitle: 'Catalog age is measured from download',
+        subtitle: 'How old the data on screen is',
         child: ListView(
           children: [
             Text(
-              'Catalog: ${catalogStatus.name} • ${modeLabel(inspectionMode)}',
-            ),
-            const SizedBox(height: 10),
-            Text(
               snapshot == null
-                  ? 'No complete six-dataset snapshot.'
-                  : 'Source: ${snapshot.source}',
+                  ? 'Item data: ${catalogStatusLabel(catalogStatus)}'
+                  : 'Item data: ${catalogStatusLabel(catalogStatus)}'
+                        ' · updated '
+                        '${localTimeLabel(snapshot.observedAt, now: now)}',
             ),
-            if (snapshot != null) ...[
-              Text(
-                'Observed: ${snapshot.observedAt.toUtc().toIso8601String()}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                itemsSourceUpdateLabel(snapshot),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 10),
-              ...snapshot.datasetCounts.entries.map(
+            Text('Game mode: ${modeLabel(inspectionMode)}', style: small),
+            if (snapshot != null)
+              ...snapshot.localizationErrors.map(
                 (e) => Text(
-                  '${e.key}: ${e.value} records',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  'Some item names could not be loaded: $e',
+                  style: const TextStyle(color: GridColors.gold),
                 ),
               ),
-              ...snapshot.localizationErrors.map(
-                (e) => Text(e, style: const TextStyle(color: GridColors.gold)),
-              ),
-            ],
-            const Divider(height: 24),
+            const SizedBox(height: 10),
             Text(
-              'Flea quote: ${quote?.toUtc().toIso8601String() ?? 'Unknown source time'}',
+              quote == null
+                  ? 'Prices: price time unknown'
+                  : 'Prices: ${localTimeLabel(quote, now: now)}',
             ),
-            const Text(
-              'Initial freshness limits: catalog 24h, flea quote 1h, session progress 15m.',
-              style: TextStyle(color: GridColors.muted, fontSize: 12),
-            ),
-            const Divider(height: 24),
+            const SizedBox(height: 10),
+            Text('Tracker progress: ${progressStatusLabel(progress.status)}'),
             Text(
-              'Tracker: ${progress.status.name} • ${modeLabel(progress.mode)}',
+              progressSnapshot == null
+                  ? 'No tracker progress yet. Anything missing stays unknown.'
+                  : 'Progress updated '
+                        '${localTimeLabel(progressSnapshot.observedAt, now: now)}'
+                        ' (this session only)',
+              style: small,
             ),
-            Text(
-              progress.snapshot == null
-                  ? 'No authorized current-session progress. Missing entities stay unknown.'
-                  : 'Observed: ${progress.snapshot!.observedAt.toUtc().toIso8601String()} • session-only',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (progress.cooldownUntil != null)
+            if (progress.status == ProgressStatus.cooldown)
               Text(
-                'Cooldown until ${progress.cooldownUntil!.toUtc().toIso8601String()}',
+                'Progress refresh is cooling down. Try again shortly.',
+                style: small,
               ),
-            if (progress.error != null)
+            if (progress.error case final error?)
               Text(
-                progress.error!,
+                'Tracker problem: $error',
                 style: const TextStyle(color: GridColors.gold),
               ),
             const SizedBox(height: 10),
@@ -301,6 +300,52 @@ class SourcePanel extends StatelessWidget {
               icon: const Icon(Icons.sync, size: 18),
               label: const Text('Refresh read-only progress'),
             ),
+            const SizedBox(height: 6),
+            DetailsSection(
+              expanded: detailsExpanded,
+              onExpandedChanged: onDetailsExpandedChanged,
+              builder: (context) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (snapshot == null)
+                    Text('No complete item data download.', style: small)
+                  else ...[
+                    Text('Source: ${snapshot.source}', style: small),
+                    Text(
+                      'Item data downloaded (UTC): '
+                      '${snapshot.observedAt.toUtc().toIso8601String()}',
+                      style: small,
+                    ),
+                    Text(itemsSourceUpdateLabel(snapshot), style: small),
+                    ...snapshot.datasetCounts.entries.map(
+                      (e) => Text('${e.key}: ${e.value} records', style: small),
+                    ),
+                  ],
+                  Text(
+                    'Price time (UTC): '
+                    '${quote?.toUtc().toIso8601String() ?? 'unknown'}',
+                    style: small,
+                  ),
+                  if (progressSnapshot != null)
+                    Text(
+                      'Progress updated (UTC): '
+                      '${progressSnapshot.observedAt.toUtc().toIso8601String()}',
+                      style: small,
+                    ),
+                  if (cooldownUntil != null)
+                    Text(
+                      'Refresh available again at '
+                      '${localTimeLabel(cooldownUntil, now: now)}',
+                      style: small,
+                    ),
+                  Text(
+                    'Data is treated as old after: item data 24h, '
+                    'prices 1h, tracker progress 15m.',
+                    style: small,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       );
@@ -308,14 +353,14 @@ class SourcePanel extends StatelessWidget {
   );
 }
 
-String _sourceLabel(ActivitySource source) => switch (source) {
-  ActivitySource.scan => 'Scan',
-  _ => source.name,
-};
-
+/// The items the player picked or scanned, newest first.
 class HistoryPanel extends StatelessWidget {
+  /// Creates the panel over [services].
   const HistoryPanel({super.key, required this.services});
+
+  /// The services whose activity history the panel lists.
   final AppServices services;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([
@@ -326,13 +371,9 @@ class HistoryPanel extends StatelessWidget {
     builder: (context, _) => GridPanel(
       title: 'Recent item activity',
       icon: Icons.history,
-      subtitle: 'Item activity • manual picks and accepted scans',
+      subtitle: 'Items you picked or scanned',
       child: services.history.rows.isEmpty
-          ? Center(
-              child: Text(
-                services.history.error ?? 'No durable item activity yet.',
-              ),
-            )
+          ? Center(child: Text(services.history.error ?? 'No items yet.'))
           : ListView.builder(
               key: const PageStorageKey('history-scroll'),
               // Rows past the edge would otherwise request their icons.
@@ -376,7 +417,7 @@ class HistoryPanel extends StatelessWidget {
                             ),
                       title: Text(name ?? row.itemId),
                       subtitle: Text(
-                        '${modeLabel(row.mode)} • ${_sourceLabel(row.source)}\n${row.observedAt.toUtc().toIso8601String()}',
+                        '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}\n${localTimeLabel(row.observedAt, now: DateTime.now())}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       onTap: () => services.selection.openHistory(row),

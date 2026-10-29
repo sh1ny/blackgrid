@@ -30,13 +30,19 @@ void main() {
           await tester.tap(find.byKey(const Key('nav-scanner')));
           await tester.pumpAndSettle();
           final panel = find.byWidgetPredicate(
-            (w) => w is GridPanel && w.title == 'Source authority',
+            (w) => w is GridPanel && w.title == 'Data sources',
+          );
+          expect(
+            find.descendant(of: panel, matching: find.text('Game mode: PvE')),
+            findsOneWidget,
           );
           expect(
             find.descendant(
               of: panel,
-              matching: find.text(
-                'Catalog: ${stored ? 'stale' : 'missing'} • PvE',
+              matching: find.textContaining(
+                stored
+                    ? 'Item data: out of date · updated '
+                    : 'Item data: not downloaded yet',
               ),
             ),
             findsOneWidget,
@@ -45,14 +51,7 @@ void main() {
             expect(
               find.descendant(
                 of: panel,
-                matching: find.text('No complete six-dataset snapshot.'),
-              ),
-              findsOneWidget,
-            );
-            expect(
-              find.descendant(
-                of: panel,
-                matching: find.textContaining('items:'),
+                matching: find.textContaining('updated'),
               ),
               findsNothing,
             );
