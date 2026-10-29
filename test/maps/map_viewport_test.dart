@@ -177,17 +177,27 @@ void main() {
       await settleMapFixture(tester, h);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
       await tester.pumpAndSettle();
-      expect(find.text('Add durable pin record'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Add pin'),
+        ),
+        findsOneWidget,
+      );
       expect(
         tester
-            .widget<TextField>(find.widgetWithText(TextField, 'Normalized X'))
+            .widget<TextField>(
+              find.widgetWithText(TextField, 'Position across (0–1)'),
+            )
             .controller!
             .text,
         '0.5',
       );
       expect(
         tester
-            .widget<TextField>(find.widgetWithText(TextField, 'Normalized Y'))
+            .widget<TextField>(
+              find.widgetWithText(TextField, 'Position down (0–1)'),
+            )
             .controller!
             .text,
         '0.5',
@@ -289,7 +299,13 @@ void main() {
     );
     await pointer.up();
     await tester.pumpAndSettle();
-    expect(find.text('Add durable pin record'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Add pin'),
+      ),
+      findsNothing,
+    );
     expect(find.text('Choose a point inside the map artwork.'), findsOneWidget);
     expect(h.services.settings.pins, isEmpty);
   });
@@ -396,7 +412,7 @@ void main() {
           double.parse(
             tester
                 .widget<TextField>(
-                  find.widgetWithText(TextField, 'Normalized X'),
+                  find.widgetWithText(TextField, 'Position across (0–1)'),
                 )
                 .controller!
                 .text,
@@ -407,7 +423,7 @@ void main() {
           double.parse(
             tester
                 .widget<TextField>(
-                  find.widgetWithText(TextField, 'Normalized Y'),
+                  find.widgetWithText(TextField, 'Position down (0–1)'),
                 )
                 .controller!
                 .text,
@@ -512,7 +528,9 @@ void main() {
       expect(
         double.parse(
           tester
-              .widget<TextField>(find.widgetWithText(TextField, 'Normalized X'))
+              .widget<TextField>(
+                find.widgetWithText(TextField, 'Position across (0–1)'),
+              )
               .controller!
               .text,
         ),
@@ -521,7 +539,9 @@ void main() {
       expect(
         double.parse(
           tester
-              .widget<TextField>(find.widgetWithText(TextField, 'Normalized Y'))
+              .widget<TextField>(
+                find.widgetWithText(TextField, 'Position down (0–1)'),
+              )
               .controller!
               .text,
         ),
@@ -651,8 +671,8 @@ void main() {
           await settleMapFixture(tester, h);
           await tester.tap(find.text('Edit pin'));
           await tester.pumpAndSettle();
-          final x = find.widgetWithText(TextField, 'Normalized X');
-          final y = find.widgetWithText(TextField, 'Normalized Y');
+          final x = find.widgetWithText(TextField, 'Position across (0–1)');
+          final y = find.widgetWithText(TextField, 'Position down (0–1)');
           expect(
             double.parse(tester.widget<TextField>(x).controller!.text),
             1e308,
@@ -997,7 +1017,7 @@ void main() {
           double.parse(
             tester
                 .widget<TextField>(
-                  find.widgetWithText(TextField, 'Normalized X'),
+                  find.widgetWithText(TextField, 'Position across (0–1)'),
                 )
                 .controller!
                 .text,
@@ -1008,7 +1028,7 @@ void main() {
           double.parse(
             tester
                 .widget<TextField>(
-                  find.widgetWithText(TextField, 'Normalized Y'),
+                  find.widgetWithText(TextField, 'Position down (0–1)'),
                 )
                 .controller!
                 .text,

@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 
 import '../domain/catalog.dart';
 import '../domain/import_preview.dart';
+import '../domain/map_coordinates.dart';
 import '../domain/settings.dart';
 import 'database.dart';
 import 'wire_json.dart';
@@ -153,9 +154,7 @@ ImportPreview parseLegacySources(
           disposition: destinationSettings == null
               ? 'add'
               : 'destination conflict',
-          reason: destinationSettings == null
-              ? 'Supported preferences will be added.'
-              : 'Existing preferences remain unless replacement is explicitly selected.',
+          reason: destinationSettings == null ? 'Settings will be added.' : 'Your current settings are kept unless you choose to replace them.',
         ),
       );
       final revisions = root.containsKey('CustomPinCoordinateRevisions')
@@ -166,7 +165,9 @@ ImportPreview parseLegacySources(
         final key = _map(entry.key);
         final revision = _integer(entry.value);
         if (normalizedRevisions.containsKey(key)) {
-          throw const FormatException('Duplicate pin frame identity.');
+          throw const FormatException(
+            'The same map appears twice in the pin positions.',
+          );
         }
         if ((key == 'thelab' && revision != 0 && revision != 1) ||
             (key != 'thelab' && revision != 0)) {
@@ -190,7 +191,7 @@ ImportPreview parseLegacySources(
           final id = _string(raw['id']);
           final key = '$mapId:$id';
           if (!seen.add(key)) {
-            throw const FormatException('Duplicate pin identity.');
+            throw const FormatException('The same pin appears twice.');
           }
           var x = _number(raw['normalizedX']).toDouble();
           var y = _number(raw['normalizedY']).toDouble();
@@ -205,8 +206,8 @@ ImportPreview parseLegacySources(
             x: x,
             y: y,
             frame: mapId == 'thelab'
-                ? 'labs-native-normalized'
-                : 'legacy-normalized',
+                ? MapCoordinateFrame.labsNativeNormalized.wireName
+                : MapCoordinateFrame.legacyNormalized.wireName,
             frameRevision: mapId == 'thelab' ? 1 : 0,
             label: id,
             updatedAt: DateTime.utc(1970),
@@ -221,8 +222,8 @@ ImportPreview parseLegacySources(
               inputOrder: pins.length,
               disposition: existing ? 'destination conflict' : 'add',
               reason: existing
-                  ? 'Existing pin remains unless replacement is selected.'
-                  : 'Frame preserved; no native artwork/geometry claim.',
+                  ? 'The existing pin is kept unless you choose to replace it.'
+                  : 'Position kept as saved.',
             ),
           );
         }
@@ -327,10 +328,10 @@ ImportPreview parseLegacySources(
       final selected = activity[winner];
       final destination = destinationByKey[row.key];
       final sourceReason = row.revision != selected.revision
-          ? 'Input $winner wins: revision ${selected.revision} exceeds ${row.revision}.'
+          ? 'Entry $winner wins: its revision ${selected.revision} is newer than ${row.revision}.'
           : row.observedAt != selected.observedAt
-          ? 'Input $winner wins: equal revision ${row.revision}, later UTC ${selected.observedAt.toIso8601String()} than ${row.observedAt.toIso8601String()}.'
-          : 'Input $winner wins: exact revision/time tie, stable earlier input order.';
+          ? 'Entry $winner wins: same revision ${row.revision}, but it was saved later.'
+          : 'Entry $winner wins: same revision and time, so the earlier entry is used.';
       accounting.add(
         ImportAccounting(
           kind: 'activity',
@@ -344,8 +345,8 @@ ImportPreview parseLegacySources(
           reason: winner != i
               ? sourceReason
               : destination != null
-              ? 'Source winner revision ${row.revision} at ${row.observedAt.toIso8601String()}; destination revision ${destination.revision} at ${destination.observedAt.toIso8601String()} remains unless replacement is selected.'
-              : 'Source winner revision ${row.revision}; identity retained even if catalog identity is unavailable.',
+              ? 'File revision ${row.revision}, current revision ${destination.revision}. Your current entry is kept unless you choose to replace it.'
+              : 'File revision ${row.revision}; kept even if the item is missing from the current item data.',
         ),
       );
     }
@@ -412,7 +413,7 @@ List<dynamic> _array(Object? v) => v is List
     : throw const FormatException('Expected supported collection.');
 String _string(Object? v) => v is String && v.trim().isNotEmpty
     ? v
-    : throw const FormatException('Missing supported identity.');
+    : throw const FormatException('A required name or id is missing.');
 bool _boolean(Object? v) =>
     v is bool ? v : throw const FormatException('Malformed supported boolean.');
 num _number(Object? v) => v is num && v.isFinite

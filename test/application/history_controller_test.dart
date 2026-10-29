@@ -71,17 +71,14 @@ void main() {
     db.writeGate.complete();
     final history = HistoryController(db);
     await history.record('synthetic-unknown-item', GameMode.pve, fixtureNow);
-    expect(history.error, contains('Manual inspection was not recorded'));
+    expect(history.error, contains('The item you looked up was not recorded'));
     await history.record(
       'synthetic-unknown-item',
       GameMode.pve,
       fixtureNow,
       source: ActivitySource.scan,
     );
-    expect(
-      history.error,
-      'Accepted scan was not recorded: local persistence failed.',
-    );
+    expect(history.error, 'The accepted scan was not recorded in history.');
     history.dispose();
     await db.close();
   });

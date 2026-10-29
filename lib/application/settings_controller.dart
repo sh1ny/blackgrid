@@ -32,8 +32,7 @@ class SettingsController extends ChangeNotifier {
       _settings = value;
       return true;
     } catch (_) {
-      error =
-          'Preferences could not be saved; previous durable settings remain.';
+      error = 'Settings could not be saved. Your previous settings are kept.';
       return false;
     } finally {
       busy = false;
@@ -72,8 +71,7 @@ class SettingsController extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (_) {
-      error =
-          'Pin could not be saved. Check its coordinates and supported frame.';
+      error = 'Pin could not be saved. Check its position.';
       return false;
     } finally {
       busy = false;
@@ -93,7 +91,7 @@ class SettingsController extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (_) {
-      error = 'Pin removal failed; the durable record remains.';
+      error = 'Pin could not be removed. The pin is kept.';
       return false;
     } finally {
       busy = false;

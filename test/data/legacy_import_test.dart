@@ -280,11 +280,11 @@ void main() {
           .length,
       3,
     );
-    expect(p.accounting[3].reason, contains('Input 2'));
-    expect(p.accounting[0].reason, contains('revision 2 exceeds 1'));
-    expect(p.accounting[1].reason, contains('later UTC'));
-    expect(p.accounting[3].reason, contains('stable earlier input order'));
-    expect(p.accounting[2].reason, contains('destination revision 99'));
+    expect(p.accounting[3].reason, contains('Entry 2'));
+    expect(p.accounting[0].reason, contains('revision 2 is newer than 1'));
+    expect(p.accounting[1].reason, contains('saved later'));
+    expect(p.accounting[3].reason, contains('the earlier entry is used'));
+    expect(p.accounting[2].reason, contains('current revision 99'));
   });
   test(
     'destination indexes preserve first activity and exact map pin identity',
@@ -343,7 +343,7 @@ void main() {
         (row) => row.kind == 'activity',
       );
       expect(history.disposition, 'destination conflict');
-      expect(history.reason, contains('destination revision 99'));
+      expect(history.reason, contains('current revision 99'));
       expect(history.reason, isNot(contains('destination revision 100')));
       expect(history.reason, isNot(contains('destination revision 101')));
     },

@@ -22,53 +22,44 @@ void main() {
       await tester.tap(find.text('Import'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextField, 'Selected history JSON path • optional'),
+        find.widgetWithText(TextField, 'History file path (optional)'),
         file.path,
       );
       await tapM1Async(
         tester,
-        find.text('Read and preview selected files'),
-        () => find
-            .textContaining('supported records accounted for')
-            .evaluate()
-            .isNotEmpty,
+        find.text('Read files and preview'),
+        () => find.textContaining('records found').evaluate().isNotEmpty,
       );
-      expect(
-        find.textContaining('supported records accounted for'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('records found'), findsOneWidget);
       expect(find.textContaining('History.FIR'), findsOneWidget);
       expect(h.services.history.rows, isEmpty);
       await tapM1Async(
         tester,
-        find.text('Accept preview and import'),
+        find.text('Import now'),
         () => find
-            .text('Import committed atomically. Sources were unchanged.')
+            .text('Import finished; your files were not changed')
             .evaluate()
             .isNotEmpty,
       );
       expect(h.services.history.rows.single.itemId, 'synthetic-unmatched');
       expect(
-        find.text('Import committed atomically. Sources were unchanged.'),
+        find.text('Import finished; your files were not changed'),
         findsOneWidget,
       );
       expect(await tester.runAsync(file.readAsBytes), orderedEquals(bytes));
       await tapM1Async(
         tester,
-        find.text('Read and preview selected files'),
+        find.text('Read files and preview'),
         () => find
-            .text('These exact source bytes were already imported.')
+            .text('These files were already imported.')
             .evaluate()
             .isNotEmpty,
       );
-      expect(
-        find.text('These exact source bytes were already imported.'),
-        findsOneWidget,
-      );
+      expect(find.text('These files were already imported.'), findsOneWidget);
       expect(
         tester
             .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Accept preview and import'),
+              find.widgetWithText(FilledButton, 'Import now'),
             )
             .onPressed,
         isNull,
@@ -91,15 +82,12 @@ void main() {
       await tester.tap(find.text('Import'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(
-          TextField,
-          'Selected settings JSON path • optional',
-        ),
+        find.widgetWithText(TextField, 'Settings file path (optional)'),
         file.path,
       );
       await tapM1Async(
         tester,
-        find.text('Read and preview selected files'),
+        find.text('Read files and preview'),
         () => find
             .textContaining('Unsupported legacy schema version')
             .evaluate()

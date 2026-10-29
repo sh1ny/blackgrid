@@ -32,7 +32,7 @@ class HistoryController extends ChangeNotifier {
       error = null;
     } catch (_) {
       if (_disposed) return;
-      error = 'Item activity could not be loaded.';
+      error = 'History could not be loaded.';
     }
     _notify();
   }
@@ -54,8 +54,8 @@ class HistoryController extends ChangeNotifier {
     } catch (_) {
       if (_disposed) return false;
       error = source == ActivitySource.scan
-          ? 'Accepted scan was not recorded: local persistence failed.'
-          : 'Manual inspection was not recorded: local persistence failed.';
+          ? 'The accepted scan was not recorded in history.'
+          : 'The item you looked up was not recorded in history.';
       _notify();
       return false;
     }

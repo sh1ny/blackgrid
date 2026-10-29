@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/map_session.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
@@ -474,6 +475,45 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final (map, frame) in [
+    ('shoreline', MapCoordinateFrame.legacyNormalized),
+    ('thelab', MapCoordinateFrame.labsNativeNormalized),
+  ]) {
+    testWidgets(
+      'pin-save regression: a new pin on $map saves with frame ${frame.wireName}',
+      (tester) async {
+        final h = await pumpMapFixture(tester);
+        if (map != 'shoreline') {
+          await tester.runAsync(() => h.services.settings.setMap(map));
+          await settleMapFixture(tester, h);
+        }
+        await tester.tap(find.text('Add pin'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Pin label'),
+          'P',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Position across (0–1)'),
+          '0.25',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Position down (0–1)'),
+          '0.75',
+        );
+        await tapM1Async(
+          tester,
+          find.text('Save pin'),
+          () => h.services.settings.pins.isNotEmpty,
+        );
+        final saved = h.services.settings.pins.single;
+        expect(saved.mapId, map);
+        expect(saved.frame, frame.wireName);
+        expect(saved.frameRevision, frame.revision);
+      },
+    );
+  }
+
   for (final map in ['shoreline', 'thelab']) {
     testWidgets(
       '$map saved-pin browser edits and removes finite off-map pins without reframing them',
@@ -490,23 +530,23 @@ void main() {
           'Durable off-map marker',
         );
         await tester.enterText(
-          find.widgetWithText(TextField, 'Normalized X'),
+          find.widgetWithText(TextField, 'Position across (0–1)'),
           'not a coordinate',
         );
         await tester.enterText(
-          find.widgetWithText(TextField, 'Normalized Y'),
+          find.widgetWithText(TextField, 'Position down (0–1)'),
           '1.5',
         );
         await tester.tap(find.text('Save pin'));
         await tester.pumpAndSettle();
         expect(find.byType(PinEditor), findsOneWidget);
         expect(
-          find.textContaining('finite normalized coordinates'),
+          find.textContaining('a number for each position'),
           findsOneWidget,
         );
         expect(h.services.settings.pins, isEmpty);
         await tester.enterText(
-          find.widgetWithText(TextField, 'Normalized X'),
+          find.widgetWithText(TextField, 'Position across (0–1)'),
           '-.2',
         );
         await tapM1Async(
@@ -531,14 +571,18 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           tester
-              .widget<TextField>(find.widgetWithText(TextField, 'Normalized X'))
+              .widget<TextField>(
+                find.widgetWithText(TextField, 'Position across (0–1)'),
+              )
               .controller!
               .text,
           '-0.2',
         );
         expect(
           tester
-              .widget<TextField>(find.widgetWithText(TextField, 'Normalized Y'))
+              .widget<TextField>(
+                find.widgetWithText(TextField, 'Position down (0–1)'),
+              )
               .controller!
               .text,
           '1.5',
@@ -622,10 +666,10 @@ void main() {
       final label = find.widgetWithText(TextField, 'Pin label');
       await tester.ensureVisible(label);
       await tester.enterText(label, 'Reachable controls');
-      final x = find.widgetWithText(TextField, 'Normalized X');
+      final x = find.widgetWithText(TextField, 'Position across (0–1)');
       await tester.ensureVisible(x);
       await tester.enterText(x, '.5');
-      final y = find.widgetWithText(TextField, 'Normalized Y');
+      final y = find.widgetWithText(TextField, 'Position down (0–1)');
       await tester.ensureVisible(y);
       await tester.enterText(y, '.5');
       await tapM1Async(

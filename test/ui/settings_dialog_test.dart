@@ -36,11 +36,8 @@ void main() {
       final h = await pumpM1(tester);
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
-      final logs = find.widgetWithText(TextField, 'Game log directory');
-      final screenshots = find.widgetWithText(
-        TextField,
-        'Screenshot directory',
-      );
+      final logs = find.widgetWithText(TextField, 'Game log folder');
+      final screenshots = find.widgetWithText(TextField, 'Screenshot folder');
       await tester.ensureVisible(logs);
       await tester.enterText(logs, ' C:/blackgrid-synthetic-missing/logs ');
       await tester.ensureVisible(screenshots);
@@ -48,7 +45,7 @@ void main() {
         screenshots,
         ' C:/blackgrid-synthetic-missing/screenshots ',
       );
-      final save = find.text('Save map inputs');
+      final save = find.text('Save map files');
       await tester.ensureVisible(save);
       await tester.pumpAndSettle();
       await tapM1Async(
@@ -91,24 +88,21 @@ void main() {
       await tester.pumpAndSettle();
       final field = find.widgetWithText(
         TextField,
-        'Tracker token • active mode only',
+        'Tracker token (current game mode)',
       );
       expect(tester.widget<TextField>(field).obscureText, isTrue);
       await tester.ensureVisible(field);
       await tester.enterText(field, 'PVP_SYNTHETIC_LOCAL_ONLY');
-      await tester.ensureVisible(find.text('Save protected token'));
+      await tester.ensureVisible(find.text('Save token'));
       await tester.pumpAndSettle();
       await tapM1Async(
         tester,
-        find.text('Save protected token'),
-        () => find
-            .text('Current-user DPAPI credential saved.')
-            .evaluate()
-            .isNotEmpty,
+        find.text('Save token'),
+        () => find.text('Tracker token saved').evaluate().isNotEmpty,
       );
       expect(h.credentials.values[GameMode.pvp], 'PVP_SYNTHETIC_LOCAL_ONLY');
       expect(tester.widget<TextField>(field).controller!.text, isEmpty);
-      expect(find.text('Current-user DPAPI credential saved.'), findsOneWidget);
+      expect(find.text('Tracker token saved'), findsOneWidget);
       await tapM1Async(
         tester,
         find.text('Remove token'),
@@ -136,7 +130,7 @@ void main() {
       expect(h.services.catalog.mode, GameMode.pve);
       await tapM1Async(
         tester,
-        find.text('Refresh complete catalog'),
+        find.text('Refresh item data'),
         () =>
             h.services.catalog.snapshot?.mode == GameMode.pve &&
             !h.services.catalog.loading,
