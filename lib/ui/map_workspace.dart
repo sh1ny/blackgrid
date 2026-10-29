@@ -9,6 +9,7 @@ import '../application/app_services.dart';
 import '../application/map_controller.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_marker_query.dart';
+import '../domain/marker_categories.dart';
 import '../domain/settings.dart';
 import '../maps/map_marker_icons.dart';
 import '../maps/prepared_map.dart';
@@ -145,7 +146,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                     final marker = visible[index].marker;
                     return ListTile(
                       title: Text(marker.name),
-                      subtitle: Text(marker.filterKey),
+                      subtitle: Text(markerCategoryLabel(marker.filterKey)),
                       onTap: () =>
                           Navigator.pop(context, 'marker:${marker.id}'),
                     );
@@ -706,7 +707,8 @@ class _MapPainter extends CustomPainter {
         CustomPainterSemantics(
           rect: rect.intersect(bounds),
           properties: SemanticsProperties(
-            label: '${marker.marker.name}, ${marker.marker.filterKey}',
+            label:
+                '${marker.marker.name}, ${markerCategoryLabel(marker.marker.filterKey)}',
             button: true,
             selected: marker.marker.id == selectedMarker,
             textDirection: TextDirection.ltr,

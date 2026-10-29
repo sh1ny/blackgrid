@@ -28,8 +28,8 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 | Bulk, search and quest controls keep working | Bulk action with an unsaveable category | test/ui/map_screen_test.dart | Hide all never saves an unsaveable key and settings reload | green |
 | Bulk, search and quest controls keep working | Search dims without hiding | test/ui/map_screen_test.dart | marker search survives show/hide-all and dimmed targets remain eligible | green |
 | Bulk, search and quest controls keep working | Quest filter keeps tiles | test/ui/map_screen_test.dart | quest filters leave tile states unchanged | green |
-| Marker lists use the category labels | List subtitle uses the label | test/maps/map_viewport_test.dart | visible-markers list shows the category label | red |
-| Marker lists use the category labels | Unknown key in the list | test/maps/map_viewport_test.dart | visible-markers list shows an unlabelled key as is | red |
+| Marker lists use the category labels | List subtitle uses the label | test/maps/map_viewport_test.dart | visible-markers list shows the category label | green |
+| Marker lists use the category labels | Unknown key in the list | test/maps/map_viewport_test.dart | visible-markers list shows an unlabelled key as is | green |
 
 ## 1. Category labels and order
 
@@ -49,8 +49,8 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 
 ## 4. Labels in the marker list and map semantics
 
-- [ ] 4.1 In `test/maps/map_viewport_test.dart`, build the expected hazard semantics label at `:772` with `markerCategoryLabel`. Add "visible-markers list shows the category label", using a `lootLoose` marker, and "visible-markers list shows an unlabelled key as is". Verify the label test fails on the raw `lootLoose` subtitle.
-- [ ] 4.2 Use `markerCategoryLabel` in `lib/ui/map_workspace.dart:148` and `:739` (D4). Verify `test/maps/map_viewport_test.dart` passes and flip its two rows green.
+- [x] 4.1 In `test/maps/map_viewport_test.dart`, build the expected hazard semantics label at `:772` with `markerCategoryLabel`. Add "visible-markers list shows the category label", using a `lootLoose` marker, and "visible-markers list shows an unlabelled key as is". Verify the label test fails on the raw `lootLoose` subtitle.
+- [x] 4.2 Use `markerCategoryLabel` in `lib/ui/map_workspace.dart:148` and `:739` (D4). Verify `test/maps/map_viewport_test.dart` passes and flip its two rows green.
 
 ## 5. Integration checks
 

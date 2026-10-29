@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/domain/marker_categories.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:flutter/gestures.dart';
@@ -242,6 +243,40 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final (filterKey, subtitle) in [
+    ('lootLoose', 'Loose loot'),
+    ('Ziplines', 'Ziplines'),
+  ]) {
+    testWidgets(
+      filterKey == 'lootLoose'
+          ? 'visible-markers list shows the category label'
+          : 'visible-markers list shows an unlabelled key as is',
+      (tester) async {
+        await pumpMapFixture(
+          tester,
+          extraMarkers: [
+            {
+              'id': 'jacket',
+              'name': 'Jacket',
+              'floorId': 'ground',
+              'category': filterKey.toLowerCase(),
+              'filterKey': filterKey,
+              'position': {'x': 64, 'z': 64},
+              'details': {'description': 'Jacket offline fixture details'},
+              'source': {'fixture': true},
+            },
+          ],
+        );
+        await tester.tap(_markerBrowser);
+        await tester.pumpAndSettle();
+        final row = tester.widget<ListTile>(
+          find.widgetWithText(ListTile, 'Jacket'),
+        );
+        expect((row.subtitle! as Text).data, subtitle);
+      },
+    );
+  }
 
   testWidgets('right-click outside artwork cannot create a new pin', (
     tester,
@@ -769,14 +804,17 @@ void main() {
         final hazard = maps.preparedMap!.markers.singleWhere(
           (marker) => marker.id == 'ground-hazard',
         );
-        final hazardLabel = '${hazard.name}, ${hazard.filterKey}';
+        final hazardLabel =
+            '${hazard.name}, ${markerCategoryLabel(hazard.filterKey)}';
         final upperPoint = ScenePoint(192, 64);
         final hiddenFloorPixel = await _paintPixel(
           tester,
           maps.transform.sceneToViewport(upperPoint),
         );
         expect(
-          find.semantics.byLabel('Upper exit, PmcExtracts').evaluate(),
+          find.semantics
+              .byLabel('Upper exit, ${markerCategoryLabel('PmcExtracts')}')
+              .evaluate(),
           isEmpty,
         );
         await tester.tapAt(_project(tester, h, ScenePoint(192, 64)));
@@ -785,7 +823,9 @@ void main() {
         await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
         await settleMapFixture(tester, h);
         expect(
-          find.semantics.byLabel('Upper exit, PmcExtracts').evaluate(),
+          find.semantics
+              .byLabel('Upper exit, ${markerCategoryLabel('PmcExtracts')}')
+              .evaluate(),
           hasLength(1),
         );
         expect(
@@ -800,7 +840,9 @@ void main() {
         await settleMapFixture(tester, h);
         expect(find.text('Upper exit'), findsNothing);
         expect(
-          find.semantics.byLabel('Upper exit, PmcExtracts').evaluate(),
+          find.semantics
+              .byLabel('Upper exit, ${markerCategoryLabel('PmcExtracts')}')
+              .evaluate(),
           isEmpty,
         );
         expect(
@@ -906,7 +948,9 @@ void main() {
         await settleMapFixture(tester, h);
         expect(find.text('Ground hazard'), findsOneWidget);
         expect(
-          find.semantics.byLabel('Ground hazard, $category').evaluate(),
+          find.semantics
+              .byLabel('Ground hazard, ${markerCategoryLabel(category)}')
+              .evaluate(),
           hasLength(1),
         );
         final filter = await _showMarkerFilter(tester, category);
@@ -917,7 +961,9 @@ void main() {
         );
         expect(find.text('Ground hazard'), findsNothing);
         expect(
-          find.semantics.byLabel('Ground hazard, $category').evaluate(),
+          find.semantics
+              .byLabel('Ground hazard, ${markerCategoryLabel(category)}')
+              .evaluate(),
           isEmpty,
         );
         await tester.tapAt(_project(tester, h, ScenePoint(64, 64)));
