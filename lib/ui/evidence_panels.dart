@@ -271,7 +271,10 @@ class SourcePanel extends StatelessWidget {
                   : 'Prices: ${localTimeLabel(quote, now: now)}',
             ),
             const SizedBox(height: 10),
-            Text('Tracker progress: ${progressStatusLabel(progress.status)}'),
+            Text(
+              'Tracker progress: ${progressStatusLabel(progress.status)}'
+              ' · ${modeLabel(progress.mode)}',
+            ),
             Text(
               progressSnapshot == null
                   ? 'No tracker progress yet. Anything missing stays unknown.'

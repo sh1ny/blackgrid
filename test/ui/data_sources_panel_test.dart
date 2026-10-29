@@ -116,7 +116,8 @@ void main() {
 
     expect(
       find.text(
-        'Tracker progress: ${progressStatusLabel(ProgressStatus.cooldown)}',
+        'Tracker progress: '
+        '${progressStatusLabel(ProgressStatus.cooldown)} · PvP',
       ),
       findsOneWidget,
     );
@@ -129,6 +130,24 @@ void main() {
     final time = localTimeLabel(until, now: DateTime.now());
     expect(find.text('Refresh available again at $time'), findsOneWidget);
   });
+
+  testWidgets(
+    'Tracker progress mode stays visible when it differs from the game mode',
+    (tester) async {
+      final h = await harness(tester);
+      h.services.progress.mode = GameMode.pve;
+      await show(tester, h);
+
+      expect(find.text('Game mode: PvP'), findsOneWidget);
+      expect(
+        find.text(
+          'Tracker progress: '
+          '${progressStatusLabel(h.services.progress.status)} · PvE',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('a missing flea quote time reads unknown', (tester) async {
     final h = await harness(tester);

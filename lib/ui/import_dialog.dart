@@ -11,8 +11,12 @@ Future<void> showLegacyImport(BuildContext context, AppServices services) =>
     );
 
 class ImportDialog extends StatefulWidget {
-  const ImportDialog({super.key, required this.services});
+  const ImportDialog({super.key, required this.services, this.reload});
   final AppServices services;
+
+  /// Reloads the app after a committed import. Defaults to
+  /// [AppServices.reloadAfterImport]; tests inject a failing one.
+  final Future<void> Function()? reload;
   @override
   State<ImportDialog> createState() => _ImportDialogState();
 }
@@ -66,22 +70,39 @@ class _ImportDialogState extends State<ImportDialog> {
       error = null;
     });
     try {
-      await widget.services.importer.commit(
-        candidate,
-        replaceExisting: replace,
-      );
-      await widget.services.reloadAfterImport();
+      try {
+        await widget.services.importer.commit(
+          candidate,
+          replaceExisting: replace,
+        );
+      } catch (_) {
+        if (mounted) {
+          setState(
+            () => error = 'The import did not finish, or these files were already imported. Nothing was changed.',
+          );
+        }
+        return;
+      }
+      // The import is saved from here on, so a failed reload must not say
+      // that nothing changed.
+      try {
+        await (widget.reload ?? widget.services.reloadAfterImport)();
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            preview = null;
+            error =
+                'The import was saved, but Blackgrid could not reload it. '
+                'Restart Blackgrid to see the imported data.';
+          });
+        }
+        return;
+      }
       if (mounted) {
         setState(() {
           imported = true;
           preview = null;
         });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(
-          () => error = 'The import did not finish, or these files were already imported. Nothing was changed.',
-        );
       }
     } finally {
       if (mounted) setState(() => busy = false);
