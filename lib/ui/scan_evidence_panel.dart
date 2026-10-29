@@ -7,11 +7,13 @@ import '../application/catalog_controller.dart';
 import '../application/scan_coordinator.dart';
 import '../data/vision/inspection_evidence.dart';
 import '../domain/title_matching.dart';
+import 'labels.dart';
 import 'theme.dart';
 
 /// What the last accepted scan found (the latest published scan before any is
 /// accepted), a note for a later scan that was not accepted, the phase of the
-/// scan in flight, the latest scan's stage timings and the recent scans.
+/// scan in flight and the recent scans, in plain words. Scores, codes, the
+/// title crop and the stage timings sit in a Details section.
 ///
 /// It only shows evidence. It never selects an item or reads a decision, so a
 /// scan cannot change what the decision card shows.
@@ -110,7 +112,7 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
   Widget build(BuildContext context) => GridPanel(
     title: 'Scan evidence',
     icon: Icons.fact_check_outlined,
-    subtitle: 'Evidence only • never a decision',
+    subtitle: 'Latest scan · shows what was read, never a keep/sell call',
     child: ListenableBuilder(
       listenable: Listenable.merge([widget.scanner, widget.catalog]),
       builder: (context, _) {
@@ -127,16 +129,7 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
             else ...[
               if (latest != null && latest.id != shown.id)
                 ..._note(context, latest),
-              ..._report(context, shown),
-            ],
-            if (latest != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                'TIMINGS • Scan #${latest.id}',
-                key: const Key('scan-timings-label'),
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              ..._timings(latest, frequency),
+              ..._summary(shown),
             ],
             const Divider(height: 24),
             const Text(
@@ -155,10 +148,17 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    _recentRow(report, frequency),
+                    _recentRow(report),
                     key: Key('scan-recent-${report.id}'),
                   ),
                 ),
+            const Divider(height: 24),
+            DetailsSection(
+              expanded: widget.detailsExpanded,
+              onExpandedChanged: widget.onDetailsExpandedChanged,
+              builder: (context) =>
+                  _details(context, shown, latest, scanner.recent, frequency),
+            ),
           ],
         );
       },
@@ -168,120 +168,195 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
   List<Widget> _phase(ScanPhase phase) => switch (phase) {
     ScanPhase.idle => const [],
     ScanPhase.targeted => const [
-      Text('Scan running: targeted', key: Key('scan-phase')),
+      Text('Reading the item…', key: Key('scan-phase')),
       SizedBox(height: 8),
     ],
     ScanPhase.fallback => const [
-      Text('Fallback underway', key: Key('scan-phase')),
+      Text('Trying a wider scan…', key: Key('scan-phase')),
       SizedBox(height: 8),
     ],
   };
 
-  List<Widget> _report(BuildContext context, ScanReport report) {
+  /// The open-view note for [report], a later scan that was not accepted.
+  List<Widget> _note(BuildContext context, ScanReport report) {
+    final (reason, match) = switch (report.end) {
+      ScanRejected(:final reason, :final outcome) => (
+        scanRejectReasonLabel(reason),
+        outcome?.match,
+      ),
+      ScanFailed(:final failure) => (scanFailureCodeLabel(failure.code), null),
+      ScanAccepted() || ScanSuperseded() => ('', null),
+    };
+    return [
+      Text(
+        'Last scan not recognised: $reason',
+        key: const Key('scan-note-reason'),
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
+      _candidate(match, key: 'scan-note-best'),
+      const Divider(height: 24),
+    ];
+  }
+
+  /// The open-view summary of the shown [report]: the accepted item's name, or
+  /// the plain reason and the best candidate, labelled not accepted.
+  List<Widget> _summary(ScanReport report) => switch (report.end) {
+    ScanAccepted(:final itemId) => [
+      Text(_itemName(itemId), key: const Key('scan-item')),
+    ],
+    ScanRejected(:final reason, :final outcome) => [
+      Text(scanRejectReasonLabel(reason), key: const Key('scan-reason')),
+      _candidate(outcome?.match, key: 'scan-candidate'),
+    ],
+    ScanFailed(:final failure) => [
+      Text(scanFailureCodeLabel(failure.code), key: const Key('scan-reason')),
+      const Text('No candidate'),
+    ],
+    ScanSuperseded() => [
+      Text(
+        scanFailureCodeLabel(ScanFailureCode.visionSuperseded),
+        key: const Key('scan-reason'),
+      ),
+    ],
+  };
+
+  /// The best candidate of [match] as `<name> (not accepted)`, else
+  /// `No candidate`.
+  Widget _candidate(TitleMatch? match, {required String key}) =>
+      switch (match?.bestId) {
+        final String id => Text(
+          '${_itemName(id)} (not accepted)',
+          key: Key(key),
+        ),
+        null => const Text('No candidate'),
+      };
+
+  /// The Details content, in order: the note scan's code, OCR text and marker
+  /// score; the shown scan's evidence; the timings; each recent entry's end
+  /// state and total.
+  Widget _details(
+    BuildContext context,
+    ScanReport? shown,
+    ScanReport? latest,
+    List<ScanReport> recent,
+    int? frequency,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (shown != null) ...[
+        if (latest != null && latest.id != shown.id)
+          ..._noteDetails(context, latest),
+        ..._shownDetails(context, shown),
+      ],
+      if (latest != null) ...[
+        const SizedBox(height: 10),
+        Text(
+          'Timings • Scan #${latest.id}',
+          key: const Key('scan-timings-label'),
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        ..._timings(latest, frequency),
+      ],
+      if (recent.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        Text('Recent scans', style: Theme.of(context).textTheme.titleSmall),
+        for (final report in recent)
+          Text(
+            _recentDetail(report, frequency),
+            key: Key('scan-recent-detail-${report.id}'),
+          ),
+      ],
+    ],
+  );
+
+  /// Code, OCR text and marker score of the note scan [report].
+  List<Widget> _noteDetails(BuildContext context, ScanReport report) {
+    final entry = shownEvidence(report);
+    final code = switch (report.end) {
+      ScanRejected(:final reason) => reason.name,
+      ScanFailed(:final failure) => failure.code.name,
+      ScanAccepted() || ScanSuperseded() => null,
+    };
+    return [
+      Text(
+        'Last scan • Scan #${report.id}',
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
+      if (code != null) Text('Code: $code', key: const Key('scan-note-code')),
+      if (entry != null) ...[
+        Text(
+          'OCR text: ${entry.text.isEmpty ? '(empty)' : entry.text}',
+          key: const Key('scan-note-text'),
+        ),
+        Text(
+          'Marker score ${_score(entry.markerScore)}',
+          key: const Key('scan-note-marker'),
+        ),
+      ],
+      const Divider(height: 24),
+    ];
+  }
+
+  /// End state, pass, marker score, crop, OCR text, candidates, item ID and
+  /// code of the shown [report].
+  List<Widget> _shownDetails(BuildContext context, ScanReport report) {
     final entry = shownEvidence(report);
     final match = switch (report.end) {
       ScanAccepted(:final outcome) => outcome.match,
       ScanRejected(:final outcome) => outcome?.match,
       ScanFailed() || ScanSuperseded() => null,
     };
-    final bold = Theme.of(context).textTheme.titleSmall;
     return [
-      Text('Scan #${report.id}', style: bold),
+      Text('Scan #${report.id}', style: Theme.of(context).textTheme.titleSmall),
       Text(_endLabel(report.end), key: const Key('scan-end')),
       if (report.winningPass case final ScanPass pass)
-        Text('Pass: ${pass.name}', key: const Key('scan-pass')),
-      ..._outcome(report.end, match),
+        Text('Pass: ${scanPassLabel(pass)}', key: const Key('scan-pass')),
       if (entry != null)
         ..._entry(entry)
       else if (shownBestMarkerScore(report) case final double score)
         ..._noEntry(score),
-    ];
-  }
-
-  /// The note for [report], a later scan that was not accepted: its reason or
-  /// failure, and when present its OCR text, marker score and best candidate.
-  List<Widget> _note(BuildContext context, ScanReport report) {
-    final entry = shownEvidence(report);
-    return [
-      Text(
-        'Last scan not accepted',
-        key: const Key('scan-note'),
-        style: Theme.of(context).textTheme.titleSmall,
-      ),
-      Text('Scan #${report.id}'),
+      ..._candidates(match, accepted: report.end is ScanAccepted),
       ...switch (report.end) {
-        ScanRejected(:final reason, :final outcome) => [
-          Text('Reason: ${reason.name}', key: const Key('scan-note-reason')),
-          if (entry != null) ...[
+        ScanAccepted(:final itemId) => [
+          Text('Item ID: $itemId', key: const Key('scan-item-id')),
+        ],
+        ScanRejected(:final reason, :final fallbackFailure) => [
+          Text('Code: ${reason.name}', key: const Key('scan-reason-code')),
+          if (fallbackFailure case final ScanFailure failure)
             Text(
-              'Marker score ${_score(entry.markerScore)}',
-              key: const Key('scan-note-marker'),
+              'Wider scan failure: ${failure.code.name}',
+              key: const Key('scan-fallback-failure'),
             ),
-            Text(
-              'OCR text: ${entry.text.isEmpty ? '(empty)' : entry.text}',
-              key: const Key('scan-note-text'),
-            ),
-          ],
-          ..._candidates(outcome?.match, accepted: false, prefix: 'scan-note'),
         ],
         ScanFailed(:final failure) => [
           Text(
-            'Failure: ${failure.code.name}',
-            key: const Key('scan-note-reason'),
+            'Code: ${failure.code.name}',
+            key: const Key('scan-reason-code'),
           ),
-          const Text('No candidate'),
+          Text(failure.message, key: const Key('scan-failure-message')),
         ],
-        ScanAccepted() || ScanSuperseded() => const <Widget>[],
+        ScanSuperseded() => const <Widget>[],
       },
-      const Divider(height: 24),
     ];
   }
 
-  List<Widget> _outcome(ScanEnd end, TitleMatch? match) => switch (end) {
-    ScanAccepted(:final itemId) => [
-      Text('Item: ${_itemLabel(itemId)}', key: const Key('scan-item')),
-      ..._candidates(match, accepted: true),
-    ],
-    ScanRejected(:final reason, :final fallbackFailure) => [
-      Text('Reason: ${reason.name}', key: const Key('scan-reason')),
-      if (fallbackFailure case final ScanFailure failure)
-        Text(
-          'Fallback failure: ${failure.code.name}',
-          key: const Key('scan-fallback-failure'),
-        ),
-      ..._candidates(match, accepted: false),
-    ],
-    ScanFailed(:final failure) => [
-      Text('Failure: ${failure.code.name}', key: const Key('scan-reason')),
-      Text(failure.message, key: const Key('scan-failure-message')),
-      const Text('No candidate'),
-    ],
-    ScanSuperseded() => const [],
-  };
-
-  List<Widget> _candidates(
-    TitleMatch? match, {
-    required bool accepted,
-    String prefix = 'scan',
-  }) {
+  List<Widget> _candidates(TitleMatch? match, {required bool accepted}) {
     final bestId = match?.bestId;
-    if (match == null || bestId == null) {
-      return accepted ? const [] : const [Text('No candidate')];
-    }
+    if (match == null || bestId == null) return const [];
     return [
       Text(
         accepted
             ? 'Best: ${_itemLabel(bestId)} ${_score(match.bestScore)}'
             : 'Best candidate (not accepted): ${_itemLabel(bestId)} '
                   '${_score(match.bestScore)}',
-        key: Key('$prefix-best'),
+        key: const Key('scan-best'),
       ),
       if (match.runnerUpId case final String runnerUp)
         Text(
           'Runner-up: ${_itemLabel(runnerUp)} ${_score(match.runnerUpScore)}',
-          key: Key('$prefix-runner-up'),
+          key: const Key('scan-runner-up'),
         ),
-      Text('Margin ${_score(match.margin)}', key: Key('$prefix-margin')),
+      Text('Margin ${_score(match.margin)}', key: const Key('scan-margin')),
     ];
   }
 
@@ -376,19 +451,27 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     ];
   }
 
-  String _recentRow(ScanReport report, int? frequency) {
+  /// The open-view recent row: the item name or plain reason, and "hotkey"
+  /// when the hotkey started the scan.
+  String _recentRow(ScanReport report) {
     final subject = switch (report.end) {
       ScanAccepted(:final itemId) => _itemName(itemId),
-      ScanRejected(:final reason) => reason.name,
-      ScanFailed(:final failure) => failure.code.name,
-      ScanSuperseded() => '',
+      ScanRejected(:final reason) => scanRejectReasonLabel(reason),
+      ScanFailed(:final failure) => scanFailureCodeLabel(failure.code),
+      ScanSuperseded() => scanFailureCodeLabel(
+        ScanFailureCode.visionSuperseded,
+      ),
     };
+    return report.byHotkey ? '$subject · hotkey' : subject;
+  }
+
+  /// The Details recent row: the end state and the total.
+  String _recentDetail(ScanReport report, int? frequency) {
     final published = report.timeline.published;
     final total = published == null || frequency == null
         ? 'no total'
         : _ms(report.timeline.msFromTrigger(published, frequency));
-    final via = report.byHotkey ? ' · hotkey' : '';
-    return '#${report.id} ${_endLabel(report.end)} · $subject · $total$via';
+    return '#${report.id} ${_endLabel(report.end)} · $total';
   }
 
   String _itemName(String id) => widget.catalog.snapshot?.items[id]?.name ?? id;

@@ -61,8 +61,7 @@ void main() {
       evidence.height / (evidence.height + history.height),
       closeTo(.6, .03),
     );
-    final needs = panel('Requirements & uses'),
-        source = panel('Source authority');
+    final needs = panel('Requirements & uses'), source = panel('Data sources');
     expect(needs.top, greaterThan(current.bottom));
     expect(source.top, needs.top);
     expect(
@@ -96,10 +95,40 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('scan-item'))).data,
       before,
     );
-    expect(
-      tester.widget<Text>(find.byKey(const Key('scan-end'))).data,
-      'Accepted',
+    // The end state now lives inside the collapsed Details section.
+    expect(find.byKey(const Key('scan-end')), findsNothing);
+  });
+  testWidgets('scan evidence Details stays expanded across Map and back', (
+    tester,
+  ) async {
+    final ports = ScanFakePorts();
+    final h = await pumpM1(tester, scanPorts: ports);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => publishTargetedScan(
+        h.services.scanner,
+        ports,
+        text: 'Alternative component',
+      ),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ScanEvidencePanel),
+        matching: find.text('Details'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
+    expect(find.byKey(const Key('scan-timing-total')), findsOneWidget);
   });
   for (final size in [const Size(1672, 941), const Size(960, 640)]) {
     testWidgets('scan evidence panel does not overflow at $size', (
