@@ -578,12 +578,11 @@ class _MapPainter extends CustomPainter {
   final String? selectedPin;
   final ValueChanged<String> selectMarker;
   final ValueChanged<String> selectPin;
-  final _fill = Paint();
+  final _badgePaints = MarkerBadgePaints();
+  late final _fill = _badgePaints.fill;
   final _edge = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 2;
-  final _ring = Paint()..style = PaintingStyle.stroke;
-  final _glyphPaint = Paint()..filterQuality = FilterQuality.medium;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -672,8 +671,6 @@ class _MapPainter extends CustomPainter {
     }
   }
 
-  /// Draws one marker badge: a disc, a ring in the state colour and the
-  /// category glyph tinted to match, or a centre dot when there is no glyph.
   void _badge(
     Canvas canvas,
     Offset point, {
@@ -681,43 +678,16 @@ class _MapPainter extends CustomPainter {
     required bool selected,
     required bool highlighted,
     required bool dimmed,
-  }) {
-    final geometry = markerIcons.geometry;
-    final icon = markerIcons.icon(filterKey);
-    final style = markerBadgeStyle(
-      role: markerIcons.colourFor(filterKey),
-      selected: selected,
-      highlighted: highlighted,
-      dimmed: dimmed,
-      geometry: geometry,
-    );
-    Color faded(Color colour) =>
-        colour.withValues(alpha: colour.a * style.opacity);
-    final colour = faded(style.colour);
-    final radius = style.diameter / 2 - geometry.ring / 2;
-    _fill.color = faded(markerIcons.background);
-    canvas.drawCircle(point, radius, _fill);
-    _ring
-      ..color = colour
-      ..strokeWidth = geometry.ring;
-    canvas.drawCircle(point, radius, _ring);
-    final glyph = icon?.glyph;
-    if (glyph == null) {
-      _fill.color = colour;
-      canvas.drawCircle(point, 3, _fill);
-      return;
-    }
-    canvas.drawImageRect(
-      glyph,
-      Rect.fromLTWH(0, 0, glyph.width.toDouble(), glyph.height.toDouble()),
-      Rect.fromCenter(
-        center: point,
-        width: geometry.glyph,
-        height: geometry.glyph,
-      ),
-      _glyphPaint..colorFilter = ColorFilter.mode(colour, BlendMode.srcIn),
-    );
-  }
+  }) => paintMarkerBadge(
+    canvas,
+    point,
+    markerIcons,
+    filterKey: filterKey,
+    selected: selected,
+    highlighted: highlighted,
+    dimmed: dimmed,
+    paints: _badgePaints,
+  );
 
   @override
   SemanticsBuilderCallback get semanticsBuilder => (size) {

@@ -6,23 +6,23 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Each applicable category is one icon tile | Tiles for the current map | test/ui/marker_preferences_test.dart | shows one labelled tile per saveable map key plus Saved pins | red |
-| Each applicable category is one icon tile | Tiles are the same size | test/ui/marker_preferences_test.dart | every tile has the same size whatever its label | red |
+| Each applicable category is one icon tile | Tiles for the current map | test/ui/marker_preferences_test.dart | shows one labelled tile per saveable map key plus Saved pins | green |
+| Each applicable category is one icon tile | Tiles are the same size | test/ui/marker_preferences_test.dart | every tile has the same size whatever its label | green |
 | Each applicable category is one icon tile | Unsaveable category gets no tile | test/ui/map_screen_test.dart | unsaveable marker key gets no tile and stays drawn | red |
-| Each applicable category is one icon tile | Map with no markers | test/ui/marker_preferences_test.dart | map without markers shows only the Saved pins tile | red |
+| Each applicable category is one icon tile | Map with no markers | test/ui/marker_preferences_test.dart | map without markers shows only the Saved pins tile | green |
 | Category keys have fixed player-facing labels | Labels for known keys | test/domain/marker_categories_test.dart | known keys have their player-facing labels | green |
 | Category keys have fixed player-facing labels | Every known key is labelled | test/domain/marker_categories_test.dart | every icon key has a unique non-empty label | green |
 | Category keys have fixed player-facing labels | Every saveable key has a label | test/domain/marker_categories_test.dart | labelled keys equal markerCategories without Labels | green |
 | Tiles follow a fixed grouped order | Grouped order | test/domain/marker_categories_test.dart | markerPreferenceKeys orders keys by group | green |
 | Tiles follow a fixed grouped order | Map order does not matter | test/domain/marker_categories_test.dart | markerPreferenceKeys ignores input order and drops unknown keys | green |
-| Clicking a tile shows or hides its category | Hide one category | test/ui/marker_preferences_test.dart | clicking a shown tile hides its category | red |
-| Clicking a tile shows or hides its category | Show it again | test/ui/marker_preferences_test.dart | clicking a hidden tile shows its category | red |
-| Clicking a tile shows or hides its category | Click while saving | test/ui/marker_preferences_test.dart | tiles ignore clicks while settings are saving | red |
-| Tile state does not rely on colour alone | Shown and hidden tiles differ without colour | test/ui/marker_preferences_test.dart | shown tile has a check mark and hidden tile is dimmed | red |
-| Tile state does not rely on colour alone | Semantics reflect the state | test/ui/marker_preferences_test.dart | tile semantics are a toggle with label and state | red |
-| Tiles draw the map's badge and its fallback | Icon tile matches the map | test/ui/marker_preferences_test.dart | loaded tile draws the category glyph in its role colour | red |
-| Tiles draw the map's badge and its fallback | Icons still loading | test/ui/marker_preferences_test.dart | tiles draw fallback badges and toggle while icons load | red |
-| Tiles draw the map's badge and its fallback | One icon failed | test/ui/marker_preferences_test.dart | a failed icon draws the fallback badge only on its tile | red |
+| Clicking a tile shows or hides its category | Hide one category | test/ui/marker_preferences_test.dart | clicking a shown tile hides its category | green |
+| Clicking a tile shows or hides its category | Show it again | test/ui/marker_preferences_test.dart | clicking a hidden tile shows its category | green |
+| Clicking a tile shows or hides its category | Click while saving | test/ui/marker_preferences_test.dart | tiles ignore clicks while settings are saving | green |
+| Tile state does not rely on colour alone | Shown and hidden tiles differ without colour | test/ui/marker_preferences_test.dart | shown tile has a check mark and hidden tile is dimmed | green |
+| Tile state does not rely on colour alone | Semantics reflect the state | test/ui/marker_preferences_test.dart | tile semantics are a toggle with label and state | green |
+| Tiles draw the map's badge and its fallback | Icon tile matches the map | test/ui/marker_preferences_test.dart | loaded tile draws the category glyph in its role colour | green |
+| Tiles draw the map's badge and its fallback | Icons still loading | test/ui/marker_preferences_test.dart | tiles draw fallback badges and toggle while icons load | green |
+| Tiles draw the map's badge and its fallback | One icon failed | test/ui/marker_preferences_test.dart | a failed icon draws the fallback badge only on its tile | green |
 | Bulk, search and quest controls keep working | Hide all then Show all | test/ui/map_screen_test.dart | marker search survives show/hide-all and dimmed targets remain eligible | red |
 | Bulk, search and quest controls keep working | Show all keeps other maps' choices | test/ui/map_screen_test.dart | Show all keeps saved entries of keys the map does not show | red |
 | Bulk, search and quest controls keep working | Bulk action with an unsaveable category | test/ui/map_screen_test.dart | Hide all never saves an unsaveable key and settings reload | red |
@@ -38,9 +38,9 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 
 ## 2. Shared badge painter and the tile grid
 
-- [ ] 2.1 Move `_MapPainter._badge` (`lib/ui/map_workspace.dart:676-720`) into `paintMarkerBadge` with `MarkerBadgePaints` in `lib/maps/map_marker_icons.dart` (D2), with `///` docs, and make `_MapPainter` call it with its own paints. Verify `test/ui/map_marker_painting_test.dart` passes unchanged.
-- [ ] 2.2 Write `test/ui/marker_preferences_test.dart` for the nine grid rows in the test map: the tile set with no raw key text, equal tile sizes, Saved pins only, hide and show by click through the real `SettingsController`, inert while `busy`, check mark versus 22% badge and muted label, toggle semantics read once with label and state before and after a click, glyph tile versus fallback while loading (then a repaint after the loader notifies), and one failed icon (`locks`). Inject a loaded `MapMarkerIcons` through the `_Assets` loader pattern. Find tiles by `ValueKey('marker-tile-<key>')`. Verify it fails because the grid does not exist.
-- [ ] 2.3 Add `MarkerPreferencesGrid` in `lib/ui/marker_preferences.dart` per D3: fixed-size scaled tiles in a `Wrap`, an `InkWell` per tile with `Semantics(toggled, label, button, excludeSemantics: true)`, inert while `busy`, and a badge `CustomPainter` over `paintMarkerBadge` whose `shouldRepaint` compares the key, the shown state and the icons, repainting on `MapMarkerIcons`. Verify `test/ui/marker_preferences_test.dart` passes and flip its nine rows green.
+- [x] 2.1 Move `_MapPainter._badge` (`lib/ui/map_workspace.dart:676-720`) into `paintMarkerBadge` with `MarkerBadgePaints` in `lib/maps/map_marker_icons.dart` (D2), with `///` docs, and make `_MapPainter` call it with its own paints. Verify `test/ui/map_marker_painting_test.dart` passes unchanged.
+- [x] 2.2 Write `test/ui/marker_preferences_test.dart` for the nine grid rows in the test map: the tile set with no raw key text, equal tile sizes, Saved pins only, hide and show by click through the real `SettingsController`, inert while `busy`, check mark versus 22% badge and muted label, toggle semantics read once with label and state before and after a click, glyph tile versus fallback while loading (then a repaint after the loader notifies), and one failed icon (`locks`). Inject a loaded `MapMarkerIcons` through the `_Assets` loader pattern. Find tiles by `ValueKey('marker-tile-<key>')`. Verify it fails because the grid does not exist.
+- [x] 2.3 Add `MarkerPreferencesGrid` in `lib/ui/marker_preferences.dart` per D3: fixed-size scaled tiles in a `Wrap`, an `InkWell` per tile with `Semantics(toggled, label, button, excludeSemantics: true)`, inert while `busy`, and a badge `CustomPainter` over `paintMarkerBadge` whose `shouldRepaint` compares the key, the shown state and the icons, repainting on `MapMarkerIcons`. Verify `test/ui/marker_preferences_test.dart` passes and flip its nine rows green.
 
 ## 3. Wire the grid into Marker preferences
 
