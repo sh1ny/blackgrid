@@ -21,6 +21,8 @@ class ScanEvidencePanel extends StatefulWidget {
     super.key,
     required this.scanner,
     required this.catalog,
+    required this.detailsExpanded,
+    required this.onDetailsExpandedChanged,
   });
 
   /// The coordinator whose phase, last accepted, latest and recent scans are
@@ -29,6 +31,12 @@ class ScanEvidencePanel extends StatefulWidget {
 
   /// The catalog the item names come from.
   final CatalogController catalog;
+
+  /// Whether the Details section is expanded; owned by the screen.
+  final bool detailsExpanded;
+
+  /// Called when the Details section asks to expand or collapse.
+  final ValueChanged<bool> onDetailsExpandedChanged;
 
   @override
   State<ScanEvidencePanel> createState() => _ScanEvidencePanelState();

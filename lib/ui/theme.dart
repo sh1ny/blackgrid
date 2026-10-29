@@ -217,6 +217,67 @@ class CollapsibleGridPanel extends StatelessWidget {
   );
 }
 
+/// A collapsible "Details" block that sits inline inside a panel.
+///
+/// The whole title row is one button that asks the parent to flip [expanded].
+/// The section is stateless: the parent owns the flag. It starts collapsed
+/// when the parent passes `false`, shows only the title row while collapsed,
+/// and calls [builder] only while expanded. There is no animation.
+class DetailsSection extends StatelessWidget {
+  /// Creates a details section.
+  const DetailsSection({
+    super.key,
+    required this.expanded,
+    required this.onExpandedChanged,
+    required this.builder,
+  });
+
+  /// Whether the content is shown.
+  final bool expanded;
+
+  /// Called with the negated [expanded] value when the title row is tapped.
+  final ValueChanged<bool> onExpandedChanged;
+
+  /// Builds the content, called only while [expanded] is `true`.
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Semantics(
+        button: true,
+        expanded: expanded,
+        label: 'Details',
+        onTap: () => onExpandedChanged(!expanded),
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: () => onExpandedChanged(!expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Details',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  color: GridColors.gold,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      if (expanded) builder(context),
+    ],
+  );
+}
+
 @Preview(name: 'Blackgrid independent visual tokens', size: Size(500, 280))
 Widget themePreview() => MaterialApp(
   theme: blackgridTheme(),

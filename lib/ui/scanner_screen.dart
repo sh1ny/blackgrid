@@ -23,9 +23,23 @@ const double leftHeight = 920;
 /// Minimum height of the scan evidence panel at text scale 1.
 const double evidenceHeight = 520;
 
-class ScannerScreen extends StatelessWidget {
+class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key, required this.services});
   final AppServices services;
+  @override
+  State<ScannerScreen> createState() => _ScannerScreenState();
+}
+
+class _ScannerScreenState extends State<ScannerScreen> {
+  /// Whether the scan evidence Details section is open. Lives here, above the
+  /// breakpoint switch, so it survives a resize. Never saved.
+  bool _scanDetailsExpanded = false;
+
+  /// Whether the source panel Details section is open. Same lifetime.
+  bool _sourceDetailsExpanded = false;
+
+  AppServices get services => widget.services;
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -63,10 +77,18 @@ class ScannerScreen extends StatelessWidget {
       final evidence = ScanEvidencePanel(
         scanner: services.scanner,
         catalog: services.catalog,
+        detailsExpanded: _scanDetailsExpanded,
+        onDetailsExpandedChanged: (value) =>
+            setState(() => _scanDetailsExpanded = value),
       );
       final current = ItemDecisionCard(services: services);
       final needs = RequirementPanel(services: services);
-      final sources = SourcePanel(services: services);
+      final sources = SourcePanel(
+        services: services,
+        detailsExpanded: _sourceDetailsExpanded,
+        onDetailsExpandedChanged: (value) =>
+            setState(() => _sourceDetailsExpanded = value),
+      );
       final history = HistoryPanel(services: services);
       if (constraints.maxWidth + _shellPadding < desktopWindowWidth) {
         return ListView(

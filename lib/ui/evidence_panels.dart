@@ -194,8 +194,19 @@ class _RequirementRow extends StatelessWidget {
 }
 
 class SourcePanel extends StatelessWidget {
-  const SourcePanel({super.key, required this.services});
+  const SourcePanel({
+    super.key,
+    required this.services,
+    required this.detailsExpanded,
+    required this.onDetailsExpandedChanged,
+  });
   final AppServices services;
+
+  /// Whether the Details section is expanded; owned by the screen.
+  final bool detailsExpanded;
+
+  /// Called when the Details section asks to expand or collapse.
+  final ValueChanged<bool> onDetailsExpandedChanged;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([

@@ -25,7 +25,7 @@ Test files:
 | player-facing-text → Times are shown in local time | Earlier day | test/ui/labels_test.dart | localTimeLabel gives date and time for an earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/data_sources_panel_test.dart | a missing flea quote time reads unknown | red |
 | player-facing-text → Details sections start collapsed | Collapsed at launch | test/ui/scanner_screen_test.dart | scan evidence Details starts collapsed with no score or timing | red |
-| player-facing-text → Details sections start collapsed | Expanding shows the detail | test/ui/details_section_test.dart | tapping the Details title builds the content | red |
+| player-facing-text → Details sections start collapsed | Expanding shows the detail | test/ui/details_section_test.dart | tapping the Details title builds the content | green |
 | player-facing-text → Details sections start collapsed | Survives a tab switch | test/ui/shell_test.dart | scan evidence Details stays expanded across Map and back | red |
 | player-facing-text → Details sections start collapsed | Survives a layout change | test/ui/scanner_screen_test.dart | scan evidence Details stays expanded across the compact breakpoint | red |
 | player-facing-text → Details sections start collapsed | New launch | test/ui/scanner_screen_test.dart | a new app starts with Details collapsed | red |
@@ -70,9 +70,9 @@ Every group follows AGENTS.md "Dart and Flutter code" and loads the skills `dart
 
 ## 2. Details section and Scanner-owned expansion state
 
-- [ ] 2.1 Write `test/ui/details_section_test.dart`: collapsed shows only the "Details" title and never calls the builder, and "tapping the Details title builds the content" calls `onExpandedChanged(true)`, after which the host rebuild shows the content. Verify it fails.
-- [ ] 2.2 Add the stateless `DetailsSection` to `lib/ui/theme.dart` (title row button, chevron, `WidgetBuilder` called only while expanded, `///` docs), following `CollapsibleGridPanel`. Verify 2.1 passes and flip "Expanding shows the detail" green.
-- [ ] 2.3 Make `ScannerScreen` a `StatefulWidget` that owns `scanDetailsExpanded` and `sourceDetailsExpanded` above its `LayoutBuilder`. Pass each flag and setter as required parameters to `ScanEvidencePanel` and `SourcePanel` (D2). Update the existing panel test hosts to supply them. Verify `mise run test` is still green with no behaviour change yet.
+- [x] 2.1 Write `test/ui/details_section_test.dart`: collapsed shows only the "Details" title and never calls the builder, and "tapping the Details title builds the content" calls `onExpandedChanged(true)`, after which the host rebuild shows the content. Verify it fails.
+- [x] 2.2 Add the stateless `DetailsSection` to `lib/ui/theme.dart` (title row button, chevron, `WidgetBuilder` called only while expanded, `///` docs), following `CollapsibleGridPanel`. Verify 2.1 passes and flip "Expanding shows the detail" green.
+- [x] 2.3 Make `ScannerScreen` a `StatefulWidget` that owns `scanDetailsExpanded` and `sourceDetailsExpanded` above its `LayoutBuilder`. Pass each flag and setter as required parameters to `ScanEvidencePanel` and `SourcePanel` (D2). Update the existing panel test hosts to supply them. Verify `mise run test` is still green with no behaviour change yet.
 
 ## 3. Scan evidence panel in plain language
 

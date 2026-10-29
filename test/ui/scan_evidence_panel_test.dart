@@ -25,7 +25,12 @@ Future<ScanUiRig> _pump(WidgetTester tester) async {
     MaterialApp(
       theme: blackgridTheme(),
       home: Scaffold(
-        body: ScanEvidencePanel(scanner: rig.coordinator, catalog: rig.catalog),
+        body: ScanEvidencePanel(
+          scanner: rig.coordinator,
+          catalog: rig.catalog,
+          detailsExpanded: false,
+          onDetailsExpandedChanged: (_) {},
+        ),
       ),
     ),
   );
