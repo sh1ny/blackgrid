@@ -2,80 +2,172 @@
 
 ## Metadata
 
-- **Round:** 1
-- **Prior round:** none. This file is the re-check run of round 1 (APPROVE_WITH_CHANGES, 4 Required Changes, CHANGES_APPLIED: no). It covers only Required Changes 1-4.
+- **Round:** 3
+- **Prior rounds:** 1 (APPROVE_WITH_CHANGES, M1-M4, re-check CHANGES_APPLIED: yes) and 2 (APPROVE_WITH_CHANGES, M5-M6, re-check CHANGES_APPLIED: yes). Their findings and rebuttals are kept below as history.
+- **Trigger:** a second drift amendment found during apply (user decision, 2026-10-29). The decision card shows the warnings in `lib/domain/decision_engine.dart` as they are, and the requirement rows show its reasons the same way. Several contain banned terms or FIR jargon. They are reworded in this change, text only. Amended: proposal What Changes and Impact, design D6 (Check B also scans `decision_engine.dart`), D7 (new decision row and a note on which reasons keep their wording), Resource Bounds, the spec scenario "Term check over the UI sources", and tasks (new 7.3; old 7.3/7.4 became 7.4/7.5).
 - **Reviewer:** fresh-context subagent (specwright-reviewer, Claude Code)
-- **Reviewed:** Original round: openspec/changes/plain-language-pass/proposal.md, design.md, specs/player-facing-text/spec.md, specs/scanner-evidence/spec.md, specs/map-rail/spec.md; main specs openspec/specs/scanner-evidence/spec.md and openspec/specs/map-rail/spec.md; openspec/roadmap.md (M4.5); openspec/architecture.md (ADR index). Source: lib/ui/scanner_screen.dart, lib/ui/shell.dart, lib/ui/live_scan_panel.dart, lib/ui/pin_editor.dart, plus grep over lib/ui/*.dart for `.name`, `toIso8601String` and the banned terms; lib/application/{selection,settings,progress,catalog,map}_controller.dart error strings; lib/data/legacy_import.dart (plan reasons); lib/domain/settings.dart (pin frame validation); lib/domain/map_coordinates.dart; enum definitions for every labelled kind. Re-check run: the current proposal.md, design.md and specs/player-facing-text/spec.md, plus the cited source lines: lib/application/selection_controller.dart:365-374, settings_controller.dart:34-37,94-97, progress_controller.dart:72,84,97,116,181, catalog_controller.dart:66-69,122-125, map_controller.dart:125,457, history_controller.dart:33-36, lib/data/legacy_import.dart:340-350 and its `reason:` sites, lib/ui/pin_editor.dart:79-83, lib/domain/map_coordinates.dart:94-97, openspec/specs/catalog-authority/spec.md:82,105. Skills loaded: dart-add-unit-test, flutter-add-widget-test.
+- **Reviewed (round 3):** `git diff HEAD -- openspec/changes/plain-language-pass/` (excluding review.md); proposal.md, design.md, tasks.md, review.md (rounds 1-2), specs/player-facing-text/spec.md. Source: every literal in `lib/domain/decision_engine.dart` (:1-4, :27-30, :72, :91, :99, :146-272, :288, :321-352) and the conditions that emit each warning or reason; `lib/domain/decision.dart`; `lib/ui/item_decision_card.dart:195-212, :284-295`; `lib/ui/requirement_rows.dart:80-91`; `lib/ui/evidence_panels.dart:75-195, :241-270`; `lib/data/catalog_normalizer.dart:126` (`quoteAt`); `openspec/specs/requirement-rows/spec.md` (:83-141); a grep of `openspec/specs/` for the reworded strings; a grep of `lib/` for every reader of `ItemDecision.warnings`, `NeedReason.message` and `NeedReason.detail`; a grep of `test/` and `integration_test/` for the reworded strings, including `test/fixtures/m0/manifest.json:6924` and `test/fixtures/m0/semantics/advice_policy.json:2612`; `test/domain/decision_engine_test.dart:50-60`; `test/application/scan_decision_precedence_test.dart:227-238`; `docs/adr/0001-shared-conservative-decision-engine.md`.
+- **Re-check run (round 3):** the current design.md (D7 decision row at :90 and its note at :92), tasks.md 7.3 (:100), and the author's Round 3 rebuttals in review.md, via `git diff HEAD -- openspec/changes/plain-language-pass/`. I checked each new S9 rewording against the condition that emits it in `decision_engine.dart` (:166, :219-224, :230-233, :262-266, :269-273, and `_gate` at :278-360) and against the banned-term list. I also grepped `test/`, `lib/` and `openspec/specs/` for the six S9 source strings and found no pin outside `decision_engine.dart`.
+- **Skills loaded:** dart-add-unit-test.
+- **Scope:** the amendment only. Earlier rounds' decisions are not reopened.
 
 <!-- This verdict covers only the contents reviewed. Editing proposal, specs or design afterward (other than applying Required Changes, or an edit confined to the proposal's `## Release Notes` section) voids it. -->
 
 ## Findings
 
-### Critical (blocking)
+### Round 3
+
+Checked and clean, so no finding:
+- **No reworded string is persisted, compared or used as a key.** `ItemDecision.warnings`, `NeedReason.message` and `NeedReason.detail` are read only in `lib/domain` and `lib/ui` (`item_decision_card.dart:284-295`, `requirement_rows.dart:90`, `evidence_panels.dart`). Nothing in `lib/data` or `lib/application` reads them, the timing log does not, and `ItemDecision` has no `==`. No control flow branches on the text. The m0 fixtures assert `decision.warnings` as the symbolic code `stale_progress`, not as engine text, so a reword is display-only.
+- **No main spec pins a reworded string.** `requirement-rows` pins only `station module status unknown` (:136-137) and `optional use, not an automatic obligation` (:141). Both stay, as D7 says. Its "Unknown progress" scenario (:86-88) asserts the tag and state label, not the reason text. The other matches under `openspec/specs/` (`FIR unknown` in scan-decisions, latest-accepted-scan and scan-correction) describe the input state, not shown text. The only other occurrences are in archived changes and a 2026-10-06 plan, which are history.
+- **Tests to update.** Only `test/domain/decision_engine_test.dart:59` (`'Instance FIR unknown'`) and `test/application/scan_decision_precedence_test.dart:235` (`'Progress authority missing or stale'`) pin reworded text. No widget test does. Task 7.3 names both.
+- **ADR-0001 is respected.** The amendment changes only literals. Task 7.3 says "no state, rule or order change", and the engine's branch conditions do not read the text.
+- **Scanning every literal of `decision_engine.dart` is sound.** The non-player literals are the import URIs (:1-4), `'RUB'` (:72), `'Any'` (:288), `'complete'`/`'failed'` (:321-335) and two interpolated module keys (:342, :352), whose `${…}` code is removed. None matches a banned stem. `'RUB'` alone does not match `gross RUB`. `authoritativeAt` is an identifier, not a literal. Every new string in the D7 row is free of banned terms. So is every reason that keeps its wording (`prerequisite, player, trader, skill or station gate unknown`, `actionable unmet need`, and the rest), so Check B passes once 7.3 is done, with no allow-list entry.
+- **The rewordings match their conditions,** with the one exception below (M7). "Item data missing or out of date" covers `catalogKnown` false, including an item missing from the catalog. "Tracker progress or item data unknown" matches `p == null` (:158-162), which happens when either source is unknown. The three FIR reasons (:239-259) map one to one.
+
+#### Critical (blocking)
 
 None.
 
-### Moderate
+#### Moderate
 
-**M1. Player-visible strings that live outside `lib/ui` break the new spec, and nothing in the design catches them.**
-The `player-facing-text` requirement "Developer wording stays out of the open view" covers all *text shown outside a Details section*. The proposal says there is "No change to `lib/domain`, `lib/application` or `lib/data` behaviour", and Check B (D6) scans only `lib/ui`. But several open-view strings are written in those layers and shown as they are:
-- `lib/application/selection_controller.dart:369`: "Stored identity is not present in this mode's current catalog. The activity row is retained." The decision card shows it in red (`item_decision_card.dart:90-95,123,274-279`). It contains the banned word `identity`.
-- `lib/application/settings_controller.dart:36` ("previous durable settings remain") and `:96` ("the durable record remains"). These appear on Map and in manual controls (`map_screen.dart:231-234,343-346`, `manual_controls.dart:88-91`, `pin_editor.dart:96`). Both contain the banned word `durable`.
-- `lib/application/progress_controller.dart:72,84,97,116` ("Protected credential ..."), `catalog_controller.dart:124` ("last-good data retained") and `map_controller.dart:125,457` ("Prepared map inventory ..."). These are developer wording of exactly the kind D7 rewrites in Settings.
-- `lib/data/legacy_import.dart:347-348`: the import plan row reasons, shown at `import_dialog.dart:174`. They carry "identity retained even if catalog identity is unavailable" and raw `toIso8601String()` times in the open view. That breaks both the banned-term rule and the "Times are shown in local time" requirement.
+**M7. "Flea price missing or older than one hour" misstates when the warning fires, and it can contradict the card.**
+The warning (`decision_engine.dart:93-100`) depends only on the item's quote time (`item.quoteAt`, read from tarkov.dev's `lastScan` at `catalog_normalizer.dart:126`). It fires when that time is missing, in the future, or more than an hour old, and the flea is not ruled out. It does not check the flea price itself, `item.fleaPrice`.
+- If `quoteAt` is missing and `fleaPrice` is present, the card shows "Flea price" with a value (`item_decision_card.dart:200-201`). The same card then warns "Flea price missing".
+- If `quoteAt` is in the future (a clock or feed skew), the new text says the price is missing or old, and neither is true. The old text named this case ("future"). The new text drops it.
+- The Data sources panel already speaks of this same timestamp as the price time ("Prices: price time unknown", `evidence_panels.dart:241-270`).
 
-Consequence: the agent-verified "string inventory" for the M4.5 exit criterion would pass while the shipped app still shows `identity`, `durable` and ISO times. The spec requirement is not met, and no test notices.
+Consequence: the warning explains why the card says Check instead of Flea. In both cases above, it gives the player a false reason.
 
-**M2. Check A's regex misses most of the `.name` sites the design itself cites.**
-D6 Check A matches `\.(status|state|reason|code|pass|fir|logStatus|screenshotStatus|source)\.name\b`, which requires a leading `.`. These current sites do not match it, because each uses a local or destructured variable:
-- `scan_evidence_panel.dart:184` (`${pass.name}`)
-- `:206`, `:238` and `:374` (`${reason.name}`, `reason.name`; `reason` comes from the Dart 3 pattern `ScanRejected(:final reason)`)
-- `evidence_panels.dart:228` (`${catalogStatus.name}`)
-- `evidence_panels.dart:302` (`source.name`)
+#### Minor
 
-This change fixes those sites, so "Clean sources" passes. But the regression requirement ("fails when UI text interpolates `.name` of a status, state, reason, code, pass or found-in-raid value") stays unenforced for the destructuring pattern that this codebase's own pattern-matching style produces. The spec's regression scenario happens to use the one shape the regex does catch.
+**M8. Task 7.3's keep-rule contradicts the D7 row it points to.**
+Task 7.3 says "Reword … per the D7 decision row" and then "Strings with no banned term and the ones `requirement-rows` pins keep their wording." `FIR` is not a banned term (spec: `canonical`, `identity`, `durable`, `DPAPI`, `authority`, `authorized`, `normalized`, `M1`, `gross RUB`, `session-only`). So six of the ten strings in the D7 row contain no banned term: `Instance FIR unknown`, the flea eligibility warning, the market quote warning, and the three FIR reasons. Under the second sentence they keep their wording. Under the first they change. D7's own note is consistent, because it says "the decision engine's *other* reasons". Only the task is ambiguous.
 
-**M3. Check B as specified hits persisted data values. "Fix by rewording" would then break saved pins.**
-`lib/ui/pin_editor.dart:81` has the literals `'labs-native-normalized'` and `'legacy-normalized'`. They are not passed to `Key(`, so a whole-word, case-insensitive match on `normalized` fails Check B. The design's Risks section says such a hit "is fixed by rewording" and that no allow-list entry is added. Rewording these wire names would make `CustomPin.validate()` (`lib/domain/settings.dart:206-211`) throw `FormatException` for every newly saved pin, and it would contradict the proposal's statement that stored values do not change. The design must say how this hit is resolved.
+Consequence: an implementer who follows 7.3 literally rewords four strings and leaves the FIR jargon that the amendment was raised to remove, and Check B cannot catch it because FIR is not banned. The two decision-card warnings would be the most visible leftovers.
+
+#### Suggestions
+
+- **S9.** D7 gives this reason for keeping the other reasons' wording: "since `requirement-rows` pins some of them". That holds for only two of them, `station module status unknown` and `optional use, not an automatic obligation`, and the second is never shown on a row anyway (spec :141). The rest are kept because they contain no banned term, but several still read as developer wording in the open view. `actionable unmet need` and `known future unmet need` appear next to the state labels "Needed now" and "Needed later". `prerequisite, player, trader, skill or station gate unknown`, `observed remainder unknown` and `task status invalid` are the others. This is a scope choice, and the user's read under the Risks entry "Wording is subjective" can adjust it without a spec change. Either state it as a scope choice in D7, or add these reasons to the D7 row. Neither is pinned by a spec.
+- **S10.** Task 7.3 changes test expectations instead of adding a red step. That is fine for a text-only change, since Check B (7.4) protects the banned terms. To meet AGENTS.md's "cheapest layer", the updated assertions should stay in `decision_engine_test.dart`, which is the domain layer. They should also cover the two reworded warnings that no test pins today, the catalog warning and the flea eligibility warning, so a later accidental reword shows up there and not only in a widget test.
+
+### Round 2 (history)
+
+#### Critical (blocking)
+
+None.
+
+#### Moderate
+
+**M5. As written, the `legacy_import.dart` scope misses import-dialog text that players see, including plan-row reasons.**
+The amended D6 says Check B reads "only the literals of the plan rows' `reason:` arguments, which are what the import dialog shows." That description of the dialog is wrong in two ways:
+- **Some reason text is not a literal argument.** Activity rows pass `reason: winner != i ? sourceReason : …` (`legacy_import.dart:345-346`). The three literals that reach the dialog by this route are assigned to the local `sourceReason` at `:330-334`, so they are not literals of a `reason:` argument. An extractor that follows the wording (the span of the `reason:` argument, like `_maskKeyArguments` spans) never reads them. These are plan-row reasons, which the spec scenario "Term check over the UI sources" covers by name ("the legacy import plan").
+- **The dialog shows more of the plan row than `reason`.** `import_dialog.dart:167` shows `'${row.kind} #${row.inputOrder} • ${row.key} • ${row.disposition}'` in the open view. That covers the `kind:`, `key:` and `disposition:` literals of every `ImportAccounting(` call (`'supported preferences'`, `'destination conflict'`, `'source collision loser'`, `'add'`).
+- **Error messages are also shown.** `import_dialog.dart:46-48` shows `'${failure.message} Nothing was changed.'` in red, outside any Details section. `_parseLegacyOffRender` rethrows every `FormatException` (`legacy_import.dart:363-364`), so all about 25 `FormatException(` messages in the file are open-view text (for example `:31`, `:128`, `:258`, `:275`, `:367`, `:410-452`). Before the amendment Check B covered them. Now it does not, and D6 wrongly calls them part of the parser text that is "never shown". The spec requirement "Developer wording stays out of the open view" covers all text outside a Details section.
+
+Consequence: none of these strings contains a banned term today (checked). The gap is in regression protection. A later edit that writes, for example, `sourceReason = '… canonical item …'` or `FormatException('Unknown item identity')` passes Check B and reaches the player's open view. The check also misstates what it guards.
+
+The fix keeps the user's decision. The input-format keys (`'normalizedX'`, `'normalizedY'`, `'CanonicalItemId'`) appear only as `root['…']`/`raw['…']` index operands, in `containsKey(`, `_alias(` and `_version(` arguments, and in the allowed-key lists at `:233-241` and `:296-301`. None of them falls inside an `ImportAccounting(` call, a `FormatException(` call or the `sourceReason` initializer. A scope built from those three regions therefore skips every wire key and covers every shown literal. That scope passes today without any rewording.
+
+**M6. Removing whole `${…}` interpolations also removes player text nested inside them.**
+D6 says "A `${…}` interpolation inside a literal is code, not text, so it is removed before matching." In this codebase, interpolations often hold string literals that are shown to the player:
+- `map_screen.dart:100`: `'${state.followGameLogs ? (… ? 'Follow logs (manual fallback)' : 'Detected map') : 'Manual map'} · …'`
+- `map_screen.dart:106` and `:109`: `'manual fallback'`, `'detected from logs'`, `'unavailable'`
+- `import_dialog.dart:154` and `:180`: `'yes'`/`'no'`, `'nothing'`
+- `live_scan_panel.dart:161`: `'unknown reason'`
+- `item_decision_card.dart:211-212`: `'Unknown'`
+
+If the whole `${…}` span is removed, any banned term written in such a nested literal passes Check B. For example, `'${fir ? 'Found in raid' : 'canonical state unknown'}'` would not be caught, although it is player text in the open view. That breaks the spec scenario's promise that "no string literal other than a widget key contains a listed term". The rule is right to treat identifiers and member chains as code: `${relevantProgress?.authorityVersion}` at `selection_controller.dart:402` is the hit that motivated it. The literals inside an interpolation are still text, though.
+
+The current engine adds an implementation trap. `_literal` in `test/ui/support/plain_language_check.dart:30-32` is a non-nesting regex. On line 402 it ends the first literal at the inner `''`, so the `authorityVersion` interpolation lands in the next "literal" only by accident. Where a nested literal contains a quote character, code text can be read as a literal. A correct rule needs a small scanner that tracks `${` depth and quotes, not another regex pass.
+
+#### Suggestions
+
+- **S7.** A short-form interpolation `$name` (no braces) is code too. As written, the rule removes only `${…}`, so a future `'$authorityVersion'` would be a false positive. Remove `$identifier` alongside `${…}`. Leave raw strings (`r'…'`) and escaped `\$` alone, because in those `$` is literal text.
+- **S8.** design.md Risks (:167) and Resource Bounds (:141) still describe Check B over "`lib/data/legacy_import.dart`" as a whole file. Once M5's scope is written into D6, make these two entries say "the import plan and error messages in `legacy_import.dart`" so the three places agree.
+
+### Round 1 (history)
+
+#### Critical (blocking)
+
+None.
+
+#### Moderate
+
+**M1. Player-visible strings that live outside `lib/ui` break the new spec, and nothing in the design catches them.** The open-view strings in `lib/application` controllers and the `legacy_import.dart` plan-row reasons contained banned terms and ISO times, and Check B scanned only `lib/ui`. (Full text in round 1.)
+
+**M2. Check A's regex misses most of the `.name` sites the design itself cites.** The leading-`.` pattern missed bare and destructured receivers (`${reason.name}`, `${pass.name}`, `catalogStatus.name`, `source.name`).
+
+**M3. Check B as specified hits persisted data values; "fix by rewording" would break saved pins.** `pin_editor.dart:81` frame literals `'labs-native-normalized'` and `'legacy-normalized'`.
 
 **M4. The proposal contradicts the spec and design on when Details collapses.**
-The proposal's second "What Changes" bullet says the Details section "is collapsed for each newly shown subject". The spec ("Its expanded state SHALL last for the app session") and design (Flow & State Gaps: "Details stays expanded and shows the new scan's detail. The flag tracks the user's choice, not the subject") say the opposite. An implementer or pre-ship reviewer reading the proposal would reset Details on every scan. That breaks the "Survives a tab switch" scenario's intent and makes watching scans live impractical.
 
-### Suggestions
+#### Suggestions
 
-- **S1.** Check B's whole-word matching misses inflected forms. Today `item_decision_card.dart:123` reads "Search real item identities, then select one. Requirements, gross values and uncertainty appear here." `identities` does not match `\bidentity\b`, and D7 does not list this string. Matching stems (`identit\w*`, `authori[sz]\w*`, `normali[sz]\w*`, `durabl\w*`) closes the gap at no cost.
-- **S2.** `item.normalizedName` is shown as the fallback subtitle when `shortName` is null (`manual_controls.dart:151`, `item_decision_card.dart:254`). It is a tarkov.dev slug: an internal key shown when a name resolves. Neither check covers it. Consider dropping the subtitle when `shortName` is null.
-- **S3.** The import-dialog digest Details flag (State & Ownership table: "Reset when the dialog closes") does not fit the spec's general rule "A Details section ... expanded state SHALL last for the app session". Scope that requirement to the Scanner Details sections, or add a sentence for dialog-scoped Details.
-- **S4.** map-rail delta, scenario "Status lines use labels": "neither line contains `watching` ... as a bare state name" is hard to assert, given that D7's own label is "Logs: watching folder". Assert instead that the line equals `'Logs: ${mapInputStatusLabel(MapInputStatus.watching)}'` and is not `Logs: watching`.
-- **S5.** D5 has widgets call `DateTime.now()` directly. The widget scenario "History row time ... shows `14:32`" can then flake across midnight unless the test builds the observed time from `DateTime.now()`. Consider passing an existing clock (for example `selection.clock`), or keep those assertions at the `localTimeLabel` unit-test layer, as AGENTS.md prefers.
-- **S6.** The design cites "ADR-0013 (timing log v1)". The architecture index shows the timing log is now v3 (ADR-0020). Cite ADR-0020 for "timing log keeps the raw codes".
+- **S1.** Match word stems (`identit`, `authori[sz]`, `normali[sz]`, `durabl`).
+- **S2.** Drop the `normalizedName` fallback subtitle.
+- **S3.** Scope or explain dialog-scoped Details.
+- **S4.** Assert map-rail status lines against the label function.
+- **S5.** Keep time-label assertions clock-safe.
+- **S6.** Cite ADR-0020 (timing log v3).
+
 
 ## Verdict
 
 VERDICT: APPROVE_WITH_CHANGES
 
+The amendment is sound. The reworded strings are display-only: nothing persists them, compares them or uses them as keys, and no main spec pins any of them. The two specs-pinned reasons keep their wording, ADR-0001's rules and order do not change, and scanning every literal of `decision_engine.dart` gives no false hit. Two wording fixes remain. One warning gives a false reason in reachable cases (M7). The task's keep-rule conflicts with the D7 row it points to (M8).
+
 ## Required Changes
 
-1. **(M1)** In proposal.md `## Impact` and design.md D7, add the player-visible display strings in `lib/application` and `lib/data` to the rewrite. Change only the text, no behaviour: `selection_controller.dart:369,372`, `settings_controller.dart:36,96`, `progress_controller.dart:72,84,97,116,181`, `catalog_controller.dart:68,124`, `map_controller.dart:125,457`, `history_controller.dart:35`, and the `legacy_import.dart` plan-row `reason` strings (banned terms and the ISO times at `:347-348`, which move to local time or behind the import dialog's Details). Replace "No change to `lib/domain`, `lib/application` or `lib/data` behaviour" with wording that permits display-string edits. In D6, extend Check B to scan those files too, or to scan every `lib/**` literal assigned to an `error`, `warning` or `reason` field. List the extra files in the design's Resource Bounds row.
-2. **(M2)** In design.md D6, change Check A's pattern so that it also matches bare and nullable receivers whose name ends in a listed kind. For example `\b\w*(?:[sS]tatus|[sS]tate|[rR]eason|[cC]ode|[pP]ass|[fF]ir|[sS]ource)\??\.name\b`, applied to non-comment lines with Key/ValueKey arguments excluded (`manual_controls.dart:31` uses `mode.name` inside a `ValueKey`). Add a label-test-style regression case that uses `${reason.name}` alongside the existing `catalog.status.name` one. The spec's "A regression" scenario may add a second WHEN for a destructured `reason`.
-3. **(M3)** In design.md D6 or D7, state that `pin_editor.dart:81` replaces the two frame literals with `MapCoordinateFrame.labsNativeNormalized.wireName` and `MapCoordinateFrame.legacyNormalized.wireName` (`lib/domain/map_coordinates.dart:96-97`), and that persisted wire names are never reworded to satisfy Check B.
-4. **(M4)** In proposal.md `## What Changes`, replace "It is collapsed for each newly shown subject" with wording that matches the spec: collapsed at launch, the expanded state lasts for the session across new scans, tab switches and breakpoint changes, and it is never saved.
+1. **(M7)** In design.md's D7 decision row, replace "Flea price missing or older than one hour" with wording that describes the quote time and covers the future case. One option is "Flea price not confirmed in the last hour". Another, matching the Data sources panel's "price time", is "Flea price time unknown or more than an hour old". Either works. The wording must not say the price is missing when only its time is.
+2. **(M8)** In tasks.md 7.3, replace "Strings with no banned term and the ones `requirement-rows` pins keep their wording" with "Strings not in the D7 decision row keep their wording, including the ones `requirement-rows` pins (`station module status unknown`, `optional use, not an automatic obligation`)."
 
-Re-check result: all four Required Changes are applied in the current artifacts (details per item under Rebuttals).
+Re-check result: both Required Changes (M7, M8) and both suggestions (S9, S10) are applied in the current artifacts. The new S9 wording is accurate and contains no banned term. Details are under each item in Rebuttals.
 
 CHANGES_APPLIED: yes
 
 ## Rebuttals
-- **M1:** fixed. proposal.md What Changes and Impact now include the display strings in the `lib/application` controllers and `lib/data/legacy_import.dart` (text only). design.md D6 Check B scans those files, D7 has rows for the controller messages and the import plan rows (ISO times move to `localTimeLabel`), and Resource Bounds lists the extra files. The `catalog_controller.dart:68,124` strings keep their wording because `catalog-authority` pins them and they contain no banned term (D7 note).
-  - **Accepted by reviewer.** Verified: proposal.md:14 and :31 permit display-string edits only and drop the old "No change ... behaviour" wording; design.md:63 (Check B) scans `lib/ui` plus the six controller files and `legacy_import.dart`; design.md:85-86 rewrite every cited string (selection :369, settings :36/:96, progress :72/:84/:97/:116, map :125/:457, history :35, legacy_import :347-348 with `localTimeLabel`); design.md:141 lists the extra files. The catalog exemption holds: `openspec/specs/catalog-authority/spec.md:82,105` pin "Stored catalog unavailable" and "Catalog refresh failed; last-good data retained", and neither contains a banned term. `selection_controller.dart:372` ("Stored-mode catalog could not be opened.") and `progress_controller.dart:181` ("Tracker unavailable") are not in the D7 table, but contain no banned term and are covered by Check B and the D7 "lines not listed follow the spec rules" sentence. Non-blocking leftover for the author to tidy: two sentences still describe the old scope. design.md:167 (Risks) says Check B "is scoped to `lib/ui`", and design.md:131 (Failure & Visibility) says a banned term "in `lib/ui`" fails the suite. D6 and the spec scenario at spec.md:43-45 are authoritative and correct; changing those two phrases to match D6 counts as applying this Required Change and does not void the verdict.
-- **M2:** fixed. D6 Check A uses `\b\w*(?:[sS]tatus|[sS]tate|[rR]eason|[cC]ode|[pP]ass|[fF]ir|[sS]ource)\??\.name\b` on non-comment lines, with Key/ValueKey/PageStorageKey arguments excluded. Its sample tests cover `${reason.name}` alongside `${catalog.status.name}`, plus the negatives `ValueKey` and `item.name`. The spec adds the scenarios "A destructured regression" and "Keys are not text".
-  - **Accepted by reviewer.** Verified at design.md:62 and spec.md:111-117. The pattern matches every site listed in M2 (`pass.name`, `reason.name`, `catalogStatus.name`, `source.name`) and the member chain `catalog.status.name`; it does not match `item.name` or `mode.name`.
-- **M3:** fixed. D6 "Wire names stay as they are": `pin_editor.dart:81` uses `MapCoordinateFrame.*.wireName`, and persisted wire names are never reworded.
-  - **Accepted by reviewer.** Verified at design.md:64. `lib/domain/map_coordinates.dart:96-97` defines `legacyNormalized('legacy-normalized', ...)` and `labsNativeNormalized('labs-native-normalized', ...)`, so the replacement keeps the exact wire strings that `lib/ui/pin_editor.dart:81` writes today.
-- **M4:** fixed. The proposal's Details bullet now matches the spec: collapsed at launch, kept for the session across new scans, tab switches and breakpoint changes, never saved.
-  - **Accepted by reviewer.** Verified at proposal.md:10, which agrees with spec.md:63 and design.md:145.
-- **S1:** applied. Check B matches word stems (`identit`, `normali[sz]`).
-- **S2:** applied. The `normalizedName` fallback subtitle is dropped (D7 note).
-- **S3:** applied. The import dialog Details is dropped, and the digest is shown as "File fingerprint".
-- **S5:** applied. Flow & State Gaps says how widget tests build time labels.
-- **S6:** applied. ADR-0020 (timing log v3) is cited.
+
+### Round 3
+
+- **M7:** fixed. The D7 decision row now rewords the market warning as "Flea price time unknown or more than an hour old", which matches the `quoteAt` condition (missing, in the future, or older than an hour) and no longer claims the price is missing.
+  - **Accepted by reviewer.** Verified at design.md:90. This is one of the two options in Required Change 1. It no longer says the price is missing when the card shows one. A future timestamp falls under "time unknown", which is a fair way to tell the player about a time that can't be trusted. It contains no banned term.
+- **M8:** fixed. Task 7.3 now says "Strings not in the D7 decision row keep their wording, including the ones `requirement-rows` pins", so every string in the row, including both FIR warnings, is reworded.
+  - **Accepted by reviewer.** Verified at tasks.md:100. The keep-rule and the D7 row no longer conflict.
+- **S9:** applied. The D7 decision row also rewords `not applicable to player`, `requirement progress or quantity unknown`, `observed remainder unknown`, `prerequisite, player, trader, skill or station gate unknown`, `known future unmet need` and `actionable unmet need`. The D7 note names the reasons that stay ("station module status unknown", "optional use, not an automatic obligation", "task completed", "quantity satisfied" and the like), which are already plain.
+  - **Accepted by reviewer.** I checked each new wording against the condition that emits it, at design.md:90 and :92:
+    - "does not apply to you" fits `_gate` returning irrelevant: a faction or edition mismatch, or a failed prerequisite task where completion was required (:166).
+    - "progress or amount needed is unknown" fits a missing or invalid progress entry, or a missing, non-finite or negative required count (:219-224).
+    - "how many you still need is unknown" fits an observed count that is missing or invalid (:230-233).
+    - "not known yet whether you can do this (level, trader, skill or another requirement)" fits `_gate` returning unresolved. That covers an incomplete gate, an unknown trader or skill, an unknown faction, edition, level or task status, and a missing station module (:262-266). "Another requirement" covers the faction, edition, task and station cases.
+    - "needed later" and "needed now" fit the future and actionable gates (:269-273).
+
+    None contains a banned term. No test, main spec or `lib/` reader outside the engine pins the six old strings, so 7.3 has nothing more to update for them. The D7 note's reason has been corrected: `requirement-rows` pins only the first two. Two non-blocking notes for apply and the user's read:
+    - "needed now" and "needed later" repeat the row's state label ("Needed now", "Needed later"). That is harmless, but a row then shows the same words twice.
+    - The kept `task status invalid`, `task status unknown or invalid` and `task failed; no active obligation` fall under "and the like", although they are less plain than "task completed". The user's read can adjust them under Risks without a spec change.
+- **S10:** applied. Task 7.3 keeps the updated assertions in the domain test and pins the catalog and flea-eligibility warnings there too.
+  - **Accepted by reviewer.** Verified at tasks.md:100.
+
+### Round 2 (history)
+
+- **M5:** fixed. D6 now scopes Check B in `legacy_import.dart` to everything the import dialog shows: every literal inside an `ImportAccounting(` call (`kind:`, `key:`, `disposition:`, `reason:`), the `sourceReason` initializer literals and every `FormatException(` message. The "never shown" claim is gone, and the input-format keys (`normalizedX`, `normalizedY`, `CanonicalItemId`) stay unscanned. Task 7.3's parenthetical matches.
+  - **Accepted by reviewer.** Verified at design.md:63 and tasks.md 7.3. The three regions match what `import_dialog.dart` shows: `:167` shows kind, key and disposition, `:171` shows the reason, and `:48` shows the failure message. They also include the `sourceReason` literals at `legacy_import.dart:330-334`. None of the input-format keys falls inside these regions: they appear only as index operands, in `containsKey(`/`_alias(`/`_version(` arguments and in the key lists at `:233-241` and `:296-301`. The scope therefore does not conflict with the user's decision. No literal in the three regions contains a banned term today, so 7.3 needs no rewording here.
+- **M6:** fixed. D6 says interpolation code (`${…}` and `$name`) is removed before matching while string literals nested inside an interpolation are still extracted and matched, through a quote- and brace-aware scanner. The sample tests `'${a ? 'canonical item' : ''}'` (hit) and `'${p?.authorityVersion}:'` (no hit) are named in D6 and task 7.3.
+  - **Accepted by reviewer.** Verified at design.md:63. Task 7.3 now also says to replace the non-nesting `_literal` regex in `test/ui/support/plain_language_check.dart` with that scanner and to add the samples. That covers the nested player text at `map_screen.dart:100,106,109`, `import_dialog.dart:154,180`, `live_scan_panel.dart:161` and `item_decision_card.dart:211-212`, and it still ignores `authorityVersion` at `selection_controller.dart:402`.
+- **S7:** applied. The `$name` short form is covered by the same rule in D6.
+  - **Accepted by reviewer.** Non-blocking note for apply: D6 does not say that raw strings (`r'...'`) and escaped `\$` keep their `$` text. The scanner should not strip there. A sample test such as `r'canonical ${x}'` (hit) would pin this down. No current source line depends on it.
+- **S8:** applied. Resource Bounds and Risks now describe the `legacy_import.dart` regions.
+  - **Accepted by reviewer.** Verified at design.md:141 and :167. Both now refer to the D6 regions.
+
+### Round 1 (history)
+
+- **M1:** fixed. proposal.md What Changes and Impact include the display strings in the `lib/application` controllers and `lib/data/legacy_import.dart` (text only). D6 Check B scans those files, D7 rewrites them, and Resource Bounds lists them. `catalog_controller.dart:68,124` keep their wording because `catalog-authority` pins them and they contain no banned term.
+  - **Accepted by reviewer (round 1).** Two non-blocking stale phrases (design.md Risks and Failure & Visibility) were to be aligned with D6.
+- **M2:** fixed. Check A uses `\b\w*(?:[sS]tatus|[sS]tate|[rR]eason|[cC]ode|[pP]ass|[fF]ir|[sS]ource)\??\.name\b` with Key arguments excluded, and the spec adds "A destructured regression" and "Keys are not text".
+  - **Accepted by reviewer (round 1).**
+- **M3:** fixed. `pin_editor.dart:81` uses `MapCoordinateFrame.*.wireName`, and persisted wire names are never reworded.
+  - **Accepted by reviewer (round 1).**
+- **M4:** fixed. The proposal's Details bullet matches the spec.
+  - **Accepted by reviewer (round 1).**
+- **S1, S2, S3, S5, S6:** applied in round 1.

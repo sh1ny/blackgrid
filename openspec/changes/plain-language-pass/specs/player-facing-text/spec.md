@@ -41,7 +41,7 @@ Text shown outside a Details section SHALL NOT contain these terms: `canonical`,
 - **THEN** the row shows the item's ID instead of dropping the row
 
 #### Scenario: Term check over the UI sources
-- **WHEN** the offline source check reads the string literals under `lib/ui`, in the controllers that write player-visible messages, and in the legacy import plan
+- **WHEN** the offline source check reads the string literals under `lib/ui`, in the controllers that write player-visible messages, in the decision engine's warnings and reasons, and in the legacy import plan
 - **THEN** no string literal other than a widget key contains a listed term, and the check fails naming the file and line when one does
 
 ### Requirement: Times are shown in local time
