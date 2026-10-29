@@ -179,6 +179,16 @@ void main() {
 
     expect(find.text('Optional uses (2)'), findsOneWidget);
     expect(find.text('Craft D'), findsNothing);
+
+    selection.inspect('item-a', [
+      _craft('Craft A'),
+      _craft('Craft B'),
+      _craft('Craft C'),
+    ]);
+    await tester.pump();
+
+    expect(find.text('Optional uses (3)'), findsOneWidget);
+    expect(find.text('Craft A'), findsNothing);
   });
 
   testWidgets('no Optional uses header without craft or barter rows', (

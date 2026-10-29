@@ -39,12 +39,44 @@ class _RequirementPanelState extends State<RequirementPanel> {
   String? _openFor;
 
   @override
+  void initState() {
+    super.initState();
+    _openFor = widget.services.selection.selectedId;
+    widget.services.selection.addListener(_selectionChanged);
+  }
+
+  @override
+  void didUpdateWidget(RequirementPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.services.selection != widget.services.selection) {
+      oldWidget.services.selection.removeListener(_selectionChanged);
+      widget.services.selection.addListener(_selectionChanged);
+      _selectionChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.services.selection.removeListener(_selectionChanged);
+    super.dispose();
+  }
+
+  /// Collapses the group as soon as a different item is inspected, so that
+  /// returning to an earlier item never reopens it.
+  void _selectionChanged() {
+    final id = widget.services.selection.selectedId;
+    if (id == _openFor) return;
+    _openFor = id;
+    _optionalOpen = false;
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.services.selection,
     builder: (context, _) {
       final selection = widget.services.selection;
       final reasons = selection.decision?.reasons;
-      final open = _optionalOpen && _openFor == selection.selectedId;
+      final open = _optionalOpen;
       return GridPanel(
         title: 'Requirements & uses',
         icon: Icons.fact_check_outlined,
@@ -83,10 +115,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
           return _OptionalHeader(
             count: optional.length,
             open: open,
-            onTap: () => setState(() {
-              _optionalOpen = !open;
-              _openFor = selection.selectedId;
-            }),
+            onTap: () => setState(() => _optionalOpen = !open),
           );
         }
         final need = optional[index - obligations.length - 1];
