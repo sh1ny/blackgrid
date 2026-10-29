@@ -41,7 +41,7 @@ Test files: `test/data/catalog_normalizer_test.dart` (existing, normalizer and p
 | Older cached projections still load | Cached projection from before this change | test/data/catalog_normalizer_test.dart; test/ui/requirement_rows_test.dart | a stored projection without display facts still loads; an old craft row keeps its stored source name | red |
 | Older cached projections still load | Refresh replaces the old projection | test/data/catalog_normalizer_test.dart | a fresh normalize names craft and barter sources after their product item | green |
 | Row display does not change decisions | Same decision before and after | test/domain/decision_engine_test.dart; test/data/catalog_normalizer_test.dart | the existing decision and normalizer tests, unchanged apart from the craft/barter source name | green |
-| Row display does not change decisions | Tool flag does not count | test/domain/decision_engine_test.dart | a craft tool stays an optional use and leaves the totals unchanged | red |
+| Row display does not change decisions | Tool flag does not count | test/domain/decision_engine_test.dart | a craft tool stays an optional use and leaves the totals unchanged | green |
 
 Ordering within obligations (state rank, then catalog order) also gets a pure test in `test/ui/requirement_rows_test.dart`: `arrangeRequirementRows orders obligations by state and keeps catalog order within a state`.
 
@@ -58,8 +58,8 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`, `dart-use-pattern-matc
 
 Skills: `dart-add-unit-test`, `dart-write-documentation`. Design D4.
 
-- [ ] 2.1 Write failing tests in `test/domain/decision_engine_test.dart`: every reason's `detail` equals its `message` without the `'<sourceName>: '` prefix, for a task, a hideout and a craft row; and the "Tool flag does not count" row (the same craft with and without `tool: true` gives the same state, remaining, totals and recommendation). Verify the `detail` test fails to compile or fails, and say why the tool test already passes, if it does.
-- [ ] 2.2 Add a required `detail` to `NeedReason` with a doc comment, and build `message` from it in `_need`. Change no state, remaining or branch. Verify the 2.1 tests and the whole `test/domain/decision_engine_test.dart` pass, then flip the rows green.
+- [x] 2.1 Write failing tests in `test/domain/decision_engine_test.dart`: every reason's `detail` equals its `message` without the `'<sourceName>: '` prefix, for a task, a hideout and a craft row; and the "Tool flag does not count" row (the same craft with and without `tool: true` gives the same state, remaining, totals and recommendation). Verify the `detail` test fails to compile or fails, and say why the tool test already passes, if it does.
+- [x] 2.2 Add a required `detail` to `NeedReason` with a doc comment, and build `message` from it in `_need`. Change no state, remaining or branch. Verify the 2.1 tests and the whole `test/domain/decision_engine_test.dart` pass, then flip the rows green.
 
 ## 3. Row model
 

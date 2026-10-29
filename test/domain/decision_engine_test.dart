@@ -335,6 +335,75 @@ void main() {
     expect(d.recommendation, Recommendation.flea);
     expect(d.reasons.every((r) => r.state == NeedState.irrelevant), isTrue);
   });
+  test('reason detail is the message without the source name prefix', () {
+    final hideout = ItemRequirement(
+      kind: RequirementKind.hideout,
+      sourceId: 'station-a-2',
+      sourceName: 'Defective Wall',
+      id: 'part',
+      itemIds: const ['item-a'],
+      progressIds: const ['part'],
+      count: 2,
+      foundInRaid: false,
+      gate: RequirementGate(),
+      stationId: 'station-a',
+      stationLevel: 2,
+    );
+    final craft = fixtureCatalog().requirements.firstWhere(
+      (r) => r.kind == RequirementKind.craft,
+    );
+    final d = decide(needs: [taskNeed(), hideout, craft], progress: active());
+    expect(d.reasons, hasLength(3));
+    for (final r in d.reasons) {
+      expect(r.detail, isNotEmpty);
+      expect(r.message, '${r.requirement.sourceName}: ${r.detail}');
+    }
+  });
+  test(
+    'a craft tool stays an optional use and leaves the totals unchanged',
+    () {
+      final craft = fixtureCatalog().requirements.firstWhere(
+        (r) => r.kind == RequirementKind.craft,
+      );
+      ItemRequirement withTool(bool? tool) => ItemRequirement(
+        kind: craft.kind,
+        sourceId: craft.sourceId,
+        sourceName: craft.sourceName,
+        id: craft.id,
+        itemIds: craft.itemIds,
+        progressIds: craft.progressIds,
+        count: craft.count,
+        foundInRaid: craft.foundInRaid,
+        gate: craft.gate,
+        optional: craft.optional,
+        stationId: craft.stationId,
+        stationLevel: craft.stationLevel,
+        productItemId: craft.productItemId,
+        productCount: craft.productCount,
+        tool: tool,
+      );
+      final plain = decide(
+        needs: [taskNeed(), withTool(null)],
+        progress: active(),
+      );
+      final tool = decide(
+        needs: [taskNeed(), withTool(true)],
+        progress: active(),
+      );
+      expect(tool.recommendation, plain.recommendation);
+      expect(tool.firNeed, plain.firNeed);
+      expect(tool.nonFirNeed, plain.nonFirNeed);
+      expect(tool.unknownFirNeed, plain.unknownFirNeed);
+      expect(
+        [for (final r in tool.reasons) (r.state, r.remaining)],
+        [for (final r in plain.reasons) (r.state, r.remaining)],
+      );
+      expect(
+        tool.reasons.singleWhere((r) => r.requirement.tool == true).state,
+        NeedState.irrelevant,
+      );
+    },
+  );
   test(
     'stale catalog/progress and mismatched mode block sale and confirmed need',
     () {
