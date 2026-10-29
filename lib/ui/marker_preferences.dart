@@ -106,6 +106,7 @@ class _MarkerTile extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(4, 6, 4, 4),
               child: Stack(
+                fit: StackFit.expand,
                 children: [
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
