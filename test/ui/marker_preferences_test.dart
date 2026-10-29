@@ -117,6 +117,7 @@ Future<_Fixture> _pump(
   Set<String> hidden = const {},
   Set<String> missing = const {},
   bool hold = false,
+  double scale = 1,
 }) async {
   tester.view.physicalSize = const Size(900, 700);
   tester.view.devicePixelRatio = 1;
@@ -142,6 +143,7 @@ Future<_Fixture> _pump(
           child: MarkerPreferencesGrid(
             services: fixture.h.services,
             keys: keys,
+            scale: scale,
           ),
         ),
       ),
@@ -168,6 +170,25 @@ Finder _badge(String key) => find.descendant(
 
 RenderObject _canvas(WidgetTester tester, String key) =>
     tester.renderObject(_badge(key));
+
+Finder _label(String key, String text) =>
+    find.descendant(of: _tile(key), matching: find.text(text));
+
+/// Expects the badge and [label] of [key]'s tile to share the tile's
+/// horizontal centre.
+void _expectCentred(WidgetTester tester, String key, String label) {
+  final centre = tester.getCenter(_tile(key)).dx;
+  expect(
+    tester.getCenter(_badge(key)).dx,
+    moreOrLessEquals(centre, epsilon: 0.5),
+    reason: 'badge of $key',
+  );
+  expect(
+    tester.getCenter(_label(key, label)).dx,
+    moreOrLessEquals(centre, epsilon: 0.5),
+    reason: 'label of $key',
+  );
+}
 
 /// Completes when [settings] is not saving; the save a tap starts has already
 /// set `busy` by the time the tap returns.
@@ -304,6 +325,24 @@ void main() {
     expect(tester.getSize(_tile('CustomPins')), btr);
     expect(btr, const Size(88, 76));
     expect(find.text('Stationary weapons'), findsOneWidget);
+  });
+
+  testWidgets("tile badge and label are centred whatever the label's length", (
+    tester,
+  ) async {
+    await _pump(tester, keys: ['locks', 'stationaryWeapons']);
+
+    _expectCentred(tester, 'locks', 'Locks');
+    _expectCentred(tester, 'stationaryWeapons', 'Stationary weapons');
+  });
+
+  testWidgets('tile badge and label stay centred at a larger scale', (
+    tester,
+  ) async {
+    await _pump(tester, keys: ['locks'], scale: 1.5);
+
+    expect(tester.getSize(_tile('locks')), const Size(132, 114));
+    _expectCentred(tester, 'locks', 'Locks');
   });
 
   testWidgets('map without markers shows only the Saved pins tile', (

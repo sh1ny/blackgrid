@@ -7,7 +7,7 @@ Defines how the Map rail's Marker preferences panel lets a player show or hide m
 ## Requirements
 
 ### Requirement: Each applicable category is one icon tile
-Marker preferences SHALL show one tile for each marker category the current map can show and Blackgrid can save as a preference, plus Saved pins. Each tile SHALL show the category's map badge above its player-facing label. Every tile SHALL have the same width and height, whatever its label's length, and SHALL NOT show the raw category key when the key has a label.
+Marker preferences SHALL show one tile for each marker category the current map can show and Blackgrid can save as a preference, plus Saved pins. Each tile SHALL show the category's map badge above its player-facing label, both centred horizontally in the tile whatever the label's length. Every tile SHALL have the same width and height, whatever its label's length, and SHALL NOT show the raw category key when the key has a label.
 
 #### Scenario: Tiles for the current map
 - **WHEN** Map shows a map whose markers carry `PmcExtracts`, `Hazards` and `lootLoose`
@@ -24,6 +24,14 @@ Marker preferences SHALL show one tile for each marker category the current map 
 #### Scenario: Map with no markers
 - **WHEN** the current map has no prepared markers, or its prepared map is unavailable
 - **THEN** the panel shows only the "Saved pins" tile
+
+#### Scenario: One-line and two-line labels are centred
+- **WHEN** the panel shows the "Locks" tile, whose label fits on one line, and the "Stationary weapons" tile, whose label wraps to two lines
+- **THEN** in each tile the badge's horizontal centre and the label's horizontal centre equal the tile's horizontal centre
+
+#### Scenario: Centred at a larger tile scale
+- **WHEN** the grid is drawn with tiles scaled larger than the default
+- **THEN** the "Locks" tile's badge and label are still centred horizontally in the tile
 
 ### Requirement: Category keys have fixed player-facing labels
 Every saveable marker category key a prepared marker can carry, plus `CustomPins`, SHALL have one fixed player-facing label. Where a category name is shown for a key with no label, the key itself SHALL be shown.
