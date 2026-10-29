@@ -54,8 +54,8 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify both exit 0 and every test map row is green.
-- [ ] 5.2 Check that the panel no longer shows a raw category key: `rg -n "FilterChip" lib/ui/map_screen.dart` finds no marker chip, and `rg -n "filterKey\)" lib/ui/map_workspace.dart` finds no raw-key `Text` or semantics label. Note in the PR body the two non-blocking re-check notes from `review.md`: "Hide all then Show all" holds only for maps with saveable keys, and the tests find tiles by key and not by label.
+- [x] 5.1 Run `dart format` on the changed files, then `mise run analyze` and `mise run test`. Verify both exit 0 and every test map row is green.
+- [x] 5.2 Check that the panel no longer shows a raw category key: `rg -n "FilterChip" lib/ui/map_screen.dart` finds no marker chip, and `rg -n "filterKey\)" lib/ui/map_workspace.dart` finds no raw-key `Text` or semantics label. Note in the PR body the two non-blocking re-check notes from `review.md`: "Hide all then Show all" holds only for maps with saveable keys, and the tests find tiles by key and not by label.
 
 ## Workflow follow-up
 
