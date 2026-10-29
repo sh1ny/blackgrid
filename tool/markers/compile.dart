@@ -140,9 +140,10 @@ int runCli(List<String> args, {StringSink? out, StringSink? err}) {
         writeBytesViaTemp(target, compileIconSvg(icon.svg, icon.file));
       }
       final names = targets.keys.map((t) => _fileName(File(t))).toSet();
-      for (final file
-          in directory.listSync(followLinks: false).whereType<File>()) {
-        if (!names.contains(_fileName(file))) file.deleteSync();
+      // Deleting a link removes only the link, never what it points at.
+      for (final entity in directory.listSync(followLinks: false)) {
+        if (names.contains(_fileName(entity))) continue;
+        if (entity is File || entity is Link) entity.deleteSync();
       }
       stdoutSink.writeln('compiled: ${set.name} (${set.icons.length} icons)');
       return 0;

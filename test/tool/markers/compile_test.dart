@@ -91,6 +91,22 @@ void main() {
     expect(elsewhere.listSync(), hasLength(1));
   });
 
+  test('cli: unlinks an orphan link in compiled without following it', () {
+    final elsewhere = Directory('${fx.dir.path}${Platform.pathSeparator}src')
+      ..createSync();
+    final kept = File('${elsewhere.path}${Platform.pathSeparator}keep.svg')
+      ..writeAsStringSync('keep');
+    Directory(compiledPath('')).createSync();
+    // A link to a directory needs no privilege: Dart makes a junction.
+    Link(compiledPath('labels.vec')).createSync(elsewhere.path);
+    expect(compile(), 0);
+    expect(
+      FileSystemEntity.typeSync(compiledPath('labels.vec'), followLinks: false),
+      FileSystemEntityType.notFound,
+    );
+    expect(kept.readAsStringSync(), 'keep');
+  });
+
   test('cli: usage errors exit 2', () {
     final err = StringBuffer();
     expect(runCli(['a', 'b'], out: StringBuffer(), err: err), 2);
