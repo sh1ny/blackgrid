@@ -2,20 +2,55 @@
 
 ## Metadata
 
-- **Round:** 3
-- **Prior rounds:** 1 (APPROVE_WITH_CHANGES, M1-M4, re-check CHANGES_APPLIED: yes) and 2 (APPROVE_WITH_CHANGES, M5-M6, re-check CHANGES_APPLIED: yes). Their findings and rebuttals are kept below as history.
-- **Trigger:** a second drift amendment found during apply (user decision, 2026-10-29). The decision card shows the warnings in `lib/domain/decision_engine.dart` as they are, and the requirement rows show its reasons the same way. Several contain banned terms or FIR jargon. They are reworded in this change, text only. Amended: proposal What Changes and Impact, design D6 (Check B also scans `decision_engine.dart`), D7 (new decision row and a note on which reasons keep their wording), Resource Bounds, the spec scenario "Term check over the UI sources", and tasks (new 7.3; old 7.3/7.4 became 7.4/7.5).
+- **Round:** 4
+- **Prior rounds:** 1 (APPROVE_WITH_CHANGES, M1-M4, re-check CHANGES_APPLIED: yes), 2 (APPROVE_WITH_CHANGES, M5-M6, re-check CHANGES_APPLIED: yes) and 3 (APPROVE_WITH_CHANGES, M7-M8, re-check CHANGES_APPLIED: yes). Their findings and rebuttals are kept below as history.
+- **Trigger:** a behaviour-change spec amendment from the pre-ship review (finding F1, P1; user decision, 2026-10-29). `lib/application/progress_controller.dart:72` already says "Tracker token unavailable", and `test/application/app_services_refresh_test.dart:593` asserts it. The main spec `progress-authority` still pinned "Protected credential unavailable". The amendment adds a MODIFIED delta `specs/progress-authority/spec.md` and a `progress-authority` entry under the proposal's Modified Capabilities.
 - **Reviewer:** fresh-context subagent (specwright-reviewer, Claude Code)
-- **Reviewed (round 3):** `git diff HEAD -- openspec/changes/plain-language-pass/` (excluding review.md); proposal.md, design.md, tasks.md, review.md (rounds 1-2), specs/player-facing-text/spec.md. Source: every literal in `lib/domain/decision_engine.dart` (:1-4, :27-30, :72, :91, :99, :146-272, :288, :321-352) and the conditions that emit each warning or reason; `lib/domain/decision.dart`; `lib/ui/item_decision_card.dart:195-212, :284-295`; `lib/ui/requirement_rows.dart:80-91`; `lib/ui/evidence_panels.dart:75-195, :241-270`; `lib/data/catalog_normalizer.dart:126` (`quoteAt`); `openspec/specs/requirement-rows/spec.md` (:83-141); a grep of `openspec/specs/` for the reworded strings; a grep of `lib/` for every reader of `ItemDecision.warnings`, `NeedReason.message` and `NeedReason.detail`; a grep of `test/` and `integration_test/` for the reworded strings, including `test/fixtures/m0/manifest.json:6924` and `test/fixtures/m0/semantics/advice_policy.json:2612`; `test/domain/decision_engine_test.dart:50-60`; `test/application/scan_decision_precedence_test.dart:227-238`; `docs/adr/0001-shared-conservative-decision-engine.md`.
-- **Re-check run (round 3):** the current design.md (D7 decision row at :90 and its note at :92), tasks.md 7.3 (:100), and the author's Round 3 rebuttals in review.md, via `git diff HEAD -- openspec/changes/plain-language-pass/`. I checked each new S9 rewording against the condition that emits it in `decision_engine.dart` (:166, :219-224, :230-233, :262-266, :269-273, and `_gate` at :278-360) and against the banned-term list. I also grepped `test/`, `lib/` and `openspec/specs/` for the six S9 source strings and found no pin outside `decision_engine.dart`.
-- **Skills loaded:** dart-add-unit-test.
+- **Reviewed (round 4):**
+  - `git diff HEAD -- openspec/changes/plain-language-pass/`, which is the proposal.md hunk, and the untracked `specs/progress-authority/spec.md`.
+  - The requirement "Selecting a known mode with a saved credential starts one progress refresh" in `openspec/specs/progress-authority/spec.md` (:10-40), diffed line by line against the delta.
+  - The output of `openspec validate plain-language-pass --strict`.
+  - Every string literal removed in `git diff main...HEAD -- lib` that is not re-added, each grepped against `openspec/specs/`.
+  - `lib/application/progress_controller.dart:69-116` (branch diff) and `test/application/app_services_refresh_test.dart:585-594`.
+  - proposal.md, design.md (:12, :83, :86, :92), tasks.md (6.1) and review.md (rounds 1-3).
+- **Re-check run (round 4):** the current proposal.md (What Changes :14, Impact :32), design.md D7 note (:92), `specs/progress-authority/spec.md`, and the author's Round 4 rebuttals in review.md, via `git diff HEAD -- openspec/changes/plain-language-pass/`. I diffed the delta against the main requirement again and re-ran `openspec validate plain-language-pass --strict`.
+- **Skills loaded:** none (the request names none beyond AGENTS.md, which I read).
 - **Scope:** the amendment only. Earlier rounds' decisions are not reopened.
 
 <!-- This verdict covers only the contents reviewed. Editing proposal, specs or design afterward (other than applying Required Changes, or an edit confined to the proposal's `## Release Notes` section) voids it. -->
 
 ## Findings
 
-### Round 3
+### Round 4
+
+Checked and clean, so no finding:
+- **The delta copies the main requirement verbatim except for the one message.** A line diff of the requirement block against `openspec/specs/progress-authority/spec.md` covers the header, the normative paragraph and all seven scenarios: launch with a saved credential, no saved credential, unreadable credential, integration disabled, unknown mode, selection superseded, and saving does not refresh. It shows one changed line. Main :23 has `failed` with "Protected credential unavailable", and the delta :18 has `failed` with "Tracker token unavailable". The only other difference is the trailing blank line before the next main requirement. The requirement header matches exactly, so the MODIFIED delta replaces the right requirement at archive, and no scenario is dropped.
+- **`openspec validate plain-language-pass --strict`** prints "Change 'plain-language-pass' is valid".
+- **The delta matches the code and its test.** `progress_controller.dart:72` sets `error = 'Tracker token unavailable'` in the credential-read `catch`. `app_services_refresh_test.dart:593` asserts that string next to `trackerRequests == 0` and `ProgressStatus.failed`. The refresh rules (no request, status `failed`) are untouched, as the proposal entry says.
+- **No other main spec pins a string this change rewords.** I took every quoted literal of 4 or more characters that the branch removes from `lib` and does not re-add, and dropped the interpolated ones. I then grepped `openspec/specs/` for each one of 6 or more characters. The only hit is `progress-authority/spec.md:23`, which this delta handles. The other progress-controller rewordings ("Credential prefix does not match selected mode", "Protected credential save failed" and the removal message) appear in no main spec. `catalog-authority` and `requirement-rows` keep their pinned strings, as rounds 1 and 3 established. Limit: this grep matches whole literals, so it would miss a spec that quotes only part of an interpolated message. Round 3's grep of the decision-engine strings covers the main case of that kind.
+- **design.md is consistent.** D7's controller row (:86) already maps "Protected credential unavailable" to "Tracker token unavailable", so the design always planned this rewording. T6 (:12, "No credential, storage or decision path changes") still holds, because only the message text changes. D7's note (:92) names the strings that keep their wording because `catalog-authority` pins them. It does not claim those are the only pinned strings.
+- **tasks.md needs no new task.** Task 6.1 already rewrote `progress_controller.dart` and the tests that pinned old text. The amendment changes only the spec, which it brings in line with code already on the branch.
+
+#### Critical (blocking)
+
+None.
+
+#### Moderate
+
+None.
+
+#### Minor
+
+**M9. The proposal's rule for spec-pinned messages now contradicts its own new Modified Capabilities entry.**
+The What Changes bullet (proposal.md:12) still says: "Messages pinned by an existing spec (`catalog-authority`, `requirement-rows`) keep their wording." "Protected credential unavailable" is a message pinned by an existing spec (`progress-authority`), yet this change rewords it to "Tracker token unavailable". The new entry at :26 records that as a user decision, but the What Changes rule reads as covering every pinned message and gives no exception. Impact (:33) also says "No behaviour change in … `lib/application`", while the change now carries a behaviour-change delta for a message written there.
+
+Consequence: the proposal states a rule and then breaks it. A later reader who checks this rewording against the What Changes rule may treat the delta as a mistake, or raise F1 again at the pre-ship re-review. The fix is one sentence.
+
+#### Suggestions
+
+- **S11.** In design.md's D7 note (:92), after the `catalog-authority` sentence, add that `progress_controller.dart:72`'s "Tracker token unavailable" rewords a message that `progress-authority` pinned, through the delta in `specs/progress-authority/spec.md` (user decision, 2026-10-29). The design would then name every spec-pinned string the change touches: the ones it keeps and the one it changes. This is optional, because D7's row (:86) already lists the new text.
+
+### Round 3 (history)
 
 Checked and clean, so no finding:
 - **No reworded string is persisted, compared or used as a key.** `ItemDecision.warnings`, `NeedReason.message` and `NeedReason.detail` are read only in `lib/domain` and `lib/ui` (`item_decision_card.dart:284-295`, `requirement_rows.dart:90`, `evidence_panels.dart`). Nothing in `lib/data` or `lib/application` reads them, the timing log does not, and `ItemDecision` has no `==`. No control flow branches on the text. The m0 fixtures assert `decision.warnings` as the symbolic code `stale_progress`, not as engine text, so a reword is display-only.
@@ -116,20 +151,26 @@ None.
 
 VERDICT: APPROVE_WITH_CHANGES
 
-The amendment is sound. The reworded strings are display-only: nothing persists them, compares them or uses them as keys, and no main spec pins any of them. The two specs-pinned reasons keep their wording, ADR-0001's rules and order do not change, and scanning every literal of `decision_engine.dart` gives no false hit. Two wording fixes remain. One warning gives a false reason in reachable cases (M7). The task's keep-rule conflicts with the D7 row it points to (M8).
+The amendment is correct. The delta copies the main requirement and all seven scenarios word for word and changes only the unreadable-credential message. The new message matches `progress_controller.dart:72` and its test, and strict validation passes. No other main spec pins a string the branch rewords. One wording fix remains: the proposal's rule that pinned messages keep their wording needs to name this deliberate exception (M9).
 
 ## Required Changes
 
-1. **(M7)** In design.md's D7 decision row, replace "Flea price missing or older than one hour" with wording that describes the quote time and covers the future case. One option is "Flea price not confirmed in the last hour". Another, matching the Data sources panel's "price time", is "Flea price time unknown or more than an hour old". Either works. The wording must not say the price is missing when only its time is.
-2. **(M8)** In tasks.md 7.3, replace "Strings with no banned term and the ones `requirement-rows` pins keep their wording" with "Strings not in the D7 decision row keep their wording, including the ones `requirement-rows` pins (`station module status unknown`, `optional use, not an automatic obligation`)."
+1. **(M9)** In proposal.md What Changes (:12), replace "Messages pinned by an existing spec (`catalog-authority`, `requirement-rows`) keep their wording." with "Messages pinned by an existing spec (`catalog-authority`, `requirement-rows`) keep their wording. The exception is the unreadable-credential message that `progress-authority` pins, which becomes "Tracker token unavailable" through a spec delta (user decision, 2026-10-29)." In Impact (:33), qualify "No behaviour change in `lib/domain`, `lib/application` or `lib/data`" so it excludes that message, for example by adding "other than the `progress-authority` message above".
 
-Re-check result: both Required Changes (M7, M8) and both suggestions (S9, S10) are applied in the current artifacts. The new S9 wording is accurate and contains no banned term. Details are under each item in Rebuttals.
+Re-check result: Required Change 1 (M9) and suggestion S11 are applied in the current artifacts, and the diff since HEAD contains no other edit to proposal.md or design.md. The delta is unchanged and strict validation still passes. Details are under each item in Rebuttals.
 
 CHANGES_APPLIED: yes
 
 ## Rebuttals
 
-### Round 3
+### Round 4
+
+- **M9:** fixed. What Changes now names the `progress-authority` unreadable-credential message as the one exception to the pinned-wording rule, with the user decision of 2026-10-29. Impact excludes that message from "No behaviour change in `lib/domain`, `lib/application` or `lib/data`".
+  - **Accepted by reviewer.** Verified at proposal.md:14 and :32. The What Changes bullet keeps the `catalog-authority` and `requirement-rows` rule and names the `progress-authority` message, its new text, the spec delta and the user decision as the one exception. The wording matches Required Change 1. Impact now says "No behaviour change in `lib/domain`, `lib/application` or `lib/data` other than the `progress-authority` message above", which agrees with the Modified Capabilities entry at :26. The proposal no longer states a rule and then breaks it.
+- **S11:** applied. The D7 note in design.md now names `progress_controller.dart:72`, the old and new text and the delta, so the design lists every spec-pinned string the change touches.
+  - **Accepted by reviewer.** Verified at design.md:92. The note names `progress_controller.dart:72`, the old and new text, the delta file and the user decision. That agrees with D7's controller row (:86), the proposal and the delta. `specs/progress-authority/spec.md` is unchanged since round 4: it still differs from the main requirement only in the unreadable-credential message (plus the trailing blank line), and `openspec validate plain-language-pass --strict` reports the change valid.
+
+### Round 3 (history)
 
 - **M7:** fixed. The D7 decision row now rewords the market warning as "Flea price time unknown or more than an hour old", which matches the `quoteAt` condition (missing, in the future, or older than an hour) and no longer claims the price is missing.
   - **Accepted by reviewer.** Verified at design.md:90. This is one of the two options in Required Change 1. It no longer says the price is missing when the card shows one. A future timestamp falls under "time unknown", which is a fair way to tell the player about a time that can't be trusted. It contains no banned term.
