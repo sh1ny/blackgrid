@@ -15,14 +15,14 @@ Test files:
 |---|---|---|---|---|
 | player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | footer says item data is out of date when the catalog is stale | red |
 | player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | an imported scan row says Imported scan | red |
-| player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | red |
+| player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | green |
 | player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/decision_card_text_test.dart | unknown found in raid is said in words | red |
 | player-facing-text → Developer wording stays out of the open view | Search field hint | test/ui/shell_test.dart | search hint asks for an item name without canonical | red |
 | player-facing-text → Developer wording stays out of the open view | Searching by ID still works | test/ui/shell_test.dart | search still finds an item by its tarkov.dev id | green |
 | player-facing-text → Developer wording stays out of the open view | Name does not resolve | test/ui/history_panel_test.dart | a row whose item has no name shows its id | green |
 | player-facing-text → Developer wording stays out of the open view | Term check over the UI sources | test/ui/plain_language_source_test.dart | no scanned literal contains a banned term | red |
 | player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | a row observed today shows its local time without ISO | red |
-| player-facing-text → Times are shown in local time | Earlier day | test/ui/labels_test.dart | localTimeLabel gives date and time for an earlier day | red |
+| player-facing-text → Times are shown in local time | Earlier day | test/ui/labels_test.dart | localTimeLabel gives date and time for an earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/data_sources_panel_test.dart | a missing flea quote time reads unknown | red |
 | player-facing-text → Details sections start collapsed | Collapsed at launch | test/ui/scanner_screen_test.dart | scan evidence Details starts collapsed with no score or timing | red |
 | player-facing-text → Details sections start collapsed | Expanding shows the detail | test/ui/details_section_test.dart | tapping the Details title builds the content | red |
@@ -33,9 +33,9 @@ Test files:
 | player-facing-text → Data sources panel reads in plain language | No catalog | test/ui/data_sources_panel_test.dart | no catalog says item data is not downloaded yet | red |
 | player-facing-text → Data sources panel reads in plain language | Tracker in cooldown | test/ui/data_sources_panel_test.dart | cooldown is said in the open and its end time only in Details | red |
 | player-facing-text → Raw enum names are never interpolated into UI text | Clean sources | test/ui/plain_language_source_test.dart | lib/ui has no raw enum name in text | red |
-| player-facing-text → Raw enum names are never interpolated into UI text | A regression | test/ui/plain_language_source_test.dart | check A flags a status name chain | red |
-| player-facing-text → Raw enum names are never interpolated into UI text | A destructured regression | test/ui/plain_language_source_test.dart | check A flags a destructured reason name | red |
-| player-facing-text → Raw enum names are never interpolated into UI text | Keys are not text | test/ui/plain_language_source_test.dart | check A ignores names inside keys and item names | red |
+| player-facing-text → Raw enum names are never interpolated into UI text | A regression | test/ui/plain_language_source_test.dart | check A flags a status name chain | green |
+| player-facing-text → Raw enum names are never interpolated into UI text | A destructured regression | test/ui/plain_language_source_test.dart | check A flags a destructured reason name | green |
+| player-facing-text → Raw enum names are never interpolated into UI text | Keys are not text | test/ui/plain_language_source_test.dart | check A ignores names inside keys and item names | green |
 | scanner-evidence → Scan phase is visible, including fallback | Fallback becomes visible | test/ui/scan_evidence_panel_test.dart | fallback phase says it is trying a wider scan | red |
 | scanner-evidence → Scan phase is visible, including fallback | Superseded scan | test/ui/scan_evidence_panel_test.dart | superseded scan shows only the newer phase | red |
 | scanner-evidence → Scanner shows the latest scan's evidence | Accepted scan | test/ui/scan_evidence_panel_test.dart | accepted report shows the item name, and Details shows id, pass, score, crop and text | red |
@@ -63,10 +63,10 @@ Every group follows AGENTS.md "Dart and Flutter code" and loads the skills `dart
 
 ## 1. Labels, local time and the source-check engine
 
-- [ ] 1.1 Write `test/ui/labels_test.dart`: "every value of every shown kind has a plain label" iterates `.values` of `CatalogStatus`, `ProgressStatus`, `MapInputStatus`, `RaidPanelState`, `ScanRejectReason`, `ScanFailureCode`, `ScanPass`, `FirState` and `ActivitySource`, asserting each label is non-empty, has no `[a-z][A-Z]`, and differs from `.name` unless the name is one lowercase word. Add `localTimeLabel` cases with a fixed `now`: same local day gives `HH:mm`, an earlier day gives `d MMM HH:mm` ("localTimeLabel gives date and time for an earlier day"), and null gives `unknown`. Verify it fails to compile or fails (no `lib/ui/labels.dart`).
-- [ ] 1.2 Add `lib/ui/labels.dart` with one exhaustive `switch` expression per kind and `localTimeLabel(DateTime?, {required DateTime now})` (design D1, D5), with `///` docs. Verify 1.1 passes and flip "Every value has a label" and "Earlier day" green.
-- [ ] 1.3 Write the check-engine tests in `test/ui/plain_language_source_test.dart` over in-memory samples: "check A flags a status name chain" (`'Catalog: ${catalog.status.name}'`), "check A flags a destructured reason name" (`'Reason: ${reason.name}'`), "check A ignores names inside keys and item names" (`ValueKey('results-${mode.name}')`, `Text(item.name)`, a `//` comment), and a Check B sample set: a hit on "canonical", "identities" and "Normalized", none inside `Key('…')`, and `M1` whole-word only. Verify they fail.
-- [ ] 1.4 Implement the two checks as pure functions in `test/ui/support/plain_language_check.dart` (D6 patterns, file:line in each hit). Verify 1.3 passes and flip "A regression", "A destructured regression" and "Keys are not text" green. The whole-tree assertions are added in group 7.
+- [x] 1.1 Write `test/ui/labels_test.dart`: "every value of every shown kind has a plain label" iterates `.values` of `CatalogStatus`, `ProgressStatus`, `MapInputStatus`, `RaidPanelState`, `ScanRejectReason`, `ScanFailureCode`, `ScanPass`, `FirState` and `ActivitySource`, asserting each label is non-empty, has no `[a-z][A-Z]`, and differs from `.name` unless the name is one lowercase word. Add `localTimeLabel` cases with a fixed `now`: same local day gives `HH:mm`, an earlier day gives `d MMM HH:mm` ("localTimeLabel gives date and time for an earlier day"), and null gives `unknown`. Verify it fails to compile or fails (no `lib/ui/labels.dart`).
+- [x] 1.2 Add `lib/ui/labels.dart` with one exhaustive `switch` expression per kind and `localTimeLabel(DateTime?, {required DateTime now})` (design D1, D5), with `///` docs. Verify 1.1 passes and flip "Every value has a label" and "Earlier day" green.
+- [x] 1.3 Write the check-engine tests in `test/ui/plain_language_source_test.dart` over in-memory samples: "check A flags a status name chain" (`'Catalog: ${catalog.status.name}'`), "check A flags a destructured reason name" (`'Reason: ${reason.name}'`), "check A ignores names inside keys and item names" (`ValueKey('results-${mode.name}')`, `Text(item.name)`, a `//` comment), and a Check B sample set: a hit on "canonical", "identities" and "Normalized", none inside `Key('…')`, and `M1` whole-word only. Verify they fail.
+- [x] 1.4 Implement the two checks as pure functions in `test/ui/support/plain_language_check.dart` (D6 patterns, file:line in each hit). Verify 1.3 passes and flip "A regression", "A destructured regression" and "Keys are not text" green. The whole-tree assertions are added in group 7.
 
 ## 2. Details section and Scanner-owned expansion state
 
