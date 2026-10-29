@@ -7,11 +7,13 @@ import '../application/app_services.dart';
 import '../domain/catalog.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_session.dart';
+import '../domain/marker_categories.dart';
 import '../domain/raid_panel_text_parser.dart';
 import '../domain/settings.dart';
 import 'item_decision_card.dart';
 import 'manual_controls.dart';
 import 'map_workspace.dart';
+import 'marker_preferences.dart';
 import 'pin_editor.dart';
 import 'theme.dart';
 
@@ -304,7 +306,9 @@ class _MapScreenState extends State<MapScreen> {
         final map =
             services.maps.selectedMapId ??
             services.settings.settings.selectedMap;
-        final categories = services.maps.applicableCategories.toList()..sort();
+        final categories = markerPreferenceKeys(
+          services.maps.applicableCategories,
+        );
         final pins = services.settings.pins
             .where((p) => p.mapId == map)
             .toList();
@@ -460,26 +464,10 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             ),
                     ),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: categories
-                          .map(
-                            (key) => FilterChip(
-                              label: Text(key),
-                              selected:
-                                  services
-                                      .settings
-                                      .settings
-                                      .markerFilters[key] ??
-                                  true,
-                              onSelected: services.settings.busy
-                                  ? null
-                                  : (value) =>
-                                        services.settings.setMarker(key, value),
-                            ),
-                          )
-                          .toList(),
+                    MarkerPreferencesGrid(
+                      services: services,
+                      keys: categories,
+                      scale: scale,
                     ),
                   ],
                 ),

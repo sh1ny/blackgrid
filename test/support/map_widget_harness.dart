@@ -245,6 +245,7 @@ Future<MapWidgetHarness> pumpMapFixture(
   List<Map<String, int>>? hazardOutline,
   ScanFakePorts? scanPorts,
   RaidPanelOcr? panelOcr,
+  List<Map<String, Object?>> extraMarkers = const [],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -258,6 +259,7 @@ Future<MapWidgetHarness> pumpMapFixture(
       hazardOutline: hazardOutline,
       scanPorts: scanPorts,
       panelOcr: panelOcr,
+      extraMarkers: extraMarkers,
     ),
   ))!;
   addTearDown(harness.dispose);

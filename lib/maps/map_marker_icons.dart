@@ -96,6 +96,82 @@ ui.Color markerFallbackColour(String filterKey) => switch (filterKey) {
   opacity: dimmed ? dimmedMarkerOpacity : 1,
 );
 
+/// The reusable [ui.Paint]s of [paintMarkerBadge].
+///
+/// A painter that draws many badges per frame keeps one set, so no badge
+/// allocates. [paintMarkerBadge] overwrites the colour of each paint before
+/// every use.
+final class MarkerBadgePaints {
+  /// Creates a set of badge paints.
+  MarkerBadgePaints()
+    : fill = ui.Paint(),
+      ring = ui.Paint()..style = ui.PaintingStyle.stroke,
+      glyph = ui.Paint()..filterQuality = ui.FilterQuality.medium;
+
+  /// Draws the disc and the fallback centre dot.
+  final ui.Paint fill;
+
+  /// Draws the ring.
+  final ui.Paint ring;
+
+  /// Draws the tinted glyph.
+  final ui.Paint glyph;
+}
+
+/// Draws one marker badge centred on [centre]: a disc, a ring in the state
+/// colour and the glyph of [filterKey] tinted to match, or a centre dot when
+/// [icons] has no glyph for it.
+///
+/// [selected], [highlighted] and [dimmed] resolve through
+/// [markerBadgeStyle]. Pass [paints] to reuse one [MarkerBadgePaints] across
+/// calls; without it the call makes its own.
+void paintMarkerBadge(
+  ui.Canvas canvas,
+  ui.Offset centre,
+  MapMarkerIcons icons, {
+  required String filterKey,
+  required bool selected,
+  required bool highlighted,
+  required bool dimmed,
+  MarkerBadgePaints? paints,
+}) {
+  final p = paints ?? MarkerBadgePaints();
+  final geometry = icons.geometry;
+  final glyph = icons.icon(filterKey)?.glyph;
+  final style = markerBadgeStyle(
+    role: icons.colourFor(filterKey),
+    selected: selected,
+    highlighted: highlighted,
+    dimmed: dimmed,
+    geometry: geometry,
+  );
+  ui.Color faded(ui.Color colour) =>
+      colour.withValues(alpha: colour.a * style.opacity);
+  final colour = faded(style.colour);
+  final radius = style.diameter / 2 - geometry.ring / 2;
+  p.fill.color = faded(icons.background);
+  canvas.drawCircle(centre, radius, p.fill);
+  p.ring
+    ..color = colour
+    ..strokeWidth = geometry.ring;
+  canvas.drawCircle(centre, radius, p.ring);
+  if (glyph == null) {
+    p.fill.color = colour;
+    canvas.drawCircle(centre, 3, p.fill);
+    return;
+  }
+  canvas.drawImageRect(
+    glyph,
+    ui.Rect.fromLTWH(0, 0, glyph.width.toDouble(), glyph.height.toDouble()),
+    ui.Rect.fromCenter(
+      center: centre,
+      width: geometry.glyph,
+      height: geometry.glyph,
+    ),
+    p.glyph..colorFilter = ui.ColorFilter.mode(colour, ui.BlendMode.srcIn),
+  );
+}
+
 /// Loads the bundled marker icon set and serves it to the map painter.
 ///
 /// Until [open] completes, and for every key the manifest or a decode

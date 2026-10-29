@@ -13,6 +13,87 @@ import '../support/map_widget_harness.dart';
 
 Finder get _savedPins => find.textContaining('saved pin records');
 
+Finder _tile(String key) => find.byKey(ValueKey('marker-tile-$key'));
+
+Finder get _search => find.byKey(const ValueKey('marker-search'));
+
+/// The scroll position of the Marker preferences list.
+ScrollPosition _preferencesList(WidgetTester tester) => tester
+    .state<ScrollableState>(
+      find.ancestor(of: _search, matching: find.byType(Scrollable)).first,
+    )
+    .position;
+
+/// Builds the tile for [key] by scrolling the preferences list, and brings it
+/// into view.
+Future<Finder> _revealTile(WidgetTester tester, String key) async {
+  await scrollMapRailTo(tester, _search);
+  await tester.ensureVisible(find.text('Marker preferences'));
+  await tester.pumpAndSettle();
+  final tile = _tile(key);
+  final list = _preferencesList(tester);
+  while (tile.evaluate().isEmpty && list.pixels < list.maxScrollExtent) {
+    list.jumpTo((list.pixels + 160).clamp(0, list.maxScrollExtent).toDouble());
+    await tester.pump();
+  }
+  await tester.pumpAndSettle();
+  await Scrollable.ensureVisible(tester.element(tile), alignment: .5);
+  await tester.pumpAndSettle();
+  return tile;
+}
+
+/// Whether the tile for [key] is built and shows the shown state.
+bool _tileShown(String key) {
+  expect(_tile(key), findsOneWidget);
+  return find
+      .descendant(of: _tile(key), matching: find.byIcon(Icons.check))
+      .evaluate()
+      .isNotEmpty;
+}
+
+/// Every marker tile key the panel currently builds.
+Set<String> _tileKeys(WidgetTester tester) {
+  const prefix = 'marker-tile-';
+  return {
+    for (final element
+        in find
+            .byWidgetPredicate(
+              (widget) => switch (widget.key) {
+                ValueKey<String>(:final value) => value.startsWith(prefix),
+                _ => false,
+              },
+            )
+            .evaluate())
+      (element.widget.key! as ValueKey<String>).value.substring(prefix.length),
+  };
+}
+
+/// A prepared-pack marker on the ground floor with an explicit filter key.
+Map<String, Object?> _extraMarker(String id, String category, String filter) =>
+    {
+      'id': id,
+      'name': id,
+      'floorId': 'ground',
+      'category': category,
+      'filterKey': filter,
+      'position': {'x': 64, 'z': 64},
+      'details': {'description': '$id offline fixture details'},
+      'source': {'fixture': true},
+    };
+
+Future<void> _tapPanelButton(
+  WidgetTester tester,
+  String label,
+  bool Function() completed,
+) async {
+  final button = find.widgetWithText(TextButton, label);
+  await scrollMapRailTo(tester, _search);
+  await Scrollable.ensureVisible(tester.element(button), alignment: .5);
+  await tester.pumpAndSettle();
+  expect(button.hitTestable(), findsOneWidget);
+  await tapM1Async(tester, button, completed);
+}
+
 void main() {
   testWidgets(
     'Read Latest exposes assumed file provenance without filename player metadata',
@@ -150,6 +231,14 @@ void main() {
             .map((marker) => marker.marker.id),
         ['ground-hazard'],
       );
+      // Dimming by search must not change what any tile says is shown.
+      for (final key in ['PmcExtracts', 'Hazards']) {
+        await _revealTile(tester, key);
+        expect(_tileShown(key), isTrue, reason: '$key tile while searching');
+      }
+      expect(_tileKeys(tester), containsAll(['PmcExtracts', 'Hazards']));
+      _preferencesList(tester).jumpTo(0);
+      await tester.pumpAndSettle();
       final hide = find.widgetWithText(TextButton, 'Hide all');
       await Scrollable.ensureVisible(tester.element(hide), alignment: .5);
       await tester.pumpAndSettle();
@@ -169,9 +258,9 @@ void main() {
       await tester.runAsync(h.services.settings.load);
       await tester.pumpAndSettle();
       expect(h.services.maps.visibleMarkers(), isEmpty);
-      final extracts = find.widgetWithText(FilterChip, 'PmcExtracts');
-      await Scrollable.ensureVisible(tester.element(extracts), alignment: .5);
-      await tester.pumpAndSettle();
+      final extracts = await _revealTile(tester, 'PmcExtracts');
+      expect(_tileShown('PmcExtracts'), isFalse);
+      expect(_tileShown('Hazards'), isFalse);
       expect(extracts.hitTestable(), findsOneWidget);
       await tapM1Async(
         tester,
@@ -192,6 +281,9 @@ void main() {
         h.services.maps.visibleMarkers().map((marker) => marker.marker.id),
         ['ground-exit', 'ground-hazard'],
       );
+      await _revealTile(tester, 'PmcExtracts');
+      expect(_tileShown('PmcExtracts'), isTrue);
+      expect(_tileShown('Hazards'), isTrue);
       final shown = (await tester.runAsync(
         () => h.services.database.readSettings(),
       ))!;
@@ -213,6 +305,120 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Show all keeps saved entries of keys the map does not show', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    await tester.runAsync(
+      () => h.services.settings.setMarker('ScavSpawns', false),
+    );
+    await tester.pumpAndSettle();
+    expect(h.services.maps.applicableCategories, isNot(contains('ScavSpawns')));
+
+    await _tapPanelButton(
+      tester,
+      'Show all',
+      () => h.services.settings.settings.markerFilters['PmcExtracts'] == true,
+    );
+
+    final stored = (await tester.runAsync(
+      () => h.services.database.readSettings(),
+    ))!;
+    expect(stored.markerFilters['ScavSpawns'], isFalse);
+    expect(stored.markerFilters['PmcExtracts'], isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('quest filters leave tile states unchanged', (tester) async {
+    final h = await pumpMapFixture(
+      tester,
+      extraMarkers: [_extraMarker('quest-item', 'questItems', 'QuestItems')],
+    );
+    await tester.runAsync(
+      () => h.services.settings.setMarker('Hazards', false),
+    );
+    await tester.pumpAndSettle();
+    await _revealTile(tester, 'QuestItems');
+    expect(_tileShown('QuestItems'), isTrue);
+    expect(_tileShown('Hazards'), isFalse);
+
+    _preferencesList(tester).jumpTo(0);
+    await tester.pumpAndSettle();
+    final trader = find.widgetWithText(TextFormField, 'Quest trader');
+    await tester.ensureVisible(trader);
+    await tester.pumpAndSettle();
+    await tester.enterText(trader, 'Prapor');
+    await tester.pumpAndSettle();
+    expect(h.services.maps.questTrader, 'Prapor');
+
+    await _revealTile(tester, 'QuestItems');
+    expect(_tileShown('QuestItems'), isTrue);
+    expect(_tileShown('PmcExtracts'), isTrue);
+    expect(_tileShown('Hazards'), isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unsaveable marker key gets no tile and stays drawn', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(
+      tester,
+      extraMarkers: [_extraMarker('zip', 'ziplines', 'Ziplines')],
+    );
+    expect(h.services.maps.applicableCategories, contains('Ziplines'));
+    await _revealTile(tester, 'PmcExtracts');
+
+    expect(_tileKeys(tester), contains('PmcExtracts'));
+    expect(_tileKeys(tester), contains('Hazards'));
+    expect(_tileKeys(tester), isNot(contains('Ziplines')));
+    expect(find.text('Ziplines'), findsNothing);
+    expect(
+      h.services.maps.visibleMarkers().map((marker) => marker.marker.id),
+      contains('zip'),
+    );
+  });
+
+  testWidgets('Hide all never saves an unsaveable key and settings reload', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(
+      tester,
+      extraMarkers: [_extraMarker('zip', 'ziplines', 'Ziplines')],
+    );
+    // Filters survive a reload only while Save marker filters is on.
+    await tester.runAsync(
+      () => h.services.settings.save(
+        h.services.settings.settings.copyWith(saveMarkerFilters: true),
+      ),
+    );
+
+    await _tapPanelButton(
+      tester,
+      'Hide all',
+      () => h.services.settings.settings.markerFilters['PmcExtracts'] == false,
+    );
+
+    final stored = (await tester.runAsync(
+      () => h.services.database.readSettings(),
+    ))!;
+    expect(stored.markerFilters['PmcExtracts'], isFalse);
+    expect(stored.markerFilters['Hazards'], isFalse);
+    expect(stored.markerFilters, isNot(contains('Ziplines')));
+    await tester.runAsync(h.services.settings.load);
+    await tester.pumpAndSettle();
+    expect(
+      h.services.settings.settings.markerFilters,
+      isNot(contains('Ziplines')),
+    );
+    expect(h.services.maps.visibleMarkers().map((marker) => marker.marker.id), [
+      'zip',
+    ]);
+    await _revealTile(tester, 'PmcExtracts');
+    expect(_tileShown('PmcExtracts'), isFalse);
+    expect(_tileShown('Hazards'), isFalse);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'manual map authority is explicit and Follow logs does not overwrite stored manual selection',
