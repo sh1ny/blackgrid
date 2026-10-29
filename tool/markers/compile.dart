@@ -8,7 +8,10 @@
 /// first runs the set check and, on any failure, prints the failures, exits 1
 /// and writes nothing. Otherwise it writes `compiled/<stem>.vec` beside the
 /// manifest for each icon, compiled with the set check's settings, and deletes
-/// every other file in `compiled/`. Exits 0 on success and 2 on a usage error.
+/// every other file in `compiled/`. It also exits 1 and writes nothing when
+/// `compiled/`, an ancestor or an output is a symbolic link or junction, so a
+/// linked directory can never redirect the writes or the deletions. Exits 0 on
+/// success and 2 on a usage error.
 ///
 /// [compiledSetFailures] is the offline check that the compiled files are in
 /// step with the SVG sources.
@@ -16,6 +19,8 @@ library;
 
 import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:blackgrid/application/output_path_guard.dart';
 
 import 'icon_set.dart';
 
@@ -119,17 +124,24 @@ int runCli(List<String> args, {StringSink? out, StringSink? err}) {
       stdoutSink.writeln('invalid: ${failures.length} failure(s)');
       return 1;
     case IconSetValid(:final set):
-      final directory = _compiledDir(set)..createSync(recursive: true);
-      final names = <String>{};
-      for (final icon in set.icons) {
-        final name = _compiledName(icon.file);
-        names.add(name);
-        final target = '${directory.path}${Platform.pathSeparator}$name';
-        final temp = File('$target.tmp')
-          ..writeAsBytesSync(compileIconSvg(icon.svg, icon.file));
-        temp.renameSync(target);
+      final directory = _compiledDir(set);
+      final targets = {
+        for (final icon in set.icons)
+          '${directory.path}${Platform.pathSeparator}${_compiledName(icon.file)}':
+              icon,
+      };
+      final unsafe = targets.keys.map(unsafeOutputReason).nonNulls;
+      if (unsafe.isNotEmpty) {
+        stdoutSink.writeln('unsafe: ${unsafe.first}');
+        return 1;
       }
-      for (final file in directory.listSync().whereType<File>()) {
+      directory.createSync(recursive: true);
+      for (final MapEntry(key: target, value: icon) in targets.entries) {
+        writeBytesViaTemp(target, compileIconSvg(icon.svg, icon.file));
+      }
+      final names = targets.keys.map((t) => _fileName(File(t))).toSet();
+      for (final file
+          in directory.listSync(followLinks: false).whereType<File>()) {
         if (!names.contains(_fileName(file))) file.deleteSync();
       }
       stdoutSink.writeln('compiled: ${set.name} (${set.icons.length} icons)');

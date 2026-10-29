@@ -76,6 +76,21 @@ void main() {
     expect(names, ['hazards.vec', 'pmc_extracts.vec']);
   });
 
+  test('cli: refuses a linked compiled directory and deletes nothing', () {
+    final elsewhere = Directory('${fx.dir.path}${Platform.pathSeparator}src')
+      ..createSync();
+    final kept = File('${elsewhere.path}${Platform.pathSeparator}keep.svg')
+      ..writeAsStringSync('keep');
+    // Dart creates a junction or a symbolic link; either is refused.
+    Link('${fx.dir.path}${Platform.pathSeparator}compiled')
+        .createSync(elsewhere.path);
+    final out = StringBuffer();
+    expect(runCli([fx.manifestPath], out: out, err: StringBuffer()), 1);
+    expect(out.toString(), contains('is a symbolic link or junction'));
+    expect(kept.readAsStringSync(), 'keep');
+    expect(elsewhere.listSync(), hasLength(1));
+  });
+
   test('cli: usage errors exit 2', () {
     final err = StringBuffer();
     expect(runCli(['a', 'b'], out: StringBuffer(), err: err), 2);
