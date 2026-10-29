@@ -77,8 +77,8 @@ Skills: `flutter-add-widget-test`, `dart-write-documentation`. Design D5, D6.
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `dart format lib test`, `mise run analyze` and `mise run test`. Verify all three are clean and every test-map row reads green.
-- [ ] 5.2 Run `openspec validate polish-requirement-rows --strict`. Verify it reports the change valid.
+- [x] 5.1 Run `dart format lib test`, `mise run analyze` and `mise run test`. Verify all three are clean and every test-map row reads green.
+- [x] 5.2 Run `openspec validate polish-requirement-rows --strict`. Verify it reports the change valid.
 
 ## Workflow follow-up
 
