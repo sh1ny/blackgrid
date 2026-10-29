@@ -530,4 +530,148 @@ void main() {
     item.remove('lastScan');
     expect(fixtureCatalog(wire: j).items['item-a']!.quoteAt, isNull);
   });
+
+  group('craft and barter display facts', () {
+    ItemRequirement craftRow(CatalogSnapshot c) =>
+        c.requirements.singleWhere((r) => r.kind == RequirementKind.craft);
+    ItemRequirement barterRow(CatalogSnapshot c) =>
+        c.requirements.singleWhere((r) => r.kind == RequirementKind.barter);
+
+    test('craft rows keep product, station, level and tool facts', () {
+      final plain = craftRow(fixtureCatalog());
+      expect(plain.productItemId, 'item-b');
+      expect(plain.productCount, 1);
+      expect(plain.stationId, 'station-a');
+      expect(plain.stationName, 'Synthetic station');
+      expect(plain.stationLevel, 1);
+      expect(plain.unlockTaskId, isNull);
+      expect(plain.unlockTaskName, isNull);
+      expect(plain.tool, isNull);
+
+      final j = wireFixture();
+      j['crafts']['data'][0]['requiredItems'][0]['attributes'] = {'tool': true};
+      expect(craftRow(fixtureCatalog(wire: j)).tool, isTrue);
+    });
+
+    test('barter rows keep offered item, trader, level and unlock facts', () {
+      final plain = barterRow(fixtureCatalog());
+      expect(plain.productItemId, 'item-b');
+      expect(plain.productCount, 1);
+      expect(plain.traderId, 'trader-a');
+      expect(plain.traderLevel, 1);
+      expect(plain.unlockTaskId, isNull);
+      expect(plain.unlockTaskName, isNull);
+
+      final j = wireFixture();
+      j['barters']['data'][0]['taskUnlock'] = 'task-a';
+      final unlocked = barterRow(fixtureCatalog(wire: j));
+      expect(unlocked.unlockTaskId, 'task-a');
+      expect(unlocked.unlockTaskName, 'Synthetic task');
+    });
+
+    test(
+      'craft and barter display facts survive the projection round trip',
+      () {
+        final j = wireFixture();
+        j['crafts']['data'][0]['requiredItems'][0]['attributes'] = {
+          'tool': true,
+        };
+        j['crafts']['data'][0]['taskUnlock'] = 'task-a';
+        j['barters']['data'][0]['taskUnlock'] = 'task-a';
+        final c = fixtureCatalog(wire: j);
+        final back = CatalogSnapshot.fromJson(
+          Map<String, dynamic>.from(jsonDecode(jsonEncode(c.toJson())) as Map),
+        );
+        for (final kind in [RequirementKind.craft, RequirementKind.barter]) {
+          final a = c.requirements.singleWhere((r) => r.kind == kind);
+          final b = back.requirements.singleWhere((r) => r.kind == kind);
+          expect(b.toJson(), a.toJson());
+          expect(b.productItemId, a.productItemId);
+          expect(b.productCount, a.productCount);
+          expect(b.traderId, a.traderId);
+          expect(b.traderLevel, a.traderLevel);
+          expect(b.unlockTaskId, 'task-a');
+          expect(b.unlockTaskName, 'Synthetic task');
+          expect(b.stationName, a.stationName);
+          expect(b.stationLevel, a.stationLevel);
+          expect(b.tool, a.tool);
+        }
+        expect(craftRow(back).tool, isTrue);
+      },
+    );
+
+    test('malformed or missing display levels become absent without rejecting the catalog', () {
+      final j = wireFixture();
+      j['crafts']['data'][0]['level'] = 'three';
+      (j['barters']['data'][0] as Map).remove('minTraderLevel');
+      final c = fixtureCatalog(wire: j);
+      final craft = craftRow(c);
+      expect(craft.stationLevel, isNull);
+      expect(craft.stationId, 'station-a');
+      expect(craft.productItemId, 'item-b');
+      expect(craft.productCount, 1);
+      final barter = barterRow(c);
+      expect(barter.traderLevel, isNull);
+      expect(barter.traderId, 'trader-a');
+      expect(barter.productItemId, 'item-b');
+      expect(barter.productCount, 1);
+    });
+
+    test('an unknown craft product still invalidates the candidate', () {
+      final j = wireFixture();
+      j['crafts']['data'][0]['productItem']['item'] = 'missing';
+      expect(() => fixtureCatalog(wire: j), throwsFormatException);
+    });
+
+    test('an unknown craft taskUnlock is kept as an id and does not reject the catalog', () {
+      final j = wireFixture();
+      j['crafts']['data'][0]['taskUnlock'] = 'task-missing';
+      final craft = craftRow(fixtureCatalog(wire: j));
+      expect(craft.unlockTaskId, 'task-missing');
+      expect(craft.unlockTaskName, 'task-missing');
+    });
+
+    test('a stored projection without display facts still loads; an old craft row keeps its stored source name', () {
+      final stored = jsonDecode(
+        jsonEncode(fixtureCatalog().toJson()),
+      ) as Map<String, dynamic>;
+      const added = [
+        'productItemId',
+        'productCount',
+        'traderId',
+        'traderLevel',
+        'unlockTaskId',
+        'unlockTaskName',
+        'stationName',
+        'tool',
+      ];
+      for (final raw in stored['requirements'] as List) {
+        final r = raw as Map<String, dynamic>;
+        r.removeWhere((k, _) => added.contains(k));
+        if (r['kind'] == 'craft') r['sourceName'] = 'craft craft-a';
+        if (r['kind'] == 'barter') r['sourceName'] = 'barter barter-a';
+      }
+      final c = CatalogSnapshot.fromJson(stored);
+      final craft = craftRow(c);
+      expect(craft.sourceName, 'craft craft-a');
+      expect(barterRow(c).sourceName, 'barter barter-a');
+      for (final r in [craft, barterRow(c)]) {
+        expect(r.productItemId, isNull);
+        expect(r.productCount, isNull);
+        expect(r.traderId, isNull);
+        expect(r.traderLevel, isNull);
+        expect(r.unlockTaskId, isNull);
+        expect(r.unlockTaskName, isNull);
+        expect(r.stationName, isNull);
+        expect(r.tool, isNull);
+      }
+    });
+
+    test('a fresh normalize names craft and barter sources after their product item', () {
+      final c = fixtureCatalog();
+      expect(craftRow(c).sourceName, 'Alternative component');
+      expect(barterRow(c).sourceName, 'Alternative component');
+      expect(craftRow(c).sourceId, 'craft-a');
+    });
+  });
 }

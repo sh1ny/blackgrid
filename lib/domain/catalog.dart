@@ -226,6 +226,14 @@ class ItemRequirement {
     this.optional = false,
     this.stationId,
     this.stationLevel,
+    this.productItemId,
+    this.productCount,
+    this.traderId,
+    this.traderLevel,
+    this.unlockTaskId,
+    this.unlockTaskName,
+    this.stationName,
+    this.tool,
   }) : itemIds = List.unmodifiable(itemIds),
        progressIds = List.unmodifiable(progressIds);
   final RequirementKind kind;
@@ -241,6 +249,33 @@ class ItemRequirement {
   final bool optional;
   final String? stationId;
   final int? stationLevel;
+
+  /// Item a craft produces or a barter offers; set on craft and barter rows.
+  final String? productItemId;
+
+  /// Quantity of [productItemId]; set on craft and barter rows.
+  final num? productCount;
+
+  /// Trader offering the barter; set on barter rows only.
+  final String? traderId;
+
+  /// Minimum loyalty level of [traderId]; set on barter rows only.
+  final int? traderLevel;
+
+  /// Task that unlocks the craft or barter, when it has one; set on craft and
+  /// barter rows. Holds the raw id even when the task is not in the catalog.
+  final String? unlockTaskId;
+
+  /// Display name of [unlockTaskId], falling back to the id itself; set
+  /// together with [unlockTaskId] on craft and barter rows.
+  final String? unlockTaskName;
+
+  /// Display name of [stationId]; set on craft rows only.
+  final String? stationName;
+
+  /// Whether the required item is a tool that is not consumed; set on craft
+  /// rows only, and only when the source states it.
+  final bool? tool;
   Map<String, Object?> toJson() => {
     'kind': kind.name,
     'sourceId': sourceId,
@@ -256,6 +291,14 @@ class ItemRequirement {
     'optional': optional,
     'stationId': stationId,
     'stationLevel': stationLevel,
+    if (productItemId != null) 'productItemId': productItemId,
+    if (productCount != null) 'productCount': productCount,
+    if (traderId != null) 'traderId': traderId,
+    if (traderLevel != null) 'traderLevel': traderLevel,
+    if (unlockTaskId != null) 'unlockTaskId': unlockTaskId,
+    if (unlockTaskName != null) 'unlockTaskName': unlockTaskName,
+    if (stationName != null) 'stationName': stationName,
+    if (tool != null) 'tool': tool,
   };
   factory ItemRequirement.fromJson(Map<String, dynamic> j) => ItemRequirement(
     kind: RequirementKind.values.byName(j['kind'] as String),
@@ -272,6 +315,14 @@ class ItemRequirement {
     optional: j['optional'] as bool,
     stationId: j['stationId'] as String?,
     stationLevel: j['stationLevel'] as int?,
+    productItemId: j['productItemId'] as String?,
+    productCount: j['productCount'] as num?,
+    traderId: j['traderId'] as String?,
+    traderLevel: j['traderLevel'] as int?,
+    unlockTaskId: j['unlockTaskId'] as String?,
+    unlockTaskName: j['unlockTaskName'] as String?,
+    stationName: j['stationName'] as String?,
+    tool: j['tool'] as bool?,
   );
 }
 

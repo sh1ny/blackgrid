@@ -345,6 +345,21 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       }
     }
   }
+  // Display names resolve as label, then normalized name, then id.
+  String displayName(
+    String dictionary,
+    Map<String, dynamic> collection,
+    String id,
+  ) {
+    final raw = collection[id];
+    if (raw is! Map) return id;
+    final normalized = raw['normalizedName'];
+    return label(dictionary, raw['name']) ??
+        (normalized is String && normalized.trim().isNotEmpty
+            ? normalized
+            : id);
+  }
+
   for (final kind in [RequirementKind.craft, RequirementKind.barter]) {
     final collection = kind == RequirementKind.craft ? rawCrafts : rawBarters;
     for (final entry in collection.entries) {
@@ -353,22 +368,39 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
         j[kind == RequirementKind.craft ? 'productItem' : 'offeredItem'],
       );
       ref(product['item'], rawItems);
-      _quantity(product['count']);
+      final productCount = _quantity(product['count']);
       if (kind == RequirementKind.craft) {
         ref(j['station'], rawStations);
       } else {
         ref(j['trader'], rawTraders);
         if (j['taskUnlock'] != null) ref(j['taskUnlock'], rawTasks);
       }
+      final productId = product['item'] as String;
+      final productName = items[productId]!.name;
+      // Display facts are read leniently: a wrong type or a missing value
+      // becomes null and never rejects the candidate.
+      final unlock = j['taskUnlock'];
+      final unlockId = unlock is String && unlock.trim().isNotEmpty
+          ? unlock
+          : null;
+      final unlockName = unlockId == null
+          ? null
+          : displayName('tasks', rawTasks, unlockId);
+      final isCraft = kind == RequirementKind.craft;
+      final stationId = isCraft ? j['station'] as String : null;
       var n = 0;
       for (final raw in _list(j['requiredItems'])) {
         final p = _map(raw);
         ref(p['item'], rawItems);
+        final attributes = p['attributes'];
+        final tool = isCraft && attributes is Map && attributes['tool'] is bool
+            ? attributes['tool'] as bool
+            : null;
         requirements.add(
           ItemRequirement(
             kind: kind,
             sourceId: entry.key,
-            sourceName: '${kind.name} ${entry.key}',
+            sourceName: productName,
             id: '${entry.key}:${n++}',
             itemIds: [p['item'] as String],
             progressIds: const [],
@@ -376,6 +408,18 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
             foundInRaid: _boolean(_map(p['attributes'] ?? {})['foundInRaid']),
             gate: gate(j),
             optional: true,
+            stationId: stationId,
+            stationLevel: isCraft ? _lenientInteger(j['level']) : null,
+            stationName: stationId == null
+                ? null
+                : displayName('hideout', rawStations, stationId),
+            productItemId: productId,
+            productCount: productCount,
+            traderId: isCraft ? null : j['trader'] as String,
+            traderLevel: isCraft ? null : _lenientInteger(j['minTraderLevel']),
+            unlockTaskId: unlockId,
+            unlockTaskName: unlockName,
+            tool: tool,
           ),
         );
       }
@@ -462,6 +506,12 @@ int? _integer(Object? v) {
   if (n == null) return null;
   if (n != n.roundToDouble()) throw const FormatException('Invalid integer');
   return n.toInt();
+}
+
+/// Reads an integer display fact; a wrong type or fractional value is null.
+int? _lenientInteger(Object? v) {
+  if (v is! num || !v.isFinite || v != v.roundToDouble()) return null;
+  return v.toInt();
 }
 
 bool? _boolean(Object? v) {

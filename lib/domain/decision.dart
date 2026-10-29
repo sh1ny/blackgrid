@@ -16,11 +16,15 @@ class NeedReason {
     required this.requirement,
     required this.state,
     required this.message,
+    required this.detail,
     this.remaining,
   });
   final ItemRequirement requirement;
   final NeedState state;
   final String message;
+
+  /// The reason itself, without the `<sourceName>: ` prefix of [message].
+  final String detail;
   final num? remaining;
 }
 

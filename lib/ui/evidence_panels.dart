@@ -4,8 +4,10 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
+import '../domain/decision.dart';
 import '../domain/settings.dart';
 import 'item_icon.dart';
+import 'requirement_rows.dart';
 import 'theme.dart';
 
 /// The evidence line for the newest items source update in [snapshot].
@@ -15,14 +17,66 @@ String itemsSourceUpdateLabel(CatalogSnapshot snapshot) =>
     'Items source update: '
     '${snapshot.sourceTimestamps['items']?.toUtc().toIso8601String() ?? 'unknown'}';
 
-class RequirementPanel extends StatelessWidget {
+/// The requirements and uses of the inspected item.
+///
+/// Task and hideout rows come first. Craft and barter rows follow under an
+/// `Optional uses` header that starts collapsed for every newly inspected item.
+class RequirementPanel extends StatefulWidget {
+  /// Creates the panel over [services]' selection.
   const RequirementPanel({super.key, required this.services});
+
+  /// The services whose current selection the panel shows.
   final AppServices services;
+
+  @override
+  State<RequirementPanel> createState() => _RequirementPanelState();
+}
+
+class _RequirementPanelState extends State<RequirementPanel> {
+  bool _optionalOpen = false;
+
+  /// The item [_optionalOpen] was set for.
+  String? _openFor;
+
+  @override
+  void initState() {
+    super.initState();
+    _openFor = widget.services.selection.selectedId;
+    widget.services.selection.addListener(_selectionChanged);
+  }
+
+  @override
+  void didUpdateWidget(RequirementPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.services.selection != widget.services.selection) {
+      oldWidget.services.selection.removeListener(_selectionChanged);
+      widget.services.selection.addListener(_selectionChanged);
+      _selectionChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.services.selection.removeListener(_selectionChanged);
+    super.dispose();
+  }
+
+  /// Collapses the group as soon as a different item is inspected, so that
+  /// returning to an earlier item never reopens it.
+  void _selectionChanged() {
+    final id = widget.services.selection.selectedId;
+    if (id == _openFor) return;
+    _openFor = id;
+    _optionalOpen = false;
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: services.selection,
+    listenable: widget.services.selection,
     builder: (context, _) {
-      final reasons = services.selection.decision?.reasons;
+      final selection = widget.services.selection;
+      final reasons = selection.decision?.reasons;
+      final open = _optionalOpen;
       return GridPanel(
         title: 'Requirements & uses',
         icon: Icons.fact_check_outlined,
@@ -37,50 +91,106 @@ class RequirementPanel extends StatelessWidget {
                   'No catalog requirement references. Progress authority may still be unknown.',
                 ),
               )
-            : ListView.builder(
-                key: const PageStorageKey('requirement-scroll'),
-                itemCount: reasons.length,
-                itemBuilder: (context, index) {
-                  final reason = reasons[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 7),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: GridColors.inset,
-                      border: Border.all(color: GridColors.quietBorder),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          reason.requirement.sourceName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          '${reason.state.name} • ${reason.requirement.kind.name} • remaining ${reason.remaining ?? 'Unknown'}',
-                          style: const TextStyle(color: GridColors.gold),
-                        ),
-                        Text(
-                          reason.message,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        Text(
-                          'FIR requirement: ${reason.requirement.foundInRaid == null
-                              ? 'Unknown'
-                              : reason.requirement.foundInRaid!
-                              ? 'Yes'
-                              : 'No'}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+            : _rows(context, reasons, open),
       );
     },
   );
+
+  Widget _rows(BuildContext context, List<NeedReason> reasons, bool open) {
+    final selection = widget.services.selection;
+    final catalog = selection.inspectionCatalog;
+    final arranged = arrangeRequirementRows(reasons);
+    final obligations = arranged.obligations;
+    final optional = arranged.optionalUses;
+    final hasHeader = optional.isNotEmpty;
+    final shownOptional = open ? optional.length : 0;
+    return ListView.builder(
+      key: const PageStorageKey('requirement-scroll'),
+      itemCount: obligations.length + (hasHeader ? 1 : 0) + shownOptional,
+      itemBuilder: (context, index) {
+        if (index < obligations.length) {
+          return _RequirementRow(requirementRow(obligations[index], catalog));
+        }
+        if (index == obligations.length) {
+          return _OptionalHeader(
+            count: optional.length,
+            open: open,
+            onTap: () => setState(() => _optionalOpen = !open),
+          );
+        }
+        final need = optional[index - obligations.length - 1];
+        return _RequirementRow(requirementRow(need, catalog));
+      },
+    );
+  }
+}
+
+class _OptionalHeader extends StatelessWidget {
+  const _OptionalHeader({
+    required this.count,
+    required this.open,
+    required this.onTap,
+  });
+
+  final int count;
+  final bool open;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(open ? Icons.expand_less : Icons.expand_more, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              'Optional uses ($count)',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _RequirementRow extends StatelessWidget {
+  const _RequirementRow(this.row);
+
+  final RequirementRowView row;
+
+  @override
+  Widget build(BuildContext context) {
+    final small = Theme.of(context).textTheme.bodySmall;
+    final facts = [?row.needs, ?row.remaining].join(' • ');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: GridColors.inset,
+        border: Border.all(color: GridColors.quietBorder),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(row.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            '${row.kindTag} • ${row.stateLabel}',
+            style: const TextStyle(color: GridColors.gold),
+          ),
+          if (row.sourceLine case final line?) Text(line, style: small),
+          if (facts.isNotEmpty) Text(facts, style: small),
+          if (row.reason case final reason?) Text(reason, style: small),
+          if (row.foundInRaidLine case final fir?) Text(fir, style: small),
+        ],
+      ),
+    );
+  }
 }
 
 class SourcePanel extends StatelessWidget {

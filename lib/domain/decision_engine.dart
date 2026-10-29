@@ -144,6 +144,7 @@ class DecisionEngine {
           requirement: r,
           state: state,
           message: '${r.sourceName}: $detail',
+          detail: detail,
           remaining: remaining,
         );
     if (r.optional ||
