@@ -33,11 +33,11 @@ Test files: `test/data/catalog_normalizer_test.dart` (existing, normalizer and p
 | Rows show quantities only when they mean something | Count unknown | test/ui/requirement_rows_test.dart | a row without a count shows no need | green |
 | The reason line does not repeat the source | Hideout reason | test/ui/requirement_rows_test.dart | an obligation reason line drops the source name | green |
 | The reason line does not repeat the source | Craft reason | test/ui/requirement_rows_test.dart | craft and barter rows have no reason line | green |
-| Obligations come first and optional uses group after them | Mixed rows | test/ui/requirement_panel_test.dart | obligations by state, then a collapsed Optional uses header | red |
-| Obligations come first and optional uses group after them | Open the group | test/ui/requirement_panel_test.dart | tapping Optional uses lists its rows | red |
-| Obligations come first and optional uses group after them | Only optional uses | test/ui/requirement_panel_test.dart | only optional uses shows only the collapsed header | red |
-| Obligations come first and optional uses group after them | A new item starts collapsed | test/ui/requirement_panel_test.dart | a newly inspected item starts with Optional uses collapsed | red |
-| Obligations come first and optional uses group after them | No optional uses | test/ui/requirement_panel_test.dart | no Optional uses header without craft or barter rows | red |
+| Obligations come first and optional uses group after them | Mixed rows | test/ui/requirement_panel_test.dart | obligations by state, then a collapsed Optional uses header | green |
+| Obligations come first and optional uses group after them | Open the group | test/ui/requirement_panel_test.dart | tapping Optional uses lists its rows | green |
+| Obligations come first and optional uses group after them | Only optional uses | test/ui/requirement_panel_test.dart | only optional uses shows only the collapsed header | green |
+| Obligations come first and optional uses group after them | A new item starts collapsed | test/ui/requirement_panel_test.dart | a newly inspected item starts with Optional uses collapsed | green |
+| Obligations come first and optional uses group after them | No optional uses | test/ui/requirement_panel_test.dart | no Optional uses header without craft or barter rows | green |
 | Older cached projections still load | Cached projection from before this change | test/data/catalog_normalizer_test.dart; test/ui/requirement_rows_test.dart | a stored projection without display facts still loads; an old craft row keeps its stored source name | green |
 | Older cached projections still load | Refresh replaces the old projection | test/data/catalog_normalizer_test.dart | a fresh normalize names craft and barter sources after their product item | green |
 | Row display does not change decisions | Same decision before and after | test/domain/decision_engine_test.dart; test/data/catalog_normalizer_test.dart | the existing decision and normalizer tests, unchanged apart from the craft/barter source name | green |
@@ -72,8 +72,8 @@ Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documenta
 
 Skills: `flutter-add-widget-test`, `dart-write-documentation`. Design D5, D6.
 
-- [ ] 4.1 Write the failing widget tests in `test/ui/requirement_panel_test.dart` for the five rows the test map assigns to that file. Drive `RequirementPanel` through a hand-written fake or the existing test `AppServices` support (see `test/ui/support/` and `test/ui/shell_test.dart:64`), selecting items from a small synthetic catalog. Use no sleeps, only `pump`/`pumpAndSettle`. Verify they fail on the old flat list.
-- [ ] 4.2 Rewrite `RequirementPanel` as a `StatefulWidget` that builds one `ListView.builder` list from `arrangeRequirementRows`: obligation rows, then a tappable `Optional uses (N)` header when there are optional uses, then the optional rows only while it is open. Reset it to collapsed when `selection.selectedId` changes. Render each `RequirementRowView` with the kind tag, state, source line, needs and remaining, reason and FIR texts, leaving out absent ones. Keep the `requirement-scroll` `PageStorageKey`, the panel title, subtitle and empty texts. Verify the 4.1 tests and `test/ui/shell_test.dart` pass, then flip the rows green.
+- [x] 4.1 Write the failing widget tests in `test/ui/requirement_panel_test.dart` for the five rows the test map assigns to that file. Drive `RequirementPanel` through a hand-written fake or the existing test `AppServices` support (see `test/ui/support/` and `test/ui/shell_test.dart:64`), selecting items from a small synthetic catalog. Use no sleeps, only `pump`/`pumpAndSettle`. Verify they fail on the old flat list.
+- [x] 4.2 Rewrite `RequirementPanel` as a `StatefulWidget` that builds one `ListView.builder` list from `arrangeRequirementRows`: obligation rows, then a tappable `Optional uses (N)` header when there are optional uses, then the optional rows only while it is open. Reset it to collapsed when `selection.selectedId` changes. Render each `RequirementRowView` with the kind tag, state, source line, needs and remaining, reason and FIR texts, leaving out absent ones. Keep the `requirement-scroll` `PageStorageKey`, the panel title, subtitle and empty texts. Verify the 4.1 tests and `test/ui/shell_test.dart` pass, then flip the rows green.
 
 ## 5. Integration checks
 
