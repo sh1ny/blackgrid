@@ -171,10 +171,7 @@ void main() {
     await tester.pumpAndSettle();
     final panel = _panel(tester);
     expect(panel.title, 'Corrected scan');
-    expect(
-      panel.subtitle,
-      'Corrected from scan #7 • 0 s ago • not an accepted scan',
-    );
+    expect(panel.subtitle, 'Corrected from scan #7 • 0 s ago • chosen by hand');
   });
 
   testWidgets('Dismiss removes the offer and keeps the item', (tester) async {
@@ -184,7 +181,7 @@ void main() {
     expect(find.byKey(const Key('correction-offer')), findsNothing);
     expect(h.services.selection.correctionOffer, isNull);
     expect(find.text('Alpha shown'), findsOneWidget);
-    expect(_panel(tester).title, 'Current manual inspection');
+    expect(_panel(tester).title, 'Picked item');
   });
 
   testWidgets('the offer shows in place of the hint when nothing is selected', (
@@ -192,7 +189,7 @@ void main() {
   ) async {
     await _arrange(tester, showAlpha: false);
     expect(find.byKey(const Key('correction-offer')), findsOneWidget);
-    expect(find.text('Find an item to inspect'), findsNothing);
+    expect(find.text('Find an item'), findsNothing);
     expect(find.byKey(const Key('correction-offer-status')), findsNothing);
   });
 
@@ -217,10 +214,7 @@ void main() {
     expect(selection.selectedId, 'alpha');
     expect(selection.item, isNull);
     expect(find.byKey(const Key('correction-offer')), findsOneWidget);
-    expect(
-      find.text('Identity retained • catalog unavailable'),
-      findsOneWidget,
-    );
+    expect(find.text('Item data unavailable'), findsOneWidget);
   });
 
   testWidgets('search results are capped at 8 and an empty search says so', (

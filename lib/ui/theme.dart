@@ -285,9 +285,8 @@ Widget themePreview() => MaterialApp(
     body: Padding(
       padding: EdgeInsets.all(14),
       child: GridPanel(
-        title: 'Manual inspection',
+        title: 'Pick or scan an item',
         icon: Icons.search,
-        subtitle: 'M1 • no accepted scan',
         child: Text(
           'Select a real catalog item. Unknown facts remain unknown.',
         ),

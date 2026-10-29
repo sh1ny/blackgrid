@@ -95,9 +95,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byWidgetPredicate(
-          (widget) =>
-              widget is GridPanel &&
-              widget.title == 'Current manual inspection',
+          (widget) => widget is GridPanel && widget.title == 'Picked item',
         ),
         matching: find.textContaining('not recorded'),
       ),
@@ -120,10 +118,7 @@ void main() {
     GridPanel titled(String title) => tester.widget<GridPanel>(
       find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
     );
-    expect(
-      titled('Current manual inspection').subtitle,
-      contains('not an accepted scan'),
-    );
+    expect(titled('Picked item').subtitle, contains('Chosen by hand'));
 
     final report = (await tester.runAsync(
       () => publishTargetedScan(

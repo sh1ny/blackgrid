@@ -88,7 +88,7 @@ void main() {
       );
       expect(h.services.selection.inspectionMode, GameMode.pve);
       expect(h.services.catalog.mode, GameMode.pvp);
-      expect(find.textContaining('Stored PvE context'), findsOneWidget);
+      expect(find.textContaining('Saved from PvE'), findsOneWidget);
       await tester.tap(find.byTooltip('Close history inspection'));
       await tester.pumpAndSettle();
       expect(h.services.selection.item!.id, 'item-b');

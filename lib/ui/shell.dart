@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../application/app_services.dart';
 import '../application/scan_coordinator.dart';
 import 'import_dialog.dart';
+import 'labels.dart';
 import 'map_screen.dart';
 import 'scanner_screen.dart';
 import 'settings_dialog.dart';
@@ -110,7 +111,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                               focusNode: searchFocus,
                               onChanged: widget.services.selection.setQuery,
                               decoration: const InputDecoration(
-                                hintText: 'Search real items or canonical IDs…',
+                                hintText: 'Search items…',
                                 prefixIcon: Icon(Icons.search, size: 20),
                                 suffixText: 'Ctrl K',
                                 contentPadding: EdgeInsets.symmetric(
@@ -196,27 +197,19 @@ class _BlackgridShellState extends State<BlackgridShell> {
                             color: GridColors.gold,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'MANUAL INSPECTION',
-                            style: TextStyle(
-                              color: GridColors.gold,
-                              fontSize: 11,
-                              letterSpacing: .8,
-                            ),
-                          ),
-                          const SizedBox(width: 24),
+                          const SizedBox(width: 2),
                           Text(
-                            'Live mode: ${modeLabel(widget.services.catalog.mode)}',
+                            'Game mode ${modeLabel(widget.services.catalog.mode)}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(width: 22),
                           Text(
-                            'Catalog ${widget.services.catalog.status.name}',
+                            'Item data ${catalogStatusLabel(widget.services.catalog.status)}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(width: 22),
                           Text(
-                            'Progress ${widget.services.progress.status.name}',
+                            'Tracker ${progressStatusLabel(widget.services.progress.status)}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(width: 22),

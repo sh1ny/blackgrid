@@ -4,6 +4,7 @@ import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/inspection_context.dart';
+import 'labels.dart';
 import 'theme.dart';
 
 class ManualControls extends StatelessWidget {
@@ -54,7 +55,7 @@ class ManualControls extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Search the catalog above. Selecting an identity is not a scan.',
+            'Picking an item here does not scan.',
             style: TextStyle(color: GridColors.muted),
           ),
           const SizedBox(height: 10),
@@ -67,17 +68,17 @@ class ManualControls extends StatelessWidget {
             icon: const Icon(Icons.refresh, size: 18),
             label: Text(
               services.catalog.loading
-                  ? 'Refreshing catalog…'
-                  : 'Refresh catalog',
+                  ? 'Refreshing item data…'
+                  : 'Refresh item data',
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Catalog: ${services.catalog.status.name}',
+            'Item data: ${catalogStatusLabel(services.catalog.status)}',
             key: Key('$storageKey-catalog-status'),
           ),
           Text(
-            'Progress: ${services.progress.status.name}',
+            'Tracker: ${progressStatusLabel(services.progress.status)}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           if (services.catalog.error != null)
@@ -91,7 +92,7 @@ class ManualControls extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           const Divider(height: 24),
-          const Text('Found in raid • this inspection only'),
+          const Text('Found in raid • this item only'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 4,
@@ -115,8 +116,8 @@ class ManualControls extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             services.selection.query.isEmpty
-                ? 'Enter a name, short name or canonical ID.'
-                : '${results.length} matching identities',
+                ? 'Type an item name.'
+                : '${results.length} matching items',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 6),
@@ -125,10 +126,10 @@ class ManualControls extends StatelessWidget {
                 ? Center(
                     child: Text(
                       services.catalog.mode == GameMode.unknown
-                          ? 'Select a mode to acquire a real catalog.'
+                          ? 'Choose a game mode to get item data.'
                           : services.catalog.status == CatalogStatus.loading
-                          ? 'Loading the complete catalog…'
-                          : 'No catalog available. Refresh to download all six datasets.',
+                          ? 'Loading item data…'
+                          : 'No item data yet. Refresh to download item data.',
                       textAlign: TextAlign.center,
                     ),
                   )
@@ -148,7 +149,9 @@ class ManualControls extends StatelessWidget {
                             services.selection.selectedId == item.id,
                         selectedColor: GridColors.gold,
                         title: Text(item.name),
-                        subtitle: Text(item.shortName ?? item.normalizedName),
+                        subtitle: item.shortName == null
+                            ? null
+                            : Text(item.shortName!),
                         onTap: () => services.selection.selectManual(item),
                       );
                     },

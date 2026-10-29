@@ -13,11 +13,11 @@ Test files:
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | footer says item data is out of date when the catalog is stale | red |
+| player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | footer says item data is out of date when the catalog is stale | green |
 | player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | an imported scan row says Imported scan | green |
 | player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | green |
-| player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/decision_card_text_test.dart | unknown found in raid is said in words | red |
-| player-facing-text → Developer wording stays out of the open view | Search field hint | test/ui/shell_test.dart | search hint asks for an item name without canonical | red |
+| player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/decision_card_text_test.dart | unknown found in raid is said in words | green |
+| player-facing-text → Developer wording stays out of the open view | Search field hint | test/ui/shell_test.dart | search hint asks for an item name without canonical | green |
 | player-facing-text → Developer wording stays out of the open view | Searching by ID still works | test/ui/shell_test.dart | search still finds an item by its tarkov.dev id | green |
 | player-facing-text → Developer wording stays out of the open view | Name does not resolve | test/ui/history_panel_test.dart | a row whose item has no name shows its id | green |
 | player-facing-text → Developer wording stays out of the open view | Term check over the UI sources | test/ui/plain_language_source_test.dart | no scanned literal contains a banned term | red |
@@ -86,8 +86,8 @@ Every group follows AGENTS.md "Dart and Flutter code" and loads the skills `dart
 
 ## 5. Decision card, shell, manual controls and live scan panel
 
-- [ ] 5.1 Write `test/ui/decision_card_text_test.dart` ("unknown found in raid is said in words": no `FIR: unknown`, and none of the D7 decision-card developer strings) and, in `test/ui/shell_test.dart`, "footer says item data is out of date when the catalog is stale", "search hint asks for an item name without canonical" and the green rider "search still finds an item by its tarkov.dev id". Verify the red ones fail.
-- [ ] 5.2 Rewrite `lib/ui/item_decision_card.dart`, `lib/ui/shell.dart` (footer and hint), `lib/ui/manual_controls.dart` (status lines through labels, prompts, no `normalizedName` subtitle), `lib/ui/live_scan_panel.dart` (any banned term) and the empty card in `lib/ui/theme.dart` per D7. Update the existing assertions in `m1_flow_test.dart`, `latest_scan_card_test.dart`, `scan_correction_card_test.dart`, `live_scan_panel_test.dart` and `scanner_screen_test.dart` that pinned old wording. Verify 5.1 passes, flip its rows green, and `mise run test` is green.
+- [x] 5.1 Write `test/ui/decision_card_text_test.dart` ("unknown found in raid is said in words": no `FIR: unknown`, and none of the D7 decision-card developer strings) and, in `test/ui/shell_test.dart`, "footer says item data is out of date when the catalog is stale", "search hint asks for an item name without canonical" and the green rider "search still finds an item by its tarkov.dev id". Verify the red ones fail.
+- [x] 5.2 Rewrite `lib/ui/item_decision_card.dart`, `lib/ui/shell.dart` (footer and hint), `lib/ui/manual_controls.dart` (status lines through labels, prompts, no `normalizedName` subtitle), `lib/ui/live_scan_panel.dart` (any banned term) and the empty card in `lib/ui/theme.dart` per D7. Update the existing assertions in `m1_flow_test.dart`, `latest_scan_card_test.dart`, `scan_correction_card_test.dart`, `live_scan_panel_test.dart` and `scanner_screen_test.dart` that pinned old wording. Verify 5.1 passes, flip its rows green, and `mise run test` is green.
 
 ## 6. Settings, import, pin editor and controller messages
 
