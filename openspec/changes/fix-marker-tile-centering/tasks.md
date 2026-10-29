@@ -19,7 +19,7 @@
 
 ## 2. Verify
 
-- [ ] 2.1 Run `mise exec -- dart format lib/ui/marker_preferences.dart test/ui/marker_preferences_test.dart`, `mise run analyze` and `mise run test`. Verify that formatting leaves no diff, analysis reports no issues and every test passes.
+- [x] 2.1 Run `mise exec -- dart format lib/ui/marker_preferences.dart test/ui/marker_preferences_test.dart`, `mise run analyze` and `mise run test`. Verify that formatting leaves no diff, analysis reports no issues and every test passes.
 
 ## Workflow follow-up
 
