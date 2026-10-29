@@ -10,11 +10,11 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 | Each applicable category is one icon tile | Tiles are the same size | test/ui/marker_preferences_test.dart | every tile has the same size whatever its label | red |
 | Each applicable category is one icon tile | Unsaveable category gets no tile | test/ui/map_screen_test.dart | unsaveable marker key gets no tile and stays drawn | red |
 | Each applicable category is one icon tile | Map with no markers | test/ui/marker_preferences_test.dart | map without markers shows only the Saved pins tile | red |
-| Category keys have fixed player-facing labels | Labels for known keys | test/domain/marker_categories_test.dart | known keys have their player-facing labels | red |
-| Category keys have fixed player-facing labels | Every known key is labelled | test/domain/marker_categories_test.dart | every icon key has a unique non-empty label | red |
-| Category keys have fixed player-facing labels | Every saveable key has a label | test/domain/marker_categories_test.dart | labelled keys equal markerCategories without Labels | red |
-| Tiles follow a fixed grouped order | Grouped order | test/domain/marker_categories_test.dart | markerPreferenceKeys orders keys by group | red |
-| Tiles follow a fixed grouped order | Map order does not matter | test/domain/marker_categories_test.dart | markerPreferenceKeys ignores input order and drops unknown keys | red |
+| Category keys have fixed player-facing labels | Labels for known keys | test/domain/marker_categories_test.dart | known keys have their player-facing labels | green |
+| Category keys have fixed player-facing labels | Every known key is labelled | test/domain/marker_categories_test.dart | every icon key has a unique non-empty label | green |
+| Category keys have fixed player-facing labels | Every saveable key has a label | test/domain/marker_categories_test.dart | labelled keys equal markerCategories without Labels | green |
+| Tiles follow a fixed grouped order | Grouped order | test/domain/marker_categories_test.dart | markerPreferenceKeys orders keys by group | green |
+| Tiles follow a fixed grouped order | Map order does not matter | test/domain/marker_categories_test.dart | markerPreferenceKeys ignores input order and drops unknown keys | green |
 | Clicking a tile shows or hides its category | Hide one category | test/ui/marker_preferences_test.dart | clicking a shown tile hides its category | red |
 | Clicking a tile shows or hides its category | Show it again | test/ui/marker_preferences_test.dart | clicking a hidden tile shows its category | red |
 | Clicking a tile shows or hides its category | Click while saving | test/ui/marker_preferences_test.dart | tiles ignore clicks while settings are saving | red |
@@ -33,8 +33,8 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 
 ## 1. Category labels and order
 
-- [ ] 1.1 Write `test/domain/marker_categories_test.dart` with the five domain rows of the test map: the labels for known keys, unique non-empty labels where only "Hazards", "Transits" and "Switches" equal their key, the labelled set equals `markerCategories` minus `Labels`, group order, and `markerPreferenceKeys` ignoring input order and dropping unknown keys (`Ziplines`). Also cover `markerCategoryLabel('Ziplines') == 'Ziplines'`. Verify it fails because `lib/domain/marker_categories.dart` does not exist.
-- [ ] 1.2 Add `lib/domain/marker_categories.dart` with the D1 table, `markerCategoryLabel` and `markerPreferenceKeys`, with `///` docs. Verify `mise run test -- test/domain/marker_categories_test.dart` passes and flip its five rows green.
+- [x] 1.1 Write `test/domain/marker_categories_test.dart` with the five domain rows of the test map: the labels for known keys, unique non-empty labels where only "Hazards", "Transits" and "Switches" equal their key, the labelled set equals `markerCategories` minus `Labels`, group order, and `markerPreferenceKeys` ignoring input order and dropping unknown keys (`Ziplines`). Also cover `markerCategoryLabel('Ziplines') == 'Ziplines'`. Verify it fails because `lib/domain/marker_categories.dart` does not exist.
+- [x] 1.2 Add `lib/domain/marker_categories.dart` with the D1 table, `markerCategoryLabel` and `markerPreferenceKeys`, with `///` docs. Verify `mise run test -- test/domain/marker_categories_test.dart` passes and flip its five rows green.
 
 ## 2. Shared badge painter and the tile grid
 
