@@ -13,32 +13,32 @@ Test files: `test/data/catalog_normalizer_test.dart` (existing, normalizer and p
 | The catalog keeps craft and barter display facts | Malformed display fact | test/data/catalog_normalizer_test.dart | malformed or missing display levels become absent without rejecting the catalog | green |
 | Display facts never change validation | Existing reference check still rejects | test/data/catalog_normalizer_test.dart | an unknown craft product still invalidates the candidate | green |
 | Display facts never change validation | Unresolvable craft unlock task | test/data/catalog_normalizer_test.dart | an unknown craft taskUnlock is kept as an id and does not reject the catalog | green |
-| Craft and barter rows name their source | Craft row | test/ui/requirement_rows_test.dart | craft row titles the product with its count and names the station level | red |
-| Craft and barter rows name their source | Barter row with an unlocking task | test/ui/requirement_rows_test.dart | barter row names the trader level and the unlocking task | red |
-| Craft and barter rows name their source | Level absent | test/ui/requirement_rows_test.dart | a barter row without a trader level names the trader alone | red |
-| Task and hideout rows name their source | Hideout row | test/ui/requirement_rows_test.dart | hideout row titles the station and its level | red |
-| Task and hideout rows name their source | Task row | test/ui/requirement_rows_test.dart | task row titles the task name | red |
-| A missing name falls back to its id | Missing trader translation | test/ui/requirement_rows_test.dart | a trader without a name falls back to its id | red |
-| A missing name falls back to its id | Missing product item in a history catalog | test/ui/requirement_rows_test.dart | a product item missing from the catalog falls back to its id | red |
-| A missing name falls back to its id | Resolved names hide ids | test/ui/requirement_rows_test.dart | a fully resolved craft row shows no 24-hex id | red |
-| Each row tags its kind and states its need in plain words | Unknown progress | test/ui/requirement_rows_test.dart | unresolved hideout row reads Can't confirm with a Hideout tag | red |
-| Each row tags its kind and states its need in plain words | Actionable task | test/ui/requirement_rows_test.dart | actionable task row reads Needed now with a Task tag | red |
-| An irrelevant row says why it does not count | Craft row state | test/ui/requirement_rows_test.dart | craft row reads Optional use with no raw state or kind name | red |
-| An irrelevant row says why it does not count | Gate excludes the player | test/ui/requirement_rows_test.dart | a gated-out task row reads Not for you | red |
-| An irrelevant row says why it does not count | Non-FIR copy of a FIR obligation | test/ui/requirement_rows_test.dart | a non-FIR copy of a FIR obligation reads Needs found in raid with its remaining | red |
-| Rows show quantities only when they mean something | Optional use with unknown remaining | test/ui/requirement_rows_test.dart | an optional use shows its fractional need without remaining or FIR | red |
-| Rows show quantities only when they mean something | Needed now | test/ui/requirement_rows_test.dart | a needed-now hideout row shows need, remaining and its FIR rule | red |
-| Rows show quantities only when they mean something | Done row | test/ui/requirement_rows_test.dart | a done row shows no remaining | red |
-| Rows show quantities only when they mean something | Tool row | test/ui/requirement_rows_test.dart | a craft tool row says it is not used up instead of its need | red |
-| Rows show quantities only when they mean something | Count unknown | test/ui/requirement_rows_test.dart | a row without a count shows no need | red |
-| The reason line does not repeat the source | Hideout reason | test/ui/requirement_rows_test.dart | an obligation reason line drops the source name | red |
-| The reason line does not repeat the source | Craft reason | test/ui/requirement_rows_test.dart | craft and barter rows have no reason line | red |
+| Craft and barter rows name their source | Craft row | test/ui/requirement_rows_test.dart | craft row titles the product with its count and names the station level | green |
+| Craft and barter rows name their source | Barter row with an unlocking task | test/ui/requirement_rows_test.dart | barter row names the trader level and the unlocking task | green |
+| Craft and barter rows name their source | Level absent | test/ui/requirement_rows_test.dart | a barter row without a trader level names the trader alone | green |
+| Task and hideout rows name their source | Hideout row | test/ui/requirement_rows_test.dart | hideout row titles the station and its level | green |
+| Task and hideout rows name their source | Task row | test/ui/requirement_rows_test.dart | task row titles the task name | green |
+| A missing name falls back to its id | Missing trader translation | test/ui/requirement_rows_test.dart | a trader without a name falls back to its id | green |
+| A missing name falls back to its id | Missing product item in a history catalog | test/ui/requirement_rows_test.dart | a product item missing from the catalog falls back to its id | green |
+| A missing name falls back to its id | Resolved names hide ids | test/ui/requirement_rows_test.dart | a fully resolved craft row shows no 24-hex id | green |
+| Each row tags its kind and states its need in plain words | Unknown progress | test/ui/requirement_rows_test.dart | unresolved hideout row reads Can't confirm with a Hideout tag | green |
+| Each row tags its kind and states its need in plain words | Actionable task | test/ui/requirement_rows_test.dart | actionable task row reads Needed now with a Task tag | green |
+| An irrelevant row says why it does not count | Craft row state | test/ui/requirement_rows_test.dart | craft row reads Optional use with no raw state or kind name | green |
+| An irrelevant row says why it does not count | Gate excludes the player | test/ui/requirement_rows_test.dart | a gated-out task row reads Not for you | green |
+| An irrelevant row says why it does not count | Non-FIR copy of a FIR obligation | test/ui/requirement_rows_test.dart | a non-FIR copy of a FIR obligation reads Needs found in raid with its remaining | green |
+| Rows show quantities only when they mean something | Optional use with unknown remaining | test/ui/requirement_rows_test.dart | an optional use shows its fractional need without remaining or FIR | green |
+| Rows show quantities only when they mean something | Needed now | test/ui/requirement_rows_test.dart | a needed-now hideout row shows need, remaining and its FIR rule | green |
+| Rows show quantities only when they mean something | Done row | test/ui/requirement_rows_test.dart | a done row shows no remaining | green |
+| Rows show quantities only when they mean something | Tool row | test/ui/requirement_rows_test.dart | a craft tool row says it is not used up instead of its need | green |
+| Rows show quantities only when they mean something | Count unknown | test/ui/requirement_rows_test.dart | a row without a count shows no need | green |
+| The reason line does not repeat the source | Hideout reason | test/ui/requirement_rows_test.dart | an obligation reason line drops the source name | green |
+| The reason line does not repeat the source | Craft reason | test/ui/requirement_rows_test.dart | craft and barter rows have no reason line | green |
 | Obligations come first and optional uses group after them | Mixed rows | test/ui/requirement_panel_test.dart | obligations by state, then a collapsed Optional uses header | red |
 | Obligations come first and optional uses group after them | Open the group | test/ui/requirement_panel_test.dart | tapping Optional uses lists its rows | red |
 | Obligations come first and optional uses group after them | Only optional uses | test/ui/requirement_panel_test.dart | only optional uses shows only the collapsed header | red |
 | Obligations come first and optional uses group after them | A new item starts collapsed | test/ui/requirement_panel_test.dart | a newly inspected item starts with Optional uses collapsed | red |
 | Obligations come first and optional uses group after them | No optional uses | test/ui/requirement_panel_test.dart | no Optional uses header without craft or barter rows | red |
-| Older cached projections still load | Cached projection from before this change | test/data/catalog_normalizer_test.dart; test/ui/requirement_rows_test.dart | a stored projection without display facts still loads; an old craft row keeps its stored source name | red |
+| Older cached projections still load | Cached projection from before this change | test/data/catalog_normalizer_test.dart; test/ui/requirement_rows_test.dart | a stored projection without display facts still loads; an old craft row keeps its stored source name | green |
 | Older cached projections still load | Refresh replaces the old projection | test/data/catalog_normalizer_test.dart | a fresh normalize names craft and barter sources after their product item | green |
 | Row display does not change decisions | Same decision before and after | test/domain/decision_engine_test.dart; test/data/catalog_normalizer_test.dart | the existing decision and normalizer tests, unchanged apart from the craft/barter source name | green |
 | Row display does not change decisions | Tool flag does not count | test/domain/decision_engine_test.dart | a craft tool stays an optional use and leaves the totals unchanged | green |
@@ -65,8 +65,8 @@ Skills: `dart-add-unit-test`, `dart-write-documentation`. Design D4.
 
 Skills: `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentation`. Design D5, including the FIR-only exclusion rule.
 
-- [ ] 3.1 Write the failing pure tests in `test/ui/requirement_rows_test.dart` for every row the test map assigns to that file, plus the obligation-order test. Build `NeedReason`s and a small `CatalogSnapshot` by hand, with names like `Workbench`, `Prapor`, `Gunsmith - Part 4` and 24-hex ids where an id fallback is asserted. Use no widget and no fixture file. Verify they fail because `lib/ui/requirement_rows.dart` is missing.
-- [ ] 3.2 Implement `lib/ui/requirement_rows.dart` with no Flutter import: `RequirementRowView` (title, kind tag, state label, source line, needs, remaining, FIR line and reason, the optional ones nullable), `requirementRow(NeedReason, CatalogSnapshot?)` and `arrangeRequirementRows(List<NeedReason>)` returning obligations ordered needed now, needed later, can't confirm, done, then the rest, with catalog order kept within a state, and the optional uses in catalog order. Use a `switch` on `RequirementKind` and `NeedState`. Hideout titles come from the stored `sourceName` plus ` level <L>`, so old projections still read. `Needs N` and `N remaining` share one count formatter: whole numbers with no decimals, others trimmed, so `1.0 remaining` never appears. Verify every 3.1 test passes, then flip the rows green.
+- [x] 3.1 Write the failing pure tests in `test/ui/requirement_rows_test.dart` for every row the test map assigns to that file, plus the obligation-order test. Build `NeedReason`s and a small `CatalogSnapshot` by hand, with names like `Workbench`, `Prapor`, `Gunsmith - Part 4` and 24-hex ids where an id fallback is asserted. Use no widget and no fixture file. Verify they fail because `lib/ui/requirement_rows.dart` is missing.
+- [x] 3.2 Implement `lib/ui/requirement_rows.dart` with no Flutter import: `RequirementRowView` (title, kind tag, state label, source line, needs, remaining, FIR line and reason, the optional ones nullable), `requirementRow(NeedReason, CatalogSnapshot?)` and `arrangeRequirementRows(List<NeedReason>)` returning obligations ordered needed now, needed later, can't confirm, done, then the rest, with catalog order kept within a state, and the optional uses in catalog order. Use a `switch` on `RequirementKind` and `NeedState`. Hideout titles come from the stored `sourceName` plus ` level <L>`, so old projections still read. `Needs N` and `N remaining` share one count formatter: whole numbers with no decimals, others trimmed, so `1.0 remaining` never appears. Verify every 3.1 test passes, then flip the rows green.
 
 ## 4. Requirements & uses panel
 
