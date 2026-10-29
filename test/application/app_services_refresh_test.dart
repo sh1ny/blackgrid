@@ -590,7 +590,7 @@ void main() {
       await services.automaticRefreshes;
       expect(net.trackerRequests, 0);
       expect(services.progress.status, ProgressStatus.failed);
-      expect(services.progress.error, 'Protected credential unavailable');
+      expect(services.progress.error, 'Tracker token unavailable');
     });
 
     test('progress: tracker integration disabled', () async {

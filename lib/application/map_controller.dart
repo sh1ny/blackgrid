@@ -122,7 +122,7 @@ class MapController extends ChangeNotifier {
       if (_disposed || inventoryGeneration != _inventoryGeneration) return;
       _loading = false;
       _inventoryLoading = false;
-      _error = 'Prepared map inventory could not be opened: $error';
+      _error = 'Map list could not be opened: $error';
       notifyListeners();
     }
   }
@@ -454,7 +454,7 @@ class MapController extends ChangeNotifier {
     } catch (error) {
       if (_disposed || generation != _generation) return;
       _loading = false;
-      _error = 'Prepared artwork could not be loaded: $error';
+      _error = 'Map picture could not be loaded: $error';
       // Previous-good viewport resources are retained only under the same
       // map/floor identity. Map/floor switches cleared them synchronously.
       notifyListeners();

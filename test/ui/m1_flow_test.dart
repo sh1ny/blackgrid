@@ -30,13 +30,19 @@ void main() {
           await tester.tap(find.byKey(const Key('nav-scanner')));
           await tester.pumpAndSettle();
           final panel = find.byWidgetPredicate(
-            (w) => w is GridPanel && w.title == 'Source authority',
+            (w) => w is GridPanel && w.title == 'Data sources',
+          );
+          expect(
+            find.descendant(of: panel, matching: find.text('Game mode: PvE')),
+            findsOneWidget,
           );
           expect(
             find.descendant(
               of: panel,
-              matching: find.text(
-                'Catalog: ${stored ? 'stale' : 'missing'} • PvE',
+              matching: find.textContaining(
+                stored
+                    ? 'Item data: out of date · updated '
+                    : 'Item data: not downloaded yet',
               ),
             ),
             findsOneWidget,
@@ -45,14 +51,7 @@ void main() {
             expect(
               find.descendant(
                 of: panel,
-                matching: find.text('No complete six-dataset snapshot.'),
-              ),
-              findsOneWidget,
-            );
-            expect(
-              find.descendant(
-                of: panel,
-                matching: find.textContaining('items:'),
+                matching: find.textContaining('updated'),
               ),
               findsNothing,
             );
@@ -89,7 +88,7 @@ void main() {
       );
       expect(h.services.selection.inspectionMode, GameMode.pve);
       expect(h.services.catalog.mode, GameMode.pvp);
-      expect(find.textContaining('Stored PvE context'), findsOneWidget);
+      expect(find.textContaining('Saved from PvE'), findsOneWidget);
       await tester.tap(find.byTooltip('Close history inspection'));
       await tester.pumpAndSettle();
       expect(h.services.selection.item!.id, 'item-b');

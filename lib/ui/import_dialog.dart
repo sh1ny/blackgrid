@@ -11,8 +11,12 @@ Future<void> showLegacyImport(BuildContext context, AppServices services) =>
     );
 
 class ImportDialog extends StatefulWidget {
-  const ImportDialog({super.key, required this.services});
+  const ImportDialog({super.key, required this.services, this.reload});
   final AppServices services;
+
+  /// Reloads the app after a committed import. Defaults to
+  /// [AppServices.reloadAfterImport]; tests inject a failing one.
+  final Future<void> Function()? reload;
   @override
   State<ImportDialog> createState() => _ImportDialogState();
 }
@@ -45,13 +49,12 @@ class _ImportDialogState extends State<ImportDialog> {
       if (mounted) setState(() => preview = result);
     } on FormatException catch (failure) {
       if (mounted) {
-        setState(() => error = '${failure.message} No destination changes.');
+        setState(() => error = '${failure.message} Nothing was changed.');
       }
     } catch (_) {
       if (mounted) {
         setState(
-          () => error =
-              'Selected file could not be read. No destination changes.',
+          () => error = 'That file could not be read. Nothing was changed.',
         );
       }
     } finally {
@@ -67,22 +70,39 @@ class _ImportDialogState extends State<ImportDialog> {
       error = null;
     });
     try {
-      await widget.services.importer.commit(
-        candidate,
-        replaceExisting: replace,
-      );
-      await widget.services.reloadAfterImport();
+      try {
+        await widget.services.importer.commit(
+          candidate,
+          replaceExisting: replace,
+        );
+      } catch (_) {
+        if (mounted) {
+          setState(
+            () => error = 'The import did not finish, or these files were already imported. Nothing was changed.',
+          );
+        }
+        return;
+      }
+      // The import is saved from here on, so a failed reload must not say
+      // that nothing changed.
+      try {
+        await (widget.reload ?? widget.services.reloadAfterImport)();
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            preview = null;
+            error =
+                'The import was saved, but Blackgrid could not reload it. '
+                'Restart Blackgrid to see the imported data.';
+          });
+        }
+        return;
+      }
       if (mounted) {
         setState(() {
           imported = true;
           preview = null;
         });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(
-          () => error = 'Import failed or source was already imported. No success was published.',
-        );
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -91,14 +111,14 @@ class _ImportDialogState extends State<ImportDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Explicit one-time legacy import'),
+    title: const Text('Import saved settings and history'),
     content: SizedBox(
       width: 720,
       height: MediaQuery.sizeOf(context).height * .68,
       child: ListView(
         children: [
           const Text(
-            'Enter only the local files you choose to import. Files are read-only and never modified. No automatic discovery or credential import.',
+            'Enter the paths of the files you want to import. Blackgrid only reads them and never changes them. It does not look for files on its own and does not import tokens.',
             style: TextStyle(color: GridColors.muted),
           ),
           const SizedBox(height: 14),
@@ -107,7 +127,7 @@ class _ImportDialogState extends State<ImportDialog> {
             enabled: !busy,
             onChanged: (_) => setState(() => preview = null),
             decoration: const InputDecoration(
-              labelText: 'Selected settings JSON path • optional',
+              labelText: 'Settings file path (optional)',
             ),
           ),
           const SizedBox(height: 12),
@@ -116,7 +136,7 @@ class _ImportDialogState extends State<ImportDialog> {
             enabled: !busy,
             onChanged: (_) => setState(() => preview = null),
             decoration: const InputDecoration(
-              labelText: 'Selected history JSON path • optional',
+              labelText: 'History file path (optional)',
             ),
           ),
           const SizedBox(height: 12),
@@ -125,7 +145,7 @@ class _ImportDialogState extends State<ImportDialog> {
             child: OutlinedButton.icon(
               onPressed: busy ? null : readPreview,
               icon: const Icon(Icons.preview_outlined),
-              label: const Text('Read and preview selected files'),
+              label: const Text('Read files and preview'),
             ),
           ),
           const SizedBox(height: 12),
@@ -136,28 +156,26 @@ class _ImportDialogState extends State<ImportDialog> {
             ),
           if (imported)
             const Text(
-              'Import committed atomically. Sources were unchanged.',
+              'Import finished; your files were not changed',
               style: TextStyle(color: GridColors.green),
             ),
           if (preview case final candidate?) ...[
             Text(
               candidate.alreadyImported
-                  ? 'These exact source bytes were already imported.'
-                  : '${candidate.accounting.length} supported records accounted for • ${candidate.pins.length} pins • ${candidate.winningActivity.length} activity winners',
+                  ? 'These files were already imported.'
+                  : '${candidate.accounting.length} records found • ${candidate.pins.length} pins • ${candidate.winningActivity.length} history entries to keep',
             ),
             const SizedBox(height: 8),
             SelectableText(
-              'Source digest: ${candidate.digest}',
+              'File fingerprint: ${candidate.digest}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (candidate.settings != null)
               Text(
-                'Preferences: ${modeLabel(candidate.settings!.mode)} • ${mapLabel(candidate.settings!.selectedMap)} • saved filters ${candidate.settings!.saveMarkerFilters} • Tracker preference ${candidate.settings!.trackerEnabled}',
+                'Settings: ${modeLabel(candidate.settings!.mode)} • ${mapLabel(candidate.settings!.selectedMap)} • remember marker filters: ${candidate.settings!.saveMarkerFilters ? 'yes' : 'no'} • use Tracker progress: ${candidate.settings!.trackerEnabled ? 'yes' : 'no'}',
               ),
             ...candidate.pins.map(
-              (p) => Text(
-                'Pin ${p.mapId}/${p.id}: (${p.x}, ${p.y}) • ${p.frame} revision ${p.frameRevision}',
-              ),
+              (p) => Text('Pin ${p.mapId}/${p.id} at (${p.x}, ${p.y})'),
             ),
             const Divider(height: 24),
             ...candidate.accounting.map(
@@ -180,10 +198,10 @@ class _ImportDialogState extends State<ImportDialog> {
             ),
             const Divider(height: 24),
             Text(
-              'Excluded fields: ${candidate.exclusions.isEmpty ? 'None supplied' : candidate.exclusions.join(', ')}',
+              'Left out: ${candidate.exclusions.isEmpty ? 'nothing' : candidate.exclusions.join(', ')}',
             ),
             const Text(
-              'Always excluded: credentials, prices/catalog/progress, corrections/FIR, accepted scans, images/OCR, screenshot/overlay/hotkey/game-log settings.',
+              'Never imported: tokens, prices, item data, progress, corrections, found-in-raid choices, accepted scans, images, screenshot, overlay, hotkey and game log settings.',
               style: TextStyle(color: GridColors.muted),
             ),
             CheckboxListTile(
@@ -192,11 +210,9 @@ class _ImportDialogState extends State<ImportDialog> {
               onChanged: busy || candidate.alreadyImported
                   ? null
                   : (value) => setState(() => replace = value ?? false),
-              title: const Text(
-                'Explicitly replace conflicting destination records',
-              ),
+              title: const Text('Replace entries that already exist here'),
               subtitle: const Text(
-                'Default: preserve existing destination values. Source collision winners remain deterministic.',
+                'Off by default: entries you already have are kept. When the files hold the same entry twice, the newest one is used.',
               ),
             ),
           ],
@@ -212,7 +228,7 @@ class _ImportDialogState extends State<ImportDialog> {
         onPressed: busy || preview == null || preview!.alreadyImported
             ? null
             : commit,
-        child: Text(busy ? 'Working…' : 'Accept preview and import'),
+        child: Text(busy ? 'Working…' : 'Import now'),
       ),
     ],
   );

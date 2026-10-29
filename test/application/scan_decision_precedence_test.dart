@@ -232,7 +232,7 @@ void main() {
     selection.setFir(FirState.yes);
     final d = selection.decision!;
     expect(d.recommendation, Recommendation.check);
-    expect(d.warnings, contains('Progress authority missing or stale'));
+    expect(d.warnings, contains('Tracker progress missing or out of date'));
     expect(d.recommendation, isNot(Recommendation.flea));
     expect(d.recommendation, isNot(Recommendation.trader));
   });

@@ -58,7 +58,7 @@ class _PinEditorState extends State<PinEditor> {
         !ny.isFinite ||
         label.text.trim().isEmpty) {
       setState(
-        () => error = 'Enter a label and finite normalized coordinates. Off-map points are allowed.',
+        () => error = 'Enter a label and a number for each position. Points outside the map are allowed.',
       );
       return;
     }
@@ -78,7 +78,9 @@ class _PinEditorState extends State<PinEditor> {
       frame:
           widget.pin?.frame ??
           widget.coordinates?.frame.wireName ??
-          (map == 'thelab' ? 'labs-native-normalized' : 'legacy-normalized'),
+          (map == 'thelab'
+              ? MapCoordinateFrame.labsNativeNormalized.wireName
+              : MapCoordinateFrame.legacyNormalized.wireName),
       frameRevision:
           widget.pin?.frameRevision ??
           widget.coordinates?.frame.revision ??
@@ -100,9 +102,7 @@ class _PinEditorState extends State<PinEditor> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(
-      widget.pin == null ? 'Add durable pin record' : 'Edit durable pin record',
-    ),
+    title: Text(widget.pin == null ? 'Add pin' : 'Edit pin'),
     content: SizedBox(
       width: 430,
       child: SingleChildScrollView(
@@ -115,7 +115,7 @@ class _PinEditorState extends State<PinEditor> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Coordinates use the retained pin frame, not cropped scene pixels. Finite off-map positions are allowed.',
+              'Positions run from 0 to 1 across the whole map. Points outside the map are allowed.',
               style: TextStyle(color: GridColors.muted),
             ),
             const SizedBox(height: 16),
@@ -126,12 +126,16 @@ class _PinEditorState extends State<PinEditor> {
             const SizedBox(height: 12),
             TextField(
               controller: x,
-              decoration: const InputDecoration(labelText: 'Normalized X'),
+              decoration: const InputDecoration(
+                labelText: 'Position across (0–1)',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: y,
-              decoration: const InputDecoration(labelText: 'Normalized Y'),
+              decoration: const InputDecoration(
+                labelText: 'Position down (0–1)',
+              ),
             ),
             if (error != null) ...[
               const SizedBox(height: 12),

@@ -1,4 +1,10 @@
 import 'package:blackgrid/application/scan_coordinator.dart';
+import 'package:blackgrid/application/catalog_controller.dart';
+import 'package:blackgrid/ui/app.dart';
+
+import '../support/m1_harness.dart';
+import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
+
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
@@ -44,7 +50,7 @@ void main() {
     );
     final left = panel('Scanner'),
         evidence = panel('Scan evidence'),
-        current = panel('Current manual inspection'),
+        current = panel('Picked item'),
         history = panel('Recent item activity');
     expect(left.left, 14);
     expect(current.left, greaterThan(left.right));
@@ -61,8 +67,7 @@ void main() {
       evidence.height / (evidence.height + history.height),
       closeTo(.6, .03),
     );
-    final needs = panel('Requirements & uses'),
-        source = panel('Source authority');
+    final needs = panel('Requirements & uses'), source = panel('Data sources');
     expect(needs.top, greaterThan(current.bottom));
     expect(source.top, needs.top);
     expect(
@@ -96,10 +101,40 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('scan-item'))).data,
       before,
     );
-    expect(
-      tester.widget<Text>(find.byKey(const Key('scan-end'))).data,
-      'Accepted',
+    // The end state now lives inside the collapsed Details section.
+    expect(find.byKey(const Key('scan-end')), findsNothing);
+  });
+  testWidgets('scan evidence Details stays expanded across Map and back', (
+    tester,
+  ) async {
+    final ports = ScanFakePorts();
+    final h = await pumpM1(tester, scanPorts: ports);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => publishTargetedScan(
+        h.services.scanner,
+        ports,
+        text: 'Alternative component',
+      ),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ScanEvidencePanel),
+        matching: find.text('Details'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
+    expect(find.byKey(const Key('scan-timing-total')), findsOneWidget);
   });
   for (final size in [const Size(1672, 941), const Size(960, 640)]) {
     testWidgets('scan evidence panel does not overflow at $size', (
@@ -264,5 +299,56 @@ void main() {
     await tester.pumpAndSettle();
     expect(h.services.scanner.status.state, LiveScanState.unavailable);
     expect(footer('Live scan unavailable'), findsOneWidget);
+  });
+
+  testWidgets(
+    'footer says item data is out of date when the catalog is stale',
+    (tester) async {
+      var now = fixtureNow;
+      tester.view.physicalSize = const Size(1672, 941);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final h = (await tester.runAsync(() async {
+        final result = M1Harness(clock: () => now);
+        await result.initialize();
+        return result;
+      }))!;
+      addTearDown(h.dispose);
+      now = fixtureNow.add(const Duration(days: 3));
+      h.services.catalog.updateAge();
+      expect(h.services.catalog.status, CatalogStatus.stale);
+      await tester.pumpWidget(BlackgridApp(services: h.services));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Item data out of date'), findsOneWidget);
+      expect(find.textContaining('stale', findRichText: true), findsNothing);
+      expect(find.textContaining('Catalog stale'), findsNothing);
+    },
+  );
+
+  testWidgets('search hint asks for an item name without canonical', (
+    tester,
+  ) async {
+    await pumpM1(tester);
+    final hint = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .map((f) => f.decoration?.hintText)
+        .whereType<String>()
+        .toList();
+    expect(hint, contains('Search items…'));
+    expect(hint.any((h) => h.toLowerCase().contains('canonical')), isFalse);
+  });
+
+  testWidgets('search still finds an item by its tarkov.dev id', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    final field = find.byWidgetPredicate(
+      (w) => w is TextField && w.decoration?.hintText != null,
+    );
+    await tester.enterText(field.first, 'item-a');
+    await tester.pumpAndSettle();
+    expect(h.services.selection.results.map((i) => i.id), contains('item-a'));
   });
 }

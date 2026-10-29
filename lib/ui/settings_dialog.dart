@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../application/app_version.dart' as app_version;
 import '../domain/catalog.dart';
+import 'labels.dart';
 import 'theme.dart';
 
 Future<void> showSettings(BuildContext context, AppServices services) =>
@@ -55,8 +56,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     } catch (_) {
       if (mounted) {
         setState(
-          () => message =
-              'Protected credential operation failed. No plaintext fallback.',
+          () => message = 'Tracker token operation failed. Nothing was stored as plain text.',
         );
       }
     } finally {
@@ -75,7 +75,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       final services = widget.services;
       final known = services.catalog.mode != GameMode.unknown;
       return AlertDialog(
-        title: const Text('Blackgrid configuration'),
+        title: const Text('Settings'),
         content: SizedBox(
           width: 560,
           child: SingleChildScrollView(
@@ -89,16 +89,14 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Manual mode is used when configured Map logs cannot establish a mode. Blackgrid reads saved files only and never interacts with the game.',
+                  'The game mode below is used when the game logs do not say which mode you are playing. Blackgrid only reads saved files and never interacts with the game.',
                   style: TextStyle(color: GridColors.muted),
                 ),
                 const SizedBox(height: 18),
                 DropdownButtonFormField<GameMode>(
                   key: ValueKey(services.catalog.mode),
                   initialValue: services.catalog.mode,
-                  decoration: const InputDecoration(
-                    labelText: 'Live game mode',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Game mode'),
                   items: GameMode.values
                       .map(
                         (m) => DropdownMenuItem(
@@ -119,15 +117,15 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       ? services.catalog.refresh
                       : null,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh complete catalog'),
+                  label: const Text('Refresh item data'),
                 ),
                 Text(
-                  'Catalog: ${services.catalog.status.name}',
+                  'Item data: ${catalogStatusLabel(services.catalog.status)}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const Divider(height: 28),
                 Text(
-                  'Map file inputs',
+                  'Map files',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
@@ -135,8 +133,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   controller: gameLogs,
                   enabled: !services.settings.busy,
                   decoration: const InputDecoration(
-                    labelText: 'Game log directory',
-                    helperText: "Leave empty to auto-detect the game's Logs folder. Monitoring is independent of Follow logs.",
+                    labelText: 'Game log folder',
+                    helperText: "Leave empty to find the game's Logs folder automatically. Logs are watched even when Follow logs is off.",
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -144,7 +142,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   controller: screenshots,
                   enabled: !services.settings.busy,
                   decoration: const InputDecoration(
-                    labelText: 'Screenshot directory',
+                    labelText: 'Screenshot folder',
                     helperText: r'Leave empty to use Documents\Escape from Tarkov\Screenshots.',
                   ),
                 ),
@@ -158,15 +156,15 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         ),
                   child: Text(
                     services.settings.busy
-                        ? 'Saving map inputs…'
-                        : 'Save map inputs',
+                        ? 'Saving map files…'
+                        : 'Save map files',
                   ),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Follow logs'),
                   subtitle: const Text(
-                    'Use the detected map when available. Manual map selection turns this off; configured logs continue to be monitored.',
+                    'Use the map found in the game logs when there is one. Choosing a map yourself turns this off; the logs are still watched.',
                   ),
                   value: services.settings.settings.followGameLogs,
                   onChanged: services.settings.busy
@@ -178,9 +176,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 const Divider(height: 28),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Enable read-only Tracker integration'),
+                  title: const Text('Use Tracker progress'),
                   subtitle: const Text(
-                    'GET /token and /progress only. GP permission required.',
+                    'Blackgrid only reads your progress. Your token needs the GP permission.',
                   ),
                   value: services.settings.settings.trackerEnabled,
                   onChanged: busy
@@ -200,7 +198,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Protected credential: ${services.progress.hasCredential ? 'Present for ${modeLabel(services.progress.mode)}' : 'Not configured'}',
+                  'Tracker token: ${services.progress.hasCredential ? 'saved for ${modeLabel(services.progress.mode)}' : 'not saved'}',
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -209,8 +207,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   autocorrect: false,
                   enableSuggestions: false,
                   decoration: const InputDecoration(
-                    labelText: 'Tracker token • active mode only',
-                    helperText: 'PVP_, PVE_ or SZN_ prefix. Never imported or stored in SQLite.',
+                    labelText: 'Tracker token (current game mode)',
+                    helperText: 'Starts with PVP_, PVE_ or SZN_. It is never imported or kept in the database.',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -225,9 +223,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               () => services.progress.saveCredential(
                                 token.text.trim(),
                               ),
-                              'Current-user DPAPI credential saved.',
+                              'Tracker token saved',
                             ),
-                      child: const Text('Save protected token'),
+                      child: const Text('Save token'),
                     ),
                     OutlinedButton(
                       onPressed:
@@ -235,7 +233,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           ? null
                           : () => action(
                               services.progress.removeCredential,
-                              'Protected credential removed; progress authority cleared.',
+                              'Token removed',
                             ),
                       child: const Text('Remove token'),
                     ),
@@ -247,7 +245,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           ? null
                           : () => action(
                               services.progress.refresh,
-                              'Progress request completed.',
+                              'Progress refreshed',
                             ),
                       child: const Text('Refresh progress'),
                     ),
@@ -257,11 +255,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 Text(
                   message ??
                       services.progress.error ??
-                      'Progress: ${services.progress.status.name}',
+                      'Progress: ${progressStatusLabel(services.progress.status)}',
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Credentials use Windows current-user DPAPI in LocalAppData/Blackgrid/credentials. Progress and account identity are session memory only; restart requires new authorization.',
+                  'Your Tracker token is stored encrypted for your Windows account. Your progress is kept only while Blackgrid is open, so refresh it after a restart.',
                   style: TextStyle(color: GridColors.muted),
                 ),
                 if (services.settings.error != null)

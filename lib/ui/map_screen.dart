@@ -11,6 +11,7 @@ import '../domain/marker_categories.dart';
 import '../domain/raid_panel_text_parser.dart';
 import '../domain/settings.dart';
 import 'item_decision_card.dart';
+import 'labels.dart';
 import 'manual_controls.dart';
 import 'map_workspace.dart';
 import 'marker_preferences.dart';
@@ -108,11 +109,11 @@ class _MapInputStatusState extends State<_MapInputStatus> {
             'Detected map: ${state.detectedMapId == null ? 'unavailable' : mapLabel(state.detectedMapId!)}',
           ),
           Text(
-            'Logs: ${state.logStatus.name}${_folder(state.logDirectory, state.logDirectoryDetected)}',
+            'Logs: ${mapInputStatusLabel(state.logStatus)}${_folder(state.logDirectory, state.logDirectoryDetected)}',
           ),
           if (state.logMessage != null) Text(state.logMessage!),
           Text(
-            'Screenshots: ${state.screenshotStatus.name}${_folder(state.screenshotDirectory, state.screenshotDirectoryDetected)}',
+            'Screenshots: ${mapInputStatusLabel(state.screenshotStatus)}${_folder(state.screenshotDirectory, state.screenshotDirectoryDetected)}',
           ),
           if (state.screenshotMessage != null) Text(state.screenshotMessage!),
           if (pending) ...[
@@ -126,7 +127,7 @@ class _MapInputStatusState extends State<_MapInputStatus> {
             Text('Saved evidence source: ${state.savedScreenshotPath}'),
             if (savedModifiedAt != null)
               Text(
-                'File modified: ${savedModifiedAt.toUtc().toIso8601String()}',
+                'File modified: ${localTimeLabel(savedModifiedAt, now: DateTime.now())}',
               ),
             if (age != null)
               Text(
@@ -144,7 +145,7 @@ class _MapInputStatusState extends State<_MapInputStatus> {
             const Text('No sampled player position')
           else ...[
             Text(
-              'Filename sample: ${sample.metadata.savedAt.toUtc().toIso8601String()}',
+              'Filename sample: ${localTimeLabel(sample.metadata.savedAt, now: DateTime.now())}',
             ),
             Text(
               'X ${sample.metadata.position.x} · Z ${sample.metadata.position.z} · height ${sample.metadata.position.height ?? 'unknown'}',
@@ -152,14 +153,14 @@ class _MapInputStatusState extends State<_MapInputStatus> {
           ],
           if (state.raidEvidence != null) ...[
             Text(
-              '${pending || inputUnavailable ? 'Previous raid panel' : 'Raid panel'}: ${state.raidEvidence!.state.name}',
+              '${pending || inputUnavailable ? 'Previous raid panel' : 'Raid panel'}: ${raidPanelStateLabel(state.raidEvidence!.state)}',
             ),
             if (state.raidEvidence!.message != null)
               Text(state.raidEvidence!.message!),
             if (retainedEvidence)
               Text(
                 state.raidHighlightIds.isEmpty
-                    ? 'No raid highlights authorized by the latest completed panel evidence.'
+                    ? 'No raid highlights from the latest completed panel read.'
                     : '${state.raidHighlightIds.length} previous raid highlights retained; the latest screenshot has not confirmed them.',
               ),
             if (!retainedEvidence)
@@ -315,8 +316,6 @@ class _MapScreenState extends State<MapScreen> {
         final workspace = GridPanel(
           title: mapLabel(map).toUpperCase(),
           icon: Icons.map_outlined,
-          subtitle:
-              'Native local artwork • durable pins • offline map capability',
           trailing: OutlinedButton.icon(
             onPressed: services.settings.busy
                 ? null
@@ -347,7 +346,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               TextButton.icon(
                 icon: const Icon(Icons.location_on_outlined),
-                label: Text('${pins.length} saved pin records'),
+                label: Text('${pins.length} saved pins'),
                 onPressed: () => _showPins(context),
               ),
             ],

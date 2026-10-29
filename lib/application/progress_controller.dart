@@ -69,7 +69,7 @@ class ProgressController extends ChangeNotifier {
     } on Object {
       if (_disposed || session != _session) return;
       status = ProgressStatus.failed;
-      error = 'Protected credential unavailable';
+      error = 'Tracker token unavailable';
     }
     _publish();
   }
@@ -81,7 +81,7 @@ class ProgressController extends ChangeNotifier {
     _publish();
     if (!TrackerClient.validToken(key, token)) {
       status = ProgressStatus.failed;
-      error = 'Credential prefix does not match selected mode';
+      error = 'This token is for a different game mode';
       _publish();
       return Future.value();
     }
@@ -94,7 +94,7 @@ class ProgressController extends ChangeNotifier {
       } on Object {
         if (_disposed || session != _session || mode != key) return;
         status = ProgressStatus.failed;
-        error = 'Protected credential save failed';
+        error = 'Tracker token could not be saved';
       }
       _publish();
     });
@@ -113,7 +113,7 @@ class ProgressController extends ChangeNotifier {
       } on Object {
         if (_disposed || session != _session || mode != key) return;
         status = ProgressStatus.failed;
-        error = 'Protected credential removal failed';
+        error = 'Tracker token could not be removed';
         _publish();
       }
     });

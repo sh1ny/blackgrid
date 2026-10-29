@@ -195,7 +195,7 @@ void main() {
         await scan(s, 'item-b');
         expect(s.item!.id, 'item-b');
         expect(s.decision, isNotNull);
-        expect(s.error, contains('Accepted scan was not recorded'));
+        expect(s.error, contains('accepted scan was not recorded'));
         expect(h.services.history.rows, isEmpty);
       },
     );

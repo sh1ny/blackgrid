@@ -447,10 +447,7 @@ void main() {
         expect(selection.selectedId, 'ana-black');
         expect(selection.correction, isNotNull);
         expect(selection.decision, isNotNull);
-        expect(
-          selection.error,
-          'Correction was not recorded: local persistence failed.',
-        );
+        expect(selection.error, 'Correction was not recorded.');
         expect(history.rows, isEmpty);
       },
     );

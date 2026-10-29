@@ -56,7 +56,16 @@ void main() {
     );
     expect(d.recommendation, Recommendation.keep);
     expect(d.nonFirNeed, 2);
-    expect(d.warnings, contains('Instance FIR unknown'));
+    expect(d.warnings, contains('Found in raid unknown for this item'));
+  });
+  test('warnings use plain wording for stale data and unknown flea rules', () {
+    final stale = decide(catalogStale: true);
+    expect(stale.warnings, contains('Item data missing or out of date'));
+    final unknownRule = decide(item: saleItem(noFlea: null, minimum: 0));
+    expect(
+      unknownRule.warnings,
+      contains('Not known whether this item can be sold on the flea market'),
+    );
   });
   test('FIR unknown is Check, Yes is Keep, No cannot satisfy FIR need', () {
     for (final fir in FirState.values) {

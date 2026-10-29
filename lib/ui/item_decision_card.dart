@@ -8,6 +8,7 @@ import '../domain/catalog.dart';
 import '../domain/decision.dart';
 import '../domain/title_matching.dart' show normaliseTitle;
 import 'item_icon.dart';
+import 'labels.dart';
 import 'theme.dart';
 
 String recommendationLabel(Recommendation value) => switch (value) {
@@ -57,17 +58,17 @@ class ItemDecisionCard extends StatelessWidget {
             ? 'Accepted scan'
             : correction != null
             ? 'Corrected scan'
-            : 'Current manual inspection',
+            : 'Picked item',
         icon: Icons.center_focus_strong,
         subtitle: selection.isHistory
-            ? 'Stored ${modeLabel(selection.inspectionMode)} context • live mode unchanged'
+            ? 'Saved from ${modeLabel(selection.inspectionMode)} • game mode unchanged'
             : scan != null
-            ? 'Scanned ${_scanAge(selection, scan)} ago • shared item decision'
+            ? 'Scanned ${_scanAge(selection, scan)} ago'
             : correction != null
             ? 'Corrected from scan #${correction.reportId} • '
                   '${_correctionAge(selection, correction)} ago • '
-                  'not an accepted scan'
-            : 'Shared item decision • not an accepted scan',
+                  'chosen by hand'
+            : 'Chosen by hand',
         trailing: _trailing(selection, backToLatest ? latest : null),
         child: item == null || decision == null
             ? offerBlock != null
@@ -79,8 +80,8 @@ class ItemDecisionCard extends StatelessWidget {
                             selection.selectedId != null) ...[
                           Text(
                             selection.loadingHistory
-                                ? 'Opening stored-mode catalog…'
-                                : 'Identity retained • catalog unavailable',
+                                ? 'Opening saved item data…'
+                                : 'Item data unavailable',
                             key: const Key('correction-offer-status'),
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
@@ -109,18 +110,18 @@ class ItemDecisionCard extends StatelessWidget {
                         const SizedBox(height: 20),
                         Text(
                           selection.loadingHistory
-                              ? 'Opening stored-mode catalog…'
+                              ? 'Opening saved item data…'
                               : selection.selectedId == null
                               ? selection.scanRetired
                                     ? 'Last scan was in an earlier mode or session; scan again'
-                                    : 'Find an item to inspect'
-                              : 'Identity retained • catalog unavailable',
+                                    : 'Find an item'
+                              : 'Item data unavailable',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          selection.error ?? 'Search real item identities, then select one. Requirements, gross values and uncertainty appear here.',
+                          selection.error ?? 'Search for an item and pick it. What you still need and its prices appear here.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
@@ -196,25 +197,25 @@ class ItemDecisionCard extends StatelessWidget {
                               runSpacing: 10,
                               children: [
                                 _value(
-                                  'Flea • gross RUB',
+                                  'Flea price',
                                   rub(decision.fleaGross),
                                   'Per slot: ${rub(decision.fleaPerSlot)}',
                                 ),
                                 _value(
-                                  decision.traderName ?? 'Trader • unavailable',
+                                  decision.traderName ?? 'Trader unavailable',
                                   rub(decision.traderGross),
                                   'Per slot: ${rub(decision.traderPerSlot)}',
                                 ),
                                 _value(
-                                  'Requirement remainder',
-                                  'FIR ${decision.firNeed ?? 'Unknown'}',
-                                  'Non-FIR ${decision.nonFirNeed ?? 'Unknown'}',
+                                  'Still needed',
+                                  'Found in raid: ${decision.firNeed ?? 'Unknown'}',
+                                  'Not found in raid: ${decision.nonFirNeed ?? 'Unknown'}',
                                 ),
                               ],
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Mode: ${modeLabel(selection.inspectionMode)} • FIR: ${selection.fir.name} • Values are gross, not profit.',
+                              '${modeLabel(selection.inspectionMode)} · Found in raid: ${firLabel(selection.fir)} · Prices before fees',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
@@ -251,7 +252,7 @@ class ItemDecisionCard extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 14),
                                   Text(
-                                    item.shortName ?? item.normalizedName,
+                                    item.shortName ?? item.name,
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 8),
@@ -486,7 +487,7 @@ class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
             onChanged: selection.setCorrectionQuery,
             decoration: const InputDecoration(
               isDense: true,
-              labelText: 'Search the catalog',
+              labelText: 'Search items',
               prefixIcon: Icon(Icons.search),
             ),
           ),

@@ -21,7 +21,7 @@ The Map rail SHALL show, top to bottom: the Active map picker alone on the first
 - **THEN** no other panel shares the Active map row, and no "Latest accepted scan" panel is shown
 
 ### Requirement: Map saved-file inputs starts collapsed
-Map saved-file inputs SHALL be a collapsible section that starts collapsed. Collapsed, it SHALL show only its title row, with none of its status lines, the Follow logs switch or the Read Latest button. Expanding it SHALL show the same content as before this change, unchanged. Collapsing SHALL NOT change any map input setting.
+Map saved-file inputs SHALL be a collapsible section that starts collapsed. Collapsed, it SHALL show only its title row, with none of its status lines, the Follow logs switch or the Read Latest button. Expanding it SHALL show the status lines, the Follow logs switch and the Read Latest button. The log, screenshot and raid panel status lines SHALL show plain-language labels, never raw state names, and their times SHALL be in local time. Collapsing SHALL NOT change any map input setting.
 
 #### Scenario: Collapsed on first show
 - **WHEN** Map is shown for the first time after launch
@@ -30,6 +30,10 @@ Map saved-file inputs SHALL be a collapsible section that starts collapsed. Coll
 #### Scenario: Expanding shows the inputs
 - **WHEN** the user clicks the collapsed "Map saved-file inputs" title
 - **THEN** the status lines, the Follow logs switch and the Read Latest button are shown, and Read Latest reads the latest screenshot when clicked
+
+#### Scenario: Status lines use labels
+- **WHEN** the section is expanded while the log folder is being watched and the screenshot folder is missing
+- **THEN** the "Logs:" line says the folder is being watched and the "Screenshots:" line says the folder was not found, and neither line contains `watching` or `missing` as a bare state name
 
 #### Scenario: Collapsing keeps settings
 - **WHEN** Follow logs is off, the user expands the section and then collapses it

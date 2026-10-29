@@ -339,7 +339,7 @@ class SelectionController extends ChangeNotifier {
     final recorded = await history.record(itemId, offer.mode, correctedAt);
     if (_disposed || generation != _generation) return;
     if (!recorded) {
-      error = 'Correction was not recorded: local persistence failed.';
+      error = 'Correction was not recorded.';
     }
     notifyListeners();
   }
@@ -366,10 +366,10 @@ class SelectionController extends ChangeNotifier {
       final snapshot = await database.loadCatalog(row.mode);
       if (_disposed || generation != _generation) return;
       _historyCatalog = snapshot;
-      if (snapshot?.items[row.itemId] == null) error = 'Stored identity is not present in this mode’s current catalog. The activity row is retained.';
+      if (snapshot?.items[row.itemId] == null) error = 'This item is not in the current item data for this mode; the history row is kept.';
     } catch (_) {
       if (!_disposed && generation == _generation) {
-        error = 'Stored-mode catalog could not be opened.';
+        error = 'Item data for that mode could not be opened.';
       }
     }
     if (_disposed || generation != _generation) return;
