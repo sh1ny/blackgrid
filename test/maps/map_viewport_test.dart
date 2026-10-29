@@ -61,10 +61,10 @@ Future<Finder> _showMarkerFilter(WidgetTester tester, String filterKey) async {
   // Bring the whole panel into view before dragging its inner list.
   await tester.ensureVisible(find.text('Marker preferences'));
   await tester.pumpAndSettle();
-  final filter = find.widgetWithText(FilterChip, filterKey);
-  // The chips are a lazy child below the search/quest controls. Scroll the
+  final filter = find.byKey(ValueKey('marker-tile-$filterKey'));
+  // The tiles are a lazy child below the search/quest controls. Scroll the
   // inner preferences list to build them. Moving its position directly avoids
-  // revealing the chip with a top-aligned scroll of the outer rail, which would
+  // revealing the tile with a top-aligned scroll of the outer rail, which would
   // unbuild the whole panel.
   final inner = tester
       .state<ScrollableState>(

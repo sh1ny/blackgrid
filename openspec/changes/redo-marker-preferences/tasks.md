@@ -8,7 +8,7 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 |---|---|---|---|---|
 | Each applicable category is one icon tile | Tiles for the current map | test/ui/marker_preferences_test.dart | shows one labelled tile per saveable map key plus Saved pins | green |
 | Each applicable category is one icon tile | Tiles are the same size | test/ui/marker_preferences_test.dart | every tile has the same size whatever its label | green |
-| Each applicable category is one icon tile | Unsaveable category gets no tile | test/ui/map_screen_test.dart | unsaveable marker key gets no tile and stays drawn | red |
+| Each applicable category is one icon tile | Unsaveable category gets no tile | test/ui/map_screen_test.dart | unsaveable marker key gets no tile and stays drawn | green |
 | Each applicable category is one icon tile | Map with no markers | test/ui/marker_preferences_test.dart | map without markers shows only the Saved pins tile | green |
 | Category keys have fixed player-facing labels | Labels for known keys | test/domain/marker_categories_test.dart | known keys have their player-facing labels | green |
 | Category keys have fixed player-facing labels | Every known key is labelled | test/domain/marker_categories_test.dart | every icon key has a unique non-empty label | green |
@@ -23,11 +23,11 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 | Tiles draw the map's badge and its fallback | Icon tile matches the map | test/ui/marker_preferences_test.dart | loaded tile draws the category glyph in its role colour | green |
 | Tiles draw the map's badge and its fallback | Icons still loading | test/ui/marker_preferences_test.dart | tiles draw fallback badges and toggle while icons load | green |
 | Tiles draw the map's badge and its fallback | One icon failed | test/ui/marker_preferences_test.dart | a failed icon draws the fallback badge only on its tile | green |
-| Bulk, search and quest controls keep working | Hide all then Show all | test/ui/map_screen_test.dart | marker search survives show/hide-all and dimmed targets remain eligible | red |
-| Bulk, search and quest controls keep working | Show all keeps other maps' choices | test/ui/map_screen_test.dart | Show all keeps saved entries of keys the map does not show | red |
-| Bulk, search and quest controls keep working | Bulk action with an unsaveable category | test/ui/map_screen_test.dart | Hide all never saves an unsaveable key and settings reload | red |
-| Bulk, search and quest controls keep working | Search dims without hiding | test/ui/map_screen_test.dart | marker search survives show/hide-all and dimmed targets remain eligible | red |
-| Bulk, search and quest controls keep working | Quest filter keeps tiles | test/ui/map_screen_test.dart | quest filters leave tile states unchanged | red |
+| Bulk, search and quest controls keep working | Hide all then Show all | test/ui/map_screen_test.dart | marker search survives show/hide-all and dimmed targets remain eligible | green |
+| Bulk, search and quest controls keep working | Show all keeps other maps' choices | test/ui/map_screen_test.dart | Show all keeps saved entries of keys the map does not show | green |
+| Bulk, search and quest controls keep working | Bulk action with an unsaveable category | test/ui/map_screen_test.dart | Hide all never saves an unsaveable key and settings reload | green |
+| Bulk, search and quest controls keep working | Search dims without hiding | test/ui/map_screen_test.dart | marker search survives show/hide-all and dimmed targets remain eligible | green |
+| Bulk, search and quest controls keep working | Quest filter keeps tiles | test/ui/map_screen_test.dart | quest filters leave tile states unchanged | green |
 | Marker lists use the category labels | List subtitle uses the label | test/maps/map_viewport_test.dart | visible-markers list shows the category label | red |
 | Marker lists use the category labels | Unknown key in the list | test/maps/map_viewport_test.dart | visible-markers list shows an unlabelled key as is | red |
 
@@ -44,8 +44,8 @@ Every group follows the "Dart and Flutter code" section of `AGENTS.md`. Skills p
 
 ## 3. Wire the grid into Marker preferences
 
-- [ ] 3.1 In `test/ui/map_screen_test.dart`, change the chip finder in "marker search survives show/hide-all and dimmed targets remain eligible" (`:172`) to the tile key. Add a step that checks every tile keeps its state while the search dims markers. Add "Show all keeps saved entries of keys the map does not show", "quest filters leave tile states unchanged", "unsaveable marker key gets no tile and stays drawn" and "Hide all never saves an unsaveable key and settings reload". The last one uses a prepared-map fixture with a `Ziplines` marker, clicks Hide all, reloads settings from the database, and expects `AppSettings` to parse with no `Ziplines` entry. In `test/maps/map_viewport_test.dart`, change `_showMarkerFilter` (`:56-80`) to find the tile key, leaving its assertions as they are. Verify the new and changed tests fail for the right reason: there is no tile, or the bulk write includes `Ziplines`.
-- [ ] 3.2 In `lib/ui/map_screen.dart`, replace the `FilterChip` `Wrap` (`:463-483`) with `MarkerPreferencesGrid`. Compute `markerPreferenceKeys(services.maps.applicableCategories)` once and use it for the grid and for Show all and Hide all (`:441`, D5). Leave search, the quest fields and Save marker filters as they are. Verify the 3.1 tests and `test/ui/map_rail_test.dart` pass, and flip the five map-screen rows green.
+- [x] 3.1 In `test/ui/map_screen_test.dart`, change the chip finder in "marker search survives show/hide-all and dimmed targets remain eligible" (`:172`) to the tile key. Add a step that checks every tile keeps its state while the search dims markers. Add "Show all keeps saved entries of keys the map does not show", "quest filters leave tile states unchanged", "unsaveable marker key gets no tile and stays drawn" and "Hide all never saves an unsaveable key and settings reload". The last one uses a prepared-map fixture with a `Ziplines` marker, clicks Hide all, reloads settings from the database, and expects `AppSettings` to parse with no `Ziplines` entry. In `test/maps/map_viewport_test.dart`, change `_showMarkerFilter` (`:56-80`) to find the tile key, leaving its assertions as they are. Verify the new and changed tests fail for the right reason: there is no tile, or the bulk write includes `Ziplines`.
+- [x] 3.2 In `lib/ui/map_screen.dart`, replace the `FilterChip` `Wrap` (`:463-483`) with `MarkerPreferencesGrid`. Compute `markerPreferenceKeys(services.maps.applicableCategories)` once and use it for the grid and for Show all and Hide all (`:441`, D5). Leave search, the quest fields and Save marker filters as they are. Verify the 3.1 tests and `test/ui/map_rail_test.dart` pass, and flip the five map-screen rows green.
 
 ## 4. Labels in the marker list and map semantics
 
