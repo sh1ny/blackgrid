@@ -14,8 +14,13 @@ bool isScannableKind(String path) {
     '.sh',
     '.yml',
     '.yaml',
+    '.json',
+    '.dart',
   ].any(lower.endsWith);
 }
+
+/// The name of the constant that holds [noGamesVariable] in the guard code.
+const _noGamesIdentifier = 'noGamesRunningVariable';
 
 /// Reports where [content] of the repository file at [path] sets
 /// [noGamesVariable].
@@ -23,7 +28,16 @@ bool isScannableKind(String path) {
 /// Returns one human-readable finding per setter, each starting with [path].
 /// Comments, descriptions, reads and Markdown are not setters. The file kind
 /// comes from [path]: `.toml` (including `mise.toml`), `.ps1`, `.cmd`, `.bat`,
-/// `.sh`, `.yml` and `.yaml`. Any other kind yields no findings.
+/// `.sh`, `.yml`, `.yaml`, `.json` and `.dart`. Any other kind yields no
+/// findings.
+///
+/// In `.json` files a key named [noGamesVariable] is a setter. In `.dart` files
+/// outside the top-level `test/` directory, any non-comment mention of
+/// [noGamesVariable] or of the `noGamesRunningVariable` identifier counts as a
+/// setter, since production and tool code has no reason to name it. Dart files
+/// under `test/` are excluded on purpose: there the variable only appears as
+/// fake input to the pure guard `nativeCaptureSkipReason` and as the guard's
+/// own read.
 List<String> findNoGamesSetters(String path, String content) {
   final lower = path.toLowerCase();
   final lines = content.split(RegExp(r'\r?\n'));
@@ -63,6 +77,13 @@ List<String> findNoGamesSetters(String path, String content) {
       RegExp('^\\s*(export\\s+)?$v=|^\\s*export\\s+$v\\b'),
       hashComment,
     );
+  }
+  if (lower.endsWith('.json')) {
+    return scan(RegExp('"$v"\\s*:'), RegExp(r'^\s*//'));
+  }
+  if (lower.endsWith('.dart')) {
+    if (path.replaceAll(r'\', '/').startsWith('test/')) return const [];
+    return scan(RegExp("$v|\\b$_noGamesIdentifier\\b"), RegExp(r'^\s*//'));
   }
   if (lower.endsWith('.yml') || lower.endsWith('.yaml')) {
     final Object? doc;

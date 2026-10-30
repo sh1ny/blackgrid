@@ -142,6 +142,31 @@ final class MissingReport extends AuditFinding {
   String toString() => 'The test report is missing or unreadable.';
 }
 
+/// An accepted host-platform skip whose covering test did not run and pass.
+final class CoveringTestNotRun extends AuditFinding {
+  /// Creates a finding for the skip of [skippedFile] covered by [coveringTest]
+  /// in [coveringFile].
+  const CoveringTestNotRun({
+    required this.skippedFile,
+    required this.coveringFile,
+    required this.coveringTest,
+  });
+
+  /// The repo-relative path of the file with the accepted host-platform skip.
+  final String skippedFile;
+
+  /// The repo-relative path of the file that should hold the covering test.
+  final String coveringFile;
+
+  /// The name of the covering test.
+  final String coveringTest;
+
+  @override
+  String toString() =>
+      'The host-platform skip in $skippedFile is covered by "$coveringTest" in '
+      '$coveringFile, but that test did not run and pass on this report.';
+}
+
 /// The outcome of [auditReport].
 class AuditResult {
   /// Creates a result.
@@ -247,6 +272,12 @@ String _normalise(String path, String repoRoot) {
 /// is accepted only when its file and exact `skipReason` both appear in the
 /// allowlist. Hidden tests, such as the `loading` entry before each suite and
 /// `(setUpAll)`, are ignored.
+///
+/// Each accepted [SkipKind.hostPlatform] skip also needs its covering test: a
+/// visible, unskipped test with `result` `success` in the suite
+/// [CoveredBy.file] whose name equals [CoveredBy.test] or ends with a space
+/// and [CoveredBy.test], because the reporter prefixes the names of enclosing
+/// groups ("group test"). Otherwise the audit reports a [CoveringTestNotRun].
 AuditResult auditReport(
   List<String>? lines,
   List<AllowedSkip> allowlist, {
@@ -261,6 +292,10 @@ AuditResult auditReport(
   final tests = <int, ({String name, int? suiteId, String reason})>{};
   var done = false;
   var ranUnskipped = 0;
+  // Visible tests that finished, as (suite path, name, result, skipped).
+  final finished =
+      <({String file, String name, String result, bool skipped})>[];
+  final coverageRequired = <AllowedSkip>{};
 
   for (var i = 0; i < lines.length; i++) {
     final text = lines[i];
@@ -295,15 +330,27 @@ AuditResult auditReport(
         }
       case {'type': 'testDone', 'testID': final int id}:
         if (decoded['hidden'] == true) continue;
+        final test = tests[id];
+        final file = suitePaths[test?.suiteId] ?? '';
+        finished.add((
+          file: file,
+          name: test?.name ?? '',
+          result: decoded['result'] as String? ?? '',
+          skipped: decoded['skipped'] == true,
+        ));
         if (decoded['skipped'] == true) {
-          final test = tests[id];
-          final file = suitePaths[test?.suiteId] ?? '';
           final reason = test?.reason ?? '';
           final name = test?.name ?? '';
-          if (allowlist.any((a) => a.file == file && a.reason == reason)) {
+          final entry = allowlist
+              .where((a) => a.file == file && a.reason == reason)
+              .firstOrNull;
+          if (entry != null) {
             accepted.add(
               AcceptedSkip(file: file, reason: reason, testName: name),
             );
+            if (entry.kind == SkipKind.hostPlatform) {
+              coverageRequired.add(entry);
+            }
           } else {
             findings.add(
               UnlistedSkip(file: file, reason: reason, testName: name),
@@ -319,6 +366,26 @@ AuditResult auditReport(
     }
   }
 
+  for (final entry in coverageRequired) {
+    if (entry.coveredBy case final CoveredBy covering?) {
+      final covered = finished.any(
+        (t) =>
+            t.file == covering.file &&
+            !t.skipped &&
+            t.result == 'success' &&
+            (t.name == covering.test || t.name.endsWith(' ${covering.test}')),
+      );
+      if (!covered) {
+        findings.add(
+          CoveringTestNotRun(
+            skippedFile: entry.file,
+            coveringFile: covering.file,
+            coveringTest: covering.test,
+          ),
+        );
+      }
+    }
+  }
   if (!done) findings.add(const MissingDone());
   if (ranUnskipped == 0) findings.add(const NoTestRan());
   return AuditResult(findings: findings, accepted: accepted);

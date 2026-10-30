@@ -392,6 +392,117 @@ void main() {
     });
   });
 
+  group('host-platform skip coverage', () {
+    const hostAllowlist = [
+      AllowedSkip(
+        kind: SkipKind.hostPlatform,
+        coveredBy: CoveredBy(file: _selfCheckFile, test: _selfCheckTest),
+        file: _bundleFile,
+        reason: _codePageReason,
+        why: 'code page',
+      ),
+    ];
+    AuditResult audit(List<String> covering) => auditReport(
+      [
+        _suite(1, _bundleFile),
+        ..._test(2, 1, 'code page', skipReason: _codePageReason),
+        _suite(2, '$_root\\${_selfCheckFile.replaceAll('/', r'\')}'),
+        ...covering,
+        _done,
+      ],
+      hostAllowlist,
+      repoRoot: _root,
+    );
+
+    test('passes when the covering test ran and succeeded', () {
+      final result = audit(_test(3, 2, _selfCheckTest));
+
+      expect(result.passed, isTrue, reason: '${result.findings}');
+      expect(result.accepted, hasLength(1));
+    });
+
+    test('passes when the covering test name has a group prefix', () {
+      final result = audit(_test(3, 2, 'self-check group $_selfCheckTest'));
+
+      expect(result.passed, isTrue, reason: '${result.findings}');
+    });
+
+    test('fails when the covering test is absent', () {
+      final result = audit(_test(3, 2, 'some other test'));
+
+      final finding = result.findings.single;
+      expect(finding, isA<CoveringTestNotRun>());
+      finding as CoveringTestNotRun;
+      expect(finding.skippedFile, _bundleFile);
+      expect(finding.coveringFile, _selfCheckFile);
+      expect(finding.coveringTest, _selfCheckTest);
+      expect(finding.toString(), contains(_bundleFile));
+      expect(finding.toString(), contains(_selfCheckFile));
+      expect(finding.toString(), contains(_selfCheckTest));
+    });
+
+    test('fails when the covering test is in another file', () {
+      final result = auditReport(
+        [
+          _suite(1, _bundleFile),
+          ..._test(2, 1, 'code page', skipReason: _codePageReason),
+          _suite(2, 'test/qualification/other_test.dart'),
+          ..._test(3, 2, _selfCheckTest),
+          _done,
+        ],
+        hostAllowlist,
+        repoRoot: _root,
+      );
+
+      expect(result.findings.single, isA<CoveringTestNotRun>());
+    });
+
+    test('fails when the covering test was skipped', () {
+      final result = audit(
+        _test(3, 2, _selfCheckTest, skipReason: _selfCheckSkipReason),
+      );
+
+      expect(result.findings, [
+        isA<UnlistedSkip>(),
+        isA<CoveringTestNotRun>(),
+        isA<NoTestRan>(),
+      ]);
+    });
+
+    test('fails when the covering test failed or errored', () {
+      for (final outcome in ['failure', 'error']) {
+        final result = audit(_test(3, 2, _selfCheckTest, result: outcome));
+
+        expect(
+          result.findings.single,
+          isA<CoveringTestNotRun>(),
+          reason: outcome,
+        );
+      }
+    });
+
+    test('does not count a hidden entry as the covering test', () {
+      final result = audit([
+        ..._test(3, 2, _selfCheckTest, hidden: true),
+        ..._test(4, 2, 'other'),
+      ]);
+
+      expect(result.findings.single, isA<CoveringTestNotRun>());
+    });
+
+    test('is not required for a private-input skip', () {
+      final result = _audit([
+        _suite(1, _ocrFile),
+        ..._test(2, 1, 'ocr', skipReason: _ocrReason),
+        _suite(2, 'test/a_test.dart'),
+        ..._test(3, 2, 'ran'),
+        _done,
+      ]);
+
+      expect(result.passed, isTrue);
+    });
+  });
+
   group('allowlist file', () {
     test('the committed allowlist parses into three private inputs and one '
         'host-platform skip', () {

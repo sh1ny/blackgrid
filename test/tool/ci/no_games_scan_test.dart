@@ -52,5 +52,38 @@ void main() {
       ignores('other.yml', 'description: "set $v=1"\n');
       ignores('README.md', '\$env:$v = "1"\n');
     });
+
+    test('flags a json key and a non-test dart mention with path:line', () {
+      expect(findNoGamesSetters('.vscode/launch.json', '{\n  "$v": "1"\n}\n'), [
+        '.vscode/launch.json:2: "$v": "1"',
+      ]);
+      expect(
+        findNoGamesSetters(
+          'tool/run.dart',
+          "void f() {\n  run(environment: {'$v': '1'});\n}\n",
+        ),
+        ["tool/run.dart:2: run(environment: {'$v': '1'});"],
+      );
+      detects('lib/a.dart', 'const x = noGamesRunningVariable;\n');
+      detects('integration_test/a.dart', 'final s = "$v";\n');
+      detects('windows/runner/a.dart', "final s = '$v'; // set\n");
+    });
+
+    test('ignores dart comments outside test and dart under test', () {
+      ignores('lib/a.dart', '// needs $v=1\n');
+      ignores('lib/a.dart', '/// Reads [noGamesRunningVariable].\n');
+      ignores('tool/a.dart', '  // $v\nvoid f() {}\n');
+      ignores('test/a_test.dart', "final env = {'$v': '1'};\n");
+      ignores('test/data/capture/support/g.dart', 'const n = "$v";\n');
+      detects('lib/test/b.dart', "final env = {'$v': '1'};\n");
+      ignores('other.json', '{"name": "x", "note": "$v"}\n');
+      ignores('lib/a.dart', 'const y = notNoGamesRunningVariableAtAll;\n');
+    });
+
+    test('scans json and dart files', () {
+      expect(isScannableKind('a/b.json'), isTrue);
+      expect(isScannableKind('lib/a.dart'), isTrue);
+      expect(isScannableKind('README.md'), isFalse);
+    });
   });
 }
