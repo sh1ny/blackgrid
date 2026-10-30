@@ -20,10 +20,10 @@ All rows are in `test/tool/changelog_test.dart`, which runs `tool/changelog.dart
 
 ## 1. Pin the entry shapes that already work
 
-- [ ] 1.1 Add the test `squash-merged PR is one entry with title and number` to `test/tool/changelog_test.dart`. Its fixture makes one direct commit on main with the subject `fix(map): centre marker tiles (#59)`. Assert the output has the line `- *(map)* centre marker tiles (#59)` under `### Fixes`, exactly once. Verify: `mise exec -- flutter test test/tool/changelog_test.dart --plain-name "squash-merged PR"` passes on unchanged code.
-- [ ] 1.2 Tighten `direct fix commit on main is listed once under Fixes` to assert the exact entry line `- direct repair` under `### Fixes`, with no `(#` on that line. Verify: that test passes on unchanged code.
-- [ ] 1.3 Add the test `direct commit that mentions merging is still listed`, with the direct commit `fix: merge duplicate pins`. Assert `- merge duplicate pins` under `### Fixes`, exactly once. Verify: it passes on unchanged code.
-- [ ] 1.4 Re-run the green rows already in the file: merged PR with branch commits, non-conventional PR title, the first-release (`--latest` from the root), prerelease and release-commit tests. Verify: `mise exec -- flutter test test/tool/changelog_test.dart` passes.
+- [x] 1.1 Add the test `squash-merged PR is one entry with title and number` to `test/tool/changelog_test.dart`. Its fixture makes one direct commit on main with the subject `fix(map): centre marker tiles (#59)`. Assert the output has the line `- *(map)* centre marker tiles (#59)` under `### Fixes`, exactly once. Verify: `mise exec -- flutter test test/tool/changelog_test.dart --plain-name "squash-merged PR"` passes on unchanged code.
+- [x] 1.2 Tighten `direct fix commit on main is listed once under Fixes` to assert the exact entry line `- direct repair` under `### Fixes`, with no `(#` on that line. Verify: that test passes on unchanged code.
+- [x] 1.3 Add the test `direct commit that mentions merging is still listed`, with the direct commit `fix: merge duplicate pins`. Assert `- merge duplicate pins` under `### Fixes`, exactly once. Verify: it passes on unchanged code.
+- [x] 1.4 Re-run the green rows already in the file: merged PR with branch commits, non-conventional PR title, the first-release (`--latest` from the root), prerelease and release-commit tests. Verify: `mise exec -- flutter test test/tool/changelog_test.dart` passes.
 
 ## 2. Skip local merges
 

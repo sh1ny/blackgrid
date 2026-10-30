@@ -137,6 +137,21 @@ void main() {
     return null;
   }
 
+  /// The entry lines of the `### <heading>` group, or empty when absent.
+  List<String> entries(String changelog, String heading) {
+    final parts = changelog.split(RegExp(r'^### ', multiLine: true));
+    for (final part in parts.skip(1)) {
+      final lines = part.split('\n').map((line) => line.trimRight());
+      if (lines.first != heading) continue;
+      return lines
+          .skip(1)
+          .takeWhile((line) => !line.startsWith('## '))
+          .where((line) => line.startsWith('- '))
+          .toList();
+    }
+    return const [];
+  }
+
   setUpAll(() async {
     final cliff = await Process.run('git-cliff', [
       '--version',
@@ -192,8 +207,36 @@ void main() {
     await buildToV010();
     await buildToBeta();
     final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
-    expect(out, contains('### Fixes'));
+    final fixes = entries(out, 'Fixes');
+    expect(fixes.where((line) => line == '- direct repair'), hasLength(1));
+    final entry = fixes.singleWhere((line) => line.contains('direct repair'));
+    expect(entry, isNot(contains('(#')));
     expect(RegExp('direct repair').allMatches(out), hasLength(1));
+  });
+
+  test('squash-merged PR is one entry with title and number', () async {
+    await buildToV010();
+    await commit('fix(map): centre marker tiles (#59)');
+    final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
+    expect(
+      entries(
+        out,
+        'Fixes',
+      ).where((line) => line == '- *(map)* centre marker tiles (#59)'),
+      hasLength(1),
+    );
+    expect(RegExp('centre marker tiles').allMatches(out), hasLength(1));
+  });
+
+  test('direct commit that mentions merging is still listed', () async {
+    await buildToV010();
+    await commit('fix: merge duplicate pins');
+    final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
+    expect(
+      entries(out, 'Fixes').where((line) => line == '- merge duplicate pins'),
+      hasLength(1),
+    );
+    expect(RegExp('merge duplicate pins').allMatches(out), hasLength(1));
   });
 
   test('final release folds prerelease sections', () async {
