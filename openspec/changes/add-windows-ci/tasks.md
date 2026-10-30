@@ -21,11 +21,13 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 | Qualification runs against the CI-built bundle | The bundle is missing | test/tool/ci/qualification_runner_test.dart | a missing bundle directory exits 2 before flutter test runs | green |
 | Qualification skips are audited against a committed allowlist | Only allowlisted tests skip | test/tool/ci/qualification_audit_test.dart | allowlisted private-input skips pass and are listed | green |
 | Qualification skips are audited against a committed allowlist | A host-platform skip is covered on CI | test/tool/ci/qualification_audit_test.dart | the host-platform entry names a covering self-check test that has no platform skip | red |
+| Qualification skips are audited against a committed allowlist | A host-platform skip is covered on CI | test/tool/ci/qualification_audit_test.dart | every committed covered_by names an existing test and a host_platform entry without covered_by is rejected | red |
 | Qualification skips are audited against a committed allowlist | An unlisted skip | test/tool/ci/qualification_audit_test.dart | an unlisted skip fails naming the file and reason | green |
 | Qualification skips are audited against a committed allowlist | The report is missing or unreadable | test/tool/ci/qualification_audit_test.dart | a missing, malformed or unfinished report fails the audit | green |
 | Qualification skips are audited against a committed allowlist | A test fails | test/tool/ci/qualification_runner_test.dart | a failing flutter test exits non-zero even when the audit passes | green |
 | The no-games confirmation is scoped to the hosted runner | Native capture test runs on the hosted runner | test/tool/ci/workflow_test.dart | the qualification step alone sets the no-games confirmation and the bundle inputs | green |
 | The no-games confirmation is scoped to the hosted runner | A game executable is listed | test/tool/ci/qualification_audit_test.dart | the capture guard's refused and unconfirmed reasons are not allowlisted | green |
+| The no-games confirmation is scoped to the hosted runner | A game executable is listed | test/tool/ci/qualification_audit_test.dart | the committed allowlist holds no capture-guard or missing-input reason | red |
 | The no-games confirmation is scoped to the hosted runner | Another step or file sets the confirmation | test/tool/ci/workflow_test.dart | no other tracked script or config sets the no-games confirmation | green |
 | CI holds least privilege and no secrets | Workflow permissions | test/tool/ci/workflow_test.dart | permissions are exactly contents read and no secrets are used | green |
 | CI holds least privilege and no secrets | An action pinned by tag | test/tool/ci/workflow_test.dart | every uses line is pinned to a 40-hex commit SHA | green |
@@ -116,13 +118,36 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 
 - [x] 4.1 Run the full offline loop, `mise run analyze` and `mise run test`. Confirm with `mise run test -- --reporter expanded` output (or the file list) that the new `test/tool/ci/` tests run in the fast loop and are not tagged `qualification`. Confirm every Test map row reads green. Do not run `ci:qualification` or set `BLACKGRID_NO_GAMES_RUNNING` locally (AGENTS.md; design D3).
 
+## 5. Host-platform allowlist entry (pre-ship review F1, design review round 3)
+
+- [ ] 5.1 Write failing tests in `test/tool/ci/qualification_audit_test.dart` (fast loop, untagged) for the three red Test map rows. They load the committed `tool/ci/qualification_skips.yaml` itself.
+  - **Covered by:** `parseAllowlist` reads `kind` (`private_input` or `host_platform`). It rejects a `host_platform` entry without `covered_by: {file, test}`, a `private_input` entry with one, and an unknown or missing `kind`. Every committed `covered_by.file` exists and declares a test whose name is exactly `covered_by.test`.
+  - **No guard or input reasons:** no committed reason equals a capture-guard reason. Generate those with `nativeCaptureSkipReason` (`test/data/capture/support/native_guard.dart`) from fake inputs: unconfirmed, tasklist failed, and each refused game. Add the self-check test's "Escape from Tarkov is running ..." reason. No committed reason names `BLACKGRID_RELEASE_BUNDLE`, `BLACKGRID_PANEL_OCR_RUNTIME`, `BLACKGRID_CMAKE` or `BLACKGRID_NO_GAMES_RUNNING`.
+  - **The host-platform entry:** it accepts exactly the 1252 reason of `m2_vision_runtime_test.dart` "bundle copied under Cyrillic path opens ready". Its `covered_by` names `test/qualification/m2_vision_self_check_test.dart` "self-check from bundle copied under Cyrillic path exits 0".
+
+  Verify: the new tests fail for the missing `kind`/`covered_by` support and the missing entry.
+- [ ] 5.2 Implement it:
+  - Add `kind` and `covered_by` to `AllowedSkip` and `parseAllowlist` in `tool/ci/src/audit.dart`, with `///` docs.
+  - Add `kind: private_input` to the three existing entries in `tool/ci/qualification_skips.yaml`, add the `host_platform` entry, and rewrite the header comment to describe the two kinds.
+
+  Verify: the 5.1 tests pass, so flip their rows green; `mise run analyze` and `dart format` are clean.
+- [ ] 5.3 Update the docs for the two kinds:
+  - the README Continuous integration section;
+  - ADR-0024's qualification-skips bullet and its index row in `openspec/architecture.md`.
+
+  Verify: `git grep -n "host-platform\|host_platform" README.md docs/adr/0024-hosted-ci-runs-every-offline-gate.md openspec/architecture.md` shows each.
+- [ ] 5.4 Re-run the full offline loop, `mise run analyze` and `mise run test`, and confirm every Test map row reads green. Do not run `ci:qualification` or set `BLACKGRID_NO_GAMES_RUNNING` locally.
+
+Tasks 2.2 and 3.3 describe the original three-entry allowlist. Group 5 supersedes that part of them.
+
 ## Workflow follow-up
 
 - After ship, the PR's first CI run is the live evidence for M6 exit criterion 1. Record from its log:
   - the install step's Flutter version equals `mise.toml`;
   - each gate step's duration, including the OpenCV build (D6 evidence);
-  - the audit's accepted skips, exactly the three allowlisted tests;
-  - the native capture and panel OCR tests ran unskipped.
+  - the audit's accepted skips: exactly the three private-input tests and the Cyrillic-path vision runtime test on code page 1252;
+  - the native capture and panel OCR tests ran unskipped;
+  - the self-check test "self-check from bundle copied under Cyrillic path exits 0" ran unskipped and passed.
 - If the capture test or the panel OCR test fails on the hosted image (design Risks; review S3), stop and ask the user. The agent never adds an allowlist entry for it or changes the no-games scope on its own.
 - A red run visible on the PR is shown by any failing CI run during the PR's life. At milestone close, if none occurred, the exit-criterion check uses the failure-path tests above plus the GitHub check conclusion on a run.
 - Making the CI check required on `main` is the owner's GitHub setting, offered at ship time, never changed by the agent.
