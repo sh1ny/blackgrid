@@ -38,6 +38,8 @@ commit_preprocessors = [
 commit_parsers = [
     # Release commits and their merges (the merge is rewritten to the PR title).
     { message = '^chore\(release\): v', skip = true },
+    # Local --no-ff merges ("merge: <branch>") are not PRs.
+    { message = '^merge: ', skip = true },
     # Branch-only subjects, as a guard for the same commits made directly on main.
     { message = '^\w+(\([^)]*\))?: (task \d|amend (specs|design|tasks)|address review feedback|add planning artifacts|archive change)', skip = true },
     { field = "group", pattern = "^feat$", group = "Features" },

@@ -137,6 +137,21 @@ void main() {
     return null;
   }
 
+  /// The entry lines of the `### <heading>` group, or empty when absent.
+  List<String> entries(String changelog, String heading) {
+    final parts = changelog.split(RegExp(r'^### ', multiLine: true));
+    for (final part in parts.skip(1)) {
+      final lines = part.split('\n').map((line) => line.trimRight());
+      if (lines.first != heading) continue;
+      return lines
+          .skip(1)
+          .takeWhile((line) => !line.startsWith('## '))
+          .where((line) => line.startsWith('- '))
+          .toList();
+    }
+    return const [];
+  }
+
   setUpAll(() async {
     final cliff = await Process.run('git-cliff', [
       '--version',
@@ -192,8 +207,58 @@ void main() {
     await buildToV010();
     await buildToBeta();
     final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
-    expect(out, contains('### Fixes'));
+    final fixes = entries(out, 'Fixes');
+    expect(fixes.where((line) => line == '- direct repair'), hasLength(1));
+    final entry = fixes.singleWhere((line) => line.contains('direct repair'));
+    expect(entry, isNot(contains('(#')));
     expect(RegExp('direct repair').allMatches(out), hasLength(1));
+  });
+
+  test('squash-merged PR is one entry with title and number', () async {
+    await buildToV010();
+    await commit('fix(map): centre marker tiles (#59)');
+    final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
+    expect(
+      entries(
+        out,
+        'Fixes',
+      ).where((line) => line == '- *(map)* centre marker tiles (#59)'),
+      hasLength(1),
+    );
+    expect(RegExp('centre marker tiles').allMatches(out), hasLength(1));
+  });
+
+  test('direct commit that mentions merging is still listed', () async {
+    await buildToV010();
+    await commit('fix: merge duplicate pins');
+    final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
+    expect(
+      entries(out, 'Fixes').where((line) => line == '- merge duplicate pins'),
+      hasLength(1),
+    );
+    expect(RegExp('merge duplicate pins').allMatches(out), hasLength(1));
+  });
+
+  test('local merge commit and its branch commits are not listed', () async {
+    await buildToV010();
+    await git(['checkout', '-b', 'docs/close-m9']);
+    await commit('docs(close-m9): close M9');
+    await git(['checkout', 'main']);
+    await git([
+      'merge',
+      '--no-ff',
+      'docs/close-m9',
+      '-m',
+      'merge: docs/close-m9',
+    ]);
+    await mergePr(21, 'control', 'feat: control feature', [
+      'feat: task 1.1 control',
+    ]);
+    final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
+    expect(out, isNot(contains('docs/close-m9')));
+    expect(out, isNot(contains('close M9')));
+    expect(out, isNot(contains('### Other')));
+    expect(entries(out, 'Features'), contains('- control feature (#21)'));
   });
 
   test('final release folds prerelease sections', () async {
@@ -278,12 +343,23 @@ void main() {
     await git(['init', '-b', 'main']);
     await cliffConfig.copy('${repo.path}${Platform.pathSeparator}cliff.toml');
     await commit('feat: root feature');
+    await mergePr(30, 'first-pr', 'feat: first pr feature', [
+      'feat: task 1.1 first pr',
+    ]);
     await tag('v0.1.0');
     await commit('fix: after tag');
     final fromRoot = await ok(['--strip', 'header', '--latest']);
     repo = saved;
     expect(fromRoot, contains('## v0.1.0'));
     expect(fromRoot, contains('root feature'));
+    expect(
+      entries(
+        fromRoot,
+        'Features',
+      ).where((line) => line == '- first pr feature (#30)'),
+      hasLength(1),
+    );
+    expect(fromRoot, isNot(contains('task 1.1 first pr')));
     expect(fromRoot, isNot(contains('after tag')));
   });
 
