@@ -1,5 +1,33 @@
 # blackgrid Changelog
 
+## v0.5.0 - 2026-10-30
+
+### Features
+
+- *(map)* collapse saved-file inputs at the bottom of the Map rail (#50)
+
+- *(item-icons)* show item icons on the decision card and history (#51)
+
+- *(map)* add Blackgrid-authored map marker icon set (#53)
+
+- *(map)* draw Blackgrid-authored icons for map markers (#54)
+
+- *(map)* show marker preferences as a grid of labelled icon tiles (#56)
+
+- *(requirements)* name requirement and use rows in plain words (#57)
+
+- *(plain-language)* speak to players in plain words, details behind Details (#58)
+
+### Fixes
+
+- *(map)* centre marker preference tile badges and labels (#59)
+
+- *(release)* clarify changelog entries and skip local merges (#60)
+
+### Build, CI, and tooling
+
+- *(specwright)* update Specwright to 0.10.0
+
 ## v0.4.0 - 2026-10-20
 
 ### Features
@@ -59,22 +87,6 @@
 - *(tooling)* upgrade Specwright to 0.4.0
 
 - *(tooling)* upgrade Specwright to 0.6.0
-
-### Other
-
-- docs/plan-m4-5
-
-- docs/plan-item-icons
-
-- docs/plan-issue-closing
-
-- docs/plan-m4-6
-
-- docs/plan-m4-6-sweep
-
-- docs/m4-live-evidence
-
-- docs/close-m4
 
 ## v0.1.0 - 2026-10-07
 
