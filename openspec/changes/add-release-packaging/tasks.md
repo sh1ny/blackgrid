@@ -18,10 +18,10 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 | The installer compiler is pinned and verified | Compiler on PATH | test/tool/release/package_test.dart | ISCC runs only by absolute path from the packaging cache | red |
 | The zip holds exactly the bundle and the notices | Zip contents | test/tool/release/package_test.dart | the zip holds the bundle and notices under one versioned folder and nothing else | red |
 | The zip holds exactly the bundle and the notices | Notices missing | test/tool/release/package_test.dart | missing notices fail and leave no zip | red |
-| The installer installs per user and keeps user data | Installer settings | test/tool/release/installer_script_test.dart | the script requests lowest privileges, the per-user folder and the committed AppId | red |
+| The installer installs per user and keeps user data | Installer settings | test/tool/release/installer_script_test.dart | the script requests lowest privileges, the per-user folder and the committed AppId | green |
 | The installer installs per user and keeps user data | Installer settings | test/tool/release/package_test.dart | ISCC gets the display version, the numeric file version and absolute paths | red |
-| The installer installs per user and keeps user data | User data on uninstall | test/tool/release/installer_script_test.dart | the script has no install-delete, uninstall-delete, uninstall-run or code section | red |
-| The installer installs per user and keeps user data | Upgrade or downgrade replaces every file | test/tool/release/installer_script_test.dart | every files entry carries ignoreversion | red |
+| The installer installs per user and keeps user data | User data on uninstall | test/tool/release/installer_script_test.dart | the script has no install-delete, uninstall-delete, uninstall-run or code section | green |
+| The installer installs per user and keeps user data | Upgrade or downgrade replaces every file | test/tool/release/installer_script_test.dart | every files entry carries ignoreversion | green |
 | The installer installs per user and keeps user data | Prerelease version in file version | test/tool/release/package_test.dart | a beta version keeps its prerelease in the display version and drops it from the file version | red |
 | Packaging publishes checksums and leaves no partial set | Checksums match | test/tool/release/package_test.dart | a successful run leaves exactly the zip, the installer and matching SHA256SUMS.txt | red |
 | Packaging publishes checksums and leaves no partial set | Installer compile fails | test/tool/release/package_test.dart | a failing ISCC exits 1 naming the stage and its code and removes build/release | red |
@@ -64,7 +64,7 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 3. Installer script
 
-- [ ] 3.1 Write failing tests in `test/tool/release/installer_script_test.dart` for the three installer-script rows of the Test map. The test parses `windows/installer/blackgrid.iss` into sections and `key=value` or `Name: …; Flags: …` entries. It asserts:
+- [x] 3.1 Write failing tests in `test/tool/release/installer_script_test.dart` for the three installer-script rows of the Test map. The test parses `windows/installer/blackgrid.iss` into sections and `key=value` or `Name: …; Flags: …` entries. It asserts:
   - `PrivilegesRequired=lowest` and no `PrivilegesRequiredOverridesAllowed`;
   - `DefaultDirName={autopf}\Blackgrid`;
   - `AppId` equals the value in ADR-0025;
@@ -73,7 +73,7 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
   - no `[InstallDelete]`, `[UninstallDelete]`, `[UninstallRun]` or `[Code]` section, case-insensitive.
 
   Verify they fail because the script does not exist.
-- [ ] 3.2 Write `windows/installer/blackgrid.iss` per D4:
+- [x] 3.2 Write `windows/installer/blackgrid.iss` per D4:
   - defines `AppVersion`, `FileVersion`, `SourceDir`, `NoticesFile`, `OutputDir`, `OutputBaseFilename`;
   - `ArchitecturesAllowed=x64os`, `MinVersion=10.0`, `CloseApplications=yes`, `Compression=lzma2/max`;
   - Start menu icon, and a desktop icon under the unchecked `desktopicon` task;
