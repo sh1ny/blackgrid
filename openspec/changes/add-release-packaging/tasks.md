@@ -6,8 +6,8 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| A release build records what it built | Successful build writes a stamp | test/tool/release/build_test.dart | a passing build writes a stamp with version, build number and HEAD commit | red |
-| A release build records what it built | A failed bundle check leaves no stamp | test/tool/release/build_test.dart | a failing bundle check deletes an earlier stamp and writes none | red |
+| A release build records what it built | Successful build writes a stamp | test/tool/release/build_test.dart | a passing build writes a stamp with version, build number and HEAD commit | green |
+| A release build records what it built | A failed bundle check leaves no stamp | test/tool/release/build_test.dart | a failing bundle check deletes an earlier stamp and writes none | green |
 | Packaging uses only a bundle stamped for the current clean HEAD | Stamp matches HEAD | test/tool/release/package_test.dart | a fresh stamp passes admission and re-runs bundle:check before packaging | red |
 | Packaging uses only a bundle stamped for the current clean HEAD | Bundle changed after the build | test/tool/release/package_test.dart | a failing bundle:check re-run refuses and leaves no package | red |
 | Packaging uses only a bundle stamped for the current clean HEAD | Bundle built from another commit | test/tool/release/package_test.dart | a stamp for another commit refuses naming both commits and clears earlier output | red |
@@ -83,12 +83,12 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 4. Build stamp
 
-- [ ] 4.1 Write failing tests in `test/tool/release/build_test.dart` for the two stamp rows:
+- [x] 4.1 Write failing tests in `test/tool/release/build_test.dart` for the two stamp rows:
   - a passing build writes `build/windows/x64/runner/blackgrid-build.json` with `format`, `version`, `buildNumber` and the 40-hex `HEAD`;
   - with a stale stamp present, a failing `bundle:check` leaves no stamp.
 
   Use the existing Git fixture and `FakeRunner`. Verify they fail for the missing stamp.
-- [ ] 4.2 Implement the stamp in `tool/release/src/stamp.dart` (a typed read and write that rejects malformed JSON) and `build_step.dart`:
+- [x] 4.2 Implement the stamp in `tool/release/src/stamp.dart` (a typed read and write that rejects malformed JSON) and `build_step.dart`:
   - delete the stamp first;
   - write it through a temp file and a rename, only after `bundle:check` passes.
 

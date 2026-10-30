@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../tool/release/src/build_step.dart';
 import '../../../tool/release/src/git.dart';
+import '../../../tool/release/src/stamp.dart';
 
 const _identity = {
   'GIT_AUTHOR_NAME': 'Test Author',
@@ -112,6 +114,7 @@ void main() {
     root = Directory.systemTemp.createTempSync('blackgrid_build_');
     work = Directory('${root.path}/work')..createSync();
     _git(work, ['init', '-b', 'main']);
+    File('${work.path}/.gitignore').writeAsStringSync('/build/\n');
     commitFile('pubspec.yaml', 'name: demo\nversion: 0.2.0\n', 'feat: first');
     commitFile('a.txt', 'a\n', 'feat: second');
     commitFile('b.txt', 'b\n', 'feat: third');
@@ -160,4 +163,37 @@ void main() {
     expect(e.exitCode, 3);
     expect(external().last.line, startsWith('mise run bundle:check'));
   });
+
+  test(
+    'a passing build writes a stamp with version, build number and HEAD commit',
+    () async {
+      final head = _git(work, ['rev-parse', 'HEAD']);
+      await runBuild();
+
+      final stamp = File('${work.path}/$stampPath');
+      expect(stamp.existsSync(), isTrue);
+      expect(jsonDecode(stamp.readAsStringSync()), {
+        'format': 1,
+        'version': '0.2.0',
+        'buildNumber': 3,
+        'commit': head,
+      });
+      expect(head, matches(RegExp(r'^[0-9a-f]{40}$')));
+    },
+  );
+
+  test(
+    'a failing bundle check deletes an earlier stamp and writes none',
+    () async {
+      final stamp = File('${work.path}/$stampPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"format":1}');
+      runner.bundleCheckExit = 4;
+
+      final e = await refusal();
+
+      expect(e.exitCode, 4);
+      expect(stamp.existsSync(), isFalse);
+    },
+  );
 }
