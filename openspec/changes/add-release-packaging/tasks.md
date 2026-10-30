@@ -48,14 +48,14 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 2. Pinned compiler and child-process timeout
 
-- [ ] 2.1 Pick D2's unpack method on the dev machine. This needs no game check: it runs only the Inno Setup installer.
+- [x] 2.1 Pick D2's unpack method on the dev machine. This needs no game check: it runs only the Inno Setup installer.
   - Download `https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe` into a new, empty scratch directory, and measure its size and SHA-256.
   - Try option 1, `/PORTABLE=1 /VERYSILENT /SUPPRESSMSGBOXES /SP- /NORESTART /CURRENTUSER /NOICONS /DIR=<scratch>\is /LOG=<scratch>\is.log`. Confirm that `<scratch>\is\ISCC.exe` exists and that no new key appears under `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall`. Compare `reg query` before and after.
   - Only if option 1 fails, try option 2 (`innoextract`), then option 3. If option 3 is used, record its machine side effects in proposal.md's Impact.
   - Write `windows/installer/packaging.lock.json` (format 1) with one `inno-setup` entry: name, version `7.1.1`, the URL, size, SHA-256, license `Inno Setup License`, and `unpack: "portable"`, or the method chosen.
 
   Verify: `dart run tool/vision/fetch_runtime.dart --lock windows/installer/packaging.lock.json --cache .dart_tool/blackgrid_packaging/downloads` downloads and verifies it, and a second run reports it reused.
-- [ ] 2.2 Read the `dart-add-unit-test`, `dart-use-pattern-matching` and `dart-write-documentation` skills. Then add an optional `Duration? timeout` to `CommandRunner.run` (`tool/release/src/git.dart`), per D6b:
+- [x] 2.2 Read the `dart-add-unit-test`, `dart-use-pattern-matching` and `dart-write-documentation` skills. Then add an optional `Duration? timeout` to `CommandRunner.run` (`tool/release/src/git.dart`), per D6b:
   - On expiry, `ProcessCommandRunner` kills the child's process tree with `taskkill /PID <pid> /T /F` and returns a typed timeout result (exit code `-1`, with a `timedOut` flag).
   - Existing callers pass none, so their behaviour is unchanged.
   - Update the fakes in `test/tool/release/*_test.dart` to the new signature.

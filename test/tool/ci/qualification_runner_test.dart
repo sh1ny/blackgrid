@@ -38,6 +38,7 @@ class _FakeRunner implements CommandRunner {
     required String workingDirectory,
     bool stream = false,
     Map<String, String>? environment,
+    Duration? timeout,
   }) async {
     calls.add(_Call(executable, arguments, stream));
     final lines = reportLines;

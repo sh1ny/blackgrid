@@ -41,6 +41,7 @@ class FakeRunner implements CommandRunner {
     required String workingDirectory,
     bool stream = false,
     Map<String, String>? environment,
+    Duration? timeout,
   }) async {
     calls.add(Call(executable, arguments, stream));
     if (executable == 'git') {

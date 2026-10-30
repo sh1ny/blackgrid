@@ -37,5 +37,5 @@ A Blackgrid build is a loose Release folder under `build/windows/x64/runner/Rele
 ## Consequences
 
 - Users get a download and an installer; the unsigned setup shows SmartScreen's "unknown publisher" until #66 lands.
-- Every CI run downloads the compiler (about 7 MB) and spends the packaging step's time; `lzma2/normal` is the knob if it grows past about 5 min.
+- Every CI run downloads the compiler (about 14 MB) and spends the packaging step's time; `lzma2/normal` is the knob if it grows past about 5 min.
 - **Reversal cost:** high for `AppId`, because a changed id makes the next version a second install beside the first. Low for everything else.
