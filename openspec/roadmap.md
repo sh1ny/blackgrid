@@ -22,13 +22,18 @@ Runs after M4.5 and before M6, so every open GitHub issue is judged before a rel
 1. `sweep-open-issues` - lists the open issues, re-checks each against current `main` (does the cited code still behave that way, is it reachable, how likely and how bad is it) and proposes a verdict for each. The user decides. The agreed fixes are then added to this list as small changes, grouped by area, each naming the issues its PR closes. A roadmap edit, not a code change.
 2. `fix-changelog-spec` - closes #17. Spec-only fix to the release-versioning changelog rule: split the entry rule into PR entries (title and number) and direct-commit entries, add a first-release scenario (which `tool/changelog.dart` already handles), and describe squash-merged PRs. The sweep closed #30 and deferred the other 16 open issues to after 1.0 with the `post-1.0` label.
 
-## Next: M6 - replacement qualification
+## Next: M6 - Windows CI and releases
 
-Clean-machine release bundle with packaged DLLs, models, artwork and notices; full display and mixed-monitor matrix (the M2 corpus covers 3440×1440 only); offline, refresh and auth failures; restart, import and history correctness (risks 3 and 7); [§14](../docs/IMPLEMENTATION_STRATEGY.md#14-definition-of-done) definition of done. Also closes the user-only checks M3 waived and M5 left pending (real saved panels, extract/transit highlights, automatic floors). Also chooses the installer format (MSIX or Inno Setup) and starts GitHub Releases with the packaged installer, plus code signing and CI builds if needed; until then versions are tags with local builds only ([Release versioning](#release-versioning-add-release-versioning)).
+Rescoped with the user on 2026-10-30; more work will be added before M6 starts. M6 opens with full CI on GitHub's Windows runners and GitHub Releases in two formats, a zip of the Release bundle and an installer, so a version is built and published without the developer's machine. The installer format (MSIX or Inno Setup) and code signing are decided in M6; until then versions are tags with local builds only ([Release versioning](#release-versioning-add-release-versioning)). Offline, refresh and auth failures and restart, import and history correctness (risks 3 and 7) stay in M6, after CI and releases. The user may move them out once M6's scope is settled. The clean-machine, display-matrix and pending user checks moved to Later.
 
 ## Later
 
 - After 1.0: the issues the M4.6 sweep defers to after 1.0.
+- Needs testers besides the user (moved out of M6 on 2026-10-30):
+  - Clean-machine qualification of the release bundle: packaged DLLs, models, artwork and notices on a fresh Windows machine.
+  - The full display and mixed-monitor matrix. The M2 corpus covers 3440×1440 only.
+  - The user-only checks M3 waived and M5 left pending: real saved panels, extract and transit highlights, and automatic floors.
+  - The [§14](../docs/IMPLEMENTATION_STRATEGY.md#14-definition-of-done) definition of done, which depends on the checks above.
 
 ## Release versioning (`add-release-versioning`)
 
