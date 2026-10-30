@@ -67,18 +67,26 @@ The qualification tier SHALL run against the bundle that the run built and check
 
 #### Scenario: Bundle-based tests run
 - **WHEN** the qualification tier runs on CI
-- **THEN** the bundle integrity, vision runtime, vision worker, vision peaks, vision self-check, inspection recognition, panel OCR and vision CMake tests run against the CI build, and none of them is reported as skipped
+- **THEN** the bundle integrity, vision runtime, vision worker, vision peaks, vision self-check, inspection recognition, panel OCR and vision CMake tests run against the CI build, and none of them is reported as skipped except a test with an allowlisted host-platform skip
 
 #### Scenario: The bundle is missing
 - **WHEN** the qualification step starts and the bundle directory it was given does not exist
 - **THEN** the step fails, and the tests that need the bundle are not reported as skipped
 
 ### Requirement: Qualification skips are audited against a committed allowlist
-The CI run SHALL fail when a qualification test is skipped for a reason that a committed allowlist does not list. The allowlist SHALL list only tests that need private, uncommitted inputs. Each entry SHALL name the test file and the skip reason it accepts.
+The CI run SHALL fail when a qualification test is skipped for a reason that a committed allowlist does not list. The allowlist SHALL list only two kinds of skip:
+- a test that needs private, uncommitted inputs;
+- a host-platform skip: a test that skips because of a host setting that a GitHub-hosted runner cannot provide, such as a UTF-8 system code page. It is allowed only when a qualification test that runs on CI covers the same behaviour, and the entry's `why` names that covering test.
 
-#### Scenario: Only private-input tests skip
-- **WHEN** the qualification tier finishes and the only skipped tests are the inspection corpus test, the targeted-region replay test and the supplied-panel-image test, each with its listed reason
+Each entry SHALL name the test file and the skip reason it accepts. A skip caused by a missing environment variable or by the capture guard is never a host-platform skip.
+
+#### Scenario: Only allowlisted tests skip
+- **WHEN** the qualification tier finishes and the only skipped tests are the inspection corpus test, the targeted-region replay test, the supplied-panel-image test and the in-process Cyrillic-path vision runtime test (on a non-UTF-8 code page), each with its listed reason
 - **THEN** the audit passes and lists each accepted skip in the run log
+
+#### Scenario: A host-platform skip is covered on CI
+- **WHEN** the allowlist accepts the in-process Cyrillic-path vision runtime test's non-UTF-8 code page skip
+- **THEN** its entry names the vision self-check test that opens the bundle under a Cyrillic path through `blackgrid.exe`, and that test runs on CI and is not reported as skipped
 
 #### Scenario: An unlisted skip
 - **WHEN** a qualification test skips with a reason not on the allowlist, for example because an environment variable was not set

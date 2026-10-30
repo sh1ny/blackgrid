@@ -19,7 +19,8 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 | The CI Release build matches a release build | A gate left the tree dirty | test/tool/release/build_test.dart | dirty tree refuses before building naming files | green |
 | Qualification runs against the CI-built bundle | Bundle-based tests run | test/tool/ci/qualification_audit_test.dart | a skipped bundle-based test fails the audit | green |
 | Qualification runs against the CI-built bundle | The bundle is missing | test/tool/ci/qualification_runner_test.dart | a missing bundle directory exits 2 before flutter test runs | green |
-| Qualification skips are audited against a committed allowlist | Only private-input tests skip | test/tool/ci/qualification_audit_test.dart | allowlisted private-input skips pass and are listed | green |
+| Qualification skips are audited against a committed allowlist | Only allowlisted tests skip | test/tool/ci/qualification_audit_test.dart | allowlisted private-input skips pass and are listed | green |
+| Qualification skips are audited against a committed allowlist | A host-platform skip is covered on CI | test/tool/ci/qualification_audit_test.dart | the host-platform entry names a covering self-check test that has no platform skip | red |
 | Qualification skips are audited against a committed allowlist | An unlisted skip | test/tool/ci/qualification_audit_test.dart | an unlisted skip fails naming the file and reason | green |
 | Qualification skips are audited against a committed allowlist | The report is missing or unreadable | test/tool/ci/qualification_audit_test.dart | a missing, malformed or unfinished report fails the audit | green |
 | Qualification skips are audited against a committed allowlist | A test fails | test/tool/ci/qualification_runner_test.dart | a failing flutter test exits non-zero even when the audit passes | green |
