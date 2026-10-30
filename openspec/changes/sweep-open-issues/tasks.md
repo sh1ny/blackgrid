@@ -12,10 +12,10 @@ This change has no specs (`skip_specs: true`), so it has no scenarios to map.
 
 All GitHub writes run as `KintsugiBot` through the fenced `gh` credential, using the reasons in design.md's Verdicts table.
 
-- [ ] 1.1 Create the `post-1.0` label on `sh1ny/blackgrid` if it is missing. Verify: `gh label list` shows it.
-- [ ] 1.2 Close #30 with a comment giving its design.md reason and evidence. Verify: `gh issue view 30` shows it closed with that comment.
-- [ ] 1.3 Comment on #17 that it will be fixed by `fix-changelog-spec` in M4.6. Verify: the comment is on #17 and the issue stays open.
-- [ ] 1.4 For each deferred issue (#10, #16, #19, #20, #21, #23, #24, #25, #28, #29, #33, #34, #38, #48, #52, #55), post its design.md reason and apply `post-1.0`. Verify: `gh issue list --label post-1.0` lists exactly those 16.
+- [x] 1.1 Create the `post-1.0` label on `sh1ny/blackgrid` if it is missing. Verify: `gh label list` shows it.
+- [x] 1.2 Close #30 with a comment giving its design.md reason and evidence. Verify: `gh issue view 30` shows it closed with that comment.
+- [x] 1.3 Comment on #17 that it will be fixed by `fix-changelog-spec` in M4.6. Verify: the comment is on #17 and the issue stays open.
+- [x] 1.4 For each deferred issue (#10, #16, #19, #20, #21, #23, #24, #25, #28, #29, #33, #34, #38, #48, #52, #55), post its design.md reason and apply `post-1.0`. Verify: `gh issue list --label post-1.0` lists exactly those 16.
 
 ## 2. Update the roadmap
 
