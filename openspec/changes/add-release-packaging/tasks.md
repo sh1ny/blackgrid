@@ -25,10 +25,10 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 | The installer installs per user and keeps user data | Prerelease version in file version | test/tool/release/package_test.dart | a beta version keeps its prerelease in the display version and drops it from the file version | green |
 | Packaging publishes checksums and leaves no partial set | Checksums match | test/tool/release/package_test.dart | a successful run leaves exactly the zip, the installer and matching SHA256SUMS.txt | green |
 | Packaging publishes checksums and leaves no partial set | Installer compile fails | test/tool/release/package_test.dart | a failing ISCC exits 1 naming the stage and its code and removes build/release | green |
-| CI runs the gates in order and stops at the first failure | All gates pass | test/tool/ci/workflow_test.dart | gate steps run in order analyze, test, build:release, ci:qualification, package:release | red |
+| CI runs the gates in order and stops at the first failure | All gates pass | test/tool/ci/workflow_test.dart | gate steps run in order analyze, test, build:release, ci:qualification, package:release | green |
 | CI runs the gates in order and stops at the first failure | Analysis fails | test/tool/ci/workflow_test.dart | no gate step has continue-on-error or an always()/failure() condition | green |
 | CI runs the gates in order and stops at the first failure | The bundle check fails | test/tool/release/build_test.dart | bundle:check failure fails the build with its output | green |
-| CI runs the gates in order and stops at the first failure | Packaging fails | test/tool/ci/workflow_test.dart | the package step is last, sets no env and has no condition | red |
+| CI runs the gates in order and stops at the first failure | Packaging fails | test/tool/ci/workflow_test.dart | the package step is last, sets no env and has no condition | green |
 
 ## 1. ADR-0025 and the architecture index
 
@@ -116,8 +116,8 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 6. CI packaging step
 
-- [ ] 6.1 In `test/tool/ci/workflow_test.dart`, add `package:release` as the last entry of `gates` and rename the order test to its Test map name. Add the test `the package step is last, sets no env and has no condition`. Verify both fail against the current workflow.
-- [ ] 6.2 Add a `Package` step (`run: mise run package:release`) after `Qualification` in `.github/workflows/ci.yml`, with no `env:`, `if:` or `continue-on-error`. Verify: `mise exec -- flutter test test/tool/ci` passes, including the unchanged no-games scope, cache and permission tests, and the CI rows are green.
+- [x] 6.1 In `test/tool/ci/workflow_test.dart`, add `package:release` as the last entry of `gates` and rename the order test to its Test map name. Add the test `the package step is last, sets no env and has no condition`. Verify both fail against the current workflow.
+- [x] 6.2 Add a `Package` step (`run: mise run package:release`) after `Qualification` in `.github/workflows/ci.yml`, with no `env:`, `if:` or `continue-on-error`. Verify: `mise exec -- flutter test test/tool/ci` passes, including the unchanged no-games scope, cache and permission tests, and the CI rows are green.
 
 ## 7. Integration checks
 

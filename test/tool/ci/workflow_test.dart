@@ -15,6 +15,7 @@ void main() {
     'mise run test',
     'mise run build:release',
     'mise run ci:qualification',
+    'mise run package:release',
   ];
 
   late String source;
@@ -123,7 +124,8 @@ void main() {
   });
 
   test(
-    'gate steps run in order analyze, test, build:release, ci:qualification',
+    'gate steps run in order analyze, test, build:release, ci:qualification, '
+    'package:release',
     () {
       final indexes = [for (final g in gates) gateIndex(g)];
       expect(indexes, everyElement(isNonNegative));
@@ -131,6 +133,16 @@ void main() {
       expect(indexes.toSet(), hasLength(gates.length));
     },
   );
+
+  test('the package step is last, sets no env and has no condition', () {
+    final index = gateIndex('mise run package:release');
+    expect(index, steps.length - 1);
+    final step = steps[index];
+    expect(run(step), 'mise run package:release');
+    expect(step, isNot(contains('env')));
+    expect(step, isNot(contains('if')));
+    expect(step, isNot(contains('continue-on-error')));
+  });
 
   test(
     'no gate step has continue-on-error or an always()/failure() condition',
