@@ -32,7 +32,7 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 1. ADR-0025 and the architecture index
 
-- [ ] 1.1 Generate the installer `AppId` GUID once, with `[guid]::NewGuid()`, uppercase. Then write `docs/adr/0025-release-packaging.md` (MADR-short, `Status: accepted`, today's date, `Amends: [0024](0024-hosted-ci-runs-every-offline-gate.md)`, CI step list only) from the design's ADRs section and D1-D7:
+- [x] 1.1 Generate the installer `AppId` GUID once, with `[guid]::NewGuid()`, uppercase. Then write `docs/adr/0025-release-packaging.md` (MADR-short, `Status: accepted`, today's date, `Amends: [0024](0024-hosted-ci-runs-every-offline-gate.md)`, CI step list only) from the design's ADRs section and D1-D7:
   - Inno Setup, per user, with the fixed `AppId` value written out;
   - artifact names (D3);
   - stamp plus fresh `bundle:check` (D1);
