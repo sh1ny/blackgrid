@@ -239,6 +239,28 @@ void main() {
     expect(RegExp('merge duplicate pins').allMatches(out), hasLength(1));
   });
 
+  test('local merge commit and its branch commits are not listed', () async {
+    await buildToV010();
+    await git(['checkout', '-b', 'docs/close-m9']);
+    await commit('docs(close-m9): close M9');
+    await git(['checkout', 'main']);
+    await git([
+      'merge',
+      '--no-ff',
+      'docs/close-m9',
+      '-m',
+      'merge: docs/close-m9',
+    ]);
+    await mergePr(21, 'control', 'feat: control feature', [
+      'feat: task 1.1 control',
+    ]);
+    final out = await ok(['--strip', 'header', 'v0.1.0..HEAD']);
+    expect(out, isNot(contains('docs/close-m9')));
+    expect(out, isNot(contains('close M9')));
+    expect(out, isNot(contains('### Other')));
+    expect(entries(out, 'Features'), contains('- control feature (#21)'));
+  });
+
   test('final release folds prerelease sections', () async {
     await buildToV010();
     await buildToBeta();
