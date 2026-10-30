@@ -7,6 +7,8 @@ import 'support/no_games_scan.dart';
 void main() {
   group('the no-games scanner', () {
     const v = noGamesVariable;
+    // Built so this file holds no process call of its own.
+    const p = 'Process';
     void detects(String path, String content) => expect(
       findNoGamesSetters(path, content),
       isNotEmpty,
@@ -69,20 +71,97 @@ void main() {
       detects('windows/runner/a.dart', "final s = '$v'; // set\n");
     });
 
-    test('ignores dart comments outside test and dart under test', () {
+    test('ignores dart comments', () {
       ignores('lib/a.dart', '// needs $v=1\n');
       ignores('lib/a.dart', '/// Reads [noGamesRunningVariable].\n');
       ignores('tool/a.dart', '  // $v\nvoid f() {}\n');
-      ignores('test/a_test.dart', "final env = {'$v': '1'};\n");
-      ignores('test/data/capture/support/g.dart', 'const n = "$v";\n');
+      ignores('test/qualification/x_test.dart', '/// Needs `$v=1`.\n');
       detects('lib/test/b.dart', "final env = {'$v': '1'};\n");
       ignores('other.json', '{"name": "x", "note": "$v"}\n');
       ignores('lib/a.dart', 'const y = notNoGamesRunningVariableAtAll;\n');
     });
 
-    test('scans json and dart files', () {
-      expect(isScannableKind('a/b.json'), isTrue);
-      expect(isScannableKind('lib/a.dart'), isTrue);
+    test(
+      'flags dart under test unless a named exemption starts no process',
+      () {
+        detects(
+          'test/qualification/x_test.dart',
+          "$p.run('a.exe', [], environment: {'$v': '1'});\n",
+        );
+        detects('test/data/capture/support/g.dart', 'const n = "$v";\n');
+        detects(
+          'test/a_test.dart',
+          'final env = {noGamesRunningVariable: "1"};\n',
+        );
+        ignores(
+          'test/data/capture/native_guard_test.dart',
+          "const confirmed = {noGamesRunningVariable: '1'};\n",
+        );
+        ignores(
+          'test/data/capture/support/native_guard.dart',
+          "const noGamesRunningVariable = '$v';\n",
+        );
+        expect(
+          findNoGamesSetters(
+            'test/data/capture/native_guard_test.dart',
+            "const c = {noGamesRunningVariable: '1'};\n"
+                "$p.runSync('a.exe', [], environment: c);\n",
+          ),
+          [contains('starts a process')],
+        );
+      },
+    );
+
+    test('flags shell setters in yaml run and script blocks', () {
+      detects('other.yml', 'steps:\n  - run: export $v=1\n');
+      detects('other.yml', 'steps:\n  - run: |\n      \$env:$v = "1"\n');
+      detects('ci.yaml', 'job:\n  script:\n    - set $v=1\n');
+      ignores(
+        'other.yml',
+        'steps:\n  - run: if (\$env:$v -ne "1") { exit 1 }\n',
+      );
+      ignores('other.yml', 'steps:\n  - run: echo "needs $v"\n');
+      expect(
+        findNoGamesSetters('other.yml', 'a:\n  - run: export $v=1\n').single,
+        startsWith('other.yml: `run` at root.a[0].run'),
+      );
+    });
+
+    test('flags native, cmake, powershell module and python setters', () {
+      detects('windows/a.cpp', '  _putenv("$v=1");\n');
+      detects('windows/a.h', 'SetEnvironmentVariableW(L"$v", L"1");\n');
+      detects('windows/CMakeLists.txt', 'set(ENV{$v} 1)\n');
+      detects(
+        'windows/a.cmake',
+        'execute_process(COMMAND \${CMAKE_COMMAND} -E env $v=1 x)\n',
+      );
+      detects('tool/a.psm1', '\$env:$v = "1"\n');
+      detects('tool/a.py', 'os.environ["$v"] = "1"\n');
+      detects('tool/a.py', "run(cmd, env={'$v': '1'})\n");
+      ignores('windows/a.cpp', 'GetEnvironmentVariableW(L"$v", buf, 8);\n');
+      ignores('windows/a.cpp', '// _putenv("$v=1");\n');
+      ignores('windows/CMakeLists.txt', '# set(ENV{$v} 1)\n');
+      ignores('tool/a.py', '# os.environ["$v"] = "1"\n');
+      ignores('tool/a.py', 'print(os.environ.get("$v"))\n');
+    });
+
+    test('scans every file kind that can set the variable', () {
+      for (final path in [
+        'a/b.json',
+        'lib/a.dart',
+        'windows/a.cpp',
+        'windows/a.cc',
+        'windows/a.c',
+        'windows/a.h',
+        'windows/a.hpp',
+        'windows/CMakeLists.txt',
+        'windows/a.cmake',
+        'tool/a.psm1',
+        'tool/a.psd1',
+        'tool/a.py',
+      ]) {
+        expect(isScannableKind(path), isTrue, reason: path);
+      }
       expect(isScannableKind('README.md'), isFalse);
     });
   });
