@@ -113,7 +113,7 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 
 ## 4. Integration check
 
-- [ ] 4.1 Run the full offline loop, `mise run analyze` and `mise run test`. Confirm with `mise run test -- --reporter expanded` output (or the file list) that the new `test/tool/ci/` tests run in the fast loop and are not tagged `qualification`. Confirm every Test map row reads green. Do not run `ci:qualification` or set `BLACKGRID_NO_GAMES_RUNNING` locally (AGENTS.md; design D3).
+- [x] 4.1 Run the full offline loop, `mise run analyze` and `mise run test`. Confirm with `mise run test -- --reporter expanded` output (or the file list) that the new `test/tool/ci/` tests run in the fast loop and are not tagged `qualification`. Confirm every Test map row reads green. Do not run `ci:qualification` or set `BLACKGRID_NO_GAMES_RUNNING` locally (AGENTS.md; design D3).
 
 ## Workflow follow-up
 
