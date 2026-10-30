@@ -44,6 +44,7 @@ void main() {
           'imports',
           'runtimeVersions',
           'notices',
+          'map-marker-icons',
         ],
       );
       for (final step in steps) {

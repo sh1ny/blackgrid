@@ -142,7 +142,10 @@ void main() {
     });
 
     setUp(() async {
-      temporary = await Directory.systemTemp.createTemp('m0-collector-');
+      // Resolve to the long path the collector records: a hosted runner's
+      // TEMP is an 8.3 short path (C:\Users\RUNNER~1).
+      final created = await Directory.systemTemp.createTemp('m0-collector-');
+      temporary = Directory(await created.resolveSymbolicLinks());
       addTearDown(() => temporary.delete(recursive: true));
       source = await Directory('${temporary.path}/synthetic source').create();
       await File('${source.path}/$_configPath').parent.create(recursive: true);

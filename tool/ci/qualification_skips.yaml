@@ -1,0 +1,38 @@
+# Qualification skips the CI audit accepts (design D3). Each entry names a test
+# file and the exact skipReason it reports, and has one of two kinds:
+#
+#   private_input  The test needs private input CI does not have (a corpus,
+#                  recordings, a user-supplied image).
+#   host_platform  The test needs a host setting a GitHub-hosted runner cannot
+#                  provide. It must carry covered_by: {file, test}, naming a
+#                  test that CI runs and that checks the same behavior without
+#                  the host setting.
+#
+# Never list a missing environment input (BLACKGRID_RELEASE_BUNDLE and the
+# like), a capture-guard reason or a game-running reason: those must fail the
+# audit, and bundle-based tests must run, never skip.
+- kind: private_input
+  file: test/qualification/inspection_corpus_test.dart
+  reason: >-
+    Requires BLACKGRID_CORPUS_DIR (a corpus directory, see
+    docs/qualification/m2/CORPUS.md).
+  why: Needs a private labeled corpus that CI does not have.
+- kind: private_input
+  file: test/qualification/targeted_region_replay_test.dart
+  reason: >-
+    Requires BLACKGRID_RECORDING_DIRS (;-separated recording session folders,
+    see docs/qualification/m2/REPLAY.md).
+  why: Needs private scan recordings that CI does not have.
+- kind: private_input
+  file: test/qualification/m5_panel_ocr_test.dart
+  reason: Requires the explicitly authorized Shoreline image and built OCR DLL.
+  why: Needs a user-supplied, human-labeled image that CI does not have.
+- kind: host_platform
+  file: test/qualification/m2_vision_runtime_test.dart
+  reason: >-
+    ANSI code page 1252 is not UTF-8; covered by the blackgrid.exe self-check
+    under a Cyrillic path (m2_vision_self_check_test).
+  why: The hosted runner is code page 1252; the exe manifest sets UTF-8 for the covering test.
+  covered_by:
+    file: test/qualification/m2_vision_self_check_test.dart
+    test: self-check from bundle copied under Cyrillic path exits 0

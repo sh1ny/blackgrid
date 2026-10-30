@@ -104,6 +104,7 @@ Scanner has a manual catalog inspection and an opt-in **live scan** switch. With
 | `analyze` | `flutter analyze` |
 | `test` | Fast suite, excludes the `qualification` tag |
 | `test:qualification` | Expensive offline qualification tier only |
+| `ci:qualification` | CI-only qualification run with a skip audit. Fails locally by design unless you confirm that no game is running; developers use `test:qualification` |
 | `test:all` | Every test |
 | `format` / `format:check` | `dart format`, or check without writing |
 | `changelog` / `release-notes` | [`tool/changelog.dart`](tool/changelog.dart) over git-cliff ([`cliff.toml`](cliff.toml)) |
@@ -324,6 +325,22 @@ mise run release-notes -- v0.1.0..v0.2.0
 | [`m1_windows_smoke_test.dart`](integration_test/m1_windows_smoke_test.dart) | Real DPAPI, real catalog, SQLite reopen on Windows |
 
 Tests live in [`test/`](test/). **Agents and live-game checks:** no agent may launch or drive Blackgrid while Escape from Tarkov is running, and checks that need the game belong to the user. See [AGENTS.md](AGENTS.md).
+
+## 🚦 Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`, on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). It installs the tools pinned in [`mise.toml`](mise.toml), then runs these gates in order and stops at the first failure:
+
+1. `mise run analyze`
+2. `mise run test`
+3. `mise run build:release` (full-history checkout, with the offline bundle check)
+4. `mise run ci:qualification`, the qualification tier against that bundle
+
+The qualification tier cannot run every test on a hosted runner. The committed allowlist, [`tool/ci/qualification_skips.yaml`](tool/ci/qualification_skips.yaml), accepts two kinds of skip, and any other skip fails the run:
+
+- **Private input** (`private_input`): three tests need private inputs that are not committed: the inspection corpus, the targeted-region replay and the supplied panel image.
+- **Host platform** (`host_platform`): a skip caused by a host setting that a hosted runner cannot provide, and only when a test that runs on CI covers the same behaviour (`covered_by`). The one such entry is the in-process Cyrillic-path vision runtime test. It needs a UTF-8 system code page, and the runner uses 1252. The `blackgrid.exe` self-check under a Cyrillic path covers it.
+
+`mise run ci:qualification` is meant for CI. Locally it fails by design unless you confirm that no game is running, so developers use `mise run test:qualification`. Making the check required before merging is the repository owner's branch protection setting on GitHub.
 
 ## 🗑️ Uninstall
 

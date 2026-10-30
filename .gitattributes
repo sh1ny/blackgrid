@@ -7,3 +7,8 @@ assets/vision/** -text
 tool/vision/fonts/** -text
 assets/map_markers/** -text
 docs/design/map-marker-icons/candidates/** -text
+# Flutter regenerates these with LF during pub get; an autocrlf checkout
+# (the hosted Windows runner) would leave them modified.
+windows/flutter/generated_plugin_registrant.cc text eol=lf
+windows/flutter/generated_plugin_registrant.h text eol=lf
+windows/flutter/generated_plugins.cmake text eol=lf

@@ -12,6 +12,7 @@
 - Testing any feature that requires the game to be running belongs 100% to the user. Agents MUST NOT launch the game or create/run automated live-game tests.
 - Written tests and fixture/mocked/offline checks are allowed. Agents may launch and test the app only after confirming Escape from Tarkov is not running; if that cannot be confirmed, do not launch it.
 - When verification requires the game, stop before that verification and ask the user to perform the test or explicitly approve skipping that confirmation. Approval to skip is not permission for an agent to perform live-game testing.
+- The CI workflow's `BLACKGRID_NO_GAMES_RUNNING=1` applies only to GitHub-hosted runners. Agents never set it on a developer machine, including to make a local `ci:qualification` run pass.
 - This boundary overrides general smoke-test, UI-test, and runtime-verification requirements. Attribute user-performed results to the user; record skipped checks as unverified, never passed.
 
 ## Dart and Flutter code

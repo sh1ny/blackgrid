@@ -14,6 +14,10 @@ run = "flutter test --exclude-tags qualification"
 description = "Run expensive offline qualification tests"
 run = "flutter test --tags qualification"
 
+[tasks."ci:qualification"]
+description = "CI-only qualification gate; fails locally by design unless the user confirms no game is running"
+run = "dart run tool/ci/qualification.dart"
+
 [tasks."test:all"]
 description = "Run the complete test suite"
 run = "flutter test"
