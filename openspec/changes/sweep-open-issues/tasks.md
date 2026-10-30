@@ -19,8 +19,8 @@ All GitHub writes run as `KintsugiBot` through the fenced `gh` credential, using
 
 ## 2. Update the roadmap
 
-- [ ] 2.1 In `openspec/roadmap.md` M4.6 Changes, replace the placeholder "2. The fix changes the sweep adds..." with `fix-changelog-spec`. It closes #17: split the changelog entry rule into PR entries and direct-commit entries, add a first-release scenario, and describe squash-merged PRs. Verify: the roadmap lists it as change 2 with #17.
-- [ ] 2.2 Run `openspec validate sweep-open-issues --strict`. Verify: it passes.
+- [x] 2.1 In `openspec/roadmap.md` M4.6 Changes, replace the placeholder "2. The fix changes the sweep adds..." with `fix-changelog-spec`. It closes #17: split the changelog entry rule into PR entries and direct-commit entries, add a first-release scenario, and describe squash-merged PRs. Verify: the roadmap lists it as change 2 with #17.
+- [x] 2.2 Run `openspec validate sweep-open-issues --strict`. Verify: it passes.
 
 ## Workflow follow-up
 

@@ -20,7 +20,7 @@ Runs after M4.5 and before M6, so every open GitHub issue is judged before a rel
 
 **Changes** (in order):
 1. `sweep-open-issues` - lists the open issues, re-checks each against current `main` (does the cited code still behave that way, is it reachable, how likely and how bad is it) and proposes a verdict for each. The user decides. The agreed fixes are then added to this list as small changes, grouped by area, each naming the issues its PR closes. A roadmap edit, not a code change.
-2. The fix changes the sweep adds. Their number and scope are not known until it runs.
+2. `fix-changelog-spec` - closes #17. Spec-only fix to the release-versioning changelog rule: split the entry rule into PR entries (title and number) and direct-commit entries, add a first-release scenario (which `tool/changelog.dart` already handles), and describe squash-merged PRs. The sweep closed #30 and deferred the other 16 open issues to after 1.0 with the `post-1.0` label.
 
 ## Next: M6 - replacement qualification
 
