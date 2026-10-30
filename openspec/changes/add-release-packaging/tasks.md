@@ -121,8 +121,8 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `mise run analyze`, `mise run test` and `dart format --output=none --set-exit-if-changed .`. Verify all pass.
-- [ ] 7.2 Package locally, end to end, with no game check needed: nothing launches the app or the produced setup.
+- [x] 7.1 Run `mise run analyze`, `mise run test` and `dart format --output=none --set-exit-if-changed .`. Verify all pass.
+- [x] 7.2 Package locally, end to end, with no game check needed: nothing launches the app or the produced setup.
   - Run `mise run build:release` then `mise run package:release` on the clean branch head.
   - Verify that `build/release/` holds exactly the three files, and that `Get-FileHash` matches `SHA256SUMS.txt`.
   - Verify that the zip lists `Blackgrid-<version>/blackgrid.exe` and `THIRD_PARTY_NOTICES.md`.
