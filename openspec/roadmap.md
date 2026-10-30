@@ -27,10 +27,40 @@ Rescoped with the user on 2026-10-30; more work will be added as M6 runs. M6 ope
 
 ## Next
 
-Not planned yet: the user adds work as M6 runs.
+Planned with the user on 2026-10-30 from a review of [TarkovMonitor](https://github.com/the-hideout/TarkovMonitor) and [tarkov.dev](https://github.com/the-hideout/tarkov-dev)'s map. The goal is useful feature parity, rebuilt independently: no source code is copied and TarkovMonitor's bugs are not repeated. Blackgrid never looks for the game process; everything below comes from the game's log files, the screenshot folder and the user's own actions. The milestones run in this order.
+
+### M7 - raid lifecycle, timers and local stats
+
+Blackgrid follows the whole raid from the game's logs, not just the map and mode, shows raid timers in its own window and keeps local stats.
+
+1. `add-raid-lifecycle` - read the rest of `application.log` (queue, match found, raid starting and started, matching aborted, back in menus, profile select) and `notifications.log` (raid exit, flea sales, task started, failed and finished) into one raid state machine that recognises reconnects. Fixes what TarkovMonitor gets wrong: partial lines across reads, multi-byte text split across chunks, and the raid exit and profile select coming from two logs in either order.
+2. `add-raid-timers` - time in raid, the run-through countdown (default 7:10) and the scav cooldown countdown (tarkov.dev's base time, the user's Fence reputation and built hideout bonuses from Tracker progress), shown in Blackgrid's window; no overlay. Settings: run-through length, Fence reputation, timers on or off and which ones show.
+3. `add-local-stats` - total flea sales and raids per map, stored locally in the Drift database, with a clear button. Nothing leaves the machine.
+
+### M8 - map labels and popups
+
+The native map reads like tarkov.dev's: named places, labelled extracts and a bubble at the marker on click.
+
+1. `add-extract-labels` - draw each extract's name beside its badge, coloured by faction (PMC, Scav, shared, transit) in colours we choose (ADR-0023), outlines drawn in their category's colour instead of hazard red, and extract outlines shown on hover or selection. Adds a `?` help button on the map: position tracking needs the game's own screenshot key.
+2. `add-marker-popups` - replace the details strip under the map with a bubble anchored to the marker that follows pan and zoom, stays in the viewport and closes. It shows the quest name and objective text, an extract's switches and required item, a lock's type and key name, a container's name, or a boss and spawn chance; raw fields move to a collapsed Details section (`player-facing-text`).
+3. `add-location-labels` - carry tarkov.dev's place labels (`maps.json`, already frozen in the pack's evidence: 303 labels on 10 maps) into a new pack version, with a rights note (user decision 2026-10-30: use tarkov.dev's data); draw them on the canvas behind the markers at a fixed screen size, with rotation and a halo, hidden on other floors by height band and thinned when zoomed far out.
+
+### M9 - Tarkov Tracker task sync
+
+Lifted from read-only by the user on 2026-10-30 ([STRATEGY.md](../STRATEGY.md)). Blackgrid marks quests on tarkovtracker.org from the logged task events, within tarkovtracker.org's API rules and limits.
+
+1. `add-tracker-task-sync` - an ADR for progression writes; a write-permission token check per mode; finished, failed and restarted tasks sent only for the matching profile and mode, behind a rate limiter, and never on a stale or unverified token.
+2. `add-tracker-history-replay` - replay past game logs to bring Tracker up to date, refused while a raid is in progress.
+
+### M10 - alerts and window behaviour
+
+1. `add-audio-alerts` - match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder and restart-failed-tasks, each with a switch, a custom sound and a test button. The user decides how the default sounds are recorded before this starts.
+2. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
+3. `add-window-behaviour` - tray, stay on top and start minimized.
 
 ## Later
 
+- Goons reports to tarkov.dev (a one-click, confirmed report that sends the map, mode, raid time and account ID). Deferred by the user on 2026-10-30.
 - After 1.0: the issues the M4.6 sweep defers to after 1.0.
 - Needs testers besides the user (moved out of M6 on 2026-10-30):
   - Clean-machine qualification of the release bundle: packaged DLLs, models, artwork and notices on a fresh Windows machine.
