@@ -6,16 +6,16 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| CI runs on every pull request and push to main | A pull request is opened | test/tool/ci/workflow_test.dart | triggers are pull_request and push to main only | red |
-| CI runs on every pull request and push to main | A push to main | test/tool/ci/workflow_test.dart | triggers are pull_request and push to main only | red |
-| CI runs on every pull request and push to main | Pushes to main in quick succession | test/tool/ci/workflow_test.dart | a push run has its own concurrency group keyed by github.sha and is never cancelled | red |
-| CI runs on every pull request and push to main | A newer commit supersedes a running pull request run | test/tool/ci/workflow_test.dart | pull request runs share one group per PR and cancel in progress | red |
-| CI uses the pinned toolchain | Tools match the pin | test/tool/ci/workflow_test.dart | tools come only from mise.toml and every gate runs through mise run | red |
-| CI uses the pinned toolchain | The pinned tool cannot be installed | test/tool/ci/workflow_test.dart | the mise install step precedes every gate and has no fallback or continue-on-error | red |
-| CI runs the gates in order and stops at the first failure | All gates pass | test/tool/ci/workflow_test.dart | gate steps run in order analyze, test, build:release, ci:qualification | red |
-| CI runs the gates in order and stops at the first failure | Analysis fails | test/tool/ci/workflow_test.dart | no gate step has continue-on-error or an always()/failure() condition | red |
+| CI runs on every pull request and push to main | A pull request is opened | test/tool/ci/workflow_test.dart | triggers are pull_request and push to main only | green |
+| CI runs on every pull request and push to main | A push to main | test/tool/ci/workflow_test.dart | triggers are pull_request and push to main only | green |
+| CI runs on every pull request and push to main | Pushes to main in quick succession | test/tool/ci/workflow_test.dart | a push run has its own concurrency group keyed by github.sha and is never cancelled | green |
+| CI runs on every pull request and push to main | A newer commit supersedes a running pull request run | test/tool/ci/workflow_test.dart | pull request runs share one group per PR and cancel in progress | green |
+| CI uses the pinned toolchain | Tools match the pin | test/tool/ci/workflow_test.dart | tools come only from mise.toml and every gate runs through mise run | green |
+| CI uses the pinned toolchain | The pinned tool cannot be installed | test/tool/ci/workflow_test.dart | the mise install step precedes every gate and has no fallback or continue-on-error | green |
+| CI runs the gates in order and stops at the first failure | All gates pass | test/tool/ci/workflow_test.dart | gate steps run in order analyze, test, build:release, ci:qualification | green |
+| CI runs the gates in order and stops at the first failure | Analysis fails | test/tool/ci/workflow_test.dart | no gate step has continue-on-error or an always()/failure() condition | green |
 | CI runs the gates in order and stops at the first failure | The bundle check fails | test/tool/release/build_test.dart | bundle:check failure fails the build with its output | green |
-| The CI Release build matches a release build | Build number from full history | test/tool/ci/workflow_test.dart | checkout uses full history and no persisted credentials | red |
+| The CI Release build matches a release build | Build number from full history | test/tool/ci/workflow_test.dart | checkout uses full history and no persisted credentials | green |
 | The CI Release build matches a release build | A gate left the tree dirty | test/tool/release/build_test.dart | dirty tree refuses before building naming files | green |
 | Qualification runs against the CI-built bundle | Bundle-based tests run | test/tool/ci/qualification_audit_test.dart | a skipped bundle-based test fails the audit | green |
 | Qualification runs against the CI-built bundle | The bundle is missing | test/tool/ci/qualification_runner_test.dart | a missing bundle directory exits 2 before flutter test runs | green |
@@ -23,12 +23,12 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 | Qualification skips are audited against a committed allowlist | An unlisted skip | test/tool/ci/qualification_audit_test.dart | an unlisted skip fails naming the file and reason | green |
 | Qualification skips are audited against a committed allowlist | The report is missing or unreadable | test/tool/ci/qualification_audit_test.dart | a missing, malformed or unfinished report fails the audit | green |
 | Qualification skips are audited against a committed allowlist | A test fails | test/tool/ci/qualification_runner_test.dart | a failing flutter test exits non-zero even when the audit passes | green |
-| The no-games confirmation is scoped to the hosted runner | Native capture test runs on the hosted runner | test/tool/ci/workflow_test.dart | the qualification step alone sets the no-games confirmation and the bundle inputs | red |
+| The no-games confirmation is scoped to the hosted runner | Native capture test runs on the hosted runner | test/tool/ci/workflow_test.dart | the qualification step alone sets the no-games confirmation and the bundle inputs | green |
 | The no-games confirmation is scoped to the hosted runner | A game executable is listed | test/tool/ci/qualification_audit_test.dart | the capture guard's refused and unconfirmed reasons are not allowlisted | green |
-| The no-games confirmation is scoped to the hosted runner | Another step or file sets the confirmation | test/tool/ci/workflow_test.dart | no other tracked script or config sets the no-games confirmation | red |
-| CI holds least privilege and no secrets | Workflow permissions | test/tool/ci/workflow_test.dart | permissions are exactly contents read and no secrets are used | red |
-| CI holds least privilege and no secrets | An action pinned by tag | test/tool/ci/workflow_test.dart | every uses line is pinned to a 40-hex commit SHA | red |
-| Caches never decide correctness | Cold cache | test/tool/ci/workflow_test.dart | caches hold only the mise downloads and the vision inputs keyed by their pins, never build output | red |
+| The no-games confirmation is scoped to the hosted runner | Another step or file sets the confirmation | test/tool/ci/workflow_test.dart | no other tracked script or config sets the no-games confirmation | green |
+| CI holds least privilege and no secrets | Workflow permissions | test/tool/ci/workflow_test.dart | permissions are exactly contents read and no secrets are used | green |
+| CI holds least privilege and no secrets | An action pinned by tag | test/tool/ci/workflow_test.dart | every uses line is pinned to a 40-hex commit SHA | green |
+| Caches never decide correctness | Cold cache | test/tool/ci/workflow_test.dart | caches hold only the mise downloads and the vision inputs keyed by their pins, never build output | green |
 | Caches never decide correctness | A corrupt cached input | test/tool/vision/fetch_runtime_test.dart | fetch skips a verified cached input and repairs a corrupt one | green |
 
 ## 1. ADR-0024 and the architecture index
@@ -69,7 +69,7 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 
 ## 3. CI workflow, offline workflow test and docs
 
-- [ ] 3.1 Write failing tests in `test/tool/ci/workflow_test.dart` for every workflow row in the Test map:
+- [x] 3.1 Write failing tests in `test/tool/ci/workflow_test.dart` for every workflow row in the Test map:
   - Parse `.github/workflows/ci.yml` with `package:yaml` and assert the properties named in D1-D6:
     - the triggers;
     - the PR concurrency group and cancellation;
@@ -93,13 +93,13 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
     Comments, descriptions and Markdown are ignored.
 
   Verify: the tests fail because the workflow is absent.
-- [ ] 3.2 Write `.github/workflows/ci.yml` per D1-D6:
+- [x] 3.2 Write `.github/workflows/ci.yml` per D1-D6:
   - Steps: checkout; `actions/cache/restore` for the vision inputs; `jdx/mise-action` (with its cache); `mise run analyze`; `mise run test`; `mise run build:release`; `actions/cache/save` for the vision inputs right after `build:release`, so a red qualification step does not lose the cache (review S2); a qualification step that resolves `BLACKGRID_CMAKE` from `(Get-Command cmake).Source` and runs `mise run ci:qualification` with the step-level `env` from 3.1.
   - Pin each action to its current major tag's commit SHA, looked up with `git ls-remote` and kept as a trailing `# vX` comment.
   - Add `mise trust` only if the first PR run shows it is needed (design Open Questions).
 
   Verify: the 3.1 tests pass, rows flipped green; `mise run analyze`, `mise run test` and `dart format` are clean.
-- [ ] 3.3 Add the docs (D7):
+- [x] 3.3 Add the docs (D7):
   - **README** gets a "Continuous integration" section:
     - what runs on every PR and push to `main`, and its order;
     - the runner image, with a link to its software list;
