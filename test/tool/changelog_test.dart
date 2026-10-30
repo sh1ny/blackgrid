@@ -343,12 +343,23 @@ void main() {
     await git(['init', '-b', 'main']);
     await cliffConfig.copy('${repo.path}${Platform.pathSeparator}cliff.toml');
     await commit('feat: root feature');
+    await mergePr(30, 'first-pr', 'feat: first pr feature', [
+      'feat: task 1.1 first pr',
+    ]);
     await tag('v0.1.0');
     await commit('fix: after tag');
     final fromRoot = await ok(['--strip', 'header', '--latest']);
     repo = saved;
     expect(fromRoot, contains('## v0.1.0'));
     expect(fromRoot, contains('root feature'));
+    expect(
+      entries(
+        fromRoot,
+        'Features',
+      ).where((line) => line == '- first pr feature (#30)'),
+      hasLength(1),
+    );
+    expect(fromRoot, isNot(contains('task 1.1 first pr')));
     expect(fromRoot, isNot(contains('after tag')));
   });
 
