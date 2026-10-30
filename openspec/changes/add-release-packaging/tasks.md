@@ -8,23 +8,23 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 |---|---|---|---|---|
 | A release build records what it built | Successful build writes a stamp | test/tool/release/build_test.dart | a passing build writes a stamp with version, build number and HEAD commit | green |
 | A release build records what it built | A failed bundle check leaves no stamp | test/tool/release/build_test.dart | a failing bundle check deletes an earlier stamp and writes none | green |
-| Packaging uses only a bundle stamped for the current clean HEAD | Stamp matches HEAD | test/tool/release/package_test.dart | a fresh stamp passes admission and re-runs bundle:check before packaging | red |
-| Packaging uses only a bundle stamped for the current clean HEAD | Bundle changed after the build | test/tool/release/package_test.dart | a failing bundle:check re-run refuses and leaves no package | red |
-| Packaging uses only a bundle stamped for the current clean HEAD | Bundle built from another commit | test/tool/release/package_test.dart | a stamp for another commit refuses naming both commits and clears earlier output | red |
-| Packaging uses only a bundle stamped for the current clean HEAD | No stamp | test/tool/release/package_test.dart | a missing stamp refuses and points to build:release | red |
-| Packaging uses only a bundle stamped for the current clean HEAD | Dirty tree | test/tool/release/package_test.dart | a dirty tree refuses listing the files | red |
-| The installer compiler is pinned and verified | Verified compiler | test/tool/release/package_test.dart | the pinned compiler is fetched, unpacked once with a complete marker and reused | red |
-| The installer compiler is pinned and verified | Hash mismatch | test/tool/release/package_test.dart | a fetch hash mismatch fails naming both hashes and unpacks nothing | red |
-| The installer compiler is pinned and verified | Compiler on PATH | test/tool/release/package_test.dart | ISCC runs only by absolute path from the packaging cache | red |
-| The zip holds exactly the bundle and the notices | Zip contents | test/tool/release/package_test.dart | the zip holds the bundle and notices under one versioned folder and nothing else | red |
-| The zip holds exactly the bundle and the notices | Notices missing | test/tool/release/package_test.dart | missing notices fail and leave no zip | red |
+| Packaging uses only a bundle stamped for the current clean HEAD | Stamp matches HEAD | test/tool/release/package_test.dart | a fresh stamp passes admission and re-runs bundle:check before packaging | green |
+| Packaging uses only a bundle stamped for the current clean HEAD | Bundle changed after the build | test/tool/release/package_test.dart | a failing bundle:check re-run refuses and leaves no package | green |
+| Packaging uses only a bundle stamped for the current clean HEAD | Bundle built from another commit | test/tool/release/package_test.dart | a stamp for another commit refuses naming both commits and clears earlier output | green |
+| Packaging uses only a bundle stamped for the current clean HEAD | No stamp | test/tool/release/package_test.dart | a missing stamp refuses and points to build:release | green |
+| Packaging uses only a bundle stamped for the current clean HEAD | Dirty tree | test/tool/release/package_test.dart | a dirty tree refuses listing the files | green |
+| The installer compiler is pinned and verified | Verified compiler | test/tool/release/package_test.dart | the pinned compiler is fetched, unpacked once with a complete marker and reused | green |
+| The installer compiler is pinned and verified | Hash mismatch | test/tool/release/package_test.dart | a fetch hash mismatch fails naming both hashes and unpacks nothing | green |
+| The installer compiler is pinned and verified | Compiler on PATH | test/tool/release/package_test.dart | ISCC runs only by absolute path from the packaging cache | green |
+| The zip holds exactly the bundle and the notices | Zip contents | test/tool/release/package_test.dart | the zip holds the bundle and notices under one versioned folder and nothing else | green |
+| The zip holds exactly the bundle and the notices | Notices missing | test/tool/release/package_test.dart | missing notices fail and leave no zip | green |
 | The installer installs per user and keeps user data | Installer settings | test/tool/release/installer_script_test.dart | the script requests lowest privileges, the per-user folder and the committed AppId | green |
-| The installer installs per user and keeps user data | Installer settings | test/tool/release/package_test.dart | ISCC gets the display version, the numeric file version and absolute paths | red |
+| The installer installs per user and keeps user data | Installer settings | test/tool/release/package_test.dart | ISCC gets the display version, the numeric file version and absolute paths | green |
 | The installer installs per user and keeps user data | User data on uninstall | test/tool/release/installer_script_test.dart | the script has no install-delete, uninstall-delete, uninstall-run or code section | green |
 | The installer installs per user and keeps user data | Upgrade or downgrade replaces every file | test/tool/release/installer_script_test.dart | every files entry carries ignoreversion | green |
-| The installer installs per user and keeps user data | Prerelease version in file version | test/tool/release/package_test.dart | a beta version keeps its prerelease in the display version and drops it from the file version | red |
-| Packaging publishes checksums and leaves no partial set | Checksums match | test/tool/release/package_test.dart | a successful run leaves exactly the zip, the installer and matching SHA256SUMS.txt | red |
-| Packaging publishes checksums and leaves no partial set | Installer compile fails | test/tool/release/package_test.dart | a failing ISCC exits 1 naming the stage and its code and removes build/release | red |
+| The installer installs per user and keeps user data | Prerelease version in file version | test/tool/release/package_test.dart | a beta version keeps its prerelease in the display version and drops it from the file version | green |
+| Packaging publishes checksums and leaves no partial set | Checksums match | test/tool/release/package_test.dart | a successful run leaves exactly the zip, the installer and matching SHA256SUMS.txt | green |
+| Packaging publishes checksums and leaves no partial set | Installer compile fails | test/tool/release/package_test.dart | a failing ISCC exits 1 naming the stage and its code and removes build/release | green |
 | CI runs the gates in order and stops at the first failure | All gates pass | test/tool/ci/workflow_test.dart | gate steps run in order analyze, test, build:release, ci:qualification, package:release | red |
 | CI runs the gates in order and stops at the first failure | Analysis fails | test/tool/ci/workflow_test.dart | no gate step has continue-on-error or an always()/failure() condition | green |
 | CI runs the gates in order and stops at the first failure | The bundle check fails | test/tool/release/build_test.dart | bundle:check failure fails the build with its output | green |
@@ -96,13 +96,13 @@ Installer behaviour that only a real install can show (shortcuts, the upgrade in
 
 ## 5. Package step
 
-- [ ] 5.1 Write failing tests in `test/tool/release/package_test.dart` for every `package_test.dart` row of the Test map.
+- [x] 5.1 Write failing tests in `test/tool/release/package_test.dart` for every `package_test.dart` row of the Test map.
   - **Fixtures:** a real Git fixture with a tiny synthetic bundle (a few small files, one in a subfolder), a stamp, `pubspec.yaml` and `THIRD_PARTY_NOTICES.md`.
   - **Fakes:** a `FakeRunner` that stubs `mise run bundle:check`, the compiler unpack and `ISCC.exe`, the last by writing a small fake setup file into `/O`. A `fetch` function parameter is injected, returning a fake installer file or throwing `FetchException`.
   - **Assertions:** the exact ISCC arguments, including the `/D` defines and absolute paths, and that the executable path is under `.dart_tool/blackgrid_packaging/innosetup-<sha>/`. Also the zip entries, read back with `package:archive`; the `SHA256SUMS.txt` content; exit codes; and that `build/release/` is absent after each refusal or failure, including when output from a pre-existing earlier run was there.
 
   Verify they fail because `package_step.dart` does not exist.
-- [ ] 5.2 Implement `tool/release/src/package_step.dart` per D1, D2, D3 and D5:
+- [x] 5.2 Implement `tool/release/src/package_step.dart` per D1, D2, D3 and D5:
   - clear `build/release/`, then run admission;
   - `bundle:check` re-run;
   - fetch the compiler through the injected `fetchInputs`;

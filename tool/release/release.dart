@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'src/build_step.dart';
 import 'src/git.dart';
+import 'src/package_step.dart';
 import 'src/release_steps.dart';
 import 'src/tag_step.dart';
 
@@ -16,6 +17,9 @@ Commands:
   build
       Build the Windows Release bundle with the pubspec version and commit-count
       build number, then run the offline bundle integrity check.
+  package
+      Package the stamped Release bundle of the clean HEAD into build/release:
+      the zip, the per-user installer and SHA256SUMS.txt.
 ''';
 
 Future<void> main(List<String> arguments) async {
@@ -41,6 +45,9 @@ Future<int> runRelease(
     case 'build':
       if (rest.isNotEmpty) return _usageError('build takes no arguments.');
       return _build(runner, repoDir ?? Directory.current);
+    case 'package':
+      if (rest.isNotEmpty) return _usageError('package takes no arguments.');
+      return _package(runner, repoDir ?? Directory.current);
     default:
       return _usageError('Unknown command "$command".');
   }
@@ -96,6 +103,16 @@ Future<int> _tag(CommandRunner runner, Directory repoDir) async {
 Future<int> _build(CommandRunner runner, Directory repoDir) async {
   try {
     await build(repoDir: repoDir, runner: runner);
+    return 0;
+  } on ReleaseException catch (e) {
+    stderr.writeln(e.message);
+    return e.exitCode;
+  }
+}
+
+Future<int> _package(CommandRunner runner, Directory repoDir) async {
+  try {
+    await package(repoDir: repoDir, runner: runner);
     return 0;
   } on ReleaseException catch (e) {
     stderr.writeln(e.message);

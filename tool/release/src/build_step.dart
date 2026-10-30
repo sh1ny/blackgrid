@@ -32,18 +32,7 @@ Future<void> build({
     );
   }
 
-  final pubspec = File('${repoDir.path}/pubspec.yaml').readAsStringSync();
-  final versions = RegExp(
-    r'^version:[ \t]*(\S+)[ \t]*$',
-    multiLine: true,
-  ).allMatches(pubspec).toList();
-  if (versions.length != 1) {
-    throw ReleaseException(
-      'pubspec.yaml must have exactly one top-level "version:" line, '
-      'found ${versions.length}.',
-    );
-  }
-  final version = versions.single.group(1)!;
+  final version = readPubspecVersion(repoDir);
 
   final head = await git.output(['rev-parse', 'HEAD']);
   final countText = await git.output(['rev-list', '--count', 'HEAD']);
@@ -97,4 +86,22 @@ Future<void> build({
     BuildStamp(version: version, buildNumber: count, commit: head),
   );
   sink.writeln('Built $version+$count; bundle check passed.');
+}
+
+/// Returns the single top-level `version:` of the pubspec in [repoDir].
+///
+/// Throws a [ReleaseException] when there is not exactly one.
+String readPubspecVersion(Directory repoDir) {
+  final pubspec = File('${repoDir.path}/pubspec.yaml').readAsStringSync();
+  final versions = RegExp(
+    r'^version:[ \t]*(\S+)[ \t]*$',
+    multiLine: true,
+  ).allMatches(pubspec).toList();
+  if (versions.length != 1) {
+    throw ReleaseException(
+      'pubspec.yaml must have exactly one top-level "version:" line, '
+      'found ${versions.length}.',
+    );
+  }
+  return versions.single.group(1)!;
 }
