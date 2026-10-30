@@ -2,14 +2,43 @@ import 'dart:convert';
 
 import 'package:yaml/yaml.dart';
 
+/// Why a skip is allowlisted.
+enum SkipKind {
+  /// The test needs private input the CI runner does not have.
+  privateInput,
+
+  /// The test needs a host setting a GitHub-hosted runner cannot provide.
+  hostPlatform,
+}
+
+/// The CI-run test that covers what a host-platform skip leaves unrun.
+class CoveredBy {
+  /// Creates a covering-test reference.
+  const CoveredBy({required this.file, required this.test});
+
+  /// The repo-relative, forward-slash path of the covering test file.
+  final String file;
+
+  /// The exact name of the covering test.
+  final String test;
+}
+
 /// One allowlisted skip: a test file that may skip for exactly [reason].
 class AllowedSkip {
   /// Creates an allowlist entry.
   const AllowedSkip({
+    required this.kind,
+    this.coveredBy,
     required this.file,
     required this.reason,
     required this.why,
   });
+
+  /// Why this skip is allowlisted.
+  final SkipKind kind;
+
+  /// The CI-run test covering a [SkipKind.hostPlatform] skip; `null` otherwise.
+  final CoveredBy? coveredBy;
 
   /// The repo-relative, forward-slash path of the test file.
   final String file;
@@ -128,10 +157,15 @@ class AuditResult {
   bool get passed => findings.isEmpty;
 }
 
-/// Parses the allowlist YAML: a list of `{file, reason, why}` maps.
+/// Parses the allowlist YAML: a list of entry maps.
+///
+/// Every entry has a `kind` (`private_input` or `host_platform`) and non-empty
+/// string `file`, `reason` and `why` fields. A `host_platform` entry also has a
+/// `covered_by` map of non-empty `file` and `test`; a `private_input` entry
+/// must not have one.
 ///
 /// Throws a [FormatException] when the document is not such a list or an
-/// entry lacks a non-empty string field.
+/// entry breaks these rules.
 List<AllowedSkip> parseAllowlist(String source) {
   final Object? document;
   try {
@@ -142,21 +176,54 @@ List<AllowedSkip> parseAllowlist(String source) {
   if (document is! YamlList) {
     throw const FormatException('Allowlist must be a YAML list of entries.');
   }
-  return [
-    for (final entry in document)
-      switch (entry) {
-        {
-          'file': final String file,
-          'reason': final String reason,
-          'why': final String why,
-        }
-            when file.isNotEmpty && reason.isNotEmpty && why.isNotEmpty =>
-          AllowedSkip(file: file, reason: reason, why: why),
-        _ => throw FormatException(
-          'Allowlist entry needs non-empty file, reason and why: $entry',
-        ),
-      },
-  ];
+  return [for (final entry in document) _parseEntry(entry)];
+}
+
+AllowedSkip _parseEntry(Object? entry) {
+  FormatException invalid(String problem) =>
+      FormatException('Allowlist entry $problem: $entry');
+  if (entry
+      case {
+        'kind': final String kind,
+        'file': final String file,
+        'reason': final String reason,
+        'why': final String why,
+      }
+      when file.isNotEmpty && reason.isNotEmpty && why.isNotEmpty) {
+    final covered = (entry as Map).containsKey('covered_by')
+        ? entry['covered_by']
+        : null;
+    final coveredBy = switch (covered) {
+      null => null,
+      {'file': final String f, 'test': final String t}
+          when f.isNotEmpty && t.isNotEmpty =>
+        CoveredBy(file: f, test: t),
+      _ => throw invalid('has a malformed covered_by'),
+    };
+    return switch ((kind, coveredBy)) {
+      ('private_input', null) => AllowedSkip(
+        kind: SkipKind.privateInput,
+        file: file,
+        reason: reason,
+        why: why,
+      ),
+      ('private_input', _) => throw invalid(
+        'is a private_input and must not have covered_by',
+      ),
+      ('host_platform', final CoveredBy covering) => AllowedSkip(
+        kind: SkipKind.hostPlatform,
+        coveredBy: covering,
+        file: file,
+        reason: reason,
+        why: why,
+      ),
+      ('host_platform', _) => throw invalid(
+        'is a host_platform and needs covered_by',
+      ),
+      _ => throw invalid('has an unknown kind "$kind"'),
+    };
+  }
+  throw invalid('needs kind, file, reason and why');
 }
 
 String _normalise(String path, String repoRoot) {

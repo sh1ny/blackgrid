@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../tool/ci/src/audit.dart';
+import '../../data/capture/support/native_guard.dart';
 
 // Verbatim from the qualification tests that may skip on private inputs.
 const _corpusReason =
@@ -15,6 +16,19 @@ const _replayReason =
 const _ocrReason =
     'Requires the explicitly authorized Shoreline image and built OCR DLL.';
 
+// The hosted windows-2025 runner is ANSI code page 1252.
+const _codePageReason =
+    'ANSI code page 1252 is not UTF-8; covered by the blackgrid.exe '
+    'self-check under a Cyrillic path (m2_vision_self_check_test).';
+
+// Verbatim from the app self-check test's launch guard.
+const _selfCheckSkipReason =
+    'Escape from Tarkov is running or its absence cannot be confirmed; '
+    'app launch is not allowed (AGENTS.md). Unverified.';
+const _selfCheckFile = 'test/qualification/m2_vision_self_check_test.dart';
+const _selfCheckTest =
+    'self-check from bundle copied under Cyrillic path exits 0';
+
 const _corpusFile = 'test/qualification/inspection_corpus_test.dart';
 const _replayFile = 'test/qualification/targeted_region_replay_test.dart';
 const _ocrFile = 'test/qualification/m5_panel_ocr_test.dart';
@@ -24,9 +38,24 @@ const _captureFile = 'test/data/capture/capture_native_test.dart';
 const _root = r'F:\Dev\Dart\blackgrid';
 
 const _allowlist = [
-  AllowedSkip(file: _corpusFile, reason: _corpusReason, why: 'private corpus'),
-  AllowedSkip(file: _replayFile, reason: _replayReason, why: 'recordings'),
-  AllowedSkip(file: _ocrFile, reason: _ocrReason, why: 'private image'),
+  AllowedSkip(
+    kind: SkipKind.privateInput,
+    file: _corpusFile,
+    reason: _corpusReason,
+    why: 'private corpus',
+  ),
+  AllowedSkip(
+    kind: SkipKind.privateInput,
+    file: _replayFile,
+    reason: _replayReason,
+    why: 'recordings',
+  ),
+  AllowedSkip(
+    kind: SkipKind.privateInput,
+    file: _ocrFile,
+    reason: _ocrReason,
+    why: 'private image',
+  ),
 ];
 
 String _line(Map<String, Object?> event) => jsonEncode(event);
@@ -364,24 +393,132 @@ void main() {
   });
 
   group('allowlist file', () {
-    test('the committed allowlist parses into the three private inputs', () {
-      final entries = parseAllowlist(
-        File('tool/ci/qualification_skips.yaml').readAsStringSync(),
-      );
+    test('the committed allowlist parses into three private inputs and one '
+        'host-platform skip', () {
+      final entries = _committed();
 
-      expect(entries.map((e) => (e.file, e.reason)), [
-        (_corpusFile, _corpusReason),
-        (_replayFile, _replayReason),
-        (_ocrFile, _ocrReason),
+      expect(entries.map((e) => (e.kind, e.file, e.reason)), [
+        (SkipKind.privateInput, _corpusFile, _corpusReason),
+        (SkipKind.privateInput, _replayFile, _replayReason),
+        (SkipKind.privateInput, _ocrFile, _ocrReason),
+        (SkipKind.hostPlatform, _bundleFile, _codePageReason),
       ]);
       expect(entries.every((e) => e.why.isNotEmpty), isTrue);
     });
 
     test('an entry missing a field is rejected', () {
       expect(
-        () => parseAllowlist('- file: a_test.dart\n  reason: r\n'),
+        () => parseAllowlist(
+          '- kind: private_input\n  file: a_test.dart\n  reason: r\n',
+        ),
         throwsFormatException,
       );
     });
+
+    test('the host-platform entry names a covering self-check test that has '
+        'no platform skip', () {
+      final hostEntries = _committed().where(
+        (e) => e.kind == SkipKind.hostPlatform,
+      );
+
+      final entry = hostEntries.single;
+      expect(entry.file, _bundleFile);
+      expect(entry.reason, _codePageReason);
+      final coveredBy = entry.coveredBy;
+      expect(coveredBy, isNotNull);
+      expect(coveredBy!.file, _selfCheckFile);
+      expect(coveredBy.test, _selfCheckTest);
+      final source = File(coveredBy.file).readAsStringSync();
+      expect(source, isNot(contains('GetACP')));
+      expect(source, isNot(contains('65001')));
+    });
+
+    test('every committed covered_by names an existing test and a '
+        'host_platform entry without covered_by is rejected', () {
+      final covered = _committed().where((e) => e.coveredBy != null);
+      expect(covered, isNotEmpty);
+      for (final entry in covered) {
+        final coveredBy = entry.coveredBy!;
+        final file = File(coveredBy.file);
+        expect(file.existsSync(), isTrue, reason: coveredBy.file);
+        final declaration = RegExp(
+          "test\\(\\s*'${RegExp.escape(coveredBy.test)}'",
+        );
+        expect(
+          declaration.hasMatch(file.readAsStringSync()),
+          isTrue,
+          reason: '${coveredBy.file} declares no test "${coveredBy.test}"',
+        );
+      }
+
+      const fields = '  file: a_test.dart\n  reason: r\n  why: w\n';
+      expect(
+        () => parseAllowlist('- kind: host_platform\n$fields'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseAllowlist(
+          '- kind: private_input\n$fields'
+          '  covered_by: {file: b_test.dart, test: t}\n',
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => parseAllowlist('- file: a_test.dart\n  reason: r\n  why: w\n'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseAllowlist('- kind: sometimes\n$fields'),
+        throwsFormatException,
+      );
+      expect(
+        parseAllowlist(
+          '- kind: host_platform\n$fields'
+          '  covered_by: {file: b_test.dart, test: t}\n',
+        ).single.coveredBy?.test,
+        't',
+      );
+    });
+
+    test('the committed allowlist holds no capture-guard or missing-input '
+        'reason', () {
+      ProcessResult tasklist(int exitCode, String stdout) =>
+          ProcessResult(0, exitCode, stdout, '');
+      String? guard({
+        bool isWindows = true,
+        Map<String, String> environment = const {noGamesRunningVariable: '1'},
+        required ProcessResult result,
+      }) => nativeCaptureSkipReason(
+        isWindows: isWindows,
+        environment: environment,
+        listProcesses: () => result,
+      );
+
+      final ok = tasklist(0, '"explorer.exe","1"\n');
+      final forbidden = <String>{
+        ?guard(isWindows: false, result: ok),
+        ?guard(environment: const {}, result: ok),
+        ?guard(result: tasklist(1, '')),
+        for (final game in ['escapefromtarkov.exe', 'escapefromtarkov_be.exe'])
+          ?guard(result: tasklist(0, '"$game","123","Console","1","1 K"\n')),
+        _selfCheckSkipReason,
+      };
+      expect(forbidden, hasLength(6));
+
+      for (final entry in _committed()) {
+        expect(forbidden, isNot(contains(entry.reason)));
+        for (final variable in [
+          'BLACKGRID_RELEASE_BUNDLE',
+          'BLACKGRID_PANEL_OCR_RUNTIME',
+          'BLACKGRID_CMAKE',
+          noGamesRunningVariable,
+        ]) {
+          expect(entry.reason, isNot(contains(variable)));
+        }
+      }
+    });
   });
 }
+
+List<AllowedSkip> _committed() =>
+    parseAllowlist(File('tool/ci/qualification_skips.yaml').readAsStringSync());
