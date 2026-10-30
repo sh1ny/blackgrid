@@ -35,8 +35,9 @@ const _noGamesIdentifier = 'noGamesRunningVariable';
 
 /// Dart files under `test/` that may name [noGamesVariable], each with why.
 ///
-/// An exemption holds only while the file starts no process, so none of them
-/// can hand the confirmation to a child process.
+/// An exemption holds only while the file starts no process and imports only
+/// [_exemptImports] or another exempt file, so none of them can hand the
+/// confirmation to a child process, directly or through a helper.
 const _testDartExemptions = {
   'test/data/capture/support/native_guard.dart':
       'defines the constant and reads it in the pure guard',
@@ -47,6 +48,18 @@ const _testDartExemptions = {
   'test/tool/ci/support/no_games_scan.dart': 'this scanner',
   'test/tool/ci/no_games_scan_test.dart': 'the fixtures of this scanner',
 };
+
+/// What an exempt file may import besides another exempt file: libraries
+/// that start no process, so no helper can hand the confirmation to a child.
+const _exemptImports = {
+  'dart:convert',
+  'dart:io',
+  'package:flutter_test/flutter_test.dart',
+  'package:yaml/yaml.dart',
+  'tool/ci/src/audit.dart',
+};
+
+final _import = RegExp(r'''^\s*(import|export|part)\s+['"]([^'"]+)['"]''');
 
 final _v = RegExp.escape(noGamesVariable);
 
@@ -83,7 +96,7 @@ final _shSetter = RegExp('^\\s*(export\\s+)?$_v=|^\\s*export\\s+$_v\\b');
 ///   `noGamesRunningVariable` identifier, since code has no reason to name
 ///   it. The exceptions are the named files under `test/` that use it as fake
 ///   input to the pure guard `nativeCaptureSkipReason`, and only while they
-///   start no process.
+///   start no process and import nothing but [_exemptImports] and each other.
 List<String> findNoGamesSetters(String path, String content) {
   final lower = path.toLowerCase();
   final lines = content.split(RegExp(r'\r?\n'));
@@ -144,11 +157,17 @@ List<String> findNoGamesSetters(String path, String content) {
       RegExp('$_v|\\b$_noGamesIdentifier\\b'),
       _slashComment,
     );
-    final exempt = _testDartExemptions.containsKey(path.replaceAll(r'\', '/'));
+    final normalized = path.replaceAll(r'\', '/');
+    final exempt = _testDartExemptions.containsKey(normalized);
     if (mentions.isEmpty || !exempt) return mentions;
     return [
       for (final line in scan(RegExp(r'\bProcess\.(run|start)'), _slashComment))
         '$line (exempt file starts a process)',
+      for (var i = 0; i < lines.length; i++)
+        if (_import.firstMatch(lines[i]) case final match?)
+          if (!_isPureImport(normalized, match.group(2)!))
+            '$path:${i + 1}: ${lines[i].trim()} '
+                '(exempt file imports ${match.group(2)})',
     ];
   }
   if (lower.endsWith('.yml') || lower.endsWith('.yaml')) {
@@ -168,6 +187,17 @@ List<String> findNoGamesSetters(String path, String content) {
     ];
   }
   return const [];
+}
+
+/// Whether [uri], imported by the exempt file at [from], is in
+/// [_exemptImports] or is another exempt file. A relative [uri] is resolved
+/// against the directory of [from].
+bool _isPureImport(String from, String uri) {
+  if (_exemptImports.contains(uri)) return true;
+  if (uri.contains(':')) return false;
+  final resolved = Uri.parse(from).resolve(uri).path;
+  return _exemptImports.contains(resolved) ||
+      _testDartExemptions.containsKey(resolved);
 }
 
 /// Whether one line of a YAML `run` or `script` block sets [noGamesVariable]

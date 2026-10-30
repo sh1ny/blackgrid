@@ -112,6 +112,33 @@ void main() {
       },
     );
 
+    test('an exempt file may import only pure libraries', () {
+      const guardTest = 'test/data/capture/native_guard_test.dart';
+      const confirmed = "const c = {noGamesRunningVariable: '1'};\n";
+      ignores(
+        guardTest,
+        "import 'dart:io';\n"
+        "import 'package:flutter_test/flutter_test.dart';\n"
+        "import 'support/native_guard.dart';\n"
+        '$confirmed',
+      );
+      ignores(
+        'test/tool/ci/qualification_audit_test.dart',
+        "import '../../../tool/ci/src/audit.dart';\n"
+            "import '../../data/capture/support/native_guard.dart';\n"
+            '$confirmed',
+      );
+      expect(
+        findNoGamesSetters(
+          guardTest,
+          "import 'support/spawner.dart';\n$confirmed",
+        ),
+        [contains('imports support/spawner.dart')],
+      );
+      detects(guardTest, "import 'package:blackgrid/x.dart';\n$confirmed");
+      detects(guardTest, 'import "dart:isolate";\n$confirmed');
+    });
+
     test('flags shell setters in yaml run and script blocks', () {
       detects('other.yml', 'steps:\n  - run: export $v=1\n');
       detects('other.yml', 'steps:\n  - run: |\n      \$env:$v = "1"\n');
