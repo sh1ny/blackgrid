@@ -33,7 +33,7 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 
 ## 1. ADR-0024 and the architecture index
 
-- [ ] 1.1 Write `docs/adr/0024-hosted-ci-runs-every-offline-gate.md` (MADR-short, `Status: accepted`, today's date) from design.md's ADRs section and D1-D6:
+- [x] 1.1 Write `docs/adr/0024-hosted-ci-runs-every-offline-gate.md` (MADR-short, `Status: accepted`, today's date) from design.md's ADRs section and D1-D6:
   - the hosted gate sequence;
   - the allowlist-only qualification skips;
   - `BLACKGRID_NO_GAMES_RUNNING=1` only in the hosted qualification step, never on a developer machine;
