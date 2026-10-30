@@ -23,7 +23,7 @@ Stash management is secondary.
 
 - Windows desktop releases only in this phase; no mobile, web, macOS, or Linux parity
 - Map and Scanner only as initial primary areas; configuration through supporting controls, no Database browsing or full Progression area yet
-- Read-only tarkovtracker.org progression integration retained; quest/progression updates deferred
+- tarkovtracker.org progression integration: reads, plus task-state updates from the game's logged task events within tarkovtracker.org's API rules (read-only lifted by the user on 2026-10-30; planned as M9)
 - No overlay, WebView/WebView2 map renderer, or runtime/architectural dependency on the old application
 - Independently recreate useful behavior in Dart/Flutter; no copied reference code or old runtime shipped. The user maintains a private reference companion (a modified fork of a C# desktop program) and owns their contributions, not all upstream or third-party contents
 - Repository work targets only the user's own repositories, never the reference companion's original upstream project. The user's fork was intentionally detached from that upstream; do not restore the fork relationship or open PRs there
