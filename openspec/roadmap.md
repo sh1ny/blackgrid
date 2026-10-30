@@ -13,14 +13,14 @@ A change that names a GitHub issue resolves it through its PR: the PR descriptio
 Rescoped with the user on 2026-10-30; more work will be added as M6 runs. M6 opens with full CI on GitHub's Windows runners and GitHub Releases in two formats, a zip of the Release bundle and an installer, so a version is built and published without the developer's machine. Offline, refresh and auth failures and restart, import and history correctness (risks 3 and 7) come last. The user may move them out once M6's scope is settled. The clean-machine, display-matrix and pending user checks moved to Later.
 
 **Exit criteria:**
-- Every PR and every push to `main` runs the offline gates on a GitHub-hosted Windows runner: `mise run analyze`, `mise run test`, a Release build and `bundle:check`. A red run is visible on the PR. (agent)
+- Every PR and every push to `main` runs the offline gates on a GitHub-hosted Windows runner: `mise run analyze`, `mise run test`, a Release build, `bundle:check` and `mise run test:qualification` against that build, so no test runs only on the developer's machine. A red run is visible on the PR. (agent)
 - The installer format (MSIX or Inno Setup) and code signing are decided and recorded in an ADR. (agent proposes; user decides)
 - Pushing a `v` tag builds the Release on CI and publishes a GitHub Release with a zip of the bundle and an installer, with that version's changelog section as its notes. A `-beta.N` tag is published as a prerelease. (agent)
 - The user installs a published release from the installer and from the zip, and starts it. (user)
 - Offline, refresh and auth failures keep the last good data and say what failed, and settings, pins and history survive restart and interrupted imports, each proved by offline tests. (agent)
 
 **Changes** (in order):
-1. `add-windows-ci` - a GitHub Actions workflow on a Windows runner that runs the offline gates, a Release build and `bundle:check` on every PR and push to `main`.
+1. `add-windows-ci` - a GitHub Actions workflow on a Windows runner that runs the offline gates, a Release build, `bundle:check` and the qualification tests on every PR and push to `main`.
 2. `add-release-packaging` - an ADR choosing the installer format and code signing, plus a `mise` task that packages the Release bundle as a zip and an installer.
 3. `publish-github-releases` - a tag-triggered workflow that builds both packages and publishes the GitHub Release with the changelog section as notes; the local release flow and README follow.
 4. `qualify-failure-and-restart` - offline tests for refresh and auth failures and for restart, import and history durability, with fixes for any gap they find.
