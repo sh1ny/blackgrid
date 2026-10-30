@@ -1,0 +1,16 @@
+# Qualification skips the CI audit accepts (design D3). Each entry names a test
+# file and the exact skipReason it reports. Only tests that need private input
+# belong here; bundle-based tests must run, never skip.
+- file: test/qualification/inspection_corpus_test.dart
+  reason: >-
+    Requires BLACKGRID_CORPUS_DIR (a corpus directory, see
+    docs/qualification/m2/CORPUS.md).
+  why: Needs a private labeled corpus that CI does not have.
+- file: test/qualification/targeted_region_replay_test.dart
+  reason: >-
+    Requires BLACKGRID_RECORDING_DIRS (;-separated recording session folders,
+    see docs/qualification/m2/REPLAY.md).
+  why: Needs private scan recordings that CI does not have.
+- file: test/qualification/m5_panel_ocr_test.dart
+  reason: Requires the explicitly authorized Shoreline image and built OCR DLL.
+  why: Needs a user-supplied, human-labeled image that CI does not have.

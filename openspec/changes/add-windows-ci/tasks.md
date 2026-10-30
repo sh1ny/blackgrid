@@ -17,14 +17,14 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 | CI runs the gates in order and stops at the first failure | The bundle check fails | test/tool/release/build_test.dart | bundle:check failure fails the build with its output | green |
 | The CI Release build matches a release build | Build number from full history | test/tool/ci/workflow_test.dart | checkout uses full history and no persisted credentials | red |
 | The CI Release build matches a release build | A gate left the tree dirty | test/tool/release/build_test.dart | dirty tree refuses before building naming files | green |
-| Qualification runs against the CI-built bundle | Bundle-based tests run | test/tool/ci/qualification_audit_test.dart | a skipped bundle-based test fails the audit | red |
-| Qualification runs against the CI-built bundle | The bundle is missing | test/tool/ci/qualification_runner_test.dart | a missing bundle directory exits 2 before flutter test runs | red |
-| Qualification skips are audited against a committed allowlist | Only private-input tests skip | test/tool/ci/qualification_audit_test.dart | allowlisted private-input skips pass and are listed | red |
-| Qualification skips are audited against a committed allowlist | An unlisted skip | test/tool/ci/qualification_audit_test.dart | an unlisted skip fails naming the file and reason | red |
-| Qualification skips are audited against a committed allowlist | The report is missing or unreadable | test/tool/ci/qualification_audit_test.dart | a missing, malformed or unfinished report fails the audit | red |
-| Qualification skips are audited against a committed allowlist | A test fails | test/tool/ci/qualification_runner_test.dart | a failing flutter test exits non-zero even when the audit passes | red |
+| Qualification runs against the CI-built bundle | Bundle-based tests run | test/tool/ci/qualification_audit_test.dart | a skipped bundle-based test fails the audit | green |
+| Qualification runs against the CI-built bundle | The bundle is missing | test/tool/ci/qualification_runner_test.dart | a missing bundle directory exits 2 before flutter test runs | green |
+| Qualification skips are audited against a committed allowlist | Only private-input tests skip | test/tool/ci/qualification_audit_test.dart | allowlisted private-input skips pass and are listed | green |
+| Qualification skips are audited against a committed allowlist | An unlisted skip | test/tool/ci/qualification_audit_test.dart | an unlisted skip fails naming the file and reason | green |
+| Qualification skips are audited against a committed allowlist | The report is missing or unreadable | test/tool/ci/qualification_audit_test.dart | a missing, malformed or unfinished report fails the audit | green |
+| Qualification skips are audited against a committed allowlist | A test fails | test/tool/ci/qualification_runner_test.dart | a failing flutter test exits non-zero even when the audit passes | green |
 | The no-games confirmation is scoped to the hosted runner | Native capture test runs on the hosted runner | test/tool/ci/workflow_test.dart | the qualification step alone sets the no-games confirmation and the bundle inputs | red |
-| The no-games confirmation is scoped to the hosted runner | A game executable is listed | test/tool/ci/qualification_audit_test.dart | the capture guard's refused and unconfirmed reasons are not allowlisted | red |
+| The no-games confirmation is scoped to the hosted runner | A game executable is listed | test/tool/ci/qualification_audit_test.dart | the capture guard's refused and unconfirmed reasons are not allowlisted | green |
 | The no-games confirmation is scoped to the hosted runner | Another step or file sets the confirmation | test/tool/ci/workflow_test.dart | no other tracked script or config sets the no-games confirmation | red |
 | CI holds least privilege and no secrets | Workflow permissions | test/tool/ci/workflow_test.dart | permissions are exactly contents read and no secrets are used | red |
 | CI holds least privilege and no secrets | An action pinned by tag | test/tool/ci/workflow_test.dart | every uses line is pinned to a 40-hex commit SHA | red |
@@ -44,20 +44,20 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
 
 ## 2. Qualification runner and skip audit
 
-- [ ] 2.1 Read the `dart-add-unit-test`, `dart-use-pattern-matching` and `dart-write-documentation` skills. Then write failing tests in `test/tool/ci/qualification_audit_test.dart` for every audit row in the Test map. Use small synthetic JSON-reporter lines, with `suite` events carrying `path`, `testStart` with `metadata.skipReason`, `testDone` and `done`.
+- [x] 2.1 Read the `dart-add-unit-test`, `dart-use-pattern-matching` and `dart-write-documentation` skills. Then write failing tests in `test/tool/ci/qualification_audit_test.dart` for every audit row in the Test map. Use small synthetic JSON-reporter lines, with `suite` events carrying `path`, `testStart` with `metadata.skipReason`, `testDone` and `done`.
   - Accepted private-input skips: the three allowlist reasons, copied verbatim from `inspection_corpus_test.dart`, `targeted_region_replay_test.dart` and `m5_panel_ocr_test.dart`.
   - Unlisted skips, including a bundle-based test and the capture guard's "set BLACKGRID_NO_GAMES_RUNNING=1 ..." and "refused: ... is running" reasons from `native_guard.dart`.
   - The report problems: missing file, malformed line, no `done` event, zero unskipped tests.
   - Hidden `loading` tests are ignored.
 
   Verify: `mise exec -- flutter test test/tool/ci/qualification_audit_test.dart` fails because the audit does not exist yet.
-- [ ] 2.2 Implement the pure audit in `tool/ci/src/audit.dart`:
+- [x] 2.2 Implement the pure audit in `tool/ci/src/audit.dart`:
   - It takes report lines and an allowlist and returns a typed result with a sealed `AuditFinding`.
   - It matches files on `suite.path` made relative to the repo (review S1), not on the test `url`.
   - It matches the exact `skipReason`.
 
   Add `tool/ci/qualification_skips.yaml` with the three entries (`file`, `reason`, `why`), loaded with `package:yaml`. Document the public API with `///`. Verify: the 2.1 tests pass; flip their rows green.
-- [ ] 2.3 Write failing tests in `test/tool/ci/qualification_runner_test.dart` with a hand-written fake command runner, injected through a parameter as in `tool/release/src/git.dart`'s `CommandRunner`:
+- [x] 2.3 Write failing tests in `test/tool/ci/qualification_runner_test.dart` with a hand-written fake command runner, injected through a parameter as in `tool/release/src/git.dart`'s `CommandRunner`:
   - A missing or non-directory `BLACKGRID_RELEASE_BUNDLE` exits 2 and never invokes `flutter`.
   - `flutter test --tags qualification --file-reporter json:<path>` is invoked with the report path in a fresh system-temp directory outside the repository.
   - A non-zero test exit gives a non-zero tool exit, even with a clean audit.
@@ -65,7 +65,7 @@ Workflow behaviour that only GitHub can execute is mapped to the offline workflo
   - Both results are printed.
 
   Verify: the tests fail before 2.4.
-- [ ] 2.4 Implement `tool/ci/qualification.dart`, a thin `main` over an injectable `runQualification`, and add the mise task `ci:qualification` (description: CI-only qualification gate; fails locally by design unless the user confirms no game is running). Verify: the 2.3 tests pass, rows flipped green; `mise run analyze` is clean; `dart format` leaves the files unchanged.
+- [x] 2.4 Implement `tool/ci/qualification.dart`, a thin `main` over an injectable `runQualification`, and add the mise task `ci:qualification` (description: CI-only qualification gate; fails locally by design unless the user confirms no game is running). Verify: the 2.3 tests pass, rows flipped green; `mise run analyze` is clean; `dart format` leaves the files unchanged.
 
 ## 3. CI workflow, offline workflow test and docs
 
