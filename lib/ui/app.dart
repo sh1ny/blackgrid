@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import 'app_logo.dart';
 import 'shell.dart';
 import 'theme.dart';
 
@@ -19,13 +20,17 @@ class BlackgridApp extends StatelessWidget {
 }
 
 class BlackgridBootstrap extends StatefulWidget {
-  const BlackgridBootstrap({super.key});
+  const BlackgridBootstrap({super.key, this.open = AppServices.open});
+
+  /// Opens local storage; replaced in tests.
+  final Future<AppServices> Function() open;
+
   @override
   State<BlackgridBootstrap> createState() => _BlackgridBootstrapState();
 }
 
 class _BlackgridBootstrapState extends State<BlackgridBootstrap> {
-  late Future<AppServices> _opening = AppServices.open();
+  late Future<AppServices> _opening = widget.open();
   AppServices? _services;
   @override
   void dispose() {
@@ -57,11 +62,7 @@ class _BlackgridBootstrapState extends State<BlackgridBootstrap> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.hub_outlined,
-                        size: 54,
-                        color: GridColors.gold,
-                      ),
+                      const AppLogo(size: 54),
                       const SizedBox(height: 20),
                       const Text(
                         'BLACKGRID',
@@ -81,7 +82,7 @@ class _BlackgridBootstrapState extends State<BlackgridBootstrap> {
                         const SizedBox(height: 14),
                         OutlinedButton(
                           onPressed: () =>
-                              setState(() => _opening = AppServices.open()),
+                              setState(() => _opening = widget.open()),
                           child: const Text('Retry opening local storage'),
                         ),
                       ],

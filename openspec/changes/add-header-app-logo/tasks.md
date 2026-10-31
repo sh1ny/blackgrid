@@ -14,10 +14,10 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) stays outside 
 | app-icon → The in-app vector stays in step with the source | Vector without a recorded hash | test/tool/app_icon/provenance_test.dart | a vec on disk with no recorded hash fails naming it and the rebuild command | green |
 | app-icon → The in-app vector stays in step with the source | Vector missing | test/tool/app_icon/provenance_test.dart | a recorded vec hash with no vec file fails naming it and the rebuild command | green |
 | app-icon → The in-app vector stays in step with the source | Vector replaced by hand | test/tool/app_icon/provenance_test.dart | a source, ico or vec hash differing from the record fails naming the rebuild command | green |
-| app-icon → The app header and the startup screen show the application icon | Header shows the logo | test/ui/shell_test.dart | header shows the 32x32 app logo and no hub icon | red |
-| app-icon → The app header and the startup screen show the application icon | Startup screen shows the logo | test/ui/app_test.dart | startup and storage error screens show the 54x54 app logo and no hub icon | red |
-| app-icon → The app header and the startup screen show the application icon | Logo is not announced | test/ui/app_logo_test.dart | the logo adds no semantics node | red |
-| app-icon → The app header and the startup screen show the application icon | Vector fails to load | test/ui/app_logo_test.dart | a failed load leaves an empty box of the same size with no error | red |
+| app-icon → The app header and the startup screen show the application icon | Header shows the logo | test/ui/shell_test.dart | header shows the 32x32 app logo and no hub icon | green |
+| app-icon → The app header and the startup screen show the application icon | Startup screen shows the logo | test/ui/app_test.dart | startup and storage error screens show the 54x54 app logo and no hub icon | green |
+| app-icon → The app header and the startup screen show the application icon | Logo is not announced | test/ui/app_logo_test.dart | the logo adds no semantics node | green |
+| app-icon → The app header and the startup screen show the application icon | Vector fails to load | test/ui/app_logo_test.dart | a failed load leaves an empty box of the same size with no error | green |
 | release-bundle-integrity → The bundle carries the committed in-app logo | Logo matches | test/tool/vision/check_bundle_test.dart | app-icon step passes listing ten sizes and app_icon.vec | green |
 | release-bundle-integrity → The bundle carries the committed in-app logo | Logo missing from the bundle | test/tool/vision/check_bundle_test.dart | a bundle without the logo vec fails the app-icon step naming the path | green |
 | release-bundle-integrity → The bundle carries the committed in-app logo | Stale bundled logo | test/tool/vision/check_bundle_test.dart | a bundled logo vec that differs fails the app-icon step, also when the exe icon is unreadable | green |
@@ -60,7 +60,7 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 Load `flutter-add-widget-test` and `dart-write-documentation` first.
 
-- [ ] 3.1 Write failing tests in a new `test/ui/app_logo_test.dart` for the rows "Logo is not announced" and "Vector fails to load". The error path injects a `load` that returns a failed `Future`. It asserts:
+- [x] 3.1 Write failing tests in a new `test/ui/app_logo_test.dart` for the rows "Logo is not announced" and "Vector fails to load". The error path injects a `load` that returns a failed `Future`. It asserts:
   - a `SizedBox` of 32x32 where the logo goes;
   - the position of a neighbouring `Text('BLACKGRID')` matches a pump with the real bytes;
   - no `ErrorWidget`;
@@ -68,9 +68,9 @@ Load `flutter-add-widget-test` and `dart-write-documentation` first.
   - `tester.takeException()` returns null.
 
   The success path loads the real asset bytes inside `tester.runAsync`, and asserts a 32x32 `AppLogo` with a `VectorGraphic` child and no semantics node of its own. Verify they fail because `AppLogo` does not exist.
-- [ ] 3.2 Implement `lib/ui/app_logo.dart` per D4: a `StatefulWidget`, a one-time load in `didChangeDependencies`, the error handled on that future, `SizedBox.square` while loading and after a failure, `VectorGraphic` over a private in-memory `BytesLoader` with `excludeFromSemantics: true`, and `///` docs. Verify that the 3.1 tests pass, and flip both rows green.
-- [ ] 3.3 Write a failing test in `test/ui/shell_test.dart` for the row "Header shows the logo": one `AppLogo` of size 32 in the header, beside `BLACKGRID`, and `find.byIcon(Icons.hub_outlined)` finds nothing. Assert on the `AppLogo` widget and its size, not on `VectorGraphic`'s private loader (review S5). Then replace the `Icon` in `lib/ui/shell.dart:73-77` with `const AppLogo()`. Verify that the test and every existing shell layout test pass, and flip the row green.
-- [ ] 3.4 Write a failing `test/ui/app_test.dart` for the row "Startup screen shows the logo". It pumps `BlackgridBootstrap(open: ...)` once with a `Completer`'s pending future and once with a failed future, and asserts a 54x54 `AppLogo` and no `Icons.hub_outlined` in both states. Then implement D7, the `open` parameter defaulting to `AppServices.open` (`main.dart` unchanged), and replace the startup screen's `Icon` with `const AppLogo(size: 54)`. Verify that the test passes, and flip the row green.
+- [x] 3.2 Implement `lib/ui/app_logo.dart` per D4: a `StatefulWidget`, a one-time load in `didChangeDependencies`, the error handled on that future, `SizedBox.square` while loading and after a failure, `VectorGraphic` over a private in-memory `BytesLoader` with `excludeFromSemantics: true`, and `///` docs. Verify that the 3.1 tests pass, and flip both rows green.
+- [x] 3.3 Write a failing test in `test/ui/shell_test.dart` for the row "Header shows the logo": one `AppLogo` of size 32 in the header, beside `BLACKGRID`, and `find.byIcon(Icons.hub_outlined)` finds nothing. Assert on the `AppLogo` widget and its size, not on `VectorGraphic`'s private loader (review S5). Then replace the `Icon` in `lib/ui/shell.dart:73-77` with `const AppLogo()`. Verify that the test and every existing shell layout test pass, and flip the row green.
+- [x] 3.4 Write a failing `test/ui/app_test.dart` for the row "Startup screen shows the logo". It pumps `BlackgridBootstrap(open: ...)` once with a `Completer`'s pending future and once with a failed future, and asserts a 54x54 `AppLogo` and no `Icons.hub_outlined` in both states. Then implement D7, the `open` parameter defaulting to `AppServices.open` (`main.dart` unchanged), and replace the startup screen's `Icon` with `const AppLogo(size: 54)`. Verify that the test passes, and flip the row green.
 
 ## 4. Bundle check compares the bundled `.vec`
 

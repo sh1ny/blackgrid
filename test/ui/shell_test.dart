@@ -1,6 +1,7 @@
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/ui/app.dart';
+import 'package:blackgrid/ui/app_logo.dart';
 
 import '../support/m1_harness.dart';
 import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
@@ -350,5 +351,20 @@ void main() {
     await tester.enterText(field.first, 'item-a');
     await tester.pumpAndSettle();
     expect(h.services.selection.results.map((i) => i.id), contains('item-a'));
+  });
+
+  testWidgets('header shows the 32x32 app logo and no hub icon', (
+    tester,
+  ) async {
+    await pumpM1(tester);
+    final logo = find.byType(AppLogo);
+    expect(logo, findsOneWidget);
+    expect(tester.widget<AppLogo>(logo).size, 32);
+    expect(tester.getSize(logo), const Size(32, 32));
+    expect(
+      tester.getRect(logo).right,
+      lessThan(tester.getRect(find.text('BLACKGRID')).left),
+    );
+    expect(find.byIcon(Icons.hub_outlined), findsNothing);
   });
 }

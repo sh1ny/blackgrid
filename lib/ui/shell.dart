@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../application/app_services.dart';
 import '../application/scan_coordinator.dart';
+import 'app_logo.dart';
 import 'import_dialog.dart';
 import 'labels.dart';
 import 'map_screen.dart';
@@ -70,11 +71,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                       child: Row(
                         children: [
                           const SizedBox(width: 20),
-                          const Icon(
-                            Icons.hub_outlined,
-                            color: GridColors.gold,
-                            size: 32,
-                          ),
+                          const AppLogo(),
                           const SizedBox(width: 12),
                           SizedBox(
                             width:
