@@ -36,19 +36,23 @@ The CI run SHALL install its tools from the versions committed in `mise.toml` an
 - **THEN** the run fails at the install step, and no gate runs on another version
 
 ### Requirement: CI runs the gates in order and stops at the first failure
-The CI run SHALL run, in this order: static analysis (`mise run analyze`), the fast test suite (`mise run test`), the Release build with its offline bundle check (`mise run build:release`), and the qualification tier against that build. A failing step SHALL fail the run, and no later step SHALL run.
+The CI run SHALL run, in this order: static analysis (`mise run analyze`), the fast test suite (`mise run test`), the Release build with its offline bundle check (`mise run build:release`), the qualification tier against that build, and packaging of that build (`mise run package:release`). A failing step SHALL fail the run, and no later step SHALL run.
 
 #### Scenario: All gates pass
-- **WHEN** analysis, the fast tests, the Release build, the bundle check and the qualification tier all succeed
+- **WHEN** analysis, the fast tests, the Release build, the bundle check, the qualification tier and packaging all succeed
 - **THEN** the run reports success
 
 #### Scenario: Analysis fails
 - **WHEN** `mise run analyze` reports an error or warning that fails it
-- **THEN** the run fails at the analysis step, and the tests, the build and the qualification tier do not run
+- **THEN** the run fails at the analysis step, and the tests, the build, the qualification tier and packaging do not run
 
 #### Scenario: The bundle check fails
 - **WHEN** the Release build finishes but `bundle:check` reports a failing step
-- **THEN** the run fails at the build step, and the qualification tier does not run
+- **THEN** the run fails at the build step, and the qualification tier and packaging do not run
+
+#### Scenario: Packaging fails
+- **WHEN** the qualification tier passes but `mise run package:release` exits non-zero
+- **THEN** the run fails at the packaging step
 
 ### Requirement: The CI Release build matches a release build
 The CI Release build SHALL be made from a full-history checkout, so its build number is the commit count of the built commit, as ADR-0009 requires. It SHALL refuse to build from a working tree with changes, as a local release build does.

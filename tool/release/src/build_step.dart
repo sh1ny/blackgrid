@@ -1,12 +1,16 @@
 import 'dart:io';
 
 import 'git.dart';
+import 'stamp.dart';
 
 const maxBuildNumber = 65535;
 const bundleDir = 'build/windows/x64/runner/Release';
 
 /// Runs the `build` flow (design D7). Throws [ReleaseException] on the first
 /// refusal or failing stage; a failing stage's exit code is propagated.
+///
+/// Any earlier build stamp is deleted first; a new one is written only after
+/// `bundle:check` passes (add-release-packaging D1).
 Future<void> build({
   required Directory repoDir,
   required CommandRunner runner,
@@ -14,6 +18,8 @@ Future<void> build({
 }) async {
   final sink = out ?? stdout;
   final git = Git(runner, repoDir);
+  final stamp = stampFile(repoDir);
+  if (stamp.existsSync()) stamp.deleteSync();
 
   final dirty = await git.output([
     'status',
@@ -26,19 +32,9 @@ Future<void> build({
     );
   }
 
-  final pubspec = File('${repoDir.path}/pubspec.yaml').readAsStringSync();
-  final versions = RegExp(
-    r'^version:[ \t]*(\S+)[ \t]*$',
-    multiLine: true,
-  ).allMatches(pubspec).toList();
-  if (versions.length != 1) {
-    throw ReleaseException(
-      'pubspec.yaml must have exactly one top-level "version:" line, '
-      'found ${versions.length}.',
-    );
-  }
-  final version = versions.single.group(1)!;
+  final version = readPubspecVersion(repoDir);
 
+  final head = await git.output(['rev-parse', 'HEAD']);
   final countText = await git.output(['rev-list', '--count', 'HEAD']);
   final count = int.tryParse(countText);
   if (count == null) {
@@ -85,5 +81,27 @@ Future<void> build({
       );
     }
   }
+  writeStamp(
+    stamp,
+    BuildStamp(version: version, buildNumber: count, commit: head),
+  );
   sink.writeln('Built $version+$count; bundle check passed.');
+}
+
+/// Returns the single top-level `version:` of the pubspec in [repoDir].
+///
+/// Throws a [ReleaseException] when there is not exactly one.
+String readPubspecVersion(Directory repoDir) {
+  final pubspec = File('${repoDir.path}/pubspec.yaml').readAsStringSync();
+  final versions = RegExp(
+    r'^version:[ \t]*(\S+)[ \t]*$',
+    multiLine: true,
+  ).allMatches(pubspec).toList();
+  if (versions.length != 1) {
+    throw ReleaseException(
+      'pubspec.yaml must have exactly one top-level "version:" line, '
+      'found ${versions.length}.',
+    );
+  }
+  return versions.single.group(1)!;
 }

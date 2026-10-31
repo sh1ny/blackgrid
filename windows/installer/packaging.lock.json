@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "inputs": [
+    {
+      "id": "inno-setup",
+      "name": "innosetup-7.1.1-x64.exe",
+      "version": "7.1.1",
+      "urls": [
+        "https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe"
+      ],
+      "authoritativeUrl": "https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe",
+      "sha256": "8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0",
+      "size": 14336568,
+      "license": "Inno Setup License",
+      "unpack": "portable"
+    }
+  ]
+}

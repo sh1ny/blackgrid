@@ -57,3 +57,6 @@ jobs:
         run: |
           $env:BLACKGRID_CMAKE = (Get-Command cmake).Source
           mise run ci:qualification
+
+      - name: Package
+        run: mise run package:release

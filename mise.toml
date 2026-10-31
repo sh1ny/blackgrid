@@ -78,6 +78,10 @@ run = "dart run tool/release/release.dart tag"
 description = "Build the Windows Release bundle with version and build number, then check it offline"
 run = "dart run tool/release/release.dart build"
 
+[tasks."package:release"]
+description = "Package the stamped Release bundle into build/release: zip, per-user installer and SHA256SUMS.txt"
+run = "dart run tool/release/release.dart package"
+
 [tasks."capture:selftest"]
 description = "Build and run the native capture self-test (needs BLACKGRID_NO_GAMES_RUNNING=1; refuses while a game is running)"
 run = "pwsh -NoProfile -File windows/capture/selftest.ps1"
