@@ -87,7 +87,7 @@ Read `.claude/skills/dart-add-unit-test/SKILL.md`, `dart-use-pattern-matching` a
 
 ## 6. Integration
 
-- [ ] 6.1 Run `dart format .`, `mise run analyze` and `mise run test`, and `openspec validate publish-github-releases --strict`. Confirm every test map row is green except those marked n/a. Verify: all four commands exit 0 and `tasks.md` shows no `red` row.
+- [x] 6.1 Run `dart format .`, `mise run analyze` and `mise run test`, and `openspec validate publish-github-releases --strict`. Confirm every test map row is green except those marked n/a. Verify: all four commands exit 0 and `tasks.md` shows no `red` row.
 
 ## Workflow follow-up
 
