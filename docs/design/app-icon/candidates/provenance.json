@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "candidates": [
+    {
+      "file": "concepts/01-grid-shield.png",
+      "author": "Nikolay Bochev",
+      "method": "ai-assisted",
+      "tools": [
+        "ChatGPT"
+      ],
+      "date": "2026-10-31",
+      "prompt": "Design an app icon for Blackgrid, a Windows desktop companion for an extraction shooter. It shows interactive raid maps and scans in-game items to say whether to keep or sell them. The mood is dark, tactical and utilitarian: think a field map grid or a scanner reticle, not a cartoon. Requirements:  1024×1024 square PNG with a transparent background. No text or letters. No game logos, and nothing copied from any game's artwork. One bold shape that is still recognisable at 16×16 px. Keep fine detail to a minimum and use thick strokes. Two or three colours at most, with strong contrast that reads on both light and dark taskbars. Give me 4 distinct concepts.",
+      "concept": null
+    },
+    {
+      "file": "concepts/02-scanner-aperture.png",
+      "author": "Nikolay Bochev",
+      "method": "ai-assisted",
+      "tools": [
+        "ChatGPT"
+      ],
+      "date": "2026-10-31",
+      "prompt": "Design an app icon for Blackgrid, a Windows desktop companion for an extraction shooter. It shows interactive raid maps and scans in-game items to say whether to keep or sell them. The mood is dark, tactical and utilitarian: think a field map grid or a scanner reticle, not a cartoon. Requirements:  1024×1024 square PNG with a transparent background. No text or letters. No game logos, and nothing copied from any game's artwork. One bold shape that is still recognisable at 16×16 px. Keep fine detail to a minimum and use thick strokes. Two or three colours at most, with strong contrast that reads on both light and dark taskbars. Give me 4 distinct concepts.",
+      "concept": null
+    },
+    {
+      "file": "concepts/03-extraction-waypoint.png",
+      "author": "Nikolay Bochev",
+      "method": "ai-assisted",
+      "tools": [
+        "ChatGPT"
+      ],
+      "date": "2026-10-31",
+      "prompt": "Design an app icon for Blackgrid, a Windows desktop companion for an extraction shooter. It shows interactive raid maps and scans in-game items to say whether to keep or sell them. The mood is dark, tactical and utilitarian: think a field map grid or a scanner reticle, not a cartoon. Requirements:  1024×1024 square PNG with a transparent background. No text or letters. No game logos, and nothing copied from any game's artwork. One bold shape that is still recognisable at 16×16 px. Keep fine detail to a minimum and use thick strokes. Two or three colours at most, with strong contrast that reads on both light and dark taskbars. Give me 4 distinct concepts.",
+      "concept": null
+    },
+    {
+      "file": "concepts/04-scanned-cargo.png",
+      "author": "Nikolay Bochev",
+      "method": "ai-assisted",
+      "tools": [
+        "ChatGPT"
+      ],
+      "date": "2026-10-31",
+      "prompt": "Design an app icon for Blackgrid, a Windows desktop companion for an extraction shooter. It shows interactive raid maps and scans in-game items to say whether to keep or sell them. The mood is dark, tactical and utilitarian: think a field map grid or a scanner reticle, not a cartoon. Requirements:  1024×1024 square PNG with a transparent background. No text or letters. No game logos, and nothing copied from any game's artwork. One bold shape that is still recognisable at 16×16 px. Keep fine detail to a minimum and use thick strokes. Two or three colours at most, with strong contrast that reads on both light and dark taskbars. Give me 4 distinct concepts.",
+      "concept": null
+    },
+    {
+      "file": "vector/grid_shield.svg",
+      "author": "Blackgrid project",
+      "method": "ai-assisted",
+      "tools": [
+        "Claude Code (claude-opus-5-5)"
+      ],
+      "date": "2026-10-31",
+      "prompt": null,
+      "concept": "concepts/01-grid-shield.png"
+    },
+    {
+      "file": "vector/scanner_aperture.svg",
+      "author": "Blackgrid project",
+      "method": "ai-assisted",
+      "tools": [
+        "Claude Code (claude-opus-5-5)"
+      ],
+      "date": "2026-10-31",
+      "prompt": null,
+      "concept": "concepts/02-scanner-aperture.png"
+    },
+    {
+      "file": "vector/extraction_waypoint.svg",
+      "author": "Blackgrid project",
+      "method": "ai-assisted",
+      "tools": [
+        "Claude Code (claude-opus-5-5)"
+      ],
+      "date": "2026-10-31",
+      "prompt": null,
+      "concept": "concepts/03-extraction-waypoint.png"
+    },
+    {
+      "file": "vector/scanned_cargo.svg",
+      "author": "Blackgrid project",
+      "method": "ai-assisted",
+      "tools": [
+        "Claude Code (claude-opus-5-5)"
+      ],
+      "date": "2026-10-31",
+      "prompt": null,
+      "concept": "concepts/04-scanned-cargo.png"
+    },
+    {
+      "file": "vector/grid_reticle.svg",
+      "author": "Blackgrid project",
+      "method": "ai-assisted",
+      "tools": [
+        "Claude Code (claude-opus-5-5)"
+      ],
+      "date": "2026-10-31",
+      "prompt": null,
+      "concept": null
+    },
+    {
+      "file": "vector/hex_sweep.svg",
+      "author": "Blackgrid project",
+      "method": "ai-assisted",
+      "tools": [
+        "Claude Code (claude-opus-5-5)"
+      ],
+      "date": "2026-10-31",
+      "prompt": null,
+      "concept": null
+    }
+  ]
+}

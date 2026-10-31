@@ -2,6 +2,8 @@
 // names (import and delay-import directories) and the VS_FIXEDFILEINFO file
 // version. Every read is bounds-checked; malformed input yields an
 // "unreadable" result and never an exception or an out-of-range read.
+// [readIconGroup] reads the application icon group on its own, so a malformed
+// icon resource never makes the imports or the version unreadable.
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -9,7 +11,11 @@ import 'dart:typed_data';
 const _machineAmd64 = 0x8664;
 const _magicPe32Plus = 0x20B;
 const _fixedFileInfoSignature = 0xFEEF04BD;
+const _rtIcon = 3;
+const _rtGroupIcon = 14;
 const _rtVersion = 16;
+const _maxIconEntries = 32;
+const _maxIconBytes = 0x100000;
 const _maxImports = 4096;
 const _maxNameLength = 260;
 
@@ -60,6 +66,77 @@ class PeReadResult {
   String? get versionString => version?.join('.');
 }
 
+/// One image of an executable's icon group.
+class PeIconImage {
+  const PeIconImage._({
+    required this.width,
+    required this.height,
+    required this.planes,
+    required this.bitCount,
+    required this.id,
+    required this.bytes,
+  });
+
+  /// Width in pixels from the group entry (a stored 0 reads as 256).
+  final int width;
+
+  /// Height in pixels from the group entry (a stored 0 reads as 256).
+  final int height;
+
+  /// Colour planes from the group entry.
+  final int planes;
+
+  /// Bits per pixel from the group entry.
+  final int bitCount;
+
+  /// The RT_ICON resource id the group entry names.
+  final int id;
+
+  /// The RT_ICON resource data: the bytes `rc.exe` copied from the `.ico`.
+  final Uint8List bytes;
+}
+
+/// Outcome of [readIconGroup].
+sealed class IconGroupResult {
+  const IconGroupResult();
+}
+
+/// An icon group whose every image was read.
+final class IconGroupReadable extends IconGroupResult {
+  /// Wraps [images].
+  IconGroupReadable(List<PeIconImage> images)
+    : images = List.unmodifiable(images);
+
+  /// The images, in group order.
+  final List<PeIconImage> images;
+}
+
+/// Input without a readable icon group.
+final class IconGroupUnreadable extends IconGroupResult {
+  /// Creates a failure carrying [reason].
+  const IconGroupUnreadable(this.reason);
+
+  /// Why the icon group could not be read.
+  final String reason;
+}
+
+/// Reads the first RT_GROUP_ICON of the PE image in [bytes] with the RT_ICON
+/// data of every entry.
+///
+/// This is separate from [readPe]: a malformed icon resource gives
+/// [IconGroupUnreadable] and leaves the imports and version readable. Every
+/// read is bounds-checked; this never throws.
+IconGroupResult readIconGroup(Uint8List bytes) {
+  try {
+    final reader = _PeReader(bytes)..readHeaders();
+    return IconGroupReadable(reader.iconGroup());
+  } on _Malformed catch (e) {
+    return IconGroupUnreadable(e.message);
+  } on RangeError catch (e) {
+    return IconGroupUnreadable('out of range read: ${e.message}');
+  }
+}
+
 PeReadResult readPe(Uint8List bytes) {
   try {
     return _PeReader(bytes).read();
@@ -88,7 +165,8 @@ class _PeReader {
     return data.getUint32(o, Endian.little);
   }
 
-  PeReadResult read() {
+  /// Validates the headers and fills [sections] and [dirs].
+  void readHeaders() {
     if (bytes.length < 0x40 || bytes[0] != 0x4D || bytes[1] != 0x5A) {
       throw _Malformed('missing MZ header');
     }
@@ -117,6 +195,10 @@ class _PeReader {
       final s = table + i * 40;
       sections.add(_Section(u32(s + 12), u32(s + 8), u32(s + 20), u32(s + 16)));
     }
+  }
+
+  PeReadResult read() {
+    readHeaders();
     return PeReadResult._ok(
       imports: _importNames(dirs[1].$1, 20, 12),
       delayImports: _importNames(dirs[13].$1, 32, 4),
@@ -196,6 +278,78 @@ class _PeReader {
       }
     }
     return null;
+  }
+
+  /// The RT_GROUP_ICON data with the RT_ICON image of every entry, or throws
+  /// [_Malformed] naming what is missing or out of bounds.
+  List<PeIconImage> iconGroup() {
+    final root = dirs[2].$1;
+    if (root == 0) throw _Malformed('no resource directory');
+    final rootOff = offsetOf(root, 16);
+    final groupType = _findEntry(root, rootOff, id: _rtGroupIcon);
+    if (groupType == null || !groupType.isDir) {
+      throw _Malformed('no RT_GROUP_ICON resource');
+    }
+    final groupNames = root + groupType.offset;
+    final groupName = _firstEntry(groupNames);
+    if (groupName == null) throw _Malformed('RT_GROUP_ICON has no entry');
+    final group = _leaf(root, groupName.isDir, groupName.offset);
+    if (group.size < 6) throw _Malformed('icon group is shorter than 6 bytes');
+    final head = group.start;
+    if (u16(head) != 0 || u16(head + 2) != 1) {
+      throw _Malformed('icon group header is not reserved 0, type 1');
+    }
+    final count = u16(head + 4);
+    if (count == 0 || count > _maxIconEntries) {
+      throw _Malformed('icon group declares $count images (1 to 32 allowed)');
+    }
+    if (6 + 14 * count > group.size) {
+      throw _Malformed('icon group of $count entries runs past its data');
+    }
+    final iconType = _findEntry(root, rootOff, id: _rtIcon);
+    if (iconType == null || !iconType.isDir) {
+      throw _Malformed('no RT_ICON resources');
+    }
+    final iconNames = root + iconType.offset;
+    final iconNamesOff = offsetOf(iconNames, 16);
+    final images = <PeIconImage>[];
+    for (var i = 0; i < count; i++) {
+      final p = head + 6 + 14 * i;
+      final id = u16(p + 12);
+      final name = _findEntry(iconNames, iconNamesOff, id: id);
+      if (name == null) throw _Malformed('entry $i names RT_ICON $id: missing');
+      final image = _leaf(root, name.isDir, name.offset);
+      images.add(
+        PeIconImage._(
+          width: bytes[p] == 0 ? 256 : bytes[p],
+          height: bytes[p + 1] == 0 ? 256 : bytes[p + 1],
+          planes: u16(p + 4),
+          bitCount: u16(p + 6),
+          id: id,
+          bytes: Uint8List.sublistView(
+            bytes,
+            image.start,
+            image.start + image.size,
+          ),
+        ),
+      );
+    }
+    return images;
+  }
+
+  /// The first-language data of a name entry whose subdirectory is at
+  /// [nameOffset] from [root]; [isDir] is the entry's subdirectory flag.
+  ({int start, int size}) _leaf(int root, bool isDir, int nameOffset) {
+    if (!isDir) throw _Malformed('resource name entry is not a directory');
+    final lang = _firstEntry(root + nameOffset);
+    if (lang == null || lang.isDir) {
+      throw _Malformed('resource has no language data');
+    }
+    final dataOff = offsetOf(root + lang.offset, 16);
+    final dataRva = u32(dataOff);
+    final size = u32(dataOff + 4);
+    if (size > _maxIconBytes) throw _Malformed('resource data too large');
+    return (start: offsetOf(dataRva, size), size: size);
   }
 
   ({bool isDir, int offset, int id})? _firstEntry(int dirRva) {

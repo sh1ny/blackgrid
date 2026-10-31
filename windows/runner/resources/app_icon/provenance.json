@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "author": "Blackgrid project",
+  "method": "ai-assisted",
+  "tools": [
+    "Claude Code (claude-opus-5-5)"
+  ],
+  "date": "2026-10-31",
+  "pickedCandidate": "vector/hex_sweep.svg",
+  "pickDate": "2026-10-31",
+  "concept": null,
+  "sha256": {
+    "app_icon.svg": "b990803802993c4f38a20b8e37b8b739d2341ea5584b4bb2a6e07cf87c5712bc",
+    "app_icon.ico": "9aba238f31f704ff38491805b7a76bac21074cf38138f951b39b718bed2099c9"
+  }
+}

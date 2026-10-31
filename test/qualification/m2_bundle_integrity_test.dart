@@ -45,6 +45,7 @@ void main() {
           'runtimeVersions',
           'notices',
           'map-marker-icons',
+          'app-icon',
         ],
       );
       for (final step in steps) {
