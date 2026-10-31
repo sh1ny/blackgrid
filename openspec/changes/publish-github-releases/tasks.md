@@ -6,38 +6,38 @@ Workflow behaviour is proved offline in two layers. `release_workflow_test.dart`
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| release-publishing → A pushed release tag starts a publish run | Tag pushed | test/tool/ci/release_workflow_test.dart | triggers are tag pushes matching v* and workflow_dispatch with a tag input | red |
-| release-publishing → A pushed release tag starts a publish run | Manual run for an existing tag | test/tool/ci/release_workflow_scripts_test.dart | preflight resolves the dispatch tag input like a pushed tag | red |
-| release-publishing → A pushed release tag starts a publish run | Manual run for a missing tag | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a tag missing on origin, naming it | red |
-| release-publishing → A pushed release tag starts a publish run | Manual run from another branch | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a manual run whose ref is not main | red |
-| release-publishing → A pushed release tag starts a publish run | Branch push or pull request | test/tool/ci/release_workflow_test.dart | triggers are tag pushes matching v* and workflow_dispatch with a tag input | red |
+| release-publishing → A pushed release tag starts a publish run | Tag pushed | test/tool/ci/release_workflow_test.dart | triggers are tag pushes matching v* and workflow_dispatch with a tag input | green |
+| release-publishing → A pushed release tag starts a publish run | Manual run for an existing tag | test/tool/ci/release_workflow_scripts_test.dart | preflight resolves the dispatch tag input like a pushed tag | green |
+| release-publishing → A pushed release tag starts a publish run | Manual run for a missing tag | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a tag missing on origin, naming it | green |
+| release-publishing → A pushed release tag starts a publish run | Manual run from another branch | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a manual run whose ref is not main | green |
+| release-publishing → A pushed release tag starts a publish run | Branch push or pull request | test/tool/ci/release_workflow_test.dart | triggers are tag pushes matching v* and workflow_dispatch with a tag input | green |
 | release-publishing → Only a valid release tag is built | Valid final tag | test/tool/release/verify_tag_test.dart | valid final tag writes notes and release metadata | green |
-| release-publishing → Only a valid release tag is built | Lightweight tag | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a lightweight tag | red |
+| release-publishing → Only a valid release tag is built | Lightweight tag | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a lightweight tag | green |
 | release-publishing → Only a valid release tag is built | Not a release version | test/tool/release/verify_tag_test.dart | non-SemVer or build-metadata tag is refused | green |
 | release-publishing → Only a valid release tag is built | Commit not on main | test/tool/release/verify_tag_test.dart | commit off main's first-parent line is refused | green |
 | release-publishing → Only a valid release tag is built | Pubspec disagrees with the tag | test/tool/release/verify_tag_test.dart | pubspec mismatch is refused naming both versions | green |
 | release-publishing → Only a valid release tag is built | No changelog section | test/tool/release/verify_tag_test.dart | missing changelog section is refused | green |
-| release-publishing → Only a valid release tag is built | Tag predates packaging | test/tool/ci/release_workflow_scripts_test.dart | the tooling guard refuses a tree without release:verify-tag | red |
-| release-publishing → The published bundle passed every offline gate | All gates pass | test/tool/ci/release_workflow_test.dart | gates job runs the shared gates workflow and publish needs it | red |
+| release-publishing → Only a valid release tag is built | Tag predates packaging | test/tool/ci/release_workflow_scripts_test.dart | the tooling guard refuses a tree without release:verify-tag | green |
+| release-publishing → The published bundle passed every offline gate | All gates pass | test/tool/ci/release_workflow_test.dart | gates job runs the shared gates workflow and publish needs it | green |
 | release-publishing → The published bundle passed every offline gate | A gate fails | test/tool/ci/workflow_test.dart | in release mode the upload step follows Package and no gate step has a condition | green |
-| release-publishing → The published bundle passed every offline gate | Gates match CI | test/tool/ci/release_workflow_test.dart | ci and release call the same gates workflow | red |
-| release-publishing → A release holds exactly the packaged assets | Assets published | test/tool/ci/release_workflow_scripts_test.dart | publish uploads exactly the zip, setup and sums to the created id | red |
-| release-publishing → A release holds exactly the packaged assets | Asset altered between jobs | test/tool/ci/release_workflow_scripts_test.dart | publish refuses a file that fails sha256sum before any POST | red |
-| release-publishing → A release holds exactly the packaged assets | Whole set replaced between jobs | test/tool/ci/release_workflow_scripts_test.dart | publish refuses sums that differ from the gates digest output | red |
-| release-publishing → A release holds exactly the packaged assets | Asset missing | test/tool/ci/release_workflow_scripts_test.dart | publish refuses a missing or extra file before any POST | red |
+| release-publishing → The published bundle passed every offline gate | Gates match CI | test/tool/ci/release_workflow_test.dart | ci and release call the same gates workflow | green |
+| release-publishing → A release holds exactly the packaged assets | Assets published | test/tool/ci/release_workflow_scripts_test.dart | publish uploads exactly the zip, setup and sums to the created id | green |
+| release-publishing → A release holds exactly the packaged assets | Asset altered between jobs | test/tool/ci/release_workflow_scripts_test.dart | publish refuses a file that fails sha256sum before any POST | green |
+| release-publishing → A release holds exactly the packaged assets | Whole set replaced between jobs | test/tool/ci/release_workflow_scripts_test.dart | publish refuses sums that differ from the gates digest output | green |
+| release-publishing → A release holds exactly the packaged assets | Asset missing | test/tool/ci/release_workflow_scripts_test.dart | publish refuses a missing or extra file before any POST | green |
 | release-publishing → Release notes are the version's changelog section | Notes from the changelog | test/tool/release/verify_tag_test.dart | notes are the lines between the tag heading and the next section | green |
 | release-publishing → Release notes are the version's changelog section | Last section in the file | test/tool/release/verify_tag_test.dart | notes of the last section run to the end of the file | green |
 | release-publishing → Release notes are the version's changelog section | Empty section | test/tool/release/verify_tag_test.dart | empty changelog section is refused | green |
 | release-publishing → Prereleases and Latest follow the version | Beta tag | test/tool/release/verify_tag_test.dart | beta tag is a prerelease and never latest | green |
 | release-publishing → Prereleases and Latest follow the version | Highest final version | test/tool/release/verify_tag_test.dart | highest final tag is latest | green |
 | release-publishing → Prereleases and Latest follow the version | Older final version published later | test/tool/release/verify_tag_test.dart | lower final tag than an existing final is not latest | green |
-| release-publishing → A release is created once and appears whole | Release already exists | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a published release for the tag | red |
-| release-publishing → A release is created once and appears whole | Draft already exists | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a draft for the tag, naming it | red |
-| release-publishing → A release is created once and appears whole | Draft appears while the gates run | test/tool/ci/release_workflow_scripts_test.dart | publish refuses a draft listed just before the POST and makes none | red |
-| release-publishing → A release is created once and appears whole | Upload interrupted | test/tool/ci/release_workflow_scripts_test.dart | a failed upload exits non-zero and never sends draft false | red |
-| release-publishing → A release is created once and appears whole | Release appears whole | test/tool/ci/release_workflow_scripts_test.dart | publish patches draft false by id only after three uploaded assets | red |
-| release-publishing → Only steps that run no repository code can write | Permissions per job | test/tool/ci/release_workflow_test.dart | top-level contents read and only preflight and publish widen to write | red |
-| release-publishing → Only steps that run no repository code can write | A write job gains a checkout | test/tool/ci/release_workflow_test.dart | no job with contents write has a checkout, mise or local workflow step | red |
+| release-publishing → A release is created once and appears whole | Release already exists | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a published release for the tag | green |
+| release-publishing → A release is created once and appears whole | Draft already exists | test/tool/ci/release_workflow_scripts_test.dart | preflight refuses a draft for the tag, naming it | green |
+| release-publishing → A release is created once and appears whole | Draft appears while the gates run | test/tool/ci/release_workflow_scripts_test.dart | publish refuses a draft listed just before the POST and makes none | green |
+| release-publishing → A release is created once and appears whole | Upload interrupted | test/tool/ci/release_workflow_scripts_test.dart | a failed upload exits non-zero and never sends draft false | green |
+| release-publishing → A release is created once and appears whole | Release appears whole | test/tool/ci/release_workflow_scripts_test.dart | publish patches draft false by id only after three uploaded assets | green |
+| release-publishing → Only steps that run no repository code can write | Permissions per job | test/tool/ci/release_workflow_test.dart | top-level contents read and only preflight and publish widen to write | green |
+| release-publishing → Only steps that run no repository code can write | A write job gains a checkout | test/tool/ci/release_workflow_test.dart | no job with contents write has a checkout, mise or local workflow step | green |
 | release-publishing → Only steps that run no repository code can write | Action pinned by tag | test/tool/ci/workflow_test.dart | every uses line in every workflow is pinned to a 40-hex commit SHA | green |
 | continuous-integration → The no-games confirmation is scoped to the hosted runner | Native capture test runs on the hosted runner | test/tool/ci/workflow_test.dart | the qualification step of the gates workflow alone sets the no-games confirmation and the bundle inputs | green |
 | continuous-integration → The no-games confirmation is scoped to the hosted runner | A game executable is listed | test/tool/ci/qualification_audit_test.dart | the capture guard's refused and unconfirmed reasons are not allowlisted | green |
@@ -76,14 +76,14 @@ Read `.claude/skills/dart-add-unit-test/SKILL.md`, `dart-use-pattern-matching` a
 
 ## 5. Release workflow
 
-- [ ] 5.1 Write `test/tool/ci/release_workflow_test.dart`, covering the structure rows: triggers, jobs and `needs`, permissions per job, no checkout, `mise` or local-workflow step in a write job, `concurrency` `release-<tag>` without cancel, and that ci and release call the same gates file. Write `test/tool/ci/release_workflow_scripts_test.dart`, covering the preflight and publish script rows. It needs a test helper (`test/tool/ci/support/`) that extracts a named step's `run:` from the parsed YAML, writes a fake `gh` script that answers from per-test fixtures and logs its argv, and runs the step under `bash` with the step's `env:` and a temp working directory. Tag the scripts test `@Tags(['qualification'])` only if it exceeds a few seconds; otherwise keep it in the fast loop. Verify: both files fail because `release.yml` does not exist.
-- [ ] 5.2 Create `.github/workflows/release.yml` per design D2, D4 and D5:
+- [x] 5.1 Write `test/tool/ci/release_workflow_test.dart`, covering the structure rows: triggers, jobs and `needs`, permissions per job, no checkout, `mise` or local-workflow step in a write job, `concurrency` `release-<tag>` without cancel, and that ci and release call the same gates file. Write `test/tool/ci/release_workflow_scripts_test.dart`, covering the preflight and publish script rows. It needs a test helper (`test/tool/ci/support/`) that extracts a named step's `run:` from the parsed YAML, writes a fake `gh` script that answers from per-test fixtures and logs its argv, and runs the step under `bash` with the step's `env:` and a temp working directory. Tag the scripts test `@Tags(['qualification'])` only if it exceeds a few seconds; otherwise keep it in the fast loop. Verify: both files fail because `release.yml` does not exist.
+- [x] 5.2 Create `.github/workflows/release.yml` per design D2, D4 and D5:
   - preflight: main-only dispatch, annotated tag via `git/ref/tags`, the `tag_object` output, and the paginated release listing;
   - gates: `uses: ./.github/workflows/gates.yml` with `release_tag`;
   - publish: download into an empty directory, exact file set, `sums_sha256`, `sha256sum -c`, the second listing, the tag re-read, POST draft → id, upload per file to that id, then `GET` id for exactly three `uploaded` assets and `PATCH` id `draft: false` with `make_latest`.
 
   Pin `actions/download-artifact` by full SHA, use timeouts of 15 min for preflight and publish, and keep `run:` scripts `set -euo pipefail` with no `${{ }}` inside. Verify: both 5.1 test files pass and their rows flip green; `mise run analyze` and `mise run test` pass.
-- [ ] 5.3 Update README "Releases and changelog": add a Publish row (automatic on tag push), the "Retry or backfill" note (manual run from `main`, a tag with no release, delete a leftover draft first, `v0.4.0`/`v0.5.0` not backfillable), and the squash merge accepted by `release:tag`. Mark local `build:release`/`package:release` as optional pre-tag checks. Verify: `rg -n "release.yml|Retry or backfill|squash" README.md` shows each point, and every relative link in the section resolves.
+- [x] 5.3 Update README "Releases and changelog": add a Publish row (automatic on tag push), the "Retry or backfill" note (manual run from `main`, a tag with no release, delete a leftover draft first, `v0.4.0`/`v0.5.0` not backfillable), and the squash merge accepted by `release:tag`. Mark local `build:release`/`package:release` as optional pre-tag checks. Verify: `rg -n "release.yml|Retry or backfill|squash" README.md` shows each point, and every relative link in the section resolves.
 
 ## 6. Integration
 

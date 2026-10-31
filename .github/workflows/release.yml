@@ -1,0 +1,212 @@
+name: Release
+
+# Publishes a GitHub release for a version tag. A pushed `v*` tag starts it;
+# a manual run from main publishes a tag that has no release yet (retry or
+# backfill). Only `preflight` and `publish` can write, and neither checks out
+# or runs repository code: they use `gh`, `sha256sum` and `jq` only. Values
+# reach the scripts through `env:`, never through an expression in `run:`.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing annotated tag to publish, for example v0.6.0
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Check the tag and the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      tag_object: ${{ steps.check.outputs.tag_object }}
+    steps:
+      - name: Check the tag and the release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            if [ "$REF" != refs/heads/main ]; then
+              echo "::error::a manual run must start from main, not $REF"
+              exit 1
+            fi
+            tag="$INPUT_TAG"
+          else
+            tag="$REF_NAME"
+          fi
+          if ! [[ "$tag" =~ ^v[0-9][0-9A-Za-z._+-]*$ ]]; then
+            echo "::error::$tag is not a version tag (v<number>...)"
+            exit 1
+          fi
+          if ! ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag"); then
+            echo "::error::tag $tag does not exist on origin"
+            exit 1
+          fi
+          if [ "$(jq -r '.object.type' <<<"$ref")" != tag ]; then
+            echo "::error::tag $tag is not annotated"
+            exit 1
+          fi
+          tag_object=$(jq -r '.object.sha' <<<"$ref")
+          existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" |
+            jq -s -r --arg tag "$tag" '
+              add // [] | map(select(.tag_name == $tag))[] |
+              "\(if .draft then "draft" else "published" end) release \(.id) for \(.tag_name)"')
+          if [ -n "$existing" ]; then
+            while IFS= read -r line; do
+              echo "::error::$line already exists"
+            done <<<"$existing"
+            exit 1
+          fi
+          {
+            echo "tag=$tag"
+            echo "tag_object=$tag_object"
+          } >> "$GITHUB_OUTPUT"
+
+  gates:
+    name: Gates
+    needs: preflight
+    permissions:
+      contents: read
+    uses: ./.github/workflows/gates.yml
+    with:
+      release_tag: ${{ needs.preflight.outputs.tag }}
+
+  publish:
+    name: Publish the release
+    needs: [preflight, gates]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Download the release package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ needs.preflight.outputs.tag }}
+          path: dist
+
+      - name: Verify the release package
+        env:
+          TAG: ${{ needs.preflight.outputs.tag }}
+          SUMS_SHA256: ${{ needs.gates.outputs.sums_sha256 }}
+        run: |
+          set -euo pipefail
+          cd dist
+          if [ ! -f release-meta/release.json ]; then
+            echo "::error::missing file release-meta/release.json"
+            exit 1
+          fi
+          version=$(jq -r '.version' release-meta/release.json)
+          if [ "$(jq -r '.tag' release-meta/release.json)" != "$TAG" ]; then
+            echo "::error::release-meta/release.json is not for $TAG"
+            exit 1
+          fi
+          zip="Blackgrid-$version-windows-x64.zip"
+          setup="Blackgrid-$version-windows-x64-setup.exe"
+          expected=$(printf '%s\n' "release/$zip" "release/$setup" \
+            release/SHA256SUMS.txt release-meta/notes.md release-meta/release.json | sort)
+          actual=$(find . -type f | sed 's|^\./||' | sort)
+          bad=0
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            echo "::error::missing file $file"
+            bad=1
+          done < <(comm -23 <(echo "$expected") <(echo "$actual"))
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            echo "::error::unexpected file $file"
+            bad=1
+          done < <(comm -13 <(echo "$expected") <(echo "$actual"))
+          [ "$bad" = 0 ] || exit 1
+          digest=$(sha256sum release/SHA256SUMS.txt | cut -d' ' -f1)
+          if [ "$digest" != "$SUMS_SHA256" ]; then
+            echo "::error::SHA256SUMS.txt differs from the digest the gates computed"
+            exit 1
+          fi
+          listed=$(awk '{ sub(/^\*/, "", $2); print $2 }' release/SHA256SUMS.txt | sort)
+          if [ "$listed" != "$(printf '%s\n' "$setup" "$zip" | sort)" ]; then
+            echo "::error::SHA256SUMS.txt must list exactly $zip and $setup"
+            exit 1
+          fi
+          cd release
+          if ! sha256sum -c SHA256SUMS.txt; then
+            echo "::error::a file does not match SHA256SUMS.txt (see FAILED above)"
+            exit 1
+          fi
+
+      - name: Create and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.preflight.outputs.tag }}
+          TAG_OBJECT: ${{ needs.preflight.outputs.tag_object }}
+        run: |
+          set -euo pipefail
+          cd dist
+          version=$(jq -r '.version' release-meta/release.json)
+          prerelease=$(jq '.prerelease' release-meta/release.json)
+          make_latest=$(jq -r 'if .latest then "true" else "false" end' release-meta/release.json)
+          files=("Blackgrid-$version-windows-x64.zip" "Blackgrid-$version-windows-x64-setup.exe" SHA256SUMS.txt)
+
+          existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" |
+            jq -s -r --arg tag "$TAG" '
+              add // [] | map(select(.tag_name == $tag))[] |
+              "\(if .draft then "draft" else "published" end) release \(.id) for \(.tag_name)"')
+          if [ -n "$existing" ]; then
+            while IFS= read -r line; do
+              echo "::error::$line already exists"
+            done <<<"$existing"
+            exit 1
+          fi
+
+          if ! ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG"); then
+            echo "::error::tag $TAG no longer exists on origin"
+            exit 1
+          fi
+          if [ "$(jq -r '.object.sha' <<<"$ref")" != "$TAG_OBJECT" ]; then
+            echo "::error::tag $TAG moved since the preflight"
+            exit 1
+          fi
+
+          payload=$(mktemp)
+          jq -n --arg tag "$TAG" --rawfile body release-meta/notes.md --argjson prerelease "$prerelease" \
+            '{tag_name: $tag, name: $tag, body: $body, draft: true, prerelease: $prerelease}' > "$payload"
+          created=$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" --input "$payload")
+          id=$(jq -r '.id' <<<"$created")
+          upload_url=$(jq -r '.upload_url | sub("\\{.*$"; "")' <<<"$created")
+          trap 'echo "::error::publishing $TAG failed; draft release $id is left in place, delete it before a retry"' ERR
+
+          for file in "${files[@]}"; do
+            gh api -X POST "$upload_url?name=$file" \
+              -H 'Content-Type: application/octet-stream' --input "release/$file" > /dev/null
+          done
+
+          current=$(gh api "repos/$GITHUB_REPOSITORY/releases/$id")
+          names=$(printf '%s\n' "${files[@]}" | jq -R . | jq -s .)
+          if ! jq -e --argjson names "$names" \
+            '(.assets | map(.name) | sort) == ($names | sort) and all(.assets[]; .state == "uploaded")' \
+            <<<"$current" > /dev/null; then
+            echo "::error::draft release $id does not hold exactly the uploaded assets:"
+            jq -r '.assets[] | "  \(.name) \(.state)"' <<<"$current"
+            exit 1
+          fi
+
+          jq -n --arg latest "$make_latest" '{draft: false, make_latest: $latest}' |
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" --input - > /dev/null
