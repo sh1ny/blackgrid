@@ -6,13 +6,13 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) is outside `te
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| app-icon → The icon source is a project-owned SVG with a provenance record | Source with a concept | test/tool/app_icon/committed_icon_test.dart | the committed source record names the picked candidate, the pick date, author and tools | red |
+| app-icon → The icon source is a project-owned SVG with a provenance record | Source with a concept | test/tool/app_icon/committed_icon_test.dart | the committed source record names the picked candidate, the pick date, author and tools | green |
 | app-icon → The icon source is a project-owned SVG with a provenance record | Missing provenance | test/tool/app_icon/provenance_test.dart | a source record without author or pickedCandidate fails naming the field | green |
-| app-icon → Concept candidates are committed with provenance | Four concepts recorded | test/tool/app_icon/committed_icon_test.dart | each committed concept PNG has an entry naming the user, ChatGPT and 2026-10-31 | red |
+| app-icon → Concept candidates are committed with provenance | Four concepts recorded | test/tool/app_icon/committed_icon_test.dart | each committed concept PNG has an entry naming the user, ChatGPT and 2026-10-31 | green |
 | app-icon → Concept candidates are committed with provenance | Unrecorded candidate | test/tool/app_icon/sheet_test.dart | an unrecorded PNG or SVG in the candidates folder fails naming it and writes no sheet | green |
 | app-icon → The comparison sheet shows every candidate at the icon sizes | Sheet with ten candidates | test/tool/app_icon/sheet_test.dart | four concepts and six vectors give ten columns at all ten sizes on both backgrounds, with no external URL | green |
 | app-icon → The comparison sheet shows every candidate at the icon sizes | Invalid vector candidate | test/tool/app_icon/sheet_test.dart | a vector that fails to compile exits non-zero naming it and leaves the earlier sheet | green |
-| app-icon → The committed icon holds every Windows size | Valid icon | test/tool/app_icon/committed_icon_test.dart | the committed ico holds the ten sizes, 32 bpp, DIB below 256 and PNG at 256, none fully transparent | red |
+| app-icon → The committed icon holds every Windows size | Valid icon | test/tool/app_icon/committed_icon_test.dart | the committed ico holds the ten sizes, 32 bpp, DIB below 256 and PNG at 256, none fully transparent | green |
 | app-icon → The committed icon holds every Windows size | Missing size | test/tool/app_icon/ico_test.dart | an ico missing 20 px or with a duplicate 32 px fails naming the size | green |
 | app-icon → The committed icon holds every Windows size | Flutter default restored | test/tool/app_icon/ico_test.dart | an ico with the Flutter default SHA-256 fails as the Flutter default | green |
 | app-icon → The icon is rebuilt from its source and stays in step | Source edited without rebuild | test/tool/app_icon/provenance_test.dart | a source or ico hash differing from the record fails naming the rebuild command | green |
@@ -56,10 +56,10 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 5. The user's pick and the committed icon
 
-- [ ] 5.1 Show the user the sheet (`build/app-icon-preview/index.html`) and ask them to pick a candidate. Apply any tweaks they ask for, regenerating the sheet each time. Never pick for them. Record their words. Verify: the user names one candidate.
-- [ ] 5.2 Copy the picked SVG to `windows/runner/resources/app_icon/app_icon.svg`, adding `app_icon_small.svg` only if the user found 16 to 24 px illegible. Write `provenance.json`, with `pickedCandidate`, `pickDate` and `concept` set. Run `mise run icon:build`, which replaces `windows/runner/resources/app_icon.ico` and writes the hashes. Verify: `git diff --stat` shows the `.ico` replaced, and `provenance.json` holds three or four hashes.
-- [ ] 5.3 Write `test/tool/app_icon/committed_icon_test.dart`, covering the rows "Source with a concept", "Four concepts recorded" and "Valid icon". It runs `checkIco` and the provenance checks on the committed files. Verify that it passes, and flip the three rows green.
-- [ ] 5.4 Write `docs/design/app-icon/README.md`, the design record in the marker README's pattern. It covers the candidates and their provenance, the preview composite's provenance, the sheet command, the user's pick with their words, the regeneration command (`mise run icon:build`, then commit the `.ico` and `provenance.json`), and a note that Windows may cache the old icon (`ie4uinit -show`). Verify: the file exists and every command it names is a mise task.
+- [x] 5.1 Show the user the sheet (`build/app-icon-preview/index.html`) and ask them to pick a candidate. Apply any tweaks they ask for, regenerating the sheet each time. Never pick for them. Record their words. Verify: the user names one candidate.
+- [x] 5.2 Copy the picked SVG to `windows/runner/resources/app_icon/app_icon.svg`, adding `app_icon_small.svg` only if the user found 16 to 24 px illegible. Write `provenance.json`, with `pickedCandidate`, `pickDate` and `concept` set. Run `mise run icon:build`, which replaces `windows/runner/resources/app_icon.ico` and writes the hashes. Verify: `git diff --stat` shows the `.ico` replaced, and `provenance.json` holds three or four hashes.
+- [x] 5.3 Write `test/tool/app_icon/committed_icon_test.dart`, covering the rows "Source with a concept", "Four concepts recorded" and "Valid icon". It runs `checkIco` and the provenance checks on the committed files. Verify that it passes, and flip the three rows green.
+- [x] 5.4 Write `docs/design/app-icon/README.md`, the design record in the marker README's pattern. It covers the candidates and their provenance, the preview composite's provenance, the sheet command, the user's pick with their words, the regeneration command (`mise run icon:build`, then commit the `.ico` and `provenance.json`), and a note that Windows may cache the old icon (`ie4uinit -show`). Verify: the file exists and every command it names is a mise task.
 
 ## 6. Installer script wiring
 
