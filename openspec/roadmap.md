@@ -16,6 +16,8 @@ Rescoped with the user on 2026-10-30; more work will be added as M6 runs. M6 ope
 - Every PR and every push to `main` runs the offline gates on a GitHub-hosted Windows runner: `mise run analyze`, `mise run test`, a Release build, `bundle:check` and `mise run test:qualification` against that build, so no test runs only on the developer's machine. A red run is visible on the PR. (agent)
 - The installer format (MSIX or Inno Setup) and code signing are decided and recorded in an ADR. (agent proposes; user decides)
 - Pushing a `v` tag builds the Release on CI and publishes a GitHub Release with a zip of the bundle and an installer, with that version's changelog section as its notes. A `-beta.N` tag is published as a prerelease. (agent)
+- `blackgrid.exe`, the installer and its uninstall entry show Blackgrid's own icon, not the Flutter default, at every size from 16 to 256 px. (agent)
+- The user picks that icon from the compared candidates. (user)
 - The user installs a published release from the installer and from the zip, and starts it. (user)
 - Offline, refresh and auth failures keep the last good data and say what failed, and settings, pins and history survive restart and interrupted imports, each proved by offline tests. (agent)
 
@@ -23,7 +25,8 @@ Rescoped with the user on 2026-10-30; more work will be added as M6 runs. M6 ope
 1. `add-windows-ci` - a GitHub Actions workflow on a Windows runner that runs the offline gates, a Release build, `bundle:check` and the qualification tests on every PR and push to `main`.
 2. `add-release-packaging` - an ADR choosing the installer format and code signing, plus a `mise` task that packages the Release bundle as a zip and an installer.
 3. `publish-github-releases` - a tag-triggered workflow that builds both packages and publishes the GitHub Release with the changelog section as notes; the local release flow and README follow.
-4. `qualify-failure-and-restart` - offline tests for refresh and auth failures and for restart, import and history durability, with fixes for any gap they find.
+4. `add-app-icon` - replace the default Flutter icon (`windows/runner/resources/app_icon.ico`, used by the executable, the installer and the uninstall entry). Candidates from two sources are compared side by side: PNGs the user generates with ChatGPT and vector icons drawn in the repo. The user picks one, and the change builds a multi-size `.ico` from it with a test of its sizes. It lands before the M6-close beta, so the first published release carries the icon.
+5. `qualify-failure-and-restart` - offline tests for refresh and auth failures and for restart, import and history durability, with fixes for any gap they find.
 
 ## Next
 
