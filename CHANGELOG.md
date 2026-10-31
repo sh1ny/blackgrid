@@ -1,5 +1,25 @@
 # blackgrid Changelog
 
+## v0.6.0-beta.1 - 2026-10-31
+
+### Features
+
+- *(add-windows-ci)* run every offline gate on hosted Windows CI (#63)
+
+- *(add-release-packaging)* package releases as a zip and per-user installer (#67)
+
+- *(publish-github-releases)* publish GitHub releases from a tag workflow (#68)
+
+- *(add-app-icon)* replace the Flutter icon with Blackgrid's own (#69)
+
+- *(add-header-app-logo)* show the hex logo inside the app window (#70)
+
+### Documentation
+
+- *(readme)* open with a plain-language guide for players
+
+- *(license)* release the source under the MIT License
+
 ## v0.5.0 - 2026-10-30
 
 ### Features
