@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../tool/app_icon/ico.dart';
 import '../../../tool/vision/check_bundle.dart';
 import '../../support/pe_builder.dart';
 
@@ -16,6 +17,49 @@ const _markerJson = 'data/vision/marker/inspection_marker.json';
 const _markerSetDir = 'assets/map_markers';
 const _bundledMarkerDir = 'data/flutter_assets/assets/map_markers';
 const _markerStep = 'map-marker-icons';
+const _iconStep = 'app-icon';
+const _flutterDefaultIco =
+    'test/fixtures/app_icon/flutter_default_app_icon.ico';
+
+/// A valid ten-size ICO built from small synthetic rasters.
+Uint8List _tenSizeIco() => encodeIco({
+  for (final size in icoRequiredSizes)
+    size: Uint8List.fromList([
+      for (var i = 0; i < size * size * 4; i++) (i * 7 + size) & 0xFF,
+    ]),
+});
+
+typedef _GroupEntry = ({
+  int width,
+  int height,
+  int bitCount,
+  int planes,
+  int size,
+  int id,
+});
+
+_GroupEntry _groupEntry(IcoImage image, int id) => (
+  width: image.width,
+  height: image.height,
+  bitCount: image.bitCount,
+  planes: image.planes,
+  size: image.bytes.length,
+  id: id,
+);
+
+/// An executable whose icon group holds [images], resource ids 1 to n.
+Uint8List _exeWithImages(
+  List<IcoImage> images, [
+  List<String> imports = const [],
+]) => PeBuilder(
+  imports: imports,
+  iconGroup: PeBuilder.iconGroupDir([
+    for (var i = 0; i < images.length; i++) _groupEntry(images[i], i + 1),
+  ]),
+  iconImages: {for (var i = 0; i < images.length; i++) i + 1: images[i].bytes},
+).build();
+
+List<IcoImage> _imagesOf(Uint8List ico) => (parseIco(ico) as IcoParsed).images;
 const _screenshotSha =
     '4c46ea322d14fb28285a79c4fe74b46c37f28f5cd2138858ff6a8a5dcc0d3eb3';
 
@@ -26,7 +70,9 @@ class _Fixture {
   _Fixture() : root = Directory.systemTemp.createTempSync('bundle_check_') {
     bundle = Directory('${root.path}/bundle')..createSync();
     final vcVersion = [14, 51, 36247, 0];
-    write('blackgrid.exe', _pe(['KERNEL32.dll', 'MSVCP140.dll']));
+    iconPath = '${root.path}/app_icon.ico';
+    File(iconPath).writeAsBytesSync(_tenSizeIco());
+    writeExe(_imagesOf(File(iconPath).readAsBytesSync()));
     write('flutter_windows.dll', _pe(['KERNEL32.dll']));
     write('sqlite3.dll', _pe(['KERNEL32.dll']));
     write('blackgrid_panel_ocr.dll', _pe(['KERNEL32.dll', 'VCRUNTIME140.dll']));
@@ -107,7 +153,14 @@ class _Fixture {
     return '${dir.path}/manifest.json';
   }
 
+  /// Writes `blackgrid.exe` with [images] as its icon group.
+  void writeExe(List<IcoImage> images) => write(
+    'blackgrid.exe',
+    _exeWithImages(images, ['KERNEL32.dll', 'MSVCP140.dll']),
+  );
+
   final Directory root;
+  late final String iconPath;
   late final Directory bundle;
   late final String lockPath = '${root.path}/lock.json';
   late final String noticesPath = '${root.path}/NOTICES.md';
@@ -269,6 +322,8 @@ class _Fixture {
     lockPath,
     '--notices',
     noticesPath,
+    '--app-icon',
+    iconPath,
   ];
 
   Future<({int code, Map<String, Object?>? report, String err})> run([
@@ -316,6 +371,7 @@ void main() {
       'runtimeVersions',
       'notices',
       _markerStep,
+      _iconStep,
     ]);
     expect(_step(report, 'inventory')['ok'], isTrue);
     final files = (report['files']! as List).cast<Map<String, Object?>>();
@@ -715,6 +771,116 @@ void main() {
         expect(File(manifest).readAsBytesSync(), before);
       },
     );
+  });
+
+  group('executable application icon', () {
+    test('app-icon step passes listing ten sizes when the exe icon group '
+        'equals the ico', () async {
+      final r = await fx.run();
+      expect(r.code, 0, reason: '${r.err} ${r.report}');
+      final step = _step(r.report!, _iconStep);
+      expect(step['ok'], isTrue);
+      expect(step['failures'], isEmpty);
+      expect((step['details']! as List).cast<String>(), [
+        for (final size in icoRequiredSizes) '${size}x$size 32-bit',
+      ]);
+    });
+
+    test('the Flutter default icon group fails naming duplicate 16, 32, 48 '
+        'and missing 20, 24, 40, 64, 96, 128', () async {
+      fx.writeExe(_imagesOf(File(_flutterDefaultIco).readAsBytesSync()));
+      final r = await fx.run();
+      expect(r.code, 1);
+      expect(r.report!['result'], 'fail');
+      expect(_step(r.report!, _iconStep)['ok'], isFalse);
+      final text = _failures(r.report!, _iconStep);
+      expect(text, contains('duplicate sizes in the executable: 16, 32, 48'));
+      for (final size in [20, 24, 40, 64, 96, 128]) {
+        expect(
+          text,
+          contains('${size}x$size 32-bit is missing from the executable'),
+        );
+      }
+      expect(text, contains('16x16 4-bit is missing from app_icon.ico'));
+      expect(text, contains('16x16 32-bit differs'));
+      expect(_step(r.report!, 'imports')['ok'], isTrue);
+    });
+
+    test('app-icon names a key present twice on one side', () async {
+      final images = _imagesOf(File(fx.iconPath).readAsBytesSync());
+      fx.writeExe([...images, images.first]);
+      final r = await fx.run();
+      expect(r.code, 1);
+      final text = _failures(r.report!, _iconStep);
+      expect(text, contains('duplicate sizes in the executable: 16'));
+      expect(text, contains('16x16 32-bit appears more than once'));
+    });
+
+    test('app-icon names a key whose bytes differ', () async {
+      final images = _imagesOf(File(fx.iconPath).readAsBytesSync());
+      final altered = [
+        for (final image in images)
+          if (image.width == 48)
+            IcoImage(
+              width: 48,
+              height: 48,
+              planes: 1,
+              bitCount: 32,
+              bytes: Uint8List.fromList(image.bytes)..[0] ^= 0xFF,
+            )
+          else
+            image,
+      ];
+      fx.writeExe(altered);
+      final r = await fx.run();
+      expect(r.code, 1);
+      final text = _failures(r.report!, _iconStep);
+      expect(text, contains('48x48 32-bit differs'));
+      expect(text, isNot(contains('missing')));
+    });
+
+    test(
+      'app-icon fails with the reason for an unreadable icon group',
+      () async {
+        fx.write('blackgrid.exe', PeBuilder(imports: ['KERNEL32.dll']).build());
+        final r = await fx.run();
+        expect(r.code, 1);
+        expect(
+          _failures(r.report!, _iconStep),
+          contains('executable icon group is unreadable: no resource'),
+        );
+      },
+    );
+
+    test(
+      'app-icon fails with the reason for an unreadable or missing ico',
+      () async {
+        File(fx.iconPath).writeAsBytesSync([1, 2, 3]);
+        final r = await fx.run();
+        expect(r.code, 1);
+        expect(
+          _failures(r.report!, _iconStep),
+          contains('app_icon.ico is unreadable'),
+        );
+        File(fx.iconPath).deleteSync();
+        final r2 = await fx.run();
+        expect(r2.code, 1);
+        expect(
+          _failures(r2.report!, _iconStep),
+          contains('app_icon.ico is unreadable: file not found'),
+        );
+      },
+    );
+
+    test('app-icon fails when blackgrid.exe is missing', () async {
+      File('${fx.bundle.path}/blackgrid.exe').deleteSync();
+      final r = await fx.run();
+      expect(r.code, 1);
+      expect(
+        _failures(r.report!, _iconStep),
+        contains('blackgrid.exe is missing'),
+      );
+    });
   });
 
   group('marker provenance', () {

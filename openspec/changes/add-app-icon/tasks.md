@@ -19,9 +19,9 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) is outside `te
 | app-icon → The icon is rebuilt from its source and stays in step | Render fails | test/tool/app_icon/build_test.dart | a source the compiler rejects exits non-zero naming it and leaves the ico and record unchanged | red |
 | app-icon → The executable, the installer and the uninstall entry use the committed icon | Installer script points at the icon | test/tool/release/installer_script_test.dart | SetupIconFile resolves to the committed ico and UninstallDisplayIcon is the installed exe | green |
 | app-icon → The executable, the installer and the uninstall entry use the committed icon | Setup icon moved | test/tool/release/installer_script_test.dart | a script naming another setup icon or none fails naming the setting | green |
-| release-bundle-integrity → The executable carries the committed application icon | Icon matches | test/tool/vision/check_bundle_test.dart | app-icon step passes listing ten sizes when the exe icon group equals the ico | red |
-| release-bundle-integrity → The executable carries the committed application icon | Stale executable icon | test/tool/vision/check_bundle_test.dart | the Flutter default icon group fails naming duplicate 16, 32, 48 and missing 20, 24, 40, 64, 96, 128 | red |
-| release-bundle-integrity → The executable carries the committed application icon | No icon resource | test/tool/vision/pe_icon_test.dart | a missing or malformed icon group gives an unreadable result without throwing | red |
+| release-bundle-integrity → The executable carries the committed application icon | Icon matches | test/tool/vision/check_bundle_test.dart | app-icon step passes listing ten sizes when the exe icon group equals the ico | green |
+| release-bundle-integrity → The executable carries the committed application icon | Stale executable icon | test/tool/vision/check_bundle_test.dart | the Flutter default icon group fails naming duplicate 16, 32, 48 and missing 20, 24, 40, 64, 96, 128 | green |
+| release-bundle-integrity → The executable carries the committed application icon | No icon resource | test/tool/vision/pe_icon_test.dart | a missing or malformed icon group gives an unreadable result without throwing | green |
 
 ## 1. ADR-0027 and the architecture index
 
@@ -67,7 +67,7 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 7. Bundle check `app-icon` step
 
-- [ ] 7.1 Write failing tests in `test/tool/vision/pe_icon_test.dart` for the row "No icon resource":
+- [x] 7.1 Write failing tests in `test/tool/vision/pe_icon_test.dart` for the row "No icon resource":
   - no `.rsrc`;
   - no `RT_GROUP_ICON`;
   - a group count above 32;
@@ -75,8 +75,8 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
   - data running past the end of the file.
 
   Build the PE images synthetically, in the existing PE test fixtures' style. Add a test that a malformed icon group leaves `readPe`'s imports and version readable (review S2). Verify they fail.
-- [ ] 7.2 Implement `readIconGroup(bytes)` in `tool/vision/pe.dart`, separate from `readPe`'s single try (S2), with bounds checks like `_version()`. Verify that the 7.1 tests pass, and flip the row green.
-- [ ] 7.3 Write failing tests in `test/tool/vision/check_bundle_test.dart` for the rows "Icon matches" and "Stale executable icon". The stale case uses an icon group built from the current Flutter default `.ico`'s ten images. Then add the `app-icon` step after `map-marker-icons` in `tool/vision/check_bundle.dart` (D5 key matching), and update `release-bundle-integrity` references in its doc comment. Verify that the tests pass, and flip both rows green.
+- [x] 7.2 Implement `readIconGroup(bytes)` in `tool/vision/pe.dart`, separate from `readPe`'s single try (S2), with bounds checks like `_version()`. Verify that the 7.1 tests pass, and flip the row green.
+- [x] 7.3 Write failing tests in `test/tool/vision/check_bundle_test.dart` for the rows "Icon matches" and "Stale executable icon". The stale case uses an icon group built from the current Flutter default `.ico`'s ten images. Then add the `app-icon` step after `map-marker-icons` in `tool/vision/check_bundle.dart` (D5 key matching), and update `release-bundle-integrity` references in its doc comment. Verify that the tests pass, and flip both rows green.
 
 ## 8. Integration
 

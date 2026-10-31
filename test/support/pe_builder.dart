@@ -11,6 +11,9 @@ class PeBuilder {
     this.delayImports = const [],
     this.version,
     this.machine = 0x8664,
+    this.iconGroup,
+    this.iconImages = const {},
+    this.iconSizeOverrides = const {},
   });
 
   static const sectionRva = 0x2000;
@@ -22,6 +25,38 @@ class PeBuilder {
   /// Four-part file version, or null for no version resource.
   final List<int>? version;
   final int machine;
+
+  /// Raw RT_GROUP_ICON resource data (see [iconGroupDir]), or null for none.
+  final Uint8List? iconGroup;
+
+  /// RT_ICON resource data keyed by resource id.
+  final Map<int, Uint8List> iconImages;
+
+  /// Replaces the size recorded in an RT_ICON data entry, keyed by resource
+  /// id, to build entries that run past the end of the file.
+  final Map<int, int> iconSizeOverrides;
+
+  /// Builds a GRPICONDIR. [declaredCount] overrides the entry count field.
+  static Uint8List iconGroupDir(
+    List<({int width, int height, int bitCount, int planes, int size, int id})>
+    entries, {
+    int? declaredCount,
+  }) {
+    final d = ByteData(6 + 14 * entries.length);
+    d.setUint16(2, 1, Endian.little);
+    d.setUint16(4, declaredCount ?? entries.length, Endian.little);
+    for (var i = 0; i < entries.length; i++) {
+      final e = entries[i];
+      final p = 6 + 14 * i;
+      d.setUint8(p, e.width >= 256 ? 0 : e.width);
+      d.setUint8(p + 1, e.height >= 256 ? 0 : e.height);
+      d.setUint16(p + 4, e.planes, Endian.little);
+      d.setUint16(p + 6, e.bitCount, Endian.little);
+      d.setUint32(p + 8, e.size, Endian.little);
+      d.setUint16(p + 12, e.id, Endian.little);
+    }
+    return d.buffer.asUint8List();
+  }
 
   Uint8List build() {
     final section = BytesBuilder();
@@ -70,26 +105,10 @@ class PeBuilder {
       delaySize = rva() - delayRva;
     }
 
-    final v = version;
-    if (v != null) {
+    final tree = _resourceTree();
+    if (tree != null) {
       resRva = rva();
-      final base = resRva;
-      // Layout: type dir @0, name dir @24, language dir @48,
-      // data entry @72, version blob @88.
-      Uint8List dir(int entryId, int target) {
-        final d = ByteData(24);
-        d.setUint16(14, 1, Endian.little); // one id entry
-        d.setUint32(16, entryId, Endian.little);
-        d.setUint32(20, target, Endian.little);
-        return d.buffer.asUint8List();
-      }
-
-      section.add(dir(16, 0x80000000 | 24));
-      section.add(dir(1, 0x80000000 | 48));
-      section.add(dir(0x409, 72));
-      final blob = _versionBlob(v);
-      section.add(u32s([base + 88, blob.length, 0, 0]));
-      section.add(blob);
+      section.add(tree(resRva));
       resSize = rva() - resRva;
     }
     align4();
@@ -134,6 +153,81 @@ class PeBuilder {
     d.setUint32(sh + 36, 0x40000040, Endian.little);
     out.setAll(sectionFileOffset, sectionBytes);
     return out;
+  }
+
+  /// Returns a function building the resource directory tree for a given
+  /// base RVA, or null when there are no resources. Every leaf has one
+  /// language (0x409).
+  Uint8List Function(int base)? _resourceTree() {
+    final types = <int, Map<int, Uint8List>>{};
+    final v = version;
+    if (v != null) types[16] = {1: _versionBlob(v)};
+    final group = iconGroup;
+    if (group != null) types[14] = {1: group};
+    if (iconImages.isNotEmpty) types[3] = iconImages;
+    if (types.isEmpty) return null;
+    return (base) {
+      final typeIds = types.keys.toList()..sort();
+      final leaves = <({int type, int name, Uint8List data})>[
+        for (final t in typeIds)
+          for (final n in (types[t]!.keys.toList()..sort()))
+            (type: t, name: n, data: types[t]![n]!),
+      ];
+      var pos = 16 + 8 * typeIds.length;
+      final nameDirAt = <int, int>{};
+      for (final t in typeIds) {
+        nameDirAt[t] = pos;
+        pos += 16 + 8 * types[t]!.length;
+      }
+      final langDirAt = <int>[];
+      for (var i = 0; i < leaves.length; i++) {
+        langDirAt.add(pos);
+        pos += 24;
+      }
+      final entryAt = <int>[];
+      for (var i = 0; i < leaves.length; i++) {
+        entryAt.add(pos);
+        pos += 16;
+      }
+      final blobAt = <int>[];
+      for (final leaf in leaves) {
+        pos = (pos + 3) & ~3;
+        blobAt.add(pos);
+        pos += leaf.data.length;
+      }
+      final out = Uint8List((pos + 3) & ~3);
+      final d = ByteData.sublistView(out);
+      void dir(int at, List<(int, int)> entries) {
+        d.setUint16(at + 14, entries.length, Endian.little);
+        for (var i = 0; i < entries.length; i++) {
+          d.setUint32(at + 16 + i * 8, entries[i].$1, Endian.little);
+          d.setUint32(at + 20 + i * 8, entries[i].$2, Endian.little);
+        }
+      }
+
+      const subdir = 0x80000000;
+      dir(0, [for (final t in typeIds) (t, subdir | nameDirAt[t]!)]);
+      var leaf = 0;
+      for (final t in typeIds) {
+        final names = types[t]!.keys.toList()..sort();
+        dir(nameDirAt[t]!, [
+          for (var i = 0; i < names.length; i++)
+            (names[i], subdir | langDirAt[leaf + i]),
+        ]);
+        leaf += names.length;
+      }
+      for (var i = 0; i < leaves.length; i++) {
+        dir(langDirAt[i], [(0x409, entryAt[i])]);
+        final l = leaves[i];
+        final size = l.type == 3
+            ? (iconSizeOverrides[l.name] ?? l.data.length)
+            : l.data.length;
+        d.setUint32(entryAt[i], base + blobAt[i], Endian.little);
+        d.setUint32(entryAt[i] + 4, size, Endian.little);
+        out.setAll(blobAt[i], l.data);
+      }
+      return out;
+    };
   }
 
   static Uint8List _versionBlob(List<int> v) {
