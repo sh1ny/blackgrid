@@ -5,6 +5,7 @@ import 'src/git.dart';
 import 'src/package_step.dart';
 import 'src/release_steps.dart';
 import 'src/tag_step.dart';
+import 'src/verify_tag_step.dart';
 
 const _usage = '''
 Usage: dart run tool/release/release.dart <command> [arguments]
@@ -20,6 +21,10 @@ Commands:
   package
       Package the stamped Release bundle of the clean HEAD into build/release:
       the zip, the per-user installer and SHA256SUMS.txt.
+  verify-tag <tag> --out <dir>
+      In the tag's checkout, refuse unless the tag is a valid release tag on
+      main's first-parent line whose pubspec version and non-empty changelog
+      section match; then write <dir>/notes.md and <dir>/release.json.
 ''';
 
 Future<void> main(List<String> arguments) async {
@@ -48,6 +53,8 @@ Future<int> runRelease(
     case 'package':
       if (rest.isNotEmpty) return _usageError('package takes no arguments.');
       return _package(runner, repoDir ?? Directory.current);
+    case 'verify-tag':
+      return _verifyTag(rest, runner, repoDir ?? Directory.current);
     default:
       return _usageError('Unknown command "$command".');
   }
@@ -113,6 +120,42 @@ Future<int> _build(CommandRunner runner, Directory repoDir) async {
 Future<int> _package(CommandRunner runner, Directory repoDir) async {
   try {
     await package(repoDir: repoDir, runner: runner);
+    return 0;
+  } on ReleaseException catch (e) {
+    stderr.writeln(e.message);
+    return e.exitCode;
+  }
+}
+
+Future<int> _verifyTag(
+  List<String> arguments,
+  CommandRunner runner,
+  Directory repoDir,
+) async {
+  String? tagName;
+  String? outDir;
+  for (var i = 0; i < arguments.length; i++) {
+    final arg = arguments[i];
+    if (arg == '--out') {
+      if (i + 1 >= arguments.length) return _usageError('--out needs a value.');
+      outDir = arguments[++i];
+    } else if (arg.startsWith('-')) {
+      return _usageError('Unknown option "$arg".');
+    } else if (tagName == null) {
+      tagName = arg;
+    } else {
+      return _usageError('Unexpected argument "$arg".');
+    }
+  }
+  if (tagName == null) return _usageError('verify-tag needs a <tag>.');
+  if (outDir == null) return _usageError('verify-tag needs --out <dir>.');
+  try {
+    await verifyTag(
+      tag: tagName,
+      outDir: Directory(outDir),
+      repoDir: repoDir,
+      runner: runner,
+    );
     return 0;
   } on ReleaseException catch (e) {
     stderr.writeln(e.message);
