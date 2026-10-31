@@ -55,7 +55,7 @@ Workflow behaviour is proved offline in two layers. `release_workflow_test.dart`
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0026-releases-published-by-a-tag-workflow.md` (Status: accepted, today's date, amends 0009 and 0024) recording design D1-D7, the rejected alternatives and reversal costs. Add its row to the in-force index in `openspec/architecture.md`. Update the CI workflow row (gates now in `gates.yml`, called by `ci.yml`) and add a release workflow row (preflight, gates, publish; permissions; artifact; GitHub Releases). Also add one line to `docs/adr/README.md` if it lists ADRs. Verify: `git diff --stat` shows only those files, and every link in the new ADR resolves (`test -f` on each relative path).
+- [x] 1.1 Write `docs/adr/0026-releases-published-by-a-tag-workflow.md` (Status: accepted, today's date, amends 0009 and 0024) recording design D1-D7, the rejected alternatives and reversal costs. Add its row to the in-force index in `openspec/architecture.md`. Update the CI workflow row (gates now in `gates.yml`, called by `ci.yml`) and add a release workflow row (preflight, gates, publish; permissions; artifact; GitHub Releases). Also add one line to `docs/adr/README.md` if it lists ADRs. Verify: `git diff --stat` shows only those files, and every link in the new ADR resolves (`test -f` on each relative path).
 
 ## 2. Tag validation and notes (`release.dart verify-tag`)
 
