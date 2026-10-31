@@ -1,6 +1,6 @@
 # Third-party notices
 
-This records inputs selected for the independently authored Blackgrid implementation, not a blanket clearance of the reference inventory. Blackgrid's project license remains unselected; the repository is private and this document does not authorize publication. No reference runtime/source or screenshots are shipped. M5 saved-panel OCR uses the installed Windows engine, and the M2 item vision runtime ships the pinned third-party binaries and OCR model; both are described below. Synthetic test fixtures were independently authored. M3 map artwork is independently acquired and bundled with the source-specific notices below; Blackgrid claims no ownership of that artwork.
+This records inputs selected for the independently authored Blackgrid implementation, not a blanket clearance of the reference inventory. Blackgrid's own source code is licensed under the [MIT License](LICENSE). That license does not cover the third-party inputs recorded here; each keeps its own terms below. No reference runtime/source or screenshots are shipped. M5 saved-panel OCR uses the installed Windows engine, and the M2 item vision runtime ships the pinned third-party binaries and OCR model; both are described below. Synthetic test fixtures were independently authored. M3 map artwork is independently acquired and bundled with the source-specific notices below; Blackgrid claims no ownership of that artwork.
 
 ## M3 map artwork and preparation
 

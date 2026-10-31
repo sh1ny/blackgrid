@@ -53,7 +53,7 @@ That is all. It does not modify any game file. A test in this repository fails i
 | [TarkovTracker](https://tarkovtracker.org) | Your quest and hideout progress, read only, so **Keep** means *you* still need it | No. Off until you paste a token in **Settings** |
 | Windows text recognition | Reads the extract names from your **O** screenshots, on your PC | Built into Windows |
 
-Blackgrid only downloads; it never uploads your data. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`, and a TarkovTracker token is encrypted for your Windows user. The maps ship inside the app; see [Credits and notices](#-credits-and-notices) for where they come from.
+Blackgrid only downloads; it never uploads your data. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`, and a TarkovTracker token is encrypted for your Windows user. The maps ship inside the app; see [Data sources and credits](#-data-sources-and-credits) for where they come from.
 
 ---
 
@@ -404,10 +404,38 @@ The qualification tier cannot run every test on a hosted runner. The committed a
 1. Delete the Release directory.
 2. Delete `%LOCALAPPDATA%\Blackgrid\` to remove settings, pins, history, the catalog cache and saved tokens.
 
-## 💡 Credits and notices
+## 💡 Data sources and credits
+
+Blackgrid is a fan-made companion tool. It is **not affiliated with, endorsed by or sponsored by Battlestate Games**. It is made for personal, non-commercial use.
+
+### tarkov.dev
+
+Blackgrid relies heavily on the [tarkov.dev](https://tarkov.dev) project and its community data:
+
+| Used from tarkov.dev | Purpose |
+|---|---|
+| SVG map graphics ([tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps), by Shebuka and contributors) | Map backgrounds for most locations |
+| Interactive map tiles | Map backgrounds for The Lab and Labyrinth; Icebreaker's tiles are by [TarkovBOT.eu](https://tarkovbot.eu/), hosted by tarkov.dev |
+| Map metadata and coordinates | Bounds, transforms and floor definitions |
+| Game data ([json.tarkov.dev](https://json.tarkov.dev)) | Items, prices, traders, quests, hideout, crafts and barters; extracts, transits, spawns, bosses, hazards, switches, locks and loot positions |
+| Item icons ([assets.tarkov.dev](https://assets.tarkov.dev)) | Item pictures on the decision card and in history, downloaded when an item is shown |
+
+Thank you to the tarkov.dev team and contributors for maintaining the maps and open game data.
+
+The map marker icons (extracts, quests, spawns, bosses, hazards and the rest) are Blackgrid's own, drawn for this project ([ADR-0023](docs/adr/0023-project-authored-map-marker-icons.md)).
+
+### TarkovTracker
+
+Optional quest and hideout progress comes from the read-only [TarkovTracker](https://tarkovtracker.org) API ([tarkovtracker-org](https://github.com/tarkovtracker-org)).
+
+### Escape from Tarkov
+
+Escape from Tarkov is a trademark of Battlestate Games Limited. Game names, item names, item images and map content belong to Battlestate Games. This project is unofficial.
+
+### Other
 
 - Inspired by [TarkovTracker](https://github.com/sayser/TarkovTracker), a C# desktop companion. Blackgrid is an independent Dart/Flutter implementation and contains no code from it.
 - Map artwork and metadata: the tarkov-dev SVG maps project, Tarkov.dev and TarkovBOT.eu, under the terms recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and in each pack's evidence.
 - Item vision: OpenCV, Tesseract, Leptonica and tessdata, pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json).
 - Project direction: [STRATEGY.md](STRATEGY.md), [architecture](openspec/architecture.md), [decisions](docs/adr/README.md).
-- No project license has been chosen. The repository is private, and nothing here authorizes publishing it or its bundled artwork.
+- Blackgrid's source code is released under the [MIT License](LICENSE). Bundled third-party code, models and map artwork keep their own licenses, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The map artwork is **not** MIT: most of it is CC BY-NC-SA 4.0, which forbids commercial use and asks that changes be shared under the same terms.
