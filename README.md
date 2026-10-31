@@ -353,8 +353,11 @@ Versions follow [SemVer 2.0.0](https://semver.org/) with `v`-prefixed tags ([ADR
 | Preview | `mise run release-notes -- --unreleased` | Prints the entries the next release will list |
 | Prepare | `mise run release:prepare -- <version>` | On a clean `main` equal to `origin/main`, with a version above every release tag: runs `analyze`, `format:check` and `test:all`, then commits `chore(release): v<version>` (pubspec version and `CHANGELOG.md`) on `release/v<version>`. It does not push; it prints the push and PR commands |
 | Merge | Push the branch, open the PR titled `chore(release): v<version>` and merge it | |
-| Tag | `mise run release:tag` | On `main` right after the release merge: checks the merge and the pubspec version, then creates annotated tag `v<version>` and pushes only that tag as `github.login` from [`openspec/specwright.yaml`](openspec/specwright.yaml) |
-| Build | `mise run build:release` | On a clean checkout: `vision:fetch`, `flutter build windows --release` with the version, the build number and `BLACKGRID_VERSION=<version>+<count>`, then `bundle:check` on `build/windows/x64/runner/Release` |
+| Tag | `mise run release:tag` | On `main` right after the release merge (a merge commit, or a squash commit titled `chore(release): v<version> (#N)` that the PR API confirms): checks the merge and the pubspec version, then creates annotated tag `v<version>` and pushes only that tag as `github.login` from [`openspec/specwright.yaml`](openspec/specwright.yaml); it then prints the link to the Publish run |
+| Publish | Automatic on the tag push ([`release.yml`](.github/workflows/release.yml)) | Checks the tag and that it has no release, runs the same gates as CI on the tag, then publishes the zip, the installer and `SHA256SUMS.txt` as one GitHub release |
+| Check a build (optional) | `mise run build:release`, `mise run package:release` | Before tagging: `vision:fetch`, `flutter build windows --release` with the version, the build number and `BLACKGRID_VERSION=<version>+<count>`, `bundle:check` on `build/windows/x64/runner/Release`, then the zip, the installer and `SHA256SUMS.txt` in `build/release/`. CI does not use these outputs; it builds again on the tag |
+
+**Retry or backfill.** Start a manual run of [`release.yml`](.github/workflows/release.yml) from `main` (Actions, Release, Run workflow) and enter a tag that has no release. A manual run from another branch is refused, and so is a tag from before release publishing such as `v0.4.0` or `v0.5.0`: they cannot be backfilled. A failed publish can leave a draft release; the preflight and the publish job refuse a tag while any release for it exists, so delete the draft on the Releases page first, then start the manual run.
 
 Pass `--trailer "<line>"` to `release:prepare` to add commit trailers; the commit and tag use Git's identity from the environment (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`). `release:tag` refuses when another PR merged between `prepare` and the release merge: delete `release/v<version>` locally and on `origin`, then prepare again.
 
@@ -385,7 +388,7 @@ Tests live in [`test/`](test/). **Agents and live-game checks:** no agent may la
 
 ## 🚦 Continuous integration
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`, on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). It installs the tools pinned in [`mise.toml`](mise.toml), then runs these gates in order and stops at the first failure:
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`. It only calls the shared [`.github/workflows/gates.yml`](.github/workflows/gates.yml), which holds the gates below so that release publishing runs the same ones. The pull request check is named `ci / Analyze, test, build and qualify`; a branch protection rule that requires it must use that name. The gates run on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). They install the tools pinned in [`mise.toml`](mise.toml), then run these gates in order and stop at the first failure:
 
 1. `mise run analyze`
 2. `mise run test`

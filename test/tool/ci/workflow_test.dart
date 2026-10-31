@@ -5,11 +5,15 @@ import 'package:yaml/yaml.dart';
 
 import 'support/no_games_scan.dart';
 
-/// Offline checks of `.github/workflows/ci.yml` and of the rule that only the
+/// Offline checks of `.github/workflows/ci.yml`, of the shared
+/// `.github/workflows/gates.yml` it calls, and of the rule that only the gates
 /// workflow's qualification step confirms that no game is running.
 void main() {
-  const workflowPath = '.github/workflows/ci.yml';
+  const workflowsDir = '.github/workflows';
+  const ciPath = '$workflowsDir/ci.yml';
+  const gatesPath = '$workflowsDir/gates.yml';
   const bundle = r'${{ github.workspace }}\build\windows\x64\runner\Release';
+  const releaseOnly = "inputs.release_tag != ''";
   const gates = [
     'mise run analyze',
     'mise run test',
@@ -17,7 +21,11 @@ void main() {
     'mise run ci:qualification',
     'mise run package:release',
   ];
+  const verifyTag =
+      r'mise run release:verify-tag -- $env:RELEASE_TAG --out build/release-meta';
 
+  late String ciSource;
+  late Map<String, dynamic> ci;
   late String source;
   late Map<String, dynamic> workflow;
   late List<Map<String, dynamic>> steps;
@@ -25,13 +33,19 @@ void main() {
   Map<String, dynamic> asMap(Object? value) =>
       (value as Map).cast<String, dynamic>();
 
+  Map<String, dynamic> load(String path, void Function(String) keep) {
+    final file = File(path);
+    expect(file.existsSync(), isTrue, reason: '$path must exist');
+    final text = file.readAsStringSync();
+    keep(text);
+    return asMap(toPlain(loadYaml(text)));
+  }
+
   setUp(() {
-    final file = File(workflowPath);
-    expect(file.existsSync(), isTrue, reason: '$workflowPath must exist');
-    source = file.readAsStringSync();
-    workflow = asMap(toPlain(loadYaml(source)));
+    ci = load(ciPath, (t) => ciSource = t);
+    workflow = load(gatesPath, (t) => source = t);
     final jobs = asMap(workflow['jobs']);
-    expect(jobs, hasLength(1), reason: 'CI is one job (D1)');
+    expect(jobs, hasLength(1), reason: 'the gates are one job (D1)');
     steps = [
       for (final s in (asMap(jobs.values.single)['steps'] as List)) asMap(s),
     ];
@@ -47,18 +61,21 @@ void main() {
     (s) => run(s).split(RegExp(r'\r?\n')).any((l) => l.trim() == command),
   );
 
+  bool isGuard(Map<String, dynamic> step) =>
+      run(step).contains('predates release publishing');
+
   test('triggers are pull_request and push to main only', () {
-    final on = asMap(workflow['on']);
+    final on = asMap(ci['on']);
     expect(on.keys.toSet(), {'pull_request', 'push'});
     // Default pull_request types: no `types` filter.
     expect(on['pull_request'] ?? <String, dynamic>{}, isNot(contains('types')));
     expect(asMap(on['push'])['branches'], ['main']);
-    expect(source, isNot(contains('pull_request_target')));
+    expect(ciSource, isNot(contains('pull_request_target')));
   });
 
   test('a push run has its own concurrency group keyed by github.sha and is '
       'never cancelled', () {
-    final concurrency = asMap(workflow['concurrency']);
+    final concurrency = asMap(ci['concurrency']);
     expect(
       '${concurrency['group']}',
       contains("format('ci-push-{0}', github.sha)"),
@@ -69,7 +86,7 @@ void main() {
   });
 
   test('pull request runs share one group per PR and cancel in progress', () {
-    final concurrency = asMap(workflow['concurrency']);
+    final concurrency = asMap(ci['concurrency']);
     final group = '${concurrency['group']}';
     expect(group, contains("github.event_name == 'pull_request'"));
     expect(
@@ -80,6 +97,36 @@ void main() {
       '${concurrency['cancel-in-progress']}',
       contains("github.event_name == 'pull_request'"),
     );
+  });
+
+  test('ci.yml has one job that calls the gates workflow with no release '
+      'tag', () {
+    final jobs = asMap(ci['jobs']);
+    expect(jobs, hasLength(1));
+    final call = asMap(jobs.values.single);
+    expect(call['uses'], './$gatesPath');
+    expect(call, isNot(contains('steps')));
+    expect(call, isNot(contains('with')), reason: 'no release_tag in CI');
+    expect(call, isNot(contains('secrets')));
+    expect(call, isNot(contains('if')));
+    expect(call, isNot(contains('continue-on-error')));
+    expect(jobs.keys.single, 'ci', reason: 'the PR check is named ci / ...');
+  });
+
+  test('the gates workflow is callable with an optional release_tag input '
+      'and a sums_sha256 output', () {
+    final on = asMap(workflow['on']);
+    expect(on.keys.toSet(), {'workflow_call'});
+    final call = asMap(on['workflow_call']);
+    final input = asMap(asMap(call['inputs'])['release_tag']);
+    expect(input['type'], 'string');
+    expect(input['required'], false);
+    expect(input['default'], '');
+    final output = asMap(asMap(call['outputs'])['sums_sha256']);
+    expect('${output['value']}', contains('jobs.'));
+    expect('${output['value']}', contains('.outputs.sums_sha256'));
+    final jobOutputs = asMap(job()['outputs']);
+    expect('${jobOutputs['sums_sha256']}', contains('steps.'));
   });
 
   test(
@@ -134,14 +181,85 @@ void main() {
     },
   );
 
-  test('the package step is last, sets no env and has no condition', () {
-    final index = gateIndex('mise run package:release');
-    expect(index, steps.length - 1);
-    final step = steps[index];
+  test('the package step sets no env and has no condition', () {
+    final step = steps[gateIndex('mise run package:release')];
     expect(run(step), 'mise run package:release');
     expect(step, isNot(contains('env')));
     expect(step, isNot(contains('if')));
     expect(step, isNot(contains('continue-on-error')));
+  });
+
+  test('in release mode the checkout pins refs/tags/<tag> and the guard and '
+      'verify-tag steps follow the mise install', () {
+    final checkout = steps.first;
+    expect(usesAction(checkout, 'actions/checkout'), isTrue);
+    final ref = '${asMap(checkout['with'])['ref']}';
+    expect(ref, contains("format('refs/tags/{0}', inputs.release_tag)"));
+    expect(ref, contains(releaseOnly));
+    final install = steps.indexWhere((s) => usesAction(s, 'jdx/mise-action'));
+    final guard = steps.indexWhere(isGuard);
+    final verify = gateIndex(verifyTag);
+    expect(guard, isNonNegative, reason: 'tag-tooling guard step');
+    expect(verify, isNonNegative, reason: 'verify-tag step');
+    expect(install, lessThan(guard));
+    expect(guard, lessThan(verify));
+    expect(verify, lessThan(gateIndex('mise run analyze')));
+    final guardScript = run(steps[guard]);
+    expect(guardScript, contains('release:verify-tag'));
+    expect(guardScript, contains('package:release'));
+    expect(steps[guard]['shell'], 'pwsh');
+    for (final i in [guard, verify]) {
+      expect(steps[i]['if'], releaseOnly);
+      expect(
+        asMap(steps[i]['env'])['RELEASE_TAG'],
+        r'${{ inputs.release_tag }}',
+      );
+    }
+  });
+
+  test('the tag reaches scripts only through env, never an expression in '
+      'run', () {
+    for (final step in steps) {
+      expect(run(step), isNot(contains(r'${{')), reason: '$step');
+    }
+  });
+
+  test('in release mode the upload step follows Package and no gate step has '
+      'a condition', () {
+    final package = gateIndex('mise run package:release');
+    final upload = steps.indexWhere(
+      (s) => usesAction(s, 'actions/upload-artifact'),
+    );
+    expect(upload, isNonNegative);
+    expect(upload, greaterThan(package));
+    expect(steps[upload]['if'], releaseOnly);
+    final inputs = asMap(steps[upload]['with']);
+    expect(inputs['name'], r'release-${{ inputs.release_tag }}');
+    expect(inputs['retention-days'], 1);
+    expect(inputs['if-no-files-found'], 'error');
+    expect(inputs['compression-level'], 0);
+    final paths = '${inputs['path']}'.split(RegExp(r'\s+'))..remove('');
+    expect(paths, ['build/release/*', 'build/release-meta/*']);
+    final sums = steps.indexWhere((s) => s['id'] == 'sums');
+    expect(sums, inInclusiveRange(package + 1, upload - 1));
+    expect(run(steps[sums]), contains('build/release/SHA256SUMS.txt'));
+    expect(run(steps[sums]), contains('sums_sha256='));
+    expect(steps[sums]['if'], releaseOnly);
+    // Only the four release-mode steps carry a condition; every gate, cache
+    // and the install is unconditional, so release and CI run identical gates.
+    final conditional = {
+      for (final (i, s) in steps.indexed)
+        if (s.containsKey('if')) i,
+    };
+    expect(conditional, {
+      steps.indexWhere(isGuard),
+      gateIndex(verifyTag),
+      sums,
+      upload,
+    });
+    for (final gate in gates) {
+      expect(steps[gateIndex(gate)], isNot(contains('if')), reason: gate);
+    }
   });
 
   test(
@@ -155,6 +273,7 @@ void main() {
         expect(condition, isNot(contains('failure()')), reason: '$step');
       }
       expect(source, isNot(contains('continue-on-error')));
+      expect(ciSource, isNot(contains('continue-on-error')));
     },
   );
 
@@ -166,8 +285,8 @@ void main() {
     expect(inputs['persist-credentials'], false);
   });
 
-  test('the qualification step alone sets the no-games confirmation and the '
-      'bundle inputs', () {
+  test('the qualification step of the gates workflow alone sets the no-games '
+      'confirmation and the bundle inputs', () {
     final index = gateIndex('mise run ci:qualification');
     expect(index, isNonNegative);
     final step = steps[index];
@@ -189,13 +308,16 @@ void main() {
     expect('${workflow['env']}', isNot(contains(noGamesVariable)));
     expect('${job()['env']}', isNot(contains(noGamesVariable)));
     expect(
-      findNoGamesSetters(workflowPath, source),
+      findNoGamesSetters(gatesPath, source),
       hasLength(1),
       reason: 'exactly one env setter in the workflow',
     );
+    expect(ciSource, isNot(contains(noGamesVariable)));
+    expect(findNoGamesSetters(ciPath, ciSource), isEmpty);
   });
 
-  test('no other tracked script or config sets the no-games confirmation', () {
+  test('no other tracked file, including ci.yml and release.yml, sets the '
+      'no-games confirmation', () {
     final listing = Process.runSync('git', [
       'ls-files',
       '--cached',
@@ -206,7 +328,7 @@ void main() {
     final files = (listing.stdout as String)
         .split('\n')
         .map((l) => l.trim())
-        .where((l) => l.isNotEmpty && l != workflowPath)
+        .where((l) => l.isNotEmpty && l != gatesPath)
         .where(isScannableKind)
         .where((l) => File(l).existsSync());
     final findings = <String>[
@@ -216,27 +338,53 @@ void main() {
     expect(findings, isEmpty, reason: 'files that set $noGamesVariable');
   });
 
-  test('permissions are exactly contents read and no secrets are used', () {
-    expect(workflow['permissions'], {'contents': 'read'});
-    expect(job(), isNot(contains('permissions')));
-    expect(source, isNot(contains('secrets.')));
+  test('ci and gates permissions are exactly contents read and no secrets are '
+      'used', () {
+    for (final (name, doc, text) in [
+      (ciPath, ci, ciSource),
+      (gatesPath, workflow, source),
+    ]) {
+      expect(doc['permissions'], {'contents': 'read'}, reason: name);
+      for (final j in asMap(doc['jobs']).values) {
+        expect(asMap(j), isNot(contains('permissions')), reason: name);
+      }
+      expect(text, isNot(contains('secrets')), reason: name);
+    }
   });
 
-  test('every uses line is pinned to a 40-hex commit SHA', () {
+  test('every uses line in every workflow is pinned to a 40-hex commit SHA', () {
     final pin = RegExp(r'^[\w.-]+/[\w./-]+@[0-9a-f]{40}$');
-    final lines = source.split(RegExp(r'\r?\n'));
+    final files = [
+      for (final e in Directory(workflowsDir).listSync())
+        if (e is File && RegExp(r'\.ya?ml$').hasMatch(e.path))
+          e.path.replaceAll(r'\', '/'),
+    ]..sort();
+    expect(files, containsAll([ciPath, gatesPath]));
     var seen = 0;
-    for (var i = 0; i < lines.length; i++) {
-      final match = RegExp(r'^\s*(?:-\s+)?uses:\s*(\S+)').firstMatch(lines[i]);
-      if (match == null) continue;
-      seen++;
-      expect(
-        pin.hasMatch(match.group(1)!),
-        isTrue,
-        reason:
-            '$workflowPath:${i + 1}: not pinned to a commit SHA: '
-            '${lines[i].trim()}',
-      );
+    for (final path in files) {
+      final lines = File(path).readAsStringSync().split(RegExp(r'\r?\n'));
+      for (var i = 0; i < lines.length; i++) {
+        final match = RegExp(r'^\s*(?:-\s+)?uses:\s*(\S+)')
+            .firstMatch(lines[i]);
+        if (match == null) continue;
+        seen++;
+        final target = match.group(1)!;
+        // A reusable workflow of this repository is a path, not an action.
+        if (target.startsWith('./$workflowsDir/')) {
+          expect(
+            File(target.substring(2)).existsSync(),
+            isTrue,
+            reason: '$path:${i + 1}: missing local workflow: $target',
+          );
+          continue;
+        }
+        expect(
+          pin.hasMatch(target),
+          isTrue,
+          reason:
+              '$path:${i + 1}: not pinned to a commit SHA: ${lines[i].trim()}',
+        );
+      }
     }
     expect(seen, isPositive);
   });
@@ -263,6 +411,7 @@ void main() {
         inputs['key'],
         r"vision-inputs-${{ hashFiles('windows/vision/third_party.lock.json') }}",
       );
+      expect(step, isNot(contains('if')));
     }
     final mise = steps.firstWhere((s) => usesAction(s, 'jdx/mise-action'));
     final miseInputs = asMap(mise['with'] ?? <String, dynamic>{});
