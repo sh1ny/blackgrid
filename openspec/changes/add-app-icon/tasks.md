@@ -17,8 +17,8 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) is outside `te
 | app-icon → The committed icon holds every Windows size | Flutter default restored | test/tool/app_icon/ico_test.dart | an ico with the Flutter default SHA-256 fails as the Flutter default | green |
 | app-icon → The icon is rebuilt from its source and stays in step | Source edited without rebuild | test/tool/app_icon/provenance_test.dart | a source or ico hash differing from the record fails naming the rebuild command | green |
 | app-icon → The icon is rebuilt from its source and stays in step | Render fails | test/tool/app_icon/build_test.dart | a source the compiler rejects exits non-zero naming it and leaves the ico and record unchanged | red |
-| app-icon → The executable, the installer and the uninstall entry use the committed icon | Installer script points at the icon | test/tool/release/installer_script_test.dart | SetupIconFile resolves to the committed ico and UninstallDisplayIcon is the installed exe | red |
-| app-icon → The executable, the installer and the uninstall entry use the committed icon | Setup icon moved | test/tool/release/installer_script_test.dart | a script naming another setup icon or none fails naming the setting | red |
+| app-icon → The executable, the installer and the uninstall entry use the committed icon | Installer script points at the icon | test/tool/release/installer_script_test.dart | SetupIconFile resolves to the committed ico and UninstallDisplayIcon is the installed exe | green |
+| app-icon → The executable, the installer and the uninstall entry use the committed icon | Setup icon moved | test/tool/release/installer_script_test.dart | a script naming another setup icon or none fails naming the setting | green |
 | release-bundle-integrity → The executable carries the committed application icon | Icon matches | test/tool/vision/check_bundle_test.dart | app-icon step passes listing ten sizes when the exe icon group equals the ico | red |
 | release-bundle-integrity → The executable carries the committed application icon | Stale executable icon | test/tool/vision/check_bundle_test.dart | the Flutter default icon group fails naming duplicate 16, 32, 48 and missing 20, 24, 40, 64, 96, 128 | red |
 | release-bundle-integrity → The executable carries the committed application icon | No icon resource | test/tool/vision/pe_icon_test.dart | a missing or malformed icon group gives an unreadable result without throwing | red |
@@ -63,7 +63,7 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 6. Installer script wiring
 
-- [ ] 6.1 Add tests to `test/tool/release/installer_script_test.dart` for the rows "Installer script points at the icon" and "Setup icon moved": `SetupIconFile` resolved relative to the `.iss` equals `windows/runner/resources/app_icon.ico`, and `UninstallDisplayIcon={app}\blackgrid.exe`. The first may pass immediately, because the wiring already exists. Make the second fail on a mutated script string. Verify that both pass on the real script, and flip both rows green.
+- [x] 6.1 Add tests to `test/tool/release/installer_script_test.dart` for the rows "Installer script points at the icon" and "Setup icon moved": `SetupIconFile` resolved relative to the `.iss` equals `windows/runner/resources/app_icon.ico`, and `UninstallDisplayIcon={app}\blackgrid.exe`. The first may pass immediately, because the wiring already exists. Make the second fail on a mutated script string. Verify that both pass on the real script, and flip both rows green.
 
 ## 7. Bundle check `app-icon` step
 

@@ -57,6 +57,47 @@ Map<String, _Section> _parse(String source) {
   return sections;
 }
 
+/// The committed application icon `SetupIconFile` must resolve to.
+const _iconPath = 'windows/runner/resources/app_icon.ico';
+
+/// Resolves [value], a path relative to the script's folder, to a
+/// repository-relative path with `/` separators.
+String _resolveFromScript(String value) {
+  final parts = _scriptPath.split('/')..removeLast();
+  for (final part in value.split(RegExp(r'[\\/]'))) {
+    if (part == '..') {
+      if (parts.isNotEmpty) parts.removeLast();
+    } else if (part.isNotEmpty && part != '.') {
+      parts.add(part);
+    }
+  }
+  return parts.join('/');
+}
+
+/// Returns a failure, naming the setting, for each icon directive of
+/// [setup] that does not point at the committed icon or the installed exe.
+List<String> _iconWiringFailures(Map<String, String> setup) {
+  final failures = <String>[];
+  final setupIcon = setup['setupiconfile'];
+  if (setupIcon == null) {
+    failures.add('SetupIconFile is missing; it must name $_iconPath');
+  } else if (_resolveFromScript(setupIcon) != _iconPath) {
+    failures.add(
+      'SetupIconFile resolves to ${_resolveFromScript(setupIcon)}, '
+      'not $_iconPath',
+    );
+  }
+  final uninstallIcon = setup['uninstalldisplayicon'];
+  if (uninstallIcon != r'{app}\blackgrid.exe') {
+    failures.add(
+      r'UninstallDisplayIcon is '
+      '${uninstallIcon ?? 'missing'}, '
+      r'not {app}\blackgrid.exe',
+    );
+  }
+  return failures;
+}
+
 void main() {
   late Map<String, _Section> sections;
   late Map<String, String> setup;
@@ -102,4 +143,35 @@ void main() {
       expect(flags, contains('ignoreversion'), reason: '$entry');
     }
   });
+
+  test('SetupIconFile resolves to the committed ico and UninstallDisplayIcon is the installed exe', () {
+    expect(_iconWiringFailures(setup), isEmpty);
+  });
+
+  test(
+    'a script naming another setup icon or none fails naming the setting',
+    () {
+      final source = File(_scriptPath).readAsStringSync();
+      final setupIconLine = RegExp(r'^SetupIconFile=.*$', multiLine: true);
+      expect(source, contains(setupIconLine));
+      Map<String, String> mutated(String replacement) => _parse(
+        source.replaceFirst(setupIconLine, replacement),
+      )['setup']!.directives;
+
+      expect(
+        _iconWiringFailures(mutated(r'SetupIconFile=..\assets\other.ico')),
+        [contains('SetupIconFile resolves to windows/assets/other.ico')],
+      );
+      expect(_iconWiringFailures(mutated('')), [
+        contains('SetupIconFile is missing'),
+      ]);
+      expect(
+        _iconWiringFailures({
+          ...setup,
+          'uninstalldisplayicon': r'{app}\other.exe',
+        }),
+        [contains('UninstallDisplayIcon')],
+      );
+    },
+  );
 }
