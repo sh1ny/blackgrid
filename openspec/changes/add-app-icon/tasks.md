@@ -13,8 +13,8 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) is outside `te
 | app-icon → The comparison sheet shows every candidate at the icon sizes | Sheet with ten candidates | test/tool/app_icon/sheet_test.dart | four concepts and six vectors give ten columns at all ten sizes on both backgrounds, with no external URL | red |
 | app-icon → The comparison sheet shows every candidate at the icon sizes | Invalid vector candidate | test/tool/app_icon/sheet_test.dart | a vector that fails to compile exits non-zero naming it and leaves the earlier sheet | red |
 | app-icon → The committed icon holds every Windows size | Valid icon | test/tool/app_icon/committed_icon_test.dart | the committed ico holds the ten sizes, 32 bpp, DIB below 256 and PNG at 256, none fully transparent | red |
-| app-icon → The committed icon holds every Windows size | Missing size | test/tool/app_icon/ico_test.dart | an ico missing 20 px or with a duplicate 32 px fails naming the size | red |
-| app-icon → The committed icon holds every Windows size | Flutter default restored | test/tool/app_icon/ico_test.dart | an ico with the Flutter default SHA-256 fails as the Flutter default | red |
+| app-icon → The committed icon holds every Windows size | Missing size | test/tool/app_icon/ico_test.dart | an ico missing 20 px or with a duplicate 32 px fails naming the size | green |
+| app-icon → The committed icon holds every Windows size | Flutter default restored | test/tool/app_icon/ico_test.dart | an ico with the Flutter default SHA-256 fails as the Flutter default | green |
 | app-icon → The icon is rebuilt from its source and stays in step | Source edited without rebuild | test/tool/app_icon/provenance_test.dart | a source or ico hash differing from the record fails naming the rebuild command | red |
 | app-icon → The icon is rebuilt from its source and stays in step | Render fails | test/tool/app_icon/build_test.dart | a source the compiler rejects exits non-zero naming it and leaves the ico and record unchanged | red |
 | app-icon → The executable, the installer and the uninstall entry use the committed icon | Installer script points at the icon | test/tool/release/installer_script_test.dart | SetupIconFile resolves to the committed ico and UninstallDisplayIcon is the installed exe | red |
@@ -31,14 +31,14 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) is outside `te
 
 Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matching` first.
 
-- [ ] 2.1 Write failing tests in `test/tool/app_icon/ico_test.dart` for the rows "Missing size" and "Flutter default restored". Add extra tests:
+- [x] 2.1 Write failing tests in `test/tool/app_icon/ico_test.dart` for the rows "Missing size" and "Flutter default restored". Add extra tests:
   - a half-transparent pixel (for example RGBA `200,100,50,128`) round-trips with straight alpha through the 16 px DIB and the 256 px PNG;
   - a stored width or height of 0 reads as 256;
   - directory planes and bit count must equal the DIB header's (review S1);
   - a PNG-encoded 32 px entry fails, and a 24 bpp entry fails.
 
   Use synthetic buffers only. Verify they fail for the missing implementation.
-- [ ] 2.2 Implement `tool/app_icon/ico.dart`: `encodeIco` (D4 layout, ascending sizes, DIB below 256, PNG at 256) and `parseIco`, both bounds-checked; the result is a sealed parse result, never an exception. Implement `checkIco(bytes)`, which returns failures naming the size or format, the required size list, and the Flutter default SHA-256 (taken from the current `windows/runner/resources/app_icon.ico` before it is replaced). Verify that the 2.1 tests pass, and flip both rows green.
+- [x] 2.2 Implement `tool/app_icon/ico.dart`: `encodeIco` (D4 layout, ascending sizes, DIB below 256, PNG at 256) and `parseIco`, both bounds-checked; the result is a sealed parse result, never an exception. Implement `checkIco(bytes)`, which returns failures naming the size or format, the required size list, and the Flutter default SHA-256 (taken from the current `windows/runner/resources/app_icon.ico` before it is replaced). Verify that the 2.1 tests pass, and flip both rows green.
 
 ## 3. Candidates and their provenance
 
