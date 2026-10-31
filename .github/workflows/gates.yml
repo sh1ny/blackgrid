@@ -1,0 +1,119 @@
+name: Gates
+
+# The one set of gates behind both the CI check and release publishing. ci.yml
+# calls it with no input. A release workflow calls it with `release_tag`, which
+# only checks out the tag, adds the release-mode steps and uploads the
+# package; every gate step is identical and unconditional in both modes.
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Tag to gate and package, or empty to gate the caller's ref
+        type: string
+        required: false
+        default: ""
+    outputs:
+      sums_sha256:
+        description: Lowercase hex SHA-256 of build/release/SHA256SUMS.txt (release mode only)
+        value: ${{ jobs.gates.outputs.sums_sha256 }}
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Analyze, test, build and qualify
+    runs-on: windows-2025
+    timeout-minutes: 120
+    outputs:
+      sums_sha256: ${{ steps.sums.outputs.sums_sha256 }}
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Empty means the caller's own ref.
+          ref: ${{ inputs.release_tag != '' && format('refs/tags/{0}', inputs.release_tag) || '' }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Restore vision inputs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .dart_tool/blackgrid_vision_inputs
+          key: vision-inputs-${{ hashFiles('windows/vision/third_party.lock.json') }}
+
+      - name: Install tools from mise.toml
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5
+
+      - name: Refuse a tag from before release publishing
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $toml = Get-Content -Raw -Path mise.toml
+          foreach ($task in 'release:verify-tag', 'package:release') {
+            if (-not $toml.Contains("[tasks.`"$task`"]")) {
+              Write-Error "$env:RELEASE_TAG predates release publishing"
+              exit 1
+            }
+          }
+
+      - name: Verify the release tag
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          mise run release:verify-tag -- $env:RELEASE_TAG --out build/release-meta
+
+      - name: Analyze
+        run: mise run analyze
+
+      - name: Test
+        run: mise run test
+
+      - name: Build Release
+        run: mise run build:release
+
+      - name: Save vision inputs
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .dart_tool/blackgrid_vision_inputs
+          key: vision-inputs-${{ hashFiles('windows/vision/third_party.lock.json') }}
+
+      - name: Qualification
+        shell: pwsh
+        env:
+          BLACKGRID_NO_GAMES_RUNNING: "1"
+          BLACKGRID_RELEASE_BUNDLE: ${{ github.workspace }}\build\windows\x64\runner\Release
+          BLACKGRID_PANEL_OCR_RUNTIME: ${{ github.workspace }}\build\windows\x64\runner\Release
+        run: |
+          $env:BLACKGRID_CMAKE = (Get-Command cmake).Source
+          mise run ci:qualification
+
+      - name: Package
+        run: mise run package:release
+
+      - name: Digest the checksum file
+        id: sums
+        if: inputs.release_tag != ''
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 -Path build/release/SHA256SUMS.txt).Hash.ToLowerInvariant()
+          "sums_sha256=$hash" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # Artifact layout: the two globs share the ancestor `build/`, so the
+      # artifact holds `release/<files>` (zip, installer, SHA256SUMS.txt) and
+      # `release-meta/<files>` (notes.md, release.json).
+      - name: Upload the release package
+        if: inputs.release_tag != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ inputs.release_tag }}
+          path: |
+            build/release/*
+            build/release-meta/*
+          retention-days: 1
+          if-no-files-found: error
+          compression-level: 0

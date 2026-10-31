@@ -328,7 +328,7 @@ Tests live in [`test/`](test/). **Agents and live-game checks:** no agent may la
 
 ## 🚦 Continuous integration
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`, on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). It installs the tools pinned in [`mise.toml`](mise.toml), then runs these gates in order and stops at the first failure:
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`. It only calls the shared [`.github/workflows/gates.yml`](.github/workflows/gates.yml), which holds the gates below so that release publishing runs the same ones. The pull request check is named `ci / Analyze, test, build and qualify`; a branch protection rule that requires it must use that name. The gates run on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). They install the tools pinned in [`mise.toml`](mise.toml), then run these gates in order and stop at the first failure:
 
 1. `mise run analyze`
 2. `mise run test`
