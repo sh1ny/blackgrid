@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: The executable carries the committed application icon
-The integrity check SHALL read the application icon group from the bundle's `blackgrid.exe` and compare it with `windows/runner/resources/app_icon.ico`. Images SHALL be matched by (width, height, bit depth), with a stored 0 read as 256. Each key SHALL appear once on each side, and each embedded image's bytes SHALL equal the `.ico` image with the same key. A duplicate key, a key on one side only, unequal bytes, or no readable icon group SHALL fail this step and name the key or the reason.
+The integrity check SHALL compare the icon group of the bundle's `blackgrid.exe` with `windows/runner/resources/app_icon.ico`, matching images by (width, height, bit depth), a stored 0 read as 256. Each size SHALL appear once per side, whatever its bit depth, and each embedded image SHALL equal the `.ico` image with the same key, byte for byte. A size repeated on one side, a key on one side only, unequal bytes or no readable icon group SHALL fail the step, naming the size, key or reason.
 
 #### Scenario: Icon matches
 - **WHEN** the bundle was built from a checkout whose `.ico` holds the ten required sizes

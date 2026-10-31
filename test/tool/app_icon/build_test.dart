@@ -159,6 +159,30 @@ void main() {
       expect(rasterizer.calls, isEmpty);
     });
 
+    test('a record write that fails after the ico was written exits non-zero '
+        'naming the rebuild command, and the hash check catches it', () async {
+      writeSource(validSvg);
+      // A directory where the record's temp file goes makes that write fail.
+      Directory('$iconDir/provenance.json.tmp').createSync();
+
+      final result = await run();
+
+      expect(result.ok, isFalse);
+      expect(result.exitCode, 1);
+      expect(result.messages.join('\n'), contains(iconBuildCommand));
+      final record = parseSourceRecord(
+        File('$iconDir/provenance.json').readAsStringSync(),
+      );
+      expect(
+        checkHashBinding(
+          (record as SourceParsed).record,
+          svg: File('$iconDir/$sourceSvgName').readAsBytesSync(),
+          ico: File(icoPath).readAsBytesSync(),
+        ).join('\n'),
+        allOf(contains(icoName), contains(iconBuildCommand)),
+      );
+    });
+
     test('a missing source record fails naming it', () async {
       File('$iconDir/$sourceSvgName').writeAsStringSync(validSvg);
 

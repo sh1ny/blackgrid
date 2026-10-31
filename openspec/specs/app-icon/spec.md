@@ -54,7 +54,7 @@ An offline command SHALL write one self-contained HTML sheet that shows every re
 - **THEN** the icon test fails, saying the icon is the Flutter default
 
 ### Requirement: The icon is rebuilt from its source and stays in step
-An offline command SHALL render the source SVG (and the small-size SVG, when present) to the `.ico`, and record the SHA-256 of each source file and of the `.ico` it wrote. The command SHALL write the `.ico` and the record only after every size rendered, so a failed run leaves both unchanged. The icon test SHALL fail when a source or the `.ico` differs from the recorded hash.
+An offline command SHALL render the source SVG (and the small-size SVG, when present) to the `.ico`, and record the SHA-256 of each source file and of the `.ico` it wrote. It SHALL write the `.ico`, then the record, only after every size rendered and encoded, so a failed render or encode leaves both unchanged. The icon test SHALL fail when a source or the `.ico` differs from the recorded hash.
 
 #### Scenario: Source edited without rebuild
 - **WHEN** the source SVG is changed and the `.ico` is not rebuilt
@@ -63,6 +63,10 @@ An offline command SHALL render the source SVG (and the small-size SVG, when pre
 #### Scenario: Render fails
 - **WHEN** the source SVG holds an element the compiler rejects
 - **THEN** the command exits non-zero, names the file, and the committed `.ico` and record are unchanged
+
+#### Scenario: Record write fails
+- **WHEN** the `.ico` was written and writing the record then fails
+- **THEN** the command exits non-zero, naming the file and the rebuild command, and the icon test fails on the `.ico` hash until the command is run again
 
 ### Requirement: The executable, the installer and the uninstall entry use the committed icon
 The executable's application icon resource SHALL be built from `windows/runner/resources/app_icon.ico`. The installer script SHALL take its setup icon from that file and its uninstall entry's icon from the installed `blackgrid.exe`.
