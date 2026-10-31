@@ -9,6 +9,7 @@ import '../../../tool/app_icon/provenance.dart';
 const _candidatesDir = 'docs/design/app-icon/candidates';
 const _sourceDir = 'windows/runner/resources/app_icon';
 const _icoPath = 'windows/runner/resources/app_icon.ico';
+const _vecPath = 'assets/app_icon/app_icon.vec';
 
 CandidatesParsed _candidates() => switch (parseCandidatesRecord(
   File('$_candidatesDir/provenance.json').readAsStringSync(),
@@ -101,9 +102,35 @@ void main() {
           svg: File('$_sourceDir/$sourceSvgName').readAsBytesSync(),
           smallSvg: _bytesIfPresent('$_sourceDir/$smallSvgName'),
           ico: File(_icoPath).readAsBytesSync(),
+          vec: _bytesIfPresent(_vecPath),
         ),
         isEmpty,
       );
+    },
+  );
+
+  test(
+    'the committed vec matches its recorded hash and the compiled source',
+    () {
+      final vec = _bytesIfPresent(_vecPath);
+      expect(
+        vec,
+        isNotNull,
+        reason: '$_vecPath is missing; run $iconBuildCommand',
+      );
+      final svg = File('$_sourceDir/$sourceSvgName').readAsBytesSync();
+
+      expect(
+        checkHashBinding(
+          _source(),
+          svg: svg,
+          smallSvg: _bytesIfPresent('$_sourceDir/$smallSvgName'),
+          ico: File(_icoPath).readAsBytesSync(),
+          vec: vec,
+        ),
+        isEmpty,
+      );
+      expect(checkCompiledVec(svg, vec!), isEmpty);
     },
   );
 }

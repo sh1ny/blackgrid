@@ -50,10 +50,11 @@ List<String> candidateFailures(Object? json, {bool Function(String)? exists}) {
 final svgBytes = Uint8List.fromList(utf8.encode('<svg/>'));
 final smallBytes = Uint8List.fromList(utf8.encode('<svg small/>'));
 final icoBytes = Uint8List.fromList([1, 2, 3]);
+final vecBytes = Uint8List.fromList([4, 5, 6]);
 
 String hashOf(Uint8List b) => sha256.convert(b).toString();
 
-Map<String, Object?> sourceJson({bool small = false}) => {
+Map<String, Object?> sourceJson({bool small = false, bool vec = false}) => {
   'schemaVersion': 1,
   'author': 'Blackgrid project',
   'method': 'ai-assisted',
@@ -66,6 +67,7 @@ Map<String, Object?> sourceJson({bool small = false}) => {
     'app_icon.svg': hashOf(svgBytes),
     if (small) 'app_icon_small.svg': hashOf(smallBytes),
     'app_icon.ico': hashOf(icoBytes),
+    if (vec) 'app_icon.vec': hashOf(vecBytes),
   },
 };
 
@@ -184,6 +186,23 @@ void main() {
       expect(record.sha256.keys, ['app_icon.svg', 'app_icon.ico']);
     });
 
+    test('a record parses with or without the app_icon.vec hash', () {
+      expect(
+        parseSource(sourceJson()).sha256.containsKey('app_icon.vec'),
+        isFalse,
+      );
+      expect(
+        parseSource(sourceJson(vec: true)).sha256['app_icon.vec'],
+        hashOf(vecBytes),
+      );
+    });
+
+    test('a malformed app_icon.vec hash is rejected naming the field', () {
+      final json = sourceJson(vec: true);
+      (json['sha256']! as Map<String, Object?>)['app_icon.vec'] = 'XYZ';
+      expect(sourceFailures(jsonEncode(json)).single, contains('app_icon.vec'));
+    });
+
     test('invalid JSON is a failure, not an exception', () {
       expect(sourceFailures('[').single, contains('JSON'));
     });
@@ -244,38 +263,74 @@ void main() {
 
   group('hash binding', () {
     test('matching bytes give no failures', () {
-      final record = parseSource(sourceJson(small: true));
+      final record = parseSource(sourceJson(small: true, vec: true));
       expect(
         checkHashBinding(
           record,
           svg: svgBytes,
           smallSvg: smallBytes,
           ico: icoBytes,
+          vec: vecBytes,
         ),
         isEmpty,
       );
     });
 
-    test('a source or ico hash differing from the record fails naming the '
-        'rebuild command', () {
-      final record = parseSource(sourceJson());
+    test('a source, ico or vec hash differing from the record fails naming '
+        'the rebuild command', () {
+      final record = parseSource(sourceJson(vec: true));
       final failures = checkHashBinding(
         record,
         svg: Uint8List.fromList([9]),
         ico: Uint8List.fromList([8]),
+        vec: Uint8List.fromList([7]),
       );
-      expect(failures, hasLength(2));
+      expect(failures, hasLength(3));
       expect(failures[0], contains('app_icon.svg'));
       expect(failures[1], contains('app_icon.ico'));
+      expect(failures[2], contains('app_icon.vec'));
       for (final f in failures) {
         expect(f, contains('differs from the record'));
         expect(f, contains('mise run icon:build'));
       }
     });
 
+    test('a vec on disk with no recorded hash fails naming it and the '
+        'rebuild command', () {
+      final record = parseSource(sourceJson());
+      final failures = checkHashBinding(
+        record,
+        svg: svgBytes,
+        ico: icoBytes,
+        vec: vecBytes,
+      );
+      expect(failures.single, contains('app_icon.vec'));
+      expect(failures.single, contains('the record has no hash for it'));
+      expect(failures.single, contains('mise run icon:build'));
+    });
+
+    test('a recorded vec hash with no vec file fails naming it and the '
+        'rebuild command', () {
+      final record = parseSource(sourceJson(vec: true));
+      final failures = checkHashBinding(
+        record,
+        svg: svgBytes,
+        ico: icoBytes,
+        vec: null,
+      );
+      expect(failures.single, contains('app_icon.vec'));
+      expect(failures.single, contains('the file is missing'));
+      expect(failures.single, contains('mise run icon:build'));
+    });
+
     test('a small svg present on only one side fails naming the file', () {
       final withSmall = parseSource(sourceJson(small: true));
-      final f1 = checkHashBinding(withSmall, svg: svgBytes, ico: icoBytes);
+      final f1 = checkHashBinding(
+        withSmall,
+        svg: svgBytes,
+        ico: icoBytes,
+        vec: null,
+      );
       expect(f1.single, contains('app_icon_small.svg'));
       expect(f1.single, contains('mise run icon:build'));
       final without = parseSource(sourceJson());
@@ -284,9 +339,45 @@ void main() {
         svg: svgBytes,
         smallSvg: smallBytes,
         ico: icoBytes,
+        vec: null,
       );
       expect(f2.single, contains('app_icon_small.svg'));
       expect(f2.single, contains('mise run icon:build'));
+    });
+  });
+
+  group('compiled vec', () {
+    final compiled = Uint8List.fromList([1, 1, 2, 3]);
+    Uint8List fakeCompile(String xml, String name) => compiled;
+
+    test('a vec equal to the compiled source gives no failures', () {
+      expect(
+        checkCompiledVec(
+          svgBytes,
+          Uint8List.fromList(compiled),
+          compile: fakeCompile,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a vec that differs from the compiled source fails naming the '
+        'rebuild command', () {
+      final failures = checkCompiledVec(
+        svgBytes,
+        Uint8List.fromList([9, 9]),
+        compile: fakeCompile,
+      );
+      expect(failures.single, contains('app_icon.vec'));
+      expect(failures.single, contains('mise run icon:build'));
+    });
+
+    test('a source the compiler rejects fails naming the source and the '
+        'rebuild command', () {
+      Uint8List reject(String xml, String name) => throw StateError('nope');
+      final failures = checkCompiledVec(svgBytes, compiled, compile: reject);
+      expect(failures.single, contains('app_icon.svg'));
+      expect(failures.single, contains('mise run icon:build'));
     });
   });
 
@@ -300,6 +391,7 @@ void main() {
         svg: svg,
         smallSvg: smallBytes,
         ico: ico,
+        vec: vecBytes,
       );
       expect(text.endsWith('}\n'), isTrue);
       expect(text, contains('\n  "author": "Blackgrid project",'));
@@ -307,8 +399,15 @@ void main() {
       expect(round.pickedCandidate, record.pickedCandidate);
       expect(round.sha256['app_icon.svg'], hashOf(svg));
       expect(round.sha256['app_icon_small.svg'], hashOf(smallBytes));
+      expect(round.sha256['app_icon.vec'], hashOf(vecBytes));
       expect(
-        checkHashBinding(round, svg: svg, smallSvg: smallBytes, ico: ico),
+        checkHashBinding(
+          round,
+          svg: svg,
+          smallSvg: smallBytes,
+          ico: ico,
+          vec: vecBytes,
+        ),
         isEmpty,
       );
     });

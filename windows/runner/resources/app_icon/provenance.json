@@ -11,6 +11,7 @@
   "concept": null,
   "sha256": {
     "app_icon.svg": "b990803802993c4f38a20b8e37b8b739d2341ea5584b4bb2a6e07cf87c5712bc",
-    "app_icon.ico": "9aba238f31f704ff38491805b7a76bac21074cf38138f951b39b718bed2099c9"
+    "app_icon.ico": "9aba238f31f704ff38491805b7a76bac21074cf38138f951b39b718bed2099c9",
+    "app_icon.vec": "6a33cbb8c2ef66ab7642708aff89789b817e0c476344721ca562c171b06d5651"
   }
 }

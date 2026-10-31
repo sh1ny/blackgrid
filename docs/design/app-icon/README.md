@@ -6,7 +6,7 @@ This is the record of how Blackgrid's application icon was designed: the candida
 
 No source or candidate traces any third-party art, or names it as a style reference. That covers the game's own artwork and logos and other companion apps. The ChatGPT prompt below explicitly asks for nothing copied from any game's artwork. Each candidate's entry in [`candidates/provenance.json`](candidates/provenance.json), and the shipped icon's record in `windows/runner/resources/app_icon/provenance.json`, is the author's attestation of this.
 
-Unlike map marker icons (ADR-0023), the concept images are committed here, as a design record under `docs/`. They are never bundled, and only the SVG redraw or vector design feeds the shipped icon. ADR-0027 records this scope difference.
+Unlike map marker icons (ADR-0023), the concept images are committed here, as a design record under `docs/`. They are never bundled, and only the SVG redraw or vector design feeds the shipped icon. ADR-0027 records this scope difference. ADR-0028 ([`0028-app-icon-ships-a-compiled-header-logo.md`](../../adr/0028-app-icon-ships-a-compiled-header-logo.md)) adds one bundled file: the compiled `assets/app_icon/app_icon.vec` that the app header draws.
 
 ## Candidates
 
@@ -57,9 +57,11 @@ The user picked `vector/hex_sweep.svg`, one of the two original vector designs, 
 `windows/runner/resources/app_icon/` holds the source:
 - `app_icon.svg`, a copy of the picked candidate;
 - optionally `app_icon_small.svg`, used only for the 16, 20 and 24 px images (not present today);
-- `provenance.json`, with the author, method, tools, the picked candidate and pick date, the concept (null here), and the SHA-256 of each source and of `windows/runner/resources/app_icon.ico`.
+- `provenance.json`, with the author, method, tools, the picked candidate and pick date, the concept (null here), and the SHA-256 of each source, of `windows/runner/resources/app_icon.ico` and of `assets/app_icon/app_icon.vec`.
 
-The folder is not a Flutter asset and is not bundled. `Runner.rc` embeds the `.ico` in `blackgrid.exe`, and the installer takes its setup icon from the same file and its uninstall icon from the installed `blackgrid.exe`.
+`assets/app_icon/app_icon.vec` is `app_icon.svg` compiled with the map marker flags. It is the only icon file that ships as a Flutter asset, for the app header (ADR-0028).
+
+The source folder is not a Flutter asset and is not bundled. `Runner.rc` embeds the `.ico` in `blackgrid.exe`, and the installer takes its setup icon from the same file and its uninstall icon from the installed `blackgrid.exe`.
 
 ## Regenerating the icon
 
@@ -69,7 +71,7 @@ After editing `app_icon.svg` (or adding or editing `app_icon_small.svg`), or aft
 mise run icon:build
 ```
 
-Then commit `windows/runner/resources/app_icon.ico` and `windows/runner/resources/app_icon/provenance.json` together. The command compiles every source before it renders, then writes the `.ico` and after it the record's hashes. A failed run changes neither. `mise run test` fails while a source or the `.ico` differs from its recorded hash, and the release bundle check (`app-icon` step) fails while a built `blackgrid.exe` embeds a different icon, so rebuild the bundle too. For a new pick, update `pickedCandidate`, `pickDate` and `concept` in the record by hand first; old candidates stay here as the record.
+Then commit `windows/runner/resources/app_icon.ico`, `assets/app_icon/app_icon.vec` and `windows/runner/resources/app_icon/provenance.json` together. The command compiles every source before it renders, then writes the `.ico`, then the `.vec`, then the record's hashes. A failed run changes none of them. `mise run test` fails while a source, the `.ico` or the `.vec` differs from its recorded hash, or while the `.vec` differs from the compiled `app_icon.svg`, and the release bundle check (`app-icon` step) fails while a built `blackgrid.exe` embeds a different icon, so rebuild the bundle too. For a new pick, update `pickedCandidate`, `pickDate` and `concept` in the record by hand first; old candidates stay here as the record.
 
 ## Windows icon cache
 

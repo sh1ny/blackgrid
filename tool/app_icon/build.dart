@@ -1,11 +1,12 @@
-// Rebuilds the committed Windows icon from its source SVG (design D1, D2, D4).
+// Rebuilds the committed Windows icon and the in-app vector from the source SVG
+// (design D1, D2, D4; ADR-0028).
 // Pure Dart (no `dart:ui`): the rasters come from an injected
 // [IconRasterizer].
 //
 // Every source is validated and compiled before anything is rendered, and the
-// `.ico` and the record are written only after every size rendered: the `.ico`
-// first, then the record, each through a `.tmp` file and a rename. A failed
-// run therefore leaves both unchanged.
+// `.ico`, the compiled `.vec` and the record are written only after every size
+// rendered: the `.ico` first, then the `.vec`, then the record, each through a
+// `.tmp` file and a rename. A failed run therefore leaves all three unchanged.
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -22,19 +23,25 @@ const String defaultIconSourceDir = 'windows/runner/resources/app_icon';
 /// Where the generated icon is written, relative to the repository root.
 const String defaultIcoPath = 'windows/runner/resources/app_icon.ico';
 
+/// Where the compiled in-app vector is written, relative to the repository
+/// root.
+const String defaultVecPath = 'assets/app_icon/app_icon.vec';
+
 /// The source record's file name inside the icon source folder.
 const String sourceRecordName = 'provenance.json';
 
 /// The sizes drawn from the small-size SVG when it exists.
 const Set<int> smallSizes = {16, 20, 24};
 
-/// Rebuilds [icoPath] and the record in [iconDir] from the SVG sources there.
+/// Rebuilds [icoPath], [vecPath] and the record in [iconDir] from the SVG
+/// sources there.
 ///
 /// [iconDir] holds `app_icon.svg`, the optional `app_icon_small.svg` and
 /// `provenance.json`. The record's hash binding is ignored (it is about to be
 /// rewritten), but its picked candidate and concept are checked against the
 /// candidates record in [candidatesDir]. Sizes 16, 20 and 24 come from the
-/// small SVG when present.
+/// small SVG when present. [vecPath] receives the compiled `app_icon.svg`
+/// (never the small one), whose hash the record binds.
 ///
 /// Returns failure messages naming the file at fault, and writes nothing,
 /// when any record is invalid, a source is over [maxSourceBytes], a source
@@ -42,6 +49,7 @@ const Set<int> smallSizes = {16, 20, 24};
 Future<IconToolResult> buildIcon({
   required String iconDir,
   required String icoPath,
+  required String vecPath,
   required String candidatesDir,
   required IconRasterizer rasterize,
 }) async {
@@ -123,6 +131,7 @@ Future<IconToolResult> buildIcon({
       svg: main.svg,
       smallSvg: small?.svg,
       ico: ico,
+      vec: main.compiled,
     );
   } on Object catch (e) {
     return IconToolResult.failure(['$icoName: cannot encode ($e)']);
@@ -130,11 +139,12 @@ Future<IconToolResult> buildIcon({
 
   try {
     writeAtomically(icoPath, ico);
+    writeAtomically(vecPath, main.compiled);
     writeAtomically(recordPath, utf8.encode(newRecord));
   } on FileSystemException catch (e) {
     return IconToolResult.failure([
       '${e.path ?? 'output'}: cannot write (${e.message}); rerun $iconBuildCommand',
     ]);
   }
-  return IconToolResult.success(['wrote $icoPath and $recordPath']);
+  return IconToolResult.success(['wrote $icoPath, $vecPath and $recordPath']);
 }

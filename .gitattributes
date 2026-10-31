@@ -6,6 +6,7 @@ test/fixtures/m3/** -text
 assets/vision/** -text
 tool/vision/fonts/** -text
 assets/map_markers/** -text
+assets/app_icon/** -text
 docs/design/map-marker-icons/candidates/** -text
 docs/design/app-icon/candidates/** -text
 windows/runner/resources/app_icon/** -text

@@ -1,7 +1,8 @@
 // The Flutter host for the app icon tools (design D1). It is outside `test/`
 // so `mise run test` never runs it; run it through the mise tasks:
 //
-//   mise run icon:build   rebuilds app_icon.ico and its provenance hashes
+//   mise run icon:build   rebuilds app_icon.ico, app_icon.vec and their
+//                         provenance hashes
 //   mise run icon:sheet   writes build/app-icon-preview/index.html
 //
 // Both run `flutter test tool/app_icon/render_host_test.dart` with
@@ -26,6 +27,7 @@ void main() {
       'build' => () => buildIcon(
         iconDir: defaultIconSourceDir,
         icoPath: defaultIcoPath,
+        vecPath: defaultVecPath,
         candidatesDir: defaultCandidatesDir,
         rasterize: _rasterize,
       ),
