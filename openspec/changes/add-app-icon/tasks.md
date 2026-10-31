@@ -25,7 +25,7 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) is outside `te
 
 ## 1. ADR-0027 and the architecture index
 
-- [ ] 1.1 Write `docs/adr/0027-application-icon-pipeline.md` (MADR-short, `Status: accepted`, today's date) from design D1 to D5 and the ADRs section: the project-owned SVG source, rasterizing in the Flutter host with straight alpha, the DIB/PNG ICO layout, hash binding, the bundle `app-icon` step, and the scope difference from ADR-0023 (committed concepts, optional prompt). Include rejected alternatives and reversal cost. Add its row to the in-force index in `openspec/architecture.md`. Verify: the file exists, and `grep 0027 openspec/architecture.md` finds the row.
+- [x] 1.1 Write `docs/adr/0027-application-icon-pipeline.md` (MADR-short, `Status: accepted`, today's date) from design D1 to D5 and the ADRs section: the project-owned SVG source, rasterizing in the Flutter host with straight alpha, the DIB/PNG ICO layout, hash binding, the bundle `app-icon` step, and the scope difference from ADR-0023 (committed concepts, optional prompt). Include rejected alternatives and reversal cost. Add its row to the in-force index in `openspec/architecture.md`. Verify: the file exists, and `grep 0027 openspec/architecture.md` finds the row.
 
 ## 2. ICO core: encoder, parser and checks
 
