@@ -18,9 +18,9 @@ The Flutter-host renderer (`tool/app_icon/render_host_test.dart`) stays outside 
 | app-icon → The app header and the startup screen show the application icon | Startup screen shows the logo | test/ui/app_test.dart | startup and storage error screens show the 54x54 app logo and no hub icon | red |
 | app-icon → The app header and the startup screen show the application icon | Logo is not announced | test/ui/app_logo_test.dart | the logo adds no semantics node | red |
 | app-icon → The app header and the startup screen show the application icon | Vector fails to load | test/ui/app_logo_test.dart | a failed load leaves an empty box of the same size with no error | red |
-| release-bundle-integrity → The bundle carries the committed in-app logo | Logo matches | test/tool/vision/check_bundle_test.dart | app-icon step passes listing ten sizes and app_icon.vec | red |
-| release-bundle-integrity → The bundle carries the committed in-app logo | Logo missing from the bundle | test/tool/vision/check_bundle_test.dart | a bundle without the logo vec fails the app-icon step naming the path | red |
-| release-bundle-integrity → The bundle carries the committed in-app logo | Stale bundled logo | test/tool/vision/check_bundle_test.dart | a bundled logo vec that differs fails the app-icon step, also when the exe icon is unreadable | red |
+| release-bundle-integrity → The bundle carries the committed in-app logo | Logo matches | test/tool/vision/check_bundle_test.dart | app-icon step passes listing ten sizes and app_icon.vec | green |
+| release-bundle-integrity → The bundle carries the committed in-app logo | Logo missing from the bundle | test/tool/vision/check_bundle_test.dart | a bundle without the logo vec fails the app-icon step naming the path | green |
+| release-bundle-integrity → The bundle carries the committed in-app logo | Stale bundled logo | test/tool/vision/check_bundle_test.dart | a bundled logo vec that differs fails the app-icon step, also when the exe icon is unreadable | green |
 
 ## 1. ADR-0028 and the architecture index
 
@@ -74,8 +74,8 @@ Load `flutter-add-widget-test` and `dart-write-documentation` first.
 
 ## 4. Bundle check compares the bundled `.vec`
 
-- [ ] 4.1 Write failing tests in `test/tool/vision/check_bundle_test.dart` for the rows "Logo matches", "Logo missing from the bundle" and "Stale bundled logo". The stale case also runs with an unreadable executable icon group, and expects both failures. Update the fixtures so that every expected-pass bundle has a committed `.vec`, passed with `--app-logo` or `appLogoPath`, and a bundled copy at `data/flutter_assets/assets/app_icon/app_icon.vec`. Use small synthetic bytes. Verify the new tests fail.
-- [ ] 4.2 Implement D5 in `tool/vision/check_bundle.dart`:
+- [x] 4.1 Write failing tests in `test/tool/vision/check_bundle_test.dart` for the rows "Logo matches", "Logo missing from the bundle" and "Stale bundled logo". The stale case also runs with an unreadable executable icon group, and expects both failures. Update the fixtures so that every expected-pass bundle has a committed `.vec`, passed with `--app-logo` or `appLogoPath`, and a bundled copy at `data/flutter_assets/assets/app_icon/app_icon.vec`. Use small synthetic bytes. Verify the new tests fail.
+- [x] 4.2 Implement D5 in `tool/vision/check_bundle.dart`:
   - `appIconStep` gains `bundledVec` and `vecPath`, and the `.vec` comparison runs first, its failures kept across the early returns;
   - add `defaultAppLogoPath`, the `checkBundle` parameter, the `--app-logo` flag in the help text and parser, and the path in `protectedFiles`;
   - pass details gain `app_icon.vec`;

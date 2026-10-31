@@ -18,6 +18,7 @@ const _markerSetDir = 'assets/map_markers';
 const _bundledMarkerDir = 'data/flutter_assets/assets/map_markers';
 const _markerStep = 'map-marker-icons';
 const _iconStep = 'app-icon';
+const _bundledLogo = 'data/flutter_assets/assets/app_icon/app_icon.vec';
 const _flutterDefaultIco =
     'test/fixtures/app_icon/flutter_default_app_icon.ico';
 
@@ -28,6 +29,9 @@ Uint8List _tenSizeIco() => encodeIco({
       for (var i = 0; i < size * size * 4; i++) (i * 7 + size) & 0xFF,
     ]),
 });
+
+/// Small synthetic stand-in for the compiled logo; only its bytes matter.
+final _logoBytes = Uint8List.fromList([for (var i = 0; i < 64; i++) i * 3]);
 
 typedef _GroupEntry = ({
   int width,
@@ -73,6 +77,9 @@ class _Fixture {
     iconPath = '${root.path}/app_icon.ico';
     File(iconPath).writeAsBytesSync(_tenSizeIco());
     writeExe(_imagesOf(File(iconPath).readAsBytesSync()));
+    logoPath = '${root.path}/app_icon.vec';
+    File(logoPath).writeAsBytesSync(_logoBytes);
+    write(_bundledLogo, _logoBytes);
     write('flutter_windows.dll', _pe(['KERNEL32.dll']));
     write('sqlite3.dll', _pe(['KERNEL32.dll']));
     write('blackgrid_panel_ocr.dll', _pe(['KERNEL32.dll', 'VCRUNTIME140.dll']));
@@ -161,6 +168,7 @@ class _Fixture {
 
   final Directory root;
   late final String iconPath;
+  late final String logoPath;
   late final Directory bundle;
   late final String lockPath = '${root.path}/lock.json';
   late final String noticesPath = '${root.path}/NOTICES.md';
@@ -324,6 +332,8 @@ class _Fixture {
     noticesPath,
     '--app-icon',
     iconPath,
+    '--app-logo',
+    logoPath,
   ];
 
   Future<({int code, Map<String, Object?>? report, String err})> run([
@@ -783,7 +793,64 @@ void main() {
       expect(step['failures'], isEmpty);
       expect((step['details']! as List).cast<String>(), [
         for (final size in icoRequiredSizes) '${size}x$size 32-bit',
+        'app_icon.vec',
       ]);
+    });
+
+    test('a bundle without the logo vec fails the app-icon step naming the '
+        'path', () async {
+      File('${fx.bundle.path}/$_bundledLogo').deleteSync();
+      final r = await fx.run();
+      expect(r.code, 1);
+      final text = _failures(r.report!, _iconStep);
+      expect(text, contains('$_bundledLogo is missing'));
+      expect(_step(r.report!, 'inventory')['ok'], isTrue);
+
+      // An unreadable committed logo is named as such.
+      final fx2 = _Fixture();
+      addTearDown(fx2.dispose);
+      File(fx2.logoPath).deleteSync();
+      final r2 = await fx2.run();
+      expect(r2.code, 1);
+      expect(
+        _failures(r2.report!, _iconStep),
+        contains('app_icon.vec is unreadable'),
+      );
+    });
+
+    test('a bundled logo vec that differs fails the app-icon step, also when '
+        'the exe icon is unreadable', () async {
+      fx.write(_bundledLogo, [..._logoBytes, 0]);
+      final r = await fx.run();
+      expect(r.code, 1);
+      expect(
+        _failures(r.report!, _iconStep),
+        contains('app_icon.vec differs between the bundle and the checkout'),
+      );
+
+      fx.write('blackgrid.exe', PeBuilder(imports: ['KERNEL32.dll']).build());
+      final r2 = await fx.run();
+      expect(r2.code, 1);
+      final text = _failures(r2.report!, _iconStep);
+      expect(text, contains('executable icon group is unreadable'));
+      expect(
+        text,
+        contains('app_icon.vec differs between the bundle and the checkout'),
+      );
+    });
+
+    test('a report path equal to the app logo is refused unchanged', () async {
+      final before = File(fx.logoPath).readAsBytesSync();
+      final out = StringBuffer();
+      final err = StringBuffer();
+      final code = await runCli(
+        [...fx.args, '--report', fx.logoPath],
+        out: out,
+        err: err,
+      );
+      expect(code, 2);
+      expect(err.toString(), contains('refusing report path'));
+      expect(File(fx.logoPath).readAsBytesSync(), before);
     });
 
     test('the Flutter default icon group fails naming duplicate 16, 32, 48 '

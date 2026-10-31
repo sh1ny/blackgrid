@@ -1,7 +1,8 @@
 // Offline integrity check for a built Windows Release bundle (design D10).
 // Runs the steps inventory, bindings, pins, imports, runtimeVersions, notices,
 // map-marker-icons and app-icon (the executable carries the committed
-// application icon), writes a JSON report and returns non-zero if any step failed.
+// application icon and the bundle the committed header logo), writes a JSON
+// report and returns non-zero if any step failed.
 // It uses no network and never starts the app.
 import 'dart:convert';
 import 'dart:io';
@@ -25,8 +26,14 @@ const defaultAllowListPath = 'tool/vision/system_allowlist.json';
 const defaultMarkerManifestPath = 'assets/map_markers/manifest.json';
 const defaultAppIconPath = 'windows/runner/resources/app_icon.ico';
 
+/// The committed compiled header logo, which the build bundles as an asset.
+const defaultAppLogoPath = 'assets/app_icon/app_icon.vec';
+
 /// The bundle-relative path of the executable whose icon group is checked.
 const appExecutablePath = 'blackgrid.exe';
+
+/// Where the Flutter build places the compiled header logo in a bundle.
+const bundledAppLogoPath = 'data/flutter_assets/assets/app_icon/app_icon.vec';
 
 /// Where the Flutter build places the map marker assets in a bundle.
 const bundledMarkerDirectory = 'data/flutter_assets/assets/map_markers';
@@ -46,6 +53,7 @@ Options:
   --allowlist <path>  default $defaultAllowListPath
   --marker-icons <path>  map marker manifest, default $defaultMarkerManifestPath
   --app-icon <path>   application icon, default $defaultAppIconPath
+  --app-logo <path>   compiled header logo, default $defaultAppLogoPath
 
 Steps: inventory, bindings, pins, imports, runtimeVersions, notices,
 map-marker-icons, app-icon.
@@ -129,6 +137,7 @@ BundleReport checkBundle({
   String allowListPath = defaultAllowListPath,
   String markerManifestPath = defaultMarkerManifestPath,
   String appIconPath = defaultAppIconPath,
+  String appLogoPath = defaultAppLogoPath,
 }) {
   final inventory = _readJson(inventoryPath, 'inventory')! as Map;
   if (inventory['format'] != 1) {
@@ -414,7 +423,14 @@ BundleReport checkBundle({
   );
 
   // Step 8: the executable carries the committed application icon (design D5).
-  steps.add(appIconStep(bytesOf(appExecutablePath), appIconPath));
+  steps.add(
+    appIconStep(
+      bytesOf(appExecutablePath),
+      appIconPath,
+      bundledVec: bytesOf(bundledAppLogoPath),
+      vecPath: appLogoPath,
+    ),
+  );
 
   final files = <Map<String, Object?>>[
     for (final e in entries)
@@ -478,24 +494,56 @@ List<String> _duplicateIconFailures(
 
 /// The `app-icon` step: compares the icon group of [exe] (the bundle's
 /// `blackgrid.exe` bytes, or null when missing) with the `.ico` at
-/// [icoPath].
+/// [icoPath], and the bundled header logo [bundledVec] (null when missing)
+/// with the committed `.vec` at [vecPath].
+///
+/// The `.vec` comparison is bytes only and runs first. Its failures are kept
+/// on every path, including the early returns for a missing executable or an
+/// unreadable icon group or `.ico`, so one run reports both problems.
 ///
 /// Images are keyed by (width, height, bit depth), a stored 0 reading as 256.
 /// The step fails for a key present twice on one side, a key present on one
 /// side only, unequal bytes for a key, and an unreadable group or `.ico`. It
-/// never throws. A pass lists the sizes in [StepResult.details].
-StepResult appIconStep(Uint8List? exe, String icoPath) {
+/// never throws. A pass lists the sizes, then `app_icon.vec`, in
+/// [StepResult.details].
+StepResult appIconStep(
+  Uint8List? exe,
+  String icoPath, {
+  required Uint8List? bundledVec,
+  required String vecPath,
+}) {
   const name = 'app-icon';
   const icoLabel = 'app_icon.ico';
+  const vecLabel = 'app_icon.vec';
+  final vecFailures = <String>[];
+  if (bundledVec == null) {
+    vecFailures.add('$bundledAppLogoPath is missing');
+  } else {
+    try {
+      final file = File(vecPath);
+      if (!file.existsSync()) {
+        vecFailures.add('$vecLabel is unreadable: file not found ($vecPath)');
+      } else if (!_sameBytes(bundledVec, file.readAsBytesSync())) {
+        vecFailures.add(
+          '$vecLabel differs between the bundle and the checkout',
+        );
+      }
+    } on FileSystemException catch (e) {
+      vecFailures.add('$vecLabel is unreadable: ${e.message}');
+    }
+  }
   if (exe == null) {
-    return StepResult(name, ['$appExecutablePath is missing']);
+    return StepResult(name, [...vecFailures, '$appExecutablePath is missing']);
   }
   final List<PeIconImage> embedded;
   switch (readIconGroup(exe)) {
     case IconGroupReadable(:final images):
       embedded = images;
     case IconGroupUnreadable(:final reason):
-      return StepResult(name, ['executable icon group is unreadable: $reason']);
+      return StepResult(name, [
+        ...vecFailures,
+        'executable icon group is unreadable: $reason',
+      ]);
   }
   final List<IcoImage> committed;
   try {
@@ -507,10 +555,16 @@ StepResult appIconStep(Uint8List? exe, String icoPath) {
       case IcoParsed(:final images):
         committed = images;
       case IcoUnreadable(:final reason):
-        return StepResult(name, ['$icoLabel is unreadable: $reason']);
+        return StepResult(name, [
+          ...vecFailures,
+          '$icoLabel is unreadable: $reason',
+        ]);
     }
   } on FileSystemException catch (e) {
-    return StepResult(name, ['$icoLabel is unreadable: ${e.message}']);
+    return StepResult(name, [
+      ...vecFailures,
+      '$icoLabel is unreadable: ${e.message}',
+    ]);
   }
 
   final exeKeys = _indexIcons([
@@ -520,6 +574,7 @@ StepResult appIconStep(Uint8List? exe, String icoPath) {
     for (final i in committed) (i.width, i.height, i.bitCount, i.bytes),
   ]);
   final failures = [
+    ...vecFailures,
     ..._duplicateIconFailures('executable', exeKeys),
     ..._duplicateIconFailures(icoLabel, icoKeys),
   ];
@@ -546,6 +601,7 @@ StepResult appIconStep(Uint8List? exe, String icoPath) {
     details: [
       if (failures.isEmpty)
         for (final k in allKeys) _keyLabel(k),
+      if (failures.isEmpty) vecLabel,
     ],
   );
 }
@@ -821,6 +877,7 @@ Future<int> runCli(
   var allow = defaultAllowListPath;
   var markerIcons = defaultMarkerManifestPath;
   var appIcon = defaultAppIconPath;
+  var appLogo = defaultAppLogoPath;
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
     String value() {
@@ -847,6 +904,8 @@ Future<int> runCli(
           markerIcons = value();
         case '--app-icon':
           appIcon = value();
+        case '--app-logo':
+          appLogo = value();
         default:
           if (a.startsWith('--') || bundle != null) {
             throw FormatException('unexpected argument $a');
@@ -877,6 +936,7 @@ Future<int> runCli(
       allowListPath: allow,
       markerManifestPath: markerIcons,
       appIconPath: appIcon,
+      appLogoPath: appLogo,
     );
   } on FormatException catch (e) {
     stderrSink.writeln('error: ${e.message}');
@@ -898,7 +958,15 @@ Future<int> runCli(
     // The check is read-only over the bundle and its committed inputs.
     final unsafe = unsafeOutputReason(
       report,
-      protectedFiles: [inventory, lock, notices, allow, markerIcons, appIcon],
+      protectedFiles: [
+        inventory,
+        lock,
+        notices,
+        allow,
+        markerIcons,
+        appIcon,
+        appLogo,
+      ],
       protectedDirectories: [dir.path],
     );
     if (unsafe != null) {
