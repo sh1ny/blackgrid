@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +43,17 @@ class FakeRunner implements CommandRunner {
   String apiLogin = _login;
   bool failPush = false;
 
+  /// Recorded `gh api` bodies by endpoint (for example `repos/o/r/pulls/7`).
+  final Map<String, String> api = {};
+
+  /// When set, every `gh api repos/...` call fails with this stderr.
+  String? repoApiError;
+
+  /// When set, network Git commands see [redirectTo] wherever origin's URL
+  /// is [redirectFrom], so a GitHub URL can front a local bare repository.
+  String? redirectFrom;
+  String? redirectTo;
+
   @override
   Future<CommandResult> run(
     String executable,
@@ -56,9 +68,19 @@ class FakeRunner implements CommandRunner {
       if (failPush && arguments.contains('push')) {
         return const CommandResult(1, '', 'remote rejected the push');
       }
+      final network =
+          arguments.contains('fetch') ||
+          arguments.contains('ls-remote') ||
+          arguments.contains('push');
       return real.run(
         executable,
-        arguments,
+        [
+          if (network && redirectFrom != null) ...[
+            '-c',
+            'url.$redirectTo.insteadOf=$redirectFrom',
+          ],
+          ...arguments,
+        ],
         workingDirectory: workingDirectory,
         environment: environment,
       );
@@ -72,6 +94,14 @@ class FakeRunner implements CommandRunner {
       if (arguments.first == 'api') {
         if (environment?['GH_TOKEN'] != _token) {
           return const CommandResult(1, '', 'not logged in');
+        }
+        if (!arguments.contains('user')) {
+          final endpoint = arguments.singleWhere((a) => a.startsWith('repos/'));
+          final error = repoApiError;
+          if (error != null) return CommandResult(1, '', error);
+          final body = api[endpoint];
+          if (body == null) return CommandResult(1, '', 'HTTP 404: $endpoint');
+          return CommandResult(0, body, '');
         }
         return CommandResult(0, '$apiLogin\n', '');
       }
@@ -140,6 +170,68 @@ void main() {
       commitFile('plain.txt', 'plain\n', 'docs: plain head');
     }
     _git(work, ['push', 'origin', 'main']);
+  }
+
+  const repoUrl = 'https://github.com/sh1ny/blackgrid.git';
+  const prApi = 'repos/sh1ny/blackgrid/pulls/7';
+
+  /// Builds main ending in a squash of a release branch whose one commit is
+  /// `chore(release): v0.2.0`, with the squash subject suffixed `(#7)`, then
+  /// points origin at a GitHub URL that the fake runner redirects to the
+  /// local bare repository. Returns the release commit's sha.
+  String buildSquash({bool mainMovesFirst = false}) {
+    _git(work, ['checkout', '-b', 'release/v0.2.0']);
+    commitFile(
+      'pubspec.yaml',
+      'name: demo\nversion: 0.2.0\n',
+      'chore(release): v0.2.0',
+    );
+    final releaseCommit = _git(work, ['rev-parse', 'HEAD']);
+    _git(work, ['checkout', 'main']);
+    if (mainMovesFirst) commitFile('late.txt', 'late\n', 'feat: late arrival');
+    _git(work, ['merge', '--squash', 'release/v0.2.0']);
+    _git(work, ['commit', '-m', 'chore(release): v0.2.0 (#7)']);
+    _git(work, ['push', 'origin', 'main']);
+    _git(work, ['remote', 'set-url', 'origin', repoUrl]);
+    runner
+      ..redirectFrom = repoUrl
+      ..redirectTo = origin.path.replaceAll('\\', '/');
+    return releaseCommit;
+  }
+
+  /// Records the PR API answers a faithful GitHub would give, with the
+  /// given overrides applied to the PR and to the release commit's entry.
+  void servePr(
+    String releaseCommit, {
+    Map<String, Object?> pr = const {},
+    Map<String, Object?> commit = const {},
+  }) {
+    runner.api[prApi] = jsonEncode({
+      'merged': true,
+      'merge_commit_sha': _git(work, ['rev-parse', 'HEAD']),
+      'head': {'ref': 'release/v0.2.0'},
+      'commits': 1,
+      ...pr,
+    });
+    runner.api['$prApi/commits'] = jsonEncode([
+      {
+        'sha': releaseCommit,
+        'commit': {'message': 'chore(release): v0.2.0'},
+        'parents': [
+          {
+            'sha': _git(work, ['rev-parse', '$releaseCommit^']),
+          },
+        ],
+        ...commit,
+      },
+    ]);
+    runner.api['repos/sh1ny/blackgrid/git/commits/$releaseCommit'] = jsonEncode(
+      {
+        'tree': {
+          'sha': _git(work, ['rev-parse', '$releaseCommit^{tree}']),
+        },
+      },
+    );
   }
 
   Future<void> runTag() => tag(repoDir: work, runner: runner, out: out);
@@ -234,6 +326,127 @@ void main() {
     _git(work, ['push', 'origin', 'main']);
     e = await refusal();
     expect(e.message, contains('docs: plain head'));
+    expect(_git(work, ['tag', '--list']), 'v0.1.0');
+    expect(_git(origin, ['tag', '--list']), 'v0.1.0');
+
+    commitFile('plain.txt', 'squashed\n', 'fix(map): x (#5)');
+    _git(work, ['push', 'origin', 'main']);
+    e = await refusal();
+    expect(e.message, contains('fix(map): x (#5)'));
+    expect(_git(work, ['tag', '--list']), 'v0.1.0');
+    expect(_git(origin, ['tag', '--list']), 'v0.1.0');
+    expect(runner.calls.where((c) => c.arguments.contains(prApi)), isEmpty);
+  });
+
+  test('squashed release gets annotated tag pushed to origin', () async {
+    final releaseCommit = buildSquash();
+    servePr(releaseCommit);
+    final head = _git(work, ['rev-parse', 'HEAD']);
+    await runTag();
+    expect(_git(work, ['cat-file', '-t', 'refs/tags/v0.2.0']), 'tag');
+    expect(_git(work, ['rev-parse', 'v0.2.0^{commit}']), head);
+    expect(_git(origin, ['cat-file', '-t', 'refs/tags/v0.2.0']), 'tag');
+    expect(_git(origin, ['rev-parse', 'v0.2.0^{commit}']), head);
+    expect(
+      out.toString(),
+      contains(
+        'https://github.com/sh1ny/blackgrid/actions/workflows/release.yml',
+      ),
+    );
+    expect(out.toString(), isNot(contains('build:release')));
+
+    final reads = runner.calls.where(
+      (c) =>
+          c.executable == 'gh' &&
+          c.arguments.any((a) => a.startsWith('repos/')),
+    );
+    expect(reads.length, 3);
+    for (final c in reads) {
+      expect(c.environment?['GH_TOKEN'], _token, reason: c.line);
+      expect(c.line, isNot(contains(_token)));
+    }
+  });
+
+  test(
+    'squashed release onto a moved main refuses naming intervening commits',
+    () async {
+      final releaseCommit = buildSquash(mainMovesFirst: true);
+      servePr(releaseCommit);
+      final e = await refusal();
+      expect(e.message, contains('feat: late arrival'));
+      expect(e.message, contains('release/v0.2.0'));
+      expect(e.message, contains('release:prepare'));
+      expect(_git(work, ['tag', '--list']), 'v0.1.0');
+      expect(_git(origin, ['tag', '--list']), 'v0.1.0');
+    },
+  );
+
+  test('squashed release PR from another branch, another merge commit or with two commits refuses', () async {
+    final releaseCommit = buildSquash();
+    final cases = <(Map<String, Object?>, String)>[
+      (
+        {
+          'head': {'ref': 'feature/x'},
+        },
+        'release/v0.2.0',
+      ),
+      ({'merge_commit_sha': 'f' * 40}, 'merge commit'),
+      ({'commits': 2}, 'commit'),
+      ({'merged': false}, 'merged'),
+    ];
+    for (final (pr, check) in cases) {
+      servePr(releaseCommit, pr: pr);
+      final e = await refusal();
+      expect(e.message, contains('#7'), reason: '$pr');
+      expect(e.message, contains(check), reason: '$pr');
+      expect(_git(work, ['tag', '--list']), 'v0.1.0', reason: '$pr');
+      expect(_git(origin, ['tag', '--list']), 'v0.1.0', reason: '$pr');
+    }
+
+    servePr(
+      releaseCommit,
+      commit: {
+        'commit': {'message': 'chore(release): v0.3.0'},
+      },
+    );
+    var e = await refusal();
+    expect(e.message, contains('#7'));
+    expect(e.message, contains('chore(release): v0.3.0'));
+
+    servePr(
+      releaseCommit,
+      commit: {
+        'parents': [
+          {'sha': 'a' * 40},
+        ],
+      },
+    );
+    e = await refusal();
+    expect(e.message, contains('#7'));
+    expect(e.message, contains('release:prepare'));
+    expect(_git(work, ['tag', '--list']), 'v0.1.0');
+    expect(_git(origin, ['tag', '--list']), 'v0.1.0');
+
+    servePr(releaseCommit);
+    runner.api['repos/sh1ny/blackgrid/git/commits/$releaseCommit'] = jsonEncode(
+      {
+        'tree': {'sha': 'b' * 40},
+      },
+    );
+    e = await refusal();
+    expect(e.message, contains('#7'));
+    expect(e.message, contains('tree'));
+    expect(_git(work, ['tag', '--list']), 'v0.1.0');
+    expect(_git(origin, ['tag', '--list']), 'v0.1.0');
+  });
+
+  test('squashed release refuses when the PR API call fails', () async {
+    buildSquash();
+    runner.repoApiError = 'HTTP 502: bad gateway';
+    final e = await refusal();
+    expect(e.message, contains('#7'));
+    expect(e.message, contains('HTTP 502: bad gateway'));
+    expect(e.message, isNot(contains(_token)));
     expect(_git(work, ['tag', '--list']), 'v0.1.0');
     expect(_git(origin, ['tag', '--list']), 'v0.1.0');
   });
