@@ -7,6 +7,7 @@ import '../../../tool/app_icon/build.dart';
 import '../../../tool/app_icon/ico.dart';
 import '../../../tool/app_icon/provenance.dart';
 import '../../../tool/app_icon/render.dart';
+import '../../../tool/markers/icon_set.dart' show compileIconSvg;
 import 'support/icon_fixture.dart';
 
 void main() {
@@ -15,6 +16,7 @@ void main() {
   late String candidates;
   late String iconDir;
   late String icoPath;
+  late String vecPath;
 
   setUp(() {
     root = Directory.systemTemp.createTempSync('app_icon_build_');
@@ -26,6 +28,7 @@ void main() {
     );
     iconDir = (Directory('${root.path}/app_icon')..createSync()).path;
     icoPath = '${root.path}/app_icon.ico';
+    vecPath = '${root.path}/assets/app_icon/app_icon.vec';
   });
   tearDown(() => root.deleteSync(recursive: true));
 
@@ -50,6 +53,7 @@ void main() {
   Future<IconToolResult> run() => buildIcon(
     iconDir: iconDir,
     icoPath: icoPath,
+    vecPath: vecPath,
     candidatesDir: candidates,
     rasterize: rasterizer.call,
   );
@@ -65,9 +69,11 @@ void main() {
 
   group('icon build', () {
     test('a source the compiler rejects exits non-zero naming it and leaves '
-        'the ico and record unchanged', () async {
+        'the ico, vec and record unchanged', () async {
       writeSource(rejectedSvg);
       File(icoPath).writeAsBytesSync([1, 2, 3]);
+      Directory(File(vecPath).parent.path).createSync(recursive: true);
+      File(vecPath).writeAsBytesSync([4, 5, 6]);
       final recordBefore = File('$iconDir/provenance.json').readAsBytesSync();
 
       final result = await run();
@@ -76,8 +82,10 @@ void main() {
       expect(result.exitCode, 1);
       expect(result.messages.join('\n'), contains(sourceSvgName));
       expect(File(icoPath).readAsBytesSync(), [1, 2, 3]);
+      expect(File(vecPath).readAsBytesSync(), [4, 5, 6]);
       expect(File('$iconDir/provenance.json').readAsBytesSync(), recordBefore);
       expect(File('$icoPath.tmp').existsSync(), isFalse);
+      expect(File('$vecPath.tmp').existsSync(), isFalse);
       expect(File('$iconDir/provenance.json.tmp').existsSync(), isFalse);
       expect(rasterizer.calls, isEmpty);
     });
@@ -96,28 +104,65 @@ void main() {
       },
     );
 
-    test('builds a valid ico, then rewrites the record hashes', () async {
-      writeSource(validSvg, small: validSvg);
+    test(
+      'builds a valid ico and vec, then rewrites the record hashes',
+      () async {
+        writeSource(validSvg, small: validSvg);
+
+        final result = await run();
+
+        expect(result.ok, isTrue, reason: result.messages.join('\n'));
+        final ico = File(icoPath).readAsBytesSync();
+        expect(checkIco(ico), isEmpty);
+        final record = parseSourceRecord(
+          File('$iconDir/provenance.json').readAsStringSync(),
+        );
+        expect(record, isA<SourceParsed>());
+        final hashes = (record as SourceParsed).record.sha256;
+        expect(hashes[icoName], sha256.convert(ico).toString());
+        final vec = File(vecPath).readAsBytesSync();
+        expect(vec, compileIconSvg(validSvg, sourceSvgName));
+        expect(hashes[vecName], sha256.convert(vec).toString());
+        expect(hashes[sourceSvgName], isNotNull);
+        expect(File('$vecPath.tmp').existsSync(), isFalse);
+        expect(
+          result.messages.join('\n'),
+          allOf(
+            contains(icoPath),
+            contains(vecPath),
+            contains('provenance.json'),
+          ),
+        );
+        expect(hashes.containsKey(smallSvgName), isTrue);
+        expect(File('$icoPath.tmp').existsSync(), isFalse);
+        Set<int> sizesOf(String file) => {
+          for (final (name, size) in rasterizer.calls)
+            if (name == file) size,
+        };
+        expect(sizesOf(smallSvgName), {16, 20, 24});
+        expect(sizesOf(sourceSvgName), {32, 40, 48, 64, 96, 128, 256});
+      },
+    );
+
+    test('a record without the vec hash builds and gains it', () async {
+      writeSource(validSvg, record: sourceRecordText());
+      expect(
+        (parseSourceRecord(
+          File('$iconDir/provenance.json').readAsStringSync(),
+        ) as SourceParsed).record.sha256.containsKey(vecName),
+        isFalse,
+      );
 
       final result = await run();
 
       expect(result.ok, isTrue, reason: result.messages.join('\n'));
-      final ico = File(icoPath).readAsBytesSync();
-      expect(checkIco(ico), isEmpty);
-      final record = parseSourceRecord(
+      final hashes = (parseSourceRecord(
         File('$iconDir/provenance.json').readAsStringSync(),
+      ) as SourceParsed).record.sha256;
+      expect(
+        hashes[vecName],
+        sha256.convert(File(vecPath).readAsBytesSync()).toString(),
       );
-      expect(record, isA<SourceParsed>());
-      final hashes = (record as SourceParsed).record.sha256;
-      expect(hashes[icoName], sha256.convert(ico).toString());
-      expect(hashes.containsKey(smallSvgName), isTrue);
-      expect(File('$icoPath.tmp').existsSync(), isFalse);
-      Set<int> sizesOf(String file) => {
-        for (final (name, size) in rasterizer.calls)
-          if (name == file) size,
-      };
-      expect(sizesOf(smallSvgName), {16, 20, 24});
-      expect(sizesOf(sourceSvgName), {32, 40, 48, 64, 96, 128, 256});
     });
 
     test(
@@ -178,6 +223,9 @@ void main() {
           (record as SourceParsed).record,
           svg: File('$iconDir/$sourceSvgName').readAsBytesSync(),
           ico: File(icoPath).readAsBytesSync(),
+          vec: File(vecPath).existsSync()
+              ? File(vecPath).readAsBytesSync()
+              : null,
         ).join('\n'),
         allOf(contains(icoName), contains(iconBuildCommand)),
       );

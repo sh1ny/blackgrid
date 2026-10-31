@@ -10,6 +10,8 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
+import '../markers/icon_set.dart' show IconCompiler, compileIconSvg;
+
 /// The command that regenerates the icon artifacts and the source record. A
 /// hash-binding failure names it so the fix is one copy away.
 const String iconBuildCommand = 'mise run icon:build';
@@ -22,6 +24,9 @@ const String smallSvgName = 'app_icon_small.svg';
 
 /// File name of the generated Windows icon.
 const String icoName = 'app_icon.ico';
+
+/// File name of the compiled in-app vector, `assets/app_icon/app_icon.vec`.
+const String vecName = 'app_icon.vec';
 
 const _schemaVersion = 1;
 const _methods = {'hand-authored', 'ai-assisted'};
@@ -46,7 +51,7 @@ const _sourceFields = {
   'concept',
   'sha256',
 };
-const _hashFields = {sourceSvgName, smallSvgName, icoName};
+const _hashFields = {sourceSvgName, smallSvgName, icoName, vecName};
 
 final _conceptPath = RegExp(r'^concepts/[^/\\]+\.png$');
 final _vectorPath = RegExp(r'^vector/[^/\\]+\.svg$');
@@ -252,8 +257,8 @@ class SourceRecord {
   /// The concept PNG the picked candidate came from, or null.
   final String? concept;
 
-  /// Lowercase hex SHA-256 by file name (`app_icon.svg`, optionally
-  /// `app_icon_small.svg`, and `app_icon.ico`).
+  /// Lowercase hex SHA-256 by file name (`app_icon.svg`, `app_icon.ico`, and
+  /// optionally `app_icon_small.svg` and `app_icon.vec`).
   final Map<String, String> sha256;
 }
 
@@ -310,11 +315,13 @@ SourceParseResult parseSourceRecord(String text) {
   switch (json['sha256']) {
     case final Map<String, Object?> raw:
       _rejectUnknown(raw, _hashFields, '$at.sha256', failures);
-      for (final name in [sourceSvgName, smallSvgName, icoName]) {
+      for (final name in [sourceSvgName, smallSvgName, icoName, vecName]) {
         switch (raw[name]) {
           case final String h when _hex64.hasMatch(h):
             hashes[name] = h;
-          case null when name == smallSvgName:
+          // Optional: a record from before the vector has no `.vec` hash, and
+          // the rebuild command is what adds it.
+          case null when name == smallSvgName || name == vecName:
             break;
           case null:
             failures.add('$at.sha256.$name: is missing');
@@ -347,15 +354,16 @@ SourceParseResult parseSourceRecord(String text) {
 
 /// Compares [record]'s hashes with the actual bytes.
 ///
-/// [smallSvg] is null when `app_icon_small.svg` is not on disk; the file must
-/// be on disk exactly when the record has a hash for it. Returns one failure
-/// per mismatch, each naming the file and [iconBuildCommand]; empty when the
-/// record binds the files.
+/// [smallSvg] is null when `app_icon_small.svg` is not on disk and [vec] is
+/// null when `app_icon.vec` is not; each file must be on disk exactly when the
+/// record has a hash for it. Returns one failure per mismatch, each naming the
+/// file and [iconBuildCommand]; empty when the record binds the files.
 List<String> checkHashBinding(
   SourceRecord record, {
   required Uint8List svg,
   Uint8List? smallSvg,
   required Uint8List ico,
+  required Uint8List? vec,
 }) {
   final failures = <String>[];
   void differs(String name, String why) => failures.add(
@@ -381,7 +389,43 @@ List<String> checkHashBinding(
   compare(sourceSvgName, svg);
   compare(smallSvgName, smallSvg);
   compare(icoName, ico);
+  compare(vecName, vec);
   return failures;
+}
+
+/// Checks that [vec] is what compiling the source [svg] produces.
+///
+/// Compiles through [compile], by default the marker compiler that
+/// `compileSources` uses. Returns a failure naming [vecName] and
+/// [iconBuildCommand] when the bytes differ, or naming [sourceSvgName] when the
+/// compiler rejects the source; empty when [vec] is in step with [svg].
+List<String> checkCompiledVec(
+  Uint8List svg,
+  Uint8List vec, {
+  IconCompiler compile = compileIconSvg,
+}) {
+  final Uint8List expected;
+  try {
+    expected = compile(utf8.decode(svg), sourceSvgName);
+  } on Object catch (e) {
+    return [
+      '$sourceSvgName: cannot compile it to check $vecName ($e); fix the '
+          'source, then run $iconBuildCommand',
+    ];
+  }
+  if (_sameBytes(expected, vec)) return const [];
+  return [
+    '$vecName: it differs from the compiled $sourceSvgName; run '
+        '$iconBuildCommand',
+  ];
+}
+
+bool _sameBytes(Uint8List a, Uint8List b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 /// Checks [record] against the candidates record: `pickedCandidate` must be a
@@ -405,13 +449,15 @@ List<String> checkSourceAgainstCandidates(
 /// The JSON text of [record] with its hashes recomputed from the given bytes.
 ///
 /// The human fields are copied unchanged. [smallSvg] is null when
-/// `app_icon_small.svg` does not exist, which drops its hash. The text uses a
-/// 2-space indent and ends with a newline.
+/// `app_icon_small.svg` does not exist, which drops its hash. [vec] is the
+/// compiled in-app vector whose hash is written under [vecName]. The text uses
+/// a 2-space indent and ends with a newline.
 String renderSourceRecord(
   SourceRecord record, {
   required Uint8List svg,
   Uint8List? smallSvg,
   required Uint8List ico,
+  required Uint8List vec,
 }) {
   String hash(Uint8List b) => sha256.convert(b).toString();
   final json = <String, Object?>{
@@ -427,6 +473,7 @@ String renderSourceRecord(
       sourceSvgName: hash(svg),
       if (smallSvg != null) smallSvgName: hash(smallSvg),
       icoName: hash(ico),
+      vecName: hash(vec),
     },
   };
   return '${const JsonEncoder.withIndent('  ').convert(json)}\n';
