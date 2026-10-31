@@ -80,9 +80,9 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 8. Integration
 
-- [ ] 8.1 Run `dart format` on the changed Dart files, then `mise run analyze` and `mise run test`. Verify: both exit 0.
-- [ ] 8.2 Confirm that Escape from Tarkov is not running (`tasklist`, checking for `EscapeFromTarkov.exe`; if that can't be confirmed, skip and record this check as unverified). Then run `mise run build:release`, which runs `bundle:check`. Verify: the report's `app-icon` step passes, listing the ten sizes. The app is not launched.
-- [ ] 8.3 Run `openspec validate add-app-icon --strict`. Verify: it passes.
+- [x] 8.1 Run `dart format` on the changed Dart files, then `mise run analyze` and `mise run test`. Verify: both exit 0.
+- [x] 8.2 Confirm that Escape from Tarkov is not running (`tasklist`, checking for `EscapeFromTarkov.exe`; if that can't be confirmed, skip and record this check as unverified). Then run `mise run build:release`, which runs `bundle:check`. Verify: the report's `app-icon` step passes, listing the ten sizes. The app is not launched.
+- [x] 8.3 Run `openspec validate add-app-icon --strict`. Verify: it passes.
 
 ## Workflow follow-up
 
