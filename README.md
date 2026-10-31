@@ -1,8 +1,65 @@
 # Blackgrid
 
-![version](https://img.shields.io/badge/version-0.1.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.6-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
+![version](https://img.shields.io/badge/version-0.5.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.6-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
-A Windows desktop companion for raid-time loot decisions, built in Dart/Flutter. It has two areas, **Map** and **Scanner**. It reads public catalog data from json.tarkov.dev and, if you opt in, read-only progress from tarkovtracker.org. Maps render natively from a bundled, hash-addressed pack. One conservative decision engine drives every recommendation: an unknown or stale input gives **Check / May Need**, never a confident Sell. The game itself is never touched. Blackgrid reads only the game's log files and the screenshots you save.
+**A helper app for Escape from Tarkov that runs next to the game on Windows.** It shows you where you are on the map, which extracts you have this raid, and whether the item in your hands is worth keeping or selling.
+
+| Map | Scanner |
+|---|---|
+| ![Map area: Reserve with extracts, transits, locks and loot markers, and floor buttons](docs/screenshots/map.png) | ![Scanner area: advice for a Graphics card, with prices, the quests that need it, and recent items](docs/screenshots/scanner.png) |
+
+## 🎯 What Blackgrid does for you
+
+Blackgrid has two areas. You switch between them at the top of the window.
+
+**🗺️ Map.** Interactive maps of all 13 locations (Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker and Labyrinth). Turn on the markers you care about: PMC, Scav and shared extracts, transits, quest items and objectives, bosses, cultists, spawns, hazards, loot containers, locks, switches, BTR stops and stationary weapons. Right-click to drop your own pins; they are saved per map.
+
+**🔍 Scanner.** Search any item with **Ctrl K** and Blackgrid tells you, in plain words, what to do with it: **Keep** (a quest or hideout upgrade needs it now), **Keep for later** (needed further down the line), **Flea** (sell it on the Flea Market) or **Trader** (sell it to the trader who pays most), with the price. When it is not sure, because prices are old, you have not said whether the item is found in raid, or it does not know your progress, it says **Check / May Need** instead of guessing. A wrong "sell" costs you an item; a "check" costs you a second look.
+
+### 📍 How it knows where you are
+
+Blackgrid never asks the game where you are. It uses two things the game already writes to your disk:
+
+1. **The game's log files.** When you load into a raid, Escape from Tarkov writes the map name and the game mode (PvP or PvE) to its log. Blackgrid reads that log and opens the right map by itself. Turn this off with **Follow logs** if you prefer to pick the map by hand.
+2. **Your screenshots.** When you take a screenshot in game (**Print Screen** by default), the game names the file after your position and the direction you are facing. Blackgrid watches your screenshot folder and puts a marker on the map where you stood and the way you faced.
+
+Your position updates **only when you take a screenshot**. It is a snapshot, not live tracking.
+
+**Which extracts do I have?** In raid, press **O** to open the list of your extracts and transits, then take a screenshot. Blackgrid reads the names from that picture with the text recognition built into Windows and highlights exactly those extracts on the map.
+
+### 🧪 Item scanning is optional
+
+You do not need the scanner to use the map, and you do not need the map to use the scanner. Searching items by name works without any scanning.
+
+**Live scan** is off until you switch it on in the Scanner area. When it is on, and you inspect an item in game, Blackgrid takes a small picture of the screen around your mouse, reads the item's name and shows the advice. A scan starts when you release the mouse button over the game window, or when you press the scan key (**F9** by default; pick any of F1 to F24, or none). Switch live scan off and Blackgrid stops listening for clicks and gives the key back.
+
+### 🛡️ Blackgrid does not touch the game
+
+Blackgrid **never** connects to the game, reads or changes its memory, injects anything into it, or sends it key presses or clicks. It only reads:
+
+- the **log files** the game writes to disk;
+- the **screenshots** you take;
+- with live scan on, a **small picture of your screen**, the way a screen-capture tool takes one. To know that your click landed on the game, it checks the title of the window under your mouse, which Windows shares with any program.
+
+That is all. It does not modify any game file. A test in this repository fails if the capture code ever calls a Windows function that could open or control another program.
+
+> **Note:** Blackgrid is a fan-made tool, not affiliated with Battlestate Games. Only Battlestate Games decides what its anti-cheat allows. Blackgrid is built to stay well away from the game, but no third-party tool can promise how anti-cheat will treat it.
+
+### 🔗 What it connects to
+
+| Service | What Blackgrid gets from it | Needed? |
+|---|---|---|
+| [tarkov.dev](https://tarkov.dev) | Items, prices, traders, quests, hideout, crafts and barters, refreshed at start and when you change game mode | Yes, for item advice |
+| [TarkovTracker](https://tarkovtracker.org) | Your quest and hideout progress, read only, so **Keep** means *you* still need it | No. Off until you paste a token in **Settings** |
+| Windows text recognition | Reads the extract names from your **O** screenshots, on your PC | Built into Windows |
+
+Blackgrid only downloads; it never uploads your data. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`, and a TarkovTracker token is encrypted for your Windows user. The maps ship inside the app; see [Credits and notices](#-credits-and-notices) for where they come from.
+
+---
+
+## 🛠️ For developers
+
+The rest of this page is for building and working on Blackgrid. It is a Dart/Flutter desktop app. Maps render natively from a bundled, hash-addressed pack, and one conservative decision engine drives every recommendation: an unknown or stale input gives **Check / May Need**, never a confident Sell.
 
 ## ✨ What it adds
 
