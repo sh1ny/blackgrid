@@ -85,9 +85,9 @@ Load `flutter-add-widget-test` and `dart-write-documentation` first.
 
 ## 5. Integration
 
-- [ ] 5.1 Run `dart format` on the changed Dart files (`mise exec -- dart format ...`), then `mise run analyze` and `mise run test`. Verify: both exit 0, and every Test map row is green.
-- [ ] 5.2 Confirm that Escape from Tarkov is not running: `tasklist` must show no `EscapeFromTarkov.exe`. If that can't be confirmed, skip this task and record it as unverified. Then run `mise run build:release`, which runs `bundle:check`. Verify: the `app-icon` step passes, listing the ten sizes and `app_icon.vec`. The app is not launched.
-- [ ] 5.3 Run `openspec validate add-header-app-logo --strict`. Verify: it passes.
+- [x] 5.1 Run `dart format` on the changed Dart files (`mise exec -- dart format ...`), then `mise run analyze` and `mise run test`. Verify: both exit 0, and every Test map row is green.
+- [x] 5.2 Confirm that Escape from Tarkov is not running: `tasklist` must show no `EscapeFromTarkov.exe`. If that can't be confirmed, skip this task and record it as unverified. Then run `mise run build:release`, which runs `bundle:check`. Verify: the `app-icon` step passes, listing the ten sizes and `app_icon.vec`. The app is not launched.
+- [x] 5.3 Run `openspec validate add-header-app-logo --strict`. Verify: it passes.
 
 ## Workflow follow-up
 
