@@ -93,3 +93,11 @@ run = "pwsh -NoProfile -File windows/capture/selftest.ps1"
 [tasks."capture:unittest"]
 description = "Build and run the native capture unit test (injected environments and fakes only; no game gate)"
 run = "pwsh -NoProfile -File windows/capture/unittest.ps1"
+
+[tasks."icon:build"]
+description = "Rebuild windows/runner/resources/app_icon.ico and its provenance hashes from the source SVG"
+run = "flutter test tool/app_icon/render_host_test.dart --dart-define=APP_ICON_MODE=build"
+
+[tasks."icon:sheet"]
+description = "Write the app icon comparison sheet to build/app-icon-preview/index.html"
+run = "flutter test tool/app_icon/render_host_test.dart --dart-define=APP_ICON_MODE=sheet"
