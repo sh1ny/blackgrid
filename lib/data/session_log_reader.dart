@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import '../domain/catalog.dart';
 import '../domain/map_session.dart';
+import '../domain/raid_lifecycle.dart';
+import 'game_log/log_file_tail.dart';
 
 /// Configured-root-only replay and tail. Record identity is incarnation plus
 /// byte offset, not timestamps. UTF-8 is decoded only after a full line arrives.
@@ -26,12 +26,12 @@ class SessionLogReader {
   String? _session;
   int _generation = 0;
   int _incarnation = 0;
-  int _offset = 0;
-
-  /// Last consumed bytes, revalidated before each tail read.
-  Uint8List _window = Uint8List(0);
-  final List<int> _line = [];
-  bool _discardLine = false;
+  late final _tail = LogFileTail(
+    kind: LogFile.application,
+    headersOnly: false,
+    chunkBytes: chunkBytes,
+    maxLineBytes: maxLineBytes,
+  );
   bool _batch = false;
   bool _recordRejected = false;
   SessionLogState? _lastPublished;
@@ -79,26 +79,11 @@ class SessionLogReader {
     _timer = Timer.periodic(pollInterval, (_) => _schedule());
   }
 
-  void _remember(Uint8List bytes) {
-    if (bytes.length >= _windowBytes) {
-      _window = Uint8List.fromList(bytes.sublist(bytes.length - _windowBytes));
-      return;
-    }
-    final keep = (_windowBytes - bytes.length).clamp(0, _window.length);
-    _window = Uint8List.fromList([
-      ..._window.sublist(_window.length - keep),
-      ...bytes,
-    ]);
-  }
-
   void _reset(String? path, String? session) {
     _path = path;
     _session = session;
     ++_incarnation;
-    _offset = 0;
-    _window = Uint8List(0);
-    _line.clear();
-    _discardLine = false;
+    _tail.reset();
     _recordRejected = false;
     _state = SessionLogState(sessionId: session, incarnation: _incarnation);
   }
@@ -228,58 +213,48 @@ class SessionLogReader {
       final file = selected.$2;
       final stat = await file.stat();
       final replaced =
-          file.path != _path || selected.$1 != _session || stat.size < _offset;
+          file.path != _path ||
+          selected.$1 != _session ||
+          stat.size < _tail.offset;
       if (replaced) {
         _reset(file.path, selected.$1);
         _publish(MapInputStatus.reading);
       }
-      final handle = await file.open();
-      var rewritten = false;
-      _batch = true;
-      try {
-        // Validate the tail of the consumed prefix through this same handle. A
-        // separate path precheck can precede an in-place rewrite and wrongly
-        // adopt unparsed replacement bytes. Rehashing the whole prefix on every
-        // poll would reread a growing game log continuously while it is played.
-        if (_window.isNotEmpty) {
-          await handle.setPosition(_offset - _window.length);
-          final consumed = await _readExactly(handle, _window.length);
-          if (_closed || generation != _generation) return;
-          rewritten = !_sameBytes(consumed, _window);
-        }
-        final end = stat.size;
-        if (!rewritten && _offset < end) _recordRejected = false;
-        while (!rewritten && _offset < end) {
-          final bytes = await handle.read((end - _offset).clamp(0, chunkBytes));
-          if (_closed || generation != _generation) return;
-          if (bytes.isEmpty) break;
-          _remember(bytes);
-          for (final byte in bytes) {
-            ++_offset;
-            if (byte == 10) {
-              if (!_discardLine) _record(_line);
-              _line.clear();
-              _discardLine = false;
-            } else if (!_discardLine) {
-              if (_line.length >= maxLineBytes) {
-                _line.clear();
-                _discardLine = true;
+      // The tail revalidates the consumed prefix through its own read handle,
+      // so an in-place rewrite restarts the file instead of adopting bytes.
+      final batch = await _tail.read(
+        file,
+        stat.size,
+        isCancelled: () => _closed || generation != _generation,
+      );
+      if (batch.cancelled || _closed || generation != _generation) return;
+      final rewritten = batch.restarted;
+      if (!rewritten) {
+        if (batch.bytesRead > 0) _recordRejected = false;
+        _batch = true;
+        try {
+          for (final item in batch.items) {
+            switch (item) {
+              case TailRecord(:final text):
+                _record(text);
+              case TailRejection(:final reason):
                 _recordRejected = true;
                 _publish(
                   MapInputStatus.error,
-                  message: 'Over-limit malformed log record rejected.',
+                  message: switch (reason) {
+                    TailRejectionReason.malformedUtf8 =>
+                      'Malformed UTF-8 log record rejected.',
+                    TailRejectionReason.lineTooLong ||
+                    TailRejectionReason.recordTooLarge =>
+                      'Over-limit malformed log record rejected.',
+                  },
                 );
-              } else {
-                _line.add(byte);
-              }
             }
           }
+        } finally {
+          _batch = false;
         }
-      } finally {
-        _batch = false;
-        await handle.close();
       }
-      if (_closed || generation != _generation) return;
       if (rewritten) {
         _reset(null, null);
         _publish(MapInputStatus.reading);
@@ -304,21 +279,7 @@ class SessionLogReader {
     }
   }
 
-  void _record(List<int> bytes) {
-    String text;
-    try {
-      final length = bytes.isNotEmpty && bytes.last == 13
-          ? bytes.length - 1
-          : bytes.length;
-      text = utf8.decoder.convert(bytes, 0, length);
-    } on FormatException {
-      _recordRejected = true;
-      _publish(
-        MapInputStatus.error,
-        message: 'Malformed UTF-8 log record rejected.',
-      );
-      return;
-    }
+  void _record(String text) {
     final mode = _mode.firstMatch(text);
     if (mode != null) {
       final detected = switch (mode[1]!.toLowerCase()) {
@@ -377,26 +338,6 @@ final _scene = RegExp(
   r'scene preset path:\s*maps/([a-zA-Z0-9_]+)\.bundle',
   caseSensitive: false,
 );
-
-const _windowBytes = 4096;
-
-Future<Uint8List> _readExactly(RandomAccessFile handle, int length) async {
-  final result = BytesBuilder(copy: false);
-  while (result.length < length) {
-    final bytes = await handle.read(length - result.length);
-    if (bytes.isEmpty) break;
-    result.add(bytes);
-  }
-  return result.takeBytes();
-}
-
-bool _sameBytes(Uint8List a, Uint8List b) {
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; ++i) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
-}
 
 // Independently reconciled scene vocabulary; persisted IDs remain settings IDs.
 String? _sceneMap(String scene) => switch (scene) {
