@@ -4,6 +4,7 @@ import 'dart:io';
 import '../domain/catalog.dart';
 import '../domain/map_session.dart';
 import '../domain/raid_lifecycle.dart';
+import 'game_log/game_locations.dart';
 import 'game_log/log_file_tail.dart';
 
 /// Configured-root-only replay and tail. Record identity is incarnation plus
@@ -282,12 +283,7 @@ class SessionLogReader {
   void _record(String text) {
     final mode = _mode.firstMatch(text);
     if (mode != null) {
-      final detected = switch (mode[1]!.toLowerCase()) {
-        'pve' => GameMode.pve,
-        'pvp' || 'regular' => GameMode.pvp,
-        'pvpseason' || 'seasonal' || 'szn' => GameMode.seasonal,
-        _ => GameMode.unknown,
-      };
+      final detected = gameModeFromLog(mode[1]!);
       _publish(
         _state.detectedMapId == null &&
                 _state.status == MapInputStatus.unavailable
@@ -299,7 +295,7 @@ class SessionLogReader {
     // Scene metadata must belong to the application logger, not arbitrary text.
     if (!text.toLowerCase().contains('application|scene preset path:')) return;
     final scene = _scene.firstMatch(text);
-    final map = scene == null ? null : _sceneMap(scene[1]!.toLowerCase());
+    final map = scene == null ? null : sceneMapId(scene[1]!);
     if (map == null) {
       _publish(
         MapInputStatus.unavailable,
@@ -338,26 +334,3 @@ final _scene = RegExp(
   r'scene preset path:\s*maps/([a-zA-Z0-9_]+)\.bundle',
   caseSensitive: false,
 );
-
-// Independently reconciled scene vocabulary; persisted IDs remain settings IDs.
-String? _sceneMap(String scene) => switch (scene) {
-  'factory4_day' ||
-  'factory4_night' ||
-  'factory_day_preset' ||
-  'factory_night_preset' => 'factory',
-  'bigmap' || 'customs_preset' => 'customs',
-  'woods' || 'woods_preset' => 'woods',
-  'shoreline' || 'shoreline_preset' => 'shoreline',
-  'interchange' || 'shopping_mall' => 'interchange',
-  'laboratory' || 'laboratory_preset' => 'thelab',
-  'rezervbase' || 'rezerv_base_preset' => 'reserve',
-  'lighthouse' || 'lighthouse_preset' => 'lighthouse',
-  'tarkovstreets' || 'city_preset' => 'streetsoftarkov',
-  'sandbox' ||
-  'sandbox_preset' ||
-  'sandbox_high' ||
-  'sandbox_high_preset' ||
-  'sandbox_start_preset' => 'groundzero',
-  'terminal' || 'icebreaker' || 'labyrinth' => scene,
-  _ => null,
-};

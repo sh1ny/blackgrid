@@ -19,26 +19,26 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | game-log-input → A record spans its header and continuation lines | Notification with a JSON body | test/data/game_log/log_file_tail_test.dart | push record completes at its closing brace | green |
 | game-log-input → A record spans its header and continuation lines | Body not yet complete | test/data/game_log/log_file_tail_test.dart | half-written push body produces nothing yet | green |
 | game-log-input → A record spans its header and continuation lines | Body cut off by the next header | test/data/game_log/log_file_tail_test.dart | next header ends an unclosed push body | green |
-| game-log-input → A record spans its header and continuation lines | Body that is not valid JSON | test/data/game_log/game_log_parsers_test.dart | invalid JSON body is rejected and later records parse | red |
+| game-log-input → A record spans its header and continuation lines | Body that is not valid JSON | test/data/game_log/game_log_parsers_test.dart | invalid JSON body is rejected and later records parse | green |
 | game-log-input → Malformed and over-long records are rejected visibly | Malformed UTF-8 line | test/data/game_log/log_file_tail_test.dart | malformed UTF-8 line is rejected and reading continues | green |
 | game-log-input → Malformed and over-long records are rejected visibly | Over-long line | test/data/game_log/log_file_tail_test.dart | over-long line and over-limit push record are rejected | green |
 | game-log-input → Replaced or rewritten files are read again from the start | Truncated file | test/data/game_log/log_file_tail_test.dart | truncated file is read again from the start | green |
 | game-log-input → Replaced or rewritten files are read again from the start | Rewritten bytes | test/data/game_log/log_file_tail_test.dart | same-length rewrite is read again from the start | green |
 | game-log-input → Events carry their log time and a stable record identity | Same identity after restart | test/data/game_log/session_log_reader_events_test.dart | a second reader gives the same identities and times | red |
 | game-log-input → Events carry their log time and a stable record identity | Records with the same text | test/data/game_log/session_log_reader_events_test.dart | identical lines get different identities | red |
-| game-log-input → Application log lines become lifecycle events | Menu events | test/data/game_log/game_log_parsers_test.dart | session mode and profile selected | red |
-| game-log-input → Application log lines become lifecycle events | Rejoin line | test/data/game_log/game_log_parsers_test.dart | transit reconnect line becomes raid rejoined | red |
-| game-log-input → Application log lines become lifecycle events | A full raid in the application log | test/data/game_log/game_log_parsers_test.dart | full raid lines in order | red |
-| game-log-input → Application log lines become lifecycle events | Matching cancelled | test/data/game_log/game_log_parsers_test.dart | matching cancelled line | red |
-| game-log-input → Application log lines become lifecycle events | Unknown scene | test/data/game_log/game_log_parsers_test.dart | unknown scene has no map | red |
-| game-log-input → Application log lines become lifecycle events | Event map presets | test/data/game_log/game_log_parsers_test.dart | event presets map to Factory and The Lab | red |
-| game-log-input → Application log lines become lifecycle events | Unrelated line | test/data/game_log/game_log_parsers_test.dart | unrelated line produces nothing | red |
-| game-log-input → Backend log notification lines become raid-exit events | Raid exit | test/data/game_log/game_log_parsers_test.dart | userMatchOver line becomes raid exit | red |
-| game-log-input → Backend log notification lines become raid-exit events | Other notification | test/data/game_log/game_log_parsers_test.dart | other payload types produce nothing | red |
-| game-log-input → Push-notification messages become flea-sale and task events | Flea sale | test/data/game_log/game_log_parsers_test.dart | type 4 sale with roubles | red |
-| game-log-input → Push-notification messages become flea-sale and task events | Task failed | test/data/game_log/game_log_parsers_test.dart | type 10, 11 and 12 task messages | red |
-| game-log-input → Push-notification messages become flea-sale and task events | Flea sale paid in another currency | test/data/game_log/game_log_parsers_test.dart | sale in another currency has no rouble amount | red |
-| game-log-input → Push-notification messages become flea-sale and task events | Message without a task ID | test/data/game_log/game_log_parsers_test.dart | task message without an ID is rejected | red |
+| game-log-input → Application log lines become lifecycle events | Menu events | test/data/game_log/game_log_parsers_test.dart | session mode and profile selected | green |
+| game-log-input → Application log lines become lifecycle events | Rejoin line | test/data/game_log/game_log_parsers_test.dart | transit reconnect line becomes raid rejoined | green |
+| game-log-input → Application log lines become lifecycle events | A full raid in the application log | test/data/game_log/game_log_parsers_test.dart | full raid lines in order | green |
+| game-log-input → Application log lines become lifecycle events | Matching cancelled | test/data/game_log/game_log_parsers_test.dart | matching cancelled line | green |
+| game-log-input → Application log lines become lifecycle events | Unknown scene | test/data/game_log/game_log_parsers_test.dart | unknown scene has no map | green |
+| game-log-input → Application log lines become lifecycle events | Event map presets | test/data/game_log/game_log_parsers_test.dart | event presets map to Factory and The Lab | green |
+| game-log-input → Application log lines become lifecycle events | Unrelated line | test/data/game_log/game_log_parsers_test.dart | unrelated line produces nothing | green |
+| game-log-input → Backend log notification lines become raid-exit events | Raid exit | test/data/game_log/game_log_parsers_test.dart | userMatchOver line becomes raid exit | green |
+| game-log-input → Backend log notification lines become raid-exit events | Other notification | test/data/game_log/game_log_parsers_test.dart | other payload types produce nothing | green |
+| game-log-input → Push-notification messages become flea-sale and task events | Flea sale | test/data/game_log/game_log_parsers_test.dart | type 4 sale with roubles | green |
+| game-log-input → Push-notification messages become flea-sale and task events | Task failed | test/data/game_log/game_log_parsers_test.dart | type 10, 11 and 12 task messages | green |
+| game-log-input → Push-notification messages become flea-sale and task events | Flea sale paid in another currency | test/data/game_log/game_log_parsers_test.dart | sale in another currency has no rouble amount | green |
+| game-log-input → Push-notification messages become flea-sale and task events | Message without a task ID | test/data/game_log/game_log_parsers_test.dart | task message without an ID is rejected | green |
 | game-log-input → Log input never touches the game process | Offline audit | test/data/game_log/log_input_audit_test.dart | log input source has no process or write calls | red |
 | raid-lifecycle → Raid phases follow the log events | A whole raid | test/domain/raid_lifecycle_test.dart | a whole raid walks every phase | red |
 | raid-lifecycle → Raid phases follow the log events | No events yet | test/domain/raid_lifecycle_test.dart | initial state is unknown | red |
@@ -80,8 +80,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 3. Event types and line parsers
 
-- [ ] 3.1 Write the failing tests in `test/data/game_log/game_log_parsers_test.dart` for every application, backend and push parser row of the test map, using lines copied in format from the specs with synthetic IDs, plus `Сёма` in a push body. Verify: they fail because the parsers do not exist.
-- [ ] 3.2 Add the sealed `GameLogEvent` hierarchy, `LogRecordId(folder, LogFile, offset)` and log-time parsing (local `DateTime`) in `lib/domain/raid_lifecycle.dart`, and the parsers in `lib/data/game_log/game_log_parsers.dart`: application message table, backend `payloadType=userMatchOver`, push `ChatMessageReceived` bodies decoded with map patterns (types 4, 10, 11, 12; task ID from the first word of `templateId`; roubles only for template `5449016a4bdc2d6f028b456f`). Move the scene table to a shared place, add `factory_event_preset` → `factory` and `laboratory_event_preset` → `thelab`, and add the rejoin location table (`bigmap`, `TarkovStreets`, `Shoreline`, `RezervBase`, `Lighthouse`, `laboratory`, `laboratory_event`, `Interchange`, `Woods`, `Sandbox`, `Sandbox_high`, `factory4_day`, `factory4_night`, `factory_event`, `Icebreaker`, case-insensitive). Verify: 3.1 tests pass and their rows flip green.
+- [x] 3.1 Write the failing tests in `test/data/game_log/game_log_parsers_test.dart` for every application, backend and push parser row of the test map, using lines copied in format from the specs with synthetic IDs, plus `Сёма` in a push body. Verify: they fail because the parsers do not exist.
+- [x] 3.2 Add the sealed `GameLogEvent` hierarchy, `LogRecordId(folder, LogFile, offset)` and log-time parsing (local `DateTime`) in `lib/domain/raid_lifecycle.dart`, and the parsers in `lib/data/game_log/game_log_parsers.dart`: application message table, backend `payloadType=userMatchOver`, push `ChatMessageReceived` bodies decoded with map patterns (types 4, 10, 11, 12; task ID from the first word of `templateId`; roubles only for template `5449016a4bdc2d6f028b456f`). Move the scene table to a shared place, add `factory_event_preset` → `factory` and `laboratory_event_preset` → `thelab`, and add the rejoin location table (`bigmap`, `TarkovStreets`, `Shoreline`, `RezervBase`, `Lighthouse`, `laboratory`, `laboratory_event`, `Interchange`, `Woods`, `Sandbox`, `Sandbox_high`, `factory4_day`, `factory4_night`, `factory_event`, `Icebreaker`, case-insensitive). Verify: 3.1 tests pass and their rows flip green.
 
 ## 4. Session log reader over three files
 

@@ -284,6 +284,21 @@ void main() {
       expect(states.length, count);
     },
   );
+
+  test('event presets detect Factory and The Lab', () async {
+    await application(
+      'log_2026.10.07_10-25-14',
+      'application|scene preset path:maps/factory_event_preset.bundle\n',
+    );
+    await reader.bind(root.path);
+    expect(reader.state.detectedMapId, 'factory');
+    await application(
+      'log_2026.10.08_10-25-14',
+      'application|scene preset path:maps/laboratory_event_preset.bundle\n',
+    );
+    await reader.rescan();
+    expect(reader.state.detectedMapId, 'thelab');
+  });
 }
 
 /// Delegates real filesystem operations, changing only the replay-open boundary.
