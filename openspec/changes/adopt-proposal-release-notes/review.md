@@ -2,6 +2,19 @@
 
 ## Metadata
 
+- **Round:** 3 (structure-only re-check)
+- **Prior round:** 2, `APPROVE`
+- **Reviewer:** fresh-context subagent (Claude Code)
+- **Round 3 scope:** the uncommitted `git diff -- openspec/changes/adopt-proposal-release-notes/`. Round 2's amendment pushed the requirement "Proposals carry release notes in a fixed format" past `openspec validate --strict`'s 500-character limit. To fix that, the parenthetical "(a heading with no items is allowed when another heading has items, as in specwright's `release.sh notes --proposal`)" was moved out of the requirement into a new scenario, "Empty heading beside items". The tasks.md test map gained a row for it, which points at the existing test "an empty heading beside one with items stays valid".
+- **Round 3 read:**
+  - the diff (specs/release-versioning/spec.md and tasks.md);
+  - `test/tool/release/release_notes_test.dart` (the helpers `_valid` and `_texts`, and the tests "headings with no item at all" and "an empty heading beside one with items stays valid");
+  - `.claude/skills/specwright-release/scripts/release.sh` lines 1110-1130.
+  - The reviewer also ran `openspec validate adopt-proposal-release-notes --strict`, which passes.
+- **Skills:** the request named none, and none were loaded.
+
+### Round 2 metadata (kept)
+
 - **Round:** 2 (drift re-check of one apply-time amendment)
 - **Prior round:** 1, `APPROVE_WITH_CHANGES`; its Required Changes 1-4 were re-checked and applied (`CHANGES_APPLIED: yes`)
 - **Reviewer:** fresh-context subagent (Claude Code)
@@ -35,6 +48,28 @@
   The skills dart-add-unit-test and dart-run-static-analysis were not loaded, because they were not needed for these findings. The upstream specwright ADR 0015 was not read; the installed release.sh and SKILL.md served as the reference format.
 
 ## Findings
+
+### Round 3 (structure-only re-check)
+
+**Critical:** none. **Moderate:** none. **Suggestions:** none.
+
+Checks, all passed:
+- **The rule means the same as in round 2.**
+  - The requirement still says "with at least one item in the section as a whole". "As a whole" already applies the count to the section, not to each heading.
+  - "Holding only list items" holds for an empty heading, since an empty heading holds no other line.
+  - The removed parenthetical's content is now the new scenario's WHEN/THEN, so no rule was lost, and no new rule was added.
+- **The new scenario agrees with the requirement and with "Invalid section".**
+  - "Empty heading beside items" (an empty `### Added` and a `### Fixed` with one item) has one item in the section as a whole, so the requirement accepts it.
+  - "Invalid section" refuses only "headings with no item at all". That is the opposite case, so the two scenarios do not overlap.
+  - The THEN, "as specwright's `release.sh notes --proposal` does", matches `release.sh:1130`, where the section is refused only when `not any(items.values())`.
+- **The test asserts the scenario.**
+  - `release_notes_test.dart:150-157` parses `### Added` with nothing under it, then `### Fixed` with `- y`.
+  - `_valid` expects a `ReleaseNotes` result, not `ReleaseNotesInvalid`, so the check succeeds.
+  - `items.keys == ['fixed']` and the `fixed` texts `== ['y']` prove that only the Fixed item is reported.
+  - The test sits beside the invalid case "headings with no item at all" (`:144-148`).
+  - The tasks.md row names this test, and its status is `green`.
+- **Validation.** `openspec validate adopt-proposal-release-notes --strict` passes.
+- **No other drift.** The diff changes only these lines. The findings of rounds 1 and 2 stand.
 
 ### Round 2 (drift amendment)
 
@@ -98,11 +133,13 @@ VERDICT: APPROVE
 
 CHANGES_APPLIED: n/a
 
-Round 2 approves the drift amendment. It is consistent across the spec, design, tasks and ADR-0029, it matches `release.sh` and the Dart parser, and it leaves no statement of the old rule. Round 1's verdict was APPROVE_WITH_CHANGES, and its Required Changes were applied and re-checked (see Rebuttals).
+Round 3 approves the restructure. The empty-heading rule means the same as in round 2. The new scenario agrees with the requirement and with "Invalid section", and the mapped test asserts it.
+
+Round 2 approved the drift amendment. It is consistent across the spec, design, tasks and ADR-0029, it matches `release.sh` and the Dart parser, and it leaves no statement of the old rule. Round 1's verdict was APPROVE_WITH_CHANGES, and its Required Changes were applied and re-checked (see Rebuttals).
 
 ## Required Changes
 
-Round 2: none. Round 1 (all applied):
+Round 3: none. Round 2: none. Round 1 (all applied):
 
 1. (M1) design.md: state that `prepare` reads the range and builds and validates the section in memory before the gates. This covers the range read, parsing, the bounds and the "nothing to release" refusal. Only the pubspec edit and inserting the section into `CHANGELOG.md` happen after `checkout -b`. Update the sequence diagram to match. In the spec, the "No change archived since the last release" refusal comes before any gate, and "Changelog generation fails" covers failures while writing `CHANGELOG.md`.
 2. (M2) proposal.md Impact and design.md:

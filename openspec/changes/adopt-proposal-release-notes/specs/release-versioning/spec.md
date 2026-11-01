@@ -30,7 +30,7 @@ Release preparation SHALL create branch `release/v<version>` and set the app ver
 ## ADDED Requirements
 
 ### Requirement: Proposals carry release notes in a fixed format
-A change's `## Release Notes` section SHALL run to the next `## ` heading or the end of `proposal.md` and hold a summary of at most 600 characters, then one or more of `### Added`, `### Changed`, `### Fixed` and `### Removed`, each at most once and holding only list items of at most 500 characters, with at least one item in the section as a whole (a heading with no items is allowed when another heading has items, as in specwright's `release.sh notes --proposal`). HTML comments and blank lines SHALL be ignored, and an indented line SHALL continue the item above it. Anything else SHALL make the section invalid.
+A change's `## Release Notes` section SHALL run to the next `## ` heading or the end of `proposal.md` and hold a summary of at most 600 characters, then one or more of `### Added`, `### Changed`, `### Fixed` and `### Removed`, each at most once and holding only list items of at most 500 characters, with at least one item in the section as a whole. HTML comments and blank lines SHALL be ignored, and an indented line SHALL continue the item above it. Anything else SHALL make the section invalid.
 
 #### Scenario: Valid section
 - **WHEN** a proposal's section has a one-sentence summary, an `### Added` list with two items and a `### Fixed` list with one
@@ -39,6 +39,10 @@ A change's `## Release Notes` section SHALL run to the next `## ` heading or the
 #### Scenario: Continued item
 - **WHEN** an item's text goes on in an indented line below it
 - **THEN** the item is the two lines joined by one space
+
+#### Scenario: Empty heading beside items
+- **WHEN** a section has an empty `### Added` and a `### Fixed` with one item
+- **THEN** checking it succeeds and reports only the `### Fixed` item, as specwright's `release.sh notes --proposal` does
 
 #### Scenario: Invalid section
 - **WHEN** a section has no summary, an unknown heading such as `### Security`, prose under `### Added`, `### Added` twice, headings with no item at all, a summary over 600 characters or an item over 500 characters
