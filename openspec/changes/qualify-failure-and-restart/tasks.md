@@ -16,8 +16,8 @@
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | local-data-durability → Settings, pins and history survive a restart | Saved records reopen unchanged | test/data/database_test.dart | fresh defaults and restart retain settings pins identity activity and full catalog | green |
-| local-data-durability → Settings, pins and history survive a restart | Removed pin stays removed | test/data/durability_restart_test.dart | a removed pin stays removed after reopening | red *(coverage)* |
-| local-data-durability → Settings, pins and history survive a restart | Failed save is not visible after restart | test/data/durability_restart_test.dart | a settings save aborted by the database reads back the earlier settings after reopening | red *(coverage)* |
+| local-data-durability → Settings, pins and history survive a restart | Removed pin stays removed | test/data/durability_restart_test.dart | a removed pin stays removed after reopening | green |
+| local-data-durability → Settings, pins and history survive a restart | Failed save is not visible after restart | test/data/durability_restart_test.dart | a settings save aborted by the database reads back the earlier settings after reopening | green |
 | local-data-durability → Unreadable settings start the session with defaults | Damaged settings record at startup | test/application/settings_load_test.dart | a settings row that is not JSON loads defaults, sets the notice and keeps the row bytes | red |
 | local-data-durability → Unreadable settings start the session with defaults | Settings written by a newer version | test/application/settings_load_test.dart | a settings row naming an unknown mode or map loads defaults and sets the notice | red |
 | local-data-durability → Unreadable settings start the session with defaults | Readable settings show no message | test/application/settings_load_test.dart | a readable settings row loads as saved with no notice | red *(coverage)* |
@@ -59,8 +59,8 @@
 
 Load `dart-add-unit-test` first. Every task in this change also follows the "Dart and Flutter code" section of AGENTS.md: no sleeps, hand-written fakes, small fixtures.
 
-- [ ] 1.1 Add `test/data/support/reopenable_database.dart` (D8). It opens `BlackgridDatabase(NativeDatabase(file))` on a `Directory.systemTemp.createTemp` file, with `reopen()` (close, then open the same file) and `delete()` for `tearDown`. It also has `abortNextInsert(table)`, which installs a `CREATE TEMP TRIGGER … BEFORE INSERT … RAISE(ABORT, 'test')`, and `writeRawRow(sql, args)` through `customStatement`. Verify with one self-test: a TEMP trigger does not survive `reopen()`.
-- [ ] 1.2 Write the *(coverage)* tests "a removed pin stays removed after reopening" and "a settings save aborted by the database reads back the earlier settings after reopening" in `test/data/durability_restart_test.dart`. Verify both pass with `mise run test -- test/data/durability_restart_test.dart`; if one fails, fix the gap test-first. Flip both rows green. Re-run "fresh defaults and restart retain settings pins identity activity and full catalog" (green row).
+- [x] 1.1 Add `test/data/support/reopenable_database.dart` (D8). It opens `BlackgridDatabase(NativeDatabase(file))` on a `Directory.systemTemp.createTemp` file, with `reopen()` (close, then open the same file) and `delete()` for `tearDown`. It also has `abortNextInsert(table)`, which installs a `CREATE TEMP TRIGGER … BEFORE INSERT … RAISE(ABORT, 'test')`, and `writeRawRow(sql, args)` through `customStatement`. Verify with one self-test: a TEMP trigger does not survive `reopen()`.
+- [x] 1.2 Write the *(coverage)* tests "a removed pin stays removed after reopening" and "a settings save aborted by the database reads back the earlier settings after reopening" in `test/data/durability_restart_test.dart`. Verify both pass with `mise run test -- test/data/durability_restart_test.dart`; if one fails, fix the gap test-first. Flip both rows green. Re-run "fresh defaults and restart retain settings pins identity activity and full catalog" (green row).
 
 ## 2. Unreadable settings, pins and history (D1, D7)
 
