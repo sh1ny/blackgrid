@@ -100,8 +100,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `dart format` on changed files, `mise run analyze` and `mise run test`. Verify: analyze reports no issues, every test passes, and every test-map row is green.
-- [ ] 7.2 Run `openspec validate add-raid-lifecycle --strict` and `mise run release-notes -- --check openspec/changes/add-raid-lifecycle/proposal.md`, and update the proposal's `## Release Notes` if what ships changed. Verify: both exit 0.
+- [x] 7.1 Run `dart format` on changed files, `mise run analyze` and `mise run test`. Verify: analyze reports no issues, every test passes, and every test-map row is green.
+- [x] 7.2 Run `openspec validate add-raid-lifecycle --strict` and `mise run release-notes -- --check openspec/changes/add-raid-lifecycle/proposal.md`, and update the proposal's `## Release Notes` if what ships changed. Verify: both exit 0.
 
 ## Workflow follow-up
 

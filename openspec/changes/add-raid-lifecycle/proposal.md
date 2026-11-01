@@ -65,3 +65,7 @@ Blackgrid now follows the raid from the game's log files: it knows when you are 
 
 ### Added
 - The Map's saved-file inputs show the raid phase (in menus, in queue, match found, raid starting, in raid or raid ended), read from the game's application, backend and push-notification logs.
+- A "Raid logs:" line on the Map reports problems with the backend and push-notification logs, such as a notifications log the game has not written yet, without changing the "Logs:" line.
+
+### Fixed
+- Factory and The Lab are detected from the game logs during event raids (the `factory_event_preset` and `laboratory_event_preset` scenes).
