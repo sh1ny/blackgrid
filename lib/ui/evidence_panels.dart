@@ -256,6 +256,8 @@ class SourcePanel extends StatelessWidget {
                         ' · updated '
                         '${localTimeLabel(snapshot.observedAt, now: now)}',
             ),
+            if (services.catalog.error case final error?)
+              Text(error, style: const TextStyle(color: GridColors.gold)),
             Text('Game mode: ${modeLabel(inspectionMode)}', style: small),
             if (snapshot != null)
               ...snapshot.localizationErrors.map(

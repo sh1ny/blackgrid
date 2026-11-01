@@ -149,6 +149,42 @@ void main() {
     },
   );
 
+  testWidgets('a catalog error shows beside the out of date item status', (
+    tester,
+  ) async {
+    final h = await harness(tester);
+    h.failNetwork = true;
+    await tester.runAsync(h.services.catalog.refresh);
+    expect(h.services.catalog.status, CatalogStatus.stale);
+    await show(tester, h);
+
+    expect(find.textContaining('Item data: out of date'), findsOneWidget);
+    expect(
+      find.text(
+        'Item data could not be downloaded: tarkov.dev answered with an '
+        'error. The last item data is still in use.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a successful refresh clears the catalog error from the panel', (
+    tester,
+  ) async {
+    final h = await harness(tester);
+    h.failNetwork = true;
+    await tester.runAsync(h.services.catalog.refresh);
+    await show(tester, h);
+    expect(find.textContaining('Item data could not be'), findsOneWidget);
+
+    h.failNetwork = false;
+    await tester.runAsync(h.services.catalog.refresh);
+    await tester.pump();
+
+    expect(find.textContaining('Item data: up to date'), findsOneWidget);
+    expect(find.textContaining('Item data could not be'), findsNothing);
+  });
+
   testWidgets('a missing flea quote time reads unknown', (tester) async {
     final h = await harness(tester);
     expect(h.services.selection.item, isNull);

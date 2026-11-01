@@ -79,7 +79,8 @@ class RefreshHttp {
     if (gate != null && !gate.isCompleted) gate.complete(succeed);
   }
 
-  /// Makes every catalog response for [route] a 503 while [failing].
+  /// Makes every catalog request for [route] fail as unreachable while
+  /// [failing].
   void failCatalog(String route, {bool failing = true}) {
     failing ? _failingRoutes.add(route) : _failingRoutes.remove(route);
   }
@@ -133,7 +134,10 @@ class RefreshHttp {
     final key = segments.last;
     final gate = _catalogGates[route];
     final succeed = gate == null ? true : await gate.future;
-    if (!succeed || _failingRoutes.contains(route)) {
+    if (_failingRoutes.contains(route)) {
+      throw http.ClientException('synthetic offline');
+    }
+    if (!succeed) {
       return http.Response('synthetic unavailable', 503);
     }
     if (_wire.containsKey(key)) {
@@ -479,7 +483,8 @@ void main() {
       expect(services.catalog.snapshot, isNotNull);
       expect(
         services.catalog.error,
-        'Catalog refresh failed; last-good data retained',
+        'Item data could not be downloaded: no connection to tarkov.dev. '
+        'The last item data is still in use.',
       );
     });
 
@@ -490,6 +495,11 @@ void main() {
       expect(net.fetches('regular'), 1);
       expect(services.catalog.status, CatalogStatus.failed);
       expect(services.catalog.snapshot, isNull);
+      expect(
+        services.catalog.error,
+        'Item data could not be downloaded: no connection to tarkov.dev. '
+        'No item data is available yet.',
+      );
     });
 
     test('catalog: manual refresh after a failure', () async {

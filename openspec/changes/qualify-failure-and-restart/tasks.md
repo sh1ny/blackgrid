@@ -40,16 +40,16 @@
 | legacy-import → A failed import changes nothing, also after a restart | Successful import survives a restart | test/data/durability_restart_test.dart | a committed import reads back pins history and its record after reopening | red *(coverage)* |
 | legacy-import → The import dialog says why nothing was imported | Files already imported | test/ui/import_dialog_test.dart | a commit refused as already imported says so | red |
 | legacy-import → The import dialog says why nothing was imported | Storage failure during commit | test/ui/import_dialog_test.dart | a commit storage failure says the import could not be saved | red |
-| catalog-authority → A failed automatic catalog refresh is not retried | Startup fetch fails with a cached snapshot | test/application/app_services_refresh_test.dart | catalog: startup fetch fails with a cached snapshot | red |
-| catalog-authority → A failed automatic catalog refresh is not retried | Startup fetch fails with no cache | test/application/app_services_refresh_test.dart | catalog: startup fetch fails with no cache | red |
+| catalog-authority → A failed automatic catalog refresh is not retried | Startup fetch fails with a cached snapshot | test/application/app_services_refresh_test.dart | catalog: startup fetch fails with a cached snapshot | green |
+| catalog-authority → A failed automatic catalog refresh is not retried | Startup fetch fails with no cache | test/application/app_services_refresh_test.dart | catalog: startup fetch fails with no cache | green |
 | catalog-authority → A failed automatic catalog refresh is not retried | Manual refresh after a failure | test/application/app_services_refresh_test.dart | catalog: manual refresh after a failure | green |
-| catalog-authority → A catalog failure message names its cause | No connection with a kept snapshot | test/application/catalog_controller_test.dart | transport failure with a kept snapshot names no connection and kept data | red |
-| catalog-authority → A catalog failure message names its cause | Server error with a kept snapshot | test/application/catalog_controller_test.dart | HTTP 503 with a kept snapshot names the server error and kept data | red |
-| catalog-authority → A catalog failure message names its cause | Invalid data with no snapshot | test/application/catalog_controller_test.dart | invalid data with no snapshot fails naming invalid data and no data | red |
-| catalog-authority → A catalog failure message names its cause | Local save failure | test/application/catalog_controller_test.dart | commit failure names the local save and keeps the stored snapshot | red |
-| catalog-authority → A catalog failure message names its cause | Timeout | test/data/catalog_client_test.dart | a stalled dataset fails as a transport CatalogException | red |
-| catalog-authority → The Data sources panel shows the catalog error | Failure shown in the panel | test/ui/data_sources_panel_test.dart | a catalog error shows beside the out of date item status | red |
-| catalog-authority → The Data sources panel shows the catalog error | Error cleared by a successful refresh | test/ui/data_sources_panel_test.dart | a successful refresh clears the catalog error from the panel | red |
+| catalog-authority → A catalog failure message names its cause | No connection with a kept snapshot | test/application/catalog_controller_test.dart | transport failure with a kept snapshot names no connection and kept data | green |
+| catalog-authority → A catalog failure message names its cause | Server error with a kept snapshot | test/application/catalog_controller_test.dart | HTTP 503 with a kept snapshot names the server error and kept data | green |
+| catalog-authority → A catalog failure message names its cause | Invalid data with no snapshot | test/application/catalog_controller_test.dart | invalid data with no snapshot fails naming invalid data and no data | green |
+| catalog-authority → A catalog failure message names its cause | Local save failure | test/application/catalog_controller_test.dart | commit failure names the local save and keeps the stored snapshot | green |
+| catalog-authority → A catalog failure message names its cause | Timeout | test/data/catalog_client_test.dart | a stalled dataset fails as a transport CatalogException | green |
+| catalog-authority → The Data sources panel shows the catalog error | Failure shown in the panel | test/ui/data_sources_panel_test.dart | a catalog error shows beside the out of date item status | green |
+| catalog-authority → The Data sources panel shows the catalog error | Error cleared by a successful refresh | test/ui/data_sources_panel_test.dart | a successful refresh clears the catalog error from the panel | green |
 | progress-authority → A malformed Tracker response keeps the session's last good progress | Malformed response after a good refresh | test/application/progress_controller_test.dart | malformed response keeps the earlier progress as stale | green |
 | progress-authority → A malformed Tracker response keeps the session's last good progress | Malformed response with no progress yet | test/application/progress_controller_test.dart | first malformed response fails with no progress | green |
 | progress-authority → A malformed Tracker response keeps the session's last good progress | Rejected token still discards progress | test/application/progress_controller_test.dart | $failure invalidates authority, transport and malformed retain stale | green |
@@ -95,13 +95,13 @@ Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentatio
 
 ## 4. Catalog failure causes and the Data sources panel (D3)
 
-- [ ] 4.1 Write the failing tests:
+- [x] 4.1 Write the failing tests:
   - the cause rows in `test/application/catalog_controller_test.dart`;
   - the timeout row in `test/data/catalog_client_test.dart`, using `StallingHttpClient`;
   - the panel rows in `test/ui/data_sources_panel_test.dart`.
   - Update the two exact-text tests, `catalog_controller_test.dart:212` and `app_services_refresh_test.dart:482`, to the spec's new texts.
   - Verify they fail.
-- [ ] 4.2 Implement D3:
+- [x] 4.2 Implement D3:
   - `CatalogFailure { transport, http, invalid }` on `CatalogException`, set at each throw site in `lib/data/catalog_client.dart`.
   - In `CatalogController._refresh`, a `commitCatalog` throw becomes `save`, and a non-`CatalogException` fetch throw becomes `invalid`.
   - Add a pure `catalogFailureMessage(kind, kept:)`, using a `switch` expression.
