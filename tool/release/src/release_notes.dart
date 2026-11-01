@@ -433,8 +433,11 @@ int? _prOf(String subject) {
 /// is the trailing `(#<n>)` of that commit's subject or the number of a
 /// `Merge pull request #<n>` subject. A proposal over [maxProposalBytes] is
 /// not read, and neither is one that no longer exists at `HEAD`; both stay
-/// listed, without a section, so one bad archive never blocks a release. Throws [ReleaseException] above [maxRangeChanges] changes, naming
-/// the count.
+/// listed, without a section, so one bad archive never blocks a release. A
+/// path added more than once (reverted, then archived again) is one change
+/// with its last PR, and a missing proposal is dropped when a change of the
+/// same name is still at `HEAD` (a renamed archive directory). Throws
+/// [ReleaseException] above [maxRangeChanges] changes, naming the count.
 Future<ReleaseRange> readReleaseRange(Git git) async {
   final tags = await git.output(['tag', '--merged', 'HEAD']);
   SemVer? latest;
@@ -485,8 +488,12 @@ Future<ReleaseRange> readReleaseRange(Git git) async {
     );
   }
 
+  // A path added again after a revert is one change: keep its last add, the
+  // introduction that survives at HEAD, so its items are listed once.
+  final lastAdd = {for (final (i, (_, _, path)) in found.indexed) path: i};
   final changes = <RangeChange>[];
-  for (final (sha, pr, path) in found) {
+  for (final (i, (sha, pr, path)) in found.indexed) {
+    if (lastAdd[path] != i) continue;
     final name = path.split('/')[3].replaceFirst(_datePrefix, '');
     final exists = await git.run(['cat-file', '-e', 'HEAD:$path']);
     if (exists.exitCode != 0) {
@@ -522,7 +529,16 @@ Future<ReleaseRange> readReleaseRange(Git git) async {
       ),
     );
   }
-  return ReleaseRange(lastFinal, changes);
+  // An archive directory renamed in the range leaves its old path missing at
+  // HEAD while the new path lists the same change; drop the missing copy.
+  final present = {
+    for (final c in changes)
+      if (!c.missing) c.name,
+  };
+  return ReleaseRange(lastFinal, [
+    for (final c in changes)
+      if (!c.missing || !present.contains(c.name)) c,
+  ]);
 }
 
 String _itemLine(String text, int? pr) =>

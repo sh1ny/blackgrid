@@ -538,6 +538,38 @@ void main() {
       ]);
     });
 
+    test('a proposal reverted and archived again is listed once, with the '
+        'last PR', () async {
+      await squash('a', 1, proposal(notes: section('### Added\n- A')));
+      await run(['rm', '-q', '-r', 'openspec/changes/archive/2026-01-01-a']);
+      await run(['commit', '-m', 'Revert "feat: a (#1)" (#2)']);
+      await squash('a', 3, proposal(notes: section('### Added\n- A')));
+
+      final range = await readReleaseRange(git);
+      expect([for (final c in range.changes) (c.name, c.pr)], [('a', 3)]);
+      final rendered = renderReleaseNotes('Sum.', range.changes);
+      expect(rendered.body, 'Sum.\n\nAdded:\n- A (#3)');
+      expect(rendered.warnings, isEmpty);
+    });
+
+    test('an archive directory renamed in the range is listed once, not also '
+        'as missing', () async {
+      await squash('r', 1, proposal(notes: section('### Fixed\n- R')));
+      await run([
+        'mv',
+        'openspec/changes/archive/2026-01-01-r',
+        'openspec/changes/archive/2026-01-02-r',
+      ]);
+      await run(['commit', '-m', 'chore: fix the archive date (#2)']);
+
+      final range = await readReleaseRange(git);
+      expect(
+        [for (final c in range.changes) (c.name, c.pr, c.missing)],
+        [('r', 2, false)],
+      );
+      expect(renderReleaseNotes('Sum.', range.changes).warnings, isEmpty);
+    });
+
     test('the proposal commits are exposed for the uncovered list', () async {
       await squash('a', 1, proposal());
       final sha = await run(['rev-parse', 'HEAD']);
