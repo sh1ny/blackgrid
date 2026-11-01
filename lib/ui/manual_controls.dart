@@ -91,6 +91,11 @@ class ManualControls extends StatelessWidget {
               services.settings.error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
+          if (services.settings.loadNotice != null)
+            Text(
+              services.settings.loadNotice!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           const Divider(height: 24),
           const Text('Found in raid • this item only'),
           const SizedBox(height: 8),

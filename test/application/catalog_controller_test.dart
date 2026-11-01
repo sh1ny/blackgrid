@@ -198,7 +198,10 @@ void main() {
           await loading;
         }
         response.completeError(
-          const CatalogException('synthetic download error'),
+          const CatalogException(
+            'synthetic download error',
+            CatalogFailure.transport,
+          ),
         );
         await refreshing;
         if (!cacheFirst) {
@@ -209,7 +212,11 @@ void main() {
         }
         expect(c.snapshot, same(cached));
         expect(c.status, CatalogStatus.stale);
-        expect(c.error, 'Catalog refresh failed; last-good data retained');
+        expect(
+          c.error,
+          'Item data could not be downloaded: no connection to tarkov.dev. '
+          'The last item data is still in use.',
+        );
         expect(store.catalogs[GameMode.pvp], same(cached));
         expect(store.commits, 0);
       },
@@ -224,7 +231,10 @@ void main() {
         if (commitFailure) store.failure = StateError('synthetic commit error');
         final client = ControlledCatalogClient((m) async {
           if (!commitFailure) {
-            throw const CatalogException('synthetic download error');
+            throw const CatalogException(
+              'synthetic download error',
+              CatalogFailure.transport,
+            );
           }
           return decisionCatalog();
         });
@@ -243,7 +253,8 @@ void main() {
     final c = CatalogController(
       store: MemoryCatalogStore(),
       client: ControlledCatalogClient(
-        (m) async => throw const CatalogException('offline'),
+        (m) async =>
+            throw const CatalogException('offline', CatalogFailure.transport),
       ),
     );
     addTearDown(c.dispose);
@@ -426,4 +437,109 @@ void main() {
       expect(c.snapshot, isNull);
     },
   );
+  group('failure causes', () {
+    const kept = 'The last item data is still in use.';
+    const none = 'No item data is available yet.';
+    test('transport failure with a kept snapshot names no connection and kept data', () async {
+      final old = fixtureCatalog();
+      final store = MemoryCatalogStore()..catalogs[GameMode.pvp] = old;
+      final c = CatalogController(
+        store: store,
+        client: CatalogClient(
+          client: MockClient((r) async => throw http.ClientException('off')),
+        ),
+      );
+      addTearDown(c.dispose);
+      await c.setMode(GameMode.pvp);
+      await c.refresh();
+      expect(c.status, CatalogStatus.stale);
+      expect(c.snapshot, same(old));
+      expect(
+        c.error,
+        'Item data could not be downloaded: no connection to tarkov.dev. '
+        '$kept',
+      );
+    });
+    test(
+      'HTTP 503 with a kept snapshot names the server error and kept data',
+      () async {
+        final j = wireFixture();
+        final store = MemoryCatalogStore()
+          ..catalogs[GameMode.pvp] = fixtureCatalog();
+        final c = CatalogController(
+          store: store,
+          client: CatalogClient(
+            client: MockClient(
+              (r) async => r.url.pathSegments.last == 'items'
+                  ? http.Response('private', 503)
+                  : http.Response(jsonEncode(j[r.url.pathSegments.last]), 200),
+            ),
+          ),
+        );
+        addTearDown(c.dispose);
+        await c.setMode(GameMode.pvp);
+        await c.refresh();
+        expect(c.status, CatalogStatus.stale);
+        expect(
+          c.error,
+          'Item data could not be downloaded: tarkov.dev answered with an '
+          'error. $kept',
+        );
+      },
+    );
+    test(
+      'invalid data with no snapshot fails naming invalid data and no data',
+      () async {
+        final c = CatalogController(
+          store: MemoryCatalogStore(),
+          client: ControlledCatalogClient(
+            (m) async =>
+                throw const CatalogException('bad', CatalogFailure.invalid),
+          ),
+        );
+        addTearDown(c.dispose);
+        await c.setMode(GameMode.pvp);
+        await c.refresh();
+        expect(c.status, CatalogStatus.failed);
+        expect(c.snapshot, isNull);
+        expect(
+          c.error,
+          'Item data from tarkov.dev was incomplete or invalid. $none',
+        );
+      },
+    );
+    test('a non-catalog fetch throw is treated as invalid data', () async {
+      final c = CatalogController(
+        store: MemoryCatalogStore(),
+        client: ControlledCatalogClient((m) async => throw StateError('x')),
+      );
+      addTearDown(c.dispose);
+      await c.setMode(GameMode.pvp);
+      await c.refresh();
+      expect(
+        c.error,
+        'Item data from tarkov.dev was incomplete or invalid. $none',
+      );
+    });
+    test(
+      'commit failure names the local save and keeps the stored snapshot',
+      () async {
+        final old = fixtureCatalog();
+        final store = MemoryCatalogStore()
+          ..catalogs[GameMode.pvp] = old
+          ..failure = StateError('disk');
+        final c = CatalogController(
+          store: store,
+          client: ControlledCatalogClient((m) async => decisionCatalog()),
+        );
+        addTearDown(c.dispose);
+        await c.setMode(GameMode.pvp);
+        await c.refresh();
+        expect(c.status, CatalogStatus.stale);
+        expect(c.snapshot, same(old));
+        expect(c.error, 'Item data could not be saved on this computer. $kept');
+        expect(await store.loadCatalog(GameMode.pvp), same(old));
+      },
+    );
+  });
 }

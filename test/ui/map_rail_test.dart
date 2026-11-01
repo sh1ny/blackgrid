@@ -244,7 +244,7 @@ void main() {
     await settleMapFixture(tester, h);
     final before = (await tester.runAsync(
       () => h.services.database.readSettings(),
-    ))!;
+    ))!.settings;
     await expandMapInputs(tester);
     final follow = find.widgetWithText(SwitchListTile, 'Follow logs');
     expect(tester.widget<SwitchListTile>(follow).value, isFalse);
@@ -253,7 +253,7 @@ void main() {
     _expectInputsCollapsed();
     final after = (await tester.runAsync(
       () => h.services.database.readSettings(),
-    ))!;
+    ))!.settings;
     expect(before.followGameLogs, isFalse);
     expect(after.followGameLogs, isFalse);
     expect(after.selectedMap, 'thelab');

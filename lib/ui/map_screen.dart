@@ -234,6 +234,11 @@ class _MapScreenState extends State<MapScreen> {
                   services.settings.error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
+              if (services.settings.loadNotice != null)
+                Text(
+                  services.settings.loadNotice!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               Expanded(
                 child: records.isEmpty
                     ? const Center(child: Text('No saved pins for this map'))
@@ -342,6 +347,11 @@ class _MapScreenState extends State<MapScreen> {
               if (services.settings.error != null)
                 Text(
                   services.settings.error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              if (services.settings.loadNotice != null)
+                Text(
+                  services.settings.loadNotice!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               TextButton.icon(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import '../data/database.dart';
 import '../domain/import_preview.dart';
 import 'theme.dart';
 
@@ -75,10 +76,14 @@ class _ImportDialogState extends State<ImportDialog> {
           candidate,
           replaceExisting: replace,
         );
-      } catch (_) {
+      } catch (failure) {
         if (mounted) {
           setState(
-            () => error = 'The import did not finish, or these files were already imported. Nothing was changed.',
+            () => error = switch (failure) {
+              ImportAlreadyCommitted() =>
+                'These files were already imported. Nothing was changed.',
+              _ => 'The import could not be saved. Nothing was changed.',
+            },
           );
         }
         return;

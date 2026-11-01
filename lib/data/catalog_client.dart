@@ -6,8 +6,32 @@ import 'package:http/http.dart' as http;
 import '../domain/catalog.dart';
 import 'catalog_normalizer.dart';
 
+/// Why a catalog refresh failed, which decides the text the player sees.
+enum CatalogFailure {
+  /// The source could not be reached, or a dataset stalled past the timeout.
+  transport,
+
+  /// The source answered with a status other than 200.
+  http,
+
+  /// The downloaded data failed validation or normalization.
+  invalid,
+
+  /// A valid download could not be stored locally.
+  ///
+  /// Only the catalog controller sets this; the client never does.
+  save,
+}
+
+/// A failed catalog download, carrying its [kind] and a log-safe [message].
 class CatalogException implements Exception {
-  const CatalogException(this.message);
+  /// Creates an exception of [kind] described by [message].
+  const CatalogException(this.message, this.kind);
+
+  /// The cause of the failure.
+  final CatalogFailure kind;
+
+  /// A short description that never contains response bodies.
   final String message;
   @override
   String toString() => message;
@@ -34,24 +58,36 @@ class CatalogClient {
             const Duration(seconds: 30),
             onTimeout: () {
               abort.complete();
-              throw const CatalogException('Catalog transport unavailable');
+              throw const CatalogException(
+                'Catalog transport unavailable',
+                CatalogFailure.transport,
+              );
             },
           );
       if (response.statusCode != 200) {
-        throw const CatalogException('Catalog download failed');
+        throw const CatalogException(
+          'Catalog download failed',
+          CatalogFailure.http,
+        );
       }
       return response.body;
     } on CatalogException {
       rethrow;
     } on Object {
-      throw const CatalogException('Catalog transport unavailable');
+      throw const CatalogException(
+        'Catalog transport unavailable',
+        CatalogFailure.transport,
+      );
     }
   }
 
   Future<CatalogSnapshot> fetch(GameMode mode) async {
     final route = mode.catalogRoute;
     if (route == null) {
-      throw const CatalogException('Choose a mode before refreshing');
+      throw const CatalogException(
+        'Choose a mode before refreshing',
+        CatalogFailure.invalid,
+      );
     }
     final datasets = <String, String>{};
     await Future.wait(
@@ -80,7 +116,10 @@ class CatalogClient {
     try {
       return await _normalizeOffRender(wire);
     } on Object {
-      throw const CatalogException('Catalog validation failed');
+      throw const CatalogException(
+        'Catalog validation failed',
+        CatalogFailure.invalid,
+      );
     }
   }
 }

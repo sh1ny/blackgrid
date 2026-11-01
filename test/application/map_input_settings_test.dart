@@ -39,7 +39,7 @@ void main() {
       screenshotDirectory: 'screenshots',
     );
     expect(await settings.setMap('woods'), isTrue);
-    final saved = await db.readSettings();
+    final saved = (await db.readSettings()).settings;
     expect(saved.selectedMap, 'woods');
     expect(saved.followGameLogs, isFalse);
     expect(saved.gameLogDirectory, 'logs');
@@ -50,8 +50,8 @@ void main() {
     expect(await settings.setMap('thelab'), isFalse);
     expect(settings.settings.selectedMap, 'woods');
     expect(settings.settings.followGameLogs, isTrue);
-    expect((await db.readSettings()).selectedMap, 'woods');
-    expect((await db.readSettings()).followGameLogs, isTrue);
+    expect((await db.readSettings()).settings.selectedMap, 'woods');
+    expect((await db.readSettings()).settings.followGameLogs, isTrue);
   });
   test('pin operations share busy protection and expose failures without replacing durable records', () async {
     final db = BlackgridDatabase(NativeDatabase.memory());
@@ -84,6 +84,6 @@ void main() {
     expect(await settings.removePin(pin), isFalse);
     expect(settings.error, isNotNull);
     expect(settings.pins.single.id, 'pin');
-    expect((await db.readPins()).single.id, 'pin');
+    expect((await db.readPins()).pins.single.id, 'pin');
   });
 }

@@ -11,19 +11,22 @@ import '../support/m1_harness.dart';
 void main() {
   Future<M1Harness> showHistory(
     WidgetTester tester, {
-    required String itemId,
-    required DateTime observedAt,
+    String itemId = 'item-a',
+    DateTime? observedAt,
     ActivitySource source = ActivitySource.manual,
+    bool seed = true,
   }) async {
     final h = (await tester.runAsync(() async {
       final result = M1Harness();
       await result.initialize();
-      await result.db.recordActivity(
-        itemId,
-        GameMode.pvp,
-        observedAt,
-        source: source,
-      );
+      if (seed) {
+        await result.db.recordActivity(
+          itemId,
+          GameMode.pvp,
+          observedAt ?? DateTime.now(),
+          source: source,
+        );
+      }
       await result.services.history.load();
       return result;
     }))!;
@@ -71,5 +74,41 @@ void main() {
     await showHistory(tester, itemId: 'ghost-item', observedAt: DateTime.now());
 
     expect(find.text('ghost-item'), findsOneWidget);
+  });
+
+  testWidgets('a record failure shows its message above the listed entries', (
+    tester,
+  ) async {
+    final h = await showHistory(tester, itemId: 'ghost-item');
+    await tester.runAsync(() async {
+      await h.db.customStatement(
+        'CREATE TRIGGER no_activity BEFORE INSERT ON activity_records '
+        "BEGIN SELECT RAISE(ABORT, 'synthetic'); END",
+      );
+      final recorded = await h.services.history.record(
+        'item-b',
+        GameMode.pvp,
+        DateTime.now(),
+        source: ActivitySource.scan,
+      );
+      expect(recorded, isFalse);
+    });
+    await tester.pump();
+
+    final message = find.text('The accepted scan was not recorded in history.');
+    expect(message, findsOneWidget);
+    expect(find.text('ghost-item'), findsOneWidget);
+    expect(
+      tester.getTopLeft(message).dy,
+      lessThan(tester.getTopLeft(find.text('ghost-item')).dy),
+    );
+  });
+
+  testWidgets('empty history shows No items yet and no error', (tester) async {
+    await showHistory(tester, seed: false);
+
+    expect(find.text('No items yet.'), findsOneWidget);
+    expect(find.textContaining('could not'), findsNothing);
+    expect(find.textContaining('not recorded'), findsNothing);
   });
 }

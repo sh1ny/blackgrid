@@ -24,12 +24,14 @@ class HistoryController extends ChangeNotifier {
 
   Future<void> load() async {
     try {
-      final rows = List<ItemActivity>.unmodifiable(
-        await database.readActivity(),
-      );
+      final read = await database.readActivity();
       if (_disposed) return;
-      _rows = rows;
-      error = null;
+      _rows = List<ItemActivity>.unmodifiable(read.rows);
+      error = switch (read.skipped) {
+        0 => null,
+        1 => '1 history entry could not be read and is not shown.',
+        final n => '$n history entries could not be read and are not shown.',
+      };
     } catch (_) {
       if (_disposed) return;
       error = 'History could not be loaded.';

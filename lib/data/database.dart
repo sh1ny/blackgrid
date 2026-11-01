@@ -79,6 +79,40 @@ class ItemIconRecords extends Table {
   Set<Column> get primaryKey => {itemId};
 }
 
+/// The settings read from the database and whether the stored record was
+/// unreadable.
+class StoredSettings {
+  /// Creates the result of a settings read.
+  const StoredSettings(this.settings, {required this.unreadable});
+
+  /// The decoded settings, or the defaults when the record is missing or
+  /// [unreadable].
+  final AppSettings settings;
+
+  /// Whether a record exists but could not be decoded.
+  final bool unreadable;
+}
+
+/// Thrown when the database on disk was written by a newer Blackgrid version.
+///
+/// The file is left untouched: no migration, downgrade, reset or deletion runs.
+class NewerDatabaseException implements Exception {
+  /// Creates the exception for a file at schema version [onDisk] opened by a
+  /// build that supports up to [supported].
+  const NewerDatabaseException({required this.onDisk, required this.supported});
+
+  /// The schema version stored in the database file.
+  final int onDisk;
+
+  /// The newest schema version this build can open.
+  final int supported;
+
+  @override
+  String toString() =>
+      'NewerDatabaseException: database schema $onDisk is newer than the '
+      'supported $supported.';
+}
+
 @DriftDatabase(
   tables: [
     Preferences,
@@ -100,6 +134,7 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
+      if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
       if (from < 1 || to != 3 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
@@ -109,12 +144,6 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       });
     },
     beforeOpen: (details) async {
-      if (details.versionBefore != null &&
-          details.versionBefore! > schemaVersion) {
-        throw StateError(
-          'This database was created by a newer Blackgrid version.',
-        );
-      }
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
@@ -173,15 +202,27 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
     });
   }
 
-  Future<AppSettings> readSettings() async {
+  /// Reads the stored settings, or defaults when there is no record.
+  ///
+  /// A record that cannot be decoded, because it is damaged or was written by
+  /// a newer version, gives default settings with
+  /// [StoredSettings.unreadable] set. Reading never writes, so the record
+  /// stays until a save replaces it. Query and open errors still throw.
+  Future<StoredSettings> readSettings() async {
     final row = await (select(
       preferences,
     )..where((p) => p.id.equals(1))).getSingleOrNull();
-    return row == null
-        ? AppSettings()
-        : AppSettings.fromJson(
-            Map<String, Object?>.from(jsonDecode(row.payload) as Map),
-          );
+    if (row == null) return StoredSettings(AppSettings(), unreadable: false);
+    try {
+      return StoredSettings(
+        AppSettings.fromJson(
+          Map<String, Object?>.from(jsonDecode(row.payload) as Map),
+        ),
+        unreadable: false,
+      );
+    } on Object {
+      return StoredSettings(AppSettings(), unreadable: true);
+    }
   }
 
   Future<void> saveSettings(AppSettings settings) => transaction(() async {
@@ -192,13 +233,29 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       ),
     );
   });
-  Future<List<CustomPin>> readPins() async => (await select(pinRecords).get())
-      .map(
-        (row) => CustomPin.fromJson(
+
+  /// Reads every stored pin that can be decoded and passes
+  /// [CustomPin.validate].
+  ///
+  /// Returns the readable [pins] and the number of rows [skipped]. Skipped
+  /// rows are neither deleted nor rewritten. Query errors still throw.
+  Future<({List<CustomPin> pins, int skipped})> readPins() async {
+    final rows = await select(pinRecords).get();
+    final pins = <CustomPin>[];
+    var skipped = 0;
+    for (final row in rows) {
+      try {
+        final pin = CustomPin.fromJson(
           Map<String, Object?>.from(jsonDecode(row.payload) as Map),
-        ),
-      )
-      .toList();
+        )..validate();
+        pins.add(pin);
+      } on Object {
+        skipped++;
+      }
+    }
+    return (pins: pins, skipped: skipped);
+  }
+
   Future<void> savePin(CustomPin pin) => transaction(() async {
     pin.validate();
     await into(pinRecords).insertOnConflictUpdate(
@@ -214,24 +271,37 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       pinRecords,
     )..where((p) => p.mapId.equals(pin.mapId) & p.pinId.equals(pin.id))).go();
   });
-  Future<List<ItemActivity>> readActivity() async {
-    final rows =
+
+  /// Reads the activity rows whose mode and source this version knows,
+  /// newest first.
+  ///
+  /// Returns the readable [rows] and the number of rows [skipped]. Skipped
+  /// rows are neither deleted nor rewritten. Query errors still throw.
+  Future<({List<ItemActivity> rows, int skipped})> readActivity() async {
+    final records =
         await (select(activityRecords)..orderBy([
               (p) => OrderingTerm.desc(p.observedAt),
               (p) => OrderingTerm.asc(p.itemId),
             ]))
             .get();
-    return rows
-        .map(
-          (row) => ItemActivity(
+    final rows = <ItemActivity>[];
+    var skipped = 0;
+    for (final row in records) {
+      try {
+        rows.add(
+          ItemActivity(
             itemId: row.itemId,
             mode: GameMode.values.byName(row.mode),
             source: ActivitySource.values.byName(row.source),
             observedAt: row.observedAt.toUtc(),
             revision: row.revision,
           ),
-        )
-        .toList();
+        );
+      } on Object {
+        skipped++;
+      }
+    }
+    return (rows: rows, skipped: skipped);
   }
 
   Future<ItemActivity> recordActivity(
@@ -301,19 +371,33 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
         importRecords,
       )..where((r) => r.digest.equals(digest))).getSingleOrNull() !=
       null;
+
+  /// Writes [preview] and its import record in one transaction.
+  ///
+  /// Throws [ImportAlreadyCommitted] when the record for the preview's digest
+  /// exists. Any other failure rolls every write back.
+  ///
+  /// Imported preferences are merged into the settings stored at commit time,
+  /// read through the tolerant [readSettings], so local inputs (folders, follow
+  /// switch, live scan and scan hotkey) always keep their stored values. With
+  /// [replaceExisting] off and a settings row present, nothing is written to
+  /// settings. A settings save that lands between this commit and the app's
+  /// reload can still overwrite the imported preferences; that is existing
+  /// behaviour.
   Future<void> commitImport(
     ImportPreview preview, {
     required bool replaceExisting,
   }) => transaction(() async {
     if (await wasImported(preview.digest)) {
-      throw StateError('These source bytes were already imported.');
+      throw const ImportAlreadyCommitted();
     }
-    if (preview.settings != null) {
+    if (preview.settings case final imported?) {
       final present = await (select(
         preferences,
       )..where((p) => p.id.equals(1))).getSingleOrNull();
       if (replaceExisting || present == null) {
-        await saveSettings(preview.settings!);
+        final stored = await readSettings();
+        await saveSettings(imported.applyTo(stored.settings));
       }
     }
     for (final pin in preview.pins) {
@@ -346,6 +430,16 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       ),
     );
   });
+}
+
+/// Thrown by [BlackgridDatabase.commitImport] when the same files were already
+/// imported.
+class ImportAlreadyCommitted implements Exception {
+  /// Creates the exception.
+  const ImportAlreadyCommitted();
+
+  @override
+  String toString() => 'These files were already imported.';
 }
 
 // A database method's shared async closure context can retain its unsendable

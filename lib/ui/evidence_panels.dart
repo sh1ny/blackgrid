@@ -256,6 +256,8 @@ class SourcePanel extends StatelessWidget {
                         ' · updated '
                         '${localTimeLabel(snapshot.observedAt, now: now)}',
             ),
+            if (services.catalog.error case final error?)
+              Text(error, style: const TextStyle(color: GridColors.gold)),
             Text('Game mode: ${modeLabel(inspectionMode)}', style: small),
             if (snapshot != null)
               ...snapshot.localizationErrors.map(
@@ -377,57 +379,75 @@ class HistoryPanel extends StatelessWidget {
       subtitle: 'Items you picked or scanned',
       child: services.history.rows.isEmpty
           ? Center(child: Text(services.history.error ?? 'No items yet.'))
-          : ListView.builder(
-              key: const PageStorageKey('history-scroll'),
-              // Rows past the edge would otherwise request their icons.
-              scrollCacheExtent: const ScrollCacheExtent.pixels(0),
-              itemCount: services.history.rows.length,
-              itemBuilder: (context, index) {
-                final row = services.history.rows[index];
-                // Only the current catalog may name an item or supply its
-                // icon; a row from another mode gets neither.
-                final item = services.catalog.mode == row.mode
-                    ? services.catalog.snapshot?.items[row.itemId]
-                    : null;
-                final name = item?.name;
-                final selected = services.selection.historyRow?.key == row.key;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Material(
-                    color: GridColors.inset,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        color: selected
-                            ? GridColors.gold
-                            : GridColors.quietBorder,
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (services.history.error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      services.history.error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: ListTile(
-                      dense: true,
-                      leading: item == null
-                          ? const Icon(
-                              Icons.inventory_2_outlined,
-                              color: GridColors.muted,
-                            )
-                          : ItemIcon(
-                              key: ValueKey(item.id),
-                              cache: services.itemIcons,
-                              itemId: item.id,
-                              iconLink: item.iconLink,
-                              size: 24,
-                              color: GridColors.muted,
-                            ),
-                      title: Text(name ?? row.itemId),
-                      subtitle: Text(
-                        '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}\n${localTimeLabel(row.observedAt, now: DateTime.now())}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      onTap: () => services.selection.openHistory(row),
                     ),
                   ),
-                );
-              },
+                Expanded(
+                  child: ListView.builder(
+                    key: const PageStorageKey('history-scroll'),
+                    // Rows past the edge would otherwise request their icons.
+                    scrollCacheExtent: const ScrollCacheExtent.pixels(0),
+                    itemCount: services.history.rows.length,
+                    itemBuilder: (context, index) {
+                      final row = services.history.rows[index];
+                      // Only the current catalog may name an item or supply its
+                      // icon; a row from another mode gets neither.
+                      final item = services.catalog.mode == row.mode
+                          ? services.catalog.snapshot?.items[row.itemId]
+                          : null;
+                      final name = item?.name;
+                      final selected =
+                          services.selection.historyRow?.key == row.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Material(
+                          color: GridColors.inset,
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              color: selected
+                                  ? GridColors.gold
+                                  : GridColors.quietBorder,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: ListTile(
+                            dense: true,
+                            leading: item == null
+                                ? const Icon(
+                                    Icons.inventory_2_outlined,
+                                    color: GridColors.muted,
+                                  )
+                                : ItemIcon(
+                                    key: ValueKey(item.id),
+                                    cache: services.itemIcons,
+                                    itemId: item.id,
+                                    iconLink: item.iconLink,
+                                    size: 24,
+                                    color: GridColors.muted,
+                                  ),
+                            title: Text(name ?? row.itemId),
+                            subtitle: Text(
+                              '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}\n${localTimeLabel(row.observedAt, now: DateTime.now())}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            onTap: () => services.selection.openHistory(row),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
     ),
   );

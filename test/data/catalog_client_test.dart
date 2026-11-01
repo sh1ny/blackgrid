@@ -152,6 +152,54 @@ void main() {
       }
     });
   }
+  testWidgets('a stalled dataset fails as a transport CatalogException', (
+    tester,
+  ) async {
+    final transport = StallingHttpClient(
+      stallPath: 'items',
+      body: false,
+      responses: wireFixture(),
+    );
+    addTearDown(transport.close);
+    final client = CatalogClient(client: transport, clock: () => fixtureNow);
+    Object? failure;
+    final fetch = client
+        .fetch(GameMode.pvp)
+        .then(
+          (_) {},
+          onError: (Object e) {
+            failure = e;
+          },
+        );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 31));
+    await fetch;
+    expect(failure, isA<CatalogException>());
+    expect((failure! as CatalogException).kind, CatalogFailure.transport);
+  });
+  test('failure kinds: HTTP status, transport error, invalid data', () async {
+    Future<CatalogFailure> kindOf(MockClient mock) async {
+      try {
+        await CatalogClient(client: mock).fetch(GameMode.pvp);
+      } on CatalogException catch (e) {
+        return e.kind;
+      }
+      fail('Expected rejection');
+    }
+
+    expect(
+      await kindOf(MockClient((r) async => http.Response('', 503))),
+      CatalogFailure.http,
+    );
+    expect(
+      await kindOf(MockClient((r) async => throw http.ClientException('x'))),
+      CatalogFailure.transport,
+    );
+    expect(
+      await kindOf(MockClient((r) async => http.Response('{invalid', 200))),
+      CatalogFailure.invalid,
+    );
+  });
   test(
     'malformed sixth dataset rejects entire candidate off isolate',
     () async {

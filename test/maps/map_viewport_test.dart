@@ -213,7 +213,7 @@ void main() {
       );
       final persisted = (await tester.runAsync(
         () => h.services.database.readPins(),
-      ))!.single;
+      ))!.pins.single;
       expect(persisted.mapId, 'shoreline');
       expect(persisted.x, closeTo(.5, 1e-9));
       expect(persisted.y, closeTo(.5, 1e-9));
@@ -228,7 +228,7 @@ void main() {
         () => h.services.settings.pins.isEmpty,
       );
       expect(
-        (await tester.runAsync(() => h.services.database.readPins()))!,
+        (await tester.runAsync(() => h.services.database.readPins()))!.pins,
         isEmpty,
       );
       expect(tester.takeException(), isNull);
@@ -442,7 +442,7 @@ void main() {
         );
         final remaining = (await tester.runAsync(
           () => h.services.database.readPins(),
-        ))!.single;
+        ))!.pins.single;
         expect(remaining.mapId, 'shoreline');
         expect(remaining.id, sourcePin.id);
         expect(remaining.label, sourcePin.label);
@@ -656,7 +656,7 @@ void main() {
           await settleMapFixture(tester, h);
           final stored = (await tester.runAsync(
             () => h.services.database.readPins(),
-          ))!.single;
+          ))!.pins.single;
           expect(stored.x, 1e308);
           expect(stored.y, -1e308);
           expect(h.services.maps.projectPin(stored), isNull);

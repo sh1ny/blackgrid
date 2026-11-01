@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/data/credential_store.dart' show DpapiCredentialStore;
 import 'package:blackgrid/data/tracker_client.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/progress.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/header_protector.dart';
 import '../support/stalling_http_client.dart';
 import '../data/tracker_client_test.dart' show tokenWire;
 
@@ -207,32 +210,94 @@ void main() {
     TrackerFailure.permission,
     TrackerFailure.mode,
     TrackerFailure.identity,
-    TrackerFailure.malformed,
   ]) {
-    test('$failure invalidates authority, transport retains stale', () async {
-      final store = MemoryCredentials()..credentials[GameMode.pvp] = token;
-      TrackerFailure? next;
-      final c = ProgressController(
-        store: store,
-        client: ControlledTracker((m, t, s, p) async {
-          if (next != null) throw TrackerException(next);
-          return response(m, s);
-        }),
-        clock: () => fixtureNow,
-      );
-      addTearDown(c.dispose);
-      await c.setMode(GameMode.pvp);
-      await c.refresh();
-      next = TrackerFailure.unavailable;
-      await c.refresh();
-      expect(c.snapshot, isNotNull);
-      expect(c.status, ProgressStatus.stale);
-      next = failure;
-      await c.refresh();
-      expect(c.snapshot, isNull);
-      expect(c.status, ProgressStatus.failed);
-    });
+    test(
+      '$failure invalidates authority, transport and malformed retain stale',
+      () async {
+        final store = MemoryCredentials()..credentials[GameMode.pvp] = token;
+        TrackerFailure? next;
+        final c = ProgressController(
+          store: store,
+          client: ControlledTracker((m, t, s, p) async {
+            if (next != null) throw TrackerException(next);
+            return response(m, s);
+          }),
+          clock: () => fixtureNow,
+        );
+        addTearDown(c.dispose);
+        await c.setMode(GameMode.pvp);
+        await c.refresh();
+        next = TrackerFailure.unavailable;
+        await c.refresh();
+        expect(c.snapshot, isNotNull);
+        expect(c.status, ProgressStatus.stale);
+        next = TrackerFailure.malformed;
+        await c.refresh();
+        expect(c.snapshot, isNotNull);
+        expect(c.status, ProgressStatus.stale);
+        next = failure;
+        await c.refresh();
+        expect(c.snapshot, isNull);
+        expect(c.status, ProgressStatus.failed);
+      },
+    );
   }
+  test('malformed response keeps the earlier progress as stale', () async {
+    var malformed = false;
+    final c = ProgressController(
+      store: MemoryCredentials()..credentials[GameMode.pvp] = token,
+      client: ControlledTracker((m, t, s, p) async {
+        if (malformed) throw const TrackerException(TrackerFailure.malformed);
+        return response(m, s);
+      }),
+      clock: () => fixtureNow,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    final earlier = c.snapshot;
+    malformed = true;
+    await c.refresh();
+    expect(c.snapshot, same(earlier));
+    expect(c.status, ProgressStatus.stale);
+    expect(c.error, 'Tracker response invalid');
+  });
+  test('first malformed response fails with no progress', () async {
+    final c = ProgressController(
+      store: MemoryCredentials()..credentials[GameMode.pvp] = token,
+      client: ControlledTracker(
+        (m, t, s, p) async =>
+            throw const TrackerException(TrackerFailure.malformed),
+      ),
+      clock: () => fixtureNow,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    expect(c.snapshot, isNull);
+    expect(c.status, ProgressStatus.failed);
+    expect(c.error, 'Tracker response invalid');
+  });
+  test('corrupt token bytes on disk fail as Tracker token unavailable with no request', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'blackgrid-corrupt-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    await File('${directory.path}/pvp.dpapi').writeAsBytes([1, 2, 3, 250, 99]);
+    final client = ControlledTracker((m, t, s, p) async => response(m, s));
+    final c = ProgressController(
+      store: DpapiCredentialStore(directory, protector: HeaderProtector()),
+      client: client,
+      clock: () => fixtureNow,
+    );
+    addTearDown(c.dispose);
+    await c.setMode(GameMode.pvp);
+    await c.refresh();
+    expect(c.status, ProgressStatus.failed);
+    expect(c.error, 'Tracker token unavailable');
+    expect(c.snapshot, isNull);
+    expect(client.calls, 0);
+  });
   test(
     'late 200 fenced by token replacement, removal and mode switch',
     () async {

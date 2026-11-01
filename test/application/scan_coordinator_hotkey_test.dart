@@ -135,7 +135,7 @@ class _Rig {
   );
 
   Future<ScanHotkey> savedHotkey() async =>
-      (await db.readSettings()).scanHotkey;
+      (await db.readSettings()).settings.scanHotkey;
 
   /// Makes the next preference saves fail, as a database error would.
   Future<void> failSaves() => db.customStatement(
@@ -384,7 +384,7 @@ void main() {
       await Future.wait([rebind, off]);
       await rig.coordinator.settled;
 
-      final saved = await rig.db.readSettings();
+      final saved = (await rig.db.readSettings()).settings;
       expect(saved.liveScan, isFalse, reason: 'the switch-off save waited');
       expect(saved.scanHotkey, ScanHotkey.f10);
       expect(rig.coordinator.error, isNull);
@@ -409,7 +409,7 @@ void main() {
       await rig.coordinator.settled;
 
       expect(await rebind, ScanRebindResult.saved);
-      final saved = await rig.db.readSettings();
+      final saved = (await rig.db.readSettings()).settings;
       expect(saved.scanHotkey, ScanHotkey.f10);
       expect(saved.liveScan, isTrue);
       expect(rig.coordinator.error, isNull);

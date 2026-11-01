@@ -15,9 +15,9 @@ void main() {
     final directory = await Directory.systemTemp.createTemp('blackgrid-store-');
     final file = File('${directory.path}/store.sqlite');
     var db = BlackgridDatabase(NativeDatabase(file));
-    final defaults = await db.readSettings();
+    final defaults = (await db.readSettings()).settings;
     expect(defaults.mode, GameMode.unknown);
-    expect(await db.readActivity(), isEmpty);
+    expect((await db.readActivity()).rows, isEmpty);
     await db.saveSettings(
       AppSettings(
         mode: GameMode.pve,
@@ -45,9 +45,9 @@ void main() {
     await db.commitCatalog(fixtureCatalog());
     await db.close();
     db = BlackgridDatabase(NativeDatabase(file));
-    expect((await db.readSettings()).mode, GameMode.pve);
-    expect((await db.readPins()).single.x, 1.2);
-    expect((await db.readActivity()).single.revision, 2);
+    expect((await db.readSettings()).settings.mode, GameMode.pve);
+    expect((await db.readPins()).pins.single.x, 1.2);
+    expect((await db.readActivity()).rows.single.revision, 2);
     expect((await db.loadCatalog(GameMode.pvp))!.items, contains('item-a'));
     expect(await db.loadCatalog(GameMode.pve), isNull);
     final columns = await db
@@ -104,7 +104,7 @@ void main() {
       second,
       source: ActivitySource.scan,
     );
-    final rows = await db.readActivity();
+    final rows = (await db.readActivity()).rows;
     expect(rows, hasLength(1));
     expect(rows.single.source, ActivitySource.scan);
     expect(rows.single.revision, 2);
@@ -120,11 +120,11 @@ void main() {
       fixtureNow,
       source: ActivitySource.scan,
     );
-    expect((await db.readActivity()).single.revision, 1);
+    expect((await db.readActivity()).rows.single.revision, 1);
 
     await db.recordActivity('item-a', GameMode.pvp, later);
 
-    final rows = await db.readActivity();
+    final rows = (await db.readActivity()).rows;
     expect(rows, hasLength(1));
     expect(rows.single.source, ActivitySource.manual);
     expect(rows.single.revision, 2);
@@ -239,7 +239,7 @@ void main() {
         db.saveSettings(AppSettings(mode: GameMode.pvp)),
         throwsA(anything),
       );
-      expect((await db.readSettings()).mode, GameMode.unknown);
+      expect((await db.readSettings()).settings.mode, GameMode.unknown);
       await db.customStatement(
         "CREATE TRIGGER fail_activity BEFORE INSERT ON activity_records BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
       );
@@ -247,7 +247,7 @@ void main() {
         db.recordActivity('item-a', GameMode.pvp, fixtureNow),
         throwsA(anything),
       );
-      expect(await db.readActivity(), isEmpty);
+      expect((await db.readActivity()).rows, isEmpty);
       await db.close();
     },
   );

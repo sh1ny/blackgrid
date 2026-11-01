@@ -1,8 +1,11 @@
 import 'dart:async';
 
+// ignore: experimental_member_use
+import 'package:drift/remote.dart' show DriftRemoteException;
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import '../data/database.dart' show NewerDatabaseException;
 import 'app_logo.dart';
 import 'shell.dart';
 import 'theme.dart';
@@ -17,6 +20,20 @@ class BlackgridApp extends StatelessWidget {
     theme: blackgridTheme(),
     home: BlackgridShell(services: services),
   );
+}
+
+/// Whether [error] is, or wraps, a [NewerDatabaseException].
+///
+/// A second query on a database opened in a background isolate delivers the
+/// exception wrapped twice in [DriftRemoteException]: once by the isolate
+/// response and once by Drift's cached migration error. Unwrapping follows
+/// only that form.
+bool isNewerDatabaseError(Object? error) {
+  var current = error;
+  while (current is DriftRemoteException) {
+    current = current.remoteCause;
+  }
+  return current is NewerDatabaseException;
 }
 
 class BlackgridBootstrap extends StatefulWidget {
@@ -75,8 +92,10 @@ class _BlackgridBootstrapState extends State<BlackgridBootstrap> {
                       if (!snapshot.hasError)
                         const CircularProgressIndicator()
                       else ...[
-                        const Text(
-                          'Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted.',
+                        Text(
+                          isNewerDatabaseError(snapshot.error)
+                              ? 'Your data was saved by a newer version of Blackgrid. Install that version or a later one to open it. Your data has not been changed.'
+                              : 'Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted.',
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 14),

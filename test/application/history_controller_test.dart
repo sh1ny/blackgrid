@@ -8,6 +8,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../data/support/reopenable_database.dart';
 import '../fixtures/m1/catalog/fixture.dart';
 
 /// A database whose activity read and write complete only when released.
@@ -18,7 +19,7 @@ class _GatedDatabase extends BlackgridDatabase {
   bool failWrite = false;
 
   @override
-  Future<List<ItemActivity>> readActivity() async {
+  Future<({List<ItemActivity> rows, int skipped})> readActivity() async {
     await readGate.future;
     return super.readActivity();
   }
@@ -116,7 +117,7 @@ void main() {
       );
       expect(await settings.setMode(GameMode.pve), isFalse);
       expect(settings.settings.mode, GameMode.unknown);
-      expect((await db.readSettings()).mode, GameMode.unknown);
+      expect((await db.readSettings()).settings.mode, GameMode.unknown);
       expect(settings.error, isNotNull);
       settings.dispose();
       await db.close();
@@ -153,4 +154,57 @@ void main() {
     settings.dispose();
     await db.close();
   });
+
+  const insert =
+      'INSERT INTO activity_records '
+      '(item_id, mode, source, observed_at, revision) VALUES (?, ?, ?, ?, 1)';
+  Future<void> withStore(
+    Future<void> Function(ReopenableDatabase, HistoryController) body,
+  ) async {
+    final store = await ReopenableDatabase.open();
+    final history = HistoryController(store.db);
+    try {
+      await body(store, history);
+    } finally {
+      history.dispose();
+      await store.delete();
+    }
+  }
+
+  test(
+    'an unreadable history row is skipped and counted in the error',
+    () => withStore((store, history) async {
+      await store.writeRawRow(insert, ['a', 'pve', 'manual', 1760000000]);
+      await store.writeRawRow(insert, ['b', 'pvp', 'scan', 1760000100]);
+      await store.writeRawRow(insert, ['c', 'arena', 'manual', 1760000200]);
+      await history.load();
+      expect(history.rows.map((r) => r.itemId), unorderedEquals(['a', 'b']));
+      expect(
+        history.error,
+        '1 history entry could not be read and is not shown.',
+      );
+      final stored = await store.db
+          .customSelect('SELECT 1 FROM activity_records')
+          .get();
+      expect(stored.length, 3);
+
+      await store.writeRawRow(insert, ['d', 'pve', 'telepathy', 1760000300]);
+      await history.load();
+      expect(history.rows.length, 2);
+      expect(
+        history.error,
+        '2 history entries could not be read and are not shown.',
+      );
+    }),
+  );
+
+  test(
+    'readable history rows load with no error',
+    () => withStore((store, history) async {
+      await store.writeRawRow(insert, ['a', 'pve', 'manual', 1760000000]);
+      await history.load();
+      expect(history.rows.length, 1);
+      expect(history.error, isNull);
+    }),
+  );
 }
