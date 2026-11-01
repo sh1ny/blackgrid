@@ -122,7 +122,9 @@ class ScavCooldownLength {
 /// marks complete, rounded to whole seconds and floored at zero. [progress]
 /// counts only when its mode is [activeMode]; it counts however old it is.
 ///
-/// Returns `null` when [inputs] has no Fence levels.
+/// Returns `null` when [inputs] has no Fence levels, or when the base or the
+/// length is not finite or exceeds one day, so item data with absurd values
+/// shows as unknown instead of overflowing.
 ScavCooldownLength? scavCooldownLength(
   ScavCooldownInputs inputs,
   double reputation,
@@ -130,7 +132,7 @@ ScavCooldownLength? scavCooldownLength(
   GameMode activeMode,
 ) {
   final levels = inputs.fenceLevels;
-  if (levels.isEmpty) return null;
+  if (levels.isEmpty || !_countable(inputs.baseSeconds)) return null;
   final level = levels.lastWhere(
     (l) => l.minimumReputation <= reputation,
     orElse: () => levels.first,
@@ -145,7 +147,9 @@ ScavCooldownLength? scavCooldownLength(
     }
   }
   final factor = 1 + bonus;
-  final seconds = (inputs.baseSeconds * level.modifier * factor).round();
+  final raw = inputs.baseSeconds * level.modifier * factor;
+  if (!_countable(raw)) return null;
+  final seconds = raw.round();
   return ScavCooldownLength(
     seconds: seconds < 0 ? 0 : seconds,
     baseSeconds: inputs.baseSeconds,
@@ -154,6 +158,12 @@ ScavCooldownLength? scavCooldownLength(
     hasProgress: usable != null,
   );
 }
+
+/// The longest scav cooldown the timer counts, one day; real ones are minutes.
+const _maxCooldownSeconds = 24 * 60 * 60;
+
+bool _countable(double seconds) =>
+    seconds.isFinite && seconds <= _maxCooldownSeconds;
 
 const _noProgress = 'No Tracker progress for this mode: no hideout bonuses';
 

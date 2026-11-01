@@ -98,6 +98,23 @@ void main() {
     },
   );
 
+  test('a reputation too large to round drops only that entry', () {
+    final timers = AppSettings.fromJson(
+      _record(
+        raidTimers: _block(
+          overrides: {
+            'fenceReputation': {'pve': 1e308, 'seasonal': 3.2},
+          },
+        ),
+      ),
+    ).raidTimers;
+    expect(timers.fenceReputationFor(GameMode.pve), 0);
+    expect(timers.fenceReputationFor(GameMode.seasonal), 3.2);
+    expect(timers.scavCooldownStarts, {
+      GameMode.seasonal: DateTime.utc(2026, 11, 1, 19, 5),
+    });
+  });
+
   test(
     'an out-of-range run-through length gives the default and keeps the rest',
     () {

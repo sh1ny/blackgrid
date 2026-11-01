@@ -212,7 +212,10 @@ class RaidTimerSettings {
 
   static double? _roundReputation(Object? value) {
     if (value is! num || !value.isFinite) return null;
-    final rounded = (value * 100).round() / 100;
+    // A finite value can still overflow once scaled; round() would throw.
+    final scaled = value * 100;
+    if (!scaled.isFinite) return null;
+    final rounded = scaled.round() / 100;
     return rounded < minFenceReputation || rounded > maxFenceReputation
         ? null
         : rounded;

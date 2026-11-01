@@ -237,6 +237,29 @@ void main() {
         'No item data for this mode',
       );
     });
+
+    test('a length too long to count gives unknown, never a throw', () {
+      final starts = {GameMode.seasonal: start};
+      for (final inputs in [
+        // Finite inputs whose product overflows to infinity.
+        _inputs(
+          base: 1e308,
+          levels: const [
+            FenceCooldownLevel(minimumReputation: 0, modifier: 10),
+          ],
+        ),
+        // Finite, but longer than any cooldown the timer can show.
+        _inputs(base: 1e12),
+      ]) {
+        expect(
+          scavCooldownLength(inputs, 0, null, GameMode.seasonal),
+          isNull,
+          reason: '${inputs.baseSeconds}',
+        );
+        final v = _view(now: start, starts: starts, inputs: inputs);
+        expect(_text(v, RaidTimerKind.scav), 'Scav unknown');
+      }
+    });
   });
 
   group('hideout progress', () {
