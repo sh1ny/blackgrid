@@ -21,15 +21,15 @@ Rules for every group:
 | raid-lifecycle → A raid records its countdown and a guessed side | Reconnect keeps the side | test/domain/raid_lifecycle_side_test.dart | continued reconnect keeps side PMC | green |
 | raid-lifecycle → A raid records its countdown and a guessed side | No queue | test/domain/raid_lifecycle_side_test.dart | raid without a queue has side unknown | green |
 | raid-lifecycle → A raid records its countdown and a guessed side | Reconnect after Blackgrid starts | test/domain/raid_lifecycle_side_test.dart | new reconnect raid has side unknown | green |
-| raid-timers → Time in raid counts from the raid's log start | Raid in progress | test/domain/raid_timers_test.dart | time in raid is now minus the log start | red |
+| raid-timers → Time in raid counts from the raid's log start | Raid in progress | test/domain/raid_timers_test.dart | time in raid is now minus the log start | green |
 | raid-timers → Time in raid counts from the raid's log start | Blackgrid restarted mid-raid | test/application/raid_timers_controller_test.dart | replayed current raid shows elapsed time before any tick | red |
-| raid-timers → Time in raid counts from the raid's log start | Raid ended | test/domain/raid_timers_test.dart | ended raid freezes as last raid | red |
-| raid-timers → Time in raid counts from the raid's log start | Reconnect continues the count | test/domain/raid_timers_test.dart | continued reconnect keeps the original start | red |
-| raid-timers → Time in raid counts from the raid's log start | Log time ahead of the clock | test/domain/raid_timers_test.dart | start after now clamps to zero | red |
-| raid-timers → Time in raid counts from the raid's log start | No raid known | test/domain/raid_timers_test.dart | no raid gives a dash | red |
-| raid-timers → The run-through countdown runs while the raid is current | Counting down | test/domain/raid_timers_test.dart | run-through is length minus time in raid | red |
-| raid-timers → The run-through countdown runs while the raid is current | Past the run-through length | test/domain/raid_timers_test.dart | run-through past the length is done | red |
-| raid-timers → The run-through countdown runs while the raid is current | Raid ended before the length | test/domain/raid_timers_test.dart | no run-through after the raid ends | red |
+| raid-timers → Time in raid counts from the raid's log start | Raid ended | test/domain/raid_timers_test.dart | ended raid freezes as last raid | green |
+| raid-timers → Time in raid counts from the raid's log start | Reconnect continues the count | test/domain/raid_timers_test.dart | continued reconnect keeps the original start | green |
+| raid-timers → Time in raid counts from the raid's log start | Log time ahead of the clock | test/domain/raid_timers_test.dart | start after now clamps to zero | green |
+| raid-timers → Time in raid counts from the raid's log start | No raid known | test/domain/raid_timers_test.dart | no raid gives a dash | green |
+| raid-timers → The run-through countdown runs while the raid is current | Counting down | test/domain/raid_timers_test.dart | run-through is length minus time in raid | green |
+| raid-timers → The run-through countdown runs while the raid is current | Past the run-through length | test/domain/raid_timers_test.dart | run-through past the length is done | green |
+| raid-timers → The run-through countdown runs while the raid is current | Raid ended before the length | test/domain/raid_timers_test.dart | no run-through after the raid ends | green |
 | raid-timers → The run-through countdown runs while the raid is current | Length changed mid-raid | test/application/raid_timers_controller_test.dart | run-through length change applies at once | red |
 | raid-timers → A scav raid's end starts that mode's scav cooldown | Scav raid ends | test/application/raid_timers_controller_test.dart | scav raid ending records its mode's start | red |
 | raid-timers → A scav raid's end starts that mode's scav cooldown | PMC raid ends | test/application/raid_timers_controller_test.dart | PMC raid ending records nothing | red |
@@ -40,23 +40,23 @@ Rules for every group:
 | raid-timers → A cooldown start is never moved back or started twice | Older folder replayed | test/application/settings_raid_timers_test.dart | older start never replaces a later one | green |
 | raid-timers → A cooldown start is never moved back or started twice | Settings saved from older values | test/application/settings_raid_timers_test.dart | save built from older settings keeps the newer start | green |
 | raid-timers → A cooldown start is never moved back or started twice | Newer scav raid | test/application/settings_raid_timers_test.dart | later start replaces the stored one | green |
-| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Neutral reputation, no bonus | test/domain/raid_timers_test.dart | neutral reputation and no bonus give the base | red |
-| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Reputation and hideout bonuses | test/domain/raid_timers_test.dart | reputation 2.50 and two bonuses give 780 s | red |
-| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Reputation below every level | test/domain/raid_timers_test.dart | reputation below every level uses the lowest | red |
-| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Item data has no cooldown inputs | test/domain/raid_timers_test.dart | missing cooldown inputs give unknown with a reason | red |
-| raid-timers → Built hideout levels come from Tracker progress for the same mode | Progress for the mode | test/domain/raid_timers_test.dart | complete module of the same mode adds its bonus | red |
-| raid-timers → Built hideout levels come from Tracker progress for the same mode | Progress for another mode | test/domain/raid_timers_test.dart | progress of another mode adds no bonus and says so | red |
-| raid-timers → Built hideout levels come from Tracker progress for the same mode | Stale progress | test/domain/raid_timers_test.dart | stale progress still counts | red |
-| raid-timers → The scav cooldown counts down to ready | Counting down | test/domain/raid_timers_test.dart | cooldown remaining is start plus length minus now | red |
-| raid-timers → The scav cooldown counts down to ready | Ready | test/domain/raid_timers_test.dart | cooldown past its end is ready | red |
+| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Neutral reputation, no bonus | test/domain/raid_timers_test.dart | neutral reputation and no bonus give the base | green |
+| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Reputation and hideout bonuses | test/domain/raid_timers_test.dart | reputation 2.50 and two bonuses give 780 s | green |
+| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Reputation below every level | test/domain/raid_timers_test.dart | reputation below every level uses the lowest | green |
+| raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Item data has no cooldown inputs | test/domain/raid_timers_test.dart | missing cooldown inputs give unknown with a reason | green |
+| raid-timers → Built hideout levels come from Tracker progress for the same mode | Progress for the mode | test/domain/raid_timers_test.dart | complete module of the same mode adds its bonus | green |
+| raid-timers → Built hideout levels come from Tracker progress for the same mode | Progress for another mode | test/domain/raid_timers_test.dart | progress of another mode adds no bonus and says so | green |
+| raid-timers → Built hideout levels come from Tracker progress for the same mode | Stale progress | test/domain/raid_timers_test.dart | stale progress still counts | green |
+| raid-timers → The scav cooldown counts down to ready | Counting down | test/domain/raid_timers_test.dart | cooldown remaining is start plus length minus now | green |
+| raid-timers → The scav cooldown counts down to ready | Ready | test/domain/raid_timers_test.dart | cooldown past its end is ready | green |
 | raid-timers → The scav cooldown counts down to ready | Reputation changed while counting | test/application/raid_timers_controller_test.dart | reputation change recomputes the remaining time | red |
 | raid-timers → The scav cooldown counts down to ready | Mode switched | test/application/raid_timers_controller_test.dart | switching mode shows that mode's cooldown and keeps the other | red |
 | raid-timers → The scav cooldown counts down to ready | Mode from the logs | test/application/raid_timers_controller_test.dart | log-detected mode drives the scav entry | red |
-| raid-timers → The scav cooldown counts down to ready | No mode known | test/domain/raid_timers_test.dart | unknown active mode gives unknown with a reason | red |
+| raid-timers → The scav cooldown counts down to ready | No mode known | test/domain/raid_timers_test.dart | unknown active mode gives unknown with a reason | green |
 | raid-timers → Timer displays follow the clock, not a tick count | Missed ticks | test/application/raid_timers_controller_test.dart | missed ticks do not drift | red |
 | raid-timers → Timer displays follow the clock, not a tick count | Nothing moving | test/application/raid_timers_controller_test.dart | no periodic timer while nothing moves | red |
 | raid-timers → Timers show in a strip in Blackgrid's window only | All timers on in a raid | test/ui/raid_timer_strip_test.dart | strip shows all three entries on Map and Scanner | red |
-| raid-timers → Timers show in a strip in Blackgrid's window only | Long raid | test/domain/raid_timers_test.dart | durations from an hour use h:mm:ss | red |
+| raid-timers → Timers show in a strip in Blackgrid's window only | Long raid | test/domain/raid_timers_test.dart | durations from an hour use h:mm:ss | green |
 | raid-timers → Timers show in a strip in Blackgrid's window only | Timers off | test/ui/raid_timer_strip_test.dart | timers off hides the strip | red |
 | raid-timers → Timers show in a strip in Blackgrid's window only | Only the scav cooldown chosen | test/ui/raid_timer_strip_test.dart | only the chosen entry shows | red |
 | raid-timers → Timer settings live in the Settings dialog | Valid run-through length | test/ui/settings_dialog_raid_timers_test.dart | valid run-through length is saved | red |
@@ -106,8 +106,8 @@ Rules for every group:
 
 ## 4. Pure timer projection
 
-- [ ] 4.1 Write the failing tests in `test/domain/raid_timers_test.dart` for every test-map row naming that file. Each test calls the pure view function with an explicit `now`, a synthetic `RaidLifecycleState`/`Raid`, `RaidTimerSettings`, `ScavCooldownInputs?` and a `ProgressSnapshot?`. Verify they fail because the library does not exist.
-- [ ] 4.2 Implement `lib/domain/raid_timers.dart` (design D1, D6):
+- [x] 4.1 Write the failing tests in `test/domain/raid_timers_test.dart` for every test-map row naming that file. Each test calls the pure view function with an explicit `now`, a synthetic `RaidLifecycleState`/`Raid`, `RaidTimerSettings`, `ScavCooldownInputs?` and a `ProgressSnapshot?`. Verify they fail because the library does not exist.
+- [x] 4.2 Implement `lib/domain/raid_timers.dart` (design D1, D6):
   - the view with its entries (In raid / Last raid / Run-through / Scav, each with text and tooltip);
   - `countsAsScavRaid(Raid)` (PvE, or side scav);
   - `scavCooldownLength(inputs, reputation, progress, activeMode)`: base × Fence modifier × (1 + sum of built bonuses), rounded and floored at zero;
