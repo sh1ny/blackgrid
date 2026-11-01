@@ -141,11 +141,15 @@ class SettingsController extends ChangeNotifier
   }
 
   /// Saves the starts recorded while another write was in flight.
+  ///
+  /// A start recorded while this flush writes queues another round, so the
+  /// loop ends only when no start arrived during the last write.
   Future<void> _flushQueued() async {
-    if (!_flushAfterBusy) return;
-    _flushAfterBusy = false;
-    if (!_loaded || _settingsUnreadable || _pendingStarts.isEmpty) return;
-    await _write(_settings);
+    while (_flushAfterBusy) {
+      _flushAfterBusy = false;
+      if (!_loaded || _settingsUnreadable || _pendingStarts.isEmpty) return;
+      await _write(_settings);
+    }
   }
 
   Future<bool> save(AppSettings value) async {

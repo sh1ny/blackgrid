@@ -194,6 +194,30 @@ void main() {
     expect((await storedStarts())[GameMode.seasonal], later);
   });
 
+  test('a start recorded during the flush write is written after it', () async {
+    await controller.load();
+    final second = DateTime.utc(2026, 11, 1, 21, 30);
+    final third = DateTime.utc(2026, 11, 1, 22, 45);
+    final firstGate = db.gate = Completer<void>();
+    final first = controller.recordScavCooldownStart(
+      GameMode.seasonal,
+      seasonal2005,
+    );
+    await controller.recordScavCooldownStart(GameMode.seasonal, second);
+    // Hold the flush write that saves the second start.
+    final flushGate = db.gate = Completer<void>();
+    firstGate.complete();
+    await pumpEventQueue();
+    expect(db.attempts, 2);
+    expect(controller.busy, isTrue);
+    await controller.recordScavCooldownStart(GameMode.seasonal, third);
+    flushGate.complete();
+    await first;
+    expect(db.attempts, 3);
+    expect(controller.busy, isFalse);
+    expect((await storedStarts())[GameMode.seasonal], third);
+  });
+
   test('a start recorded before load only waits in the pending map', () async {
     await controller.recordScavCooldownStart(GameMode.pve, seasonal2005);
     expect(db.attempts, 0);
