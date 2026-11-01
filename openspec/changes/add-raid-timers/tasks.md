@@ -170,9 +170,9 @@ Rules for every group:
 
 ## 8. Integration checks
 
-- [ ] 8.1 Run `mise run analyze` and `mise run test`. Both pass, and `dart format --set-exit-if-changed lib test` reports no changes.
-- [ ] 8.2 Check that every test-map row is green and that `mise run release-notes -- --check openspec/changes/add-raid-timers/proposal.md` exits 0. Update the proposal's `## Release Notes` if what ships changed.
-- [ ] 8.3 Run `openspec validate add-raid-timers --strict`, which passes.
+- [x] 8.1 Run `mise run analyze` and `mise run test`. Both pass, and `dart format --set-exit-if-changed lib test` reports no changes.
+- [x] 8.2 Check that every test-map row is green and that `mise run release-notes -- --check openspec/changes/add-raid-timers/proposal.md` exits 0. Update the proposal's `## Release Notes` if what ships changed.
+- [x] 8.3 Run `openspec validate add-raid-timers --strict`, which passes.
 
 ## Workflow follow-up
 

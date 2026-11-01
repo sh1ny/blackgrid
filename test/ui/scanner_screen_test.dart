@@ -28,6 +28,11 @@ void main() {
         find.widgetWithText(ListTile, 'Synthetic component'),
         findsOneWidget,
       );
+      // The raid timer strip sits above the Scanner; scroll the row in.
+      await tester.ensureVisible(
+        find.widgetWithText(ListTile, 'Synthetic component'),
+      );
+      await tester.pump();
       await tapM1Async(
         tester,
         find.widgetWithText(ListTile, 'Synthetic component'),
@@ -65,6 +70,11 @@ void main() {
       expect(h.services.scans.hasAcceptedScan, isFalse);
       await tester.enterText(find.byType(TextField), 'item-b');
       await tester.pump();
+      // The raid timer strip sits above the Scanner; scroll the row in.
+      await tester.ensureVisible(
+        find.widgetWithText(ListTile, 'Alternative component'),
+      );
+      await tester.pump();
       await tapM1Async(
         tester,
         find.widgetWithText(ListTile, 'Alternative component'),
@@ -86,6 +96,11 @@ void main() {
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'item-a');
+    await tester.pump();
+    // The raid timer strip sits above the Scanner; scroll the row in.
+    await tester.ensureVisible(
+      find.widgetWithText(ListTile, 'Synthetic component'),
+    );
     await tester.pump();
     await tapM1Async(
       tester,
@@ -109,6 +124,11 @@ void main() {
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Synthetic component');
+    await tester.pump();
+    // The raid timer strip sits above the Scanner; scroll the row in.
+    await tester.ensureVisible(
+      find.widgetWithText(ListTile, 'Synthetic component'),
+    );
     await tester.pump();
     await tapM1Async(
       tester,
