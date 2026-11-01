@@ -86,6 +86,10 @@ class SessionLogReader {
   final _problems = <LogFile, String>{};
   final _pendingControl = <GameLogEvent>[];
   bool _needReset = false;
+
+  /// Whether the last selection found a newest session folder that has no
+  /// application log yet, as when the game has just created it.
+  bool _folderAwaitsApplicationLog = false;
   bool _batch = false;
   bool _recordRejected = false;
   SessionLogState? _lastPublished;
@@ -231,6 +235,7 @@ class SessionLogReader {
   }
 
   Future<_Selection?> _select() async {
+    _folderAwaitsApplicationLog = false;
     final root = Directory(_root);
     if (!await root.exists()) return null;
     final sessions = <(DateTime, Directory)>[];
@@ -278,7 +283,10 @@ class SessionLogReader {
     }
 
     final application = newest(LogFile.application);
-    if (application == null) return null;
+    if (application == null) {
+      _folderAwaitsApplicationLog = true;
+      return null;
+    }
     return _Selection(
       session.path,
       _basename(session.path),
@@ -338,7 +346,10 @@ class SessionLogReader {
     if (selected == null) {
       if (_path != null || _session != null) {
         _reset(null, null);
-        _needReset = true;
+        // A new folder whose application log is not there yet is not a
+        // restart of the input: the folder change that follows interrupts
+        // the raid instead of discarding it.
+        if (!_folderAwaitsApplicationLog) _needReset = true;
       }
       _publish(
         MapInputStatus.missing,

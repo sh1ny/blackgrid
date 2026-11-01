@@ -31,7 +31,7 @@ String _push(Object body, [String time = '21:30:00.000']) =>
 
 Map<String, Object?> _taskStarted(String task) => {
   'type': 'new_message',
-  'message': {'type': 11, 'templateId': '$task description'},
+  'message': {'type': 10, 'templateId': '$task description'},
 };
 
 const _badPush = '{ "type": \n}';
@@ -120,6 +120,39 @@ void main() {
     );
     await reader.rescan();
     expect(records(), hasLength(1));
+  });
+
+  test('a new folder without its application log yet does not reset the '
+      'raid input', () async {
+    await write(_older, 'application_000.log', _app('GameStarted: x'));
+    await reader.bind(root.path);
+    batches.clear();
+    await Directory('${root.path}/$_newer').create();
+    await reader.rescan();
+    expect(batches.expand((b) => b), isEmpty);
+    expect(reader.state.status, MapInputStatus.missing);
+    expect(
+      reader.state.message,
+      'No current application log found in the configured root.',
+    );
+    await reader.rescan();
+    expect(batches.expand((b) => b), isEmpty);
+    await write(_newer, 'application_000.log', _app('GameStarting: y'));
+    await reader.rescan();
+    final events = batches.expand((b) => b).toList();
+    expect(events.whereType<LogInputReset>(), isEmpty);
+    expect(events.first, isA<SessionFolderChanged>());
+    expect((events.first as SessionFolderChanged).folder, _newer);
+    expect(events.skip(1), [isA<RaidStarting>()]);
+  });
+
+  test('a vanished root still resets the raid input', () async {
+    await write(_older, 'application_000.log', _app('GameStarted: x'));
+    await reader.bind(root.path);
+    batches.clear();
+    await Directory('${root.path}/$_older').delete(recursive: true);
+    await reader.rescan();
+    expect(batches.expand((b) => b), [isA<LogInputReset>()]);
   });
 
   test('missing push log keeps application and backend events', () async {

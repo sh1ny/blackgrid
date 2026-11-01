@@ -183,6 +183,48 @@ void main() {
     expect(second.map(_key).toList(), first.map(_key).toList());
   });
 
+  test('a new folder without its application log yet keeps the raid', () async {
+    const next = 'log_2026.10.31_23-00-00_1.3.0.0.48484';
+    final (controller, reader, seen) = open();
+    await write(LogFile.application, '');
+    await reader.bind(root.path);
+    for (final (file, line) in _session.take(8)) {
+      if (file == LogFile.application) {
+        await write(LogFile.application, line, append: true);
+      }
+    }
+    await reader.rescan();
+    final raid = controller.state.raid!;
+    expect(controller.state.phase, RaidPhase.inRaid);
+    expect(seen.map((t) => _key(t).$1), ['aborted', 'started']);
+
+    // The restarted client creates its folder before its application log.
+    await Directory('${root.path}/$next').create();
+    await reader.rescan();
+    expect(controller.state.raid, raid);
+
+    await File('${root.path}/$next/application_000.log').writeAsString(
+      _line(
+            'application',
+            'PrepareSelectedProfileLocally ProfileId:aaaa AccountId:1',
+            '23:00:30.000',
+          ) +
+          _line(
+            'application',
+            'Transit reconnect status:MatchWait raidMode:Online '
+                'location:laboratory',
+            '23:00:40.000',
+          ) +
+          _line('application', 'GameStarted: 8', '23:01:00.000'),
+      flush: true,
+    );
+    await reader.rescan();
+
+    expect(seen.map((t) => _key(t).$1), ['aborted', 'started']);
+    expect(controller.state.phase, RaidPhase.inRaid);
+    expect(controller.state.raid!.interrupted, isFalse);
+  });
+
   test('dispose stops the subscription and closes transitions', () async {
     await writeWhole();
     final reader = newReader();

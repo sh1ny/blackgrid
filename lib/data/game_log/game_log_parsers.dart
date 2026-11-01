@@ -149,8 +149,8 @@ ParseResult _push(LogRecordId id, DateTime time, String message, String body) {
   if (json case {'message': {'type': final int type} && final Map message}) {
     return switch (type) {
       4 => _sale(id, time, message),
-      10 => _task(message, (taskId) => TaskFailed(id, time, taskId)),
-      11 => _task(message, (taskId) => TaskStarted(id, time, taskId)),
+      10 => _task(message, (taskId) => TaskStarted(id, time, taskId)),
+      11 => _task(message, (taskId) => TaskFailed(id, time, taskId)),
       12 => _task(message, (taskId) => TaskFinished(id, time, taskId)),
       _ => const ParsedNothing(),
     };

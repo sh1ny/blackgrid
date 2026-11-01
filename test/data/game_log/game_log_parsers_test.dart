@@ -238,13 +238,13 @@ void main() {
 
     test('type 10, 11 and 12 task messages', () {
       const task = '5936d90786f7742b1420ba5b';
-      final failed = _event(
-        LogFile.pushNotifications,
-        _pushRecord(_message(10, templateId: '$task failMessageText')),
-      );
       final started = _event(
         LogFile.pushNotifications,
-        _pushRecord(_message(11, templateId: '$task description')),
+        _pushRecord(_message(10, templateId: '$task description')),
+      );
+      final failed = _event(
+        LogFile.pushNotifications,
+        _pushRecord(_message(11, templateId: '$task failMessageText')),
       );
       final finished = _event(
         LogFile.pushNotifications,

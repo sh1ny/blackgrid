@@ -250,7 +250,18 @@ class MapSessionController extends ChangeNotifier {
         log.sessionId != _log.sessionId || log.incarnation != _log.incarnation;
     final detectionChanged = log.detectedMapId != _log.detectedMapId;
     final modeChanged = log.detectedMode != _log.detectedMode;
+    // A backend or push log problem never touches the Map's log state.
+    final raidLogsOnly =
+        log.status == _log.status &&
+        log.message == _log.message &&
+        !sessionChanged &&
+        !detectionChanged &&
+        !modeChanged;
     _log = log;
+    if (raidLogsOnly) {
+      notifyListeners();
+      return;
+    }
     if (sessionChanged) ++_epoch;
     // An error with unchanged session, map and mode is transient (sharing
     // violation, rejected record): it stays visible but keeps the evidence.
