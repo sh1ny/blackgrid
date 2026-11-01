@@ -75,7 +75,7 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 8. Integration checks
 
-- [ ] 8.1 Run `mise run analyze`, `mise run test`, `dart format --output=none --set-exit-if-changed .` and `openspec validate adopt-proposal-release-notes --strict`. Run `mise run release-notes` on this branch and confirm it prints this change's items with nothing refused. Run `mise run release-notes -- --check openspec/changes/adopt-proposal-release-notes/proposal.md` and confirm exit 0. Record the outputs in the commit.
+- [x] 8.1 Run `mise run analyze`, `mise run test`, `dart format --output=none --set-exit-if-changed .` and `openspec validate adopt-proposal-release-notes --strict`. Run `mise run release-notes` on this branch and confirm it prints this change's items with nothing refused. Run `mise run release-notes -- --check openspec/changes/adopt-proposal-release-notes/proposal.md` and confirm exit 0. Record the outputs in the commit.
 
 ## Workflow follow-up
 
