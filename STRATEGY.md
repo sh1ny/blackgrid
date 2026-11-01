@@ -1,6 +1,6 @@
 ---
 name: Blackgrid
-last_updated: 2026-10-06
+last_updated: 2026-11-01
 ---
 
 # Blackgrid Strategy
@@ -21,14 +21,16 @@ Stash management is secondary.
 
 ## Boundaries
 
-- Windows desktop releases only in this phase; no mobile, web, macOS, or Linux parity
-- Map and Scanner only as initial primary areas; configuration through supporting controls, no Database browsing or full Progression area yet
-- tarkovtracker.org progression integration: reads, plus task-state updates from the game's logged task events within tarkovtracker.org's API rules (read-only lifted by the user on 2026-10-30; planned as M9)
-- No overlay, WebView/WebView2 map renderer, or runtime/architectural dependency on the old application
+- Windows desktop releases only in this phase; no macOS or Linux parity. Web and mobile apps come late, after an optional sync service (roadmap M17–M19), and never get live map position or the scanner
+- Map and Scanner only as initial primary areas; configuration through supporting controls, no Database browsing yet. A local progress tracker (quests, objectives, hideout) arrives in M9
+- Blackgrid tracks quest and hideout progress itself, locally and offline, from the game's logs and the player's own input (user decision 2026-11-01; M9). The existing read-only tarkovtracker.org token integration stays until the local tracker replaces it, then is retired. Blackgrid never writes to tarkovtracker.org; the 2026-10-30 plan for task-state writes is withdrawn
+- No overlay: nothing is drawn over the game, so no transparent, borderless or click-through map and no global in-game hotkeys that only drive one. "Stay on top" for Blackgrid's own opaque, bordered window is allowed (user decision 2026-11-01)
+- No squad features (shared positions, squad item needs, squad raid planning) and no phone or tablet map with live position (user decision 2026-11-01)
+- No WebView/WebView2 map renderer, or runtime/architectural dependency on the old application
 - Independently recreate useful behavior in Dart/Flutter; no copied reference code or old runtime shipped. The user maintains a private reference companion (a modified fork of a C# desktop program) and owns their contributions, not all upstream or third-party contents
 - Repository work targets only the user's own repositories, never the reference companion's original upstream project. The user's fork was intentionally detached from that upstream; do not restore the fork relationship or open PRs there
 - The user's intent is for Blackgrid to be open source when functional. No license has been selected and this intent does not authorize making the current private repository public now
-- No Blackgrid backend, cloud sync, account system, or telemetry; existing third-party data/progression access is not a Blackgrid account system
+- The desktop app needs no Blackgrid backend or account and sends no telemetry; everything works on one machine, offline once data is downloaded. An optional Blackgrid Service with accounts (roadmap M17) may later sync progress for the web and mobile apps; it holds only the progress event history, and the desktop app works fully without it. Existing third-party data/progression access is not a Blackgrid account system
 - Proven OpenCV/Tesseract item-recognition approach retained until parity; no novelty-driven engine substitution
 - Blackgrid owns the scanner pipeline in Dart; no RatScanner/RatEye/RatStash code or C# bridge is integrated. Native bindings/FFI remain for selected OpenCV/Tesseract primitives and Windows APIs
 - Map artwork comes from `tarkov.dev` downloads for local caching/rendering rather than repeated remote requests; retain applicable asset terms and include required notices with public or distributed material

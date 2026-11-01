@@ -21,7 +21,7 @@ Blackgrid follows the whole raid from the game's logs, not just the map and mode
 - During real raids, the raid state, timers and stats follow the game. (user)
 
 **Changes** (in order):
-1. `add-raid-lifecycle` - read the rest of `application.log` (queue, match found, raid starting and started, matching aborted, back in menus, profile select) and `notifications.log` (raid exit, flea sales, task started, failed and finished) into one raid state machine that recognises reconnects. Fixes what TarkovMonitor gets wrong: partial lines across reads, multi-byte text split across chunks, and the raid exit and profile select coming from two logs in either order.
+1. `add-raid-lifecycle` - read the rest of `application.log` (queue, match found, raid starting and started, matching aborted, back in menus, profile select) and `notifications.log` (raid exit, flea sales, task started, failed and finished, which are message types 10, 11 and 12, confirmed in the user's logs on 2026-11-01) into one raid state machine that recognises reconnects. Fixes what TarkovMonitor gets wrong: partial lines across reads, multi-byte text split across chunks, and the raid exit and profile select coming from two logs in either order.
 2. `add-raid-timers` - time in raid, the run-through countdown (default 7:10) and the scav cooldown countdown (tarkov.dev's base time, the user's Fence reputation and built hideout bonuses from Tracker progress), shown in Blackgrid's window; no overlay. Settings: run-through length, Fence reputation, timers on or off and which ones show.
 3. `add-local-stats` - total flea sales and raids per map, stored locally in the Drift database, with a clear button. Nothing leaves the machine.
 
@@ -37,20 +37,100 @@ The native map reads like tarkov.dev's: named places, labelled extracts and a bu
 
 ## Later
 
-The milestones below run in this order after M8 (planned with the user on 2026-10-30).
+The milestones below run in this order after M8. M9 and M10 were planned with the user on 2026-10-30; M9 was replaced and M11–M19 were added on 2026-11-01 from the user's future-ideas list.
 
-### M9 - Tarkov Tracker task sync
+**Rules for everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
 
-Lifted from read-only by the user on 2026-10-30 ([STRATEGY.md](../STRATEGY.md)). Blackgrid marks quests on tarkovtracker.org from the logged task events, within tarkovtracker.org's API rules and limits.
+### M9 - local progress tracker
 
-1. `add-tracker-task-sync` - an ADR for progression writes; a write-permission token check per mode; finished, failed and restarted tasks sent only for the matching profile and mode, behind a rate limiter, and never on a stale or unverified token.
-2. `add-tracker-history-replay` - replay past game logs to bring Tracker up to date, refused while a raid is in progress.
+Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackgrid tracks quest and hideout progress itself, on the player's machine. The tracker is built so sync can be added later, but it syncs nothing. The existing read-only progress-site token stays exactly as it is until this milestone's last change replaces everything it provides.
+
+**Exit criteria:**
+- Every progress change is stored as an event with a unique ID, device ID, timestamp, game mode, wipe and data format version, and the current state is computed from the events. Replaying an event twice changes nothing. The newest change per task, objective or station wins, and game-log events beat older manual edits. Proved by model tests. (agent)
+- The availability rules are a plain Dart package with no Flutter or Windows dependency. For each task they say done, available or locked, and why: level, trader loyalty, a missing or must-be-failed prerequisite, an alternative task, faction or edition. Proved by tests on frozen tarkov.dev fixtures. (agent)
+- Task started, failed and finished events from the logs fill the store per mode and wipe. A log-folder replay rebuilds a wipe and is refused during a raid. Proved by offline fixture tests. (agent)
+- Keep/sell advice, the scav cooldown's hideout bonuses and task state come from local progress, and the token integration is removed. (agent)
+- A replay of the player's real log folders matches their in-game quest state, and the checklist and manual progress entry work in play. (user)
+
+**Changes** (in order):
+1. `add-progress-store` - an ADR for the local tracker and its event format, then the event store in the Drift database: device ID, mode and wipe keys, a format version, newest-change-wins merging, counters stored as values rather than increments, and undo from the event history.
+2. `add-task-catalog` - keep more tarkov.dev data: tasks, objectives, prerequisites (including must-be-failed and alternatives), trader and level requirements, faction, Kappa and Lightkeeper flags, and hideout stations and levels. Mode-scoped like the item catalog.
+3. `add-task-rules` - the availability rules package. We write the edition rules ourselves.
+4. `add-task-log-progress` - take task events from M7's raid lifecycle into the store, and replay old log folders.
+5. `add-manual-progress` - the player enters their level, trader loyalty levels and built hideout station levels by hand, and can override any task the logs missed.
+6. `add-quest-checklist` - active quests with tickable objectives and +/- counters for kill and found-in-raid objectives. Ticking an objective updates the map's quest markers.
+7. `retire-tracker-token` - switch keep/sell advice, the scav timer and task state to local progress, and remove the token integration. Before it starts, the user decides whether to keep a one-time "import my progress" from the site.
+
+**Inputs for `add-progress-store`'s ADR** (from the user's future-ideas list, 2026-11-01):
+- **Why our own tracker:** showing tasks, availability, needed items and the hideout has to be built in Blackgrid either way, because a third-party API returns only IDs and states. Syncing with someone else's service adds daily request quotas, tokens the user must create, polling, conflict handling and terms of use, and it still cannot write hideout or trader progress. A local tracker has none of these limits and works offline. Blackgrid never writes to the progress site.
+- **Sync-ready from the first release:** tarkov.dev IDs in every key, with game mode and wipe; each app downloads tarkov.dev data itself, so a sync service would only ever hold the player's progress; the rules package gives web and mobile the same answers as the desktop. The extra cost now is one or two tasks in this change, and the event history also gives undo, log replay and the wipe summary.
+- **Upkeep:** the availability rules are the hardest part (alternatives, must-be-failed prerequisites, faction and edition rules) and need checking every wipe.
 
 ### M10 - alerts and window behaviour
 
 1. `add-audio-alerts` - match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder and restart-failed-tasks, each with a switch, a custom sound and a test button. The user decides how the default sounds are recorded before this starts.
 2. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
 3. `add-window-behaviour` - tray, stay on top and start minimized.
+
+### M11 - quest planning
+
+The player sees how to reach the quests they want. A quest tree draws each trader's quests as a prerequisite graph: selecting a quest traces the path that unlocks it, a search finds which quest rewards an item, and right-click sets a quest's state by hand. A next-quest suggestion gives its reasons: what the quest unlocks, whether it counts toward Kappa or Lightkeeper, and whether it can be finished now. The milestone also shows Kappa, Lightkeeper and trader loyalty progress. Builds on M9's rules.
+
+### M12 - hideout
+
+- An overview of all stations with their levels and upgrade requirements, the bonuses scaled by Hideout Management, and a history of finished crafts.
+- Every craft the built stations can run, ranked by profit per craft and per hour, with favourites and an item filter. Inputs are costed by the cheapest cash or barter route, and outputs at the Flea price after fees.
+- Timers the player starts by hand for crafts, the Bitcoin Farm, the Water Collector filter and the Scav Case, with a "ready to collect" alert. The game logs no craft events: craft actions go out as the generic `items/moving` request with no body in the logs, and there are no hideout notifications (checked in the user's logs on 2026-11-01). Trader restocks are not logged either.
+
+Builds on M9's hideout levels.
+
+### M13 - map comfort
+
+- Each map keeps its own marker filters and sizes, restored when it opens, with a reset button. The player and quest markers get their own sizes.
+- A few one-click temporary markers that clear at raid end.
+- Rebindable "jump to player" and "fit map" keys that work only when Blackgrid's window has focus.
+- A setup and troubleshooting guide in the app and the README, extending M8's help button. It covers the screenshot key (Steam players should avoid F12), the logs folder, OneDrive moving screenshots, the launcher's "Clear Cache" deleting old logs, and the Windows "unknown publisher" warning.
+
+Small and independent, so it can move earlier if wanted.
+
+### M14 - loot, extracts and keys
+
+- A loot filter by item, showing only the places a chosen item can spawn and combining with the container filters, plus the items each container type can hold. How much of this is possible depends on tarkov.dev's spawn data.
+- Each extract's requirements: time of day, faction, required items and switches. Extracts the player cannot use now are drawn differently, and a filter shows only PMC, Scav or co-op exits. Builds on M8's popups and faction colours.
+- The player marks the keys they own, stored with their progress, and the Locks list and the map highlight the doors those keys open.
+
+### M15 - stats and traders
+
+- A wipe summary: quests over time and per trader, quest XP and roubles earned, craft profit, and the found-in-raid items the hideout still needs. It can be exported as an image.
+- Raid history from the logs: raids per map and per week, the most played map and the busiest day. Queues that never became raids can be removed. Extends M7's local stats.
+- A trader browser with stock, prices, resale profit per unit and per restock, favourites, hidden items and restock timers started by hand.
+
+### M16 - portable progress
+
+Progress moves between machines without a server. First comes export and import of a progress file, then sync through a folder the player already has (OneDrive, Dropbox). Conflicts are settled by M9's newest-change-wins rule.
+
+### M17 - Blackgrid Service
+
+An optional hosted service that holds only the progress event history, for players who want the web and mobile apps. The desktop app keeps working fully without it. It needs before launch:
+
+- sign-in with passkeys or a trusted identity provider so we store no passwords if we can avoid it, two-factor sign-in if passwords are used, and a separate revocable sign-in per device, kept in Windows' protected storage;
+- encryption in transit and at rest, with per-account access enforced on the server;
+- rate limits and abuse protection, and security logging that stores no more personal data than needed;
+- account export and deletion (GDPR);
+- dependency and secret scanning in CI, and a security review;
+- a plan for hosting, domain, email, backups, monitoring, support and running costs (donations or supporter tiers).
+
+It never holds game logs, screenshots, scan images or anything else from the player's PC.
+
+Starts only once the desktop features are solid and the cost plan exists.
+
+### M18 - Blackgrid Web
+
+A Flutter web app built on M9's rules package. It covers quests, objectives and counters, hideout levels, needed items and keep/sell lists, Kappa and Lightkeeper progress, the quest tree, owned keys and timers started by hand. It has no live position, no scanner and no log reading. Whether it gets a planning map without position is still open. Needs M17.
+
+### M19 - Blackgrid Mobile
+
+A Flutter phone app with the web app's scope and small-screen layouts, built after the web app proves the sync. Needs M17.
 
 ### Other
 
@@ -64,7 +144,7 @@ Lifted from read-only by the user on 2026-10-30 ([STRATEGY.md](../STRATEGY.md)).
 
 ## Release versioning (`add-release-versioning`)
 
-Decided with the user on 2026-10-08 and recorded in [ADR-0009](../docs/adr/0009-release-versioning.md): SemVer `v` tags, one minor version per milestone close (M2 → `0.2.0`), `-beta.N` prereleases for user-only checks, a commit-count build number, and a changelog with one entry per merged PR.
+Decided with the user on 2026-10-08 and recorded in [ADR-0009](../docs/adr/0009-release-versioning.md): SemVer `v` tags, one minor version per milestone close (M2 → `0.2.0`), `-beta.N` prereleases for user-only checks, and a commit-count build number. Its changelog with one entry per merged PR was replaced by release notes taken from each change's proposal ([ADR-0029](../docs/adr/0029-release-notes-come-from-each-proposal.md)).
 
 Release flow (local steps; details in the [README](../README.md)):
 
