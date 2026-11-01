@@ -1,159 +1,85 @@
-# blackgrid Changelog
+# Blackgrid Changelog
 
 ## v0.6.0 - 2026-11-01
 
-### Features
+Blackgrid is now built, packaged and published without a developer's machine: hosted Windows CI runs every offline gate, a release produces a zip and an installer, and a pushed tag publishes the GitHub Release. The app has its own icon and logo, the source is MIT-licensed, and failures now say what failed while keeping your data.
 
-- *(add-windows-ci)* run every offline gate on hosted Windows CI (#63)
+Added:
+- Every pull request and push to main runs analyze, tests, a Release build, the bundle check and the qualification tests on hosted Windows CI (#63)
+- A release builds a zip and a per-user installer (unsigned, no admin prompt) with a SHA256SUMS file (#67)
+- Pushing a `v` tag builds the Release on CI and publishes a GitHub Release with the zip, installer, checksums and that version's changelog section as notes; `-beta.N` tags are prereleases (#68)
+- Blackgrid has its own icon on `blackgrid.exe`, the installer and the uninstall entry, replacing the Flutter default (#69)
+- The app header and the startup screen show the Blackgrid hex logo (#70)
+- The README opens with a plain-language guide for players
+- The source is released under the MIT License
 
-- *(add-release-packaging)* package releases as a zip and per-user installer (#67)
+Changed:
+- Catalog failures say what failed (no connection, download refused, invalid data or local save failed) and whether earlier item data is still in use, and the Data sources panel shows the message too (#73)
+- A preference import with "Replace" no longer changes the live scan switch or the scan hotkey, and "already imported" has its own message (#73)
 
-- *(publish-github-releases)* publish GitHub releases from a tag workflow (#68)
-
-- *(add-app-icon)* replace the Flutter icon with Blackgrid's own (#69)
-
-- *(add-header-app-logo)* show the hex logo inside the app window (#70)
-
-- *(qualify-failure-and-restart)* keep data and say what failed (#73)
-
-### Documentation
-
-- *(readme)* open with a plain-language guide for players
-
-- *(license)* release the source under the MIT License
+Fixed:
+- Unreadable stored settings, pins or history rows no longer stop Blackgrid from starting; they are skipped or reset to defaults without rewriting the stored data, and a database written by a newer version gets its own message (#73)
+- A Tracker response that cannot be parsed keeps your last good progress as out of date, and one bad history row no longer hides all history (#73)
 
 ## v0.5.0 - 2026-10-30
 
-### Features
+Blackgrid now talks to players in plain words, with technical details behind a Details section. Items show their pictures, the map draws its own marker icons, and requirement rows say which craft, trade, task or station they mean.
 
-- *(map)* collapse saved-file inputs at the bottom of the Map rail (#50)
+Added:
+- The decision card and recent activity show each item's icon, downloaded from tarkov.dev once and kept in a local cache (#51)
+- Every map marker category draws its own Blackgrid-authored icon, with a provenance record for each icon file (#53, #54)
+- Requirements and uses rows name their source: a craft shows its product, count, station and level, a barter its offered item and trader level, and optional crafts and barters group after the obligations (#57)
+- A collapsed Details section holds scores, margins, timings and other technical information (#58)
 
-- *(item-icons)* show item icons on the decision card and history (#51)
+Changed:
+- The Map rail puts the decision card and Marker preferences first and folds the saved-file inputs into a collapsed section at the bottom (#50)
+- Marker preferences is a uniform grid of labelled icon tiles instead of chips with raw category keys (#56)
+- Status, reason and error text, times and the import dialog use plain language instead of enum names and UTC timestamps (#58)
 
-- *(map)* add Blackgrid-authored map marker icon set (#53)
-
-- *(map)* draw Blackgrid-authored icons for map markers (#54)
-
-- *(map)* show marker preferences as a grid of labelled icon tiles (#56)
-
-- *(requirements)* name requirement and use rows in plain words (#57)
-
-- *(plain-language)* speak to players in plain words, details behind Details (#58)
-
-### Fixes
-
-- *(map)* centre marker preference tile badges and labels (#59)
-
-- *(release)* clarify changelog entries and skip local merges (#60)
-
-### Build, CI, and tooling
-
-- *(specwright)* update Specwright to 0.10.0
+Fixed:
+- Marker preference tile badges and labels are centred whatever the label length (#59)
 
 ## v0.4.0 - 2026-10-20
 
-### Features
+Blackgrid can now read an item from the game. With live scan on, a click on the inspect window or the scan hotkey reads the item name and drives the decision card, with one-click correction for scans it could not accept. Releases also gained version numbers, tags and a changelog.
 
-- *(release)* add release versioning (#15)
+Added:
+- Releases have SemVer versions with `v` tags, the version is shown in Settings, and local tasks prepare, tag and build a release (#15)
+- A Windows capture layer reacts to a mouse release while the game window is in front and copies only the screen region it needs (#18)
+- A warm background vision worker keeps text recognition ready, answers the newest request and drops stale results (#22)
+- Inspection recognition finds the inspect window's magnifier marker, reads the item title with OCR and matches it to a catalog item (#26)
+- A Live scan switch and a Scanner evidence panel show the scan phase, OCR text, candidates and timings, with a full-client fallback pass when the targeted pass is not accepted (#27)
+- An opt-in "Record scan frames" switch saves scan images for building a test corpus; it is off at every start (#32)
+- An accepted scan becomes the current selection, drives the decision card and is recorded in activity history (#39)
+- An unaccepted scan offers its best candidates and a search as one-click corrections (#42)
+- A global scan hotkey, F9 by default, can be rebound to F1-F24 or turned off (#45)
+- The decision card offers "Back to latest scan" (#46)
+- A scan latency report reads the timing log and checks it against the latency targets (#47)
 
-- *(capture)* add the Windows capture boundary (#18)
+Changed:
+- The catalog and Tracker progress refresh on launch and on every mode selection (#44)
+- The Map rail shows the shared decision card in place of the "Latest accepted scan" stub, and scanning keeps working with Map open (#46)
+- A scan whose best match shares its display name with another item is shown as ambiguous and offers a correction, and correction rows tell same-name variants apart (#47)
 
-- *(vision)* add the warm vision worker (#22)
-
-- *(vision)* add the inspection recognition pipeline (#26)
-
-- *(scanner)* add live scan pipeline and Scanner evidence (#27)
-
-- *(scan)* add opt-in scan frame recording (#32)
-
-- *(scan-decisions)* drive the decision card from accepted scans (#39)
-
-- *(scan-correction)* offer one-click correction for unaccepted scans (#42)
-
-- *(catalog)* refresh catalog and progress on mode selection (#44)
-
-- *(scanner)* add a global scan hotkey trigger (#45)
-
-- *(map)* return to the latest accepted scan from the decision card (#46)
-
-- *(scanner)* add latency qualification and same-name ambiguity (#47)
-
-### Fixes
-
-- *(scanner)* wait for the inspect window before capturing (#31)
-
-- *(vision)* bound the blank title margin before OCR (#35)
-
-- *(capture)* place the targeted region where the inspect window opens (#37)
-
-- *(catalog)* measure catalog freshness from download time (#40)
-
-### Documentation
-
-- *(roadmap)* plan release versioning and defer installers to M6 (#14)
-
-- *(roadmap)* mark release versioning as landed
-
-- *(roadmap)* plan fix-title-crop as M2 change 8 and record the targeted-pass issue for M4
-
-- *(close-m2)* close M2 and promote M4 to Now (#36)
-
-- *(plan)* place catalog startup refresh in M4 and requirement rows in M4.5
-
-### Build, CI, and tooling
-
-- *(specwright)* update Specwright to 0.1.6 and configure PR reviewers
-
-- *(specwright)* update Specwright to 0.1.8
-
-- *(tooling)* upgrade Specwright to 0.4.0
-
-- *(tooling)* upgrade Specwright to 0.6.0
+Fixed:
+- A scan waits for the inspect window to open before capturing, the newest click supersedes an older scan, the last accepted item stays shown, and the footer shows the live scan state (#31)
+- Title reading trims the blank margin after the item name, so more titles are read (#35)
+- The targeted capture covers the area where the inspect window opens and lists every marker in it (#37)
+- Catalog freshness is measured from download time, not from source timestamps (#40)
 
 ## v0.1.0 - 2026-10-07
 
-### Features
+The first baseline: a native Windows app for looking up an item and getting a keep-or-sell recommendation, an offline native map workspace, and the bundled image and text recognition runtime that later scanning builds on.
 
-- *(m1)* enable safe manual inspection and durable local activity (#3)
+Added:
+- Find real items by name or ID and get a keep-or-sell recommendation with its uncertainty; preferences and item activity survive a restart (#3)
+- A native, offline Map with real multilevel artwork for Interchange, Labs and Icebreaker, map markers and your saved pins (#4)
+- The Map works on its own for every supported map, with marker search, quest filters, saved log and screenshot inputs, player position and raid exits (#7)
+- A native vision runtime bundles OpenCV and Tesseract for reading item names (#9)
+- Reproducible, rights-gated qualification tooling and evidence for comparing Blackgrid with the reference companion (#1, #2)
+- Automated review is configured for the repository (#5)
 
-- *(m3)* navigate real native maps offline (#4)
-
-- *(map)* deliver complete independent M5 map workspace (#7)
-
-### Fixes
-
-- *(test)* speed up development and map qualification tests (#6)
-
-### Documentation
-
-- add product strategy and M0 qualification plan
-
-- *(qualification)* bound U2 evidence and unblock M1 authoring (#2)
-
-- rewrite README from the current code (#12)
-
-- name the reference companion neutrally and credit its upstream (#13)
-
-### Build, CI, and tooling
-
-- initialize private repository
-
-- add Windows Flutter baseline and development tooling
-
-- *(ai)* share skills and Dart MCP config between Claude Code and OMP
-
-### Other
-
-- Merge pull request #1: reproducible rights-gated M0 qualification
-
-Preserve the reviewed qualification history and its author attribution.
-
-Co-authored-by: KintsugiBot <296966193+KintsugiBot@users.noreply.github.com>
-
-- Add .mira.yml for Blackgrid review configuration (#5)
-
-- Adopt OpenSpec + Specwright in place of Compound Engineering (#8)
-
-- Add native item vision runtime (OpenCV + Tesseract) (#9)
-
-- Update Specwright to 0.1.4 and re-request review after fixes (#11)
+Changed:
+- Development moved from Compound Engineering to OpenSpec and Specwright (#8, #11)
+- The README is rewritten from the current code, and the reference companion is named neutrally with its upstream credited (#12, #13)
+- Development and map qualification tests run faster (#6)

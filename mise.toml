@@ -1,6 +1,5 @@
 [tools]
 flutter = "3.47.6"
-"aqua:orhun/git-cliff" = "2.14.2"
 
 [tasks.analyze]
 description = "Run Flutter static analysis"
@@ -30,13 +29,9 @@ run = "dart format ."
 description = "Check Dart formatting without changing files"
 run = "dart format --output=none --set-exit-if-changed ."
 
-[tasks.changelog]
-description = "Regenerate CHANGELOG.md from local Git history"
-run = "dart run tool/changelog.dart --output CHANGELOG.md"
-
 [tasks.release-notes]
-description = "Print release notes; forward git-cliff tag/range options after --"
-run = "dart run tool/changelog.dart --strip header"
+description = "Preview the next release's notes from archived proposals; pass --check <proposal.md> after -- to validate one proposal"
+run = "dart run tool/changelog.dart"
 
 [tasks."qualification:freeze"]
 description = "Collect explicit reference metadata; forward collector parameters after --"

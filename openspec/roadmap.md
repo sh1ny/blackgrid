@@ -71,7 +71,7 @@ Release flow (local steps; details in the [README](../README.md)):
 - `mise run release:prepare -- <version>` - checks a clean, current `main`, runs the offline gates, then commits `chore(release): v<version>` on `release/v<version>`.
 - `mise run release:tag` - after the release PR merges, tags the merge `v<version>` and pushes the tag as the configured GitHub login.
 - `mise run build:release` - builds the Windows Release bundle with the version and build number, then runs `bundle:check`.
-- `mise run release-notes -- --unreleased` - previews the next release's entries.
+- `mise run release-notes` - previews the next release's notes, built from the archived proposals' `## Release Notes` sections ([ADR-0029](../docs/adr/0029-release-notes-come-from-each-proposal.md)); `release:prepare` then needs a release summary.
 
 M6 moved the builds to CI: a pushed `v` tag publishes a GitHub Release with a zip and an installer ([ADR-0024](../docs/adr/0024-hosted-ci-runs-every-offline-gate.md), [ADR-0025](../docs/adr/0025-release-packaging.md), [ADR-0026](../docs/adr/0026-releases-published-by-a-tag-workflow.md)). Code signing waits on [#66](https://github.com/sh1ny/blackgrid/issues/66).
 

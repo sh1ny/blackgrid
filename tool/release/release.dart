@@ -11,8 +11,11 @@ const _usage = '''
 Usage: dart run tool/release/release.dart <command> [arguments]
 
 Commands:
-  prepare <version> [--trailer <line>]...
+  prepare <version> (--summary <text> | --summary-file <path>) [--trailer <line>]...
       Create release/v<version> with the version bump and changelog commit.
+      The summary (whitespace collapsed to one line, at most 600 characters,
+      not starting with `#`) opens the new changelog section; the file must be
+      outside the checkout.
   tag
       Tag the merged release commit on main and push the tag to origin.
   build
@@ -66,10 +69,22 @@ Future<int> _prepare(
   Directory repoDir,
 ) async {
   String? version;
+  String? summary;
+  String? summaryFile;
   final trailers = <String>[];
   for (var i = 0; i < arguments.length; i++) {
     final arg = arguments[i];
-    if (arg == '--trailer') {
+    if (arg == '--summary') {
+      if (i + 1 >= arguments.length) {
+        return _usageError('--summary needs a value.');
+      }
+      summary = arguments[++i];
+    } else if (arg == '--summary-file') {
+      if (i + 1 >= arguments.length) {
+        return _usageError('--summary-file needs a value.');
+      }
+      summaryFile = arguments[++i];
+    } else if (arg == '--trailer') {
       if (i + 1 >= arguments.length) {
         return _usageError('--trailer needs a value.');
       }
@@ -83,12 +98,25 @@ Future<int> _prepare(
     }
   }
   if (version == null) return _usageError('prepare needs a <version>.');
+  if (summary != null && summaryFile != null) {
+    return _usageError('--summary and --summary-file are exclusive.');
+  }
   try {
+    if (summaryFile != null) {
+      try {
+        summary = File(summaryFile).readAsStringSync();
+      } on FileSystemException catch (e) {
+        throw ReleaseException(
+          'Cannot read the summary file $summaryFile: ${e.message}',
+        );
+      }
+    }
     await prepare(
       version: version,
       repoDir: repoDir,
       runner: runner,
       trailers: trailers,
+      summary: summary,
     );
     return 0;
   } on ReleaseException catch (e) {

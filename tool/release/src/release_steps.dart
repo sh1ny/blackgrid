@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'git.dart';
+import 'release_notes.dart';
 import 'semver.dart';
 
 const releaseGates = ['analyze', 'format:check', 'test:all'];
@@ -12,12 +13,38 @@ Future<void> prepare({
   required Directory repoDir,
   required CommandRunner runner,
   List<String> trailers = const [],
+  String? summary,
+  DateTime? now,
   StringSink? out,
 }) async {
   final sink = out ?? stdout;
   final git = Git(runner, repoDir);
   final tag = 'v$version';
   final branch = 'release/$tag';
+
+  // 0. The summary, before anything is read or run.
+  final collapsed = summary == null ? '' : collapseSummary(summary);
+  if (collapsed.isEmpty) {
+    throw const ReleaseException(
+      'A release summary is required: pass --summary <text> or '
+      '--summary-file <path> (the summary is blank or missing).',
+    );
+  }
+  if (collapsed.length > maxSummary) {
+    throw ReleaseException(
+      'The release summary is ${collapsed.length} characters after '
+      'collapsing whitespace, over the $maxSummary limit.',
+    );
+  }
+  // The summary is the section's first line, so a leading `## ` would end
+  // the section there in verify-tag, after the tag is pushed.
+  if (collapsed.startsWith('#')) {
+    throw const ReleaseException(
+      'The release summary starts with `#`; it must not, because as the '
+      'first line of the CHANGELOG.md section a heading would end the section '
+      'in verify-tag. Start it with plain text (write "PR #69", not "#69").',
+    );
+  }
 
   // 1. Validate the version.
   final SemVer requested;
@@ -87,6 +114,16 @@ Future<void> prepare({
     }
   }
 
+  // 5b. Build and validate the section in memory.
+  final range = await readReleaseRange(git);
+  if (range.changes.isEmpty) {
+    throw ReleaseException(
+      'Nothing to release: no change was archived on main since '
+      '${range.lastFinalTag ?? 'the first commit'}.',
+    );
+  }
+  final rendered = renderReleaseNotes(collapsed, range.changes);
+
   // 6. Offline gates; nothing has been changed so far.
   for (final gate in releaseGates) {
     sink.writeln('Running gate: mise run $gate');
@@ -116,22 +153,23 @@ Future<void> prepare({
     // 8. Rewrite the version line.
     _setPubspecVersion(File('${repoDir.path}/pubspec.yaml'), version);
 
-    // 9. Regenerate the changelog. Run the Dart executable running this tool:
-    // on Windows the `dart` on PATH is a .bat shim that needs a shell.
-    final changelog = await runner.run(Platform.resolvedExecutable, [
-      'run',
-      'tool/changelog.dart',
-      '--tag',
-      tag,
-      '--output',
-      'CHANGELOG.md',
-    ], workingDirectory: repoDir.path);
-    if (changelog.exitCode != 0) {
-      throw ReleaseException(
-        leftover(
-          'Changelog generation failed (exit code ${changelog.exitCode}): '
-          '${changelog.stderr.trim()}',
+    // 9. Insert the section above the newest one.
+    final changelogFile = File('${repoDir.path}/CHANGELOG.md');
+    try {
+      final existing = changelogFile.existsSync()
+          ? changelogFile.readAsStringSync()
+          : '';
+      changelogFile.writeAsStringSync(
+        insertChangelogSection(
+          existing: existing,
+          version: version,
+          date: _isoDate(now ?? DateTime.now()),
+          body: rendered.body,
         ),
+      );
+    } on FileSystemException catch (e) {
+      throw ReleaseException(
+        leftover('Writing CHANGELOG.md failed: ${e.message} (${e.path}).'),
       );
     }
 
@@ -148,19 +186,9 @@ Future<void> prepare({
     throw ReleaseException(leftover(e.message), exitCode: e.exitCode);
   }
 
-  // 11. Information and next commands.
-  try {
-    final bumped = await runner.run('git-cliff', [
-      '--offline',
-      '--config',
-      'cliff.toml',
-      '--bumped-version',
-    ], workingDirectory: repoDir.path);
-    if (bumped.exitCode == 0 && bumped.stdout.trim().isNotEmpty) {
-      sink.writeln('git-cliff suggested next version: ${bumped.stdout.trim()}');
-    }
-  } on Object {
-    // Informational only.
+  // 11. Warnings and next commands.
+  for (final warning in rendered.warnings) {
+    sink.writeln('Warning: $warning');
   }
   sink.writeln('Release commit created on $branch. Next:');
   sink.writeln('  git push -u origin $branch');
@@ -181,4 +209,57 @@ void _setPubspecVersion(File pubspec, String version) {
   }
   // Replacement leaves the existing line terminators untouched.
   pubspec.writeAsStringSync(text.replaceFirst(pattern, 'version: $version'));
+}
+
+String _isoDate(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+final RegExp _anySpace = RegExp(r'\s+');
+final RegExp _versionHeading = RegExp(r'^## v(\S+)', multiLine: true);
+final RegExp _anyHeading = RegExp(r'^## ', multiLine: true);
+
+/// Collapses every whitespace run, newlines included, to one space and trims.
+String collapseSummary(String text) => text.replaceAll(_anySpace, ' ').trim();
+
+/// Returns [existing] with a `## v<version> - <date>` section holding [body]
+/// directly above its newest `## v` section.
+///
+/// Every other byte of [existing] is kept, except that a final [version] drops
+/// the sections of its own prereleases (`## v<version>-<pre> ...`, up to the
+/// next `## ` heading). With no `## v` section the new one goes after the
+/// existing text, and an empty [existing] gets the `# Blackgrid Changelog`
+/// title first. The section uses the line ending [existing] uses, `\n` when
+/// it has none.
+String insertChangelogSection({
+  required String existing,
+  required String version,
+  required String date,
+  required String body,
+}) {
+  final eol = existing.contains('\r\n') ? '\r\n' : '\n';
+  var text = existing.isEmpty ? '# Blackgrid Changelog$eol$eol' : existing;
+
+  if (!version.contains('-')) {
+    final headings = _anyHeading.allMatches(text).map((m) => m.start).toList();
+    final removals = <(int, int)>[];
+    for (final m in _versionHeading.allMatches(text)) {
+      if (!m[1]!.startsWith('$version-')) continue;
+      final next = headings.where((h) => h > m.start);
+      removals.add((m.start, next.isEmpty ? text.length : next.first));
+    }
+    for (final (start, end) in removals.reversed) {
+      text = text.replaceRange(start, end, '');
+    }
+  }
+
+  final section =
+      '## v$version - $date$eol$eol${body.replaceAll('\n', eol)}$eol$eol';
+  final newest = _versionHeading.firstMatch(text);
+  if (newest != null) {
+    return text.replaceRange(newest.start, newest.start, section);
+  }
+  final kept = text.trimRight();
+  return '$kept$eol$eol${section.trimRight()}$eol';
 }

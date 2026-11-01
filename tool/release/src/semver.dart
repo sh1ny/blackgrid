@@ -13,7 +13,7 @@ const _build = '(?:\\+($_buildId(?:\\.$_buildId)*))?';
 
 final RegExp _semver = RegExp('^$_core$_pre$_build\$');
 
-/// Matches cliff.toml's strict v-prefixed SemVer tag pattern.
+/// Matches a strict v-prefixed SemVer release tag (`v1.2.3`, `v1.2.3-beta.1`).
 final RegExp releaseTagPattern = RegExp('^v$_core$_pre$_build\$');
 
 class SemVer implements Comparable<SemVer> {

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 /// A refusal or failure with the exit code the CLI should use.
@@ -33,7 +34,7 @@ class CommandResult {
   final bool timedOut;
 }
 
-/// Seam for every external effect (git, mise gates, dart, gh, git-cliff).
+/// Seam for every external effect (git, mise gates, dart, gh).
 abstract class CommandRunner {
   /// Runs [executable]. With [stream], output goes straight to the console
   /// and the result has empty stdout/stderr.
@@ -83,6 +84,12 @@ class ProcessCommandRunner implements CommandRunner {
   }) async {
     final env = _environmentFor(environment);
     final includeParent = environment == null;
+    // Git writes commit messages and file contents as UTF-8 whatever the
+    // console code page, so decoding them with [systemEncoding] would mangle
+    // any non-ASCII text (proposal release notes, for one).
+    final Encoding encoding = executable == 'git'
+        ? const Utf8Codec(allowMalformed: true)
+        : systemEncoding;
     // flutter is a .bat shim on Windows, which only a shell can launch.
     final shell = Platform.isWindows && executable == 'flutter';
     if (!stream && timeout == null) {
@@ -93,6 +100,8 @@ class ProcessCommandRunner implements CommandRunner {
         environment: env,
         includeParentEnvironment: includeParent,
         runInShell: shell,
+        stdoutEncoding: encoding,
+        stderrEncoding: encoding,
       );
       return CommandResult(
         result.exitCode,
@@ -111,10 +120,10 @@ class ProcessCommandRunner implements CommandRunner {
     );
     final out = stream
         ? Future.value('')
-        : process.stdout.transform(systemEncoding.decoder).join();
+        : process.stdout.transform(encoding.decoder).join();
     final err = stream
         ? Future.value('')
-        : process.stderr.transform(systemEncoding.decoder).join();
+        : process.stderr.transform(encoding.decoder).join();
     if (timeout == null) {
       return CommandResult(await process.exitCode, await out, await err);
     }
