@@ -82,12 +82,16 @@ A change in the release's range whose proposal has no valid `## Release Notes` s
 - **WHEN** change `c`, merged as PR #82, has no `## Release Notes` section and its Why starts `The map ignores floors. It should not.`
 - **THEN** the notes list under `Changes:` `- c (#82): The map ignores floors.`, and a warning names `c` and its error
 
+#### Scenario: Proposal not readable at HEAD
+- **WHEN** change `d`, merged as PR #83, had its archived proposal added in the range, but the file is no longer at `HEAD` (the change was reverted or its archive moved)
+- **THEN** the notes list `- d (#83)` under `Changes:`, a warning names `d`, and the release is not stopped
+
 #### Scenario: Release with no valid section at all
 - **WHEN** no change in the range has a valid section
 - **THEN** the section holds the summary and the `Changes:` list only, and each change is reported as a warning
 
 ### Requirement: Release preparation requires a release summary
-Release preparation SHALL require a summary of the whole release, given on the command line or in a file. It SHALL collapse the summary to one line (every run of whitespace, newlines included, becomes one space; the ends are trimmed) and SHALL refuse before running any gate when the result is missing, blank or over 600 characters. The summary SHALL open the release's section, followed by the grouped items.
+Release preparation SHALL require a summary of the whole release, given on the command line or in a file. It SHALL collapse the summary to one line (every run of whitespace, newlines included, becomes one space; the ends are trimmed) and SHALL refuse before running any gate when the result is missing, blank, over 600 characters, or starts with `#`. The summary SHALL open the release's section, followed by the grouped items.
 
 #### Scenario: Summary given
 - **WHEN** preparation for `0.7.0` is given the summary `Blackgrid now follows the whole raid.`
@@ -96,6 +100,10 @@ Release preparation SHALL require a summary of the whole release, given on the c
 #### Scenario: Multi-line summary file
 - **WHEN** the summary file holds `Raid timers arrive.`, a newline and `## Not a heading`
 - **THEN** the section's summary is the one line `Raid timers arrive. ## Not a heading`, and `verify-tag` on the tagged release publishes the whole section, grouped items included
+
+#### Scenario: Summary starting with a heading
+- **WHEN** preparation is given the summary `## Highlights Raid timers arrive.`
+- **THEN** it is refused before any gate runs, because as the section's first line that heading would end the section in `verify-tag`, and no branch, file or commit is created
 
 #### Scenario: Summary missing or too long
 - **WHEN** preparation is started without a summary, with a blank one, or with one that is 601 characters after collapsing

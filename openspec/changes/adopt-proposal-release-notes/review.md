@@ -2,6 +2,15 @@
 
 ## Metadata
 
+- **Round:** 4 (behaviour-change amendment from pre-ship finding F1)
+- **Prior round:** 3, `APPROVE`
+- **Reviewer:** fresh-context subagent (Claude Code); recorded by the orchestrator through `review-run.sh record`, because the reviewer writes no `review.md` itself.
+- **Round 4 scope:** the uncommitted `git diff -- openspec/changes/adopt-proposal-release-notes/ docs/adr/0029-release-notes-come-from-each-proposal.md`. `prepare` now also refuses a collapsed summary that starts with `#`: the spec adds the scenario "Summary starting with a heading", D3 and ADR-0029 are reworded, and the test map gains a row. F2 (an archived proposal missing at `HEAD`) was checked for context.
+- **Round 4 read:** the diff; spec.md "Release notes are built…", "A change without valid release notes is still listed" and "Release preparation requires a release summary"; design.md D3, D7, Failure & Visibility and Resource Bounds; `tool/release/src/verify_tag_step.dart` `_section`; `tool/release/src/release_steps.dart` (`_versionHeading`, `_anyHeading`, insert); `tool/release/src/release_notes.dart` (`readReleaseRange`, `_changeLines`); `README.md` and `tool/release/release.dart` help. `openspec validate adopt-proposal-release-notes --strict` passes.
+- **Skills:** the request named none, and none were loaded.
+
+### Round 3 metadata (kept)
+
 - **Round:** 3 (structure-only re-check)
 - **Prior round:** 2, `APPROVE`
 - **Reviewer:** fresh-context subagent (Claude Code)
@@ -48,6 +57,24 @@
   The skills dart-add-unit-test and dart-run-static-analysis were not loaded, because they were not needed for these findings. The upstream specwright ADR 0015 was not read; the installed release.sh and SKILL.md served as the reference format.
 
 ## Findings
+
+### Round 4 (pre-ship F1 amendment)
+
+#### Critical (blocking)
+
+None.
+
+#### Moderate
+
+**M5. The design and spec did not describe the F2 fallback.** *(Resolved, see Rebuttals.)* The Failure & Visibility "Range reader" row said a git error or a proposal over 64 KB stops `prepare` with the leftover-branch instructions, contradicting Resource Bounds, D7 and the F2 fix (`cat-file -e` fails → the change is kept with `missing: true`). The requirement "A change without valid release notes is still listed" covers the behaviour (listed, warned, never stops the release), but no scenario stated the name-only line for a proposal that cannot be read at `HEAD`, so the F2 regression test mapped to nothing. A clarification, not a behaviour change; also round 1's S6 with a concrete consequence.
+
+#### Suggestions
+
+**S7.** ADR-0029's parenthetical "(a leading heading would end the section)" is imprecise: only a leading `## ` does; say that `## v…` would also read as a version heading, and that any leading `#` is refused for simplicity. *(Applied.)*
+
+**S8.** `README.md`'s Prepare row and `tool/release/release.dart`'s `--summary` help do not mention the `#` rule; the refusal message should name the rule so a summary like `#69 brings…` is easy to fix. *(Applied.)*
+
+**On the boundary:** `#` is right. `## ` is the minimum for correctness (`_section` ends on `## `; `_versionHeading` matches `^## v`), but a leading `# ` would be an H1 in the published body and `### ` would look like the D1 subheadings. The only false positives are summaries opening with a PR reference such as `#69 …`, which are rare and easy to fix. The amendment is consistent across the spec requirement, the new scenario, D3, ADR-0029 and the test map; "Multi-line summary file" still holds because its `##` is not leading.
 
 ### Round 3 (structure-only re-check)
 
@@ -129,15 +156,22 @@ None.
 
 ## Verdict
 
-VERDICT: APPROVE
+VERDICT: APPROVE_WITH_CHANGES
 
-CHANGES_APPLIED: n/a
+CHANGES_APPLIED: yes
+
+Round 4 approves the `#` refusal as written, with two required clarifications for the F2 fallback (applied, see Rebuttals).
 
 Round 3 approves the restructure. The empty-heading rule means the same as in round 2. The new scenario agrees with the requirement and with "Invalid section", and the mapped test asserts it.
 
 Round 2 approved the drift amendment. It is consistent across the spec, design, tasks and ADR-0029, it matches `release.sh` and the Dart parser, and it leaves no statement of the old rule. Round 1's verdict was APPROVE_WITH_CHANGES, and its Required Changes were applied and re-checked (see Rebuttals).
 
 ## Required Changes
+
+Round 4 (all applied):
+
+1. (M5) design.md, Failure & Visibility: reword the "Range reader" row (a git error refuses before the gates and changes nothing; no leftover-branch instructions; drop "or a proposal over 64 KB"), and extend the "Fallback" row to an archived proposal missing at `HEAD` or over 64 KB → listed under `Changes:` by name only, with a warning.
+2. (M5) spec.md, "A change without valid release notes is still listed": add a scenario "Proposal not readable at HEAD" (change `d`, PR #83, proposal absent at `HEAD` → `- d (#83)` under `Changes:`, a warning names `d`, the release is not stopped) and its test map row.
 
 Round 3: none. Round 2: none. Round 1 (all applied):
 
@@ -156,6 +190,11 @@ Round 3: none. Round 2: none. Round 1 (all applied):
 
 
 ## Rebuttals
+
+- **Round 4 Required Change 1 (M5): fixed by the orchestrator.** The "Range reader" row now reads "Git error | `prepare` refuses before the gates and before the branch exists; nothing is changed; the preview exits non-zero". The "Fallback" row covers "archived proposal over 64 KB or no longer at `HEAD` (reverted or moved) | Listed under `Changes:` (by name and PR only when the proposal was not read)". This also closes round 1's S6.
+- **Round 4 Required Change 2 (M5): fixed by the orchestrator.** spec.md adds the scenario "Proposal not readable at HEAD" with the reviewer's WHEN/THEN. tasks.md maps it to "a proposal deleted on main is listed under Changes and warned, not fatal" (release_notes_test.dart), which asserts `Changes:
+- gone (#1)` and the warning `gone: the archived proposal is no longer at HEAD (reverted or moved)`. ADR-0029's D7 bullet now says the same. `openspec validate --strict` passes.
+- **Round 4 S7, S8: applied.** ADR-0029's parenthetical is reworded as suggested; README's Prepare row, the `release.dart` usage and the refusal message name the `#` rule (the message suggests "PR #69", not "#69").
 
 - **Required Change 1 (M1): fixed, verified by reviewer.**
   - D3 now has an "Order inside `prepare`" paragraph (design.md:43): first the summary checks, then the preconditions, then the in-memory build and validation from `HEAD` (range, parsing, bounds and the nothing-to-release refusal), then the gates. Only the pubspec edit and the `CHANGELOG.md` insert come after `checkout -b`.

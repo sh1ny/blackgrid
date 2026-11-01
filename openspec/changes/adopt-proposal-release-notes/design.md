@@ -39,7 +39,7 @@ TIER: FULL
 
 ### D3: The release summary is an input to `prepare`
 
-- **Choice:** `prepare <version> --summary <text>` or `--summary-file <path>` (outside the checkout). The summary is collapsed to one line (whitespace runs, newlines included, become one space; ends trimmed), as specwright does; this also keeps a `## ` line in the file from cutting the section short in `verify-tag` (`verify_tag_step.dart:121-129`). It refuses before the gates when the collapsed summary is missing, blank or over 600 characters.
+- **Choice:** `prepare <version> --summary <text>` or `--summary-file <path>` (outside the checkout). The summary is collapsed to one line (whitespace runs, newlines included, become one space; ends trimmed), as specwright does; this also keeps a `## ` line inside the file from cutting the section short in `verify-tag` (`verify_tag_step.dart:121-129`). A summary that starts with `#` would still put a heading line first in the section, so it is refused too. It refuses before the gates when the collapsed summary is missing, blank, over 600 characters or starts with `#`.
 - **Order inside `prepare`:** summary checks, then the existing preconditions (branch, clean tree, fetch, `HEAD == origin/main`, version, tag and branch absent), then the whole section is built and validated in memory from `HEAD` (range read, parsing, the bounds in Resource Bounds, the "nothing to release" refusal), then the gates. `HEAD` cannot move after the preconditions pass, so the in-memory section stays valid. Only the pubspec edit and inserting the section into `CHANGELOG.md` happen after `checkout -b`; today's build-after-branch (`release_steps.dart:107-136`) moves before the gates. `mise run release-notes` prints the draft (grouped items, warnings, uncovered commits) first, so the summary is written from what it shows.
 - **Rejected:** A placeholder summary that the user replaces in the release PR, with `verify-tag` refusing the placeholder. The edit would be a second commit on the release PR, which `release:tag` refuses. Amending the release commit by hand could work, but it is easy to get wrong. Also rejected: the last change's summary (specwright's fallback). It describes one change, not the release.
 - **Reversal cost:** low.
@@ -123,9 +123,9 @@ sequenceDiagram
 | Component | Fails / dies mid-operation → | Recovery | Retry safe? | Who finds out |
 |---|---|---|---|---|
 | Section parser | Invalid section in an in-flight proposal | Fix the proposal | Yes | Fast test suite, CI on the PR |
-| Range reader (`git log`/`git show`) | Git error, or a proposal over 64 KB | `prepare` stops with the error and the leftover-branch instructions (`release_steps.dart:109-114`); the preview exits non-zero | Yes | User, on the terminal |
+| Range reader (`git log`/`git show`) | Git error | `prepare` refuses before the gates and before the branch exists; nothing is changed; the preview exits non-zero | Yes | User, on the terminal |
 | Notes builder | No change in range (direct commits only included: intended, a release needs at least one change) | `prepare` refuses before the gates and before creating the branch | Yes | User |
-| Fallback | Archived section invalid or missing | Listed under `Changes:` | n/a | Warning printed by preview and `prepare`; visible in the release PR diff |
+| Fallback | Archived section invalid or missing; archived proposal over 64 KB or no longer at `HEAD` (reverted or moved) | Listed under `Changes:` (by name and PR only when the proposal was not read) | n/a | Warning printed by preview and `prepare`; visible in the release PR diff |
 | Hand edit of GitHub releases | `gh release edit` fails half-way (one of two) | Re-run for the failed one | Yes, idempotent | Agent reports per release |
 
 ## Resource Bounds (FULL)
