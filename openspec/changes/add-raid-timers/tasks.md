@@ -71,14 +71,14 @@ Rules for every group:
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0031-raid-timers-are-projections-of-log-times.md` (MADR-short, `Status: accepted`, date of writing), recording the decisions listed under design.md "ADRs → To record during apply":
+- [x] 1.1 Write `docs/adr/0031-raid-timers-are-projections-of-log-times.md` (MADR-short, `Status: accepted`, date of writing), recording the decisions listed under design.md "ADRs → To record during apply":
   - timers computed from log times and the clock, never accumulated ticks;
   - per-mode cooldown starts and timer settings in a separately decoded `raidTimers` settings block, moved only later, max-merged in every save, never saved automatically while the record is unreadable;
   - cooldown inputs as an optional catalog block from json.tarkov.dev's REST datasets, with no GraphQL and no version bump;
   - the active mode is the effective mode.
 
   Verify: the file exists and `rg -n "0031" openspec/architecture.md` finds its index row.
-- [ ] 1.2 In `openspec/architecture.md`:
+- [x] 1.2 In `openspec/architecture.md`:
   - add the `RaidTimersController` component row and the state rows from design.md "State & Ownership";
   - add `Raid.raidStartingTime`/`side` to the raid lifecycle row;
   - add `scavCooldown` to the catalog snapshot row;
