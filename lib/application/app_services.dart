@@ -14,6 +14,7 @@ import '../data/item_icon_client.dart';
 import '../data/raid_panel_ocr.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
+import '../data/session_log_reader.dart';
 import '../data/tracker_client.dart';
 import '../domain/catalog.dart';
 import '../domain/credential_store.dart';
@@ -26,6 +27,7 @@ import 'item_icon_cache.dart';
 import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'progress_controller.dart';
+import 'raid_lifecycle_controller.dart';
 import 'scan_coordinator.dart';
 import 'scan_decision_feed.dart';
 import 'scan_epoch.dart';
@@ -85,8 +87,13 @@ class AppServices {
       epoch: _currentEpoch,
     );
     importer = LegacyImport(database);
+    // The lifecycle controller subscribes before MapSessionController binds,
+    // so the first replay of the session folder reaches it.
+    final logReader = SessionLogReader();
+    raidLifecycle = RaidLifecycleController(logReader);
     mapSession = MapSessionController(
       settings: settings,
+      logReader: logReader,
       panelOcr: panelOcr ?? RaidPanelOcr(),
       clock: clock,
       discovery: pathDiscovery,
@@ -141,6 +148,10 @@ class AppServices {
   late final SettingsController settings;
   late final MapController maps;
   late final MapSessionController mapSession;
+
+  /// Folds the session logs into the raid phase; the reader is owned by
+  /// [mapSession], which binds and closes it.
+  late final RaidLifecycleController raidLifecycle;
 
   /// Owns live scanning: the switch, the worker, the hook and the scan flow.
   late final ScanCoordinator scanner;
@@ -376,6 +387,8 @@ class AppServices {
       }
       await mapSession.close();
     } finally {
+      // After mapSession.close() has closed the reader it listens to.
+      raidLifecycle.dispose();
       scans.dispose();
       selection.dispose();
       progress.dispose();

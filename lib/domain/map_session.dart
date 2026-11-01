@@ -73,6 +73,7 @@ class MapSessionState {
     this.screenshotStatus = MapInputStatus.disabled,
     this.logMessage,
     this.screenshotMessage,
+    this.raidLogsMessage,
     this.playerSample,
     this.raidEvidence,
     Set<String> raidHighlightIds = const {},
@@ -101,6 +102,9 @@ class MapSessionState {
   final MapInputStatus screenshotStatus;
   final String? logMessage;
   final String? screenshotMessage;
+
+  /// A problem with the backend or push-notifications log, or `null`.
+  final String? raidLogsMessage;
   final MapPlayerSample? playerSample;
   final RaidPanelEvidence? raidEvidence;
   final Set<String> raidHighlightIds;

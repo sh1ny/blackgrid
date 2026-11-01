@@ -3,6 +3,7 @@ import '../application/progress_controller.dart';
 import '../application/scan_coordinator.dart';
 import '../domain/inspection_context.dart';
 import '../domain/map_session.dart';
+import '../domain/raid_lifecycle.dart';
 import '../domain/raid_panel_text_parser.dart';
 import '../domain/settings.dart';
 
@@ -39,6 +40,17 @@ String mapInputStatusLabel(MapInputStatus status) => switch (status) {
   MapInputStatus.watching => 'watching folder',
   MapInputStatus.unavailable => 'cannot be read',
   MapInputStatus.error => 'something went wrong',
+};
+
+/// Reads as "Raid: <label>".
+String raidPhaseLabel(RaidPhase phase) => switch (phase) {
+  RaidPhase.unknown => 'unknown',
+  RaidPhase.inMenus => 'in menus',
+  RaidPhase.inQueue => 'in queue',
+  RaidPhase.matchFound => 'match found',
+  RaidPhase.raidStarting => 'raid starting',
+  RaidPhase.inRaid => 'in raid',
+  RaidPhase.raidEnded => 'raid ended',
 };
 
 /// Describes how well the raid panel text was read.

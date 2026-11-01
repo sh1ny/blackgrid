@@ -10,7 +10,7 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | game-log-input → Session log files are read from the newest session folder | A newer folder replaces the current one | test/data/game_log/session_log_reader_events_test.dart | a newer folder replaces the current one | green |
 | game-log-input → Session log files are read from the newest session folder | Missing push-notifications log | test/data/game_log/session_log_reader_events_test.dart | missing push log keeps application and backend events | green |
 | game-log-input → Session log files are read from the newest session folder | No log folder | test/data/game_log/session_log_reader_events_test.dart | no session folder produces no events | green |
-| game-log-input → Backend and push-notification problems never change the Map's log state | Push log missing during a raid | test/application/map_session_controller_test.dart | missing push log leaves Logs status and screenshot labels unchanged | red |
+| game-log-input → Backend and push-notification problems never change the Map's log state | Push log missing during a raid | test/application/map_session_controller_test.dart | missing push log leaves Logs status and screenshot labels unchanged | green |
 | game-log-input → Backend and push-notification problems never change the Map's log state | Rejected push record | test/data/game_log/session_log_reader_events_test.dart | rejected push record reports on raid logs only | green |
 | game-log-input → Backend and push-notification problems never change the Map's log state | Backend log rewritten | test/data/game_log/session_log_reader_events_test.dart | backend rewrite keeps map, mode and incarnation | green |
 | game-log-input → A record is decoded only when it is complete | Line split across two reads | test/data/game_log/log_file_tail_test.dart | line split across two reads decodes once | green |
@@ -46,7 +46,7 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | raid-lifecycle → Raid phases follow the log events | Out-of-place event | test/domain/raid_lifecycle_test.dart | raid started without a queue | green |
 | raid-lifecycle → A raid records its map, mode, times and entry | Recorded raid | test/domain/raid_lifecycle_test.dart | raid records map, mode, times, entry and cause | green |
 | raid-lifecycle → A raid records its map, mode, times and entry | Map unknown | test/domain/raid_lifecycle_test.dart | unsupported scene leaves the map unknown | green |
-| raid-lifecycle → Events read together are reduced in log-time order | Replay matches the live read | test/application/raid_lifecycle_controller_test.dart | replay and live read end the raid identically | red |
+| raid-lifecycle → Events read together are reduced in log-time order | Replay matches the live read | test/application/raid_lifecycle_controller_test.dart | replay and live read end the raid identically | green |
 | raid-lifecycle → Events read together are reduced in log-time order | Same time in two files | test/data/game_log/session_log_reader_events_test.dart | equal times sort application before backend | green |
 | raid-lifecycle → Events read together are reduced in log-time order | A file could not be read for a poll | test/domain/raid_lifecycle_test.dart | late raid exit after a menu ending changes nothing | green |
 | raid-lifecycle → The first ending of a raid wins and later endings change nothing | Raid exit first | test/domain/raid_lifecycle_test.dart | raid exit first ends the raid once | green |
@@ -63,10 +63,10 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | raid-lifecycle → A client restart during a raid continues that raid | Restart without reconnecting | test/domain/raid_lifecycle_test.dart | restart then queue ends the raid by client restart | green |
 | raid-lifecycle → A client restart during a raid continues that raid | Blackgrid starts after the restart | test/domain/raid_lifecycle_test.dart | new folder alone starts a reconnect raid | green |
 | raid-lifecycle → Each lifecycle transition is published once | One transition per event | test/domain/raid_lifecycle_test.dart | a whole raid publishes one start and one end | green |
-| raid-lifecycle → Each lifecycle transition is published once | Re-read after restart | test/application/raid_lifecycle_controller_test.dart | re-reading a folder republishes the same transitions | red |
-| raid-lifecycle → Map shows the raid phase | In raid | test/ui/map_rail_test.dart | raid line shows in raid on Customs | red |
-| raid-lifecycle → Map shows the raid phase | Matching cancelled | test/ui/map_rail_test.dart | raid line shows matching cancelled | red |
-| raid-lifecycle → Map shows the raid phase | No log input | test/ui/map_rail_test.dart | raid line shows unknown without log input | red |
+| raid-lifecycle → Each lifecycle transition is published once | Re-read after restart | test/application/raid_lifecycle_controller_test.dart | re-reading a folder republishes the same transitions | green |
+| raid-lifecycle → Map shows the raid phase | In raid | test/ui/map_rail_test.dart | raid line shows in raid on Customs | green |
+| raid-lifecycle → Map shows the raid phase | Matching cancelled | test/ui/map_rail_test.dart | raid line shows matching cancelled | green |
+| raid-lifecycle → Map shows the raid phase | No log input | test/ui/map_rail_test.dart | raid line shows unknown without log input | green |
 
 ## 1. ADR and architecture
 
@@ -95,8 +95,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 6. Controller, wiring and the Map lines
 
-- [ ] 6.1 Write the failing tests: `test/application/raid_lifecycle_controller_test.dart` (a temp session folder whose backend raid exit is 9 minutes before the next profile select: the bind-time replay and a line-by-line live append end the raid with the same time, cause and identity; a second controller over the same folder republishes the same transitions), the `map_session_controller_test.dart` case for a missing push log during a followed screenshot, and the three Raid-line widget tests plus a "Raid logs:" line test in `test/ui/map_rail_test.dart` (follow `flutter-add-widget-test`). Verify: they fail for the missing controller and lines.
-- [ ] 6.2 Add `RaidLifecycleController` (`lib/application/raid_lifecycle_controller.dart`, subscribes in its constructor), build the reader, then the controller, then `MapSessionController` with the reader injected in `lib/application/app_services.dart`, and dispose the controller after `mapSession.close()`. Expose `raidLogsMessage` through `MapSessionState`, and add the "Raid:" line (plain words from a `raidPhaseLabel` helper, map label when known, "(matching cancelled)" after an aborted queue, "unknown" without log input) and the "Raid logs:" line to `_MapInputStatus` in `lib/ui/map_screen.dart`. Verify: 6.1 tests pass, rows flip green, and the existing `map_rail_test.dart` and `map_session_controller_test.dart` tests still pass.
+- [x] 6.1 Write the failing tests: `test/application/raid_lifecycle_controller_test.dart` (a temp session folder whose backend raid exit is 9 minutes before the next profile select: the bind-time replay and a line-by-line live append end the raid with the same time, cause and identity; a second controller over the same folder republishes the same transitions), the `map_session_controller_test.dart` case for a missing push log during a followed screenshot, and the three Raid-line widget tests plus a "Raid logs:" line test in `test/ui/map_rail_test.dart` (follow `flutter-add-widget-test`). Verify: they fail for the missing controller and lines.
+- [x] 6.2 Add `RaidLifecycleController` (`lib/application/raid_lifecycle_controller.dart`, subscribes in its constructor), build the reader, then the controller, then `MapSessionController` with the reader injected in `lib/application/app_services.dart`, and dispose the controller after `mapSession.close()`. Expose `raidLogsMessage` through `MapSessionState`, and add the "Raid:" line (plain words from a `raidPhaseLabel` helper, map label when known, "(matching cancelled)" after an aborted queue, "unknown" without log input) and the "Raid logs:" line to `_MapInputStatus` in `lib/ui/map_screen.dart`. Verify: 6.1 tests pass, rows flip green, and the existing `map_rail_test.dart` and `map_session_controller_test.dart` tests still pass.
 
 ## 7. Integration checks
 

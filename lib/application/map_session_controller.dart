@@ -104,6 +104,7 @@ class MapSessionController extends ChangeNotifier {
     screenshotMessage: _disagreement
         ? '${_screenshotMessage == null ? '' : '$_screenshotMessage '}Detected map differs from the selected map; watched screenshots are ignored. Read Latest can apply a saved sample to the selected map as assumed evidence.'
         : _screenshotMessage,
+    raidLogsMessage: _log.raidLogsMessage,
     playerSample: _sample,
     raidEvidence: _evidence,
     raidHighlightIds: _highlights,

@@ -175,6 +175,31 @@ void main() {
     expect(session.state.assumedAssociation, isTrue);
   });
 
+  test('missing push log leaves Logs status and screenshot labels unchanged', () async {
+    await log('woods');
+    // The backend log exists and is empty; only the notifications log is absent.
+    await File(
+      '${root.path}${Platform.pathSeparator}log_2026.10.07_0-52-00${Platform.pathSeparator}backend.log',
+    ).writeAsString('', flush: true);
+    await settings.setMapInputs(followGameLogs: true);
+    await session.initialize();
+    session.updateMapContext(_map('woods'), 1);
+    await screenshot(1);
+    await watcher.rescan();
+    await _until(
+      session,
+      () => session.state.raidHighlightIds.contains('woods-exit'),
+    );
+    final state = session.state;
+    expect(state.logStatus, MapInputStatus.watching);
+    expect(state.logMessage, isNull);
+    expect(state.detectedMapId, 'woods');
+    expect(state.assumedAssociation, isFalse);
+    expect(state.playerSample!.assumedAssociation, isFalse);
+    expect(state.screenshotMessage, isNull);
+    expect(state.raidLogsMessage, contains('notifications log'));
+  });
+
   test(
     'disagreement blocks watched evidence; Read Latest remains visibly assumed',
     () async {
