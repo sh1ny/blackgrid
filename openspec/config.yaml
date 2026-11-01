@@ -6,8 +6,8 @@ context: |
   Dart/Flutter work follows the "Dart and Flutter code" section of AGENTS.md. The orchestrator loads the skills it names before writing specs, design or tasks for Dart code, and puts that section, or its path, plus the skill names for the task group into every specwright-implementer and specwright-reviewer packet. Both agents have the Skill tool locally (added to `tools:`, which a Specwright update overwrites; re-add it after updating until sh1ny/specwright#24 lands). Without it, they read the `SKILL.md` files directly.
   Mira (.mira.yml) reviews PRs.
   Specwright replaces the Compound Engineering ce-* skills in this repo; do not use them. docs/plans/ and docs/qualification/ are CE-era history and evidence, not OpenSpec changes.
-  PR titles MUST be conventional `type(scope): summary` (feat, fix, perf, docs, refactor, style, test, build, ci, chore): the changelog lists one entry per merged PR, titled and grouped by its PR title (ADR-0009).
-  At a milestone close, suggest `mise run release:prepare -- <next minor>` (for example `0.2.0` for M2). While user-only checks are still open, suggest a prerelease `<next minor>-beta.N` first; the final version follows once the user reports those checks passed (ADR-0009).
+  PR titles MUST be conventional `type(scope): summary` (feat, fix, perf, docs, refactor, style, test, build, ci, chore). Release notes come from each change's `## Release Notes` section, not from PR titles; only the PR number is read from the merge commit subject (ADR-0029).
+  At a milestone close, suggest a release of the next minor (for example `0.2.0` for M2): first `mise run release-notes` to preview the notes, then a release summary written from that preview into a file outside the checkout, then `mise run release:prepare -- <version> --summary-file <file>` (it refuses without a summary). While user-only checks are still open, suggest a prerelease `<next minor>-beta.N` first; the final version follows once the user reports those checks passed (ADR-0009, ADR-0029).
   MANDATORY: Invoke the 'specwright-branch' skill immediately when a new OpenSpec change is started (/opsx:new, /opsx:propose, /opsx:ff, openspec-new-change, openspec-propose, openspec-ff-change) — BEFORE 'openspec new change' runs or any change file is created.
   MANDATORY: Invoke the 'specwright-commit' skill immediately when the OpenSpec apply phase begins (/opsx:apply, openspec-apply-change, 'openspec instructions apply').
   MANDATORY: Before archiving a change (/opsx:archive, /opsx:bulk-archive, openspec-archive-change, 'openspec archive'), read its review.md. If it has a whole line `VERDICT: DEFERRED`, do not archive that change: move nothing, sync no spec, and name its `Deferred to:` targets. In a bulk archive, skip that change and archive the rest.
@@ -23,6 +23,12 @@ context: |
 #   context: |
 #     Designs and tasks must cover Windows, macOS, and Linux
 #     Write all artifacts in Spanish
+
+rules:
+  proposal:
+    - Keep the `## Release Notes` section in every proposal (summary of at most 600 characters, then `### Added`, `### Changed`, `### Fixed` and/or `### Removed` list items of at most 500 characters), although `release.enabled` is false in openspec/specwright.yaml; this overrides the schema's instruction to delete the section when releases are off (ADR-0029).
+    - Keep the `## Release Notes` section current during apply whenever a task changes what the change ships.
+    - Check the section with `mise run release-notes -- --check <proposal.md>`; it must exit 0. The fast test suite fails on an in-flight proposal with a missing or invalid section.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.

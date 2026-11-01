@@ -102,7 +102,7 @@ flowchart LR
 
 ## ⚡ Install / Update
 
-> **Prerequisites:** Windows 11 x64, Git, and [mise](https://mise.jdx.dev/). Visual Studio with **Desktop development with C++**, its CMake tools and a Windows SDK ([Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup)). Windows Developer Mode if a native build needs symlinks. Flutter 3.47.6 and git-cliff 2.14.2 come from [`mise.toml`](mise.toml); no global Flutter install is needed.
+> **Prerequisites:** Windows 11 x64, Git, and [mise](https://mise.jdx.dev/). Visual Studio with **Desktop development with C++**, its CMake tools and a Windows SDK ([Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup)). Windows Developer Mode if a native build needs symlinks. Flutter 3.47.6 comes from [`mise.toml`](mise.toml); no global Flutter install is needed.
 
 Install and update use the same commands:
 
@@ -164,7 +164,7 @@ Scanner has a manual catalog inspection and an opt-in **live scan** switch. With
 | `ci:qualification` | CI-only qualification run with a skip audit. Fails locally by design unless you confirm that no game is running; developers use `test:qualification` |
 | `test:all` | Every test |
 | `format` / `format:check` | `dart format`, or check without writing |
-| `changelog` / `release-notes` | [`tool/changelog.dart`](tool/changelog.dart) over git-cliff ([`cliff.toml`](cliff.toml)) |
+| `release-notes` | [`tool/changelog.dart`](tool/changelog.dart): preview the next release's notes from archived proposals, or `-- --check <proposal.md>` to validate one proposal's `## Release Notes` section |
 | `release:prepare` / `release:tag` / `build:release` | [`tool/release/release.dart`](tool/release/release.dart): prepare a release commit, tag the merged release, build a versioned Release bundle (see **Releases and changelog**) |
 | `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart): download and verify pinned vision inputs |
 | `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart): offline check of a built Release bundle |
@@ -350,8 +350,8 @@ Versions follow [SemVer 2.0.0](https://semver.org/) with `v`-prefixed tags ([ADR
 
 | Step | Command | Does |
 |---|---|---|
-| Preview | `mise run release-notes -- --unreleased` | Prints the entries the next release will list |
-| Prepare | `mise run release:prepare -- <version>` | On a clean `main` equal to `origin/main`, with a version above every release tag: runs `analyze`, `format:check` and `test:all`, then commits `chore(release): v<version>` (pubspec version and `CHANGELOG.md`) on `release/v<version>`. It does not push; it prints the push and PR commands |
+| Preview | `mise run release-notes` | Prints the grouped items the next release will list, warnings for changes without valid release notes, and the commits on `main` that no change covers. Changes no file. Write the release summary from it |
+| Prepare | `mise run release:prepare -- <version> --summary-file <file>` (or `--summary "<text>"`) | Refuses without a summary of at most 600 characters (collapsed to one line); keep the file outside the checkout. On a clean `main` equal to `origin/main`, with a version above every release tag, it builds the notes and refuses when no change was archived since the last final release, runs `analyze`, `format:check` and `test:all`, then commits `chore(release): v<version>` (pubspec version and the new `CHANGELOG.md` section) on `release/v<version>`. It does not push; it prints the push and PR commands |
 | Merge | Push the branch, open the PR titled `chore(release): v<version>` and merge it | |
 | Tag | `mise run release:tag` | On `main` right after the release merge (a merge commit, or a squash commit titled `chore(release): v<version> (#N)` that the PR API confirms): checks the merge and the pubspec version, then creates annotated tag `v<version>` and pushes only that tag as `github.login` from [`openspec/specwright.yaml`](openspec/specwright.yaml); it then prints the link to the Publish run |
 | Publish | Automatic on the tag push ([`release.yml`](.github/workflows/release.yml)) | Checks the tag and that it has no release, runs the same gates as CI on the tag, then publishes the zip, the installer and `SHA256SUMS.txt` as one GitHub release |
@@ -363,13 +363,12 @@ Pass `--trailer "<line>"` to `release:prepare` to add commit trailers; the commi
 
 The version shows in the **Settings** dialog and in the `appVersion` field of the **Vision self-check** report. A build without the define (`flutter run`) shows `dev`. The executable's file version is `<major>.<minor>.<patch>.<count>`.
 
-The changelog lists one entry per merged PR, titled with the PR title and grouped by its conventional type, so PR titles use `type(scope): summary`. Commits that reached `main` only through a branch are not listed, and prerelease tags get no section of their own: the final release lists everything since the previous final release.
+Release notes come from each change's proposal ([ADR-0029](docs/adr/0029-release-notes-come-from-each-proposal.md)). Every `proposal.md` has a `## Release Notes` section: a summary, then `### Added`, `### Changed`, `### Fixed` and `### Removed` lists. `release:prepare` reads the sections of the proposals archived on `main`'s first-parent line since the last final release, groups their items as `Added:`, `Changed:`, `Fixed:` and `Removed:` with each change's PR number, puts the release summary first, and inserts that section above the newest one in `CHANGELOG.md`. Earlier sections are never regenerated. A final release drops the sections of its own prereleases and lists everything since the previous final release. A change without a valid section is listed under `Changes:` with the first sentence of its Why, and a warning names it.
 
 ```text
-mise run changelog
-mise run release-notes -- --unreleased
-mise run release-notes -- --latest
-mise run release-notes -- v0.1.0..v0.2.0
+mise run release-notes
+mise run release-notes -- --check openspec/changes/<change>/proposal.md
+mise run release:prepare -- 0.7.0 --summary-file ../release-summary.txt
 ```
 </details>
 

@@ -64,8 +64,8 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 6. Authoring rules and docs
 
-- [ ] 6.1 In `openspec/config.yaml`, add a `rules: proposal:` entry: keep the `## Release Notes` section in every proposal although `release.enabled` is false, keep it current during apply, and check it with `mise run release-notes -- --check <proposal.md>`. Reword the context's PR-title line and the milestone-close line so that the notes come from proposals and `release:prepare` needs a summary (preview first). Verify: `openspec instructions proposal --change adopt-proposal-release-notes --json` shows the new rule in `rules`.
-- [ ] 6.2 Update `README.md`: drop git-cliff from the prerequisites and the tooling table, rewrite the release table's Preview and Prepare rows and the changelog paragraph and examples for the new flow. Update `openspec/roadmap.md`'s `release-notes -- --unreleased` line. Verify: `grep -n -i "cliff\|--unreleased\|--latest" README.md openspec/roadmap.md` finds nothing.
+- [x] 6.1 In `openspec/config.yaml`, add a `rules: proposal:` entry: keep the `## Release Notes` section in every proposal although `release.enabled` is false, keep it current during apply, and check it with `mise run release-notes -- --check <proposal.md>`. Reword the context's PR-title line and the milestone-close line so that the notes come from proposals and `release:prepare` needs a summary (preview first). Verify: `openspec instructions proposal --change adopt-proposal-release-notes --json` shows the new rule in `rules`.
+- [x] 6.2 Update `README.md`: drop git-cliff from the prerequisites and the tooling table, rewrite the release table's Preview and Prepare rows and the changelog paragraph and examples for the new flow. Update `openspec/roadmap.md`'s `release-notes -- --unreleased` line. Verify: `grep -n -i "cliff\|--unreleased\|--latest" README.md openspec/roadmap.md` finds nothing.
 
 ## 7. Rewrite the existing release notes
 
