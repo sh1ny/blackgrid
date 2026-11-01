@@ -1,7 +1,7 @@
 name: blackgrid
 description: "Independent Windows desktop manual item decisions."
 publish_to: 'none'
-version: 0.6.0-beta.1
+version: 0.6.0
 
 environment:
   sdk: ^3.13.5

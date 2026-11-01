@@ -1,6 +1,6 @@
 # blackgrid Changelog
 
-## v0.6.0-beta.1 - 2026-10-31
+## v0.6.0 - 2026-11-01
 
 ### Features
 
@@ -13,6 +13,8 @@
 - *(add-app-icon)* replace the Flutter icon with Blackgrid's own (#69)
 
 - *(add-header-app-logo)* show the hex logo inside the app window (#70)
+
+- *(qualify-failure-and-restart)* keep data and say what failed (#73)
 
 ### Documentation
 
