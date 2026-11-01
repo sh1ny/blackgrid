@@ -59,6 +59,79 @@ void main() {
       expect(restored.followGameLogs, isFalse);
     },
   );
+  group('importing settings over stored local inputs', () {
+    late Directory dir;
+    late BlackgridDatabase db;
+    late File file;
+    setUp(() async {
+      dir = await Directory.systemTemp.createTemp('blackgrid-local-inputs-');
+      db = BlackgridDatabase(NativeDatabase.memory());
+      file = File('${dir.path}/settings.json');
+      await file.writeAsBytes(
+        legacyBytes(settings: syntheticSettings())['settings']!,
+      );
+    });
+    tearDown(() async {
+      await db.close();
+      await dir.delete(recursive: true);
+    });
+
+    test('a Replace import keeps live scan and the scan hotkey and applies imported preferences', () async {
+      await db.saveSettings(
+        AppSettings(
+          mode: GameMode.pvp,
+          selectedMap: 'woods',
+          liveScan: true,
+          scanHotkey: ScanHotkey.f8,
+        ),
+      );
+      final importer = LegacyImport(db);
+      final preview = await importer.previewFiles(settingsPath: file.path);
+      await importer.commit(preview, replaceExisting: true);
+      final stored = (await db.readSettings()).settings;
+      expect(stored.liveScan, isTrue);
+      expect(stored.scanHotkey, ScanHotkey.f8);
+      expect(stored.mode, GameMode.pve);
+      expect(stored.selectedMap, 'customs');
+      expect(stored.markerFilters['CustomPins'], isTrue);
+      expect(stored.trackerEnabled, isTrue);
+    });
+
+    test(
+      'a Replace import keeps both input folders and the follow switch',
+      () async {
+        await db.saveSettings(
+          AppSettings(
+            gameLogDirectory: '${dir.path}/logs',
+            screenshotDirectory: '${dir.path}/shots',
+            followGameLogs: false,
+          ),
+        );
+        final importer = LegacyImport(db);
+        final preview = await importer.previewFiles(settingsPath: file.path);
+        await importer.commit(preview, replaceExisting: true);
+        final stored = (await db.readSettings()).settings;
+        expect(stored.gameLogDirectory, '${dir.path}/logs');
+        expect(stored.screenshotDirectory, '${dir.path}/shots');
+        expect(stored.followGameLogs, isFalse);
+        expect(stored.mode, GameMode.pve);
+      },
+    );
+
+    test(
+      'an import with no stored settings uses default local inputs',
+      () async {
+        final importer = LegacyImport(db);
+        final preview = await importer.previewFiles(settingsPath: file.path);
+        await importer.commit(preview, replaceExisting: false);
+        final stored = (await db.readSettings()).settings;
+        expect(stored.liveScan, isFalse);
+        expect(stored.scanHotkey, ScanHotkey.f9);
+        expect(stored.followGameLogs, isTrue);
+        expect(stored.mode, GameMode.pve);
+      },
+    );
+  });
   for (final version in [0, 1, 2, 3]) {
     test(
       'settings schema $version and nested scanner 0/1 preserve valuable fields only',
@@ -77,7 +150,7 @@ void main() {
           expect(p.exclusions, contains('ProtectedToken'));
           expect(p.exclusions, contains('Scanner.ScanHotkey'));
           expect(
-            p.settings!.toJson().toString(),
+            p.settings!.markerFilters.toString(),
             isNot(contains('NOT_A_TOKEN')),
           );
         }
@@ -472,7 +545,7 @@ void main() {
     expect(repeated.alreadyImported, isTrue);
     await expectLater(
       importer.commit(repeated, replaceExisting: true),
-      throwsStateError,
+      throwsA(isA<ImportAlreadyCommitted>()),
     );
     expect((await db.readActivity()).rows.length, 1);
     await db.close();

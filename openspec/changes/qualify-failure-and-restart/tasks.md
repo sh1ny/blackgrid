@@ -33,13 +33,13 @@
 | local-data-durability → A database from a newer version is refused with its own message | Other open failure | test/ui/app_test.dart | any other open failure shows the generic storage message | green |
 | local-data-durability → A damaged saved token reports the token as unavailable | Corrupt token bytes on disk | test/application/progress_controller_test.dart | corrupt token bytes on disk fail as Tracker token unavailable with no request | green |
 | local-data-durability → A damaged saved token reports the token as unavailable | Saving a new token recovers | test/data/credential_store_test.dart | saving over corrupt token bytes reads back the new token after reopening | green |
-| legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | red |
-| legacy-import → An import never changes this computer's own inputs | Replace keeps input folders | test/data/legacy_import_test.dart | a Replace import keeps both input folders and the follow switch | red *(coverage)* |
-| legacy-import → An import never changes this computer's own inputs | Import with no stored settings | test/data/legacy_import_test.dart | an import with no stored settings uses default local inputs | red *(coverage)* |
-| legacy-import → A failed import changes nothing, also after a restart | Failure on the last write | test/data/durability_restart_test.dart | an import aborted at its import record leaves every table unchanged after reopening and can run again | red *(coverage)* |
-| legacy-import → A failed import changes nothing, also after a restart | Successful import survives a restart | test/data/durability_restart_test.dart | a committed import reads back pins history and its record after reopening | red *(coverage)* |
-| legacy-import → The import dialog says why nothing was imported | Files already imported | test/ui/import_dialog_test.dart | a commit refused as already imported says so | red |
-| legacy-import → The import dialog says why nothing was imported | Storage failure during commit | test/ui/import_dialog_test.dart | a commit storage failure says the import could not be saved | red |
+| legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | green |
+| legacy-import → An import never changes this computer's own inputs | Replace keeps input folders | test/data/legacy_import_test.dart | a Replace import keeps both input folders and the follow switch | green |
+| legacy-import → An import never changes this computer's own inputs | Import with no stored settings | test/data/legacy_import_test.dart | an import with no stored settings uses default local inputs | green |
+| legacy-import → A failed import changes nothing, also after a restart | Failure on the last write | test/data/durability_restart_test.dart | an import aborted at its import record leaves every table unchanged after reopening and can run again | green |
+| legacy-import → A failed import changes nothing, also after a restart | Successful import survives a restart | test/data/durability_restart_test.dart | a committed import reads back pins history and its record after reopening | green |
+| legacy-import → The import dialog says why nothing was imported | Files already imported | test/ui/import_dialog_test.dart | a commit refused as already imported says so | green |
+| legacy-import → The import dialog says why nothing was imported | Storage failure during commit | test/ui/import_dialog_test.dart | a commit storage failure says the import could not be saved | green |
 | catalog-authority → A failed automatic catalog refresh is not retried | Startup fetch fails with a cached snapshot | test/application/app_services_refresh_test.dart | catalog: startup fetch fails with a cached snapshot | green |
 | catalog-authority → A failed automatic catalog refresh is not retried | Startup fetch fails with no cache | test/application/app_services_refresh_test.dart | catalog: startup fetch fails with no cache | green |
 | catalog-authority → A failed automatic catalog refresh is not retried | Manual refresh after a failure | test/application/app_services_refresh_test.dart | catalog: manual refresh after a failure | green |
@@ -120,14 +120,14 @@ Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentatio
 
 ## 6. Import keeps local inputs and explains refusals (D5, D6)
 
-- [ ] 6.1 Write the failing tests for the `legacy-import` rows in `test/data/legacy_import_test.dart` and `test/ui/import_dialog_test.dart`. The import-record abort uses `ReopenableDatabase.abortNextInsert('import_records')`. The two durability rows live in `test/data/durability_restart_test.dart`. Verify the red ones fail for the right reason.
-- [ ] 6.2 Implement D5:
+- [x] 6.1 Write the failing tests for the `legacy-import` rows in `test/data/legacy_import_test.dart` and `test/ui/import_dialog_test.dart`. The import-record abort uses `ReopenableDatabase.abortNextInsert('import_records')`. The two durability rows live in `test/data/durability_restart_test.dart`. Verify the red ones fail for the right reason.
+- [x] 6.2 Implement D5:
   - `ImportPreview.settings` becomes `ImportedPreferences`, holding mode, map, save-marker-filters, marker filters and the Tracker switch.
   - The preview stops reading destination settings for local inputs.
   - Inside the `commitImport` transaction, read stored settings through the tolerant `readSettings` and, with Replace on or no row stored, write `stored.copyWith(<preferences>)`.
   - Note review S4 in a code comment on `commitImport`: a settings save that lands between the commit and the reload can still overwrite the imported preferences. That is existing behaviour.
   - Verify the `legacy-import` storage rows pass.
-- [ ] 6.3 Implement D6:
+- [x] 6.3 Implement D6:
   - `ImportAlreadyCommitted` replaces the `StateError` in `commitImport`, with `///` docs.
   - `import_dialog.dart` maps it to "These files were already imported. Nothing was changed." and maps any other error to "The import could not be saved. Nothing was changed."
   - Keep the existing preview-time "These files were already imported." text.

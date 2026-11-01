@@ -105,6 +105,76 @@ void main() {
       expect(h.services.history.rows, isEmpty);
     },
   );
+  Future<M1Harness> previewHistory(WidgetTester tester) async {
+    final h = await pumpM1(tester);
+    final directory = (await tester.runAsync(
+      () => Directory.systemTemp.createTemp('blackgrid-widget-commit-'),
+    ))!;
+    addTearDown(() => directory.delete(recursive: true));
+    final file = File('${directory.path}/synthetic-history.json');
+    await tester.runAsync(
+      () => file.writeAsString(jsonEncode(syntheticHistory())),
+    );
+    await tester.tap(find.text('Import'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'History file path (optional)'),
+      file.path,
+    );
+    await tapM1Async(
+      tester,
+      find.text('Read files and preview'),
+      () => find.textContaining('records found').evaluate().isNotEmpty,
+    );
+    return h;
+  }
+
+  testWidgets('a commit refused as already imported says so', (tester) async {
+    final h = await previewHistory(tester);
+    // Another import commits the same files after the preview was shown.
+    await tester.runAsync(() async {
+      final other = h.services.importer;
+      final file = File(
+        (tester
+            .widget<TextField>(
+              find.widgetWithText(TextField, 'History file path (optional)'),
+            )
+            .controller!
+            .text),
+      );
+      final again = await other.previewFiles(historyPath: file.path);
+      await other.commit(again, replaceExisting: false);
+    });
+    await tapM1Async(
+      tester,
+      find.text('Import now'),
+      () => find.textContaining('Nothing was changed').evaluate().isNotEmpty,
+    );
+    expect(
+      find.text('These files were already imported. Nothing was changed.'),
+      findsOneWidget,
+    );
+  }, timeout: const Timeout(Duration(seconds: 30)));
+  testWidgets('a commit storage failure says the import could not be saved', (
+    tester,
+  ) async {
+    final h = await previewHistory(tester);
+    await tester.runAsync(
+      () => h.db.customStatement(
+        'CREATE TEMP TRIGGER abort_import BEFORE INSERT ON import_records '
+        "BEGIN SELECT RAISE(ABORT, 'test'); END",
+      ),
+    );
+    await tapM1Async(
+      tester,
+      find.text('Import now'),
+      () => find.textContaining('Nothing was changed').evaluate().isNotEmpty,
+    );
+    expect(
+      find.text('The import could not be saved. Nothing was changed.'),
+      findsOneWidget,
+    );
+  }, timeout: const Timeout(Duration(seconds: 30)));
   testWidgets(
     'a reload failure after a saved import says the import was saved',
     (tester) async {

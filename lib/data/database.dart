@@ -371,19 +371,33 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
         importRecords,
       )..where((r) => r.digest.equals(digest))).getSingleOrNull() !=
       null;
+
+  /// Writes [preview] and its import record in one transaction.
+  ///
+  /// Throws [ImportAlreadyCommitted] when the record for the preview's digest
+  /// exists. Any other failure rolls every write back.
+  ///
+  /// Imported preferences are merged into the settings stored at commit time,
+  /// read through the tolerant [readSettings], so local inputs (folders, follow
+  /// switch, live scan and scan hotkey) always keep their stored values. With
+  /// [replaceExisting] off and a settings row present, nothing is written to
+  /// settings. A settings save that lands between this commit and the app's
+  /// reload can still overwrite the imported preferences; that is existing
+  /// behaviour.
   Future<void> commitImport(
     ImportPreview preview, {
     required bool replaceExisting,
   }) => transaction(() async {
     if (await wasImported(preview.digest)) {
-      throw StateError('These source bytes were already imported.');
+      throw const ImportAlreadyCommitted();
     }
-    if (preview.settings != null) {
+    if (preview.settings case final imported?) {
       final present = await (select(
         preferences,
       )..where((p) => p.id.equals(1))).getSingleOrNull();
       if (replaceExisting || present == null) {
-        await saveSettings(preview.settings!);
+        final stored = await readSettings();
+        await saveSettings(imported.applyTo(stored.settings));
       }
     }
     for (final pin in preview.pins) {
@@ -416,6 +430,16 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       ),
     );
   });
+}
+
+/// Thrown by [BlackgridDatabase.commitImport] when the same files were already
+/// imported.
+class ImportAlreadyCommitted implements Exception {
+  /// Creates the exception.
+  const ImportAlreadyCommitted();
+
+  @override
+  String toString() => 'These files were already imported.';
 }
 
 // A database method's shared async closure context can retain its unsendable

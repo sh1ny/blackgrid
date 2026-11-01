@@ -108,7 +108,7 @@ ImportPreview parseLegacySources(
       }
     }
     final digest = sha256.convert(digestInput.takeBytes()).toString();
-    AppSettings? settings;
+    ImportedPreferences? settings;
     final pins = <CustomPin>[];
     final activity = <ItemActivity>[];
     final accounting = <ImportAccounting>[];
@@ -137,7 +137,9 @@ ImportPreview parseLegacySources(
           filters[key] = _boolean(raw[key]);
         }
       }
-      settings = AppSettings(
+      // Local inputs are never part of the preview; the commit takes them
+      // from the stored settings.
+      settings = ImportedPreferences(
         mode: mode,
         selectedMap: map,
         saveMarkerFilters: root.containsKey('SaveMarkerFilters')
@@ -147,11 +149,6 @@ ImportPreview parseLegacySources(
         trackerEnabled: scanner.containsKey('TrackerProgressEnabled')
             ? _boolean(scanner['TrackerProgressEnabled'])
             : false,
-        // Input paths and following authority are local configuration, never
-        // imported from a reference profile or reset by preference replacement.
-        gameLogDirectory: destinationSettings?.gameLogDirectory ?? '',
-        screenshotDirectory: destinationSettings?.screenshotDirectory ?? '',
-        followGameLogs: destinationSettings?.followGameLogs ?? true,
       );
       accounting.add(
         ImportAccounting(
