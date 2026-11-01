@@ -5,6 +5,9 @@
 /// tooling and specwright decide the same proposals the same way.
 library;
 
+import 'git.dart';
+import 'semver.dart';
+
 /// Longest summary, in characters, after whitespace collapses.
 const int maxSummary = 600;
 
@@ -334,3 +337,236 @@ String? firstWhySentence(String proposal) {
 /// An item that does gets no `(#<pr>)` appended when notes are rendered.
 bool namesReference(String item) =>
     _reference.hasMatch(item.replaceAll(_codeSpan, ' '));
+
+/// Longest proposal, in bytes, that is read; a larger one is listed by name.
+const int maxProposalBytes = 64 * 1024;
+
+/// Most changes one release range may hold before the release is refused.
+const int maxRangeChanges = 1000;
+
+/// Most items listed in the grouped blocks of the notes.
+const int maxListedItems = 150;
+
+/// Most changes listed with their detail in the `Changes:` block.
+const int maxListedChanges = 100;
+
+/// One change archived in a release range.
+class RangeChange {
+  /// Creates a change.
+  ///
+  /// [notes] is `null` when the proposal was over [maxProposalBytes] and so
+  /// was not read; [why] is then `null` too.
+  const RangeChange({
+    required this.name,
+    required this.pr,
+    required this.sha,
+    required this.notes,
+    required this.why,
+  });
+
+  /// The change name: its archive directory minus the date prefix.
+  final String name;
+
+  /// The PR number read from the subject of the adding commit, or `null`.
+  final int? pr;
+
+  /// The commit on main's first-parent line that added the archived proposal.
+  final String sha;
+
+  /// What [parseReleaseNotes] made of the proposal; `null` when oversized.
+  final ReleaseNotesResult? notes;
+
+  /// The first sentence of the proposal's `## Why`, or `null`.
+  final String? why;
+
+  /// Why the change has no valid section, or `null` when it has one.
+  String? get problem => switch (notes) {
+    ReleaseNotes() => null,
+    ReleaseNotesInvalid(:final errors) => errors.first.toString(),
+    NoReleaseNotes() => 'no release notes',
+    null => 'proposal is over the ${maxProposalBytes ~/ 1024} KB limit',
+  };
+}
+
+/// The changes archived since the last final release tag.
+class ReleaseRange {
+  /// Creates the range.
+  const ReleaseRange(this.lastFinalTag, this.changes);
+
+  /// The latest final release tag reachable from `HEAD`, or `null`.
+  final String? lastFinalTag;
+
+  /// The changes, oldest first on the first-parent line.
+  final List<RangeChange> changes;
+
+  /// The commits that added at least one archived proposal.
+  Set<String> get proposalShas => {for (final c in changes) c.sha};
+}
+
+/// The rendered body of a release section and the warnings found on the way.
+typedef RenderedNotes = ({String body, List<String> warnings});
+
+final RegExp _trailingPr = RegExp(r'\(#(\d+)\)\s*$');
+final RegExp _mergePr = RegExp(r'^Merge pull request #(\d+)');
+final RegExp _datePrefix = RegExp(r'^\d{4}-\d{2}-\d{2}-');
+const String _field = '\x01';
+
+int? _prOf(String subject) {
+  final m = _trailingPr.firstMatch(subject) ?? _mergePr.firstMatch(subject);
+  return m == null ? null : int.parse(m[1]!);
+}
+
+/// Reads the changes archived on main's first-parent line since the last final
+/// tag reachable from `HEAD` (all of history when there is none), oldest first.
+///
+/// A change is an archived `proposal.md` added by a first-parent commit; its PR
+/// is the trailing `(#<n>)` of that commit's subject or the number of a
+/// `Merge pull request #<n>` subject. A proposal over [maxProposalBytes] is
+/// not read. Throws [ReleaseException] above [maxRangeChanges] changes, naming
+/// the count.
+Future<ReleaseRange> readReleaseRange(Git git) async {
+  final tags = await git.output(['tag', '--merged', 'HEAD']);
+  SemVer? latest;
+  String? lastFinal;
+  for (final raw in tags.split('\n')) {
+    final name = raw.trim();
+    if (!releaseTagPattern.hasMatch(name)) continue;
+    final v = SemVer.tryParse(name.substring(1));
+    if (v == null || v.preRelease.isNotEmpty) continue;
+    if (latest == null || v.compareTo(latest) > 0) {
+      latest = v;
+      lastFinal = name;
+    }
+  }
+
+  final log = await git.output([
+    '-c',
+    'core.quotepath=false',
+    'log',
+    '--first-parent',
+    '--diff-merges=first-parent',
+    '--no-renames',
+    '--diff-filter=A',
+    '--name-only',
+    '--reverse',
+    '--format=$_field%H$_field%s',
+    ?(lastFinal == null ? null : '$lastFinal..HEAD'),
+    '--',
+    ':(glob)openspec/changes/archive/*/proposal.md',
+  ]);
+  final found = <(String sha, int? pr, String path)>[];
+  String? sha;
+  int? pr;
+  for (final line in log.split('\n')) {
+    if (line.startsWith(_field)) {
+      final parts = line.split(_field);
+      sha = parts[1];
+      pr = _prOf(parts.sublist(2).join(_field).trim());
+    } else if (line.trim().isNotEmpty && sha != null) {
+      found.add((sha, pr, line.trim()));
+    }
+  }
+  if (found.length > maxRangeChanges) {
+    throw ReleaseException(
+      '${found.length} changes were archived since '
+      '${lastFinal ?? 'the first commit'}; at most $maxRangeChanges are '
+      'supported.',
+    );
+  }
+
+  final changes = <RangeChange>[];
+  for (final (sha, pr, path) in found) {
+    final name = path.split('/')[3].replaceFirst(_datePrefix, '');
+    final size = int.tryParse(
+      await git.output(['cat-file', '-s', 'HEAD:$path']),
+    );
+    if (size == null || size > maxProposalBytes) {
+      changes.add(
+        RangeChange(name: name, pr: pr, sha: sha, notes: null, why: null),
+      );
+      continue;
+    }
+    final text = await git.output(['show', 'HEAD:$path']);
+    changes.add(
+      RangeChange(
+        name: name,
+        pr: pr,
+        sha: sha,
+        notes: parseReleaseNotes(text),
+        why: firstWhySentence(text),
+      ),
+    );
+  }
+  return ReleaseRange(lastFinal, changes);
+}
+
+String _itemLine(String text, int? pr) =>
+    pr != null && !namesReference(text) ? '- $text (#$pr)' : '- $text';
+
+List<String> _changeLines(List<RangeChange> changes) {
+  final detailed = changes.length <= maxListedChanges;
+  return [
+    for (final c in changes.take(maxListedChanges))
+      if (detailed)
+        '- ${c.name}${c.pr == null ? '' : ' (#${c.pr})'}'
+            '${(c.why ?? '').isEmpty ? '' : ': ${c.why}'}'
+      else
+        '- ${c.name}',
+    if (!detailed) '…and ${changes.length - maxListedChanges} more',
+  ];
+}
+
+/// Renders the notes body for [changes] under [summary].
+///
+/// The blocks are joined by one blank line: the summary; `Added:`, `Changed:`,
+/// `Fixed:` and `Removed:` (empty groups omitted) with the items of every
+/// valid section in change order, at most [maxListedItems] items and then
+/// `…and <n> more items`; then `Changes:` for the changes without a valid
+/// section. With no valid section at all the body is the summary and
+/// `Changes:`. An item that names no `#<n>` gets ` (#<pr>)` of its change.
+/// Each change without a valid section adds a warning naming it and its first
+/// problem. The `## v<version> - <date>` heading is not part of the body.
+///
+/// Throws [ArgumentError] when [changes] is empty.
+RenderedNotes renderReleaseNotes(String summary, List<RangeChange> changes) {
+  if (changes.isEmpty) {
+    throw ArgumentError.value(changes, 'changes', 'must not be empty');
+  }
+  final warnings = <String>[];
+  final plain = <RangeChange>[];
+  final byHeading = {for (final h in noteHeadings) h: <String>[]};
+  for (final c in changes) {
+    if (c.notes case ReleaseNotes(:final items)) {
+      for (final h in noteHeadings) {
+        for (final item in items[h] ?? const <ReleaseNoteItem>[]) {
+          byHeading[h]!.add(_itemLine(item.text, c.pr));
+        }
+      }
+    } else {
+      plain.add(c);
+      warnings.add('${c.name}: ${c.problem}');
+    }
+  }
+
+  final blocks = [summary];
+  var remaining = maxListedItems;
+  var total = 0;
+  for (final h in noteHeadings) {
+    final lines = byHeading[h]!;
+    total += lines.length;
+    final shown = lines.take(remaining).toList();
+    remaining -= shown.length;
+    if (shown.isNotEmpty) {
+      blocks.add(
+        ['${h[0].toUpperCase()}${h.substring(1)}:', ...shown].join('\n'),
+      );
+    }
+  }
+  if (total > maxListedItems) {
+    blocks[blocks.length - 1] += '\n…and ${total - maxListedItems} more items';
+  }
+  if (plain.isNotEmpty) {
+    blocks.add(['Changes:', ..._changeLines(plain)].join('\n'));
+  }
+  return (body: blocks.join('\n\n'), warnings: warnings);
+}
