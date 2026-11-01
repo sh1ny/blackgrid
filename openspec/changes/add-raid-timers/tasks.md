@@ -55,15 +55,15 @@ Rules for every group:
 | raid-timers → The scav cooldown counts down to ready | No mode known | test/domain/raid_timers_test.dart | unknown active mode gives unknown with a reason | green |
 | raid-timers → Timer displays follow the clock, not a tick count | Missed ticks | test/application/raid_timers_controller_test.dart | missed ticks do not drift | green |
 | raid-timers → Timer displays follow the clock, not a tick count | Nothing moving | test/application/raid_timers_controller_test.dart | no periodic timer while nothing moves | green |
-| raid-timers → Timers show in a strip in Blackgrid's window only | All timers on in a raid | test/ui/raid_timer_strip_test.dart | strip shows all three entries on Map and Scanner | red |
+| raid-timers → Timers show in a strip in Blackgrid's window only | All timers on in a raid | test/ui/raid_timer_strip_test.dart | strip shows all three entries on Map and Scanner | green |
 | raid-timers → Timers show in a strip in Blackgrid's window only | Long raid | test/domain/raid_timers_test.dart | durations from an hour use h:mm:ss | green |
-| raid-timers → Timers show in a strip in Blackgrid's window only | Timers off | test/ui/raid_timer_strip_test.dart | timers off hides the strip | red |
-| raid-timers → Timers show in a strip in Blackgrid's window only | Only the scav cooldown chosen | test/ui/raid_timer_strip_test.dart | only the chosen entry shows | red |
-| raid-timers → Timer settings live in the Settings dialog | Valid run-through length | test/ui/settings_dialog_raid_timers_test.dart | valid run-through length is saved | red |
-| raid-timers → Timer settings live in the Settings dialog | Invalid run-through length | test/ui/settings_dialog_raid_timers_test.dart | invalid run-through lengths are refused | red |
-| raid-timers → Timer settings live in the Settings dialog | Fence reputation out of range | test/ui/settings_dialog_raid_timers_test.dart | out-of-range reputation is refused | red |
-| raid-timers → Timer settings live in the Settings dialog | Reputation for the detected mode | test/ui/settings_dialog_raid_timers_test.dart | reputation edits the active mode's value | red |
-| raid-timers → Timer settings live in the Settings dialog | No mode known | test/ui/settings_dialog_raid_timers_test.dart | reputation field disabled without a mode | red |
+| raid-timers → Timers show in a strip in Blackgrid's window only | Timers off | test/ui/raid_timer_strip_test.dart | timers off hides the strip | green |
+| raid-timers → Timers show in a strip in Blackgrid's window only | Only the scav cooldown chosen | test/ui/raid_timer_strip_test.dart | only the chosen entry shows | green |
+| raid-timers → Timer settings live in the Settings dialog | Valid run-through length | test/ui/settings_dialog_raid_timers_test.dart | valid run-through length is saved | green |
+| raid-timers → Timer settings live in the Settings dialog | Invalid run-through length | test/ui/settings_dialog_raid_timers_test.dart | invalid run-through lengths are refused | green |
+| raid-timers → Timer settings live in the Settings dialog | Fence reputation out of range | test/ui/settings_dialog_raid_timers_test.dart | out-of-range reputation is refused | green |
+| raid-timers → Timer settings live in the Settings dialog | Reputation for the detected mode | test/ui/settings_dialog_raid_timers_test.dart | reputation edits the active mode's value | green |
+| raid-timers → Timer settings live in the Settings dialog | No mode known | test/ui/settings_dialog_raid_timers_test.dart | reputation field disabled without a mode | green |
 | raid-timers → Timer settings and cooldown starts survive restart | Restart restores everything | test/data/durability_restart_test.dart | raid timer settings and starts survive a reopen | green |
 | raid-timers → Timer settings and cooldown starts survive restart | Record from an older version | test/domain/raid_timer_settings_test.dart | record without raidTimers decodes to defaults | green |
 | raid-timers → Timer settings and cooldown starts survive restart | Save fails | test/application/settings_raid_timers_test.dart | failed save keeps the start pending and effective | green |
@@ -154,13 +154,13 @@ Rules for every group:
 
 ## 7. Timer strip and settings UI
 
-- [ ] 7.1 Write the failing widget tests:
+- [x] 7.1 Write the failing widget tests:
   - `test/ui/raid_timer_strip_test.dart`, for its 3 rows. The strip is pumped in the shell, the test switches between Map and Scanner, and asserts that the entries' text and tooltips are found and that the strip is absent when off.
   - `test/ui/settings_dialog_raid_timers_test.dart`, for its 5 rows.
 
   Use the existing harnesses under `test/support/`.
-- [ ] 7.2 Implement `lib/ui/raid_timer_strip.dart` and insert it in `lib/ui/shell.dart` between the header and the `Expanded` (design D8). Use a `SizedBox.shrink()` when there are no entries, and a `Tooltip` per entry. Verify: the strip rows are green and flipped, and `test/ui/shell_test.dart` and `test/ui/app_test.dart` still pass.
-- [ ] 7.3 Add the "Raid timers" section to `lib/ui/settings_dialog.dart`:
+- [x] 7.2 Implement `lib/ui/raid_timer_strip.dart` and insert it in `lib/ui/shell.dart` between the header and the `Expanded` (design D8). Use a `SizedBox.shrink()` when there are no entries, and a `Tooltip` per entry. Verify: the strip rows are green and flipped, and `test/ui/shell_test.dart` and `test/ui/app_test.dart` still pass.
+- [x] 7.3 Add the "Raid timers" section to `lib/ui/settings_dialog.dart`:
   - an on/off switch and three show checkboxes;
   - a run-through m:ss field that refuses values outside 1:00–30:00 with the spec's message;
   - a Fence reputation field for the active mode (`catalog.mode`), refusing values outside −7.00–6.00, disabled with the note when no mode is known;

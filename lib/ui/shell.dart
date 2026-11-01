@@ -7,6 +7,7 @@ import 'app_logo.dart';
 import 'import_dialog.dart';
 import 'labels.dart';
 import 'map_screen.dart';
+import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
 import 'settings_dialog.dart';
 import 'theme.dart';
@@ -153,6 +154,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                   ),
                 ),
               ),
+              RaidTimerStrip(controller: widget.services.raidTimers),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
