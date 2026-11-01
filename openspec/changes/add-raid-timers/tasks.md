@@ -98,11 +98,11 @@ Rules for every group:
 
 ## 3. Cooldown inputs on the catalog
 
-- [ ] 3.1 Write failing tests in `test/data/catalog_normalizer_test.dart` (extra tests, no map rows):
+- [x] 3.1 Write failing tests in `test/data/catalog_normalizer_test.dart` (extra tests, no map rows):
   - fills `scavCooldown` from minimal synthetic `items.data.settings.scavCooldownSeconds`, the Fence trader's `reputationLevels`, and a hideout level's `ScavCooldownTimer` bonus;
   - a missing or malformed part (no settings, no Fence, a non-number modifier, more than 64 levels or 256 bonuses) gives `scavCooldown == null` while the catalog stays valid with the same items;
   - a snapshot JSON round-trip keeps the block, and a stored snapshot JSON without the key loads with `null`.
-- [ ] 3.2 Implement `ScavCooldownInputs` in `lib/domain/catalog.dart`: `baseSeconds`, Fence levels sorted by minimum, and `bonuses` keyed `<stationId>-<level>`. Also add the optional `scavCooldown` key in `CatalogSnapshot.toJson`/`fromJson` and extraction in `lib/data/catalog_normalizer.dart` (design D5). `schemaVersion` and `normalizerVersion` stay 1. Verify: the 3.1 tests pass, `test/domain/catalog_authority_test.dart` passes unchanged, and `mise run analyze` is clean.
+- [x] 3.2 Implement `ScavCooldownInputs` in `lib/domain/catalog.dart`: `baseSeconds`, Fence levels sorted by minimum, and `bonuses` keyed `<stationId>-<level>`. Also add the optional `scavCooldown` key in `CatalogSnapshot.toJson`/`fromJson` and extraction in `lib/data/catalog_normalizer.dart` (design D5). `schemaVersion` and `normalizerVersion` stay 1. Verify: the 3.1 tests pass, `test/domain/catalog_authority_test.dart` passes unchanged, and `mise run analyze` is clean.
 
 ## 4. Pure timer projection
 

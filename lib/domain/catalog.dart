@@ -326,6 +326,79 @@ class ItemRequirement {
   );
 }
 
+/// One Fence reputation tier and its scav cooldown multiplier.
+class FenceCooldownLevel {
+  /// Creates a tier that applies from [minimumReputation] upward.
+  const FenceCooldownLevel({
+    required this.minimumReputation,
+    required this.modifier,
+  });
+
+  /// Restores a tier from its stored `{min, modifier}` object.
+  factory FenceCooldownLevel.fromJson(Map<String, dynamic> j) =>
+      FenceCooldownLevel(
+        minimumReputation: (j['min'] as num).toDouble(),
+        modifier: (j['modifier'] as num).toDouble(),
+      );
+
+  /// The lowest Fence reputation at which this tier applies.
+  final double minimumReputation;
+
+  /// The multiplier this tier applies to the base cooldown.
+  final double modifier;
+
+  /// The stored `{min, modifier}` form.
+  Map<String, Object?> toJson() => {
+    'min': minimumReputation,
+    'modifier': modifier,
+  };
+}
+
+/// The catalog facts needed to compute a scav cooldown.
+class ScavCooldownInputs {
+  /// Creates inputs; [fenceLevels] and [bonuses] are copied and frozen.
+  ScavCooldownInputs({
+    required this.baseSeconds,
+    required Iterable<FenceCooldownLevel> fenceLevels,
+    required Map<String, double> bonuses,
+  }) : fenceLevels = List.unmodifiable(
+         fenceLevels.toList()
+           ..sort((a, b) => a.minimumReputation.compareTo(b.minimumReputation)),
+       ),
+       bonuses = Map.unmodifiable(bonuses);
+
+  /// Restores inputs from their stored form.
+  factory ScavCooldownInputs.fromJson(Map<String, dynamic> j) =>
+      ScavCooldownInputs(
+        baseSeconds: (j['baseSeconds'] as num).toDouble(),
+        fenceLevels: (j['fenceLevels'] as List).map(
+          (v) =>
+              FenceCooldownLevel.fromJson(Map<String, dynamic>.from(v as Map)),
+        ),
+        bonuses: (j['bonuses'] as Map).map(
+          (k, v) => MapEntry(k as String, (v as num).toDouble()),
+        ),
+      );
+
+  /// The cooldown in seconds before any Fence or hideout adjustment.
+  final double baseSeconds;
+
+  /// Fence tiers, sorted by ascending minimum reputation.
+  final List<FenceCooldownLevel> fenceLevels;
+
+  /// Hideout cooldown bonuses (negative fractions) keyed `<stationId>-<level>`.
+  ///
+  /// A station level without a cooldown bonus is absent.
+  final Map<String, double> bonuses;
+
+  /// The stored form.
+  Map<String, Object?> toJson() => {
+    'baseSeconds': baseSeconds,
+    'fenceLevels': fenceLevels.map((v) => v.toJson()).toList(),
+    'bonuses': bonuses,
+  };
+}
+
 class CatalogSnapshot {
   CatalogSnapshot({
     required this.mode,
@@ -340,6 +413,7 @@ class CatalogSnapshot {
     Map<String, DateTime?> sourceTimestamps = const {},
     Iterable<String> localizationErrors = const [],
     Map<String, int> datasetCounts = const {},
+    this.scavCooldown,
   }) : items = Map.unmodifiable(items),
        traders = Map.unmodifiable(traders),
        requirements = List.unmodifiable(requirements),
@@ -388,6 +462,10 @@ class CatalogSnapshot {
   final Map<String, DateTime?> sourceTimestamps;
   final List<String> localizationErrors;
   final Map<String, int> datasetCounts;
+
+  /// Inputs for the scav cooldown, or null when the datasets lacked or
+  /// malformed any part of them.
+  final ScavCooldownInputs? scavCooldown;
   late final Map<String, List<ItemRequirement>> requirementIndex;
   late final List<(CatalogItem, String)> searchIndex;
 
@@ -449,6 +527,7 @@ class CatalogSnapshot {
     ),
     'localizationErrors': localizationErrors,
     'datasetCounts': datasetCounts,
+    if (scavCooldown != null) 'scavCooldown': scavCooldown!.toJson(),
   };
   factory CatalogSnapshot.fromJson(Map<String, dynamic> j) {
     if (j['schemaVersion'] != 1 || j['normalizerVersion'] != 1) {
@@ -479,6 +558,11 @@ class CatalogSnapshot {
       ),
       localizationErrors: (j['localizationErrors'] as List).cast<String>(),
       datasetCounts: (j['datasetCounts'] as Map).cast<String, int>(),
+      scavCooldown: j['scavCooldown'] == null
+          ? null
+          : ScavCooldownInputs.fromJson(
+              Map<String, dynamic>.from(j['scavCooldown'] as Map),
+            ),
     );
   }
 }
