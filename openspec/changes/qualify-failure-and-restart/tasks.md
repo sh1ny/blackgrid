@@ -135,9 +135,9 @@ Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentatio
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `mise run analyze` and `mise run test`. Both pass, with every Test map row green. Format the changed Dart with `dart format`.
-- [ ] 7.2 Run `openspec validate qualify-failure-and-restart --strict`. It passes.
-- [ ] 7.3 Record the M6 exit criterion evidence in this change's `evidence.md`. List the tests that prove each part: refresh failures keep last good data and say what failed (groups 4 and 5), auth failures (group 5), and settings, pins and history across restart and interrupted import (groups 1, 2 and 6). Note that killing the process mid-write is not tested (design D8). Verify that the file names an existing test for each part.
+- [x] 7.1 Run `mise run analyze` and `mise run test`. Both pass, with every Test map row green. Format the changed Dart with `dart format`.
+- [x] 7.2 Run `openspec validate qualify-failure-and-restart --strict`. It passes.
+- [x] 7.3 Record the M6 exit criterion evidence in this change's `evidence.md`. List the tests that prove each part: refresh failures keep last good data and say what failed (groups 4 and 5), auth failures (group 5), and settings, pins and history across restart and interrupted import (groups 1, 2 and 6). Note that killing the process mid-write is not tested (design D8). Verify that the file names an existing test for each part.
 
 ## Workflow follow-up
 
