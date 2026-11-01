@@ -478,6 +478,26 @@ void main() {
     },
   );
 
+  test(
+    'a summary starting with a heading is refused before any gate',
+    () async {
+      final before = snapshot();
+      for (final bad in [
+        '## Highlights Raid timers arrive.',
+        '\n  ## v0.9.0 is out',
+        '# Title',
+        '### Small',
+      ]) {
+        final e = await refusal('0.2.0', summary: bad);
+        expect(e.message, contains('starts with `#`'), reason: bad);
+        expect(runner.calls, isEmpty);
+        expect(snapshot(), before);
+      }
+      // A `#` later in the summary is fine: it stays inside the one line.
+      await prepareRelease('0.2.0', summary: 'Fixes #12 and ## more.');
+    },
+  );
+
   test('a git error reading the range is refused without leftover-branch '
       'instructions', () async {
     runner.failRangeRead = true;

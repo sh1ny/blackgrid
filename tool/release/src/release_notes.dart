@@ -356,14 +356,16 @@ const int maxListedChanges = 100;
 class RangeChange {
   /// Creates a change.
   ///
-  /// [notes] is `null` when the proposal was over [maxProposalBytes] and so
-  /// was not read; [why] is then `null` too.
+  /// [notes] is `null` when the proposal was over [maxProposalBytes] or,
+  /// with [missing], no longer exists at `HEAD`, and so was not read; [why]
+  /// is then `null` too.
   const RangeChange({
     required this.name,
     required this.pr,
     required this.sha,
     required this.notes,
     required this.why,
+    this.missing = false,
   });
 
   /// The change name: its archive directory minus the date prefix.
@@ -381,11 +383,17 @@ class RangeChange {
   /// The first sentence of the proposal's `## Why`, or `null`.
   final String? why;
 
+  /// Whether the archived proposal no longer exists at `HEAD`: its change was
+  /// reverted, or its archive directory was moved, after it was added.
+  final bool missing;
+
   /// Why the change has no valid section, or `null` when it has one.
   String? get problem => switch (notes) {
     ReleaseNotes() => null,
     ReleaseNotesInvalid(:final errors) => errors.first.toString(),
     NoReleaseNotes() => 'no release notes',
+    null when missing =>
+      'the archived proposal is no longer at HEAD (reverted or moved)',
     null => 'proposal is over the ${maxProposalBytes ~/ 1024} KB limit',
   };
 }
@@ -424,7 +432,8 @@ int? _prOf(String subject) {
 /// A change is an archived `proposal.md` added by a first-parent commit; its PR
 /// is the trailing `(#<n>)` of that commit's subject or the number of a
 /// `Merge pull request #<n>` subject. A proposal over [maxProposalBytes] is
-/// not read. Throws [ReleaseException] above [maxRangeChanges] changes, naming
+/// not read, and neither is one that no longer exists at `HEAD`; both stay
+/// listed, without a section, so one bad archive never blocks a release. Throws [ReleaseException] above [maxRangeChanges] changes, naming
 /// the count.
 Future<ReleaseRange> readReleaseRange(Git git) async {
   final tags = await git.output(['tag', '--merged', 'HEAD']);
@@ -479,6 +488,20 @@ Future<ReleaseRange> readReleaseRange(Git git) async {
   final changes = <RangeChange>[];
   for (final (sha, pr, path) in found) {
     final name = path.split('/')[3].replaceFirst(_datePrefix, '');
+    final exists = await git.run(['cat-file', '-e', 'HEAD:$path']);
+    if (exists.exitCode != 0) {
+      changes.add(
+        RangeChange(
+          name: name,
+          pr: pr,
+          sha: sha,
+          notes: null,
+          why: null,
+          missing: true,
+        ),
+      );
+      continue;
+    }
     final size = int.tryParse(
       await git.output(['cat-file', '-s', 'HEAD:$path']),
     );

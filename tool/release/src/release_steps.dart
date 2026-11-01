@@ -36,6 +36,15 @@ Future<void> prepare({
       'collapsing whitespace, over the $maxSummary limit.',
     );
   }
+  // The summary is the section's first line, so a leading `## ` would end
+  // the section there in verify-tag, after the tag is pushed.
+  if (collapsed.startsWith('#')) {
+    throw const ReleaseException(
+      'The release summary starts with `#`; it must not, because as the '
+      'first line of the CHANGELOG.md section a heading would end the section '
+      'in verify-tag. Start it with plain text (write "PR #69", not "#69").',
+    );
+  }
 
   // 1. Validate the version.
   final SemVer requested;

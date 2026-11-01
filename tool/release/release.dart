@@ -13,8 +13,9 @@ Usage: dart run tool/release/release.dart <command> [arguments]
 Commands:
   prepare <version> (--summary <text> | --summary-file <path>) [--trailer <line>]...
       Create release/v<version> with the version bump and changelog commit.
-      The summary (whitespace collapsed to one line, at most 600 characters)
-      opens the new changelog section; the file must be outside the checkout.
+      The summary (whitespace collapsed to one line, at most 600 characters,
+      not starting with `#`) opens the new changelog section; the file must be
+      outside the checkout.
   tag
       Tag the merged release commit on main and push the tag to origin.
   build

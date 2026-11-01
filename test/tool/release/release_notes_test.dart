@@ -519,6 +519,25 @@ void main() {
       },
     );
 
+    test('a proposal deleted on main is listed under Changes and warned, not '
+        'fatal', () async {
+      await squash('gone', 1, proposal(notes: section('### Added\n- Gone')));
+      await run(['rm', '-q', '-r', 'openspec/changes/archive/2026-01-01-gone']);
+      await run(['commit', '-m', 'Revert "feat: gone (#1)" (#2)']);
+      await squash('kept', 3, proposal(notes: section('### Fixed\n- Kept')));
+
+      final range = await readReleaseRange(git);
+      expect([for (final c in range.changes) c.name], ['gone', 'kept']);
+      final rendered = renderReleaseNotes('Sum.', range.changes);
+      expect(
+        rendered.body,
+        'Sum.\n\nFixed:\n- Kept (#3)\n\nChanges:\n- gone (#1)',
+      );
+      expect(rendered.warnings, [
+        'gone: the archived proposal is no longer at HEAD (reverted or moved)',
+      ]);
+    });
+
     test('the proposal commits are exposed for the uncovered list', () async {
       await squash('a', 1, proposal());
       final sha = await run(['rev-parse', 'HEAD']);
