@@ -21,6 +21,7 @@ class SessionLogState {
     this.detectedMapId,
     this.detectedMode = GameMode.unknown,
     this.message,
+    this.raidLogsMessage,
   });
   final MapInputStatus status;
   final String? sessionId;
@@ -28,6 +29,13 @@ class SessionLogState {
   final String? detectedMapId;
   final GameMode detectedMode;
   final String? message;
+
+  /// A problem with the backend or push-notifications log, or `null` when both
+  /// read cleanly.
+  ///
+  /// Separate from [status] and [message], which describe the application log
+  /// alone; a raid-log problem never changes the detected map or mode.
+  final String? raidLogsMessage;
 }
 
 class MapPlayerSample {
