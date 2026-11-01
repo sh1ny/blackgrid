@@ -3,14 +3,20 @@ import 'package:flutter/foundation.dart';
 import '../data/database.dart';
 import '../domain/catalog.dart';
 import '../domain/settings.dart';
+import 'raid_timers_controller.dart';
 
-class SettingsController extends ChangeNotifier {
+class SettingsController extends ChangeNotifier
+    implements RaidTimerSettingsSource {
   SettingsController(this.database);
   final BlackgridDatabase database;
   AppSettings _settings = AppSettings();
   List<CustomPin> _pins = const [];
   AppSettings get settings => _settings;
   List<CustomPin> get pins => _pins;
+
+  @override
+  RaidTimerSettings get raidTimers => _settings.raidTimers;
+
   String? error;
   bool busy = false;
   bool _settingsUnreadable = false;
@@ -58,6 +64,7 @@ class SettingsController extends ChangeNotifier {
 
   /// The cooldown starts the timers use: the stored starts max-merged with
   /// the starts still waiting for a successful save.
+  @override
   Map<GameMode, DateTime> get effectiveScavCooldownStarts => Map.unmodifiable(
     _maxMerge(_settings.raidTimers.scavCooldownStarts, _pendingStarts),
   );
@@ -80,6 +87,7 @@ class SettingsController extends ChangeNotifier {
   /// one is kept pending and saved at once, or right after the save in flight.
   /// Nothing is saved before [load] completes or while the stored record is
   /// unreadable: the user's first save writes the pending starts then.
+  @override
   Future<void> recordScavCooldownStart(GameMode mode, DateTime start) async {
     final current = effectiveScavCooldownStarts[mode];
     if (current != null && !start.isAfter(current)) return;

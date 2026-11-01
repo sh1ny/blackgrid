@@ -28,6 +28,7 @@ import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'progress_controller.dart';
 import 'raid_lifecycle_controller.dart';
+import 'raid_timers_controller.dart';
 import 'scan_coordinator.dart';
 import 'scan_decision_feed.dart';
 import 'scan_epoch.dart';
@@ -91,6 +92,14 @@ class AppServices {
     // so the first replay of the session folder reaches it.
     final logReader = SessionLogReader();
     raidLifecycle = RaidLifecycleController(logReader);
+    // Also before the first bind: it records cooldown starts from the replay.
+    raidTimers = RaidTimersController(
+      lifecycle: raidLifecycle,
+      settings: settings,
+      catalog: catalog,
+      progress: progress,
+      clock: clock ?? DateTime.now,
+    );
     mapSession = MapSessionController(
       settings: settings,
       logReader: logReader,
@@ -152,6 +161,10 @@ class AppServices {
   /// Folds the session logs into the raid phase; the reader is owned by
   /// [mapSession], which binds and closes it.
   late final RaidLifecycleController raidLifecycle;
+
+  /// Projects the raid timers for the shell strip and records scav cooldown
+  /// starts as raids end.
+  late final RaidTimersController raidTimers;
 
   /// Owns live scanning: the switch, the worker, the hook and the scan flow.
   late final ScanCoordinator scanner;
@@ -388,6 +401,7 @@ class AppServices {
       await mapSession.close();
     } finally {
       // After mapSession.close() has closed the reader it listens to.
+      raidTimers.dispose();
       raidLifecycle.dispose();
       scans.dispose();
       selection.dispose();
