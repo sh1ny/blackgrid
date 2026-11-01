@@ -8,6 +8,7 @@ import '../domain/catalog.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_session.dart';
 import '../domain/marker_categories.dart';
+import '../domain/raid_lifecycle.dart';
 import '../domain/raid_panel_text_parser.dart';
 import '../domain/settings.dart';
 import 'item_decision_card.dart';
@@ -69,6 +70,7 @@ class _MapInputStatusState extends State<_MapInputStatus> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([
       widget.services.mapSession,
+      widget.services.raidLifecycle,
       widget.services.settings,
     ]),
     builder: (context, _) {
@@ -112,6 +114,9 @@ class _MapInputStatusState extends State<_MapInputStatus> {
             'Logs: ${mapInputStatusLabel(state.logStatus)}${_folder(state.logDirectory, state.logDirectoryDetected)}',
           ),
           if (state.logMessage != null) Text(state.logMessage!),
+          Text(_raidLine(services.raidLifecycle.state)),
+          if (state.raidLogsMessage != null)
+            Text('Raid logs: ${state.raidLogsMessage}'),
           Text(
             'Screenshots: ${mapInputStatusLabel(state.screenshotStatus)}${_folder(state.screenshotDirectory, state.screenshotDirectoryDetected)}',
           ),
@@ -535,6 +540,25 @@ class _MapScreenState extends State<MapScreen> {
       },
     ),
   );
+}
+
+/// The "Raid:" line: the phase in plain words, the map while a raid is being
+/// entered, under way or just ended, and a note after a cancelled queue.
+String _raidLine(RaidLifecycleState state) {
+  final label = raidPhaseLabel(state.phase);
+  final mapId = switch (state.phase) {
+    RaidPhase.raidStarting => state.pendingMapId ?? state.currentRaid?.mapId,
+    RaidPhase.inRaid || RaidPhase.raidEnded => state.raid?.mapId,
+    RaidPhase.unknown ||
+    RaidPhase.inMenus ||
+    RaidPhase.inQueue ||
+    RaidPhase.matchFound => null,
+  };
+  final onMap = mapId == null ? '' : ' on ${mapLabel(mapId)}';
+  final cancelled = state.phase == RaidPhase.inMenus && state.lastQueueAborted
+      ? ' (matching cancelled)'
+      : '';
+  return 'Raid: $label$onMap$cancelled';
 }
 
 String _folder(String path, bool detected) =>

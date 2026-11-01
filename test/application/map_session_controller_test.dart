@@ -175,6 +175,61 @@ void main() {
     expect(session.state.assumedAssociation, isTrue);
   });
 
+  test('missing push log leaves Logs status and screenshot labels unchanged', () async {
+    await log('woods');
+    // The backend log exists and is empty; only the notifications log is absent.
+    await File(
+      '${root.path}${Platform.pathSeparator}log_2026.10.07_0-52-00${Platform.pathSeparator}backend.log',
+    ).writeAsString('', flush: true);
+    await settings.setMapInputs(followGameLogs: true);
+    await session.initialize();
+    session.updateMapContext(_map('woods'), 1);
+    await screenshot(1);
+    await watcher.rescan();
+    await _until(
+      session,
+      () => session.state.raidHighlightIds.contains('woods-exit'),
+    );
+    final state = session.state;
+    expect(state.logStatus, MapInputStatus.watching);
+    expect(state.logMessage, isNull);
+    expect(state.detectedMapId, 'woods');
+    expect(state.assumedAssociation, isFalse);
+    expect(state.playerSample!.assumedAssociation, isFalse);
+    expect(state.screenshotMessage, isNull);
+    expect(state.raidLogsMessage, contains('notifications log'));
+  });
+
+  test('raid logs change keeps evidence with an unsupported scene', () async {
+    final application = await log('nowhere');
+    await settings.setMap('woods');
+    await session.initialize();
+    session.updateMapContext(_map('woods'), 1);
+    expect(session.state.logStatus, MapInputStatus.unavailable);
+    await screenshot(1);
+    await session.readLatest();
+    await _until(
+      session,
+      () => session.state.raidHighlightIds.contains('woods-exit'),
+    );
+    expect(session.state.playerSample, isNotNull);
+    final epoch = session.state.sessionEpoch;
+    expect(session.state.raidLogsMessage, isNotNull);
+
+    // The push log appearing changes only the raid-logs line.
+    await File(
+      '${application.parent.path}${Platform.pathSeparator}push-notifications.log',
+    ).writeAsString('', flush: true);
+    await logs.rescan();
+
+    expect(session.state.raidLogsMessage, contains('backend'));
+    expect(session.state.logStatus, MapInputStatus.unavailable);
+    expect(session.state.sessionEpoch, epoch);
+    expect(session.state.playerSample, isNotNull);
+    expect(session.state.raidEvidence, isNotNull);
+    expect(session.state.raidHighlightIds, {'woods-exit'});
+  });
+
   test(
     'disagreement blocks watched evidence; Read Latest remains visibly assumed',
     () async {

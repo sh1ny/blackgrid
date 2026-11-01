@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:blackgrid/data/raid_panel_ocr.dart';
 import 'package:blackgrid/domain/map_session.dart';
+import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/labels.dart';
@@ -139,6 +140,38 @@ Future<void> _until(WidgetTester tester, bool Function() done) async {
     await tester.pump();
   }
   await tester.pumpAndSettle();
+}
+
+/// Writes a session folder whose application log holds [messages], one line
+/// each a second apart, and points the log input at it.
+///
+/// The backend log is empty; there is no push-notifications log.
+Future<void> _useLogFolder(
+  WidgetTester tester,
+  MapWidgetHarness h,
+  List<String> messages,
+) async {
+  final root = (await tester.runAsync(
+    () => Directory.systemTemp.createTemp('blackgrid-map-raid-'),
+  ))!;
+  addTearDown(() => root.delete(recursive: true));
+  await tester.runAsync(() async {
+    final folder = await Directory(
+      '${root.path}${Platform.pathSeparator}log_2026.10.31_22-00-00_1.3.0.0.48484',
+    ).create();
+    final lines = StringBuffer();
+    for (final (i, message) in messages.indexed) {
+      final second = (i + 1).toString().padLeft(2, '0');
+      lines.writeln(
+        '2026-10-31 22:00:$second.000|1.3.0.0.48484|Info|application|$message',
+      );
+    }
+    await File('${folder.path}${Platform.pathSeparator}application_000.log')
+        .writeAsString(lines.toString(), flush: true);
+    await File('${folder.path}${Platform.pathSeparator}backend_000.log')
+        .writeAsString('', flush: true);
+    await h.services.settings.setMapInputs(gameLogDirectory: root.path);
+  });
 }
 
 /// Starts Read Latest without the UI and waits until [done].
@@ -340,6 +373,70 @@ void main() {
       'Screenshots: ${mapInputStatusLabel(MapInputStatus.missing)}',
     );
     expect(lineOf('Screenshots:'), isNot('Screenshots: missing'));
+  });
+
+  testWidgets('raid line shows in raid on Customs', (tester) async {
+    final h = await pumpMapFixture(tester);
+    await _useLogFolder(tester, h, [
+      'Matching with group id: 1',
+      'scene preset path:maps/bigmap.bundle',
+      'MatchingCompleted: 7',
+      'GameStarting: 7',
+      'GameStarted: 7',
+    ]);
+    await _until(
+      tester,
+      () => h.services.raidLifecycle.state.phase == RaidPhase.inRaid,
+    );
+    await expandMapInputs(tester);
+    expect(find.text('Raid: in raid on Customs'), findsOneWidget);
+    expect(find.textContaining('inRaid'), findsNothing);
+    expect(find.textContaining('RaidPhase.'), findsNothing);
+  });
+
+  testWidgets('raid line shows matching cancelled', (tester) async {
+    final h = await pumpMapFixture(tester);
+    await _useLogFolder(tester, h, [
+      'Matching with group id: 1',
+      'Network game matching cancelled.',
+    ]);
+    await _until(tester, () => h.services.raidLifecycle.state.lastQueueAborted);
+    await expandMapInputs(tester);
+    expect(find.text('Raid: in menus (matching cancelled)'), findsOneWidget);
+  });
+
+  testWidgets('raid line shows unknown without log input', (tester) async {
+    final h = await pumpMapFixture(tester);
+    expect(h.services.mapSession.state.logDirectory, isEmpty);
+    await expandMapInputs(tester);
+    expect(find.text('Raid: unknown'), findsOneWidget);
+    expect(find.textContaining('RaidPhase.'), findsNothing);
+    expect(find.textContaining('inRaid'), findsNothing);
+    expect(find.textContaining('Raid logs:'), findsNothing);
+  });
+
+  testWidgets('raid logs line shows the missing notifications log', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    await _useLogFolder(tester, h, ['Matching with group id: 1']);
+    await _until(
+      tester,
+      () => h.services.mapSession.state.raidLogsMessage != null,
+    );
+    await expandMapInputs(tester);
+    expect(
+      find.text('Raid logs: notifications log not written yet'),
+      findsOneWidget,
+    );
+    // The application log is fine, so the Logs line is unchanged.
+    expect(
+      find.text(
+        'Logs: ${mapInputStatusLabel(MapInputStatus.watching)}'
+        ' · ${h.services.mapSession.state.logDirectory}',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('collapsed section does not mount the saved-file status', (
