@@ -29,7 +29,7 @@ Stash management is secondary.
 - No WebView/WebView2 map renderer, or runtime/architectural dependency on the old application
 - Independently recreate useful behavior in Dart/Flutter; no copied reference code or old runtime shipped. The user maintains a private reference companion (a modified fork of a C# desktop program) and owns their contributions, not all upstream or third-party contents
 - Repository work targets only the user's own repositories, never the reference companion's original upstream project. The user's fork was intentionally detached from that upstream; do not restore the fork relationship or open PRs there
-- The user's intent is for Blackgrid to be open source when functional. No license has been selected and this intent does not authorize making the current private repository public now
+- Blackgrid is open source: the source is released under the MIT License ([LICENSE](LICENSE)) and the repository is public
 - The desktop app needs no Blackgrid backend or account and sends no telemetry; everything works on one machine, offline once data is downloaded. An optional Blackgrid Service with accounts (roadmap M17) may later sync progress for the web and mobile apps; it holds only the progress event history, and the desktop app works fully without it. Existing third-party data/progression access is not a Blackgrid account system
 - Proven OpenCV/Tesseract item-recognition approach retained until parity; no novelty-driven engine substitution
 - Blackgrid owns the scanner pipeline in Dart; no RatScanner/RatEye/RatStash code or C# bridge is integrated. Native bindings/FFI remain for selected OpenCV/Tesseract primitives and Windows APIs
