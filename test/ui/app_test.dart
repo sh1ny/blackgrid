@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:blackgrid/application/app_services.dart';
+import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/app_logo.dart';
 import 'package:flutter/material.dart';
@@ -34,4 +35,39 @@ void main() {
       expectStartupLogo(tester);
     },
   );
+
+  const newer =
+      'Your data was saved by a newer version of Blackgrid. Install that version or a later one to open it. Your data has not been changed.';
+  const generic =
+      'Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted.';
+
+  testWidgets('a newer database shows the newer-version startup message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      BlackgridBootstrap(
+        open: () => Future<AppServices>.error(
+          const NewerDatabaseException(onDisk: 99, supported: 3),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text(newer), findsOneWidget);
+    expect(find.text(generic), findsNothing);
+    expect(find.text('Retry opening local storage'), findsOneWidget);
+  });
+
+  testWidgets('any other open failure shows the generic storage message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      BlackgridBootstrap(
+        open: () => Future<AppServices>.error(StateError('storage')),
+      ),
+    );
+    await tester.pump();
+    expect(find.text(generic), findsOneWidget);
+    expect(find.text(newer), findsNothing);
+    expect(find.text('Retry opening local storage'), findsOneWidget);
+  });
 }

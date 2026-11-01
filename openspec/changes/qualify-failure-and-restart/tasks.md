@@ -29,8 +29,8 @@
 | local-data-durability → Unreadable history entries are skipped, not fatal | All entries readable | test/application/history_controller_test.dart | readable history rows load with no error | green |
 | local-data-durability → History errors stay visible while entries are listed | Recording fails while entries are listed | test/ui/history_panel_test.dart | a record failure shows its message above the listed entries | green |
 | local-data-durability → History errors stay visible while entries are listed | Empty history with no error | test/ui/history_panel_test.dart | empty history shows No items yet and no error | green |
-| local-data-durability → A database from a newer version is refused with its own message | Newer schema version on disk | test/data/migration_test.dart, test/ui/app_test.dart | newer schema reaches the second query as NewerDatabaseException without byte mutation; a newer database shows the newer-version startup message | red |
-| local-data-durability → A database from a newer version is refused with its own message | Other open failure | test/ui/app_test.dart | any other open failure shows the generic storage message | red *(coverage)* |
+| local-data-durability → A database from a newer version is refused with its own message | Newer schema version on disk | test/data/migration_test.dart, test/ui/app_test.dart | newer schema reaches the second query as NewerDatabaseException without byte mutation; a newer database shows the newer-version startup message | green |
+| local-data-durability → A database from a newer version is refused with its own message | Other open failure | test/ui/app_test.dart | any other open failure shows the generic storage message | green |
 | local-data-durability → A damaged saved token reports the token as unavailable | Corrupt token bytes on disk | test/application/progress_controller_test.dart | corrupt token bytes on disk fail as Tracker token unavailable with no request | green |
 | local-data-durability → A damaged saved token reports the token as unavailable | Saving a new token recovers | test/data/credential_store_test.dart | saving over corrupt token bytes reads back the new token after reopening | green |
 | legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | red |
@@ -85,8 +85,8 @@ Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentatio
 
 ## 3. Newer database refusal (D2)
 
-- [ ] 3.1 Write the failing test in `test/data/migration_test.dart`. It opens a `user_version 99` file through `BlackgridDatabase.open(file)` (`createInBackground`), runs a first query and ignores its failure, then asserts the type of the second query's error. Keep the unchanged-bytes and future-table assertions. Write the `test/ui/app_test.dart` tests: the bootstrap's `open` throws what that test proves arrives and shows the newer-version message; any other error shows the generic message; Retry is present in both. Verify they fail.
-- [ ] 3.2 Implement D2:
+- [x] 3.1 Write the failing test in `test/data/migration_test.dart`. It opens a `user_version 99` file through `BlackgridDatabase.open(file)` (`createInBackground`), runs a first query and ignores its failure, then asserts the type of the second query's error. Keep the unchanged-bytes and future-table assertions. Write the `test/ui/app_test.dart` tests: the bootstrap's `open` throws what that test proves arrives and shows the newer-version message; any other error shows the generic message; Retry is present in both. Verify they fail.
+- [x] 3.2 Implement D2:
   - Add `NewerDatabaseException` in `lib/data/database.dart` with `///` docs.
   - `onUpgrade` throws it when `from > to`, before any migrator call or transaction. `from < 1` keeps the `StateError`.
   - Remove the unreachable `beforeOpen` version check.

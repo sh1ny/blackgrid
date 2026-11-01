@@ -93,6 +93,26 @@ class StoredSettings {
   final bool unreadable;
 }
 
+/// Thrown when the database on disk was written by a newer Blackgrid version.
+///
+/// The file is left untouched: no migration, downgrade, reset or deletion runs.
+class NewerDatabaseException implements Exception {
+  /// Creates the exception for a file at schema version [onDisk] opened by a
+  /// build that supports up to [supported].
+  const NewerDatabaseException({required this.onDisk, required this.supported});
+
+  /// The schema version stored in the database file.
+  final int onDisk;
+
+  /// The newest schema version this build can open.
+  final int supported;
+
+  @override
+  String toString() =>
+      'NewerDatabaseException: database schema $onDisk is newer than the '
+      'supported $supported.';
+}
+
 @DriftDatabase(
   tables: [
     Preferences,
@@ -114,6 +134,7 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
+      if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
       if (from < 1 || to != 3 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
@@ -123,12 +144,6 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       });
     },
     beforeOpen: (details) async {
-      if (details.versionBefore != null &&
-          details.versionBefore! > schemaVersion) {
-        throw StateError(
-          'This database was created by a newer Blackgrid version.',
-        );
-      }
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
