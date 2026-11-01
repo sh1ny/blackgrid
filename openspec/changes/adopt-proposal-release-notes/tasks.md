@@ -14,7 +14,7 @@ Parsing, grouping and rendering are pure and proved in `release_notes_test.dart`
 | release-versioning → Proposals carry release notes in a fixed format | Continued item | test/tool/release/release_notes_test.dart | an indented line continues the item above with one space | green |
 | release-versioning → Proposals carry release notes in a fixed format | Invalid section | test/tool/release/release_notes_test.dart | each invalid form is reported with its line and problem | green |
 | release-versioning → Proposals carry release notes in a fixed format | No section | test/tool/release/release_notes_test.dart | a proposal without the heading reports no release notes | green |
-| release-versioning → Proposals carry release notes in a fixed format | In-flight proposal checked offline | test/tool/release/proposal_release_notes_test.dart | in-flight proposals of this repository have valid release notes; and: a fixture tree with an invalid in-flight proposal fails naming it | red |
+| release-versioning → Proposals carry release notes in a fixed format | In-flight proposal checked offline | test/tool/release/proposal_release_notes_test.dart | in-flight proposals of this repository have valid release notes; and: a fixture tree with an invalid in-flight proposal fails naming it | green |
 | release-versioning → Release notes are built from the changes archived since the last final release | Items grouped across changes | test/tool/release/release_notes_test.dart | items are grouped across changes in first-parent order with the PR appended | green |
 | release-versioning → Release notes are built from the changes archived since the last final release | Prereleases do not bound the range | test/tool/release/release_notes_test.dart | the range starts at the last final tag, not a prerelease | green |
 | release-versioning → Release notes are built from the changes archived since the last final release | Change archived only on a branch | test/tool/release/release_notes_test.dart | a change archived only on an unmerged branch is not listed | green |
@@ -24,8 +24,8 @@ Parsing, grouping and rendering are pure and proved in `release_notes_test.dart`
 | release-versioning → Release preparation requires a release summary | Summary given | test/tool/release/prepare_test.dart | the summary opens the section followed by the grouped items | red |
 | release-versioning → Release preparation requires a release summary | Multi-line summary file | test/tool/release/verify_tag_test.dart | a multi-line summary file becomes one line and verify-tag publishes the whole section | red |
 | release-versioning → Release preparation requires a release summary | Summary missing or too long | test/tool/release/prepare_test.dart | a missing, blank or over-long summary is refused before any gate | red |
-| release-versioning → The next release's notes can be previewed | Preview | test/tool/changelog_test.dart | preview prints grouped items and uncovered direct commits and changes no file | red |
-| release-versioning → The next release's notes can be previewed | Nothing to preview | test/tool/changelog_test.dart | preview with nothing since the last final tag says so and exits 0 | red |
+| release-versioning → The next release's notes can be previewed | Preview | test/tool/changelog_test.dart | preview prints grouped items and uncovered direct commits and changes no file | green |
+| release-versioning → The next release's notes can be previewed | Nothing to preview | test/tool/changelog_test.dart | preview with nothing since the last final tag says so and exits 0 | green |
 
 ## 1. ADR-0029 and the architecture index
 
@@ -45,8 +45,8 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 4. CLI, git-cliff removal and the in-flight check
 
-- [ ] 4.1 Write failing tests: rewrite `test/tool/changelog_test.dart` for the rows "Preview" and "Nothing to preview", plus `--check <proposal.md>` (exit 0 with the summary; exit 1 with each error and its line; exit 2 for a missing file) and an unknown option (exit 2). Write `test/tool/release/proposal_release_notes_test.dart` for "In-flight proposal checked offline": one test over this repository's `openspec/changes/*/proposal.md` (not `archive/`), and one over a temporary fixture tree with an invalid in-flight proposal, through the same helper. Verify they fail.
-- [ ] 4.2 Rewrite `tool/changelog.dart` as the CLI over the library: preview by default (grouped items, warnings, and non-merge, non-release first-parent commits since the last final tag that added no archived proposal, listed as uncovered), and `--check <proposal.md>`. Delete `cliff.toml`. In `mise.toml`, remove the git-cliff tool and the `changelog` task, and point `release-notes` at the new CLI with a matching description. Implement the in-flight helper. Verify group 4's tests pass, flip their rows green, and `grep -rn cliff tool test mise.toml` finds nothing.
+- [x] 4.1 Write failing tests: rewrite `test/tool/changelog_test.dart` for the rows "Preview" and "Nothing to preview", plus `--check <proposal.md>` (exit 0 with the summary; exit 1 with each error and its line; exit 2 for a missing file) and an unknown option (exit 2). Write `test/tool/release/proposal_release_notes_test.dart` for "In-flight proposal checked offline": one test over this repository's `openspec/changes/*/proposal.md` (not `archive/`), and one over a temporary fixture tree with an invalid in-flight proposal, through the same helper. Verify they fail.
+- [x] 4.2 Rewrite `tool/changelog.dart` as the CLI over the library: preview by default (grouped items, warnings, and non-merge, non-release first-parent commits since the last final tag that added no archived proposal, listed as uncovered), and `--check <proposal.md>`. Delete `cliff.toml`. In `mise.toml`, remove the git-cliff tool and the `changelog` task, and point `release-notes` at the new CLI with a matching description. Implement the in-flight helper. Verify group 4's tests pass, flip their rows green, and `grep -rn cliff tool test mise.toml` finds nothing.
 
 ## 5. `release:prepare` builds the section
 

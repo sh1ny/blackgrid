@@ -5,6 +5,8 @@
 /// tooling and specwright decide the same proposals the same way.
 library;
 
+import 'dart:io';
+
 import 'git.dart';
 import 'semver.dart';
 
@@ -569,4 +571,34 @@ RenderedNotes renderReleaseNotes(String summary, List<RangeChange> changes) {
     blocks.add(['Changes:', ..._changeLines(plain)].join('\n'));
   }
   return (body: blocks.join('\n\n'), warnings: warnings);
+}
+
+/// Checks every in-flight proposal under [changesDir] offline.
+///
+/// An in-flight proposal is `<changesDir>/<name>/proposal.md` for each
+/// directory except `archive`. Returns one `(path, problem)` per proposal
+/// without a valid `## Release Notes` section; the problem is its first error
+/// as `line <n>: <message>`, or the missing-section message. An empty list
+/// means every in-flight proposal is valid.
+List<(String path, String problem)> checkInFlightProposals(
+  Directory changesDir,
+) {
+  final problems = <(String, String)>[];
+  final dirs = changesDir.listSync().whereType<Directory>().toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+  for (final dir in dirs) {
+    final name = dir.uri.pathSegments.lastWhere((s) => s.isNotEmpty);
+    if (name == 'archive') continue;
+    final file = File('${dir.path}${Platform.pathSeparator}proposal.md');
+    if (!file.existsSync()) continue;
+    switch (parseReleaseNotes(file.readAsStringSync())) {
+      case ReleaseNotes():
+        break;
+      case ReleaseNotesInvalid(:final errors):
+        problems.add((file.path, errors.first.toString()));
+      case final NoReleaseNotes none:
+        problems.add((file.path, none.message));
+    }
+  }
+  return problems;
 }

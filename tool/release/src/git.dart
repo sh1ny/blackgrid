@@ -34,7 +34,7 @@ class CommandResult {
   final bool timedOut;
 }
 
-/// Seam for every external effect (git, mise gates, dart, gh, git-cliff).
+/// Seam for every external effect (git, mise gates, dart, gh).
 abstract class CommandRunner {
   /// Runs [executable]. With [stream], output goes straight to the console
   /// and the result has empty stdout/stderr.
