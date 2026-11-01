@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../tool/release/src/git.dart';
+import '../../../tool/release/src/release_notes.dart';
+import '../../../tool/release/src/release_steps.dart';
 import '../../../tool/release/src/verify_tag_step.dart';
 
 const _identity = {
@@ -256,31 +258,39 @@ void main() {
     });
   });
 
+  /// Archives a proposal the way a squash-merged PR [pr] would.
+  void archiveProposal(String name, int pr, String added) {
+    final dir = Directory(
+      '${work.path}/openspec/changes/archive/2026-01-01-$name',
+    )..createSync(recursive: true);
+    File('${dir.path}/proposal.md').writeAsStringSync(
+      '## Why\n\nBecause.\n\n## Release Notes\n\nA summary.\n\n'
+      '### Added\n\n- $added\n',
+    );
+    _git(work, ['add', '.']);
+    _git(work, ['commit', '-m', 'feat: $name (#$pr)']);
+  }
+
+  /// The changelog `prepare` writes for [version]: its range, its renderer and
+  /// its in-process insert, with no external tool.
+  Future<String> preparedChangelog(String version, String summary) async {
+    final range = await readReleaseRange(
+      Git(const ProcessCommandRunner(environment: _identity), work),
+    );
+    final rendered = renderReleaseNotes(summary, range.changes);
+    return insertChangelogSection(
+      existing: '# demo Changelog\n\n',
+      version: version,
+      date: '2026-11-10',
+      body: rendered.body,
+    );
+  }
+
   test(
     'the heading release:prepare renders for a beta is found by verify-tag',
     () async {
-      final repoRoot = Directory.current.absolute.path;
-      File('$repoRoot/cliff.toml').copySync('${work.path}/cliff.toml');
-      commitFiles({}, 'feat(map): add a thing (#9)');
-      final render = await Process.run(
-        'dart',
-        [
-          'run',
-          '$repoRoot/tool/changelog.dart',
-          '--tag',
-          'v0.6.0-beta.1',
-          '--output',
-          'CHANGELOG.md',
-        ],
-        workingDirectory: work.path,
-        // dart is a .bat shim on Windows.
-        runInShell: Platform.isWindows,
-        environment: _identity,
-        stdoutEncoding: utf8,
-        stderrEncoding: utf8,
-      );
-      expect(render.exitCode, 0, reason: '${render.stderr}');
-      final changelog = File('${work.path}/CHANGELOG.md').readAsStringSync();
+      archiveProposal('thing', 9, 'Add a thing');
+      final changelog = await preparedChangelog('0.6.0-beta.1', 'A summary.');
       expect(
         changelog,
         contains(RegExp(r'^## v0\.6\.0-beta\.1\b', multiLine: true)),
@@ -289,7 +299,32 @@ void main() {
       releaseCommit(pubspecVersion: '0.6.0-beta.1', changelog: changelog);
       _git(work, ['tag', 'v0.6.0-beta.1']);
       await verify('v0.6.0-beta.1');
-      expect(notes(), contains('add a thing (#9)'));
+      expect(notes(), contains('Add a thing (#9)'));
+    },
+  );
+
+  test(
+    'a multi-line summary file becomes one line and verify-tag publishes the '
+    'whole section',
+    () async {
+      archiveProposal('thing', 9, 'Add a thing');
+      // The file lives outside the checkout, as prepare requires.
+      final summaryFile = File('${root.path}/summary.md')
+        ..writeAsStringSync('Raid timers arrive.\n## Not a heading\n');
+      final changelog = await preparedChangelog(
+        '0.6.0',
+        collapseSummary(summaryFile.readAsStringSync()),
+      );
+      expect(changelog, contains('\nRaid timers arrive. ## Not a heading\n'));
+
+      releaseCommit(pubspecVersion: '0.6.0', changelog: changelog);
+      _git(work, ['tag', 'v0.6.0']);
+      await verify('v0.6.0');
+      expect(
+        notes(),
+        '\nRaid timers arrive. ## Not a heading\n\n'
+        'Added:\n- Add a thing (#9)\n',
+      );
     },
   );
 }

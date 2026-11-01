@@ -6,10 +6,10 @@ Parsing, grouping and rendering are pure and proved in `release_notes_test.dart`
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| release-versioning → Release commit records the version and the changelog | Release commit created | test/tool/release/prepare_test.dart | release commit inserts the new section above the newest and keeps every other section | red |
-| release-versioning → Release commit records the version and the changelog | Final release replaces its prereleases | test/tool/release/prepare_test.dart | a final release removes the sections of its own prereleases | red |
-| release-versioning → Release commit records the version and the changelog | Prerelease keeps the earlier prerelease | test/tool/release/prepare_test.dart | a prerelease keeps the earlier prerelease section below it | red |
-| release-versioning → Release commit records the version and the changelog | Changelog generation fails | test/tool/release/prepare_test.dart | a failing CHANGELOG write stops with no commit and names the branch and files to discard | red |
+| release-versioning → Release commit records the version and the changelog | Release commit created | test/tool/release/prepare_test.dart | release commit inserts the new section above the newest and keeps every other section | green |
+| release-versioning → Release commit records the version and the changelog | Final release replaces its prereleases | test/tool/release/prepare_test.dart | a final release removes the sections of its own prereleases | green |
+| release-versioning → Release commit records the version and the changelog | Prerelease keeps the earlier prerelease | test/tool/release/prepare_test.dart | a prerelease keeps the earlier prerelease section below it | green |
+| release-versioning → Release commit records the version and the changelog | Changelog generation fails | test/tool/release/prepare_test.dart | a failing CHANGELOG write stops with no commit and names the branch and files to discard | green |
 | release-versioning → Proposals carry release notes in a fixed format | Valid section | test/tool/release/release_notes_test.dart | a valid section yields its summary and items | green |
 | release-versioning → Proposals carry release notes in a fixed format | Continued item | test/tool/release/release_notes_test.dart | an indented line continues the item above with one space | green |
 | release-versioning → Proposals carry release notes in a fixed format | Invalid section | test/tool/release/release_notes_test.dart | each invalid form is reported with its line and problem | green |
@@ -18,12 +18,12 @@ Parsing, grouping and rendering are pure and proved in `release_notes_test.dart`
 | release-versioning → Release notes are built from the changes archived since the last final release | Items grouped across changes | test/tool/release/release_notes_test.dart | items are grouped across changes in first-parent order with the PR appended | green |
 | release-versioning → Release notes are built from the changes archived since the last final release | Prereleases do not bound the range | test/tool/release/release_notes_test.dart | the range starts at the last final tag, not a prerelease | green |
 | release-versioning → Release notes are built from the changes archived since the last final release | Change archived only on a branch | test/tool/release/release_notes_test.dart | a change archived only on an unmerged branch is not listed | green |
-| release-versioning → Release notes are built from the changes archived since the last final release | No change archived since the last release | test/tool/release/prepare_test.dart | nothing archived since the last final tag is refused before any gate | red |
+| release-versioning → Release notes are built from the changes archived since the last final release | No change archived since the last release | test/tool/release/prepare_test.dart | nothing archived since the last final tag is refused before any gate | green |
 | release-versioning → A change without valid release notes is still listed | Change without a valid section | test/tool/release/release_notes_test.dart | a change without a valid section is listed under Changes with its Why sentence and warned | green |
 | release-versioning → A change without valid release notes is still listed | Release with no valid section at all | test/tool/release/release_notes_test.dart | with no valid section the notes are the summary and Changes only | green |
-| release-versioning → Release preparation requires a release summary | Summary given | test/tool/release/prepare_test.dart | the summary opens the section followed by the grouped items | red |
-| release-versioning → Release preparation requires a release summary | Multi-line summary file | test/tool/release/verify_tag_test.dart | a multi-line summary file becomes one line and verify-tag publishes the whole section | red |
-| release-versioning → Release preparation requires a release summary | Summary missing or too long | test/tool/release/prepare_test.dart | a missing, blank or over-long summary is refused before any gate | red |
+| release-versioning → Release preparation requires a release summary | Summary given | test/tool/release/prepare_test.dart | the summary opens the section followed by the grouped items | green |
+| release-versioning → Release preparation requires a release summary | Multi-line summary file | test/tool/release/verify_tag_test.dart | a multi-line summary file becomes one line and verify-tag publishes the whole section | green |
+| release-versioning → Release preparation requires a release summary | Summary missing or too long | test/tool/release/prepare_test.dart | a missing, blank or over-long summary is refused before any gate | green |
 | release-versioning → The next release's notes can be previewed | Preview | test/tool/changelog_test.dart | preview prints grouped items and uncovered direct commits and changes no file | green |
 | release-versioning → The next release's notes can be previewed | Nothing to preview | test/tool/changelog_test.dart | preview with nothing since the last final tag says so and exits 0 | green |
 
@@ -50,8 +50,8 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 5. `release:prepare` builds the section
 
-- [ ] 5.1 Write failing tests in `test/tool/release/prepare_test.dart` for the rows "Release commit created", "Final release replaces its prereleases", "Prerelease keeps the earlier prerelease", "Changelog generation fails", "No change archived since the last release", "Summary given" and "Summary missing or too long". Fixtures hold archived proposals with sections. Also add: a git error while reading the range, before the branch exists, is refused without the leftover-branch instructions (review S6); and `--summary` and `--summary-file` are exclusive. In `test/tool/release/verify_tag_test.dart`, rewrite the beta-heading contract test to build the section with `prepare`'s in-process insert instead of git-cliff, then run `verify-tag` on it. Add the "Multi-line summary file" row there. Remove the `changelogCode` stub from `FakeRunner`. Verify the new tests fail.
-- [ ] 5.2 Implement D3 in `tool/release/src/release_steps.dart` and `tool/release/release.dart`:
+- [x] 5.1 Write failing tests in `test/tool/release/prepare_test.dart` for the rows "Release commit created", "Final release replaces its prereleases", "Prerelease keeps the earlier prerelease", "Changelog generation fails", "No change archived since the last release", "Summary given" and "Summary missing or too long". Fixtures hold archived proposals with sections. Also add: a git error while reading the range, before the branch exists, is refused without the leftover-branch instructions (review S6); and `--summary` and `--summary-file` are exclusive. In `test/tool/release/verify_tag_test.dart`, rewrite the beta-heading contract test to build the section with `prepare`'s in-process insert instead of git-cliff, then run `verify-tag` on it. Add the "Multi-line summary file" row there. Remove the `changelogCode` stub from `FakeRunner`. Verify the new tests fail.
+- [x] 5.2 Implement D3 in `tool/release/src/release_steps.dart` and `tool/release/release.dart`:
   - add the `--summary <text>` / `--summary-file <path>` options and collapse the summary;
   - check it before the preconditions;
   - build and validate the section in memory after the preconditions and before the gates;

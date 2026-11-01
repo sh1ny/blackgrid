@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../tool/release/release.dart';
 import '../../../tool/release/src/git.dart';
 import '../../../tool/release/src/release_steps.dart';
 
@@ -14,16 +15,16 @@ const _identity = {
   'GIT_CONFIG_NOSYSTEM': '1',
 };
 
-/// Records every non-git invocation. Git runs for real; `mise run <gate>` and
-/// the changelog generator are stubbed.
+/// Records every non-git invocation. Git runs for real; `mise run <gate>` is
+/// stubbed.
 class FakeRunner implements CommandRunner {
   FakeRunner(this.real);
 
   final CommandRunner real;
   final List<String> calls = [];
   final Map<String, int> gateCodes = {};
-  int changelogCode = 0;
   int commitCode = 0;
+  bool failRangeRead = false;
 
   @override
   Future<CommandResult> run(
@@ -39,6 +40,9 @@ class FakeRunner implements CommandRunner {
       if (commitCode != 0 && arguments.first == 'commit') {
         return CommandResult(commitCode, '', 'hook refused');
       }
+      if (failRangeRead && arguments.contains('--merged')) {
+        return const CommandResult(128, '', 'fatal: range exploded');
+      }
       return real.run(
         executable,
         arguments,
@@ -48,19 +52,6 @@ class FakeRunner implements CommandRunner {
     calls.add(line);
     if (executable == 'mise' && arguments.first == 'run') {
       return CommandResult(gateCodes[arguments[1]] ?? 0, '', 'gate stderr');
-    }
-    if (executable == Platform.resolvedExecutable &&
-        arguments.contains('tool/changelog.dart')) {
-      if (changelogCode != 0) {
-        return CommandResult(changelogCode, '', 'generator exploded');
-      }
-      final tag = arguments[arguments.indexOf('--tag') + 1];
-      File('$workingDirectory/CHANGELOG.md')
-          .writeAsStringSync('# Changelog\n\n## $tag\n\n- feat: something\n');
-      return const CommandResult(0, '', '');
-    }
-    if (executable == 'git-cliff') {
-      return const CommandResult(0, '0.2.0\n', '');
     }
     fail('unexpected command: $line');
   }
@@ -84,6 +75,12 @@ String _git(Directory dir, List<String> args) {
   return (r.stdout as String).trim();
 }
 
+const _summary = 'Blackgrid now follows the whole raid.';
+
+String _proposal(String added) =>
+    '## Why\n\nBecause it matters.\n\n## Release Notes\n\nA summary.\n\n'
+    '### Added\n\n- $added\n';
+
 void main() {
   late Directory root;
   late Directory origin;
@@ -94,19 +91,25 @@ void main() {
   Future<void> prepareRelease(
     String version, {
     List<String> trailers = const [],
+    String? summary = _summary,
   }) {
     return prepare(
       version: version,
       repoDir: work,
       runner: runner,
       trailers: trailers,
+      summary: summary,
+      now: DateTime(2026, 11, 2),
       out: out,
     );
   }
 
-  Future<ReleaseException> refusal(String version) async {
+  Future<ReleaseException> refusal(
+    String version, {
+    String? summary = _summary,
+  }) async {
     try {
-      await prepareRelease(version);
+      await prepareRelease(version, summary: summary);
     } on ReleaseException catch (e) {
       return e;
     }
@@ -122,6 +125,23 @@ void main() {
     File('${work.path}/pubspec.yaml').readAsStringSync(),
   ].join('\n--\n');
 
+  /// Commits an archived proposal, as a squash-merged PR [pr] would.
+  void archive(String name, int pr, String proposal) {
+    final dir = Directory(
+      '${work.path}/openspec/changes/archive/2026-01-01-$name',
+    )..createSync(recursive: true);
+    File('${dir.path}/proposal.md').writeAsStringSync(proposal);
+    _git(work, ['add', '.']);
+    _git(work, ['commit', '-m', 'feat: $name (#$pr)']);
+  }
+
+  void commitChangelog(String text) {
+    File('${work.path}/CHANGELOG.md').writeAsStringSync(text);
+    _git(work, ['add', 'CHANGELOG.md']);
+    _git(work, ['commit', '-m', 'docs: changelog']);
+    _git(work, ['push', 'origin', 'main']);
+  }
+
   setUp(() {
     root = Directory.systemTemp.createTempSync('blackgrid_prepare_');
     origin = Directory('${root.path}/origin.git')..createSync();
@@ -136,6 +156,7 @@ void main() {
     _git(work, ['add', '.']);
     _git(work, ['commit', '-m', 'feat: first']);
     _git(work, ['tag', 'v0.1.0']);
+    archive('thing', 5, _proposal('Raid timers'));
     _git(work, ['push', 'origin', 'main', '--tags']);
     runner = FakeRunner(ProcessCommandRunner(environment: _identity));
     out = StringBuffer();
@@ -297,21 +318,212 @@ void main() {
     },
   );
 
+  test('a failing CHANGELOG write stops with no commit and names the branch '
+      'and files to discard', () async {
+    Directory('${work.path}/CHANGELOG.md').createSync();
+    File('${work.path}/CHANGELOG.md/keep.txt').writeAsStringSync('x');
+    _git(work, ['add', '.']);
+    _git(work, ['commit', '-m', 'docs: changelog is odd']);
+    _git(work, ['push', 'origin', 'main']);
+    final mainHead = _git(work, ['rev-parse', 'main']);
+    final e = await refusal('0.2.0');
+    expect(e.message, contains('CHANGELOG.md'));
+    expect(e.message, contains('release/v0.2.0'));
+    expect(e.message, contains('pubspec.yaml'));
+    expect(e.message, contains('git checkout main'));
+    expect(_git(work, ['rev-parse', 'HEAD']), mainHead);
+    expect(_git(work, ['rev-parse', 'release/v0.2.0']), mainHead);
+  });
+
+  group('the changelog section', () {
+    const dated = '## v0.6.0 - 2026-10-01\n\nold six\n\n';
+    const older = '## v0.5.0 - 2026-09-01\n\nold five\n\n';
+    const title = '# Blackgrid Changelog\n\n';
+    const added = 'Added:\n- Raid timers (#5)\n\n';
+
+    String changelog() => File('${work.path}/CHANGELOG.md').readAsStringSync();
+
+    test('release commit inserts the new section above the newest and keeps '
+        'every other section', () async {
+      commitChangelog('$title$dated${older.trimRight()}\n');
+      await prepareRelease('0.7.0');
+      expect(_git(work, ['branch', '--show-current']), 'release/v0.7.0');
+      expect(_git(work, ['rev-list', '--count', 'main..HEAD']), '1');
+      expect(
+        _git(work, ['log', '-1', '--format=%s']),
+        'chore(release): v0.7.0',
+      );
+      expect(
+        _git(work, [
+          'show',
+          '--name-only',
+          '--format=',
+          'HEAD',
+        ]).split('\n').toSet(),
+        {'CHANGELOG.md', 'pubspec.yaml'},
+      );
+      expect(
+        File('${work.path}/pubspec.yaml').readAsStringSync(),
+        contains('version: 0.7.0\r\n'),
+      );
+      expect(
+        changelog(),
+        '$title## v0.7.0 - 2026-11-02\n\n$_summary\n\n$added'
+        '$dated${older.trimRight()}\n',
+      );
+    });
+
+    test(
+      'a final release removes the sections of its own prereleases',
+      () async {
+        commitChangelog(
+          '$title## v0.7.0-beta.2 - 2026-10-20\n\nbeta two\n\n'
+          '## v0.7.0-beta.1 - 2026-10-10\n\nbeta one\n\n$dated',
+        );
+        await prepareRelease('0.7.0');
+        expect(
+          changelog(),
+          '$title## v0.7.0 - 2026-11-02\n\n$_summary\n\n$added$dated',
+        );
+      },
+    );
+
+    test(
+      'a prerelease keeps the earlier prerelease section below it',
+      () async {
+        const beta1 = '## v0.7.0-beta.1 - 2026-10-10\n\nbeta one\n\n';
+        commitChangelog('$title$beta1$dated');
+        await prepareRelease('0.7.0-beta.2');
+        expect(
+          changelog(),
+          '$title## v0.7.0-beta.2 - 2026-11-02\n\n$_summary\n\n$added'
+          '$beta1$dated',
+        );
+      },
+    );
+
+    test('a CRLF changelog keeps its line endings', () async {
+      commitChangelog('$title$dated'.replaceAll('\n', '\r\n'));
+      await prepareRelease('0.7.0');
+      final text = changelog();
+      expect(text, startsWith('# Blackgrid Changelog\r\n\r\n## v0.7.0 - '));
+      expect(text.replaceAll('\r\n', ''), isNot(contains('\n')));
+      expect(text, endsWith('old six\r\n\r\n'));
+    });
+
+    test(
+      'a changelog without a version section gets it after the title',
+      () async {
+        commitChangelog(title);
+        await prepareRelease('0.2.0');
+        expect(
+          changelog(),
+          '$title## v0.2.0 - 2026-11-02\n\n$_summary\n\n${added.trimRight()}\n',
+        );
+      },
+    );
+
+    test(
+      'the summary opens the section followed by the grouped items',
+      () async {
+        await prepareRelease('0.2.0');
+        expect(
+          changelog(),
+          contains('## v0.2.0 - 2026-11-02\n\n$_summary\n\nAdded:\n'),
+        );
+      },
+    );
+
+    test('a change without release notes is warned about and listed', () async {
+      archive('plain', 6, '## Why\n\nJust because.\n');
+      _git(work, ['push', 'origin', 'main']);
+      await prepareRelease('0.2.0');
+      expect(out.toString(), contains('plain: no release notes'));
+      expect(changelog(), contains('Changes:\n- plain (#6): Just because.'));
+    });
+
+    test('no suggested next version is printed', () async {
+      await prepareRelease('0.2.0');
+      expect(out.toString(), isNot(contains('suggested next version')));
+    });
+  });
+
   test(
-    'changelog failure makes no commit and names branch and files to discard',
+    'nothing archived since the last final tag is refused before any gate',
     () async {
-      runner.changelogCode = 7;
-      final mainHead = _git(work, ['rev-parse', 'main']);
-      final e = await refusal('0.2.0');
-      expect(e.message, contains('generator exploded'));
-      expect(e.message, contains('release/v0.2.0'));
-      expect(e.message, contains('pubspec.yaml'));
-      expect(e.message, contains('CHANGELOG.md'));
-      expect(e.message, contains('git checkout main'));
-      expect(_git(work, ['rev-parse', 'HEAD']), mainHead);
-      expect(_git(work, ['rev-parse', 'release/v0.2.0']), mainHead);
+      _git(work, ['tag', 'v0.2.0']);
+      File('${work.path}/README.md').writeAsStringSync('direct\n');
+      _git(work, ['commit', '-am', 'feat: direct commit']);
+      _git(work, ['push', 'origin', 'main', '--tags']);
+      final before = snapshot();
+      final e = await refusal('0.3.0');
+      expect(e.message.toLowerCase(), contains('nothing to release'));
+      expect(runner.calls, isEmpty);
+      expect(snapshot(), before);
     },
   );
+
+  test(
+    'a missing, blank or over-long summary is refused before any gate',
+    () async {
+      final before = snapshot();
+      for (final bad in [null, '', ' \n\t ', 'a ' * 301]) {
+        final e = await refusal('0.2.0', summary: bad);
+        expect(e.message.toLowerCase(), contains('summary'), reason: '$bad');
+        expect(runner.calls, isEmpty);
+        expect(snapshot(), before);
+      }
+      // 600 characters after collapsing are accepted.
+      await prepareRelease('0.2.0', summary: '${'a ' * 299}a');
+    },
+  );
+
+  test('a git error reading the range is refused without leftover-branch '
+      'instructions', () async {
+    runner.failRangeRead = true;
+    final before = snapshot();
+    final e = await refusal('0.2.0');
+    expect(e.message, contains('range exploded'));
+    expect(e.message, isNot(contains('release/v0.2.0')));
+    expect(e.message, isNot(contains('Discard')));
+    expect(runner.calls, isEmpty);
+    expect(snapshot(), before);
+  });
+
+  group('command line', () {
+    Future<int> cli(List<String> args) =>
+        runRelease(['prepare', ...args], runner: runner, repoDir: work);
+
+    test('--summary and --summary-file are exclusive', () async {
+      final before = snapshot();
+      expect(
+        await cli(['0.2.0', '--summary', 'x', '--summary-file', 'y.md']),
+        2,
+      );
+      expect(snapshot(), before);
+      expect(runner.calls, isEmpty);
+    });
+
+    test('a multi-line summary file becomes one line in the section', () async {
+      final file = File('${root.path}/summary.md')
+        ..writeAsStringSync('Raid timers arrive.\n## Not a heading\n');
+      expect(await cli(['0.2.0', '--summary-file', file.path]), 0);
+      expect(
+        File('${work.path}/CHANGELOG.md').readAsStringSync(),
+        contains('\n\nRaid timers arrive. ## Not a heading\n\nAdded:\n'),
+      );
+    });
+
+    test('a missing summary is a refusal', () async {
+      expect(await cli(['0.2.0']), 1);
+      expect(runner.calls, isEmpty);
+    });
+
+    test('an unreadable summary file is a refusal', () async {
+      expect(await cli(['0.2.0', '--summary-file', '${root.path}/nope.md']), 1);
+      expect(runner.calls, isEmpty);
+    });
+  });
 
   test(
     'commit failure leaves a recovery that returns main to a clean tree',
