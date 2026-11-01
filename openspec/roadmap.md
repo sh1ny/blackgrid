@@ -8,45 +8,36 @@ Milestone IDs keep the implementation strategy's numbering (M0–M6), so they ma
 
 A change that names a GitHub issue resolves it through its PR: the PR description links the issue with a closing keyword (`Closes #41`), so merging the PR closes the issue, and the PR's body says what of the issue it delivers. If the PR delivers only part of the issue, it links it with `Refs #N` instead, and the issue says what is left.
 
-## Now: M6 - Windows CI and releases
+## Now: M7 - raid lifecycle, timers and local stats
 
-Rescoped with the user on 2026-10-30; more work will be added as M6 runs. M6 opens with full CI on GitHub's Windows runners and GitHub Releases in two formats, a zip of the Release bundle and an installer, so a version is built and published without the developer's machine. Offline, refresh and auth failures and restart, import and history correctness (risks 3 and 7) come last. The user may move them out once M6's scope is settled. The clean-machine, display-matrix and pending user checks moved to Later.
-
-**Exit criteria:**
-- Every PR and every push to `main` runs the offline gates on a GitHub-hosted Windows runner: `mise run analyze`, `mise run test`, a Release build, `bundle:check` and `mise run test:qualification` against that build, so no test runs only on the developer's machine. A red run is visible on the PR. (agent)
-- The installer format (MSIX or Inno Setup) and code signing are decided and recorded in an ADR. (agent proposes; user decides)
-- Pushing a `v` tag builds the Release on CI and publishes a GitHub Release with a zip of the bundle and an installer, with that version's changelog section as its notes. A `-beta.N` tag is published as a prerelease. (agent)
-- `blackgrid.exe`, the installer and its uninstall entry show Blackgrid's own icon, not the Flutter default, at every size from 16 to 256 px. (agent)
-- The user picks that icon from the compared candidates. (user)
-- The user installs a published release from the installer and from the zip, and starts it. (user)
-- Offline, refresh and auth failures keep the last good data and say what failed, and settings, pins and history survive restart and interrupted imports, each proved by offline tests. (agent)
-
-**Changes** (in order):
-1. `add-windows-ci` - a GitHub Actions workflow on a Windows runner that runs the offline gates, a Release build, `bundle:check` and the qualification tests on every PR and push to `main`.
-2. `add-release-packaging` - an ADR choosing the installer format and code signing, plus a `mise` task that packages the Release bundle as a zip and an installer.
-3. `publish-github-releases` - a tag-triggered workflow that builds both packages and publishes the GitHub Release with the changelog section as notes; the local release flow and README follow.
-4. `add-app-icon` - replace the default Flutter icon (`windows/runner/resources/app_icon.ico`, used by the executable, the installer and the uninstall entry). Candidates from two sources are compared side by side: PNGs the user generates with ChatGPT and vector icons drawn in the repo. The user picks one, and the change builds a multi-size `.ico` from it with a test of its sizes. It lands before the M6-close beta, so the first published release carries the icon.
-5. `qualify-failure-and-restart` - offline tests for refresh and auth failures and for restart, import and history durability, with fixes for any gap they find.
-
-## Next
-
-Planned with the user on 2026-10-30 from a review of [TarkovMonitor](https://github.com/the-hideout/TarkovMonitor) and [tarkov.dev](https://github.com/the-hideout/tarkov-dev)'s map. The goal is useful feature parity, rebuilt independently: no source code is copied and TarkovMonitor's bugs are not repeated. Blackgrid never looks for the game process; everything below comes from the game's log files, the screenshot folder and the user's own actions. The milestones run in this order.
-
-### M7 - raid lifecycle, timers and local stats
+Promoted from Next at the M6 close on 2026-11-01; the user agreed its split then. Planned with the user on 2026-10-30 from a review of [TarkovMonitor](https://github.com/the-hideout/TarkovMonitor) and [tarkov.dev](https://github.com/the-hideout/tarkov-dev)'s map. The goal is useful feature parity, rebuilt independently: no source code is copied and TarkovMonitor's bugs are not repeated. Blackgrid never looks for the game process; everything below comes from the game's log files, the screenshot folder and the user's own actions.
 
 Blackgrid follows the whole raid from the game's logs, not just the map and mode, shows raid timers in its own window and keeps local stats.
 
+**Exit criteria:**
+- `application.log` and `notifications.log` feed one raid state machine covering queue, match found, raid starting and started, matching aborted, raid exit, back in menus, profile select and reconnects. Partial lines, multi-byte text split across reads and the two logs arriving in either order are each proved by offline fixture tests. (agent)
+- Time in raid, the run-through countdown and the scav cooldown show in Blackgrid's own window, never on the game screen. Their settings survive restart, and the countdowns are proved by fake-clock tests. (agent)
+- Total flea sales and raids per map are stored only in the local database, survive restart and are emptied by the clear button, proved by offline tests. (agent)
+- During real raids, the raid state, timers and stats follow the game. (user)
+
+**Changes** (in order):
 1. `add-raid-lifecycle` - read the rest of `application.log` (queue, match found, raid starting and started, matching aborted, back in menus, profile select) and `notifications.log` (raid exit, flea sales, task started, failed and finished) into one raid state machine that recognises reconnects. Fixes what TarkovMonitor gets wrong: partial lines across reads, multi-byte text split across chunks, and the raid exit and profile select coming from two logs in either order.
 2. `add-raid-timers` - time in raid, the run-through countdown (default 7:10) and the scav cooldown countdown (tarkov.dev's base time, the user's Fence reputation and built hideout bonuses from Tracker progress), shown in Blackgrid's window; no overlay. Settings: run-through length, Fence reputation, timers on or off and which ones show.
 3. `add-local-stats` - total flea sales and raids per map, stored locally in the Drift database, with a clear button. Nothing leaves the machine.
 
-### M8 - map labels and popups
+## Next: M8 - map labels and popups
 
 The native map reads like tarkov.dev's: named places, labelled extracts and a bubble at the marker on click.
+
+**Split agreed:** 2026-11-01
 
 1. `add-extract-labels` - draw each extract's name beside its badge, coloured by faction (PMC, Scav, shared, transit) in colours we choose (ADR-0023), outlines drawn in their category's colour instead of hazard red, and extract outlines shown on hover or selection. Adds a `?` help button on the map: position tracking needs the game's own screenshot key.
 2. `add-marker-popups` - replace the details strip under the map with a bubble anchored to the marker that follows pan and zoom, stays in the viewport and closes. It shows the quest name and objective text, an extract's switches and required item, a lock's type and key name, a container's name, or a boss and spawn chance; raw fields move to a collapsed Details section (`player-facing-text`).
 3. `add-location-labels` - carry tarkov.dev's place labels (`maps.json`, already frozen in the pack's evidence: 303 labels on 10 maps) into a new pack version, with a rights note (user decision 2026-10-30: use tarkov.dev's data); draw them on the canvas behind the markers at a fixed screen size, with rotation and a halo, hidden on other floors by height band and thinned when zoomed far out.
+
+## Later
+
+The milestones below run in this order after M8 (planned with the user on 2026-10-30).
 
 ### M9 - Tarkov Tracker task sync
 
@@ -61,7 +52,7 @@ Lifted from read-only by the user on 2026-10-30 ([STRATEGY.md](../STRATEGY.md)).
 2. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
 3. `add-window-behaviour` - tray, stay on top and start minimized.
 
-## Later
+### Other
 
 - Goons reports to tarkov.dev (a one-click, confirmed report that sends the map, mode, raid time and account ID). Deferred by the user on 2026-10-30.
 - After 1.0: the issues the M4.6 sweep defers to after 1.0.
@@ -75,14 +66,14 @@ Lifted from read-only by the user on 2026-10-30 ([STRATEGY.md](../STRATEGY.md)).
 
 Decided with the user on 2026-10-08 and recorded in [ADR-0009](../docs/adr/0009-release-versioning.md): SemVer `v` tags, one minor version per milestone close (M2 → `0.2.0`), `-beta.N` prereleases for user-only checks, a commit-count build number, and a changelog with one entry per merged PR.
 
-Release flow (local, no CI; details in the [README](../README.md)):
+Release flow (local steps; details in the [README](../README.md)):
 
 - `mise run release:prepare -- <version>` - checks a clean, current `main`, runs the offline gates, then commits `chore(release): v<version>` on `release/v<version>`.
 - `mise run release:tag` - after the release PR merges, tags the merge `v<version>` and pushes the tag as the configured GitHub login.
 - `mise run build:release` - builds the Windows Release bundle with the version and build number, then runs `bundle:check`.
 - `mise run release-notes -- --unreleased` - previews the next release's entries.
 
-Installers, GitHub Releases, code signing and CI builds belong to M6.
+M6 moved the builds to CI: a pushed `v` tag publishes a GitHub Release with a zip and an installer ([ADR-0024](../docs/adr/0024-hosted-ci-runs-every-offline-gate.md), [ADR-0025](../docs/adr/0025-release-packaging.md), [ADR-0026](../docs/adr/0026-releases-published-by-a-tag-workflow.md)). Code signing waits on [#66](https://github.com/sh1ny/blackgrid/issues/66).
 
 ## Done
 
@@ -94,3 +85,4 @@ Installers, GitHub Releases, code signing and CI builds belong to M6.
 - M4 - complete raid-time Scanner slice - 2026-10-20 ([PR #37](https://github.com/sh1ny/blackgrid/pull/37), [PR #39](https://github.com/sh1ny/blackgrid/pull/39), [PR #42](https://github.com/sh1ny/blackgrid/pull/42), [PR #44](https://github.com/sh1ny/blackgrid/pull/44), [PR #45](https://github.com/sh1ny/blackgrid/pull/45), [PR #46](https://github.com/sh1ny/blackgrid/pull/46), [PR #47](https://github.com/sh1ny/blackgrid/pull/47)) - [evidence](../docs/qualification/m4/EVIDENCE.md) - Agent checks passed. The user's live session on `0.1.0+323` passed the targeted-share, latency, live hotkey and Map checks: with the mouse, 74.6% of accepts came from the targeted pass, targeted trigger to decision was 139.6 ms p95 and the total was 572.4 ms p95. The hotkey figures were below 20 samples and the user accepted them. The user waived the reference timing baseline and the reference corpus comparison: Blackgrid feels responsive and uses less CPU and memory than the reference companion, which they no longer run. Learned: centring the targeted region on the inspect window made the targeted pass the common path, and shared display names now end `ambiguous` instead of being false positives (ADR-0021). Some targeted passes still read the stash's filter button ([#48](https://github.com/sh1ny/blackgrid/issues/48)).
 - M4.5 - player-facing polish, item icons and own map markers - 2026-10-29 ([PR #50](https://github.com/sh1ny/blackgrid/pull/50), [PR #51](https://github.com/sh1ny/blackgrid/pull/51), [PR #53](https://github.com/sh1ny/blackgrid/pull/53), [PR #54](https://github.com/sh1ny/blackgrid/pull/54), [PR #56](https://github.com/sh1ny/blackgrid/pull/56), [PR #57](https://github.com/sh1ny/blackgrid/pull/57), [PR #58](https://github.com/sh1ny/blackgrid/pull/58), [PR #59](https://github.com/sh1ny/blackgrid/pull/59)) - Agent checks passed on `main` `da08fdd` (marker provenance check: 19 icons valid; full offline suite and analyze). The user passed the map rail, item icon, requirements & uses and plain-language reads, and the Marker preferences look on re-check after `fix-marker-tile-centering`. Learned: tests that pinned tile size but not position let an off-centre layout through until the user looked, so layout criteria marked "user for the look" also get a geometry widget test where one can prove the invariant.
 - M4.6 - open-issue sweep - 2026-10-30 ([PR #60](https://github.com/sh1ny/blackgrid/pull/60)) - The sweep judged all 18 open issues against `main`: #30 was closed as no longer applying, 16 were deferred to after 1.0 with the `post-1.0` label and a recorded reason, and #17 was fixed by `fix-changelog-spec`, which also stopped local `merge:` commits from showing up in the changelog. Learned: judging issues at sweep time, against current `main`, left one fix-now issue out of 18, so review-filed issues are not accepted in advance.
+- M6 - Windows CI and releases - 2026-11-01 ([PR #63](https://github.com/sh1ny/blackgrid/pull/63), [PR #67](https://github.com/sh1ny/blackgrid/pull/67), [PR #68](https://github.com/sh1ny/blackgrid/pull/68), [PR #69](https://github.com/sh1ny/blackgrid/pull/69), [PR #70](https://github.com/sh1ny/blackgrid/pull/70), [PR #72](https://github.com/sh1ny/blackgrid/pull/72), [PR #73](https://github.com/sh1ny/blackgrid/pull/73)) - Agent checks passed on `main` `dc636c9`: the `ci` workflow ran every offline gate green on a hosted Windows runner; ADR-0025 records the Inno Setup installer and unsigned builds until #66; the `v0.6.0-beta.1` tag published a prerelease with the zip, the installer and the changelog notes; the committed `.ico` holds all ten sizes from 16 to 256 px; and offline tests prove that failures keep the last good data and that settings, pins, history and imports survive restart. The user picked the `hex_sweep` icon on 2026-10-31 and installed beta.1 from both the installer and the zip on 2026-11-01. Learned: with every gate on a hosted runner, a release no longer depends on the developer's machine, and the restart tests showed that one unreadable row could block startup, so stored data is now decoded one row at a time.
