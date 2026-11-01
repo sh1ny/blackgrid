@@ -69,8 +69,8 @@ Load `dart-add-unit-test`, `dart-write-documentation` and `dart-use-pattern-matc
 
 ## 7. Rewrite the existing release notes
 
-- [ ] 7.1 Rewrite the `v0.6.0`, `v0.5.0`, `v0.4.0` and `v0.1.0` sections of `CHANGELOG.md` in the new format: a summary, then `Added:`/`Changed:`/`Fixed:`/`Removed:` items with PR numbers. Write them from each range's archived proposals and merged PRs (`git log --first-parent v<prev>..v<tag>`). Keep the headings and dates as they are, and title the file `# Blackgrid Changelog`. Verify: every PR number in the old sections appears in, or is deliberately folded into, the new ones (list any dropped release or docs-only commits in the commit message); each section passes `release:verify-tag`'s section parse (non-empty, no inner `## ` line).
-- [ ] 7.2 Write `openspec/changes/adopt-proposal-release-notes/release-bodies/v0.6.0-beta.1.md`: the beta's notes in the new format, covering only what landed by `v0.6.0-beta.1` (`git log --first-parent v0.5.0..v0.6.0-beta.1`). Verify: every PR it names is an ancestor of `v0.6.0-beta.1`.
+- [x] 7.1 Rewrite the `v0.6.0`, `v0.5.0`, `v0.4.0` and `v0.1.0` sections of `CHANGELOG.md` in the new format: a summary, then `Added:`/`Changed:`/`Fixed:`/`Removed:` items with PR numbers. Write them from each range's archived proposals and merged PRs (`git log --first-parent v<prev>..v<tag>`). Keep the headings and dates as they are, and title the file `# Blackgrid Changelog`. Verify: every PR number in the old sections appears in, or is deliberately folded into, the new ones (list any dropped release or docs-only commits in the commit message); each section passes `release:verify-tag`'s section parse (non-empty, no inner `## ` line).
+- [x] 7.2 Write `openspec/changes/adopt-proposal-release-notes/release-bodies/v0.6.0-beta.1.md`: the beta's notes in the new format, covering only what landed by `v0.6.0-beta.1` (`git log --first-parent v0.5.0..v0.6.0-beta.1`). Verify: every PR it names is an ancestor of `v0.6.0-beta.1`.
 
 ## 8. Integration checks
 
