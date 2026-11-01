@@ -13,13 +13,43 @@ class SettingsController extends ChangeNotifier {
   List<CustomPin> get pins => _pins;
   String? error;
   bool busy = false;
+  bool _settingsUnreadable = false;
+  int _pinsSkipped = 0;
+
+  /// What the last load could not read, or `null` when everything was readable.
+  ///
+  /// Joins a sentence about the settings record, recomputed by every [load]
+  /// and cleared by a successful [save], with a sentence counting the saved
+  /// pins that were skipped, recomputed after every pin read. It is separate
+  /// from [error], which only reports failed saves.
+  String? get loadNotice {
+    final parts = [
+      if (_settingsUnreadable)
+        'Your saved settings could not be read. '
+            'Default settings are in use until you change one.',
+      if (_pinsSkipped == 1)
+        '1 saved pin could not be read and is not shown.'
+      else if (_pinsSkipped > 1)
+        '$_pinsSkipped saved pins could not be read and are not shown.',
+    ];
+    return parts.isEmpty ? null : parts.join(' ');
+  }
+
   Future<void> load() async {
-    final saved = await database.readSettings();
+    final stored = await database.readSettings();
+    final saved = stored.settings;
     _settings = saved.saveMarkerFilters
         ? saved
         : saved.copyWith(markerFilters: const {});
-    _pins = List.unmodifiable(await database.readPins());
+    _settingsUnreadable = stored.unreadable;
+    await _readPins();
     notifyListeners();
+  }
+
+  Future<void> _readPins() async {
+    final read = await database.readPins();
+    _pins = List.unmodifiable(read.pins);
+    _pinsSkipped = read.skipped;
   }
 
   Future<bool> save(AppSettings value) async {
@@ -30,6 +60,7 @@ class SettingsController extends ChangeNotifier {
     try {
       await database.saveSettings(value);
       _settings = value;
+      _settingsUnreadable = false;
       return true;
     } catch (_) {
       error = 'Settings could not be saved. Your previous settings are kept.';
@@ -66,7 +97,7 @@ class SettingsController extends ChangeNotifier {
     try {
       pin.validate();
       await database.savePin(pin);
-      _pins = List.unmodifiable(await database.readPins());
+      await _readPins();
       error = null;
       notifyListeners();
       return true;
@@ -86,7 +117,7 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
     try {
       await database.removePin(pin);
-      _pins = List.unmodifiable(await database.readPins());
+      await _readPins();
       error = null;
       notifyListeners();
       return true;

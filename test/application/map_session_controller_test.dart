@@ -99,7 +99,7 @@ void main() {
     await settings.setMap('woods');
     expect(session.effectiveMapId, 'woods');
     expect(settings.settings.followGameLogs, isFalse);
-    expect((await database.readSettings()).followGameLogs, isFalse);
+    expect((await database.readSettings()).settings.followGameLogs, isFalse);
     expect(session.state.mapDisagreement, isTrue);
     await settings.setMarker('PmcExtracts', false);
     expect(session.effectiveMapId, 'woods');

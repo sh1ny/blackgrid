@@ -46,9 +46,9 @@ void main() {
           .get(),
       hasLength(1),
     );
-    expect((await db.readSettings()).mode, GameMode.pve);
-    expect((await db.readSettings()).selectedMap, 'woods');
-    final retained = (await db.readActivity()).single;
+    expect((await db.readSettings()).settings.mode, GameMode.pve);
+    expect((await db.readSettings()).settings.selectedMap, 'woods');
+    final retained = (await db.readActivity()).rows.single;
     expect(retained.itemId, 'synthetic-item');
     expect(retained.mode, GameMode.pve);
     expect(retained.source, ActivitySource.importedManual);
@@ -98,8 +98,8 @@ void main() {
               .get(),
           hasLength(1),
         );
-        expect((await db.readSettings()).selectedMap, 'woods');
-        final retained = (await db.readActivity()).single;
+        expect((await db.readSettings()).settings.selectedMap, 'woods');
+        final retained = (await db.readActivity()).rows.single;
         expect(retained.itemId, 'synthetic-item');
         expect(retained.revision, 7);
         final loaded = await db.loadCatalog(catalog.mode);

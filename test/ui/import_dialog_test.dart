@@ -168,7 +168,7 @@ void main() {
         findsNothing,
       );
       final rows = await tester.runAsync(h.db.readActivity);
-      expect(rows, isNotEmpty);
+      expect(rows!.rows, isNotEmpty);
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );

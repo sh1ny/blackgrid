@@ -51,7 +51,7 @@ void main() {
       await importer.commit(preview, replaceExisting: true);
       await db.close();
       db = BlackgridDatabase(NativeDatabase(store));
-      final restored = await db.readSettings();
+      final restored = (await db.readSettings()).settings;
       expect(restored.selectedMap, 'customs');
       expect(restored.mode, GameMode.pve);
       expect(restored.gameLogDirectory, '${root.path}/local-logs');
@@ -461,8 +461,8 @@ void main() {
       historyPath: historyFile.path,
     );
     await importer.commit(preview, replaceExisting: false);
-    expect((await db.readSettings()).selectedMap, 'woods');
-    expect((await db.readActivity()).single.itemId, 'synthetic-unmatched');
+    expect((await db.readSettings()).settings.selectedMap, 'woods');
+    expect((await db.readActivity()).rows.single.itemId, 'synthetic-unmatched');
     expect(await settingsFile.readAsBytes(), orderedEquals(bytes['settings']!));
     expect(await historyFile.readAsBytes(), orderedEquals(bytes['history']!));
     final repeated = await importer.previewFiles(
@@ -474,7 +474,7 @@ void main() {
       importer.commit(repeated, replaceExisting: true),
       throwsStateError,
     );
-    expect((await db.readActivity()).length, 1);
+    expect((await db.readActivity()).rows.length, 1);
     await db.close();
     await dir.delete(recursive: true);
   });
@@ -491,9 +491,9 @@ void main() {
       db.commitImport(p, replaceExisting: true),
       throwsA(anything),
     );
-    expect((await db.readSettings()).mode, GameMode.unknown);
-    expect(await db.readPins(), isEmpty);
-    expect(await db.readActivity(), isEmpty);
+    expect((await db.readSettings()).settings.mode, GameMode.unknown);
+    expect((await db.readPins()).pins, isEmpty);
+    expect((await db.readActivity()).rows, isEmpty);
     expect(await db.wasImported(p.digest), isFalse);
     await db.close();
   });

@@ -196,7 +196,7 @@ void main() {
     rig.configureVision = (v) => v.startGate = gate;
 
     await rig.coordinator.setLiveScan(true);
-    expect((await rig.db.readSettings()).liveScan, isTrue);
+    expect((await rig.db.readSettings()).settings.liveScan, isTrue);
 
     // Hold the vision start: the hook must wait for it.
     await (await rig.visionCreated(0)).startEntered.future;
@@ -254,7 +254,7 @@ void main() {
     expect(rig.coordinator.hotkeyState, const ScanHotkeyInactive());
     expect(rig.visions.single.closeCalls, 1);
     expect(
-      (await rig.db.readSettings()).liveScan,
+      (await rig.db.readSettings()).settings.liveScan,
       isTrue,
       reason: 'the setting stays on',
     );
@@ -345,7 +345,7 @@ void main() {
     expect(rig.visions.single.closeCalls, 1);
     expect(rig.captures.single.closeCalls, 1);
     expect(
-      (await rig.db.readSettings()).liveScan,
+      (await rig.db.readSettings()).settings.liveScan,
       isFalse,
       reason: 'the setting is saved off',
     );
@@ -454,7 +454,7 @@ void main() {
         await Future.wait([on, off]);
         await rig.coordinator.settled;
 
-        expect((await rig.db.readSettings()).liveScan, isFalse);
+        expect((await rig.db.readSettings()).settings.liveScan, isFalse);
         expect(rig.settings.settings.liveScan, isFalse);
         expect(rig.coordinator.switchOn, isFalse);
         expect(rig.coordinator.status.state, LiveScanState.off);
@@ -490,7 +490,7 @@ void main() {
       expect(rig.coordinator.switchOn, isTrue);
       expect(rig.coordinator.status.state, LiveScanState.ready);
       expect(rig.coordinator.error, isNull);
-      expect((await rig.db.readSettings()).liveScan, isTrue);
+      expect((await rig.db.readSettings()).settings.liveScan, isTrue);
       expect(rig.settings.settings.liveScan, isTrue);
       expect(rig.visions, hasLength(1));
     });
@@ -508,7 +508,7 @@ void main() {
       expect(rig.coordinator.switchOn, isFalse);
       expect(rig.coordinator.status.state, LiveScanState.off);
       expect(rig.coordinator.error, isNull);
-      expect((await rig.db.readSettings()).liveScan, isFalse);
+      expect((await rig.db.readSettings()).settings.liveScan, isFalse);
       expect(rig.settings.settings.liveScan, isFalse);
       expect(
         rig.visions,
@@ -522,13 +522,13 @@ void main() {
     test('a switch-off right before dispose still saves off', () async {
       rig = await _Rig.create();
       await rig.switchOn();
-      expect((await rig.db.readSettings()).liveScan, isTrue);
+      expect((await rig.db.readSettings()).settings.liveScan, isTrue);
 
       final off = rig.coordinator.setLiveScan(false);
       final disposed = rig.coordinator.dispose();
       await Future.wait([off, disposed]);
 
-      expect((await rig.db.readSettings()).liveScan, isFalse);
+      expect((await rig.db.readSettings()).settings.liveScan, isFalse);
       expect(rig.settings.settings.liveScan, isFalse);
     });
 
@@ -548,7 +548,7 @@ void main() {
 
       gate.complete();
       await Future.wait([on, disposed]);
-      expect((await rig.db.readSettings()).liveScan, isTrue);
+      expect((await rig.db.readSettings()).settings.liveScan, isTrue);
       expect(rig.settings.settings.liveScan, isTrue);
     });
   });

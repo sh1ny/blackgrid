@@ -28,7 +28,7 @@ void main() {
     await store.db.savePin(removed);
     await store.db.removePin(removed);
     final db = await store.reopen();
-    expect((await db.readPins()).map((p) => p.id), ['kept']);
+    expect((await db.readPins()).pins.map((p) => p.id), ['kept']);
   });
 
   test('a settings save aborted by the database reads back the earlier settings after reopening', () async {
@@ -39,6 +39,6 @@ void main() {
       throwsA(anything),
     );
     final db = await store.reopen();
-    expect((await db.readSettings()).mode, GameMode.pve);
+    expect((await db.readSettings()).settings.mode, GameMode.pve);
   });
 }

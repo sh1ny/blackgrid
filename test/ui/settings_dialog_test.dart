@@ -65,7 +65,7 @@ void main() {
       );
       final persisted = (await tester.runAsync(
         () => h.services.database.readSettings(),
-      ))!;
+      ))!.settings;
       expect(persisted.gameLogDirectory, 'C:/blackgrid-synthetic-missing/logs');
       expect(
         persisted.screenshotDirectory,

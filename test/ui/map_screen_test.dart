@@ -258,7 +258,7 @@ void main() {
       expect(h.services.maps.search, 'exit, tunnel');
       final hidden = (await tester.runAsync(
         () => h.services.database.readSettings(),
-      ))!;
+      ))!.settings;
       expect(hidden.markerFilters['PmcExtracts'], isFalse);
       expect(hidden.markerFilters, isNot(contains('extracts')));
       expect(hidden.markerFilters, isNot(contains('hazards')));
@@ -293,7 +293,7 @@ void main() {
       expect(_tileShown('Hazards'), isTrue);
       final shown = (await tester.runAsync(
         () => h.services.database.readSettings(),
-      ))!;
+      ))!.settings;
       expect(shown.markerFilters['PmcExtracts'], isTrue);
       expect(shown.markerFilters, isNot(contains('extracts')));
       expect(shown.markerFilters, isNot(contains('hazards')));
@@ -331,7 +331,7 @@ void main() {
 
     final stored = (await tester.runAsync(
       () => h.services.database.readSettings(),
-    ))!;
+    ))!.settings;
     expect(stored.markerFilters['ScavSpawns'], isFalse);
     expect(stored.markerFilters['PmcExtracts'], isTrue);
     expect(tester.takeException(), isNull);
@@ -408,7 +408,7 @@ void main() {
 
     final stored = (await tester.runAsync(
       () => h.services.database.readSettings(),
-    ))!;
+    ))!.settings;
     expect(stored.markerFilters['PmcExtracts'], isFalse);
     expect(stored.markerFilters['Hazards'], isFalse);
     expect(stored.markerFilters, isNot(contains('Ziplines')));
@@ -449,7 +449,7 @@ void main() {
       );
       final stored = (await tester.runAsync(
         () => h.services.database.readSettings(),
-      ))!;
+      ))!.settings;
       expect(stored.selectedMap, 'thelab');
       expect(stored.followGameLogs, isTrue);
       expect(h.services.maps.selectedMapId, 'thelab');

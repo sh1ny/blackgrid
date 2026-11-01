@@ -79,6 +79,20 @@ class ItemIconRecords extends Table {
   Set<Column> get primaryKey => {itemId};
 }
 
+/// The settings read from the database and whether the stored record was
+/// unreadable.
+class StoredSettings {
+  /// Creates the result of a settings read.
+  const StoredSettings(this.settings, {required this.unreadable});
+
+  /// The decoded settings, or the defaults when the record is missing or
+  /// [unreadable].
+  final AppSettings settings;
+
+  /// Whether a record exists but could not be decoded.
+  final bool unreadable;
+}
+
 @DriftDatabase(
   tables: [
     Preferences,
@@ -173,15 +187,27 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
     });
   }
 
-  Future<AppSettings> readSettings() async {
+  /// Reads the stored settings, or defaults when there is no record.
+  ///
+  /// A record that cannot be decoded, because it is damaged or was written by
+  /// a newer version, gives default settings with
+  /// [StoredSettings.unreadable] set. Reading never writes, so the record
+  /// stays until a save replaces it. Query and open errors still throw.
+  Future<StoredSettings> readSettings() async {
     final row = await (select(
       preferences,
     )..where((p) => p.id.equals(1))).getSingleOrNull();
-    return row == null
-        ? AppSettings()
-        : AppSettings.fromJson(
-            Map<String, Object?>.from(jsonDecode(row.payload) as Map),
-          );
+    if (row == null) return StoredSettings(AppSettings(), unreadable: false);
+    try {
+      return StoredSettings(
+        AppSettings.fromJson(
+          Map<String, Object?>.from(jsonDecode(row.payload) as Map),
+        ),
+        unreadable: false,
+      );
+    } on Object {
+      return StoredSettings(AppSettings(), unreadable: true);
+    }
   }
 
   Future<void> saveSettings(AppSettings settings) => transaction(() async {
@@ -192,13 +218,29 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       ),
     );
   });
-  Future<List<CustomPin>> readPins() async => (await select(pinRecords).get())
-      .map(
-        (row) => CustomPin.fromJson(
+
+  /// Reads every stored pin that can be decoded and passes
+  /// [CustomPin.validate].
+  ///
+  /// Returns the readable [pins] and the number of rows [skipped]. Skipped
+  /// rows are neither deleted nor rewritten. Query errors still throw.
+  Future<({List<CustomPin> pins, int skipped})> readPins() async {
+    final rows = await select(pinRecords).get();
+    final pins = <CustomPin>[];
+    var skipped = 0;
+    for (final row in rows) {
+      try {
+        final pin = CustomPin.fromJson(
           Map<String, Object?>.from(jsonDecode(row.payload) as Map),
-        ),
-      )
-      .toList();
+        )..validate();
+        pins.add(pin);
+      } on Object {
+        skipped++;
+      }
+    }
+    return (pins: pins, skipped: skipped);
+  }
+
   Future<void> savePin(CustomPin pin) => transaction(() async {
     pin.validate();
     await into(pinRecords).insertOnConflictUpdate(
@@ -214,24 +256,37 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       pinRecords,
     )..where((p) => p.mapId.equals(pin.mapId) & p.pinId.equals(pin.id))).go();
   });
-  Future<List<ItemActivity>> readActivity() async {
-    final rows =
+
+  /// Reads the activity rows whose mode and source this version knows,
+  /// newest first.
+  ///
+  /// Returns the readable [rows] and the number of rows [skipped]. Skipped
+  /// rows are neither deleted nor rewritten. Query errors still throw.
+  Future<({List<ItemActivity> rows, int skipped})> readActivity() async {
+    final records =
         await (select(activityRecords)..orderBy([
               (p) => OrderingTerm.desc(p.observedAt),
               (p) => OrderingTerm.asc(p.itemId),
             ]))
             .get();
-    return rows
-        .map(
-          (row) => ItemActivity(
+    final rows = <ItemActivity>[];
+    var skipped = 0;
+    for (final row in records) {
+      try {
+        rows.add(
+          ItemActivity(
             itemId: row.itemId,
             mode: GameMode.values.byName(row.mode),
             source: ActivitySource.values.byName(row.source),
             observedAt: row.observedAt.toUtc(),
             revision: row.revision,
           ),
-        )
-        .toList();
+        );
+      } on Object {
+        skipped++;
+      }
+    }
+    return (rows: rows, skipped: skipped);
   }
 
   Future<ItemActivity> recordActivity(

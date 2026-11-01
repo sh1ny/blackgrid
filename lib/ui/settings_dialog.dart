@@ -269,6 +269,13 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                   ),
+                if (services.settings.loadNotice != null)
+                  Text(
+                    services.settings.loadNotice!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
               ],
             ),
           ),

@@ -16,6 +16,13 @@ import 'wire_json.dart';
 class LegacyImport {
   const LegacyImport(this.database);
   final BlackgridDatabase database;
+
+  /// Parses the selected legacy files into a preview against the stored data.
+  ///
+  /// Stored pins and history rows that cannot be read are left out of the
+  /// comparison, so the preview may report a record as added while a commit
+  /// that keeps existing data keeps the unreadable row instead. An unreadable
+  /// settings record compares as the default settings.
   Future<ImportPreview> previewFiles({
     String? settingsPath,
     String? historyPath,
@@ -30,12 +37,12 @@ class LegacyImport {
     if (sources.isEmpty) {
       throw const FormatException('Select explicit settings or history files.');
     }
-    final settings = await database.readSettings();
+    final settings = (await database.readSettings()).settings;
     final hasSettings = await database
         .customSelect('SELECT id FROM preferences WHERE id = 1')
         .get();
-    final pins = await database.readPins();
-    final history = await database.readActivity();
+    final pins = (await database.readPins()).pins;
+    final history = (await database.readActivity()).rows;
     final paths = [
       if (sources.containsKey('settings')) settingsPath!,
       if (sources.containsKey('history')) historyPath!,

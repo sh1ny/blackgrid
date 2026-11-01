@@ -18,17 +18,17 @@
 | local-data-durability → Settings, pins and history survive a restart | Saved records reopen unchanged | test/data/database_test.dart | fresh defaults and restart retain settings pins identity activity and full catalog | green |
 | local-data-durability → Settings, pins and history survive a restart | Removed pin stays removed | test/data/durability_restart_test.dart | a removed pin stays removed after reopening | green |
 | local-data-durability → Settings, pins and history survive a restart | Failed save is not visible after restart | test/data/durability_restart_test.dart | a settings save aborted by the database reads back the earlier settings after reopening | green |
-| local-data-durability → Unreadable settings start the session with defaults | Damaged settings record at startup | test/application/settings_load_test.dart | a settings row that is not JSON loads defaults, sets the notice and keeps the row bytes | red |
-| local-data-durability → Unreadable settings start the session with defaults | Settings written by a newer version | test/application/settings_load_test.dart | a settings row naming an unknown mode or map loads defaults and sets the notice | red |
-| local-data-durability → Unreadable settings start the session with defaults | Readable settings show no message | test/application/settings_load_test.dart | a readable settings row loads as saved with no notice | red *(coverage)* |
-| local-data-durability → Unreadable settings start the session with defaults | Next save replaces the unreadable record | test/application/settings_load_test.dart | the first save after a default start clears the notice and reads back after reopening | red |
-| local-data-durability → Unreadable settings start the session with defaults | Replace import clears the message | test/application/settings_load_test.dart | a Replace import after a default start clears the settings notice on reload | red |
-| local-data-durability → Unreadable pins are skipped, not fatal | One damaged pin among readable ones | test/application/settings_load_test.dart | one unreadable pin row is skipped, counted in the notice and kept on disk | red |
-| local-data-durability → Unreadable pins are skipped, not fatal | All pins readable | test/application/settings_load_test.dart | readable pins load with no pin notice | red *(coverage)* |
-| local-data-durability → Unreadable history entries are skipped, not fatal | One entry with an unknown mode | test/application/history_controller_test.dart | an unreadable history row is skipped and counted in the error | red |
-| local-data-durability → Unreadable history entries are skipped, not fatal | All entries readable | test/application/history_controller_test.dart | readable history rows load with no error | red *(coverage)* |
-| local-data-durability → History errors stay visible while entries are listed | Recording fails while entries are listed | test/ui/history_panel_test.dart | a record failure shows its message above the listed entries | red |
-| local-data-durability → History errors stay visible while entries are listed | Empty history with no error | test/ui/history_panel_test.dart | empty history shows No items yet and no error | red *(coverage)* |
+| local-data-durability → Unreadable settings start the session with defaults | Damaged settings record at startup | test/application/settings_load_test.dart | a settings row that is not JSON loads defaults, sets the notice and keeps the row bytes | green |
+| local-data-durability → Unreadable settings start the session with defaults | Settings written by a newer version | test/application/settings_load_test.dart | a settings row naming an unknown mode or map loads defaults and sets the notice | green |
+| local-data-durability → Unreadable settings start the session with defaults | Readable settings show no message | test/application/settings_load_test.dart | a readable settings row loads as saved with no notice | green |
+| local-data-durability → Unreadable settings start the session with defaults | Next save replaces the unreadable record | test/application/settings_load_test.dart | the first save after a default start clears the notice and reads back after reopening | green |
+| local-data-durability → Unreadable settings start the session with defaults | Replace import clears the message | test/application/settings_load_test.dart | a Replace import after a default start clears the settings notice on reload | green |
+| local-data-durability → Unreadable pins are skipped, not fatal | One damaged pin among readable ones | test/application/settings_load_test.dart | one unreadable pin row is skipped, counted in the notice and kept on disk | green |
+| local-data-durability → Unreadable pins are skipped, not fatal | All pins readable | test/application/settings_load_test.dart | readable pins load with no pin notice | green |
+| local-data-durability → Unreadable history entries are skipped, not fatal | One entry with an unknown mode | test/application/history_controller_test.dart | an unreadable history row is skipped and counted in the error | green |
+| local-data-durability → Unreadable history entries are skipped, not fatal | All entries readable | test/application/history_controller_test.dart | readable history rows load with no error | green |
+| local-data-durability → History errors stay visible while entries are listed | Recording fails while entries are listed | test/ui/history_panel_test.dart | a record failure shows its message above the listed entries | green |
+| local-data-durability → History errors stay visible while entries are listed | Empty history with no error | test/ui/history_panel_test.dart | empty history shows No items yet and no error | green |
 | local-data-durability → A database from a newer version is refused with its own message | Newer schema version on disk | test/data/migration_test.dart, test/ui/app_test.dart | newer schema reaches the second query as NewerDatabaseException without byte mutation; a newer database shows the newer-version startup message | red |
 | local-data-durability → A database from a newer version is refused with its own message | Other open failure | test/ui/app_test.dart | any other open failure shows the generic storage message | red *(coverage)* |
 | local-data-durability → A damaged saved token reports the token as unavailable | Corrupt token bytes on disk | test/application/progress_controller_test.dart | corrupt token bytes on disk fail as Tracker token unavailable with no request | red *(coverage)* |
@@ -66,8 +66,8 @@ Load `dart-add-unit-test` first. Every task in this change also follows the "Dar
 
 Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentation` and `flutter-add-widget-test` first.
 
-- [ ] 2.1 Write the failing tests for the red `local-data-durability` rows on settings, pins and history in `test/application/settings_load_test.dart` and `test/application/history_controller_test.dart`. Use `ReopenableDatabase` with raw rows: a non-JSON payload, a payload with `"mode":"arena"`, a payload with an unknown map, a pin payload that is not JSON, a pin with an unsupported frame, and an activity row with `mode` `arena`. The "Replace import clears the message" test commits a Replace import through `LegacyImport` and then calls `SettingsController.load`, as `reloadAfterImport` does. Verify they fail for the missing behaviour, not for setup errors.
-- [ ] 2.2 Implement D1 in `lib/data/database.dart`:
+- [x] 2.1 Write the failing tests for the red `local-data-durability` rows on settings, pins and history in `test/application/settings_load_test.dart` and `test/application/history_controller_test.dart`. Use `ReopenableDatabase` with raw rows: a non-JSON payload, a payload with `"mode":"arena"`, a payload with an unknown map, a pin payload that is not JSON, a pin with an unsupported frame, and an activity row with `mode` `arena`. The "Replace import clears the message" test commits a Replace import through `LegacyImport` and then calls `SettingsController.load`, as `reloadAfterImport` does. Verify they fail for the missing behaviour, not for setup errors.
+- [x] 2.2 Implement D1 in `lib/data/database.dart`:
   - `readSettings` returns `StoredSettings(settings, unreadable)`. `readPins` returns `(pins, skipped)`. `readActivity` returns `(rows, skipped)`.
   - Only the per-row decode sits inside `try … on Object` (review S1: decoders throw `FormatException`, `StateError`, `TypeError` and `ArgumentError`). The query stays outside it, so open and query errors still throw.
   - `readPins` also runs `CustomPin.validate()` per row and counts a failure as skipped (review S2).
@@ -75,7 +75,7 @@ Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentatio
   - Update every caller: `SettingsController`, `HistoryController`, `LegacyImport.previewFiles` (`legacy_import.dart:35-36`) and the tests that call these methods.
   - For the import preview, a skipped destination pin is accepted: the preview may report "add" while a Replace-off commit keeps the unreadable row (review S3). Document that on `previewFiles`.
   - Verify the database tests pass.
-- [ ] 2.3 Implement D7:
+- [x] 2.3 Implement D7:
   - `SettingsController.loadNotice` is built from the settings sentence, recomputed by every `load` and cleared by a successful `save`, and the pins sentence, recomputed after every `readPins`. Singular and plural follow the spec texts.
   - `HistoryController.load` sets `error` from `skipped`.
   - Show `loadNotice` after `settings.error` in `lib/ui/manual_controls.dart` and `lib/ui/map_screen.dart`.
