@@ -219,6 +219,54 @@ void main() {
     expect(reader.state.incarnation, state.incarnation);
   });
 
+  Future<void> rescanWithPushOpenFailing() => IOOverrides.runZoned(
+    reader.rescan,
+    createDirectory: (path) {
+      expect(path, root.path);
+      return _FailingOpenDirectory(
+        root,
+        (file) => file.path.endsWith('push-notifications_000.log'),
+      );
+    },
+  );
+
+  test('a read failure clears on the next clean read', () async {
+    await write(_newer, 'application_000.log', _app('GameStarted: x'));
+    await write(_newer, 'backend_000.log', '');
+    await write(
+      _newer,
+      'push-notifications_000.log',
+      _push(_taskStarted('aaaa')),
+    );
+    await reader.bind(root.path);
+    expect(reader.state.raidLogsMessage, isNull);
+    await rescanWithPushOpenFailing();
+    expect(reader.state.raidLogsMessage, 'notifications log could not be read');
+    // No new bytes: the retry alone must clear the transient failure.
+    await reader.rescan();
+    expect(reader.state.raidLogsMessage, isNull);
+  });
+
+  test('a read failure does not hide an earlier rejection', () async {
+    await write(_newer, 'application_000.log', _app('GameStarted: x'));
+    await write(_newer, 'backend_000.log', '');
+    await write(_newer, 'push-notifications_000.log', _push(_badPush));
+    await reader.bind(root.path);
+    expect(reader.state.raidLogsMessage, contains('rejected'));
+    await rescanWithPushOpenFailing();
+    expect(reader.state.raidLogsMessage, contains('could not be read'));
+    await reader.rescan();
+    expect(reader.state.raidLogsMessage, contains('rejected'));
+    await write(
+      _newer,
+      'push-notifications_000.log',
+      _push(_taskStarted('aaaa'), '21:31:00.000'),
+      append: true,
+    );
+    await reader.rescan();
+    expect(reader.state.raidLogsMessage, isNull);
+  });
+
   test('backend rewrite keeps map, mode and incarnation', () async {
     await write(
       _newer,
@@ -303,4 +351,64 @@ void main() {
     await reader.bind(root.path);
     expect(records(), [isA<ProfileSelected>(), isA<RaidExit>()]);
   });
+}
+
+/// Wraps a real directory so that opening a matching listed file fails.
+class _FailingOpenDirectory implements Directory {
+  _FailingOpenDirectory(this.directory, this.fails);
+
+  final Directory directory;
+  final bool Function(File file) fails;
+
+  @override
+  String get path => directory.path;
+
+  @override
+  Future<bool> exists() => directory.exists();
+
+  @override
+  Stream<FileSystemEntity> list({
+    bool recursive = false,
+    bool followLinks = true,
+  }) async* {
+    await for (final entry in directory.list(
+      recursive: recursive,
+      followLinks: followLinks,
+    )) {
+      if (entry is Directory) {
+        yield _FailingOpenDirectory(entry, fails);
+      } else if (entry is File && fails(entry)) {
+        yield _FailingOpenFile(entry);
+      } else {
+        yield entry;
+      }
+    }
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'Unexpected directory operation: ${invocation.memberName}',
+  );
+}
+
+/// A listed file whose [open] always fails, as a locked file would.
+class _FailingOpenFile implements File {
+  _FailingOpenFile(this.file);
+
+  final File file;
+
+  @override
+  String get path => file.path;
+
+  @override
+  Future<FileStat> stat() => file.stat();
+
+  @override
+  Future<RandomAccessFile> open({FileMode mode = FileMode.read}) =>
+      throw FileSystemException('locked for the test', path);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'Unexpected file operation: ${invocation.memberName}',
+  );
 }

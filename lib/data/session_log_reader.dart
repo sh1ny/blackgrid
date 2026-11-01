@@ -84,6 +84,11 @@ class SessionLogReader {
   };
   LogFileTail get _tail => _tails[LogFile.application]!;
   final _problems = <LogFile, String>{};
+
+  /// Raid logs whose last read failed; cleared by the next read that opens
+  /// the file, so a transient failure never outlives a clean retry and never
+  /// replaces a rejection still in [_problems].
+  final _unreadable = <LogFile>{};
   final _pendingControl = <GameLogEvent>[];
   bool _needReset = false;
 
@@ -153,6 +158,7 @@ class SessionLogReader {
       tail.reset();
     }
     _problems.clear();
+    _unreadable.clear();
     _recordRejected = false;
     _state = SessionLogState(sessionId: session, incarnation: _incarnation);
   }
@@ -377,6 +383,7 @@ class SessionLogReader {
       if (stat == null || stat.type == FileSystemEntityType.notFound) {
         missing[kind] = _missingText[kind]!;
         _problems.remove(kind);
+        _unreadable.remove(kind);
       } else {
         sizes[kind] = stat.size;
       }
@@ -459,7 +466,10 @@ class SessionLogReader {
       }
     }
     final problems = [
-      for (final kind in _raidLogs) ?_problems[kind] ?? missing[kind],
+      for (final kind in _raidLogs)
+        ?(_unreadable.contains(kind)
+            ? '${_fileNames[kind]} log could not be read'
+            : _problems[kind] ?? missing[kind]),
     ];
     _setRaidLogsMessage(problems.isEmpty ? null : problems.join('; '));
     // A rejected record stays visible until newer bytes read cleanly.
@@ -508,6 +518,7 @@ class SessionLogReader {
             rejected = true;
         }
       }
+      _unreadable.remove(kind);
       final name = _fileNames[kind]!;
       if (rejected) {
         _problems[kind] = '$name log: a record was rejected';
@@ -517,7 +528,7 @@ class SessionLogReader {
         _problems.remove(kind);
       }
     } on FileSystemException {
-      _problems[kind] = '${_fileNames[kind]} log could not be read';
+      _unreadable.add(kind);
     }
     return true;
   }
