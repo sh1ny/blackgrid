@@ -36,10 +36,10 @@ Rules for every group:
 | raid-timers → A scav raid's end starts that mode's scav cooldown | PvE raid ends | test/application/raid_timers_controller_test.dart | any PvE raid ending records a PvE start | red |
 | raid-timers → A scav raid's end starts that mode's scav cooldown | Unknown mode | test/application/raid_timers_controller_test.dart | raid with unknown mode records nothing | red |
 | raid-timers → A scav raid's end starts that mode's scav cooldown | Ended by client restart | test/application/raid_timers_controller_test.dart | client-restart ending records its end time | red |
-| raid-timers → A cooldown start is never moved back or started twice | Replay after restart | test/application/settings_raid_timers_test.dart | recording the stored start again saves nothing | red |
-| raid-timers → A cooldown start is never moved back or started twice | Older folder replayed | test/application/settings_raid_timers_test.dart | older start never replaces a later one | red |
-| raid-timers → A cooldown start is never moved back or started twice | Settings saved from older values | test/application/settings_raid_timers_test.dart | save built from older settings keeps the newer start | red |
-| raid-timers → A cooldown start is never moved back or started twice | Newer scav raid | test/application/settings_raid_timers_test.dart | later start replaces the stored one | red |
+| raid-timers → A cooldown start is never moved back or started twice | Replay after restart | test/application/settings_raid_timers_test.dart | recording the stored start again saves nothing | green |
+| raid-timers → A cooldown start is never moved back or started twice | Older folder replayed | test/application/settings_raid_timers_test.dart | older start never replaces a later one | green |
+| raid-timers → A cooldown start is never moved back or started twice | Settings saved from older values | test/application/settings_raid_timers_test.dart | save built from older settings keeps the newer start | green |
+| raid-timers → A cooldown start is never moved back or started twice | Newer scav raid | test/application/settings_raid_timers_test.dart | later start replaces the stored one | green |
 | raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Neutral reputation, no bonus | test/domain/raid_timers_test.dart | neutral reputation and no bonus give the base | red |
 | raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Reputation and hideout bonuses | test/domain/raid_timers_test.dart | reputation 2.50 and two bonuses give 780 s | red |
 | raid-timers → The scav cooldown length comes from item data, Fence reputation and hideout progress | Reputation below every level | test/domain/raid_timers_test.dart | reputation below every level uses the lowest | red |
@@ -64,10 +64,10 @@ Rules for every group:
 | raid-timers → Timer settings live in the Settings dialog | Fence reputation out of range | test/ui/settings_dialog_raid_timers_test.dart | out-of-range reputation is refused | red |
 | raid-timers → Timer settings live in the Settings dialog | Reputation for the detected mode | test/ui/settings_dialog_raid_timers_test.dart | reputation edits the active mode's value | red |
 | raid-timers → Timer settings live in the Settings dialog | No mode known | test/ui/settings_dialog_raid_timers_test.dart | reputation field disabled without a mode | red |
-| raid-timers → Timer settings and cooldown starts survive restart | Restart restores everything | test/data/durability_restart_test.dart | raid timer settings and starts survive a reopen | red |
-| raid-timers → Timer settings and cooldown starts survive restart | Record from an older version | test/domain/raid_timer_settings_test.dart | record without raidTimers decodes to defaults | red |
-| raid-timers → Timer settings and cooldown starts survive restart | Save fails | test/application/settings_raid_timers_test.dart | failed save keeps the start pending and effective | red |
-| raid-timers → Timer settings and cooldown starts survive restart | Stored settings unreadable | test/application/settings_raid_timers_test.dart | unreadable record is never saved by a recorded start | red |
+| raid-timers → Timer settings and cooldown starts survive restart | Restart restores everything | test/data/durability_restart_test.dart | raid timer settings and starts survive a reopen | green |
+| raid-timers → Timer settings and cooldown starts survive restart | Record from an older version | test/domain/raid_timer_settings_test.dart | record without raidTimers decodes to defaults | green |
+| raid-timers → Timer settings and cooldown starts survive restart | Save fails | test/application/settings_raid_timers_test.dart | failed save keeps the start pending and effective | green |
+| raid-timers → Timer settings and cooldown starts survive restart | Stored settings unreadable | test/application/settings_raid_timers_test.dart | unreadable record is never saved by a recorded start | green |
 
 ## 1. ADR and architecture
 
@@ -118,12 +118,12 @@ Rules for every group:
 
 ## 5. Timer settings and cooldown-start persistence
 
-- [ ] 5.1 Write the failing tests in `test/domain/raid_timer_settings_test.dart`:
+- [x] 5.1 Write the failing tests in `test/domain/raid_timer_settings_test.dart`:
   - "Record from an older version";
   - extra tests: a malformed `raidTimers` block gives timer defaults and keeps every other setting; an unknown mode key or an out-of-range reputation or length drops only that entry; a JSON round-trip.
-- [ ] 5.2 Implement `RaidTimerSettings` in `lib/domain/settings.dart` (design D3): `enabled`, the three show flags, `runThroughSeconds` (60..1800, default 430), `fenceReputation` per `GameMode` (−7.00..6.00, two decimals, default 0) and `scavCooldownStarts` per mode (UTC ISO). Add `AppSettings.raidTimers` with `copyWith`, and decode the block in its own `try`. Verify: the 5.1 tests pass, `test/application/settings_load_test.dart` and `test/data/legacy_import_test.dart` pass unchanged, and the row is flipped.
-- [ ] 5.3 Write the failing tests in `test/application/settings_raid_timers_test.dart` for the 6 test-map rows naming that file. They use the in-memory database pattern of the existing settings tests and a fake database that fails or blocks saves on demand, released by a `Completer`. Also add an extra test: `recordScavCooldownStart` during an in-flight user save is written right after that save ends.
-- [ ] 5.4 Implement the D4 behaviour in `lib/application/settings_controller.dart`:
+- [x] 5.2 Implement `RaidTimerSettings` in `lib/domain/settings.dart` (design D3): `enabled`, the three show flags, `runThroughSeconds` (60..1800, default 430), `fenceReputation` per `GameMode` (−7.00..6.00, two decimals, default 0) and `scavCooldownStarts` per mode (UTC ISO). Add `AppSettings.raidTimers` with `copyWith`, and decode the block in its own `try`. Verify: the 5.1 tests pass, `test/application/settings_load_test.dart` and `test/data/legacy_import_test.dart` pass unchanged, and the row is flipped.
+- [x] 5.3 Write the failing tests in `test/application/settings_raid_timers_test.dart` for the 6 test-map rows naming that file. They use the in-memory database pattern of the existing settings tests and a fake database that fails or blocks saves on demand, released by a `Completer`. Also add an extra test: `recordScavCooldownStart` during an in-flight user save is written right after that save ends.
+- [x] 5.4 Implement the D4 behaviour in `lib/application/settings_controller.dart`:
   - `recordScavCooldownStart`, with the pending map and the flush after an in-flight save;
   - the max-merge of starts inside every `save`;
   - pending kept after a failed save;
@@ -132,7 +132,7 @@ Rules for every group:
   - setters `setRaidTimers` and `setFenceReputation(mode, value)`.
 
   Verify: the 5.3 rows are green and flipped, and `test/application/map_input_settings_test.dart` still passes.
-- [ ] 5.5 Add the "Restart restores everything" test to `test/data/durability_restart_test.dart`: save timer settings and a seasonal start, reopen the database, reload. Verify it passes and flip the row.
+- [x] 5.5 Add the "Restart restores everything" test to `test/data/durability_restart_test.dart`: save timer settings and a seasonal start, reopen the database, reload. Verify it passes and flip the row.
 
 ## 6. RaidTimersController
 
