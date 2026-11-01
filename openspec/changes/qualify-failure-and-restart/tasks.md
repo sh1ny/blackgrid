@@ -31,8 +31,8 @@
 | local-data-durability → History errors stay visible while entries are listed | Empty history with no error | test/ui/history_panel_test.dart | empty history shows No items yet and no error | green |
 | local-data-durability → A database from a newer version is refused with its own message | Newer schema version on disk | test/data/migration_test.dart, test/ui/app_test.dart | newer schema reaches the second query as NewerDatabaseException without byte mutation; a newer database shows the newer-version startup message | red |
 | local-data-durability → A database from a newer version is refused with its own message | Other open failure | test/ui/app_test.dart | any other open failure shows the generic storage message | red *(coverage)* |
-| local-data-durability → A damaged saved token reports the token as unavailable | Corrupt token bytes on disk | test/application/progress_controller_test.dart | corrupt token bytes on disk fail as Tracker token unavailable with no request | red *(coverage)* |
-| local-data-durability → A damaged saved token reports the token as unavailable | Saving a new token recovers | test/data/credential_store_test.dart | saving over corrupt token bytes reads back the new token after reopening | red *(coverage)* |
+| local-data-durability → A damaged saved token reports the token as unavailable | Corrupt token bytes on disk | test/application/progress_controller_test.dart | corrupt token bytes on disk fail as Tracker token unavailable with no request | green |
+| local-data-durability → A damaged saved token reports the token as unavailable | Saving a new token recovers | test/data/credential_store_test.dart | saving over corrupt token bytes reads back the new token after reopening | green |
 | legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | red |
 | legacy-import → An import never changes this computer's own inputs | Replace keeps input folders | test/data/legacy_import_test.dart | a Replace import keeps both input folders and the follow switch | red *(coverage)* |
 | legacy-import → An import never changes this computer's own inputs | Import with no stored settings | test/data/legacy_import_test.dart | an import with no stored settings uses default local inputs | red *(coverage)* |
@@ -50,10 +50,10 @@
 | catalog-authority → A catalog failure message names its cause | Timeout | test/data/catalog_client_test.dart | a stalled dataset fails as a transport CatalogException | red |
 | catalog-authority → The Data sources panel shows the catalog error | Failure shown in the panel | test/ui/data_sources_panel_test.dart | a catalog error shows beside the out of date item status | red |
 | catalog-authority → The Data sources panel shows the catalog error | Error cleared by a successful refresh | test/ui/data_sources_panel_test.dart | a successful refresh clears the catalog error from the panel | red |
-| progress-authority → A malformed Tracker response keeps the session's last good progress | Malformed response after a good refresh | test/application/progress_controller_test.dart | malformed response keeps the earlier progress as stale | red |
-| progress-authority → A malformed Tracker response keeps the session's last good progress | Malformed response with no progress yet | test/application/progress_controller_test.dart | first malformed response fails with no progress | red |
-| progress-authority → A malformed Tracker response keeps the session's last good progress | Rejected token still discards progress | test/application/progress_controller_test.dart | $failure invalidates authority, transport and malformed retain stale | red |
-| progress-authority → A malformed Tracker response keeps the session's last good progress | Account mismatch still discards progress | test/application/progress_controller_test.dart | $failure invalidates authority, transport and malformed retain stale | red |
+| progress-authority → A malformed Tracker response keeps the session's last good progress | Malformed response after a good refresh | test/application/progress_controller_test.dart | malformed response keeps the earlier progress as stale | green |
+| progress-authority → A malformed Tracker response keeps the session's last good progress | Malformed response with no progress yet | test/application/progress_controller_test.dart | first malformed response fails with no progress | green |
+| progress-authority → A malformed Tracker response keeps the session's last good progress | Rejected token still discards progress | test/application/progress_controller_test.dart | $failure invalidates authority, transport and malformed retain stale | green |
+| progress-authority → A malformed Tracker response keeps the session's last good progress | Account mismatch still discards progress | test/application/progress_controller_test.dart | $failure invalidates authority, transport and malformed retain stale | green |
 
 ## 1. Restart test support and restart coverage
 
@@ -111,9 +111,9 @@ Load `dart-add-unit-test`, `dart-use-pattern-matching`, `dart-write-documentatio
 
 ## 5. Tracker malformed responses and damaged tokens (D4)
 
-- [ ] 5.1 Write the failing tests "malformed response keeps the earlier progress as stale" and "first malformed response fails with no progress". Move `malformed` out of the invalidating list in the parametrized test, renamed "$failure invalidates authority, transport and malformed retain stale", which keeps `authentication`, `permission`, `mode` and `identity`. Verify the malformed cases fail.
-- [ ] 5.2 Implement D4: `invalidatesAuthority` is true only for `authentication`, `permission`, `mode` and `identity` (`lib/data/tracker_client.dart:24-26`). Verify the 5.1 tests pass and flip the four progress rows green.
-- [ ] 5.3 Add a `HeaderProtector` fake next to `SyntheticProtector` (D8). It prefixes a fixed header on protect and rejects bytes without it on unprotect. Write the *(coverage)* tests:
+- [x] 5.1 Write the failing tests "malformed response keeps the earlier progress as stale" and "first malformed response fails with no progress". Move `malformed` out of the invalidating list in the parametrized test, renamed "$failure invalidates authority, transport and malformed retain stale", which keeps `authentication`, `permission`, `mode` and `identity`. Verify the malformed cases fail.
+- [x] 5.2 Implement D4: `invalidatesAuthority` is true only for `authentication`, `permission`, `mode` and `identity` (`lib/data/tracker_client.dart:24-26`). Verify the 5.1 tests pass and flip the four progress rows green.
+- [x] 5.3 Add a `HeaderProtector` fake next to `SyntheticProtector` (D8). It prefixes a fixed header on protect and rejects bytes without it on unprotect. Write the *(coverage)* tests:
   - "corrupt token bytes on disk fail as Tracker token unavailable with no request": random bytes written into the file of a `DpapiCredentialStore` using `HeaderProtector`, read through `ProgressController` with a request-counting tracker.
   - "saving over corrupt token bytes reads back the new token after reopening".
   - Verify they pass, or fix test-first, and flip both rows green.

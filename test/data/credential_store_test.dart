@@ -6,6 +6,8 @@ import 'package:blackgrid/data/credential_store.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:test/test.dart';
 
+import '../support/header_protector.dart';
+
 class SyntheticProtector implements CredentialProtector {
   bool failProtect = false, failUnprotect = false, failReplace = false;
   @override
@@ -83,4 +85,24 @@ void main() {
       'PVE_SYNTHETIC_LOCAL_ONLY',
     );
   });
+  test(
+    'saving over corrupt token bytes reads back the new token after reopening',
+    () async {
+      final header = HeaderProtector();
+      final file = File('${directory.path}/pvp.dpapi');
+      await file.writeAsBytes([1, 2, 3, 250, 99]);
+      final damaged = DpapiCredentialStore(directory, protector: header);
+      await expectLater(
+        damaged.readCredential(GameMode.pvp),
+        throwsA(isA<CredentialUnavailable>()),
+      );
+      await damaged.writeCredential(GameMode.pvp, 'PVP_SYNTHETIC_NEW');
+      final reopened = DpapiCredentialStore(
+        directory,
+        protector: HeaderProtector(),
+      );
+      expect(await reopened.readCredential(GameMode.pvp), 'PVP_SYNTHETIC_NEW');
+      expect((await directory.list().toList()).length, 1);
+    },
+  );
 }

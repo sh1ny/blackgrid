@@ -21,9 +21,21 @@ class TrackerException implements Exception {
   const TrackerException(this.failure, {this.cooldownUntil});
   final TrackerFailure failure;
   final DateTime? cooldownUntil;
-  bool get invalidatesAuthority =>
-      failure != TrackerFailure.unavailable &&
-      failure != TrackerFailure.cooldown;
+
+  /// Whether this failure proves the loaded progress no longer belongs to the
+  /// selected token, mode or account.
+  ///
+  /// A malformed response, transport failure or cooldown says nothing about
+  /// the loaded progress, so it is kept as stale.
+  bool get invalidatesAuthority => switch (failure) {
+    TrackerFailure.authentication ||
+    TrackerFailure.permission ||
+    TrackerFailure.mode ||
+    TrackerFailure.identity => true,
+    TrackerFailure.unavailable ||
+    TrackerFailure.malformed ||
+    TrackerFailure.cooldown => false,
+  };
   @override
   String toString() => switch (failure) {
     TrackerFailure.unavailable => 'Tracker transport unavailable',
