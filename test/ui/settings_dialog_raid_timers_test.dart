@@ -10,6 +10,7 @@ const _runThroughMessage =
 const _reputationMessage =
     'The Fence reputation must be between −7.00 and 6.00.';
 const _chooseMode = 'Choose a game mode first.';
+const _notSavedMessage = 'Not saved. Try again.';
 
 final _runThrough = find.widgetWithText(TextField, 'Run-through length (m:ss)');
 final _reputation = find.widgetWithText(TextField, 'Fence reputation');
@@ -124,6 +125,41 @@ void main() {
     await _noModeDialog(tester);
     expect(tester.widget<TextField>(_reputation).enabled, isFalse);
     expect(find.text(_chooseMode), findsOneWidget);
+  });
+
+  testWidgets('a value typed during another save is not shown as saved', (
+    tester,
+  ) async {
+    final h = await pumpTimerApp(tester);
+    await _openSettings(tester);
+    final runThrough = h.services.settings.raidTimers.runThroughSeconds;
+    final reputation = h.services.settings.raidTimers.fenceReputationFor(
+      h.services.catalog.mode,
+    );
+    // Another save is in flight, so the settings controller skips these.
+    h.services.settings.busy = true;
+    await _enterAndSubmit(tester, _runThrough, '8:00');
+    await _enterAndSubmit(tester, _reputation, '2.50');
+    await tester.pumpAndSettle();
+    expect(find.text(_notSavedMessage), findsNWidgets(2));
+    expect(tester.widget<TextField>(_runThrough).controller!.text, '8:00');
+    expect(h.services.settings.raidTimers.runThroughSeconds, runThrough);
+    expect(
+      h.services.settings.raidTimers.fenceReputationFor(
+        h.services.catalog.mode,
+      ),
+      reputation,
+    );
+
+    // Once the other save is done, committing the same text saves it.
+    h.services.settings.busy = false;
+    await _enterAndSubmit(tester, _runThrough, '8:00');
+    await pumpUntil(
+      tester,
+      () => h.services.settings.raidTimers.runThroughSeconds == 480,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(_notSavedMessage), findsOneWidget);
   });
 
   testWidgets('timer switches are saved', (tester) async {

@@ -124,13 +124,13 @@ class _SettingsDialogState extends State<SettingsDialog> {
         label: 'Run-through length (m:ss)',
         helper: 'From 1:00 to 30:00.',
         value: formatTimerSeconds(timers.runThroughSeconds),
-        onCommit: (text) {
+        onCommit: (text) async {
           final seconds = _parseRunThrough(text);
           if (seconds == null) return _runThroughMessage;
-          save(
+          final saved = await services.settings.setRaidTimers(
             services.settings.raidTimers.copyWith(runThroughSeconds: seconds),
           );
-          return null;
+          return saved ? null : _notSavedMessage;
         },
       ),
       const SizedBox(height: 12),
@@ -141,11 +141,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
             : 'For ${modeLabel(mode)}, with two decimals. Used for the scav cooldown.',
         value: timers.fenceReputationFor(mode).toStringAsFixed(2),
         enabled: mode != GameMode.unknown,
-        onCommit: (text) {
+        onCommit: (text) async {
           final value = _parseReputation(text);
           if (value == null) return _reputationMessage;
-          unawaited(services.settings.setFenceReputation(mode, value));
-          return null;
+          final saved = await services.settings.setFenceReputation(mode, value);
+          return saved ? null : _notSavedMessage;
         },
       ),
       if (mode == GameMode.unknown)
@@ -393,6 +393,10 @@ const _runThroughMessage =
 const _reputationMessage =
     'The Fence reputation must be between −7.00 and 6.00.';
 
+/// Shown when a valid edit was not saved: another save was in flight, or the
+/// save failed (the dialog's settings error then says more).
+const _notSavedMessage = 'Not saved. Try again.';
+
 final _minutesSeconds = RegExp(r'^(\d{1,2}):([0-5]\d)$');
 
 /// Reads `m:ss` as seconds, or `null` when [text] is not `m:ss` or is outside
@@ -422,8 +426,9 @@ double? _parseReputation(String text) {
 /// A text field that commits on the keyboard's done action and when it loses
 /// focus.
 ///
-/// [onCommit] returns an error message to show under the field, or `null` when
-/// the text was accepted. The field follows [value] when it changes, so an
+/// [onCommit] completes with an error message to show under the field, or
+/// `null` when the text was saved. A refused or unsaved edit keeps the typed
+/// text, so the field never shows a value as saved when it was not. The field follows [value] when it changes, so an
 /// accepted edit shows in its saved form. An edit that equals [value] is not
 /// committed again.
 class _CommitField extends StatefulWidget {
@@ -438,7 +443,7 @@ class _CommitField extends StatefulWidget {
   final String? helper;
   final String value;
   final bool enabled;
-  final String? Function(String text) onCommit;
+  final Future<String?> Function(String text) onCommit;
   @override
   State<_CommitField> createState() => _CommitFieldState();
 }
@@ -469,16 +474,20 @@ class _CommitFieldState extends State<_CommitField> {
   }
 
   void _onFocus() {
-    if (!focus.hasFocus) _commit();
+    if (!focus.hasFocus) unawaited(_commit());
   }
 
-  void _commit() {
+  Future<void> _commit() async {
     if (!mounted || !widget.enabled) return;
     if (controller.text.trim() == widget.value) {
       if (error != null) setState(() => error = null);
       return;
     }
-    setState(() => error = widget.onCommit(controller.text));
+    final text = controller.text;
+    final result = await widget.onCommit(text);
+    // A newer edit replaced the text this result belongs to.
+    if (!mounted || controller.text != text) return;
+    setState(() => error = result);
   }
 
   @override
@@ -489,7 +498,7 @@ class _CommitFieldState extends State<_CommitField> {
     onChanged: (_) {
       if (error != null) setState(() => error = null);
     },
-    onSubmitted: (_) => _commit(),
+    onSubmitted: (_) => unawaited(_commit()),
     decoration: InputDecoration(
       labelText: widget.label,
       helperText: widget.helper,

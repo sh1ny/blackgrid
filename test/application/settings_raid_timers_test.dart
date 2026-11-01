@@ -176,6 +176,24 @@ void main() {
     );
   });
 
+  test('a start recorded during an in-flight cooldown save is written right after it', () async {
+    await controller.load();
+    final later = DateTime.utc(2026, 11, 1, 21, 30);
+    final gate = db.gate = Completer<void>();
+    final first = controller.recordScavCooldownStart(
+      GameMode.seasonal,
+      seasonal2005,
+    );
+    expect(controller.busy, isTrue);
+    await controller.recordScavCooldownStart(GameMode.seasonal, later);
+    expect(db.attempts, 1);
+    gate.complete();
+    await first;
+    expect(db.attempts, 2);
+    expect(controller.busy, isFalse);
+    expect((await storedStarts())[GameMode.seasonal], later);
+  });
+
   test('a start recorded before load only waits in the pending map', () async {
     await controller.recordScavCooldownStart(GameMode.pve, seasonal2005);
     expect(db.attempts, 0);

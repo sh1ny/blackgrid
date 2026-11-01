@@ -99,6 +99,7 @@ class SettingsController extends ChangeNotifier
     }
     if (!_loaded || _settingsUnreadable) return;
     await _write(_settings);
+    await _flushQueued();
   }
 
   /// Writes [value] with every start max-merged with the stored and pending
