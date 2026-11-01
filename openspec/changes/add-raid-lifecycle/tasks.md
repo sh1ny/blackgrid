@@ -40,29 +40,29 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | game-log-input → Push-notification messages become flea-sale and task events | Flea sale paid in another currency | test/data/game_log/game_log_parsers_test.dart | sale in another currency has no rouble amount | green |
 | game-log-input → Push-notification messages become flea-sale and task events | Message without a task ID | test/data/game_log/game_log_parsers_test.dart | task message without an ID is rejected | green |
 | game-log-input → Log input never touches the game process | Offline audit | test/data/game_log/log_input_audit_test.dart | log input source has no process or write calls | red |
-| raid-lifecycle → Raid phases follow the log events | A whole raid | test/domain/raid_lifecycle_test.dart | a whole raid walks every phase | red |
-| raid-lifecycle → Raid phases follow the log events | No events yet | test/domain/raid_lifecycle_test.dart | initial state is unknown | red |
-| raid-lifecycle → Raid phases follow the log events | Raid without a starting countdown | test/domain/raid_lifecycle_test.dart | match found goes straight to in raid | red |
-| raid-lifecycle → Raid phases follow the log events | Out-of-place event | test/domain/raid_lifecycle_test.dart | raid started without a queue | red |
-| raid-lifecycle → A raid records its map, mode, times and entry | Recorded raid | test/domain/raid_lifecycle_test.dart | raid records map, mode, times, entry and cause | red |
-| raid-lifecycle → A raid records its map, mode, times and entry | Map unknown | test/domain/raid_lifecycle_test.dart | unsupported scene leaves the map unknown | red |
+| raid-lifecycle → Raid phases follow the log events | A whole raid | test/domain/raid_lifecycle_test.dart | a whole raid walks every phase | green |
+| raid-lifecycle → Raid phases follow the log events | No events yet | test/domain/raid_lifecycle_test.dart | initial state is unknown | green |
+| raid-lifecycle → Raid phases follow the log events | Raid without a starting countdown | test/domain/raid_lifecycle_test.dart | match found goes straight to in raid | green |
+| raid-lifecycle → Raid phases follow the log events | Out-of-place event | test/domain/raid_lifecycle_test.dart | raid started without a queue | green |
+| raid-lifecycle → A raid records its map, mode, times and entry | Recorded raid | test/domain/raid_lifecycle_test.dart | raid records map, mode, times, entry and cause | green |
+| raid-lifecycle → A raid records its map, mode, times and entry | Map unknown | test/domain/raid_lifecycle_test.dart | unsupported scene leaves the map unknown | green |
 | raid-lifecycle → Events read together are reduced in log-time order | Replay matches the live read | test/application/raid_lifecycle_controller_test.dart | replay and live read end the raid identically | red |
 | raid-lifecycle → Events read together are reduced in log-time order | Same time in two files | test/data/game_log/session_log_reader_events_test.dart | equal times sort application before backend | red |
-| raid-lifecycle → Events read together are reduced in log-time order | A file could not be read for a poll | test/domain/raid_lifecycle_test.dart | late raid exit after a menu ending changes nothing | red |
-| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Raid exit first | test/domain/raid_lifecycle_test.dart | raid exit first ends the raid once | red |
-| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Profile select first | test/domain/raid_lifecycle_test.dart | profile select first ends the raid once | red |
-| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Stale raid exit after a new queue | test/domain/raid_lifecycle_test.dart | stale exit after a new queue is ignored | red |
-| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Raid exit with no raid | test/domain/raid_lifecycle_test.dart | raid exit in menus is ignored | red |
-| raid-lifecycle → A queue that ends without a raid is aborted | Matching cancelled after a match was found | test/domain/raid_lifecycle_test.dart | matching cancelled aborts the queue | red |
-| raid-lifecycle → A queue that ends without a raid is aborted | Back to menus while loading | test/domain/raid_lifecycle_test.dart | profile select while loading aborts the queue | red |
-| raid-lifecycle → A queue that ends without a raid is aborted | Aborted with no queue | test/domain/raid_lifecycle_test.dart | abort in menus is ignored | red |
-| raid-lifecycle → Rejoining a raid is a transit or a reconnect | Transit to another map | test/domain/raid_lifecycle_test.dart | rejoin after an ended raid is a transit | red |
-| raid-lifecycle → Rejoining a raid is a transit or a reconnect | Queue between the raid and the rejoin | test/domain/raid_lifecycle_test.dart | rejoin after a queue is a reconnect | red |
-| raid-lifecycle → Rejoining a raid is a transit or a reconnect | Unknown rejoin location | test/domain/raid_lifecycle_test.dart | unknown rejoin location has no map | red |
-| raid-lifecycle → A client restart during a raid continues that raid | Restart and reconnect while Blackgrid runs | test/domain/raid_lifecycle_test.dart | restart and reconnect continue one raid | red |
-| raid-lifecycle → A client restart during a raid continues that raid | Restart without reconnecting | test/domain/raid_lifecycle_test.dart | restart then queue ends the raid by client restart | red |
-| raid-lifecycle → A client restart during a raid continues that raid | Blackgrid starts after the restart | test/domain/raid_lifecycle_test.dart | new folder alone starts a reconnect raid | red |
-| raid-lifecycle → Each lifecycle transition is published once | One transition per event | test/domain/raid_lifecycle_test.dart | a whole raid publishes one start and one end | red |
+| raid-lifecycle → Events read together are reduced in log-time order | A file could not be read for a poll | test/domain/raid_lifecycle_test.dart | late raid exit after a menu ending changes nothing | green |
+| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Raid exit first | test/domain/raid_lifecycle_test.dart | raid exit first ends the raid once | green |
+| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Profile select first | test/domain/raid_lifecycle_test.dart | profile select first ends the raid once | green |
+| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Stale raid exit after a new queue | test/domain/raid_lifecycle_test.dart | stale exit after a new queue is ignored | green |
+| raid-lifecycle → The first ending of a raid wins and later endings change nothing | Raid exit with no raid | test/domain/raid_lifecycle_test.dart | raid exit in menus is ignored | green |
+| raid-lifecycle → A queue that ends without a raid is aborted | Matching cancelled after a match was found | test/domain/raid_lifecycle_test.dart | matching cancelled aborts the queue | green |
+| raid-lifecycle → A queue that ends without a raid is aborted | Back to menus while loading | test/domain/raid_lifecycle_test.dart | profile select while loading aborts the queue | green |
+| raid-lifecycle → A queue that ends without a raid is aborted | Aborted with no queue | test/domain/raid_lifecycle_test.dart | abort in menus is ignored | green |
+| raid-lifecycle → Rejoining a raid is a transit or a reconnect | Transit to another map | test/domain/raid_lifecycle_test.dart | rejoin after an ended raid is a transit | green |
+| raid-lifecycle → Rejoining a raid is a transit or a reconnect | Queue between the raid and the rejoin | test/domain/raid_lifecycle_test.dart | rejoin after a queue is a reconnect | green |
+| raid-lifecycle → Rejoining a raid is a transit or a reconnect | Unknown rejoin location | test/domain/raid_lifecycle_test.dart | unknown rejoin location has no map | green |
+| raid-lifecycle → A client restart during a raid continues that raid | Restart and reconnect while Blackgrid runs | test/domain/raid_lifecycle_test.dart | restart and reconnect continue one raid | green |
+| raid-lifecycle → A client restart during a raid continues that raid | Restart without reconnecting | test/domain/raid_lifecycle_test.dart | restart then queue ends the raid by client restart | green |
+| raid-lifecycle → A client restart during a raid continues that raid | Blackgrid starts after the restart | test/domain/raid_lifecycle_test.dart | new folder alone starts a reconnect raid | green |
+| raid-lifecycle → Each lifecycle transition is published once | One transition per event | test/domain/raid_lifecycle_test.dart | a whole raid publishes one start and one end | green |
 | raid-lifecycle → Each lifecycle transition is published once | Re-read after restart | test/application/raid_lifecycle_controller_test.dart | re-reading a folder republishes the same transitions | red |
 | raid-lifecycle → Map shows the raid phase | In raid | test/ui/map_rail_test.dart | raid line shows in raid on Customs | red |
 | raid-lifecycle → Map shows the raid phase | Matching cancelled | test/ui/map_rail_test.dart | raid line shows matching cancelled | red |
@@ -90,8 +90,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 5. Raid state machine
 
-- [ ] 5.1 Write the failing tests in `test/domain/raid_lifecycle_test.dart` for every reducer row of the test map, with event lists built in code (no files). Cover that `interrupted` is a flag on the raid, not a phase (review round 2 note), and that the client-restart rule overrides "the first ending wins" only for a new folder's profile selected. Verify: they fail because `reduce` does not exist.
-- [ ] 5.2 Implement `RaidPhase`, `RaidLifecycleState`, `RaidTransition` (raid started, raid ended with cause, matching aborted, each with its `LogRecordId` and time) and the pure `reduce(state, event)` in `lib/domain/raid_lifecycle.dart` per both specs and design D3, D6, D8, using switch expressions over the sealed events. Verify: 5.1 tests pass and their rows flip green.
+- [x] 5.1 Write the failing tests in `test/domain/raid_lifecycle_test.dart` for every reducer row of the test map, with event lists built in code (no files). Cover that `interrupted` is a flag on the raid, not a phase (review round 2 note), and that the client-restart rule overrides "the first ending wins" only for a new folder's profile selected. Verify: they fail because `reduce` does not exist.
+- [x] 5.2 Implement `RaidPhase`, `RaidLifecycleState`, `RaidTransition` (raid started, raid ended with cause, matching aborted, each with its `LogRecordId` and time) and the pure `reduce(state, event)` in `lib/domain/raid_lifecycle.dart` per both specs and design D3, D6, D8, using switch expressions over the sealed events. Verify: 5.1 tests pass and their rows flip green.
 
 ## 6. Controller, wiring and the Map lines
 
