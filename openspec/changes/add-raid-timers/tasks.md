@@ -12,15 +12,15 @@ Rules for every group:
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| raid-lifecycle → A raid records its countdown and a guessed side | PMC countdown | test/domain/raid_lifecycle_side_test.dart | countdown over 3 s records raid starting and side PMC | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | No countdown | test/domain/raid_lifecycle_side_test.dart | no raid starting gives side scav | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | Short countdown | test/domain/raid_lifecycle_side_test.dart | 2 s countdown gives side scav | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | Countdown exactly 3 s | test/domain/raid_lifecycle_side_test.dart | exactly 3 s countdown gives side scav | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | Raid starting from an aborted queue | test/domain/raid_lifecycle_side_test.dart | raid starting of an aborted queue is forgotten | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | Transit keeps the side | test/domain/raid_lifecycle_side_test.dart | transit raid takes the previous raid's side | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | Reconnect keeps the side | test/domain/raid_lifecycle_side_test.dart | continued reconnect keeps side PMC | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | No queue | test/domain/raid_lifecycle_side_test.dart | raid without a queue has side unknown | red |
-| raid-lifecycle → A raid records its countdown and a guessed side | Reconnect after Blackgrid starts | test/domain/raid_lifecycle_side_test.dart | new reconnect raid has side unknown | red |
+| raid-lifecycle → A raid records its countdown and a guessed side | PMC countdown | test/domain/raid_lifecycle_side_test.dart | countdown over 3 s records raid starting and side PMC | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | No countdown | test/domain/raid_lifecycle_side_test.dart | no raid starting gives side scav | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | Short countdown | test/domain/raid_lifecycle_side_test.dart | 2 s countdown gives side scav | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | Countdown exactly 3 s | test/domain/raid_lifecycle_side_test.dart | exactly 3 s countdown gives side scav | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | Raid starting from an aborted queue | test/domain/raid_lifecycle_side_test.dart | raid starting of an aborted queue is forgotten | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | Transit keeps the side | test/domain/raid_lifecycle_side_test.dart | transit raid takes the previous raid's side | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | Reconnect keeps the side | test/domain/raid_lifecycle_side_test.dart | continued reconnect keeps side PMC | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | No queue | test/domain/raid_lifecycle_side_test.dart | raid without a queue has side unknown | green |
+| raid-lifecycle → A raid records its countdown and a guessed side | Reconnect after Blackgrid starts | test/domain/raid_lifecycle_side_test.dart | new reconnect raid has side unknown | green |
 | raid-timers → Time in raid counts from the raid's log start | Raid in progress | test/domain/raid_timers_test.dart | time in raid is now minus the log start | red |
 | raid-timers → Time in raid counts from the raid's log start | Blackgrid restarted mid-raid | test/application/raid_timers_controller_test.dart | replayed current raid shows elapsed time before any tick | red |
 | raid-timers → Time in raid counts from the raid's log start | Raid ended | test/domain/raid_timers_test.dart | ended raid freezes as last raid | red |
@@ -88,8 +88,8 @@ Rules for every group:
 
 ## 2. Raid side in the lifecycle (raid-lifecycle delta)
 
-- [ ] 2.1 Write the failing tests in `test/domain/raid_lifecycle_side_test.dart` for the 9 raid-lifecycle rows of the test map. They drive the pure `reduce` with synthetic events and made-up `LogRecordId`s. Verify they fail because `Raid` has no `side` or `raidStartingTime`.
-- [ ] 2.2 Implement the side guess (design D2) in `lib/domain/raid_lifecycle.dart`:
+- [x] 2.1 Write the failing tests in `test/domain/raid_lifecycle_side_test.dart` for the 9 raid-lifecycle rows of the test map. They drive the pure `reduce` with synthetic events and made-up `LogRecordId`s. Verify they fail because `Raid` has no `side` or `raidStartingTime`.
+- [x] 2.2 Implement the side guess (design D2) in `lib/domain/raid_lifecycle.dart`:
   - add `enum RaidSide { pmc, scav, unknown }`, plus `Raid.raidStartingTime` and `Raid.side`, carried by `ended`/`withInterrupted`;
   - add `RaidLifecycleState.pendingCountdown`, set by `RaidStarting` and cleared by queue entered, matching aborted, profile selected and raid started;
   - classify in `_raidStarted`: gap > 3 s → PMC, else scav, for a queue entry; transit → previous raid's side; continued reconnect → unchanged; new reconnect or no queue → unknown.
