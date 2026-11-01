@@ -70,8 +70,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0030-game-log-input.md` (MADR-short, `Status: accepted`, date, source `add-raid-lifecycle` design D1, D2, D3, D5, D7) covering one reader per session folder, record framing, per-scan log-time ordering, the application-only Map state and the stable record identity, with the rejected alternatives and consequences from design.md. Verify: the file exists and `docs/adr/README.md` (if it indexes ADRs) lists it.
-- [ ] 1.2 Update `openspec/architecture.md`: the in-force ADR index row for ADR-0030; component rows for the session log reader (three tails) and `RaidLifecycleController`; the "Game inputs" boundary (three files, framing, event identity, application-only Map state); the "Log tail" row in Resource bounds (push record 1 MiB / 8 192 lines); the Session evidence state row notes raid state lives in `RaidLifecycleController`. Verify: `git diff openspec/architecture.md` shows each item and no line still says only `application*.log` is read.
+- [x] 1.1 Write `docs/adr/0030-game-log-input.md` (MADR-short, `Status: accepted`, date, source `add-raid-lifecycle` design D1, D2, D3, D5, D7) covering one reader per session folder, record framing, per-scan log-time ordering, the application-only Map state and the stable record identity, with the rejected alternatives and consequences from design.md. Verify: the file exists and `docs/adr/README.md` (if it indexes ADRs) lists it.
+- [x] 1.2 Update `openspec/architecture.md`: the in-force ADR index row for ADR-0030; component rows for the session log reader (three tails) and `RaidLifecycleController`; the "Game inputs" boundary (three files, framing, event identity, application-only Map state); the "Log tail" row in Resource bounds (push record 1 MiB / 8 192 lines); the Session evidence state row notes raid state lives in `RaidLifecycleController`. Verify: `git diff openspec/architecture.md` shows each item and no line still says only `application*.log` is read.
 
 ## 2. Per-file tail and record framing
 
