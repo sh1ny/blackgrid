@@ -8,40 +8,26 @@ Milestone IDs keep the implementation strategy's numbering (M0–M6), so they ma
 
 A change that names a GitHub issue resolves it through its PR: the PR description links the issue with a closing keyword (`Closes #41`), so merging the PR closes the issue, and the PR's body says what of the issue it delivers. If the PR delivers only part of the issue, it links it with `Refs #N` instead, and the issue says what is left.
 
-## Now: M7 - raid lifecycle, timers and local stats
+## Now: M8 - map labels and popups
 
-Promoted from Next at the M6 close on 2026-11-01; the user agreed its split then. Planned with the user on 2026-10-30 from a review of [TarkovMonitor](https://github.com/the-hideout/TarkovMonitor) and [tarkov.dev](https://github.com/the-hideout/tarkov-dev)'s map. The goal is useful feature parity, rebuilt independently: no source code is copied and TarkovMonitor's bugs are not repeated. Blackgrid never looks for the game process; everything below comes from the game's log files, the screenshot folder and the user's own actions.
-
-Blackgrid follows the whole raid from the game's logs, not just the map and mode, shows raid timers in its own window and keeps local stats.
-
-**Exit criteria:**
-- `application.log` and `notifications.log` feed one raid state machine covering queue, match found, raid starting and started, matching aborted, raid exit, back in menus, profile select and reconnects. Partial lines, multi-byte text split across reads and the two logs arriving in either order are each proved by offline fixture tests. (agent)
-- Time in raid, the run-through countdown and the scav cooldown show in Blackgrid's own window, never on the game screen. Their settings survive restart, and the countdowns are proved by fake-clock tests. (agent)
-- Total flea sales and raids per map are stored only in the local database, survive restart and are emptied by the clear button, proved by offline tests. (agent)
-- During real raids, the raid state, timers and stats follow the game. (user)
-
-**Changes** (in order):
-1. `add-raid-lifecycle` - read the rest of `application.log` (queue, match found, raid starting and started, matching aborted, back in menus, profile select) and `notifications.log` (raid exit, flea sales, task started, failed and finished, which are message types 10, 11 and 12, confirmed in the user's logs on 2026-11-01) into one raid state machine that recognises reconnects. Fixes what TarkovMonitor gets wrong: partial lines across reads, multi-byte text split across chunks, and the raid exit and profile select coming from two logs in either order.
-2. `add-raid-timers` - time in raid, the run-through countdown (default 7:10) and the scav cooldown countdown (tarkov.dev's base time, the user's Fence reputation and built hideout bonuses from Tracker progress), shown in Blackgrid's window; no overlay. Settings: run-through length, Fence reputation, timers on or off and which ones show.
-3. `add-local-stats` - total flea sales and raids per map, stored locally in the Drift database, with a clear button. Nothing leaves the machine.
-
-## Next: M8 - map labels and popups
+Promoted from Next at the M7 close on 2026-11-02; the user agreed its split on 2026-11-01.
 
 The native map reads like tarkov.dev's: named places, labelled extracts and a bubble at the marker on click.
 
-**Split agreed:** 2026-11-01
+**Exit criteria:**
+- Extract names show beside their badges in faction colours, and outlines use their category colour and show on hover or selection, proved by widget or painter tests. (agent)
+- Clicking a marker opens a bubble anchored to it that follows pan and zoom, stays in the viewport and closes, with player-facing text and raw fields in a collapsed Details section, proved by widget tests. (agent)
+- The new pack version carries tarkov.dev's place labels with a rights note, drawn behind markers at a fixed screen size, hidden on other floors and thinned when zoomed out, proved by pack and painter tests. (agent)
+- On real maps the labels, extract names and bubbles read correctly. (user)
 
+**Changes** (in order):
 1. `add-extract-labels` - draw each extract's name beside its badge, coloured by faction (PMC, Scav, shared, transit) in colours we choose (ADR-0023), outlines drawn in their category's colour instead of hazard red, and extract outlines shown on hover or selection. Adds a `?` help button on the map: position tracking needs the game's own screenshot key.
 2. `add-marker-popups` - replace the details strip under the map with a bubble anchored to the marker that follows pan and zoom, stays in the viewport and closes. It shows the quest name and objective text, an extract's switches and required item, a lock's type and key name, a container's name, or a boss and spawn chance; raw fields move to a collapsed Details section (`player-facing-text`).
 3. `add-location-labels` - carry tarkov.dev's place labels (`maps.json`, already frozen in the pack's evidence: 303 labels on 10 maps) into a new pack version, with a rights note (user decision 2026-10-30: use tarkov.dev's data); draw them on the canvas behind the markers at a fixed screen size, with rotation and a halo, hidden on other floors by height band and thinned when zoomed far out.
 
-## Later
+## Next: M9 - local progress tracker
 
-The milestones below run in this order after M8. M9 and M10 were planned with the user on 2026-10-30; M9 was replaced and M11–M19 were added on 2026-11-01 from the user's future-ideas list.
-
-**Rules for everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
-
-### M9 - local progress tracker
+The rules at the top of Later apply to M9 too.
 
 Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackgrid tracks quest and hideout progress itself, on the player's machine. The tracker is built so sync can be added later, but it syncs nothing. The existing read-only progress-site token stays exactly as it is until this milestone's last change replaces everything it provides.
 
@@ -51,6 +37,8 @@ Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackg
 - Task started, failed and finished events from the logs fill the store per mode and wipe. A log-folder replay rebuilds a wipe and is refused during a raid. Proved by offline fixture tests. (agent)
 - Keep/sell advice, the scav cooldown's hideout bonuses and task state come from local progress, and the token integration is removed. (agent)
 - A replay of the player's real log folders matches their in-game quest state, and the checklist and manual progress entry work in play. (user)
+
+**Split agreed:** 2026-11-02
 
 **Changes** (in order):
 1. `add-progress-store` - an ADR for the local tracker and its event format, then the event store in the Drift database: device ID, mode and wipe keys, a format version, newest-change-wins merging, counters stored as values rather than increments, and undo from the event history.
@@ -65,6 +53,12 @@ Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackg
 - **Why our own tracker:** showing tasks, availability, needed items and the hideout has to be built in Blackgrid either way, because a third-party API returns only IDs and states. Syncing with someone else's service adds daily request quotas, tokens the user must create, polling, conflict handling and terms of use, and it still cannot write hideout or trader progress. A local tracker has none of these limits and works offline. Blackgrid never writes to the progress site.
 - **Sync-ready from the first release:** tarkov.dev IDs in every key, with game mode and wipe; each app downloads tarkov.dev data itself, so a sync service would only ever hold the player's progress; the rules package gives web and mobile the same answers as the desktop. The extra cost now is one or two tasks in this change, and the event history also gives undo, log replay and the wipe summary.
 - **Upkeep:** the availability rules are the hardest part (alternatives, must-be-failed prerequisites, faction and edition rules) and need checking every wipe.
+
+## Later
+
+The milestones below run in this order after M9. M10 was planned with the user on 2026-10-30; M11–M19 were added on 2026-11-01 from the user's future-ideas list.
+
+**Rules for everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
 
 ### M10 - alerts and window behaviour
 
@@ -166,3 +160,4 @@ M6 moved the builds to CI: a pushed `v` tag publishes a GitHub Release with a zi
 - M4.5 - player-facing polish, item icons and own map markers - 2026-10-29 ([PR #50](https://github.com/sh1ny/blackgrid/pull/50), [PR #51](https://github.com/sh1ny/blackgrid/pull/51), [PR #53](https://github.com/sh1ny/blackgrid/pull/53), [PR #54](https://github.com/sh1ny/blackgrid/pull/54), [PR #56](https://github.com/sh1ny/blackgrid/pull/56), [PR #57](https://github.com/sh1ny/blackgrid/pull/57), [PR #58](https://github.com/sh1ny/blackgrid/pull/58), [PR #59](https://github.com/sh1ny/blackgrid/pull/59)) - Agent checks passed on `main` `da08fdd` (marker provenance check: 19 icons valid; full offline suite and analyze). The user passed the map rail, item icon, requirements & uses and plain-language reads, and the Marker preferences look on re-check after `fix-marker-tile-centering`. Learned: tests that pinned tile size but not position let an off-centre layout through until the user looked, so layout criteria marked "user for the look" also get a geometry widget test where one can prove the invariant.
 - M4.6 - open-issue sweep - 2026-10-30 ([PR #60](https://github.com/sh1ny/blackgrid/pull/60)) - The sweep judged all 18 open issues against `main`: #30 was closed as no longer applying, 16 were deferred to after 1.0 with the `post-1.0` label and a recorded reason, and #17 was fixed by `fix-changelog-spec`, which also stopped local `merge:` commits from showing up in the changelog. Learned: judging issues at sweep time, against current `main`, left one fix-now issue out of 18, so review-filed issues are not accepted in advance.
 - M6 - Windows CI and releases - 2026-11-01 ([PR #63](https://github.com/sh1ny/blackgrid/pull/63), [PR #67](https://github.com/sh1ny/blackgrid/pull/67), [PR #68](https://github.com/sh1ny/blackgrid/pull/68), [PR #69](https://github.com/sh1ny/blackgrid/pull/69), [PR #70](https://github.com/sh1ny/blackgrid/pull/70), [PR #72](https://github.com/sh1ny/blackgrid/pull/72), [PR #73](https://github.com/sh1ny/blackgrid/pull/73)) - Agent checks passed on `main` `dc636c9`: the `ci` workflow ran every offline gate green on a hosted Windows runner; ADR-0025 records the Inno Setup installer and unsigned builds until #66; the `v0.6.0-beta.1` tag published a prerelease with the zip, the installer and the changelog notes; the committed `.ico` holds all ten sizes from 16 to 256 px; and offline tests prove that failures keep the last good data and that settings, pins, history and imports survive restart. The user picked the `hex_sweep` icon on 2026-10-31 and installed beta.1 from both the installer and the zip on 2026-11-01. Learned: with every gate on a hosted runner, a release no longer depends on the developer's machine, and the restart tests showed that one unreadable row could block startup, so stored data is now decoded one row at a time.
+- M7 - raid lifecycle, timers and local stats - 2026-11-02 ([PR #76](https://github.com/sh1ny/blackgrid/pull/76), [PR #77](https://github.com/sh1ny/blackgrid/pull/77), [PR #79](https://github.com/sh1ny/blackgrid/pull/79)) - Agent checks passed on `main` `c2b28f7`: offline fixture tests prove lines and multi-byte text split across reads, both log orders and reconnects; fake-clock tests prove the timers; restart and clear tests prove settings and stats survive. The user reported the raid state line working on `0.6.0+384` (2026-11-01) and the timers and local stats on `0.6.0+386` (2026-11-02, a short test). Learned: reconnects make "the same raid" a cross-cutting rule (lifecycle, timers and stats each had to agree on it), and a mid-raid clear followed by a reconnect and a restart can still recount one raid, accepted as [#80](https://github.com/sh1ny/blackgrid/issues/80).
