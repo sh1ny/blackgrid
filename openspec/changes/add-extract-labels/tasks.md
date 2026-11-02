@@ -69,8 +69,8 @@ Rules for every group:
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `mise run analyze` and `mise run test`, and format with `dart format`. Both must pass with no new analyzer issues.
-- [ ] 5.2 Re-check the proposal's `## Release Notes` against what shipped and run `mise run release-notes -- --check openspec/changes/add-extract-labels/proposal.md` (exit 0).
+- [x] 5.1 Run `mise run analyze` and `mise run test`, and format with `dart format`. Both must pass with no new analyzer issues.
+- [x] 5.2 Re-check the proposal's `## Release Notes` against what shipped and run `mise run release-notes -- --check openspec/changes/add-extract-labels/proposal.md` (exit 0).
 
 ## Workflow follow-up
 
