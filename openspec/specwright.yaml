@@ -102,6 +102,14 @@ pr:
 cheap_tier:
   enabled: false
 
+# Backend for this repository's branch state and version-control writes:
+# git (default) | jj | gitbutler. Selection is explicit and never inferred from .jj/
+# or .git/gitbutler/. gitbutler is for this (code) repository only and needs
+# finish: pr; a repo GitButler already manages must set it, the git backend
+# refuses to write there. Git on Windows with core.autocrlf=true can make
+# GitButler checkouts conflict on line endings.
+vcs: git
+
 # Store-backed changes only (planning in an OpenSpec store, a separate git
 # repo): settings for the store side. Every other setting is shared with the
 # code repo, and each key below falls back to the code repo's value.
