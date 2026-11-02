@@ -2252,6 +2252,1158 @@ class ItemIconRecordsCompanion extends UpdateCompanion<ItemIconRecord> {
   }
 }
 
+class $RaidStatRecordsTable extends RaidStatRecords
+    with TableInfo<$RaidStatRecordsTable, RaidStatRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RaidStatRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _folderMeta = const VerificationMeta('folder');
+  @override
+  late final GeneratedColumn<String> folder = GeneratedColumn<String>(
+    'folder',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileMeta = const VerificationMeta('file');
+  @override
+  late final GeneratedColumn<String> file = GeneratedColumn<String>(
+    'file',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _offsetMeta = const VerificationMeta('offset');
+  @override
+  late final GeneratedColumn<int> offset = GeneratedColumn<int>(
+    'offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<String> mapId = GeneratedColumn<String>(
+    'map_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startMsMeta = const VerificationMeta(
+    'startMs',
+  );
+  @override
+  late final GeneratedColumn<int> startMs = GeneratedColumn<int>(
+    'start_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entryMeta = const VerificationMeta('entry');
+  @override
+  late final GeneratedColumn<String> entry = GeneratedColumn<String>(
+    'entry',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    folder,
+    file,
+    offset,
+    mode,
+    mapId,
+    startMs,
+    entry,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'raid_stat_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RaidStatRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('folder')) {
+      context.handle(
+        _folderMeta,
+        folder.isAcceptableOrUnknown(data['folder']!, _folderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderMeta);
+    }
+    if (data.containsKey('file')) {
+      context.handle(
+        _fileMeta,
+        file.isAcceptableOrUnknown(data['file']!, _fileMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileMeta);
+    }
+    if (data.containsKey('offset')) {
+      context.handle(
+        _offsetMeta,
+        offset.isAcceptableOrUnknown(data['offset']!, _offsetMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_offsetMeta);
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+        _mapIdMeta,
+        mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta),
+      );
+    }
+    if (data.containsKey('start_ms')) {
+      context.handle(
+        _startMsMeta,
+        startMs.isAcceptableOrUnknown(data['start_ms']!, _startMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startMsMeta);
+    }
+    if (data.containsKey('entry')) {
+      context.handle(
+        _entryMeta,
+        entry.isAcceptableOrUnknown(data['entry']!, _entryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {folder, file, offset};
+  @override
+  RaidStatRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RaidStatRecord(
+      folder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder'],
+      )!,
+      file: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file'],
+      )!,
+      offset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}offset'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      mapId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}map_id'],
+      ),
+      startMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_ms'],
+      )!,
+      entry: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry'],
+      )!,
+    );
+  }
+
+  @override
+  $RaidStatRecordsTable createAlias(String alias) {
+    return $RaidStatRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class RaidStatRecord extends DataClass implements Insertable<RaidStatRecord> {
+  final String folder;
+  final String file;
+  final int offset;
+  final String mode;
+  final String? mapId;
+  final int startMs;
+  final String entry;
+  const RaidStatRecord({
+    required this.folder,
+    required this.file,
+    required this.offset,
+    required this.mode,
+    this.mapId,
+    required this.startMs,
+    required this.entry,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['folder'] = Variable<String>(folder);
+    map['file'] = Variable<String>(file);
+    map['offset'] = Variable<int>(offset);
+    map['mode'] = Variable<String>(mode);
+    if (!nullToAbsent || mapId != null) {
+      map['map_id'] = Variable<String>(mapId);
+    }
+    map['start_ms'] = Variable<int>(startMs);
+    map['entry'] = Variable<String>(entry);
+    return map;
+  }
+
+  RaidStatRecordsCompanion toCompanion(bool nullToAbsent) {
+    return RaidStatRecordsCompanion(
+      folder: Value(folder),
+      file: Value(file),
+      offset: Value(offset),
+      mode: Value(mode),
+      mapId: mapId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mapId),
+      startMs: Value(startMs),
+      entry: Value(entry),
+    );
+  }
+
+  factory RaidStatRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RaidStatRecord(
+      folder: serializer.fromJson<String>(json['folder']),
+      file: serializer.fromJson<String>(json['file']),
+      offset: serializer.fromJson<int>(json['offset']),
+      mode: serializer.fromJson<String>(json['mode']),
+      mapId: serializer.fromJson<String?>(json['mapId']),
+      startMs: serializer.fromJson<int>(json['startMs']),
+      entry: serializer.fromJson<String>(json['entry']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'folder': serializer.toJson<String>(folder),
+      'file': serializer.toJson<String>(file),
+      'offset': serializer.toJson<int>(offset),
+      'mode': serializer.toJson<String>(mode),
+      'mapId': serializer.toJson<String?>(mapId),
+      'startMs': serializer.toJson<int>(startMs),
+      'entry': serializer.toJson<String>(entry),
+    };
+  }
+
+  RaidStatRecord copyWith({
+    String? folder,
+    String? file,
+    int? offset,
+    String? mode,
+    Value<String?> mapId = const Value.absent(),
+    int? startMs,
+    String? entry,
+  }) => RaidStatRecord(
+    folder: folder ?? this.folder,
+    file: file ?? this.file,
+    offset: offset ?? this.offset,
+    mode: mode ?? this.mode,
+    mapId: mapId.present ? mapId.value : this.mapId,
+    startMs: startMs ?? this.startMs,
+    entry: entry ?? this.entry,
+  );
+  RaidStatRecord copyWithCompanion(RaidStatRecordsCompanion data) {
+    return RaidStatRecord(
+      folder: data.folder.present ? data.folder.value : this.folder,
+      file: data.file.present ? data.file.value : this.file,
+      offset: data.offset.present ? data.offset.value : this.offset,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      startMs: data.startMs.present ? data.startMs.value : this.startMs,
+      entry: data.entry.present ? data.entry.value : this.entry,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RaidStatRecord(')
+          ..write('folder: $folder, ')
+          ..write('file: $file, ')
+          ..write('offset: $offset, ')
+          ..write('mode: $mode, ')
+          ..write('mapId: $mapId, ')
+          ..write('startMs: $startMs, ')
+          ..write('entry: $entry')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(folder, file, offset, mode, mapId, startMs, entry);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RaidStatRecord &&
+          other.folder == this.folder &&
+          other.file == this.file &&
+          other.offset == this.offset &&
+          other.mode == this.mode &&
+          other.mapId == this.mapId &&
+          other.startMs == this.startMs &&
+          other.entry == this.entry);
+}
+
+class RaidStatRecordsCompanion extends UpdateCompanion<RaidStatRecord> {
+  final Value<String> folder;
+  final Value<String> file;
+  final Value<int> offset;
+  final Value<String> mode;
+  final Value<String?> mapId;
+  final Value<int> startMs;
+  final Value<String> entry;
+  final Value<int> rowid;
+  const RaidStatRecordsCompanion({
+    this.folder = const Value.absent(),
+    this.file = const Value.absent(),
+    this.offset = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.startMs = const Value.absent(),
+    this.entry = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RaidStatRecordsCompanion.insert({
+    required String folder,
+    required String file,
+    required int offset,
+    required String mode,
+    this.mapId = const Value.absent(),
+    required int startMs,
+    required String entry,
+    this.rowid = const Value.absent(),
+  }) : folder = Value(folder),
+       file = Value(file),
+       offset = Value(offset),
+       mode = Value(mode),
+       startMs = Value(startMs),
+       entry = Value(entry);
+  static Insertable<RaidStatRecord> custom({
+    Expression<String>? folder,
+    Expression<String>? file,
+    Expression<int>? offset,
+    Expression<String>? mode,
+    Expression<String>? mapId,
+    Expression<int>? startMs,
+    Expression<String>? entry,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (folder != null) 'folder': folder,
+      if (file != null) 'file': file,
+      if (offset != null) 'offset': offset,
+      if (mode != null) 'mode': mode,
+      if (mapId != null) 'map_id': mapId,
+      if (startMs != null) 'start_ms': startMs,
+      if (entry != null) 'entry': entry,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RaidStatRecordsCompanion copyWith({
+    Value<String>? folder,
+    Value<String>? file,
+    Value<int>? offset,
+    Value<String>? mode,
+    Value<String?>? mapId,
+    Value<int>? startMs,
+    Value<String>? entry,
+    Value<int>? rowid,
+  }) {
+    return RaidStatRecordsCompanion(
+      folder: folder ?? this.folder,
+      file: file ?? this.file,
+      offset: offset ?? this.offset,
+      mode: mode ?? this.mode,
+      mapId: mapId ?? this.mapId,
+      startMs: startMs ?? this.startMs,
+      entry: entry ?? this.entry,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (folder.present) {
+      map['folder'] = Variable<String>(folder.value);
+    }
+    if (file.present) {
+      map['file'] = Variable<String>(file.value);
+    }
+    if (offset.present) {
+      map['offset'] = Variable<int>(offset.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<String>(mapId.value);
+    }
+    if (startMs.present) {
+      map['start_ms'] = Variable<int>(startMs.value);
+    }
+    if (entry.present) {
+      map['entry'] = Variable<String>(entry.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RaidStatRecordsCompanion(')
+          ..write('folder: $folder, ')
+          ..write('file: $file, ')
+          ..write('offset: $offset, ')
+          ..write('mode: $mode, ')
+          ..write('mapId: $mapId, ')
+          ..write('startMs: $startMs, ')
+          ..write('entry: $entry, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $FleaSaleRecordsTable extends FleaSaleRecords
+    with TableInfo<$FleaSaleRecordsTable, FleaSaleRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FleaSaleRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _folderMeta = const VerificationMeta('folder');
+  @override
+  late final GeneratedColumn<String> folder = GeneratedColumn<String>(
+    'folder',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileMeta = const VerificationMeta('file');
+  @override
+  late final GeneratedColumn<String> file = GeneratedColumn<String>(
+    'file',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _offsetMeta = const VerificationMeta('offset');
+  @override
+  late final GeneratedColumn<int> offset = GeneratedColumn<int>(
+    'offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timeMsMeta = const VerificationMeta('timeMs');
+  @override
+  late final GeneratedColumn<int> timeMs = GeneratedColumn<int>(
+    'time_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countMeta = const VerificationMeta('count');
+  @override
+  late final GeneratedColumn<int> count = GeneratedColumn<int>(
+    'count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _roublesMeta = const VerificationMeta(
+    'roubles',
+  );
+  @override
+  late final GeneratedColumn<int> roubles = GeneratedColumn<int>(
+    'roubles',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    folder,
+    file,
+    offset,
+    mode,
+    timeMs,
+    itemId,
+    count,
+    roubles,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'flea_sale_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FleaSaleRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('folder')) {
+      context.handle(
+        _folderMeta,
+        folder.isAcceptableOrUnknown(data['folder']!, _folderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderMeta);
+    }
+    if (data.containsKey('file')) {
+      context.handle(
+        _fileMeta,
+        file.isAcceptableOrUnknown(data['file']!, _fileMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileMeta);
+    }
+    if (data.containsKey('offset')) {
+      context.handle(
+        _offsetMeta,
+        offset.isAcceptableOrUnknown(data['offset']!, _offsetMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_offsetMeta);
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('time_ms')) {
+      context.handle(
+        _timeMsMeta,
+        timeMs.isAcceptableOrUnknown(data['time_ms']!, _timeMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timeMsMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('count')) {
+      context.handle(
+        _countMeta,
+        count.isAcceptableOrUnknown(data['count']!, _countMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countMeta);
+    }
+    if (data.containsKey('roubles')) {
+      context.handle(
+        _roublesMeta,
+        roubles.isAcceptableOrUnknown(data['roubles']!, _roublesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {folder, file, offset};
+  @override
+  FleaSaleRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FleaSaleRecord(
+      folder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder'],
+      )!,
+      file: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file'],
+      )!,
+      offset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}offset'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      timeMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}time_ms'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      count: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}count'],
+      )!,
+      roubles: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}roubles'],
+      ),
+    );
+  }
+
+  @override
+  $FleaSaleRecordsTable createAlias(String alias) {
+    return $FleaSaleRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class FleaSaleRecord extends DataClass implements Insertable<FleaSaleRecord> {
+  final String folder;
+  final String file;
+  final int offset;
+  final String mode;
+  final int timeMs;
+  final String itemId;
+  final int count;
+  final int? roubles;
+  const FleaSaleRecord({
+    required this.folder,
+    required this.file,
+    required this.offset,
+    required this.mode,
+    required this.timeMs,
+    required this.itemId,
+    required this.count,
+    this.roubles,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['folder'] = Variable<String>(folder);
+    map['file'] = Variable<String>(file);
+    map['offset'] = Variable<int>(offset);
+    map['mode'] = Variable<String>(mode);
+    map['time_ms'] = Variable<int>(timeMs);
+    map['item_id'] = Variable<String>(itemId);
+    map['count'] = Variable<int>(count);
+    if (!nullToAbsent || roubles != null) {
+      map['roubles'] = Variable<int>(roubles);
+    }
+    return map;
+  }
+
+  FleaSaleRecordsCompanion toCompanion(bool nullToAbsent) {
+    return FleaSaleRecordsCompanion(
+      folder: Value(folder),
+      file: Value(file),
+      offset: Value(offset),
+      mode: Value(mode),
+      timeMs: Value(timeMs),
+      itemId: Value(itemId),
+      count: Value(count),
+      roubles: roubles == null && nullToAbsent
+          ? const Value.absent()
+          : Value(roubles),
+    );
+  }
+
+  factory FleaSaleRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FleaSaleRecord(
+      folder: serializer.fromJson<String>(json['folder']),
+      file: serializer.fromJson<String>(json['file']),
+      offset: serializer.fromJson<int>(json['offset']),
+      mode: serializer.fromJson<String>(json['mode']),
+      timeMs: serializer.fromJson<int>(json['timeMs']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      count: serializer.fromJson<int>(json['count']),
+      roubles: serializer.fromJson<int?>(json['roubles']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'folder': serializer.toJson<String>(folder),
+      'file': serializer.toJson<String>(file),
+      'offset': serializer.toJson<int>(offset),
+      'mode': serializer.toJson<String>(mode),
+      'timeMs': serializer.toJson<int>(timeMs),
+      'itemId': serializer.toJson<String>(itemId),
+      'count': serializer.toJson<int>(count),
+      'roubles': serializer.toJson<int?>(roubles),
+    };
+  }
+
+  FleaSaleRecord copyWith({
+    String? folder,
+    String? file,
+    int? offset,
+    String? mode,
+    int? timeMs,
+    String? itemId,
+    int? count,
+    Value<int?> roubles = const Value.absent(),
+  }) => FleaSaleRecord(
+    folder: folder ?? this.folder,
+    file: file ?? this.file,
+    offset: offset ?? this.offset,
+    mode: mode ?? this.mode,
+    timeMs: timeMs ?? this.timeMs,
+    itemId: itemId ?? this.itemId,
+    count: count ?? this.count,
+    roubles: roubles.present ? roubles.value : this.roubles,
+  );
+  FleaSaleRecord copyWithCompanion(FleaSaleRecordsCompanion data) {
+    return FleaSaleRecord(
+      folder: data.folder.present ? data.folder.value : this.folder,
+      file: data.file.present ? data.file.value : this.file,
+      offset: data.offset.present ? data.offset.value : this.offset,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      timeMs: data.timeMs.present ? data.timeMs.value : this.timeMs,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      count: data.count.present ? data.count.value : this.count,
+      roubles: data.roubles.present ? data.roubles.value : this.roubles,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FleaSaleRecord(')
+          ..write('folder: $folder, ')
+          ..write('file: $file, ')
+          ..write('offset: $offset, ')
+          ..write('mode: $mode, ')
+          ..write('timeMs: $timeMs, ')
+          ..write('itemId: $itemId, ')
+          ..write('count: $count, ')
+          ..write('roubles: $roubles')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(folder, file, offset, mode, timeMs, itemId, count, roubles);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FleaSaleRecord &&
+          other.folder == this.folder &&
+          other.file == this.file &&
+          other.offset == this.offset &&
+          other.mode == this.mode &&
+          other.timeMs == this.timeMs &&
+          other.itemId == this.itemId &&
+          other.count == this.count &&
+          other.roubles == this.roubles);
+}
+
+class FleaSaleRecordsCompanion extends UpdateCompanion<FleaSaleRecord> {
+  final Value<String> folder;
+  final Value<String> file;
+  final Value<int> offset;
+  final Value<String> mode;
+  final Value<int> timeMs;
+  final Value<String> itemId;
+  final Value<int> count;
+  final Value<int?> roubles;
+  final Value<int> rowid;
+  const FleaSaleRecordsCompanion({
+    this.folder = const Value.absent(),
+    this.file = const Value.absent(),
+    this.offset = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.timeMs = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.count = const Value.absent(),
+    this.roubles = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FleaSaleRecordsCompanion.insert({
+    required String folder,
+    required String file,
+    required int offset,
+    required String mode,
+    required int timeMs,
+    required String itemId,
+    required int count,
+    this.roubles = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : folder = Value(folder),
+       file = Value(file),
+       offset = Value(offset),
+       mode = Value(mode),
+       timeMs = Value(timeMs),
+       itemId = Value(itemId),
+       count = Value(count);
+  static Insertable<FleaSaleRecord> custom({
+    Expression<String>? folder,
+    Expression<String>? file,
+    Expression<int>? offset,
+    Expression<String>? mode,
+    Expression<int>? timeMs,
+    Expression<String>? itemId,
+    Expression<int>? count,
+    Expression<int>? roubles,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (folder != null) 'folder': folder,
+      if (file != null) 'file': file,
+      if (offset != null) 'offset': offset,
+      if (mode != null) 'mode': mode,
+      if (timeMs != null) 'time_ms': timeMs,
+      if (itemId != null) 'item_id': itemId,
+      if (count != null) 'count': count,
+      if (roubles != null) 'roubles': roubles,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FleaSaleRecordsCompanion copyWith({
+    Value<String>? folder,
+    Value<String>? file,
+    Value<int>? offset,
+    Value<String>? mode,
+    Value<int>? timeMs,
+    Value<String>? itemId,
+    Value<int>? count,
+    Value<int?>? roubles,
+    Value<int>? rowid,
+  }) {
+    return FleaSaleRecordsCompanion(
+      folder: folder ?? this.folder,
+      file: file ?? this.file,
+      offset: offset ?? this.offset,
+      mode: mode ?? this.mode,
+      timeMs: timeMs ?? this.timeMs,
+      itemId: itemId ?? this.itemId,
+      count: count ?? this.count,
+      roubles: roubles ?? this.roubles,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (folder.present) {
+      map['folder'] = Variable<String>(folder.value);
+    }
+    if (file.present) {
+      map['file'] = Variable<String>(file.value);
+    }
+    if (offset.present) {
+      map['offset'] = Variable<int>(offset.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (timeMs.present) {
+      map['time_ms'] = Variable<int>(timeMs.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (count.present) {
+      map['count'] = Variable<int>(count.value);
+    }
+    if (roubles.present) {
+      map['roubles'] = Variable<int>(roubles.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FleaSaleRecordsCompanion(')
+          ..write('folder: $folder, ')
+          ..write('file: $file, ')
+          ..write('offset: $offset, ')
+          ..write('mode: $mode, ')
+          ..write('timeMs: $timeMs, ')
+          ..write('itemId: $itemId, ')
+          ..write('count: $count, ')
+          ..write('roubles: $roubles, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StatsMetaTable extends StatsMeta
+    with TableInfo<$StatsMetaTable, StatsMetaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StatsMetaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _clearedAtMsMeta = const VerificationMeta(
+    'clearedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> clearedAtMs = GeneratedColumn<int>(
+    'cleared_at_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, clearedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stats_meta';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StatsMetaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('cleared_at_ms')) {
+      context.handle(
+        _clearedAtMsMeta,
+        clearedAtMs.isAcceptableOrUnknown(
+          data['cleared_at_ms']!,
+          _clearedAtMsMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StatsMetaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StatsMetaData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      clearedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cleared_at_ms'],
+      ),
+    );
+  }
+
+  @override
+  $StatsMetaTable createAlias(String alias) {
+    return $StatsMetaTable(attachedDatabase, alias);
+  }
+}
+
+class StatsMetaData extends DataClass implements Insertable<StatsMetaData> {
+  final int id;
+  final int? clearedAtMs;
+  const StatsMetaData({required this.id, this.clearedAtMs});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || clearedAtMs != null) {
+      map['cleared_at_ms'] = Variable<int>(clearedAtMs);
+    }
+    return map;
+  }
+
+  StatsMetaCompanion toCompanion(bool nullToAbsent) {
+    return StatsMetaCompanion(
+      id: Value(id),
+      clearedAtMs: clearedAtMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clearedAtMs),
+    );
+  }
+
+  factory StatsMetaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StatsMetaData(
+      id: serializer.fromJson<int>(json['id']),
+      clearedAtMs: serializer.fromJson<int?>(json['clearedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'clearedAtMs': serializer.toJson<int?>(clearedAtMs),
+    };
+  }
+
+  StatsMetaData copyWith({
+    int? id,
+    Value<int?> clearedAtMs = const Value.absent(),
+  }) => StatsMetaData(
+    id: id ?? this.id,
+    clearedAtMs: clearedAtMs.present ? clearedAtMs.value : this.clearedAtMs,
+  );
+  StatsMetaData copyWithCompanion(StatsMetaCompanion data) {
+    return StatsMetaData(
+      id: data.id.present ? data.id.value : this.id,
+      clearedAtMs: data.clearedAtMs.present
+          ? data.clearedAtMs.value
+          : this.clearedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StatsMetaData(')
+          ..write('id: $id, ')
+          ..write('clearedAtMs: $clearedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, clearedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StatsMetaData &&
+          other.id == this.id &&
+          other.clearedAtMs == this.clearedAtMs);
+}
+
+class StatsMetaCompanion extends UpdateCompanion<StatsMetaData> {
+  final Value<int> id;
+  final Value<int?> clearedAtMs;
+  const StatsMetaCompanion({
+    this.id = const Value.absent(),
+    this.clearedAtMs = const Value.absent(),
+  });
+  StatsMetaCompanion.insert({
+    this.id = const Value.absent(),
+    this.clearedAtMs = const Value.absent(),
+  });
+  static Insertable<StatsMetaData> custom({
+    Expression<int>? id,
+    Expression<int>? clearedAtMs,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (clearedAtMs != null) 'cleared_at_ms': clearedAtMs,
+    });
+  }
+
+  StatsMetaCompanion copyWith({Value<int>? id, Value<int?>? clearedAtMs}) {
+    return StatsMetaCompanion(
+      id: id ?? this.id,
+      clearedAtMs: clearedAtMs ?? this.clearedAtMs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (clearedAtMs.present) {
+      map['cleared_at_ms'] = Variable<int>(clearedAtMs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StatsMetaCompanion(')
+          ..write('id: $id, ')
+          ..write('clearedAtMs: $clearedAtMs')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$BlackgridDatabase extends GeneratedDatabase {
   _$BlackgridDatabase(QueryExecutor e) : super(e);
   $BlackgridDatabaseManager get managers => $BlackgridDatabaseManager(this);
@@ -2266,6 +3418,21 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
   late final $ItemIconRecordsTable itemIconRecords = $ItemIconRecordsTable(
     this,
   );
+  late final $RaidStatRecordsTable raidStatRecords = $RaidStatRecordsTable(
+    this,
+  );
+  late final $FleaSaleRecordsTable fleaSaleRecords = $FleaSaleRecordsTable(
+    this,
+  );
+  late final $StatsMetaTable statsMeta = $StatsMetaTable(this);
+  late final Index raidStatRecordsModeStart = Index(
+    'raid_stat_records_mode_start',
+    'CREATE INDEX raid_stat_records_mode_start ON raid_stat_records (mode, start_ms)',
+  );
+  late final Index fleaSaleRecordsMode = Index(
+    'flea_sale_records_mode',
+    'CREATE INDEX flea_sale_records_mode ON flea_sale_records (mode)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2278,6 +3445,11 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     activeCatalogs,
     importRecords,
     itemIconRecords,
+    raidStatRecords,
+    fleaSaleRecords,
+    statsMeta,
+    raidStatRecordsModeStart,
+    fleaSaleRecordsMode,
   ];
 }
 
@@ -3870,6 +5042,677 @@ typedef $$ItemIconRecordsTableProcessedTableManager =
       ItemIconRecord,
       PrefetchHooks Function()
     >;
+typedef $$RaidStatRecordsTableCreateCompanionBuilder =
+    RaidStatRecordsCompanion Function({
+      required String folder,
+      required String file,
+      required int offset,
+      required String mode,
+      Value<String?> mapId,
+      required int startMs,
+      required String entry,
+      Value<int> rowid,
+    });
+typedef $$RaidStatRecordsTableUpdateCompanionBuilder =
+    RaidStatRecordsCompanion Function({
+      Value<String> folder,
+      Value<String> file,
+      Value<int> offset,
+      Value<String> mode,
+      Value<String?> mapId,
+      Value<int> startMs,
+      Value<String> entry,
+      Value<int> rowid,
+    });
+
+class $$RaidStatRecordsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $RaidStatRecordsTable> {
+  $$RaidStatRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get folder => $composableBuilder(
+    column: $table.folder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get file => $composableBuilder(
+    column: $table.file,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mapId => $composableBuilder(
+    column: $table.mapId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startMs => $composableBuilder(
+    column: $table.startMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entry => $composableBuilder(
+    column: $table.entry,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RaidStatRecordsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $RaidStatRecordsTable> {
+  $$RaidStatRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get folder => $composableBuilder(
+    column: $table.folder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get file => $composableBuilder(
+    column: $table.file,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mapId => $composableBuilder(
+    column: $table.mapId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startMs => $composableBuilder(
+    column: $table.startMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entry => $composableBuilder(
+    column: $table.entry,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RaidStatRecordsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $RaidStatRecordsTable> {
+  $$RaidStatRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get folder =>
+      $composableBuilder(column: $table.folder, builder: (column) => column);
+
+  GeneratedColumn<String> get file =>
+      $composableBuilder(column: $table.file, builder: (column) => column);
+
+  GeneratedColumn<int> get offset =>
+      $composableBuilder(column: $table.offset, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<String> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get startMs =>
+      $composableBuilder(column: $table.startMs, builder: (column) => column);
+
+  GeneratedColumn<String> get entry =>
+      $composableBuilder(column: $table.entry, builder: (column) => column);
+}
+
+class $$RaidStatRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $RaidStatRecordsTable,
+          RaidStatRecord,
+          $$RaidStatRecordsTableFilterComposer,
+          $$RaidStatRecordsTableOrderingComposer,
+          $$RaidStatRecordsTableAnnotationComposer,
+          $$RaidStatRecordsTableCreateCompanionBuilder,
+          $$RaidStatRecordsTableUpdateCompanionBuilder,
+          (
+            RaidStatRecord,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $RaidStatRecordsTable,
+              RaidStatRecord
+            >,
+          ),
+          RaidStatRecord,
+          PrefetchHooks Function()
+        > {
+  $$RaidStatRecordsTableTableManager(
+    _$BlackgridDatabase db,
+    $RaidStatRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RaidStatRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RaidStatRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RaidStatRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> folder = const Value.absent(),
+                Value<String> file = const Value.absent(),
+                Value<int> offset = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<String?> mapId = const Value.absent(),
+                Value<int> startMs = const Value.absent(),
+                Value<String> entry = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RaidStatRecordsCompanion(
+                folder: folder,
+                file: file,
+                offset: offset,
+                mode: mode,
+                mapId: mapId,
+                startMs: startMs,
+                entry: entry,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String folder,
+                required String file,
+                required int offset,
+                required String mode,
+                Value<String?> mapId = const Value.absent(),
+                required int startMs,
+                required String entry,
+                Value<int> rowid = const Value.absent(),
+              }) => RaidStatRecordsCompanion.insert(
+                folder: folder,
+                file: file,
+                offset: offset,
+                mode: mode,
+                mapId: mapId,
+                startMs: startMs,
+                entry: entry,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RaidStatRecordsTable, RaidStatRecord>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $RaidStatRecordsTable,
+                    RaidStatRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RaidStatRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $RaidStatRecordsTable,
+      RaidStatRecord,
+      $$RaidStatRecordsTableFilterComposer,
+      $$RaidStatRecordsTableOrderingComposer,
+      $$RaidStatRecordsTableAnnotationComposer,
+      $$RaidStatRecordsTableCreateCompanionBuilder,
+      $$RaidStatRecordsTableUpdateCompanionBuilder,
+      (
+        RaidStatRecord,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $RaidStatRecordsTable,
+          RaidStatRecord
+        >,
+      ),
+      RaidStatRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$FleaSaleRecordsTableCreateCompanionBuilder =
+    FleaSaleRecordsCompanion Function({
+      required String folder,
+      required String file,
+      required int offset,
+      required String mode,
+      required int timeMs,
+      required String itemId,
+      required int count,
+      Value<int?> roubles,
+      Value<int> rowid,
+    });
+typedef $$FleaSaleRecordsTableUpdateCompanionBuilder =
+    FleaSaleRecordsCompanion Function({
+      Value<String> folder,
+      Value<String> file,
+      Value<int> offset,
+      Value<String> mode,
+      Value<int> timeMs,
+      Value<String> itemId,
+      Value<int> count,
+      Value<int?> roubles,
+      Value<int> rowid,
+    });
+
+class $$FleaSaleRecordsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $FleaSaleRecordsTable> {
+  $$FleaSaleRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get folder => $composableBuilder(
+    column: $table.folder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get file => $composableBuilder(
+    column: $table.file,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timeMs => $composableBuilder(
+    column: $table.timeMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get count => $composableBuilder(
+    column: $table.count,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get roubles => $composableBuilder(
+    column: $table.roubles,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FleaSaleRecordsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $FleaSaleRecordsTable> {
+  $$FleaSaleRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get folder => $composableBuilder(
+    column: $table.folder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get file => $composableBuilder(
+    column: $table.file,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timeMs => $composableBuilder(
+    column: $table.timeMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get count => $composableBuilder(
+    column: $table.count,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get roubles => $composableBuilder(
+    column: $table.roubles,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FleaSaleRecordsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $FleaSaleRecordsTable> {
+  $$FleaSaleRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get folder =>
+      $composableBuilder(column: $table.folder, builder: (column) => column);
+
+  GeneratedColumn<String> get file =>
+      $composableBuilder(column: $table.file, builder: (column) => column);
+
+  GeneratedColumn<int> get offset =>
+      $composableBuilder(column: $table.offset, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<int> get timeMs =>
+      $composableBuilder(column: $table.timeMs, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<int> get count =>
+      $composableBuilder(column: $table.count, builder: (column) => column);
+
+  GeneratedColumn<int> get roubles =>
+      $composableBuilder(column: $table.roubles, builder: (column) => column);
+}
+
+class $$FleaSaleRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $FleaSaleRecordsTable,
+          FleaSaleRecord,
+          $$FleaSaleRecordsTableFilterComposer,
+          $$FleaSaleRecordsTableOrderingComposer,
+          $$FleaSaleRecordsTableAnnotationComposer,
+          $$FleaSaleRecordsTableCreateCompanionBuilder,
+          $$FleaSaleRecordsTableUpdateCompanionBuilder,
+          (
+            FleaSaleRecord,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $FleaSaleRecordsTable,
+              FleaSaleRecord
+            >,
+          ),
+          FleaSaleRecord,
+          PrefetchHooks Function()
+        > {
+  $$FleaSaleRecordsTableTableManager(
+    _$BlackgridDatabase db,
+    $FleaSaleRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FleaSaleRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FleaSaleRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FleaSaleRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> folder = const Value.absent(),
+                Value<String> file = const Value.absent(),
+                Value<int> offset = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<int> timeMs = const Value.absent(),
+                Value<String> itemId = const Value.absent(),
+                Value<int> count = const Value.absent(),
+                Value<int?> roubles = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FleaSaleRecordsCompanion(
+                folder: folder,
+                file: file,
+                offset: offset,
+                mode: mode,
+                timeMs: timeMs,
+                itemId: itemId,
+                count: count,
+                roubles: roubles,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String folder,
+                required String file,
+                required int offset,
+                required String mode,
+                required int timeMs,
+                required String itemId,
+                required int count,
+                Value<int?> roubles = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FleaSaleRecordsCompanion.insert(
+                folder: folder,
+                file: file,
+                offset: offset,
+                mode: mode,
+                timeMs: timeMs,
+                itemId: itemId,
+                count: count,
+                roubles: roubles,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$FleaSaleRecordsTable, FleaSaleRecord>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $FleaSaleRecordsTable,
+                    FleaSaleRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FleaSaleRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $FleaSaleRecordsTable,
+      FleaSaleRecord,
+      $$FleaSaleRecordsTableFilterComposer,
+      $$FleaSaleRecordsTableOrderingComposer,
+      $$FleaSaleRecordsTableAnnotationComposer,
+      $$FleaSaleRecordsTableCreateCompanionBuilder,
+      $$FleaSaleRecordsTableUpdateCompanionBuilder,
+      (
+        FleaSaleRecord,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $FleaSaleRecordsTable,
+          FleaSaleRecord
+        >,
+      ),
+      FleaSaleRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$StatsMetaTableCreateCompanionBuilder = StatsMetaCompanion Function({
+  Value<int> id,
+  Value<int?> clearedAtMs,
+});
+typedef $$StatsMetaTableUpdateCompanionBuilder = StatsMetaCompanion Function({
+  Value<int> id,
+  Value<int?> clearedAtMs,
+});
+
+class $$StatsMetaTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $StatsMetaTable> {
+  $$StatsMetaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get clearedAtMs => $composableBuilder(
+    column: $table.clearedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StatsMetaTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $StatsMetaTable> {
+  $$StatsMetaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get clearedAtMs => $composableBuilder(
+    column: $table.clearedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StatsMetaTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $StatsMetaTable> {
+  $$StatsMetaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get clearedAtMs => $composableBuilder(
+    column: $table.clearedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$StatsMetaTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $StatsMetaTable,
+          StatsMetaData,
+          $$StatsMetaTableFilterComposer,
+          $$StatsMetaTableOrderingComposer,
+          $$StatsMetaTableAnnotationComposer,
+          $$StatsMetaTableCreateCompanionBuilder,
+          $$StatsMetaTableUpdateCompanionBuilder,
+          (
+            StatsMetaData,
+            BaseReferences<_$BlackgridDatabase, $StatsMetaTable, StatsMetaData>,
+          ),
+          StatsMetaData,
+          PrefetchHooks Function()
+        > {
+  $$StatsMetaTableTableManager(_$BlackgridDatabase db, $StatsMetaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StatsMetaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StatsMetaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StatsMetaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> clearedAtMs = const Value.absent(),
+          }) => StatsMetaCompanion(id: id, clearedAtMs: clearedAtMs),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> clearedAtMs = const Value.absent(),
+          }) => StatsMetaCompanion.insert(id: id, clearedAtMs: clearedAtMs),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$StatsMetaTable, StatsMetaData>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $StatsMetaTable,
+                    StatsMetaData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StatsMetaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $StatsMetaTable,
+      StatsMetaData,
+      $$StatsMetaTableFilterComposer,
+      $$StatsMetaTableOrderingComposer,
+      $$StatsMetaTableAnnotationComposer,
+      $$StatsMetaTableCreateCompanionBuilder,
+      $$StatsMetaTableUpdateCompanionBuilder,
+      (
+        StatsMetaData,
+        BaseReferences<_$BlackgridDatabase, $StatsMetaTable, StatsMetaData>,
+      ),
+      StatsMetaData,
+      PrefetchHooks Function()
+    >;
 
 class $BlackgridDatabaseManager {
   final _$BlackgridDatabase _db;
@@ -3888,4 +5731,10 @@ class $BlackgridDatabaseManager {
       $$ImportRecordsTableTableManager(_db, _db.importRecords);
   $$ItemIconRecordsTableTableManager get itemIconRecords =>
       $$ItemIconRecordsTableTableManager(_db, _db.itemIconRecords);
+  $$RaidStatRecordsTableTableManager get raidStatRecords =>
+      $$RaidStatRecordsTableTableManager(_db, _db.raidStatRecords);
+  $$FleaSaleRecordsTableTableManager get fleaSaleRecords =>
+      $$FleaSaleRecordsTableTableManager(_db, _db.fleaSaleRecords);
+  $$StatsMetaTableTableManager get statsMeta =>
+      $$StatsMetaTableTableManager(_db, _db.statsMeta);
 }

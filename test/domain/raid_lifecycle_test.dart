@@ -155,7 +155,6 @@ void main() {
       final id = LogRecordId('f1', LogFile.pushNotifications, 1);
       final before = _Trace([log.profile('19:30:00')]).last;
       for (final event in <GameLogEvent>[
-        FleaSale(id, log.t('19:31:00'), 'item', 1, 100),
         TaskStarted(id, log.t('19:31:00'), 'task'),
         TaskFailed(id, log.t('19:31:00'), 'task'),
         TaskFinished(id, log.t('19:31:00'), 'task'),

@@ -24,6 +24,7 @@ import '../maps/prepared_map_loader.dart';
 import 'catalog_controller.dart';
 import 'history_controller.dart';
 import 'item_icon_cache.dart';
+import 'local_stats_controller.dart';
 import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'progress_controller.dart';
@@ -100,6 +101,14 @@ class AppServices {
       progress: progress,
       clock: clock ?? DateTime.now,
     );
+    // Also before the first bind: the transitions stream does not buffer.
+    localStats = LocalStatsController(
+      transitions: raidLifecycle.transitions,
+      modeChanges: catalog,
+      mode: () => catalog.mode,
+      store: database,
+      clock: clock ?? DateTime.now,
+    );
     mapSession = MapSessionController(
       settings: settings,
       logReader: logReader,
@@ -165,6 +174,10 @@ class AppServices {
   /// Projects the raid timers for the shell strip and records scav cooldown
   /// starts as raids end.
   late final RaidTimersController raidTimers;
+
+  /// Stores raids and flea sales as the lifecycle publishes them and serves
+  /// the Stats dialog.
+  late final LocalStatsController localStats;
 
   /// Owns live scanning: the switch, the worker, the hook and the scan flow.
   late final ScanCoordinator scanner;
@@ -402,6 +415,7 @@ class AppServices {
     } finally {
       // After mapSession.close() has closed the reader it listens to.
       raidTimers.dispose();
+      localStats.dispose();
       raidLifecycle.dispose();
       scans.dispose();
       selection.dispose();

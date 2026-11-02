@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/application/raid_lifecycle_controller.dart';
+import 'package:blackgrid/data/game_log/game_log_parsers.dart';
 import 'package:blackgrid/data/session_log_reader.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,7 +89,28 @@ _Key _key(RaidTransition t) => switch (t) {
   RaidStartedTransition() => ('started', t.id, t.time, null),
   final RaidEndedTransition e => ('ended', e.id, e.time, e.cause),
   MatchingAbortedTransition() => ('aborted', t.id, t.time, null),
+  FleaSoldTransition() => ('flea', t.id, t.time, null),
 };
+
+/// A flea sale of 2 of one item paying 45 000 roubles, as the game logs it.
+final String _saleRecord =
+    '2026-10-31 22:05:00.000|$_version|Info|push-notifications|'
+    'Got notification | ChatMessageReceived\n'
+    '${const JsonEncoder.withIndent('  ').convert({
+      'type': 'new_message',
+      'message': {
+        'type': 4,
+        'systemData': {'soldItem': 'item-a', 'itemCount': 2},
+        'items': {
+          'data': [
+            {
+              '_tpl': roublesTemplateId,
+              'upd': {'StackObjectsCount': 45000},
+            },
+          ],
+        },
+      },
+    })}\n';
 
 void main() {
   late Directory root;
@@ -180,6 +203,27 @@ void main() {
     final second = await replay();
 
     expect(first.map((t) => _key(t).$1), ['aborted', 'started', 'ended']);
+    expect(second.map(_key).toList(), first.map(_key).toList());
+  });
+
+  test('replayed folder republishes the sale with the same identity', () async {
+    await write(LogFile.backend, '');
+    await write(
+      LogFile.application,
+      _line('application', 'Session mode: Regular', '22:00:00.000'),
+    );
+    await write(LogFile.pushNotifications, _saleRecord);
+    final first = await replay();
+    final second = await replay();
+
+    for (final run in [first, second]) {
+      final sale = run.whereType<FleaSoldTransition>().single;
+      expect(sale.id, const LogRecordId(_folder, LogFile.pushNotifications, 0));
+      expect(sale.time, DateTime(2026, 10, 31, 22, 5));
+      expect(sale.itemId, 'item-a');
+      expect(sale.count, 2);
+      expect(sale.roubles, 45000);
+    }
     expect(second.map(_key).toList(), first.map(_key).toList());
   });
 

@@ -353,6 +353,15 @@ void main() {
     expect(h.services.selection.results.map((i) => i.id), contains('item-a'));
   });
 
+  testWidgets('the header Stats button opens the Stats dialog', (tester) async {
+    await pumpM1(tester);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Stats'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PvP stats'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('header shows the 32x32 app logo and no hub icon', (
     tester,
   ) async {

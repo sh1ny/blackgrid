@@ -40,7 +40,7 @@ void main() {
     );
     final db = BlackgridDatabase(schema.newConnection());
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 3);
+    await verifier.migrateAndValidate(db, 4);
     expect(
       await db
           .customSelect(
@@ -92,7 +92,7 @@ void main() {
         );
         final db = BlackgridDatabase(schema.newConnection());
         addTearDown(db.close);
-        await verifier.migrateAndValidate(db, 3);
+        await verifier.migrateAndValidate(db, 4);
         expect(
           await db
               .customSelect(
@@ -116,6 +116,71 @@ void main() {
       },
     );
   }
+  test('3 to 4 and 1 to 4 keep data and start with empty stats', () async {
+    for (final from in [3, 1]) {
+      final verifier = SchemaVerifier(GeneratedHelper());
+      final schema = await verifier.schemaAt(from);
+      final raw = schema.rawDatabase;
+      raw.execute('INSERT INTO preferences(id,payload) VALUES (?,?)', [
+        1,
+        jsonEncode(
+          AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson(),
+        ),
+      ]);
+      raw.execute(
+        'INSERT INTO pin_records(map_id,pin_id,payload) VALUES (?,?,?)',
+        [
+          'woods',
+          'pin-1',
+          jsonEncode(
+            CustomPin(
+              id: 'pin-1',
+              mapId: 'woods',
+              x: 0.25,
+              y: 0.5,
+              frame: 'legacy-normalized',
+              frameRevision: 0,
+              label: 'synthetic',
+              updatedAt: DateTime.utc(2026, 10, 1),
+            ).toJson(),
+          ),
+        ],
+      );
+      raw.execute(
+        'INSERT INTO activity_records(item_id,mode,source,observed_at,revision) VALUES (?,?,?,?,?)',
+        ['synthetic-item', 'pve', 'importedManual', 1791244800, 7],
+      );
+      final catalog = fixtureCatalog();
+      final key = 'json.tarkov.dev:${catalog.mode.name}';
+      raw.execute(
+        'INSERT INTO catalog_records(id,cache_key,revision,payload) VALUES (?,?,?,?)',
+        [1, key, catalog.revision, jsonEncode(catalog.toJson())],
+      );
+      raw.execute(
+        'INSERT INTO active_catalogs(cache_key,record_id) VALUES (?,?)',
+        [key, 1],
+      );
+      final db = BlackgridDatabase(schema.newConnection());
+      addTearDown(db.close);
+      addTearDown(schema.close);
+      await verifier.migrateAndValidate(db, 4);
+      expect((await db.readSettings()).settings.selectedMap, 'woods');
+      expect((await db.readPins()).pins.single.id, 'pin-1');
+      expect((await db.readActivity()).rows.single.revision, 7);
+      expect((await db.loadCatalog(catalog.mode))!.revision, catalog.revision);
+      for (final table in [
+        'raid_stat_records',
+        'flea_sale_records',
+        'stats_meta',
+      ]) {
+        expect(
+          await db.customSelect('SELECT 1 FROM $table').get(),
+          isEmpty,
+          reason: '$table must exist and start empty from v$from.',
+        );
+      }
+    }
+  });
   test('newer schema reaches the second query as NewerDatabaseException without byte mutation', () async {
     final dir = await Directory.systemTemp.createTemp('blackgrid-newer-');
     addTearDown(() => dir.delete(recursive: true));
@@ -155,7 +220,7 @@ void main() {
           'inner remoteCause',
           isA<NewerDatabaseException>()
               .having((e) => e.onDisk, 'onDisk', 99)
-              .having((e) => e.supported, 'supported', 3),
+              .having((e) => e.supported, 'supported', 4),
         ),
       ),
     );
