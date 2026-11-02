@@ -105,7 +105,9 @@ class RaidTimersController extends ChangeNotifier {
     switch (transition) {
       case RaidEndedTransition(:final raid):
         _recordStart(raid);
-      case RaidStartedTransition() || MatchingAbortedTransition():
+      case RaidStartedTransition() ||
+          MatchingAbortedTransition() ||
+          FleaSoldTransition():
         break;
     }
   }

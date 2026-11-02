@@ -427,6 +427,34 @@ final class MatchingAbortedTransition extends RaidTransition {
   const MatchingAbortedTransition(super.id, super.time);
 }
 
+/// A flea market sale was read from the push-notifications log.
+///
+/// It carries the sale's record identity and time; it never changes the raid
+/// phase or any raid.
+final class FleaSoldTransition extends RaidTransition {
+  /// Creates the transition for a sale of [count] of [itemId].
+  const FleaSoldTransition(
+    super.id,
+    super.time,
+    this.itemId,
+    this.count,
+    this.roubles,
+    this.mode,
+  );
+
+  /// The sold item's template ID.
+  final String itemId;
+
+  /// How many of the item sold.
+  final int count;
+
+  /// The rouble payout, or `null` when the sale paid in another currency.
+  final int? roubles;
+
+  /// The last session mode logged before the sale, or `null` when none was.
+  final GameMode? mode;
+}
+
 const _keep = Object();
 
 /// The immutable state [reduce] folds log events into.
@@ -585,10 +613,20 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
       final MatchingAborted e => _matchingAborted(state, e),
       final RaidRejoined e => _raidRejoined(state, e),
       final RaidExit e => _raidExit(state, e),
-      FleaSale() ||
-      TaskStarted() ||
-      TaskFailed() ||
-      TaskFinished() => (state, const []),
+      final FleaSale e => (
+        state,
+        [
+          FleaSoldTransition(
+            e.id,
+            e.time,
+            e.itemId,
+            e.count,
+            e.roubles,
+            state.sessionMode,
+          ),
+        ],
+      ),
+      TaskStarted() || TaskFailed() || TaskFinished() => (state, const []),
     };
 
 bool _isLoading(RaidPhase phase) => switch (phase) {

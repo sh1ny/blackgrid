@@ -13,11 +13,11 @@ Rules for every group:
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| raid-lifecycle → Each flea sale is published once with its mode | Sale during a session | test/domain/raid_lifecycle_flea_test.dart | sale publishes one flea-sale transition with the session mode | red |
-| raid-lifecycle → Each flea sale is published once with its mode | Sale before any mode is logged | test/domain/raid_lifecycle_flea_test.dart | sale before any mode has no mode | red |
-| raid-lifecycle → Each flea sale is published once with its mode | Sale paid in another currency | test/domain/raid_lifecycle_flea_test.dart | sale without roubles publishes no payout | red |
-| raid-lifecycle → Each flea sale is published once with its mode | Replay after an app restart | test/application/raid_lifecycle_controller_test.dart | replayed folder republishes the sale with the same identity | red |
-| raid-lifecycle → Each flea sale is published once with its mode | Sale during a raid | test/domain/raid_lifecycle_flea_test.dart | sale in raid leaves phase and raid unchanged | red |
+| raid-lifecycle → Each flea sale is published once with its mode | Sale during a session | test/domain/raid_lifecycle_flea_test.dart | sale publishes one flea-sale transition with the session mode | green |
+| raid-lifecycle → Each flea sale is published once with its mode | Sale before any mode is logged | test/domain/raid_lifecycle_flea_test.dart | sale before any mode has no mode | green |
+| raid-lifecycle → Each flea sale is published once with its mode | Sale paid in another currency | test/domain/raid_lifecycle_flea_test.dart | sale without roubles publishes no payout | green |
+| raid-lifecycle → Each flea sale is published once with its mode | Replay after an app restart | test/application/raid_lifecycle_controller_test.dart | replayed folder republishes the sale with the same identity | green |
+| raid-lifecycle → Each flea sale is published once with its mode | Sale during a raid | test/domain/raid_lifecycle_flea_test.dart | sale in raid leaves phase and raid unchanged | green |
 | local-stats → Each raid start counts once for its map and mode | Two raids on one map | test/data/local_stats_store_test.dart | two raid starts on one map count 2 | red |
 | local-stats → Each raid start counts once for its map and mode | Transit counts as a new raid | test/data/local_stats_store_test.dart | transit raid counts on its own map | red |
 | local-stats → Each raid start counts once for its map and mode | Replay after a restart | test/data/local_stats_store_test.dart | same raid identity stored twice counts once | red |
@@ -58,8 +58,8 @@ Rules for every group:
 
 ## 2. Flea sales as lifecycle transitions
 
-- [ ] 2.1 Write failing tests in `test/domain/raid_lifecycle_flea_test.dart` for the four reducer rows, and the replay row in `test/application/raid_lifecycle_controller_test.dart` (a reader fake replaying the same batch twice). Verify they fail because `FleaSoldTransition` does not exist.
-- [ ] 2.2 Add `FleaSoldTransition(id, time, itemId, count, roubles, mode)` to the sealed `RaidTransition` in `lib/domain/raid_lifecycle.dart` and publish it from `reduce` for `FleaSale` with `state.sessionMode`, state unchanged (design D1). Add the case to `RaidTimersController._onTransition` as a no-op. Verify: group 2 rows green, `test/domain/raid_lifecycle_test.dart` and `test/application/raid_timers_controller_test.dart` still pass.
+- [x] 2.1 Write failing tests in `test/domain/raid_lifecycle_flea_test.dart` for the four reducer rows, and the replay row in `test/application/raid_lifecycle_controller_test.dart` (a reader fake replaying the same batch twice). Verify they fail because `FleaSoldTransition` does not exist.
+- [x] 2.2 Add `FleaSoldTransition(id, time, itemId, count, roubles, mode)` to the sealed `RaidTransition` in `lib/domain/raid_lifecycle.dart` and publish it from `reduce` for `FleaSale` with `state.sessionMode`, state unchanged (design D1). Add the case to `RaidTimersController._onTransition` as a no-op. Verify: group 2 rows green, `test/domain/raid_lifecycle_test.dart` and `test/application/raid_timers_controller_test.dart` still pass.
 
 ## 3. Reconnect rule and totals (domain)
 
