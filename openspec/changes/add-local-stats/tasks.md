@@ -18,25 +18,25 @@ Rules for every group:
 | raid-lifecycle → Each flea sale is published once with its mode | Sale paid in another currency | test/domain/raid_lifecycle_flea_test.dart | sale without roubles publishes no payout | green |
 | raid-lifecycle → Each flea sale is published once with its mode | Replay after an app restart | test/application/raid_lifecycle_controller_test.dart | replayed folder republishes the sale with the same identity | green |
 | raid-lifecycle → Each flea sale is published once with its mode | Sale during a raid | test/domain/raid_lifecycle_flea_test.dart | sale in raid leaves phase and raid unchanged | green |
-| local-stats → Each raid start counts once for its map and mode | Two raids on one map | test/data/local_stats_store_test.dart | two raid starts on one map count 2 | red |
-| local-stats → Each raid start counts once for its map and mode | Transit counts as a new raid | test/data/local_stats_store_test.dart | transit raid counts on its own map | red |
-| local-stats → Each raid start counts once for its map and mode | Replay after a restart | test/data/local_stats_store_test.dart | same raid identity stored twice counts once | red |
-| local-stats → Each raid start counts once for its map and mode | Unknown map | test/data/local_stats_store_test.dart | raid with no map counts under unknown map | red |
+| local-stats → Each raid start counts once for its map and mode | Two raids on one map | test/data/local_stats_store_test.dart | two raid starts on one map count 2 | green |
+| local-stats → Each raid start counts once for its map and mode | Transit counts as a new raid | test/data/local_stats_store_test.dart | transit raid counts on its own map | green |
+| local-stats → Each raid start counts once for its map and mode | Replay after a restart | test/data/local_stats_store_test.dart | same raid identity stored twice counts once | green |
+| local-stats → Each raid start counts once for its map and mode | Unknown map | test/data/local_stats_store_test.dart | raid with no map counts under unknown map | green |
 | local-stats → A reconnect continuing a counted raid does not count again | Both apps restarted mid-raid | test/domain/local_stats_test.dart | reconnect on same map within 2 h is not counted | green |
 | local-stats → A reconnect continuing a counted raid does not count again | Reconnect on another map | test/domain/local_stats_test.dart | reconnect on another map counts | green |
 | local-stats → A reconnect continuing a counted raid does not count again | Reconnect long after the last raid | test/domain/local_stats_test.dart | reconnect 2 h 1 min after counts | green |
 | local-stats → A reconnect continuing a counted raid does not count again | Reconnect with nothing stored | test/domain/local_stats_test.dart | reconnect with no earlier raid counts | green |
-| local-stats → A reconnect continuing a counted raid does not count again | Replay of a skipped reconnect after a later raid | test/data/local_stats_store_test.dart | replayed skipped reconnect stays skipped after a later raid | red |
-| local-stats → Each flea sale counts once | Two sales | test/data/local_stats_store_test.dart | two sales total sales items and roubles | red |
-| local-stats → Each flea sale counts once | Replayed sale | test/data/local_stats_store_test.dart | same sale identity stored twice counts once | red |
-| local-stats → Each flea sale counts once | Sale not paid in roubles | test/data/local_stats_store_test.dart | sale without roubles counts items but no roubles | red |
-| local-stats → Raids and sales with no mode are kept apart | Sale before the mode is logged | test/data/local_stats_store_test.dart | sale with no mode is in no known mode's totals | red |
-| local-stats → Raids and sales with no mode are kept apart | Known mode | test/data/local_stats_store_test.dart | PvE sale changes only PvE totals | red |
-| local-stats → Stats stay on this PC and survive a restart | Restart | test/data/local_stats_store_test.dart | stats read back after close and reopen | red |
-| local-stats → Stats stay on this PC and survive a restart | Upgrade from an older database | test/data/migration_test.dart | 3 to 4 and 1 to 4 keep data and start with empty stats | red |
-| local-stats → Clear empties stats and keeps them empty | Clear | test/data/local_stats_store_test.dart | clear empties every mode | red |
-| local-stats → Clear empties stats and keeps them empty | Replay after a clear and a restart | test/data/local_stats_store_test.dart | records at or before the clear time are not stored after reopen | red |
-| local-stats → Clear empties stats and keeps them empty | New activity after a clear | test/data/local_stats_store_test.dart | raid after the clear time is stored | red |
+| local-stats → A reconnect continuing a counted raid does not count again | Replay of a skipped reconnect after a later raid | test/data/local_stats_store_test.dart | replayed skipped reconnect stays skipped after a later raid | green |
+| local-stats → Each flea sale counts once | Two sales | test/data/local_stats_store_test.dart | two sales total sales items and roubles | green |
+| local-stats → Each flea sale counts once | Replayed sale | test/data/local_stats_store_test.dart | same sale identity stored twice counts once | green |
+| local-stats → Each flea sale counts once | Sale not paid in roubles | test/data/local_stats_store_test.dart | sale without roubles counts items but no roubles | green |
+| local-stats → Raids and sales with no mode are kept apart | Sale before the mode is logged | test/data/local_stats_store_test.dart | sale with no mode is in no known mode's totals | green |
+| local-stats → Raids and sales with no mode are kept apart | Known mode | test/data/local_stats_store_test.dart | PvE sale changes only PvE totals | green |
+| local-stats → Stats stay on this PC and survive a restart | Restart | test/data/local_stats_store_test.dart | stats read back after close and reopen | green |
+| local-stats → Stats stay on this PC and survive a restart | Upgrade from an older database | test/data/migration_test.dart | 3 to 4 and 1 to 4 keep data and start with empty stats | green |
+| local-stats → Clear empties stats and keeps them empty | Clear | test/data/local_stats_store_test.dart | clear empties every mode | green |
+| local-stats → Clear empties stats and keeps them empty | Replay after a clear and a restart | test/data/local_stats_store_test.dart | records at or before the clear time are not stored after reopen | green |
+| local-stats → Clear empties stats and keeps them empty | New activity after a clear | test/data/local_stats_store_test.dart | raid after the clear time is stored | green |
 | local-stats → Clear empties stats and keeps them empty | Clear fails | test/application/local_stats_controller_test.dart | failed clear keeps totals and shows the clear message | red |
 | local-stats → The Stats dialog shows the current mode's stats | Stats for the current mode | test/ui/stats_dialog_test.dart | shows the current mode's maps by count, total and sales | red |
 | local-stats → The Stats dialog shows the current mode's stats | Empty stats | test/ui/stats_dialog_test.dart | empty mode shows no raids or flea sales message | red |
@@ -68,10 +68,10 @@ Rules for every group:
 
 ## 4. Database schema 4 and the ledger
 
-- [ ] 4.1 Write failing migration tests in `test/data/migration_test.dart`: 3→4 and 1→4, each keeping preferences, pins, activity and the active catalog and creating the three stats tables empty. Keep the existing tests passing. Verify they fail because schema 4 is missing.
-- [ ] 4.2 Add `RaidStatRecords`, `FleaSaleRecords` and `StatsMeta` (design data model: integer-millisecond times, key `(folder, file, offset)`, indexes on mode) to `lib/data/database.dart`, set `schemaVersion` to 4 and chain `onUpgrade` 1→2→3→4, any other range still throwing. Regenerate with `dart run build_runner build`, dump `drift_schemas/drift_schema_v4.json` and generate `test/data/generated/schema_v4.dart` with `drift_dev`. Verify: the group 4.1 tests pass and `mise run analyze` is clean.
-- [ ] 4.3 Write failing tests in `test/data/local_stats_store_test.dart` for the store rows of the test map (raid and sale insert-or-ignore, unknown map and mode, totals per mode, restart via a temporary file closed and reopened, clear, the watermark across reopen, a raid after the clear, and the replay of a skipped reconnect after a later raid). Verify they fail because the store methods do not exist.
-- [ ] 4.4 Add a `LocalStatsStore` interface (in `lib/domain/local_stats.dart` or beside it) implemented by `BlackgridDatabase`: `recordRaid`, `recordSale` (each one transaction: read the watermark, skip at or before it; for a reconnect read the newest same-mode raid starting strictly before it and apply `countsReconnect`; insert-or-ignore), `readTotals(mode)`, `readSince()`, `clear(now)` (delete both ledgers and upsert the watermark in one transaction). Verify: group 4.3 rows green.
+- [x] 4.1 Write failing migration tests in `test/data/migration_test.dart`: 3→4 and 1→4, each keeping preferences, pins, activity and the active catalog and creating the three stats tables empty. Keep the existing tests passing. Verify they fail because schema 4 is missing.
+- [x] 4.2 Add `RaidStatRecords`, `FleaSaleRecords` and `StatsMeta` (design data model: integer-millisecond times, key `(folder, file, offset)`, indexes on mode) to `lib/data/database.dart`, set `schemaVersion` to 4 and chain `onUpgrade` 1→2→3→4, any other range still throwing. Regenerate with `dart run build_runner build`, dump `drift_schemas/drift_schema_v4.json` and generate `test/data/generated/schema_v4.dart` with `drift_dev`. Verify: the group 4.1 tests pass and `mise run analyze` is clean.
+- [x] 4.3 Write failing tests in `test/data/local_stats_store_test.dart` for the store rows of the test map (raid and sale insert-or-ignore, unknown map and mode, totals per mode, restart via a temporary file closed and reopened, clear, the watermark across reopen, a raid after the clear, and the replay of a skipped reconnect after a later raid). Verify they fail because the store methods do not exist.
+- [x] 4.4 Add a `LocalStatsStore` interface (in `lib/domain/local_stats.dart` or beside it) implemented by `BlackgridDatabase`: `recordRaid`, `recordSale` (each one transaction: read the watermark, skip at or before it; for a reconnect read the newest same-mode raid starting strictly before it and apply `countsReconnect`; insert-or-ignore), `readTotals(mode)`, `readSince()`, `clear(now)` (delete both ledgers and upsert the watermark in one transaction). Verify: group 4.3 rows green.
 
 ## 5. LocalStatsController
 

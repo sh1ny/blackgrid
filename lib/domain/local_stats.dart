@@ -135,3 +135,30 @@ final class LocalStatsTotals {
     return {for (final MapEntry(:key, :value) in entries) key: value};
   }
 }
+
+/// The durable ledger behind the local stats.
+///
+/// Every record is stored once under its log record identity, and a record
+/// logged at or before the last clear is never stored.
+abstract interface class LocalStatsStore {
+  /// Stores [row] unless its identity is known, its start is at or before the
+  /// clear time, or it is a reconnect that [countsReconnect] rejects.
+  ///
+  /// The decision and the write happen in one transaction.
+  Future<void> recordRaid(RaidStatRow row);
+
+  /// Stores [row] unless its identity is known or its time is at or before the
+  /// clear time.
+  Future<void> recordSale(FleaSaleRow row);
+
+  /// Totals for [mode]; [GameMode.unknown] reads the records stored without a
+  /// mode.
+  Future<LocalStatsTotals> readTotals(GameMode mode);
+
+  /// When the stats were last cleared, or `null` when they never were.
+  Future<DateTime?> readSince();
+
+  /// Deletes every raid and sale of every mode and records [now] as the clear
+  /// time, in one transaction.
+  Future<void> clear(DateTime now);
+}

@@ -9,6 +9,8 @@ import '../domain/catalog.dart';
 import '../domain/catalog_store.dart';
 import '../domain/settings.dart';
 import '../domain/import_preview.dart';
+import '../domain/local_stats.dart';
+import '../domain/raid_lifecycle.dart';
 
 part 'database.g.dart';
 
@@ -79,6 +81,47 @@ class ItemIconRecords extends Table {
   Set<Column> get primaryKey => {itemId};
 }
 
+/// One counted raid start; the key is the log record that announced it.
+///
+/// Times are integer milliseconds since the epoch so the clear watermark
+/// compares at millisecond precision. `mode` is a [GameMode] name, `unknown`
+/// when none was known; `file` and `entry` are enum names.
+@TableIndex(name: 'raid_stat_records_mode_start', columns: {#mode, #startMs})
+class RaidStatRecords extends Table {
+  TextColumn get folder => text()();
+  TextColumn get file => text()();
+  IntColumn get offset => integer()();
+  TextColumn get mode => text()();
+  TextColumn get mapId => text().nullable()();
+  IntColumn get startMs => integer()();
+  TextColumn get entry => text()();
+  @override
+  Set<Column> get primaryKey => {folder, file, offset};
+}
+
+/// One counted flea-market sale; the key is the log record that announced it.
+@TableIndex(name: 'flea_sale_records_mode', columns: {#mode})
+class FleaSaleRecords extends Table {
+  TextColumn get folder => text()();
+  TextColumn get file => text()();
+  IntColumn get offset => integer()();
+  TextColumn get mode => text()();
+  IntColumn get timeMs => integer()();
+  TextColumn get itemId => text()();
+  IntColumn get count => integer()();
+  IntColumn get roubles => integer().nullable()();
+  @override
+  Set<Column> get primaryKey => {folder, file, offset};
+}
+
+/// The single row (id 0) holding when the local stats were last cleared.
+class StatsMeta extends Table {
+  IntColumn get id => integer()();
+  IntColumn get clearedAtMs => integer().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// The settings read from the database and whether the stored record was
 /// unreadable.
 class StoredSettings {
@@ -122,25 +165,36 @@ class NewerDatabaseException implements Exception {
     ActiveCatalogs,
     ImportRecords,
     ItemIconRecords,
+    RaidStatRecords,
+    FleaSaleRecords,
+    StatsMeta,
   ],
 )
-class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
+class BlackgridDatabase extends _$BlackgridDatabase
+    implements CatalogStore, LocalStatsStore {
   BlackgridDatabase(super.executor);
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 3 || from >= to) {
+      if (from < 1 || to != 4 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
         if (from < 2) await m.createTable(importRecords);
         if (from < 3) await m.createTable(itemIconRecords);
+        if (from < 4) {
+          await m.createTable(raidStatRecords);
+          await m.createTable(fleaSaleRecords);
+          await m.createTable(statsMeta);
+          await m.createIndex(raidStatRecordsModeStart);
+          await m.createIndex(fleaSaleRecordsMode);
+        }
       });
     },
     beforeOpen: (details) async {
@@ -201,6 +255,141 @@ class BlackgridDatabase extends _$BlackgridDatabase implements CatalogStore {
       )..where((r) => r.cacheKey.equals(key) & r.id.isNotValue(id))).go();
     });
   }
+
+  static const _statsMetaId = 0;
+
+  Future<int?> _clearedAtMs() async {
+    final row = await (select(
+      statsMeta,
+    )..where((m) => m.id.equals(_statsMetaId))).getSingleOrNull();
+    return row?.clearedAtMs;
+  }
+
+  @override
+  Future<void> recordRaid(RaidStatRow row) => transaction(() async {
+    final startMs = row.start.millisecondsSinceEpoch;
+    final cleared = await _clearedAtMs();
+    if (cleared != null && startMs <= cleared) return;
+    final modeName = (row.mode ?? GameMode.unknown).name;
+    if (row.entry == RaidEntry.reconnect) {
+      final newest =
+          await (select(raidStatRecords)
+                ..where(
+                  (r) =>
+                      r.mode.equals(modeName) &
+                      r.startMs.isSmallerThanValue(startMs),
+                )
+                ..orderBy([(r) => OrderingTerm.desc(r.startMs)])
+                ..limit(1))
+              .getSingleOrNull();
+      final previous = newest == null
+          ? null
+          : RaidStatRow(
+              id: LogRecordId(
+                newest.folder,
+                LogFile.values.byName(newest.file),
+                newest.offset,
+              ),
+              // The query matched the candidate's stored mode, so share it:
+              // `null` and `GameMode.unknown` are both stored as `unknown`.
+              mode: row.mode,
+              mapId: newest.mapId,
+              start: DateTime.fromMillisecondsSinceEpoch(
+                newest.startMs,
+                isUtc: true,
+              ),
+              entry: RaidEntry.values.byName(newest.entry),
+            );
+      if (!countsReconnect(previous, row)) return;
+    }
+    await into(raidStatRecords).insert(
+      RaidStatRecordsCompanion.insert(
+        folder: row.id.folder,
+        file: row.id.file.name,
+        offset: row.id.offset,
+        mode: modeName,
+        mapId: Value(row.mapId),
+        startMs: startMs,
+        entry: row.entry.name,
+      ),
+      mode: InsertMode.insertOrIgnore,
+    );
+  });
+
+  @override
+  Future<void> recordSale(FleaSaleRow row) => transaction(() async {
+    final timeMs = row.time.millisecondsSinceEpoch;
+    final cleared = await _clearedAtMs();
+    if (cleared != null && timeMs <= cleared) return;
+    await into(fleaSaleRecords).insert(
+      FleaSaleRecordsCompanion.insert(
+        folder: row.id.folder,
+        file: row.id.file.name,
+        offset: row.id.offset,
+        mode: (row.mode ?? GameMode.unknown).name,
+        timeMs: timeMs,
+        itemId: row.itemId,
+        count: row.count,
+        roubles: Value(row.roubles),
+      ),
+      mode: InsertMode.insertOrIgnore,
+    );
+  });
+
+  @override
+  Future<LocalStatsTotals> readTotals(GameMode mode) async {
+    final raids =
+        await (selectOnly(raidStatRecords)
+              ..addColumns([
+                raidStatRecords.mapId,
+                raidStatRecords.folder.count(),
+              ])
+              ..where(raidStatRecords.mode.equals(mode.name))
+              ..groupBy([raidStatRecords.mapId]))
+            .map(
+              (r) => (
+                r.read(raidStatRecords.mapId),
+                r.read(raidStatRecords.folder.count())!,
+              ),
+            )
+            .get();
+    final sales = await customSelect(
+      'SELECT COUNT(*) AS sales, COALESCE(SUM(count), 0) AS items, '
+      'COALESCE(SUM(roubles), 0) AS roubles, '
+      'COALESCE(SUM(roubles IS NULL), 0) AS not_roubles '
+      'FROM flea_sale_records WHERE mode = ?',
+      variables: [Variable.withString(mode.name)],
+      readsFrom: {fleaSaleRecords},
+    ).getSingle();
+    return LocalStatsTotals(
+      raidsByMap: {for (final (map, count) in raids) map: count},
+      raidTotal: raids.fold(0, (sum, r) => sum + r.$2),
+      sales: sales.read<int>('sales'),
+      items: sales.read<int>('items'),
+      roubles: sales.read<int>('roubles'),
+      salesNotInRoubles: sales.read<int>('not_roubles'),
+    );
+  }
+
+  @override
+  Future<DateTime?> readSince() async {
+    final ms = await _clearedAtMs();
+    return ms == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+  }
+
+  @override
+  Future<void> clear(DateTime now) => transaction(() async {
+    await delete(raidStatRecords).go();
+    await delete(fleaSaleRecords).go();
+    await into(statsMeta).insertOnConflictUpdate(
+      StatsMetaCompanion.insert(
+        id: const Value(_statsMetaId),
+        clearedAtMs: Value(now.millisecondsSinceEpoch),
+      ),
+    );
+  });
 
   /// Reads the stored settings, or defaults when there is no record.
   ///
