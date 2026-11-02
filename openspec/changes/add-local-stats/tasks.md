@@ -22,10 +22,10 @@ Rules for every group:
 | local-stats → Each raid start counts once for its map and mode | Transit counts as a new raid | test/data/local_stats_store_test.dart | transit raid counts on its own map | red |
 | local-stats → Each raid start counts once for its map and mode | Replay after a restart | test/data/local_stats_store_test.dart | same raid identity stored twice counts once | red |
 | local-stats → Each raid start counts once for its map and mode | Unknown map | test/data/local_stats_store_test.dart | raid with no map counts under unknown map | red |
-| local-stats → A reconnect continuing a counted raid does not count again | Both apps restarted mid-raid | test/domain/local_stats_test.dart | reconnect on same map within 2 h is not counted | red |
-| local-stats → A reconnect continuing a counted raid does not count again | Reconnect on another map | test/domain/local_stats_test.dart | reconnect on another map counts | red |
-| local-stats → A reconnect continuing a counted raid does not count again | Reconnect long after the last raid | test/domain/local_stats_test.dart | reconnect 2 h 1 min after counts | red |
-| local-stats → A reconnect continuing a counted raid does not count again | Reconnect with nothing stored | test/domain/local_stats_test.dart | reconnect with no earlier raid counts | red |
+| local-stats → A reconnect continuing a counted raid does not count again | Both apps restarted mid-raid | test/domain/local_stats_test.dart | reconnect on same map within 2 h is not counted | green |
+| local-stats → A reconnect continuing a counted raid does not count again | Reconnect on another map | test/domain/local_stats_test.dart | reconnect on another map counts | green |
+| local-stats → A reconnect continuing a counted raid does not count again | Reconnect long after the last raid | test/domain/local_stats_test.dart | reconnect 2 h 1 min after counts | green |
+| local-stats → A reconnect continuing a counted raid does not count again | Reconnect with nothing stored | test/domain/local_stats_test.dart | reconnect with no earlier raid counts | green |
 | local-stats → A reconnect continuing a counted raid does not count again | Replay of a skipped reconnect after a later raid | test/data/local_stats_store_test.dart | replayed skipped reconnect stays skipped after a later raid | red |
 | local-stats → Each flea sale counts once | Two sales | test/data/local_stats_store_test.dart | two sales total sales items and roubles | red |
 | local-stats → Each flea sale counts once | Replayed sale | test/data/local_stats_store_test.dart | same sale identity stored twice counts once | red |
@@ -63,8 +63,8 @@ Rules for every group:
 
 ## 3. Reconnect rule and totals (domain)
 
-- [ ] 3.1 Write failing tests in `test/domain/local_stats_test.dart` for the four `countsReconnect` rows, plus edges: exactly 2 h is the same raid (not counted), a non-reconnect entry always counts, and a previous raid of another mode never suppresses a count. Verify they fail because `lib/domain/local_stats.dart` does not exist.
-- [ ] 3.2 Create `lib/domain/local_stats.dart`: stored-row value types (`RaidStatRow`, `FleaSaleRow`), `LocalStatsTotals` (maps with counts ordered by count then label key, raid total, sales, items, roubles, sales not in roubles), `countsReconnect(previous, candidate)` with the 2 h window as one named constant (design D5). Verify: group 3 rows green.
+- [x] 3.1 Write failing tests in `test/domain/local_stats_test.dart` for the four `countsReconnect` rows, plus edges: exactly 2 h is the same raid (not counted), a non-reconnect entry always counts, and a previous raid of another mode never suppresses a count. Verify they fail because `lib/domain/local_stats.dart` does not exist.
+- [x] 3.2 Create `lib/domain/local_stats.dart`: stored-row value types (`RaidStatRow`, `FleaSaleRow`), `LocalStatsTotals` (maps with counts ordered by count then label key, raid total, sales, items, roubles, sales not in roubles), `countsReconnect(previous, candidate)` with the 2 h window as one named constant (design D5). Verify: group 3 rows green.
 
 ## 4. Database schema 4 and the ledger
 
