@@ -401,18 +401,9 @@ void main() {
   );
 }
 
-// TEMPORARY until the committed pack is regenerated with a recorded
-// `vectorCodecFormat` (task 6.3): the committed manifest predates the record,
-// so it is stamped here. These tests check placement, not the format.
 PreparedMapPackLoader _loader() => PreparedMapPackLoader(
-  loadBytes: (path) async {
-    final bytes = ByteData.sublistView(await File(path).readAsBytes());
-    if (!path.endsWith('manifest.json')) return bytes;
-    final manifest =
-        jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
-    manifest['vectorCodecFormat'] ??= preparedVectorCodecFormat;
-    return preparedJsonBytes(manifest);
-  },
+  loadBytes: (path) async =>
+      ByteData.sublistView(await File(path).readAsBytes()),
 );
 
 void _expectSourceMarker(PreparedMarker marker, Map<String, dynamic> control) {

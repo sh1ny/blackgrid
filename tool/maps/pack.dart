@@ -109,6 +109,14 @@ int vectorPayloadFormat(Uint8List bytes, String path) {
   return bytes[4];
 }
 
+/// Compiles SVG [xml] with the pack's compiler flags, named [debugName] in
+/// diagnostics.
+///
+/// This is the encoder every pack build and validation uses, exposed so tests
+/// can recompile committed payloads without writing into a generation.
+Uint8List encodeMapVector(String xml, String debugName) =>
+    _encodeVector(xml, debugName);
+
 Uint8List _encodeVector(String xml, String debugName) => vector.encodeSvg(
   xml: xml,
   debugName: debugName,
@@ -1631,6 +1639,15 @@ Future<List<String>> preparedAssetDirectories(Directory packs) async {
   final version = await _activeVersion(packs);
   final prefix = 'versions/$version/';
   final manifest = await validateCandidate(Directory('${packs.path}/$prefix'));
+  return assetDirectoriesOf(version, manifest);
+}
+
+/// Returns the sorted asset directories, relative to the pack root, that
+/// generation [version] with [manifest] needs declared in `pubspec.yaml`.
+///
+/// Pure: it reads only the manifest's `outputs` and does not validate.
+List<String> assetDirectoriesOf(String version, Map<String, dynamic> manifest) {
+  final prefix = 'versions/$version/';
   final directories = <String>{'', prefix};
   for (final output in manifest['outputs'] as List) {
     final path = output['path'] as String;

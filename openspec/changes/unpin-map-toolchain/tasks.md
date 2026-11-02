@@ -152,15 +152,19 @@ The committed pack itself (group 6) is also covered by extra tests: `test/maps/a
 
 ## 6. Run it once on main's toolchain
 
-- [ ] 6.1 Wrap the existing map asset lines in `pubspec.yaml` (currently lines 42-247) with the begin/end markers, without changing the lines. Verify: `mise run analyze` passes and `flutter pub get` reports no asset change.
-- [ ] 6.2 One-time cross-check, local only, while the raw generation exists:
+- [x] 6.1 Wrap the existing map asset lines in `pubspec.yaml` (currently lines 42-247) with the begin/end markers, without changing the lines. Verify: `mise run analyze` passes and `flutter pub get` reports no asset change.
+- [x] 6.2 One-time cross-check, local only, while the raw generation exists:
   - run `mise exec -- dart run tool/maps/prepare.dart rebuild --raw .dart_tool/maps/m5-raw-20261007-abstract --candidate .dart_tool/maps/crosscheck-raw-<UTC>`;
   - run the generation-backed rebuild of `d5a0f9ae…` into another scratch folder (`check` keeps nothing, so call `_rebuildActive` through a scratch script under `.dart_tool/`, or use `refresh` on a scratch copy of `assets/maps`);
   - compare the two canonical manifests.
 
   Record in this task whether they are identical. Expected: identical. If not, stop and report the differing keys to the owner before promoting.
-- [ ] 6.3 Run `mise run maps:rebuild` on main's toolchain (compiler 1.3.4, image 4.12.0, xml 6.6.1, vector_graphics 1.2.5, codec 1.1.13). Record the new generation id and the report. Expected: only provenance changed, so only `manifest.json` differs from `d5a0f9ae…`. If the report shows anything else, copy its per-map summary here and add a user check: the owner checks those maps in the app before merge. Verify: `mise run maps:check` exits 0 and prints the reproduced line; `git status` shows the new generation folder, `assets/maps/active.json`, the `pubspec.yaml` block, and `d5a0f9ae…` and `0e059640…` deleted; `assets/maps/versions/` holds exactly one folder.
-- [ ] 6.4 Add the committed-pack fast tests:
+
+  **Result (2026-11-02):** identical. The raw rebuild and the `d5a0f9ae…`-backed rebuild produced the same canonical manifest with the installed toolchain.
+- [x] 6.3 Run `mise run maps:rebuild` on main's toolchain (compiler 1.3.4, image 4.12.0, xml 6.6.1, vector_graphics 1.2.5, codec 1.1.13). Record the new generation id and the report. Expected: only provenance changed, so only `manifest.json` differs from `d5a0f9ae…`. If the report shows anything else, copy its per-map summary here and add a user check: the owner checks those maps in the app before merge. Verify: `mise run maps:check` exits 0 and prints the reproduced line; `git status` shows the new generation folder, `assets/maps/active.json`, the `pubspec.yaml` block, and `d5a0f9ae…` and `0e059640…` deleted; `assets/maps/versions/` holds exactly one folder.
+
+  **Result (2026-11-02):** new generation `ed26414539f458929025f4ef2c3413d3457c7b3e5b9f2e2adfb4dc20c24bba5f`; `d5a0f9ae…` and `0e059640…` deleted. All 1321 output files are byte-identical to `d5a0f9ae…`, and every map and floor value is unchanged. The only differences are top-level manifest keys from this change's format migration: `compilerVersion`, `dependencies` and `runtimeVectorVersion` removed, `toolchain` and `vectorCodecFormat: 1` added. The report printed no map or floor line, only the `pack` group; its `Artwork changed` line fired because pack-level keys count (the conservative rule from review round 2). No artwork changed, so no owner map check is needed. `mise run maps:check` then printed: `Map pack ed26414539f458929025f4ef2c3413d3457c7b3e5b9f2e2adfb4dc20c24bba5f reproduced byte-identically with xml 6.6.1, image 4.12.0, vector_graphics_compiler 1.3.4, vector_graphics 1.2.5, vector_graphics_codec 1.1.13.`
+- [x] 6.4 Add the committed-pack fast tests:
   - `test/maps/active_pack_vectors_test.dart`: every committed `.vec` recompiles byte-identical from its `.compiler.svg`, decodes with `VectorGraphicsCodec().decode(bytes, null)`, and has a header matching `vectorCodecFormat`; failure reasons name the path and `mise run maps:rebuild`;
   - `test/maps/active_pack_loader_test.dart`: `PreparedMapPackLoader` with a file-backed `loadBytes` loads the real active pack with 13 maps;
   - the asset-block test: the `pubspec.yaml` block equals the directories derived from the active manifest's `outputs`.

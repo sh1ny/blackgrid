@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:test/test.dart';
 
 import '../../tool/maps/pack.dart';
@@ -118,6 +121,27 @@ void main() {
         ),
       );
     });
+  });
+
+  test('the committed pubspec block lists the active generation', () {
+    final active = jsonDecode(
+      File('assets/maps/active.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final version = active['version'] as String;
+    final manifest = jsonDecode(
+      File('assets/maps/versions/$version/manifest.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final pubspec = File('pubspec.yaml').readAsLinesSync();
+    final block = pubspec
+        .skipWhile((line) => line != mapPackAssetsBegin)
+        .skip(1)
+        .takeWhile((line) => line != mapPackAssetsEnd)
+        .toList();
+    expect(
+      block,
+      mapPackAssetLines('assets/maps', assetDirectoriesOf(version, manifest)),
+      reason: 'pubspec.yaml is stale: run mise run maps:rebuild',
+    );
   });
 
   group('mapPackAssetLines', () {
