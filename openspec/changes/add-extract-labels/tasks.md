@@ -29,8 +29,8 @@ Rules for every group:
 | map-zone-labels → Extract and transit outlines show on hover or selection | Selection keeps the outline | test/ui/map_zone_labels_test.dart | a selected extract keeps its outline after the pointer leaves | red |
 | map-zone-labels → Extract and transit outlines show on hover or selection | Hazard zone outline always shows | test/domain/map_zone_style_test.dart | outlineDrawn is true for non-exit keys at rest | green |
 | map-zone-labels → Extract and transit outlines show on hover or selection | Pointer leaves the map | test/ui/map_zone_labels_test.dart | leaving the viewport clears the hovered outline | red |
-| map-zone-labels → A hidden outline is not a click target | Click inside a hidden extract area | test/maps/map_controller_test.dart | a hidden extract outline is not hit | red |
-| map-zone-labels → A hidden outline is not a click target | Click inside a drawn hazard zone | test/maps/map_controller_test.dart | a hazard outline is still hit | red |
+| map-zone-labels → A hidden outline is not a click target | Click inside a hidden extract area | test/maps/map_controller_test.dart | a hidden extract outline is not hit | green |
+| map-zone-labels → A hidden outline is not a click target | Click inside a drawn hazard zone | test/maps/map_controller_test.dart | a hazard outline is still hit | green |
 | map-zone-labels → A hidden outline is not a click target | Accessibility target of an extract | test/ui/map_zone_labels_test.dart | a hidden extract's semantics rect is its badge circle | red |
 | map-help → The map toolbar has a help button | Open and close the help | test/ui/map_help_test.dart | the help button opens and Close closes the help, keeping the selection | red |
 | map-help → The map toolbar has a help button | Help without artwork | test/ui/map_help_test.dart | the help button works with no artwork loaded | red |
@@ -47,8 +47,8 @@ Rules for every group:
 
 ## 2. Hit testing respects hidden outlines
 
-- [ ] 2.1 Add failing tests to `test/maps/map_controller_test.dart` (rows "Click inside a hidden extract area", "Click inside a drawn hazard zone"). Use a synthetic map with an extract and a hazard zone, each with an outline. A point inside the extract polygon away from its badge returns null at rest, and returns the extract when `hoveredMarkerId` is the extract or it is selected. A point inside the hazard polygon returns the hazard. Verify the extract-at-rest case fails against the current `hitTestMarker`.
-- [ ] 2.2 Add the optional `hoveredMarkerId` to `MapController.hitTestMarker`, and filter its outline pass with `outlineDrawn` using the hover id and `_selectedMarkerId` (design D3). Verify that 2.1 and the existing `map_controller_test.dart` hit tests pass, and flip both rows green.
+- [x] 2.1 Add failing tests to `test/maps/map_controller_test.dart` (rows "Click inside a hidden extract area", "Click inside a drawn hazard zone"). Use a synthetic map with an extract and a hazard zone, each with an outline. A point inside the extract polygon away from its badge returns null at rest, and returns the extract when `hoveredMarkerId` is the extract or it is selected. A point inside the hazard polygon returns the hazard. Verify the extract-at-rest case fails against the current `hitTestMarker`.
+- [x] 2.2 Add the optional `hoveredMarkerId` to `MapController.hitTestMarker`, and filter its outline pass with `outlineDrawn` using the hover id and `_selectedMarkerId` (design D3). Verify that 2.1 and the existing `map_controller_test.dart` hit tests pass, and flip both rows green.
 
 ## 3. Painter: outline colours, hover, names and semantics
 
