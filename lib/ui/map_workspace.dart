@@ -110,12 +110,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     final id = maps.preparedMap == null
         ? null
         : maps
-              .hitTestMarker(
-                point,
-                radius: 22,
-                hoveredMarkerId: _liveHover,
-                preferHovered: true,
-              )
+              .hitTestMarker(point, radius: 22, hoveredMarkerId: _liveHover)
               ?.marker
               .id;
     if (id == _liveHover) return;

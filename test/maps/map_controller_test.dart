@@ -798,21 +798,19 @@ void main() {
         await overlap.initialize(selectedMapId: 'interchange');
         final both = overlap.transform.sceneToViewport(ScenePoint(11, 21));
 
-        ProjectedMapMarker? hit({bool prefer = false}) => overlap.hitTestMarker(
-          both,
-          radius: 1,
-          hoveredMarkerId: 'gate',
-          preferHovered: prefer,
-        );
-        expect(hit()!.marker.id, 'minefield', reason: 'the topmost outline');
-        expect(hit(prefer: true)!.marker.id, 'gate');
+        // Hover and click both pass the hovered id, so a click inside the
+        // highlighted extract selects the extract, not the zone on top.
         expect(
           overlap
-              .hitTestMarker(both, radius: 1, preferHovered: true)!
+              .hitTestMarker(both, radius: 1, hoveredMarkerId: 'gate')!
               .marker
               .id,
+          'gate',
+        );
+        expect(
+          overlap.hitTestMarker(both, radius: 1)!.marker.id,
           'minefield',
-          reason: 'nothing hovered, so nothing is preferred',
+          reason: 'nothing hovered: the topmost drawn outline',
         );
       },
     );

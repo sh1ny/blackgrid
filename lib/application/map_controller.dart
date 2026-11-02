@@ -581,15 +581,14 @@ class MapController extends ChangeNotifier {
   /// drawn ([outlineDrawn]): an extract or transit outline counts only when
   /// its marker is the selected one or has the id [hoveredMarkerId].
   ///
-  /// With [preferHovered], a point inside the hovered marker's outline keeps
-  /// that marker even when another drawn outline lies on top, so hover does
-  /// not jump while the pointer stays in the area it revealed. A badge within
-  /// [radius] still wins.
+  /// A point inside the hovered marker's outline hits that marker even when
+  /// another drawn outline lies on top, so hover does not jump while the
+  /// pointer stays in the area it revealed, and a click there selects the
+  /// highlighted marker. A badge within [radius] still wins.
   ProjectedMapMarker? hitTestMarker(
     ViewportPoint point, {
     double radius = 18,
     String? hoveredMarkerId,
-    bool preferHovered = false,
   }) {
     requirePositiveFinite(radius, 'radius');
     ProjectedMapMarker? nearest;
@@ -605,7 +604,7 @@ class MapController extends ChangeNotifier {
       }
     }
     if (nearest != null) return nearest;
-    if (preferHovered && hoveredMarkerId != null) {
+    if (hoveredMarkerId != null) {
       for (final marker in markers) {
         if (marker.marker.id == hoveredMarkerId &&
             _insideOutline(point, marker.outline)) {
