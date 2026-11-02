@@ -2035,7 +2035,8 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
 /// [toolchain] and returns the line to print when it reproduces byte for byte.
 ///
 /// Writes nothing under [packs]. The rebuild lives in a folder created under
-/// [tempParent] (default: the system temp folder) and is always deleted.
+/// [tempParent] (default: the system temp folder) and is always deleted; a
+/// failed deletion is reported on stderr and never replaces the result.
 /// Throws a [MapPackCheckFailure] with the per-map summary, the differing
 /// paths and manifest values, and the instruction to rebuild when it does not.
 Future<String> checkActive(
@@ -2063,7 +2064,11 @@ Future<String> checkActive(
       ].join('\n'),
     );
   } finally {
-    await work.delete(recursive: true);
+    try {
+      await work.delete(recursive: true);
+    } on FileSystemException catch (error) {
+      stderr.writeln('Could not delete ${work.path}: $error');
+    }
   }
 }
 
@@ -2214,13 +2219,15 @@ String _refreshStamp(DateTime moment) {
 /// In order: the leftover precheck and the marker check (before any write);
 /// verification of the committed generation; the rebuild and its validation
 /// into `refresh-<UTC>` under [candidateParent] (default `.dart_tool/maps`);
-/// the change report through [log] (default stdout); promotion; the block
-/// rewrite through a temp file and a rename, declaring directories under
-/// [assetRoot]; pruning; and deleting the candidate.
+/// the change report through [log] (default stdout); staging the rewritten
+/// block, declaring directories under [assetRoot], in a temp file next to
+/// [pubspec]; promotion; the rename of that file over [pubspec]; pruning; and
+/// deleting the candidate.
 ///
 /// Until promotion nothing under [packs] changes. When the rebuild started
 /// and anything fails, the candidate is kept and a [MapPackRefreshFailure]
-/// names it. [encode] replaces the vector encoder of the rebuild only;
+/// names it; a failure after promotion also says that `active.json` already
+/// names the new generation and to run `mise run maps:rebuild` again. [encode] replaces the vector encoder of the rebuild only;
 /// validation always uses the real one.
 Future<MapPackRefresh> refreshActive(
   Directory packs,
@@ -2240,6 +2247,7 @@ Future<MapPackRefresh> refreshActive(
     '${(candidateParent ?? Directory('.dart_tool/maps')).path}'
     '/refresh-${_refreshStamp(now ?? DateTime.now())}',
   );
+  String? promoted;
   try {
     final (committed, rebuilt) = await _rebuildActive(
       packs,
@@ -2255,23 +2263,39 @@ Future<MapPackRefresh> refreshActive(
                 'the app before merge.'
           : 'Only the toolchain record changed: no owner check is needed.',
     );
-    final id = await promoteCandidate(candidate, packs);
+    final manifestBytes = await packFile(
+      candidate,
+      'manifest.json',
+    ).readAsBytes();
     final updated = replaceMapPackAssetBlock(
       await pubspec.readAsString(),
-      mapPackAssetLines(root, await preparedAssetDirectories(packs)),
+      mapPackAssetLines(
+        root,
+        assetDirectoriesOf(
+          _hash(manifestBytes),
+          jsonDecode(utf8.decode(manifestBytes)) as Map<String, dynamic>,
+        ),
+      ),
     );
     final temporary = File('${pubspec.path}.tmp');
     await temporary.writeAsString(updated, flush: true);
+    final id = await promoteCandidate(candidate, packs);
+    promoted = id;
     await temporary.rename(pubspec.path);
     final pruned = await pruneSupersededGenerations(packs, id);
     await candidate.delete(recursive: true);
     return MapPackRefresh(id: id, changed: report.changed, pruned: pruned);
   } catch (error) {
+    final after = promoted == null
+        ? ''
+        : '\nactive.json already names $promoted; run mise run maps:rebuild '
+              'again to bring pubspec.yaml and the generations in line';
     if (await candidate.exists()) {
       throw MapPackRefreshFailure(
-        '$error\nCandidate kept at ${candidate.path}',
+        '$error$after\nCandidate kept at ${candidate.path}',
       );
     }
+    if (promoted != null) throw MapPackRefreshFailure('$error$after');
     rethrow;
   }
 }

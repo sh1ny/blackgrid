@@ -1440,6 +1440,33 @@ void main() {
     });
 
     test(
+      'refresh that cannot stage the pubspec rewrite promotes nothing',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        // A directory where the staged pubspec goes makes the write fail.
+        await Directory('${pubspec.path}.tmp').create();
+
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('${work.path}/$candidateName'),
+                isNot(contains('active.json already names')),
+              ),
+            ),
+          ),
+        );
+
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsString(), pubspecText);
+      },
+    );
+
+    test(
       'refresh with a leftover fails before rebuilding and changes nothing',
       () async {
         await promoteCandidate(fixtures.first, packs);
