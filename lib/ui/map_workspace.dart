@@ -9,6 +9,7 @@ import '../application/app_services.dart';
 import '../application/map_controller.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_marker_query.dart';
+import '../domain/map_zone_style.dart';
 import '../domain/marker_categories.dart';
 import '../domain/settings.dart';
 import '../maps/map_marker_icons.dart';
@@ -27,6 +28,8 @@ class MapWorkspace extends StatefulWidget {
 class _MapWorkspaceState extends State<MapWorkspace> {
   String? _selectedMarker;
   int? _selectionGeneration;
+  String? _hoveredMarker;
+  int? _hoverGeneration;
   String? _selectedPin;
   String? _selectedPinMapId;
   final _focus = FocusNode(debugLabel: 'Native map workspace');
@@ -57,6 +60,32 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       _selectionGeneration = maps.contentGeneration;
       _selectedPin = null;
       _selectedPinMapId = null;
+    });
+  }
+
+  /// The hovered marker id, unless the map or its content changed since.
+  String? get _liveHover =>
+      _hoverGeneration == maps.contentGeneration ? _hoveredMarker : null;
+
+  void _hover(PointerHoverEvent event) {
+    if (maps.preparedMap == null) return;
+    final point = ViewportPoint(event.localPosition.dx, event.localPosition.dy);
+    final id = maps
+        .hitTestMarker(point, radius: 22, hoveredMarkerId: _liveHover)
+        ?.marker
+        .id;
+    if (id == _liveHover) return;
+    setState(() {
+      _hoveredMarker = id;
+      _hoverGeneration = maps.contentGeneration;
+    });
+  }
+
+  void _leave() {
+    if (_hoveredMarker == null) return;
+    setState(() {
+      _hoveredMarker = null;
+      _hoverGeneration = null;
     });
   }
 
@@ -94,7 +123,11 @@ class _MapWorkspaceState extends State<MapWorkspace> {
 
   void _select(ViewportPoint point) {
     _focus.requestFocus();
-    final marker = maps.hitTestMarker(point, radius: 22);
+    final marker = maps.hitTestMarker(
+      point,
+      radius: 22,
+      hoveredMarkerId: _liveHover,
+    );
     String? pinId;
     if (widget.services.settings.settings.markerFilters['CustomPins'] !=
         false) {
@@ -363,79 +396,86 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                 });
                           }
                         },
-                        child: GestureDetector(
-                          key: const Key('native-map-viewport'),
-                          behavior: HitTestBehavior.opaque,
-                          onPanUpdate: map == null
-                              ? null
-                              : (event) =>
-                                    maps.panBy(event.delta.dx, event.delta.dy),
-                          onTapUp: (event) => _select(
-                            ViewportPoint(
-                              event.localPosition.dx,
-                              event.localPosition.dy,
-                            ),
-                          ),
-                          onSecondaryTapUp: map == null
-                              ? null
-                              : (event) {
-                                  if (!widget.services.settings.busy) {
-                                    _createPinAt(
-                                      ViewportPoint(
-                                        event.localPosition.dx,
-                                        event.localPosition.dy,
-                                      ),
-                                    );
-                                  }
-                                },
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              CustomPaint(
-                                painter: _MapPainter(
-                                  maps,
-                                  widget.services.markerIcons,
-                                  pins,
-                                  showPins:
-                                      widget
-                                          .services
-                                          .settings
-                                          .settings
-                                          .markerFilters['CustomPins'] !=
-                                      false,
-                                  selectedMarker: selected?.id,
-                                  selectedPin: selectedPin?.id,
-                                  selectMarker: _selectMarker,
-                                  selectPin: (id) {
-                                    _focus.requestFocus();
-                                    maps.setSelectedMarker(null);
-                                    setState(() {
-                                      _selectedPin = id;
-                                      _selectedPinMapId = maps.selectedMapId;
-                                      _selectedMarker = null;
-                                    });
-                                  },
-                                ),
+                        child: MouseRegion(
+                          onHover: _hover,
+                          onExit: (_) => _leave(),
+                          child: GestureDetector(
+                            key: const Key('native-map-viewport'),
+                            behavior: HitTestBehavior.opaque,
+                            onPanUpdate: map == null
+                                ? null
+                                : (event) => maps.panBy(
+                                    event.delta.dx,
+                                    event.delta.dy,
+                                  ),
+                            onTapUp: (event) => _select(
+                              ViewportPoint(
+                                event.localPosition.dx,
+                                event.localPosition.dy,
                               ),
-                              if (maps.loading)
-                                const Align(
-                                  alignment: Alignment.topCenter,
-                                  child: LinearProgressIndicator(),
+                            ),
+                            onSecondaryTapUp: map == null
+                                ? null
+                                : (event) {
+                                    if (!widget.services.settings.busy) {
+                                      _createPinAt(
+                                        ViewportPoint(
+                                          event.localPosition.dx,
+                                          event.localPosition.dy,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                CustomPaint(
+                                  painter: _MapPainter(
+                                    maps,
+                                    widget.services.markerIcons,
+                                    pins,
+                                    showPins:
+                                        widget
+                                            .services
+                                            .settings
+                                            .settings
+                                            .markerFilters['CustomPins'] !=
+                                        false,
+                                    selectedMarker: selected?.id,
+                                    hoveredMarker: _liveHover,
+                                    selectedPin: selectedPin?.id,
+                                    selectMarker: _selectMarker,
+                                    selectPin: (id) {
+                                      _focus.requestFocus();
+                                      maps.setSelectedMarker(null);
+                                      setState(() {
+                                        _selectedPin = id;
+                                        _selectedPinMapId = maps.selectedMapId;
+                                        _selectedMarker = null;
+                                      });
+                                    },
+                                  ),
                                 ),
-                              if (maps.error != null || maps.unavailable)
-                                Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Text(
-                                      maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: GridColors.muted,
+                                if (maps.loading)
+                                  const Align(
+                                    alignment: Alignment.topCenter,
+                                    child: LinearProgressIndicator(),
+                                  ),
+                                if (maps.error != null || maps.unavailable)
+                                  Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Text(
+                                        maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: GridColors.muted,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -560,6 +600,11 @@ class _MarkerDetails extends StatelessWidget {
   );
 }
 
+const _labelFontSize = 12.0;
+const _labelHaloWidth = 3.0;
+const _labelGap = 4.0;
+const _labelMaxWidth = 180.0;
+
 class _MapPainter extends CustomPainter {
   _MapPainter(
     this.maps,
@@ -567,6 +612,7 @@ class _MapPainter extends CustomPainter {
     this.pins, {
     required this.showPins,
     required this.selectedMarker,
+    required this.hoveredMarker,
     required this.selectedPin,
     required this.selectMarker,
     required this.selectPin,
@@ -576,6 +622,7 @@ class _MapPainter extends CustomPainter {
   final List<CustomPin> pins;
   final bool showPins;
   final String? selectedMarker;
+  final String? hoveredMarker;
   final String? selectedPin;
   final ValueChanged<String> selectMarker;
   final ValueChanged<String> selectPin;
@@ -596,38 +643,28 @@ class _MapPainter extends CustomPainter {
       size.width + 44,
       size.height + 44,
     );
-    for (final projected in maps.visibleMarkers()) {
+    final visible = maps.visibleMarkers();
+    for (final projected in visible) {
+      if (_outlineShown(projected.marker)) _outline(canvas, projected);
+    }
+    for (final projected in visible) {
       final point = Offset(
         projected.viewportPoint.x,
         projected.viewportPoint.y,
       );
-      final marker = projected.marker;
-      if (projected.outline.isNotEmpty) {
-        final path = Path();
-        for (var index = 0; index < projected.outline.length; index++) {
-          final p = projected.outline[index];
-          if (index == 0) {
-            path.moveTo(p.x, p.y);
-          } else {
-            path.lineTo(p.x, p.y);
-          }
-        }
-        path.close();
-        _fill.color = Colors.red.withValues(
-          alpha: projected.dimmed ? .035 : .16,
-        );
-        canvas.drawPath(path, _fill);
-        _edge.color = Colors.redAccent.withValues(
-          alpha: projected.dimmed ? .22 : 1,
-        );
-        canvas.drawPath(path, _edge);
-      }
+      if (markerBounds.contains(point)) _name(canvas, point, projected);
+    }
+    for (final projected in visible) {
+      final point = Offset(
+        projected.viewportPoint.x,
+        projected.viewportPoint.y,
+      );
       if (!markerBounds.contains(point)) continue;
       _badge(
         canvas,
         point,
-        filterKey: marker.filterKey,
-        selected: marker.id == selectedMarker,
+        filterKey: projected.marker.filterKey,
+        selected: projected.marker.id == selectedMarker,
         highlighted: projected.linkedHighlighted || projected.raidHighlighted,
         dimmed: projected.dimmed,
       );
@@ -672,6 +709,71 @@ class _MapPainter extends CustomPainter {
     }
   }
 
+  bool _outlineShown(PreparedMarker marker) => outlineDrawn(
+    marker.filterKey,
+    hovered: marker.id == hoveredMarker,
+    selected: marker.id == selectedMarker,
+  );
+
+  void _outline(Canvas canvas, ProjectedMapMarker projected) {
+    if (projected.outline.isEmpty) return;
+    final path = Path();
+    for (var index = 0; index < projected.outline.length; index++) {
+      final p = projected.outline[index];
+      if (index == 0) {
+        path.moveTo(p.x, p.y);
+      } else {
+        path.lineTo(p.x, p.y);
+      }
+    }
+    path.close();
+    final colour = markerIcons.colourFor(projected.marker.filterKey);
+    _fill.color = colour.withValues(alpha: projected.dimmed ? .035 : .16);
+    canvas.drawPath(path, _fill);
+    _edge.color = colour.withValues(
+      alpha: projected.dimmed ? dimmedMarkerOpacity : 1,
+    );
+    canvas.drawPath(path, _edge);
+  }
+
+  /// Draws the name of an extract or transit right of its badge: a halo in the
+  /// marker background colour, then the faction colour on top.
+  void _name(Canvas canvas, Offset point, ProjectedMapMarker projected) {
+    final marker = projected.marker;
+    final faction = labelFactionFor(marker.filterKey);
+    if (faction == null || marker.name.trim().isEmpty) return;
+    final opacity = projected.dimmed ? dimmedMarkerOpacity : 1.0;
+    const base = TextStyle(
+      fontSize: _labelFontSize,
+      fontWeight: FontWeight.w600,
+    );
+    final halo = markerIcons.background.withValues(alpha: opacity);
+    final styles = [
+      base.copyWith(
+        foreground: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _labelHaloWidth
+          ..strokeJoin = StrokeJoin.round
+          ..color = halo,
+      ),
+      base.copyWith(
+        color: Color(labelColourFor(faction)).withValues(alpha: opacity),
+      ),
+    ];
+    final start =
+        point.dx + markerIcons.geometry.selectedDiameter / 2 + _labelGap;
+    for (final style in styles) {
+      final text = TextPainter(
+        text: TextSpan(text: marker.name, style: style),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: _labelMaxWidth);
+      text.paint(canvas, Offset(start, point.dy - text.height / 2));
+      text.dispose();
+    }
+  }
+
   void _badge(
     Canvas canvas,
     Offset point, {
@@ -699,8 +801,10 @@ class _MapPainter extends CustomPainter {
         center: Offset(marker.viewportPoint.x, marker.viewportPoint.y),
         radius: 22,
       );
-      for (final vertex in marker.outline) {
-        rect = rect.expandToInclude(Rect.fromLTWH(vertex.x, vertex.y, 1, 1));
+      if (_outlineShown(marker.marker)) {
+        for (final vertex in marker.outline) {
+          rect = rect.expandToInclude(Rect.fromLTWH(vertex.x, vertex.y, 1, 1));
+        }
       }
       if (!bounds.overlaps(rect)) continue;
       targets.add(

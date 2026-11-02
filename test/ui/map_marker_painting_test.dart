@@ -330,8 +330,8 @@ void main() {
     final at = f.marker('zone');
 
     final pattern = paints
-      ..path(color: Colors.red.withValues(alpha: .16))
-      ..path(color: Colors.redAccent);
+      ..path(color: _dangerRed.withValues(alpha: .16))
+      ..path(color: _dangerRed);
     _discAndRing(pattern, at, ring: _dangerRed);
     pattern.something(
       _glyphAt(

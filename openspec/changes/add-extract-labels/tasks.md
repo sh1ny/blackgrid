@@ -11,27 +11,27 @@ Rules for every group:
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| map-zone-labels → Extracts and transits show their names beside their badges | Visible extract shows its name | test/ui/map_zone_labels_test.dart | a PmcExtracts marker paints its name right of its badge | red |
+| map-zone-labels → Extracts and transits show their names beside their badges | Visible extract shows its name | test/ui/map_zone_labels_test.dart | a PmcExtracts marker paints its name right of its badge | green |
 | map-zone-labels → Extracts and transits show their names beside their badges | Other categories stay unnamed | test/domain/map_zone_style_test.dart | only the four exit keys have a label faction | green |
-| map-zone-labels → Extracts and transits show their names beside their badges | Hidden category draws no name | test/ui/map_zone_labels_test.dart | hiding ScavExtracts removes its badge and name only | red |
-| map-zone-labels → Extracts and transits show their names beside their badges | Extract with an empty name | test/ui/map_zone_labels_test.dart | a blank extract name paints its badge and no label | red |
-| map-zone-labels → Name labels are coloured by faction | Each faction draws its own colour | test/ui/map_zone_labels_test.dart | four factions paint four label colours over exit-green badges | red |
+| map-zone-labels → Extracts and transits show their names beside their badges | Hidden category draws no name | test/ui/map_zone_labels_test.dart | hiding ScavExtracts removes its badge and name only | green |
+| map-zone-labels → Extracts and transits show their names beside their badges | Extract with an empty name | test/ui/map_zone_labels_test.dart | a blank extract name paints its badge and no label | green |
+| map-zone-labels → Name labels are coloured by faction | Each faction draws its own colour | test/ui/map_zone_labels_test.dart | four factions paint four label colours over exit-green badges | green |
 | map-zone-labels → Name labels are coloured by faction | Palette rule rejects a bad label colour | test/domain/map_zone_style_test.dart | label palette meets contrast, hue band and distinctness rules | green |
-| map-zone-labels → Name labels are coloured by faction | Highlighted extract keeps its faction name colour | test/ui/map_zone_labels_test.dart | a raid-highlighted Scav extract keeps its Scav label colour | red |
-| map-zone-labels → Name labels stay readable at every zoom | Zooming keeps the text size | test/ui/map_zone_labels_test.dart | zooming moves the label but keeps its font size | red |
-| map-zone-labels → Name labels stay readable at every zoom | Dimmed extract fades its name | test/ui/map_zone_labels_test.dart | a dimmed extract paints its name at 0.22 alpha | red |
-| map-zone-labels → Name labels stay readable at every zoom | Overlapping badge stays on top | test/ui/map_zone_labels_test.dart | names paint after outlines and before every badge | red |
-| map-zone-labels → Zone outlines use their category colour | Categories draw their own outline colours | test/ui/map_zone_labels_test.dart | hazard, quest and switch outlines paint in their role colours | red |
-| map-zone-labels → Zone outlines use their category colour | Icons not loaded yet | test/ui/map_zone_labels_test.dart | before icons load a quest outline paints gold | red |
-| map-zone-labels → Extract and transit outlines show on hover or selection | Extract outline is hidden at rest | test/ui/map_zone_labels_test.dart | an extract at rest paints no outline | red |
-| map-zone-labels → Extract and transit outlines show on hover or selection | Hover reveals the outline | test/ui/map_zone_labels_test.dart | hovering an extract badge paints its outline until the pointer leaves | red |
-| map-zone-labels → Extract and transit outlines show on hover or selection | Moving into the revealed outline keeps it | test/ui/map_zone_labels_test.dart | moving from the badge into the revealed area keeps the outline | red |
-| map-zone-labels → Extract and transit outlines show on hover or selection | Selection keeps the outline | test/ui/map_zone_labels_test.dart | a selected extract keeps its outline after the pointer leaves | red |
+| map-zone-labels → Name labels are coloured by faction | Highlighted extract keeps its faction name colour | test/ui/map_zone_labels_test.dart | a raid-highlighted Scav extract keeps its Scav label colour | green |
+| map-zone-labels → Name labels stay readable at every zoom | Zooming keeps the text size | test/ui/map_zone_labels_test.dart | zooming moves the label but keeps its font size | green |
+| map-zone-labels → Name labels stay readable at every zoom | Dimmed extract fades its name | test/ui/map_zone_labels_test.dart | a dimmed extract paints its name at 0.22 alpha | green |
+| map-zone-labels → Name labels stay readable at every zoom | Overlapping badge stays on top | test/ui/map_zone_labels_test.dart | names paint after outlines and before every badge | green |
+| map-zone-labels → Zone outlines use their category colour | Categories draw their own outline colours | test/ui/map_zone_labels_test.dart | hazard, quest and switch outlines paint in their role colours | green |
+| map-zone-labels → Zone outlines use their category colour | Icons not loaded yet | test/ui/map_zone_labels_test.dart | before icons load a quest outline paints gold | green |
+| map-zone-labels → Extract and transit outlines show on hover or selection | Extract outline is hidden at rest | test/ui/map_zone_labels_test.dart | an extract at rest paints no outline | green |
+| map-zone-labels → Extract and transit outlines show on hover or selection | Hover reveals the outline | test/ui/map_zone_labels_test.dart | hovering an extract badge paints its outline until the pointer leaves | green |
+| map-zone-labels → Extract and transit outlines show on hover or selection | Moving into the revealed outline keeps it | test/ui/map_zone_labels_test.dart | moving from the badge into the revealed area keeps the outline | green |
+| map-zone-labels → Extract and transit outlines show on hover or selection | Selection keeps the outline | test/ui/map_zone_labels_test.dart | a selected extract keeps its outline after the pointer leaves | green |
 | map-zone-labels → Extract and transit outlines show on hover or selection | Hazard zone outline always shows | test/domain/map_zone_style_test.dart | outlineDrawn is true for non-exit keys at rest | green |
-| map-zone-labels → Extract and transit outlines show on hover or selection | Pointer leaves the map | test/ui/map_zone_labels_test.dart | leaving the viewport clears the hovered outline | red |
+| map-zone-labels → Extract and transit outlines show on hover or selection | Pointer leaves the map | test/ui/map_zone_labels_test.dart | leaving the viewport clears the hovered outline | green |
 | map-zone-labels → A hidden outline is not a click target | Click inside a hidden extract area | test/maps/map_controller_test.dart | a hidden extract outline is not hit | green |
 | map-zone-labels → A hidden outline is not a click target | Click inside a drawn hazard zone | test/maps/map_controller_test.dart | a hazard outline is still hit | green |
-| map-zone-labels → A hidden outline is not a click target | Accessibility target of an extract | test/ui/map_zone_labels_test.dart | a hidden extract's semantics rect is its badge circle | red |
+| map-zone-labels → A hidden outline is not a click target | Accessibility target of an extract | test/ui/map_zone_labels_test.dart | a hidden extract's semantics rect is its badge circle | green |
 | map-help → The map toolbar has a help button | Open and close the help | test/ui/map_help_test.dart | the help button opens and Close closes the help, keeping the selection | red |
 | map-help → The map toolbar has a help button | Help without artwork | test/ui/map_help_test.dart | the help button works with no artwork loaded | red |
 | map-help → The map toolbar has a help button | Escape closes only the dialog | test/ui/map_help_test.dart | Escape closes the help and keeps the selected marker | red |
@@ -52,8 +52,8 @@ Rules for every group:
 
 ## 3. Painter: outline colours, hover, names and semantics
 
-- [ ] 3.1 Write failing painter and widget tests in `test/ui/map_zone_labels_test.dart` for every `map-zone-labels` row mapped to that file. Use a synthetic map with one PMC, one Scav, one shared extract, one transit, a hazard zone, a quest objective zone, a switch with an outline and a `locks` marker. Hover goes through a mouse `TestGesture`, and names are asserted through the recorded canvas (`paints..paragraph`, or by intercepting text on a recording canvas, whichever the harness supports). Update the existing `map_marker_painting_test.dart` hazard test from `Colors.red`/`redAccent` to the danger role colour `#FF5252` (the `map-marker-icons` "red zone polygon" scenario still holds). Verify that the new tests fail for the right reason: red outlines, no names, extract outlines always drawn.
-- [ ] 3.2 Implement design D2, D4 and D5 in `lib/ui/map_workspace.dart`:
+- [x] 3.1 Write failing painter and widget tests in `test/ui/map_zone_labels_test.dart` for every `map-zone-labels` row mapped to that file. Use a synthetic map with one PMC, one Scav, one shared extract, one transit, a hazard zone, a quest objective zone, a switch with an outline and a `locks` marker. Hover goes through a mouse `TestGesture`, and names are asserted through the recorded canvas (`paints..paragraph`, or by intercepting text on a recording canvas, whichever the harness supports). Update the existing `map_marker_painting_test.dart` hazard test from `Colors.red`/`redAccent` to the danger role colour `#FF5252` (the `map-marker-icons` "red zone polygon" scenario still holds). Verify that the new tests fail for the right reason: red outlines, no names, extract outlines always drawn.
+- [x] 3.2 Implement design D2, D4 and D5 in `lib/ui/map_workspace.dart`:
   - outline colour from `markerIcons.colourFor`;
   - `_hoveredMarker` with a generation guard, set through a `MouseRegion` (`onHover`/`onExit`) and passed to `hitTestMarker` and the painter;
   - the three paint passes (outlines, names, badges), with the name `TextPainter` and halo;
