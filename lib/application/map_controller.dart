@@ -7,6 +7,7 @@ import '../domain/map_coordinates.dart';
 import '../domain/map_floors.dart';
 import '../domain/map_geometry.dart';
 import '../domain/map_marker_query.dart';
+import '../domain/map_zone_style.dart';
 import '../domain/settings.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map.dart';
@@ -574,7 +575,21 @@ class MapController extends ChangeNotifier {
       );
 
   /// Selects a visible marker with a fixed logical-pixel hit radius.
-  ProjectedMapMarker? hitTestMarker(ViewportPoint point, {double radius = 18}) {
+  ///
+  /// The nearest badge within [radius] wins. Otherwise the topmost marker
+  /// whose outline contains [point] is hit, but only while that outline is
+  /// drawn ([outlineDrawn]): an extract or transit outline counts only when
+  /// its marker is the selected one or has the id [hoveredMarkerId].
+  ///
+  /// A point inside the hovered marker's outline hits that marker even when
+  /// another drawn outline lies on top, so hover does not jump while the
+  /// pointer stays in the area it revealed, and a click there selects the
+  /// highlighted marker. A badge within [radius] still wins.
+  ProjectedMapMarker? hitTestMarker(
+    ViewportPoint point, {
+    double radius = 18,
+    String? hoveredMarkerId,
+  }) {
     requirePositiveFinite(radius, 'radius');
     ProjectedMapMarker? nearest;
     var distance = radius * radius;
@@ -589,8 +604,22 @@ class MapController extends ChangeNotifier {
       }
     }
     if (nearest != null) return nearest;
+    if (hoveredMarkerId != null) {
+      for (final marker in markers) {
+        if (marker.marker.id == hoveredMarkerId &&
+            _insideOutline(point, marker.outline)) {
+          return marker;
+        }
+      }
+    }
     for (final marker in markers.reversed) {
-      if (_insideOutline(point, marker.outline)) return marker;
+      final id = marker.marker.id;
+      final drawn = outlineDrawn(
+        marker.marker.filterKey,
+        hovered: id == hoveredMarkerId,
+        selected: id == _selectedMarkerId,
+      );
+      if (drawn && _insideOutline(point, marker.outline)) return marker;
     }
     return null;
   }

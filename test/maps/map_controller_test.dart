@@ -718,7 +718,118 @@ void main() {
     expect(controller.error, startsWith('Map list could not be opened: '));
     expect(controller.preparedMap, isNull);
   });
+
+  group('outline hits follow outline visibility', () {
+    late MapController controller;
+    late ViewportPoint insideExtract;
+    late ViewportPoint insideHazard;
+
+    setUp(() async {
+      controller = _controller(
+        markers: [
+          _marker(
+            'gate',
+            'extracts',
+            4,
+            4,
+            name: 'Gate',
+            details: {'faction': 'pmc'},
+            outline: _square(2, 14),
+          ),
+          _marker(
+            'minefield',
+            'hazards',
+            28,
+            28,
+            name: 'Minefield',
+            outline: _square(18, 30),
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      insideExtract = controller.transform.sceneToViewport(ScenePoint(12, 20));
+      insideHazard = controller.transform.sceneToViewport(ScenePoint(20, 12));
+    });
+
+    test('a hidden extract outline is not hit', () {
+      expect(controller.hitTestMarker(insideExtract, radius: 1), isNull);
+      expect(
+        controller
+            .hitTestMarker(insideExtract, radius: 1, hoveredMarkerId: 'gate')!
+            .marker
+            .id,
+        'gate',
+      );
+      controller.setSelectedMarker('gate');
+      expect(
+        controller.hitTestMarker(insideExtract, radius: 1)!.marker.id,
+        'gate',
+      );
+    });
+
+    test(
+      'a hovered extract keeps its hit over an overlapping hazard',
+      () async {
+        final overlap = _controller(
+          markers: [
+            _marker(
+              'gate',
+              'extracts',
+              4,
+              4,
+              name: 'Gate',
+              details: {'faction': 'pmc'},
+              outline: _square(2, 14),
+            ),
+            _marker(
+              'minefield',
+              'hazards',
+              18,
+              18,
+              name: 'Minefield',
+              outline: _square(8, 20),
+            ),
+          ],
+        );
+        addTearDown(overlap.dispose);
+        overlap.updateViewport(const Size(320, 320));
+        await overlap.initialize(selectedMapId: 'interchange');
+        final both = overlap.transform.sceneToViewport(ScenePoint(11, 21));
+
+        // Hover and click both pass the hovered id, so a click inside the
+        // highlighted extract selects the extract, not the zone on top.
+        expect(
+          overlap
+              .hitTestMarker(both, radius: 1, hoveredMarkerId: 'gate')!
+              .marker
+              .id,
+          'gate',
+        );
+        expect(
+          overlap.hitTestMarker(both, radius: 1)!.marker.id,
+          'minefield',
+          reason: 'nothing hovered: the topmost drawn outline',
+        );
+      },
+    );
+
+    test('a hazard outline is still hit', () {
+      expect(
+        controller.hitTestMarker(insideHazard, radius: 1)!.marker.id,
+        'minefield',
+      );
+    });
+  });
 }
+
+List<Map<String, dynamic>> _square(double from, double to) => [
+  {'x': from, 'z': from, 'height': null},
+  {'x': to, 'z': from, 'height': null},
+  {'x': to, 'z': to, 'height': null},
+  {'x': from, 'z': to, 'height': null},
+];
 
 MapController _controllerFor(Future<ByteData> Function(String) loadBytes) {
   final loader = PreparedMapPackLoader(loadBytes: loadBytes);
