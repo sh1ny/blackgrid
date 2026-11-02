@@ -36,6 +36,7 @@ class MapWidgetHarness {
     RaidPanelOcr? panelOcr,
     MapMarkerIcons? markerIcons,
     List<Map<String, Object?>> extraMarkers = const [],
+    bool artwork = true,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -68,8 +69,9 @@ class MapWidgetHarness {
       loadBytes: preparedPackBytes(
         manifest,
         other: (path) async {
-          if (path == 'assets/maps/versions/fixture/base.png' ||
-              path == 'assets/maps/versions/fixture/upper.png') {
+          if (artwork &&
+              (path == 'assets/maps/versions/fixture/base.png' ||
+                  path == 'assets/maps/versions/fixture/upper.png')) {
             return png;
           }
           throw StateError('Unknown fixture asset: $path');
@@ -229,6 +231,7 @@ Future<MapWidgetHarness> pumpMapFixture(
   ScanFakePorts? scanPorts,
   RaidPanelOcr? panelOcr,
   List<Map<String, Object?>> extraMarkers = const [],
+  bool artwork = true,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -243,6 +246,7 @@ Future<MapWidgetHarness> pumpMapFixture(
       scanPorts: scanPorts,
       panelOcr: panelOcr,
       extraMarkers: extraMarkers,
+      artwork: artwork,
     ),
   ))!;
   addTearDown(harness.dispose);

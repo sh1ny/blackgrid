@@ -32,13 +32,13 @@ Rules for every group:
 | map-zone-labels → A hidden outline is not a click target | Click inside a hidden extract area | test/maps/map_controller_test.dart | a hidden extract outline is not hit | green |
 | map-zone-labels → A hidden outline is not a click target | Click inside a drawn hazard zone | test/maps/map_controller_test.dart | a hazard outline is still hit | green |
 | map-zone-labels → A hidden outline is not a click target | Accessibility target of an extract | test/ui/map_zone_labels_test.dart | a hidden extract's semantics rect is its badge circle | green |
-| map-help → The map toolbar has a help button | Open and close the help | test/ui/map_help_test.dart | the help button opens and Close closes the help, keeping the selection | red |
-| map-help → The map toolbar has a help button | Help without artwork | test/ui/map_help_test.dart | the help button works with no artwork loaded | red |
-| map-help → The map toolbar has a help button | Escape closes only the dialog | test/ui/map_help_test.dart | Escape closes the help and keeps the selected marker | red |
-| map-help → Help explains how the player's position reaches the map | Position section content | test/ui/map_help_test.dart | the help explains the screenshot key, folder and no-position case | red |
-| map-help → Help explains how the player's position reaches the map | No promise of live capture | test/ui/map_help_test.dart | the help text makes no screen-capture claim | red |
-| map-help → Help lists the map controls | Controls section content | test/ui/map_help_test.dart | the help lists every map control | red |
-| map-help → Help lists the map controls | Help text has no developer wording | test/ui/map_help_test.dart | the help text has no filter keys or raw identifiers | red |
+| map-help → The map toolbar has a help button | Open and close the help | test/ui/map_help_test.dart | the help button opens and Close closes the help, keeping the selection | green |
+| map-help → The map toolbar has a help button | Help without artwork | test/ui/map_help_test.dart | the help button works with no artwork loaded | green |
+| map-help → The map toolbar has a help button | Escape closes only the dialog | test/ui/map_help_test.dart | Escape closes the help and keeps the selected marker | green |
+| map-help → Help explains how the player's position reaches the map | Position section content | test/ui/map_help_test.dart | the help explains the screenshot key, folder and no-position case | green |
+| map-help → Help explains how the player's position reaches the map | No promise of live capture | test/ui/map_help_test.dart | the help text makes no screen-capture claim | green |
+| map-help → Help lists the map controls | Controls section content | test/ui/map_help_test.dart | the help lists every map control | green |
+| map-help → Help lists the map controls | Help text has no developer wording | test/ui/map_help_test.dart | the help text has no filter keys or raw identifiers | green |
 
 ## 1. Label and outline rules
 
@@ -64,8 +64,8 @@ Rules for every group:
 
 ## 4. Map help
 
-- [ ] 4.1 Write failing widget tests in `test/ui/map_help_test.dart` for every `map-help` row. Cover the tooltip "Map help", open and close with Close and with Escape (the selected marker stays selected), with and without artwork, the position text (screenshot key, Settings screenshot folder, no screenshot means no position, never captures the screen), every control from the spec, and no `PmcExtracts`-style keys or `camelCase` identifiers in the dialog text. Verify that they fail because there is no button yet.
-- [ ] 4.2 Implement design D6: the `?` `IconButton` at the end of the toolbar, the "Map help" `AlertDialog` with "Your position" and "Controls" sections, and focus returned to the map on close. Verify that 4.1 passes, then flip the rows green.
+- [x] 4.1 Write failing widget tests in `test/ui/map_help_test.dart` for every `map-help` row. Cover the tooltip "Map help", open and close with Close and with Escape (the selected marker stays selected), with and without artwork, the position text (screenshot key, Settings screenshot folder, no screenshot means no position, never captures the screen), every control from the spec, and no `PmcExtracts`-style keys or `camelCase` identifiers in the dialog text. Verify that they fail because there is no button yet.
+- [x] 4.2 Implement design D6: the `?` `IconButton` at the end of the toolbar, the "Map help" `AlertDialog` with "Your position" and "Controls" sections, and focus returned to the map on close. Verify that 4.1 passes, then flip the rows green.
 
 ## 5. Integration checks
 

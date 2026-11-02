@@ -18,6 +18,26 @@ import 'pin_editor.dart';
 import 'theme.dart';
 
 /// Native artwork and screen-space targets share the controller's view geometry.
+/// How the player's position reaches the map, as the map help explains it.
+const _positionHelp =
+    "Your position and facing come from screenshots you take during a raid "
+    "with the game's own screenshot key. Blackgrid reads them from the "
+    'Screenshot folder set in Settings. Without such a screenshot the map '
+    'shows no position. Blackgrid never captures the screen for this.';
+
+/// The map controls listed in the map help, as (control, action) pairs.
+const _controlHelp = [
+  ('Drag or arrow keys', 'Pan the map'),
+  ('Mouse wheel or + / -', 'Zoom in or out'),
+  ('Home', 'Fit the map to the view'),
+  ('C', 'Center on your position'),
+  ('Enter', 'Browse markers'),
+  ('N or right-click', 'Add a pin'),
+  ('Delete', 'Remove the selected pin'),
+  ('Escape', 'Clear the selection'),
+  ('Hover over an extract', 'Show its area'),
+];
+
 class MapWorkspace extends StatefulWidget {
   const MapWorkspace({super.key, required this.services});
   final AppServices services;
@@ -98,6 +118,51 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       return;
     }
     showPinEditor(context, widget.services, coordinates: coordinates);
+  }
+
+  /// Opens the map help, then gives keyboard focus back to the map.
+  Future<void> _showHelp() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Map help'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your position',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              const Text(_positionHelp),
+              const SizedBox(height: 16),
+              Text('Controls', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 4),
+              for (final (control, action) in _controlHelp)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(width: 180, child: Text(control)),
+                      Expanded(child: Text(action)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+    if (mounted) _focus.requestFocus();
   }
 
   Future<void> _removePin(CustomPin pin) async {
@@ -361,6 +426,11 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                         maps.floorSelection?.isLayerVisible(floor.id) ?? false,
                     onSelected: (_) => maps.toggleFloor(floor.id),
                   ),
+              IconButton(
+                tooltip: 'Map help',
+                onPressed: _showHelp,
+                icon: const Icon(Icons.help_outline),
+              ),
             ],
           ),
           const SizedBox(height: 8),
