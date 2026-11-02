@@ -17,7 +17,6 @@ import '../maps/prepared_map.dart';
 import 'pin_editor.dart';
 import 'theme.dart';
 
-/// Native artwork and screen-space targets share the controller's view geometry.
 /// How the player's position reaches the map, as the map help explains it.
 const _positionHelp =
     "Your position and facing come from screenshots you take during a raid "
@@ -38,6 +37,7 @@ const _controlHelp = [
   ('Hover over an extract', 'Show its area'),
 ];
 
+/// Native artwork and screen-space targets share the controller's view geometry.
 class MapWorkspace extends StatefulWidget {
   const MapWorkspace({super.key, required this.services});
   final AppServices services;
@@ -50,13 +50,23 @@ class _MapWorkspaceState extends State<MapWorkspace> {
   int? _selectionGeneration;
   String? _hoveredMarker;
   int? _hoverGeneration;
+
+  /// Where the mouse last hovered over the map, or `null` once it left.
+  ViewportPoint? _hoverPoint;
   String? _selectedPin;
   String? _selectedPinMapId;
   final _focus = FocusNode(debugLabel: 'Native map workspace');
   MapController get maps => widget.services.maps;
 
   @override
+  void initState() {
+    super.initState();
+    maps.addListener(_rehover);
+  }
+
+  @override
   void dispose() {
+    maps.removeListener(_rehover);
     _focus.dispose();
     super.dispose();
   }
@@ -88,12 +98,26 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       _hoverGeneration == maps.contentGeneration ? _hoveredMarker : null;
 
   void _hover(PointerHoverEvent event) {
-    if (maps.preparedMap == null) return;
-    final point = ViewportPoint(event.localPosition.dx, event.localPosition.dy);
-    final id = maps
-        .hitTestMarker(point, radius: 22, hoveredMarkerId: _liveHover)
-        ?.marker
-        .id;
+    _hoverPoint = ViewportPoint(event.localPosition.dx, event.localPosition.dy);
+    _rehover();
+  }
+
+  /// Hit-tests the last hover point again, so the hover follows the map when
+  /// it pans or zooms under a still pointer.
+  void _rehover() {
+    final point = _hoverPoint;
+    if (point == null || !mounted) return;
+    final id = maps.preparedMap == null
+        ? null
+        : maps
+              .hitTestMarker(
+                point,
+                radius: 22,
+                hoveredMarkerId: _liveHover,
+                preferHovered: true,
+              )
+              ?.marker
+              .id;
     if (id == _liveHover) return;
     setState(() {
       _hoveredMarker = id;
@@ -102,6 +126,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
   }
 
   void _leave() {
+    _hoverPoint = null;
     if (_hoveredMarker == null) return;
     setState(() {
       _hoveredMarker = null;

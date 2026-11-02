@@ -769,6 +769,54 @@ void main() {
       );
     });
 
+    test(
+      'a hovered extract keeps its hit over an overlapping hazard',
+      () async {
+        final overlap = _controller(
+          markers: [
+            _marker(
+              'gate',
+              'extracts',
+              4,
+              4,
+              name: 'Gate',
+              details: {'faction': 'pmc'},
+              outline: _square(2, 14),
+            ),
+            _marker(
+              'minefield',
+              'hazards',
+              18,
+              18,
+              name: 'Minefield',
+              outline: _square(8, 20),
+            ),
+          ],
+        );
+        addTearDown(overlap.dispose);
+        overlap.updateViewport(const Size(320, 320));
+        await overlap.initialize(selectedMapId: 'interchange');
+        final both = overlap.transform.sceneToViewport(ScenePoint(11, 21));
+
+        ProjectedMapMarker? hit({bool prefer = false}) => overlap.hitTestMarker(
+          both,
+          radius: 1,
+          hoveredMarkerId: 'gate',
+          preferHovered: prefer,
+        );
+        expect(hit()!.marker.id, 'minefield', reason: 'the topmost outline');
+        expect(hit(prefer: true)!.marker.id, 'gate');
+        expect(
+          overlap
+              .hitTestMarker(both, radius: 1, preferHovered: true)!
+              .marker
+              .id,
+          'minefield',
+          reason: 'nothing hovered, so nothing is preferred',
+        );
+      },
+    );
+
     test('a hazard outline is still hit', () {
       expect(
         controller.hitTestMarker(insideHazard, radius: 1)!.marker.id,

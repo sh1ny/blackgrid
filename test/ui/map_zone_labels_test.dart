@@ -773,6 +773,42 @@ void main() {
     },
   );
 
+  testWidgets('moving the map under a still pointer re-checks the hover', (
+    tester,
+  ) async {
+    final f = await _pumpLoaded(tester);
+    final mouse = await _mouse(tester);
+    final at = f.marker('pmc');
+
+    await mouse.moveTo(_global(tester, at));
+    await tester.pump();
+    expect(_outlineDrawn(f, _calls(tester), 'pmc', _exitGreen), isTrue);
+
+    // 100 game units left: the pointer then sits on empty map between the
+    // extract column and the zone column, and the extract stays visible.
+    final shift = (f.marker('quest').dx - at.dx) * 100 / 150;
+    f.h.services.maps.panBy(-shift, 0);
+    await tester.pump();
+    expect(f.marker('pmc').dx, closeTo(at.dx - shift, .01));
+    expect(
+      _calls(tester).any(
+        (call) =>
+            call.$1 == #drawPath &&
+            _sameColour((call.$2[1] as Paint).color, _exitGreen),
+      ),
+      isFalse,
+      reason: 'the extract moved away from the pointer',
+    );
+
+    f.h.services.maps.panBy(shift, 0);
+    await tester.pump();
+    expect(
+      _outlineDrawn(f, _calls(tester), 'pmc', _exitGreen),
+      isTrue,
+      reason: 'the extract moved back under the pointer',
+    );
+  });
+
   testWidgets('a selected extract keeps its outline after the pointer leaves', (
     tester,
   ) async {
