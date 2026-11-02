@@ -85,8 +85,8 @@ Rules for every group:
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `mise run analyze` and `mise run test`, both clean; run `dart format` on every changed Dart file. Verify: both commands exit 0 and every test-map row is green.
-- [ ] 7.2 Run `openspec validate add-local-stats --strict` and `mise run release-notes -- --check openspec/changes/add-local-stats/proposal.md`. Verify: both exit 0; update the proposal's Release Notes if the shipped behaviour changed.
+- [x] 7.1 Run `mise run analyze` and `mise run test`, both clean; run `dart format` on every changed Dart file. Verify: both commands exit 0 and every test-map row is green.
+- [x] 7.2 Run `openspec validate add-local-stats --strict` and `mise run release-notes -- --check openspec/changes/add-local-stats/proposal.md`. Verify: both exit 0; update the proposal's Release Notes if the shipped behaviour changed.
 
 ## Workflow follow-up
 
