@@ -10,6 +10,7 @@ import 'map_screen.dart';
 import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
 import 'settings_dialog.dart';
+import 'stats_dialog.dart';
 import 'theme.dart';
 
 class BlackgridShell extends StatefulWidget {
@@ -66,8 +67,8 @@ class _BlackgridShellState extends State<BlackgridShell> {
                     child: SizedBox(
                       width:
                           constraints.maxWidth <
-                              1100 * MediaQuery.textScalerOf(context).scale(1)
-                          ? 1100 * MediaQuery.textScalerOf(context).scale(1)
+                              1220 * MediaQuery.textScalerOf(context).scale(1)
+                          ? 1220 * MediaQuery.textScalerOf(context).scale(1)
                           : constraints.maxWidth,
                       child: Row(
                         children: [
@@ -136,6 +137,13 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                 showSettings(context, widget.services),
                             icon: const Icon(Icons.settings_outlined, size: 18),
                             label: const Text('Settings'),
+                          ),
+                          const SizedBox(width: 10),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                showStats(context, widget.services.localStats),
+                            icon: const Icon(Icons.bar_chart, size: 18),
+                            label: const Text('Stats'),
                           ),
                           const SizedBox(width: 10),
                           OutlinedButton.icon(

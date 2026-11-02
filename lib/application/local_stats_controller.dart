@@ -64,8 +64,11 @@ class LocalStatsController extends ChangeNotifier {
   /// When the stats were last cleared, or `null` when they never were.
   DateTime? get since => _since;
 
+  /// The app's current mode, which [totals] belong to when it is known.
+  GameMode get mode => _mode();
+
   /// Whether the app's mode is known, so [totals] belong to a mode.
-  bool get modeKnown => _mode() != GameMode.unknown;
+  bool get modeKnown => mode != GameMode.unknown;
 
   /// The message for a failed totals read, until the next successful read.
   String? get readError => _readError;

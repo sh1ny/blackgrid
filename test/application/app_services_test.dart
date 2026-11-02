@@ -8,6 +8,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart' show FlutterError;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -95,6 +96,27 @@ void main() {
     expect(
       services.settings.effectiveScavCooldownStarts[GameMode.pve],
       DateTime(2026, 10, 31, 22, 9, 4),
+    );
+  });
+  test('the local stats controller is built and disposed with the services', () async {
+    final services = AppServices(
+      database: BlackgridDatabase(NativeDatabase.memory()),
+      credentials: _EmptyCredentials(),
+      client: MockClient((request) async => http.Response('', 503)),
+    );
+    // Built: a live controller accepts listeners and follows the catalog mode.
+    services.localStats.addListener(() {});
+    expect(
+      services.localStats.modeKnown,
+      services.catalog.mode != GameMode.unknown,
+    );
+
+    await services.dispose();
+
+    // Disposed: a disposed ChangeNotifier refuses new listeners.
+    expect(
+      () => services.localStats.addListener(() {}),
+      throwsA(isA<FlutterError>()),
     );
   });
   test(

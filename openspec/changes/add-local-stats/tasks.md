@@ -38,13 +38,13 @@ Rules for every group:
 | local-stats → Clear empties stats and keeps them empty | Replay after a clear and a restart | test/data/local_stats_store_test.dart | records at or before the clear time are not stored after reopen | green |
 | local-stats → Clear empties stats and keeps them empty | New activity after a clear | test/data/local_stats_store_test.dart | raid after the clear time is stored | green |
 | local-stats → Clear empties stats and keeps them empty | Clear fails | test/application/local_stats_controller_test.dart | failed clear keeps totals and shows the clear message | green |
-| local-stats → The Stats dialog shows the current mode's stats | Stats for the current mode | test/ui/stats_dialog_test.dart | shows the current mode's maps by count, total and sales | red |
-| local-stats → The Stats dialog shows the current mode's stats | Empty stats | test/ui/stats_dialog_test.dart | empty mode shows no raids or flea sales message | red |
+| local-stats → The Stats dialog shows the current mode's stats | Stats for the current mode | test/ui/stats_dialog_test.dart | shows the current mode's maps by count, total and sales | green |
+| local-stats → The Stats dialog shows the current mode's stats | Empty stats | test/ui/stats_dialog_test.dart | empty mode shows no raids or flea sales message | green |
 | local-stats → The Stats dialog shows the current mode's stats | Mode not known yet | test/application/local_stats_controller_test.dart | unknown app mode loads no totals | green |
 | local-stats → The Stats dialog shows the current mode's stats | Mode changes while open | test/application/local_stats_controller_test.dart | mode change reloads the new mode's totals | green |
 | local-stats → The Stats dialog shows the current mode's stats | New sale while open | test/application/local_stats_controller_test.dart | stored sale reloads totals and notifies | green |
-| local-stats → Clearing asks for confirmation | Confirmed | test/ui/stats_dialog_test.dart | confirming clear empties the stats | red |
-| local-stats → Clearing asks for confirmation | Cancelled | test/ui/stats_dialog_test.dart | cancelling clear deletes nothing | red |
+| local-stats → Clearing asks for confirmation | Confirmed | test/ui/stats_dialog_test.dart | confirming clear empties the stats | green |
+| local-stats → Clearing asks for confirmation | Cancelled | test/ui/stats_dialog_test.dart | cancelling clear deletes nothing | green |
 | local-stats → Stats failures are visible and contained | Read fails | test/application/local_stats_controller_test.dart | failed read sets the read message | green |
 | local-stats → Stats failures are visible and contained | Write fails | test/application/local_stats_controller_test.dart | failed insert sets the write message and the next insert still runs | green |
 | local-stats → Stats failures are visible and contained | Write message survives a reload | test/application/local_stats_controller_test.dart | successful reload keeps the write message | green |
@@ -80,8 +80,8 @@ Rules for every group:
 
 ## 6. Stats dialog, header button and wiring
 
-- [ ] 6.1 Write failing widget tests in `test/ui/stats_dialog_test.dart` with a controller over a fake store: the current mode's maps by count with `mapLabel` names, the raid total, sales/items/roubles and the "not paid in roubles" note, the empty message, the unknown-mode message, the since line, each failure message, the clear confirmation text "Clear the stats of every mode? This cannot be undone." with confirm and cancel. Add a shell test (in `test/ui/app_test.dart` or a new file) that the header's Stats button opens the dialog. Verify they fail because the dialog does not exist.
-- [ ] 6.2 Implement `lib/ui/stats_dialog.dart` and the "Stats" `OutlinedButton` beside Settings in `lib/ui/shell.dart` (design D6). Build `LocalStatsController` in `AppServices` right after `RaidTimersController`, before `MapSessionController` binds the reader, with `catalog` as the mode source; dispose it before the database closes. Verify: group 6 rows green, `test/application/app_services_test.dart` still passes, and an app-services test asserts the controller is built and disposed.
+- [x] 6.1 Write failing widget tests in `test/ui/stats_dialog_test.dart` with a controller over a fake store: the current mode's maps by count with `mapLabel` names, the raid total, sales/items/roubles and the "not paid in roubles" note, the empty message, the unknown-mode message, the since line, each failure message, the clear confirmation text "Clear the stats of every mode? This cannot be undone." with confirm and cancel. Add a shell test (in `test/ui/app_test.dart` or a new file) that the header's Stats button opens the dialog. Verify they fail because the dialog does not exist.
+- [x] 6.2 Implement `lib/ui/stats_dialog.dart` and the "Stats" `OutlinedButton` beside Settings in `lib/ui/shell.dart` (design D6). Build `LocalStatsController` in `AppServices` right after `RaidTimersController`, before `MapSessionController` binds the reader, with `catalog` as the mode source; dispose it before the database closes. Verify: group 6 rows green, `test/application/app_services_test.dart` still passes, and an app-services test asserts the controller is built and disposed.
 
 ## 7. Integration checks
 
