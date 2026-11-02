@@ -56,6 +56,24 @@ void main() {
     expect((await db.readPins()).pins.map((p) => p.id), ['kept']);
   });
 
+  test('raid timer settings and starts survive a reopen', () async {
+    final start = DateTime.utc(2026, 11, 1, 20, 5);
+    await store.db.saveSettings(
+      AppSettings(
+        raidTimers: RaidTimerSettings(
+          runThroughSeconds: 480,
+          fenceReputation: {GameMode.seasonal: 3.2},
+          scavCooldownStarts: {GameMode.seasonal: start},
+        ),
+      ),
+    );
+    final db = await store.reopen();
+    final timers = (await db.readSettings()).settings.raidTimers;
+    expect(timers.runThroughSeconds, 480);
+    expect(timers.fenceReputationFor(GameMode.seasonal), 3.2);
+    expect(timers.scavCooldownStarts, {GameMode.seasonal: start});
+  });
+
   test('a settings save aborted by the database reads back the earlier settings after reopening', () async {
     await store.db.saveSettings(AppSettings(mode: GameMode.pve));
     await store.abortNextInsert('preferences');

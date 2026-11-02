@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
 import '../application/app_version.dart' as app_version;
 import '../domain/catalog.dart';
+import '../domain/raid_timers.dart';
+import '../domain/settings.dart';
 import 'labels.dart';
 import 'theme.dart';
 
@@ -62,6 +66,98 @@ class _SettingsDialogState extends State<SettingsDialog> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  /// The "Raid timers" section: the on/off switch, the three show checkboxes,
+  /// the run-through length and the active mode's Fence reputation.
+  ///
+  /// The two text fields save on the keyboard's done action and when they lose
+  /// focus; a value outside its range is refused with a message and the saved
+  /// value stays.
+  List<Widget> _raidTimerSection(BuildContext context) {
+    final services = widget.services;
+    final timers = services.settings.raidTimers;
+    final mode = services.catalog.mode;
+    final idle = !services.settings.busy;
+    void save(RaidTimerSettings next) =>
+        unawaited(services.settings.setRaidTimers(next));
+    CheckboxListTile show(
+      String title,
+      bool value,
+      RaidTimerSettings Function(bool) change,
+    ) => CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      dense: true,
+      title: Text(title),
+      value: value,
+      onChanged: idle ? (v) => save(change(v ?? false)) : null,
+    );
+    return [
+      Text('Raid timers', style: Theme.of(context).textTheme.titleMedium),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Show raid timers'),
+        subtitle: const Text(
+          'A strip under the header with the time in raid, the run-through countdown and the scav cooldown. It is computed from the game logs and never touches the game.',
+        ),
+        value: timers.enabled,
+        onChanged: idle ? (v) => save(timers.copyWith(enabled: v)) : null,
+      ),
+      show(
+        'Time in raid',
+        timers.showTimeInRaid,
+        (v) => timers.copyWith(showTimeInRaid: v),
+      ),
+      show(
+        'Run-through',
+        timers.showRunThrough,
+        (v) => timers.copyWith(showRunThrough: v),
+      ),
+      show(
+        'Scav cooldown',
+        timers.showScavCooldown,
+        (v) => timers.copyWith(showScavCooldown: v),
+      ),
+      const SizedBox(height: 12),
+      _CommitField(
+        label: 'Run-through length (m:ss)',
+        helper: 'From 1:00 to 30:00.',
+        value: formatTimerSeconds(timers.runThroughSeconds),
+        onCommit: (text) async {
+          final seconds = _parseRunThrough(text);
+          if (seconds == null) return _runThroughMessage;
+          final saved = await services.settings.setRaidTimers(
+            services.settings.raidTimers.copyWith(runThroughSeconds: seconds),
+          );
+          return saved ? null : _notSavedMessage;
+        },
+      ),
+      const SizedBox(height: 12),
+      _CommitField(
+        label: 'Fence reputation',
+        helper: mode == GameMode.unknown
+            ? null
+            : 'For ${modeLabel(mode)}, with two decimals. Used for the scav cooldown.',
+        value: timers.fenceReputationFor(mode).toStringAsFixed(2),
+        enabled: mode != GameMode.unknown,
+        onCommit: (text) async {
+          final value = _parseReputation(text);
+          if (value == null) return _reputationMessage;
+          final saved = await services.settings.setFenceReputation(mode, value);
+          return saved ? null : _notSavedMessage;
+        },
+      ),
+      if (mode == GameMode.unknown)
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text(
+            'Choose a game mode first.',
+            style: TextStyle(color: GridColors.muted),
+          ),
+        ),
+      const Divider(height: 28),
+    ];
   }
 
   @override
@@ -174,6 +270,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         ),
                 ),
                 const Divider(height: 28),
+                ..._raidTimerSection(context),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Use Tracker progress'),
@@ -288,5 +385,124 @@ class _SettingsDialogState extends State<SettingsDialog> {
         ],
       );
     },
+  );
+}
+
+const _runThroughMessage =
+    'The run-through length must be between 1:00 and 30:00.';
+const _reputationMessage =
+    'The Fence reputation must be between −7.00 and 6.00.';
+
+/// Shown when a valid edit was not saved: another save was in flight, or the
+/// save failed (the dialog's settings error then says more).
+const _notSavedMessage = 'Not saved. Try again.';
+
+final _minutesSeconds = RegExp(r'^(\d{1,2}):([0-5]\d)$');
+
+/// Reads `m:ss` as seconds, or `null` when [text] is not `m:ss` or is outside
+/// the allowed run-through range.
+int? _parseRunThrough(String text) {
+  final match = _minutesSeconds.firstMatch(text.trim());
+  if (match == null) return null;
+  final seconds = int.parse(match[1]!) * 60 + int.parse(match[2]!);
+  return seconds >= RaidTimerSettings.minRunThroughSeconds &&
+          seconds <= RaidTimerSettings.maxRunThroughSeconds
+      ? seconds
+      : null;
+}
+
+/// Reads a Fence reputation, accepting a comma as the decimal mark, or `null`
+/// when [text] is not a number in the allowed range.
+double? _parseReputation(String text) {
+  final value = double.tryParse(text.trim().replaceAll(',', '.'));
+  if (value == null ||
+      !(value >= RaidTimerSettings.minFenceReputation &&
+          value <= RaidTimerSettings.maxFenceReputation)) {
+    return null;
+  }
+  return value;
+}
+
+/// A text field that commits on the keyboard's done action and when it loses
+/// focus.
+///
+/// [onCommit] completes with an error message to show under the field, or
+/// `null` when the text was saved. A refused or unsaved edit keeps the typed
+/// text, so the field never shows a value as saved when it was not. The field follows [value] when it changes, so an
+/// accepted edit shows in its saved form. An edit that equals [value] is not
+/// committed again.
+class _CommitField extends StatefulWidget {
+  const _CommitField({
+    required this.label,
+    required this.value,
+    required this.onCommit,
+    this.helper,
+    this.enabled = true,
+  });
+  final String label;
+  final String? helper;
+  final String value;
+  final bool enabled;
+  final Future<String?> Function(String text) onCommit;
+  @override
+  State<_CommitField> createState() => _CommitFieldState();
+}
+
+class _CommitFieldState extends State<_CommitField> {
+  late final controller = TextEditingController(text: widget.value);
+  final focus = FocusNode();
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    focus.addListener(_onFocus);
+  }
+
+  @override
+  void didUpdateWidget(_CommitField old) {
+    super.didUpdateWidget(old);
+    if (widget.value != old.value) controller.text = widget.value;
+  }
+
+  @override
+  void dispose() {
+    focus.removeListener(_onFocus);
+    focus.dispose();
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _onFocus() {
+    if (!focus.hasFocus) unawaited(_commit());
+  }
+
+  Future<void> _commit() async {
+    if (!mounted || !widget.enabled) return;
+    if (controller.text.trim() == widget.value) {
+      if (error != null) setState(() => error = null);
+      return;
+    }
+    final text = controller.text;
+    final result = await widget.onCommit(text);
+    // A newer edit replaced the text this result belongs to.
+    if (!mounted || controller.text != text) return;
+    setState(() => error = result);
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: controller,
+    focusNode: focus,
+    enabled: widget.enabled,
+    onChanged: (_) {
+      if (error != null) setState(() => error = null);
+    },
+    onSubmitted: (_) => unawaited(_commit()),
+    decoration: InputDecoration(
+      labelText: widget.label,
+      helperText: widget.helper,
+      errorText: error,
+    ),
   );
 }

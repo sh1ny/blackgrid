@@ -531,6 +531,132 @@ void main() {
     expect(fixtureCatalog(wire: j).items['item-a']!.quoteAt, isNull);
   });
 
+  group('scav cooldown inputs', () {
+    Map<String, dynamic> cooldownWire() {
+      final j = wireFixture();
+      (j['items']['data'] as Map)['settings'] = {'scavCooldownSeconds': 1500};
+      (j['traders']['data'] as Map)['trader-fence'] = {
+        'id': 'trader-fence',
+        'name': 'trader-fence Nickname',
+        'normalizedName': 'fence',
+        'reputationLevels': [
+          {'minimumReputation': 0, 'scavCooldownModifier': 1},
+          {'minimumReputation': -7, 'scavCooldownModifier': 6},
+          {'minimumReputation': 100, 'scavCooldownModifier': 0.4},
+        ],
+      };
+      final levels = j['hideout']['data']['station-a']['levels'] as List;
+      (levels[0] as Map)['bonuses'] = [
+        {'type': 'ScavCooldownTimer', 'value': -0.15},
+        {'type': 'Other', 'value': 3},
+      ];
+      levels.add({
+        ...Map<String, dynamic>.from(levels[0] as Map),
+        'id': 'station-a-3',
+        'level': 3,
+        'itemRequirements': <Object?>[],
+        'bonuses': [
+          {'type': 'ScavCooldownTimer', 'value': -0.2},
+        ],
+      });
+      // Round trip so every literal is a plain dynamic JSON value.
+      return jsonDecode(jsonEncode(j)) as Map<String, dynamic>;
+    }
+
+    test(
+      'fills the inputs from settings, the Fence trader and hideout bonuses',
+      () {
+        final inputs = fixtureCatalog(wire: cooldownWire()).scavCooldown!;
+        expect(inputs.baseSeconds, 1500);
+        expect(
+          inputs.fenceLevels.map((l) => (l.minimumReputation, l.modifier)),
+          [(-7, 6), (0, 1), (100, 0.4)],
+        );
+        expect(inputs.bonuses, {'station-a-1': -0.15, 'station-a-3': -0.2});
+      },
+    );
+
+    test('a station level without a cooldown bonus is simply absent', () {
+      final j = cooldownWire();
+      for (final level in j['hideout']['data']['station-a']['levels'] as List) {
+        (level as Map).remove('bonuses');
+      }
+      expect(fixtureCatalog(wire: j).scavCooldown!.bonuses, isEmpty);
+    });
+
+    final breakages = <String, void Function(Map<String, dynamic>)>{
+      'no settings': (j) => (j['items']['data'] as Map).remove('settings'),
+      'non-number base': (j) =>
+          j['items']['data']['settings']['scavCooldownSeconds'] = '1500',
+      'no Fence trader': (j) =>
+          (j['traders']['data'] as Map).remove('trader-fence'),
+      'no reputation levels': (j) =>
+          j['traders']['data']['trader-fence'].remove('reputationLevels'),
+      'non-number modifier': (j) =>
+          j['traders']['data']['trader-fence']['reputationLevels'][0]['scavCooldownModifier'] =
+              'fast',
+      'non-number bonus': (j) =>
+          j['hideout']['data']['station-a']['levels'][0]['bonuses'][0]['value'] =
+              'big',
+      'more than 64 levels': (j) =>
+          j['traders']['data']['trader-fence']['reputationLevels'] = [
+            for (var i = 0; i < 65; i++)
+              {'minimumReputation': i, 'scavCooldownModifier': 1},
+          ],
+      'more than 256 bonuses': (j) =>
+          j['hideout']['data']['station-a']['levels'] = [
+            for (var i = 1; i <= 257; i++)
+              {
+                'id': 'station-a-$i',
+                'level': i,
+                'itemRequirements': <Object?>[],
+                'bonuses': [
+                  {'type': 'ScavCooldownTimer', 'value': -0.1},
+                ],
+              },
+          ],
+    };
+    for (final e in breakages.entries) {
+      test('${e.key} gives null and keeps a valid catalog', () {
+        final good = fixtureCatalog(wire: cooldownWire());
+        final j = cooldownWire();
+        e.value(j);
+        final c = fixtureCatalog(wire: j);
+        expect(c.scavCooldown, isNull);
+        expect(c.items.keys, good.items.keys);
+        expect(c.authoritativeAt(fixtureNow), isTrue);
+        expect(c.toJson().containsKey('scavCooldown'), isFalse);
+      });
+    }
+
+    test('the block survives a snapshot JSON round trip', () {
+      final c = fixtureCatalog(wire: cooldownWire());
+      final stored = jsonDecode(jsonEncode(c.toJson())) as Map<String, dynamic>;
+      expect(stored['scavCooldown'], {
+        'baseSeconds': 1500,
+        'fenceLevels': [
+          {'min': -7, 'modifier': 6},
+          {'min': 0, 'modifier': 1},
+          {'min': 100, 'modifier': 0.4},
+        ],
+        'bonuses': {'station-a-1': -0.15, 'station-a-3': -0.2},
+      });
+      final back = CatalogSnapshot.fromJson(stored);
+      expect(back.toJson(), c.toJson());
+      expect(back.scavCooldown!.bonuses['station-a-3'], -0.2);
+      expect(back.schemaVersion, 1);
+      expect(back.normalizerVersion, 1);
+    });
+
+    test('a stored snapshot without the key loads with null', () {
+      final stored = jsonDecode(
+        jsonEncode(fixtureCatalog().toJson()),
+      ) as Map<String, dynamic>;
+      expect(stored.containsKey('scavCooldown'), isFalse);
+      expect(CatalogSnapshot.fromJson(stored).scavCooldown, isNull);
+    });
+  });
+
   group('craft and barter display facts', () {
     ItemRequirement craftRow(CatalogSnapshot c) =>
         c.requirements.singleWhere((r) => r.kind == RequirementKind.craft);

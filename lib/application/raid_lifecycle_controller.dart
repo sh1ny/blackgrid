@@ -4,13 +4,15 @@ import 'package:flutter/foundation.dart';
 
 import '../data/session_log_reader.dart';
 import '../domain/raid_lifecycle.dart';
+import 'raid_timers_controller.dart';
 
 /// Folds the log reader's events into the raid lifecycle state.
 ///
 /// Subscribes to [SessionLogReader.events] in its constructor, so a controller
 /// built before the first bind sees the replay of the whole session folder.
 /// The reader stays owned by whoever binds and closes it.
-class RaidLifecycleController extends ChangeNotifier {
+class RaidLifecycleController extends ChangeNotifier
+    implements RaidTimerLifecycleSource {
   /// Starts listening to [reader].
   RaidLifecycleController(SessionLogReader reader) {
     _subscription = reader.events.listen(_onBatch);
@@ -23,9 +25,11 @@ class RaidLifecycleController extends ChangeNotifier {
   bool _disposed = false;
 
   /// The state after the last event read.
+  @override
   RaidLifecycleState get state => _state;
 
   /// Each transition, published once, in the order the events were read.
+  @override
   Stream<RaidTransition> get transitions => _transitions.stream;
 
   void _onBatch(List<GameLogEvent> batch) {

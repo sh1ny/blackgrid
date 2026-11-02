@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/catalog.dart';
 import '../domain/catalog_store.dart';
 import '../data/catalog_client.dart';
+import 'raid_timers_controller.dart';
 
 /// Builds the player-facing text for a catalog failure of [kind].
 ///
@@ -28,7 +29,8 @@ String catalogFailureMessage(CatalogFailure kind, {required bool kept}) {
 
 enum CatalogStatus { missing, loading, current, stale, failed }
 
-class CatalogController extends ChangeNotifier {
+class CatalogController extends ChangeNotifier
+    implements RaidTimerCatalogSource {
   CatalogController({
     required this._store,
     required this._client,
@@ -39,7 +41,9 @@ class CatalogController extends ChangeNotifier {
   final DateTime Function() _clock;
   final Map<GameMode, Future<void>> _refreshes = {};
   final Map<GameMode, int> _refreshGenerations = {};
+  @override
   GameMode mode = GameMode.unknown;
+  @override
   CatalogSnapshot? snapshot;
   CatalogStatus status = CatalogStatus.missing;
   String? error;

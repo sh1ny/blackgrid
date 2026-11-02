@@ -461,7 +461,74 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       'crafts': rawCrafts.length,
       'barters': rawBarters.length,
     },
+    scavCooldown: _scavCooldown(
+      roots['items']!['data'],
+      rawTraders,
+      rawStations,
+    ),
   );
+}
+
+const _maxFenceLevels = 64;
+const _maxCooldownBonuses = 256;
+
+/// Reads the scav cooldown inputs, or null when any part is missing,
+/// malformed or over its bound. It never rejects the catalog.
+ScavCooldownInputs? _scavCooldown(
+  Object? itemsData,
+  Map<String, dynamic> traders,
+  Map<String, dynamic> stations,
+) {
+  try {
+    final base = _finite(
+      _map(_map(itemsData)['settings'])['scavCooldownSeconds'],
+    );
+    if (base <= 0) return null;
+    final fence = traders.values
+        .map(_map)
+        .where((t) => t['normalizedName'] == 'fence')
+        .toList();
+    if (fence.length != 1) return null;
+    final rawLevels = _list(fence.single['reputationLevels']);
+    if (rawLevels.isEmpty || rawLevels.length > _maxFenceLevels) return null;
+    final levels = [
+      for (final raw in rawLevels)
+        FenceCooldownLevel(
+          minimumReputation: _finite(_map(raw)['minimumReputation']),
+          modifier: _finite(_map(raw)['scavCooldownModifier']),
+        ),
+    ];
+    final bonuses = <String, double>{};
+    for (final station in stations.entries) {
+      for (final rawLevel in _list(_map(station.value)['levels'])) {
+        final level = _map(rawLevel);
+        final number = _integer(level['level']);
+        if (number == null || number < 1) return null;
+        for (final rawBonus in _list(level['bonuses'] ?? const [])) {
+          final bonus = _map(rawBonus);
+          if (bonus['type'] != 'ScavCooldownTimer') continue;
+          final key = '${station.key}-$number';
+          if (bonuses.containsKey(key) ||
+              bonuses.length >= _maxCooldownBonuses) {
+            return null;
+          }
+          bonuses[key] = _finite(bonus['value']);
+        }
+      }
+    }
+    return ScavCooldownInputs(
+      baseSeconds: base,
+      fenceLevels: levels,
+      bonuses: bonuses,
+    );
+  } on FormatException {
+    return null;
+  }
+}
+
+double _finite(Object? v) {
+  if (v is! num || !v.isFinite) throw const FormatException('Invalid number');
+  return v.toDouble();
 }
 
 Map<String, dynamic> _map(Object? v) {

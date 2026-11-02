@@ -6,10 +6,12 @@ import '../domain/catalog.dart';
 import '../domain/credential_store.dart';
 import '../domain/progress.dart';
 import '../data/tracker_client.dart';
+import 'raid_timers_controller.dart';
 
 enum ProgressStatus { missing, loading, current, stale, failed, cooldown }
 
-class ProgressController extends ChangeNotifier {
+class ProgressController extends ChangeNotifier
+    implements RaidTimerProgressSource {
   ProgressController({
     required this._store,
     required this._client,
@@ -18,8 +20,10 @@ class ProgressController extends ChangeNotifier {
   final CredentialStore _store;
   final TrackerClient _client;
   final DateTime Function() _clock;
+  @override
   GameMode mode = GameMode.unknown;
   ProgressStatus status = ProgressStatus.missing;
+  @override
   ProgressSnapshot? snapshot;
   String? error;
   DateTime? cooldownUntil;

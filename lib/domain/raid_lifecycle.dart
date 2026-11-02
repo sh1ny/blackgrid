@@ -272,6 +272,20 @@ enum RaidEntry {
   noQueue,
 }
 
+/// Which character the player most likely took into a raid.
+///
+/// A guess from the log: the game never names the side.
+enum RaidSide {
+  /// A PMC, guessed from a raid-starting countdown of more than 3 s.
+  pmc,
+
+  /// A scav, guessed from a missing or short raid-starting countdown.
+  scav,
+
+  /// Not guessable: no queue was logged, or no earlier raid is known.
+  unknown,
+}
+
 /// Why a raid ended.
 enum RaidEndCause {
   /// The backend reported the raid result.
@@ -297,6 +311,8 @@ final class Raid {
     this.endTime,
     this.endCause,
     this.interrupted = false,
+    this.raidStartingTime,
+    this.side = RaidSide.unknown,
   });
 
   /// The settings map ID, or `null` when the map is unknown.
@@ -331,6 +347,13 @@ final class Raid {
   /// Whether a client restart interrupted the raid and it has not resumed.
   final bool interrupted;
 
+  /// The last raid-starting time logged since the queue, or `null` if none
+  /// or if the raid was not entered from a queue.
+  final DateTime? raidStartingTime;
+
+  /// The guessed side; see [RaidSide].
+  final RaidSide side;
+
   /// Whether the raid has not ended.
   bool get isCurrent => endTime == null;
 
@@ -345,6 +368,8 @@ final class Raid {
     endTime: time,
     endCause: cause,
     interrupted: interrupted,
+    raidStartingTime: raidStartingTime,
+    side: side,
   );
 
   /// Returns a copy with [interrupted] set to [value].
@@ -358,6 +383,8 @@ final class Raid {
     endTime: endTime,
     endCause: endCause,
     interrupted: value,
+    raidStartingTime: raidStartingTime,
+    side: side,
   );
 }
 
@@ -415,6 +442,7 @@ final class RaidLifecycleState {
     this.sessionMode,
     this.guardTime,
     this.queueEnteredTime,
+    this.pendingCountdown,
     this.pendingMapId,
     this.pendingEntry,
     this.pendingStart,
@@ -449,6 +477,12 @@ final class RaidLifecycleState {
   /// When the queue for the raid being set up was entered.
   final DateTime? queueEnteredTime;
 
+  /// The last raid-starting time since the queue was entered, or `null`.
+  ///
+  /// Cleared by a queue entry, an aborted queue, a profile selection and a
+  /// raid start.
+  final DateTime? pendingCountdown;
+
   /// The map of the raid being set up (last scene or rejoin location).
   final String? pendingMapId;
 
@@ -477,6 +511,7 @@ final class RaidLifecycleState {
     Object? sessionMode = _keep,
     Object? guardTime = _keep,
     Object? queueEnteredTime = _keep,
+    Object? pendingCountdown = _keep,
     Object? pendingMapId = _keep,
     Object? pendingEntry = _keep,
     Object? pendingStart = _keep,
@@ -498,6 +533,9 @@ final class RaidLifecycleState {
     queueEnteredTime: identical(queueEnteredTime, _keep)
         ? this.queueEnteredTime
         : queueEnteredTime as DateTime?,
+    pendingCountdown: identical(pendingCountdown, _keep)
+        ? this.pendingCountdown
+        : pendingCountdown as DateTime?,
     pendingMapId: identical(pendingMapId, _keep)
         ? this.pendingMapId
         : pendingMapId as String?,
@@ -527,27 +565,31 @@ typedef RaidReduction = (RaidLifecycleState, List<RaidTransition>);
 ///
 /// A raid entered by a rejoin (transit or reconnect) is published with the
 /// raid-rejoined record's identity and time, not the raid-started record's.
-RaidReduction reduce(
-  RaidLifecycleState state,
-  GameLogEvent event,
-) => switch (event) {
-  LogInputReset() => (RaidLifecycleState.initial, const []),
-  final SessionFolderChanged e => _folderChanged(state, e),
-  final SessionModeChanged e => (state.copyWith(sessionMode: e.mode), const []),
-  final ProfileSelected e => _profileSelected(state, e),
-  final QueueEntered e => _queueEntered(state, e),
-  final SceneLoaded e => _sceneLoaded(state, e),
-  MatchFound() => (state.copyWith(phase: RaidPhase.matchFound), const []),
-  RaidStarting() => (state.copyWith(phase: RaidPhase.raidStarting), const []),
-  final RaidStarted e => _raidStarted(state, e),
-  final MatchingAborted e => _matchingAborted(state, e),
-  final RaidRejoined e => _raidRejoined(state, e),
-  final RaidExit e => _raidExit(state, e),
-  FleaSale() ||
-  TaskStarted() ||
-  TaskFailed() ||
-  TaskFinished() => (state, const []),
-};
+RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
+    switch (event) {
+      LogInputReset() => (RaidLifecycleState.initial, const []),
+      final SessionFolderChanged e => _folderChanged(state, e),
+      final SessionModeChanged e => (
+        state.copyWith(sessionMode: e.mode),
+        const [],
+      ),
+      final ProfileSelected e => _profileSelected(state, e),
+      final QueueEntered e => _queueEntered(state, e),
+      final SceneLoaded e => _sceneLoaded(state, e),
+      MatchFound() => (state.copyWith(phase: RaidPhase.matchFound), const []),
+      final RaidStarting e => (
+        state.copyWith(phase: RaidPhase.raidStarting, pendingCountdown: e.time),
+        const [],
+      ),
+      final RaidStarted e => _raidStarted(state, e),
+      final MatchingAborted e => _matchingAborted(state, e),
+      final RaidRejoined e => _raidRejoined(state, e),
+      final RaidExit e => _raidExit(state, e),
+      FleaSale() ||
+      TaskStarted() ||
+      TaskFailed() ||
+      TaskFinished() => (state, const []),
+    };
 
 bool _isLoading(RaidPhase phase) => switch (phase) {
   RaidPhase.inQueue || RaidPhase.matchFound || RaidPhase.raidStarting => true,
@@ -606,6 +648,7 @@ RaidReduction _abortQueue(
     phase: RaidPhase.inMenus,
     lastQueueAborted: true,
     transitPossible: false,
+    pendingCountdown: null,
     pendingEntry: null,
     pendingMapId: null,
     pendingStart: null,
@@ -615,6 +658,11 @@ RaidReduction _abortQueue(
 
 RaidReduction _profileSelected(RaidLifecycleState state, ProfileSelected e) {
   if (_beforeGuard(state, e.time)) return (state, const []);
+  final (next, published) = _selectProfile(state, e);
+  return (next.copyWith(pendingCountdown: null), published);
+}
+
+RaidReduction _selectProfile(RaidLifecycleState state, ProfileSelected e) {
   final raid = state.currentRaid;
   if (raid != null && raid.interrupted) {
     // First profile selection of the new folder: back in the menus, but the
@@ -690,6 +738,7 @@ RaidReduction _queueEntered(RaidLifecycleState state, QueueEntered e) {
       transitPossible: false,
       guardTime: e.time,
       queueEnteredTime: e.time,
+      pendingCountdown: null,
       pendingMapId: null,
       pendingEntry: RaidEntry.queue,
       pendingStart: null,
@@ -740,12 +789,14 @@ RaidReduction _raidStarted(RaidLifecycleState state, RaidStarted e) {
         phase: RaidPhase.inRaid,
         raid: current.withInterrupted(value: false),
         restartProfile: null,
+        pendingCountdown: null,
       ),
       const [],
     );
   }
   final entry = state.pendingEntry ?? RaidEntry.noQueue;
   final start = state.pendingStart ?? (id: e.id, time: e.time);
+  final countdown = entry == RaidEntry.queue ? state.pendingCountdown : null;
   final raid = Raid(
     mapId: state.pendingMapId,
     mode: state.sessionMode,
@@ -753,6 +804,8 @@ RaidReduction _raidStarted(RaidLifecycleState state, RaidStarted e) {
     startTime: start.time,
     startId: start.id,
     entry: entry,
+    raidStartingTime: countdown,
+    side: _guessSide(state, entry, countdown, e.time),
   );
   return (
     state.copyWith(
@@ -760,6 +813,7 @@ RaidReduction _raidStarted(RaidLifecycleState state, RaidStarted e) {
       raid: raid,
       transitPossible: false,
       restartProfile: null,
+      pendingCountdown: null,
       pendingMapId: null,
       pendingEntry: null,
       pendingStart: null,
@@ -767,3 +821,20 @@ RaidReduction _raidStarted(RaidLifecycleState state, RaidStarted e) {
     [RaidStartedTransition(start.id, start.time, raid)],
   );
 }
+
+/// A raid-starting countdown longer than this means the player is a PMC.
+const _pmcCountdown = Duration(seconds: 3);
+
+RaidSide _guessSide(
+  RaidLifecycleState state,
+  RaidEntry entry,
+  DateTime? countdown,
+  DateTime startedAt,
+) => switch (entry) {
+  RaidEntry.queue =>
+    countdown != null && startedAt.difference(countdown) > _pmcCountdown
+        ? RaidSide.pmc
+        : RaidSide.scav,
+  RaidEntry.transit => state.raid?.side ?? RaidSide.unknown,
+  RaidEntry.reconnect || RaidEntry.noQueue => RaidSide.unknown,
+};

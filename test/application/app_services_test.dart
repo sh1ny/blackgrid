@@ -54,6 +54,49 @@ class DelayedCredentials implements CredentialStore {
 }
 
 void main() {
+  test('a finished raid in the logs starts the active mode cooldown', () async {
+    final root = await Directory.systemTemp.createTemp('blackgrid-timers-');
+    final folder = await Directory(
+      '${root.path}/log_2026.10.31_22-00-00_1.3.0.0.48484',
+    ).create();
+    String line(String log, String message, String time) =>
+        '2026-10-31 $time|1.3.0.0.48484|Info|$log|$message\n';
+    await File('${folder.path}/application_000.log').writeAsString(
+      line('application', 'Session mode: Pve', '22:00:10.000') +
+          line(
+            'application',
+            'PrepareSelectedProfileLocally ProfileId:aaaa AccountId:1',
+            '22:00:30.000',
+          ) +
+          line('application', 'Matching with group id: 1', '22:02:00.000') +
+          line('application', 'GameStarted: 7', '22:03:00.000'),
+    );
+    await File('${folder.path}/backend_000.log').writeAsString(
+      line(
+        'backend',
+        'WebSocketSharp - binary message received: type=Notification, '
+            'trackingId=t1, payloadType=userMatchOver, payloadLength=393',
+        '22:09:04.000',
+      ),
+    );
+    final services = AppServices(
+      database: BlackgridDatabase(NativeDatabase.memory()),
+      credentials: _EmptyCredentials(),
+      client: MockClient((request) async => http.Response('', 503)),
+    );
+    addTearDown(() async {
+      await services.dispose();
+      await root.delete(recursive: true);
+    });
+    await services.settings.save(AppSettings(gameLogDirectory: root.path));
+    await services.initialize();
+
+    expect(services.catalog.mode, GameMode.pve);
+    expect(
+      services.settings.effectiveScavCooldownStarts[GameMode.pve],
+      DateTime(2026, 10, 31, 22, 9, 4),
+    );
+  });
   test(
     'saved log context outranks fallback without overwriting manual settings',
     () async {
