@@ -13,7 +13,7 @@ The representative vector's technical selection was corrected from Streets to In
 
 The SVG repository licence is not a blanket licence for Labs/Icebreaker raster artwork. Published source and creator evidence is retained; a website software licence does not establish artwork permission. No separate owner-cleared permission is asserted. Inclusion follows the user's direction for this private implementation, not permission for a public release or a visibility change.
 
-Preparation-only dependencies are pinned to `xml 6.6.1` ([MIT](https://github.com/renggli/dart-xml)), `image 4.8.0` ([MIT](https://github.com/brendan-duncan/image)) and `vector_graphics_compiler 1.3.0` ([BSD-3-Clause](https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler)); none requires a Flutter engine. Native runtime `vector_graphics 1.2.3` is qualified separately before its runtime commitment. Resolved transitive notices/lock are integrated by the parent after package resolution.
+Preparation-only dependencies are pinned to `xml 6.6.1` ([MIT](https://github.com/renggli/dart-xml)), `image 4.12.0` ([MIT](https://github.com/brendan-duncan/image)) and `vector_graphics_compiler 1.3.4` ([BSD-3-Clause](https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler)); none requires a Flutter engine. Native runtime `vector_graphics 1.2.5` is qualified separately before its runtime commitment. Resolved transitive notices/lock are integrated by the parent after package resolution.
 
 ## M5 Map-owned saved-panel OCR
 
@@ -613,12 +613,12 @@ Subject to the License Terms for the software, you may copy and distribute with 
 The same Visual C++ Runtime Redistributable package is available from Latest supported Visual C++ Redistributable downloads and Download Visual Studio Tools. Distribution of the Visual C++ Runtime Redistributable package, merge modules, and individual binaries obtained from those pages is limited to licensed Visual Studio users and is subject to its license terms.
 ```
 
-<a id="dart-archive-4-3-0"></a>
-### `package:archive` 4.3.0 (development only)
+<a id="dart-archive-4-6-0"></a>
+### `package:archive` 4.6.0 (development only)
 
 - **Use:** a pinned dev dependency of `tool/vision/fetch_runtime.dart`, which uses it to extract the two DLLs from the nupkg. It is not part of the application or the bundle.
-- **Version:** 4.3.0
-- **Source:** <https://pub.dev/packages/archive/versions/4.3.0>
+- **Version:** 4.6.0
+- **Source:** <https://pub.dev/packages/archive/versions/4.6.0>
 - **License:** MIT, verbatim under [Map preparation MIT packages](#map-preparation-mit-packages) below (`package-root:archive/LICENSE`).
 
 <a id="apache-license-2-0"></a>
@@ -833,7 +833,7 @@ This verbatim text is shared by OpenCV 4.13.0, the Tesseract 5.0.0 engine, the c
 
 ## Resolved selection
 
-Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.6 / Dart 3.13.5 toolchain. Some transitive packages supply native build hooks rather than application Dart code; they are included conservatively in this record. Verbatim license texts below were read from the resolved packages through the official Dart tooling.
+Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / Dart 3.13.7 toolchain. Some transitive packages supply native build hooks rather than application Dart code; they are included conservatively in this record. Verbatim license texts below were read from the resolved packages through the official Dart tooling.
 
 | Input | Resolved version | Use | Source |
 | --- | --- | --- | --- |
@@ -842,43 +842,43 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.6 / 
 | code_assets | 1.2.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/code_assets/versions/1.2.1) |
 | collection | 1.19.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/collection/versions/1.19.1) |
 | convert | 3.1.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/convert/versions/3.1.2) |
-| crypto | 3.0.7 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/crypto/versions/3.0.7) |
-| drift | 2.35.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/drift/versions/2.35.1) |
+| crypto | 3.0.8 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/crypto/versions/3.0.8) |
+| drift | 2.35.3 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/drift/versions/2.35.3) |
 | ffi | 2.2.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/ffi/versions/2.2.0) |
 | file | 7.0.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/file/versions/7.0.1) |
-| flutter | Flutter 3.47.6 | Framework / desktop runtime | [Flutter](https://github.com/flutter/flutter/tree/3.47.6) |
+| flutter | Flutter 3.47.9 | Framework / desktop runtime | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
 | glob | 2.2.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/glob/versions/2.2.0) |
-| hooks | 2.0.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/hooks/versions/2.0.2) |
+| hooks | 2.2.0 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/hooks/versions/2.2.0) |
 | http | 1.6.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/http/versions/1.6.0) |
 | http_parser | 4.1.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/http_parser/versions/4.1.2) |
 | logging | 1.3.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/logging/versions/1.3.0) |
 | material_color_utilities | 0.13.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/material_color_utilities/versions/0.13.0) |
-| meta | 1.18.3 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/meta/versions/1.18.3) |
+| meta | 1.19.0 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/meta/versions/1.19.0) |
 | native_toolchain_c | 0.19.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/native_toolchain_c/versions/0.19.2) |
 | path | 1.9.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/path/versions/1.9.1) |
 | pub_semver | 2.2.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/pub_semver/versions/2.2.1) |
-| record_use | 0.6.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/record_use/versions/0.6.0) |
-| sky_engine | Flutter 3.47.6 | Engine / aggregate native notices | [Flutter](https://github.com/flutter/flutter/tree/3.47.6) |
+| record_use | 1.1.1 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/record_use/versions/1.1.1) |
+| sky_engine | Flutter 3.47.9 | Engine / aggregate native notices | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
 | source_span | 1.10.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/source_span/versions/1.10.2) |
-| sqlite3 | 3.5.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/sqlite3/versions/3.5.2) |
+| sqlite3 | 3.8.0 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/sqlite3/versions/3.8.0) |
 | stack_trace | 1.12.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stack_trace/versions/1.12.2) |
 | stream_channel | 2.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stream_channel/versions/2.1.4) |
 | string_scanner | 1.4.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/string_scanner/versions/1.4.1) |
 | term_glyph | 1.2.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/term_glyph/versions/1.2.2) |
 | typed_data | 1.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/typed_data/versions/1.4.0) |
 | unorm_dart | 0.3.3 | Item-title NFKC normalisation | [pub.dev](https://pub.dev/packages/unorm_dart/versions/0.3.3) |
-| vector_graphics | 1.2.3 | Native compiled-vector rendering | [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.3) |
+| vector_graphics | 1.2.5 | Native compiled-vector rendering| [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.5) |
 | vector_graphics_codec | 1.1.13 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.1.13) |
-| vector_graphics_compiler | 1.3.0 | Offline map preparation | [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.0) |
+| vector_graphics_compiler | 1.3.4 | Offline map preparation| [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.4) |
 | xml | 6.6.1 | Offline SVG dependency/style preparation | [pub.dev](https://pub.dev/packages/xml/versions/6.6.1) |
-| image | 4.8.0 | Offline PNG validation | [pub.dev](https://pub.dev/packages/image/versions/4.8.0) |
+| image | 4.12.0 | Offline PNG validation| [pub.dev](https://pub.dev/packages/image/versions/4.12.0) |
 | petitparser | 7.0.2 | Preparation parser dependency | [pub.dev](https://pub.dev/packages/petitparser/versions/7.0.2) |
-| archive | 4.3.0 | Preparation image dependency | [pub.dev](https://pub.dev/packages/archive/versions/4.3.0) |
+| archive | 4.6.0 | Preparation image dependency| [pub.dev](https://pub.dev/packages/archive/versions/4.6.0) |
 | posix | 6.5.2 | Preparation image dependency | [pub.dev](https://pub.dev/packages/posix/versions/6.5.2) |
 | vector_math | 2.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/vector_math/versions/2.4.0) |
 | web | 1.1.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/web/versions/1.1.1) |
 | yaml | 3.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/yaml/versions/3.1.4) |
-| drift_dev | 2.35.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/drift_dev/versions/2.35.1) |
+| drift_dev | 2.35.2 | Development / generation / tests| [pub.dev](https://pub.dev/packages/drift_dev/versions/2.35.2) |
 | build_runner | 2.16.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/build_runner/versions/2.16.1) |
 | test | 1.31.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/test/versions/1.31.1) |
 | flutter_lints | 6.0.0 | Development / generation / tests | [pub.dev](https://pub.dev/packages/flutter_lints/versions/6.0.0) |

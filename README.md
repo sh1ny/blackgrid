@@ -1,6 +1,6 @@
 # Blackgrid
 
-![version](https://img.shields.io/badge/version-0.6.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.6-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
+![version](https://img.shields.io/badge/version-0.6.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.9-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
 **A helper app for Escape from Tarkov that runs next to the game on Windows.** It shows you where you are on the map, which extracts you have this raid, and whether the item in your hands is worth keeping or selling.
 
@@ -102,7 +102,7 @@ flowchart LR
 
 ## ⚡ Install / Update
 
-> **Prerequisites:** Windows 11 x64, Git, and [mise](https://mise.jdx.dev/). Visual Studio with **Desktop development with C++**, its CMake tools and a Windows SDK ([Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup)). Windows Developer Mode if a native build needs symlinks. Flutter 3.47.6 comes from [`mise.toml`](mise.toml); no global Flutter install is needed.
+> **Prerequisites:** Windows 11 x64, Git, and [mise](https://mise.jdx.dev/). Visual Studio with **Desktop development with C++**, its CMake tools and a Windows SDK ([Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup)). Windows Developer Mode if a native build needs symlinks. Flutter 3.47.9 comes from [`mise.toml`](mise.toml); no global Flutter install is needed.
 
 Install and update use the same commands:
 

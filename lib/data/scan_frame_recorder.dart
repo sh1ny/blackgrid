@@ -309,7 +309,7 @@ abstract interface class ScanFrameWriter {
 /// `frames.jsonl` in one write. Any error yields a [ScanFrameFailure] and no
 /// line.
 ///
-/// Pixels use the image 4.8.0 API: `Image.fromBytes` with `numChannels: 4`,
+/// Pixels use the image 4.12.0 API: `Image.fromBytes` with `numChannels: 4`,
 /// `rowStride: stride` and `ChannelOrder.bgra`, then `convert(numChannels: 3)`
 /// to drop the undefined fourth byte, then `encodePng` at a fast level.
 class IsolateScanFrameWriter implements ScanFrameWriter {
