@@ -4227,10 +4227,11 @@ class $$CatalogRecordsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (activeCatalogsRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       CatalogRecord,
                       $CatalogRecordsTable,
-                      ActiveCatalog
+                      ActiveCatalog,
+                      $ActiveCatalogsTable
                     >(
                       currentTable: table,
                       referencedTable: $$CatalogRecordsTableReferences
@@ -4241,8 +4242,8 @@ class $$CatalogRecordsTableTableManager
                             table,
                             p0,
                           ).activeCatalogsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.recordId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'record_id',
                       typedResults: items,
                     ),
                 ];
