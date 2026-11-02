@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'pack.dart';
 
+Future<Map<String, String>> _toolchain() async =>
+    toolchainFromLock(await File('pubspec.lock').readAsString());
+
 const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart acquire --raw <fresh-directory>
   dart run tool/maps/prepare.dart rebuild --raw <frozen-directory> --candidate <fresh-directory>
@@ -43,22 +46,24 @@ qualification.
 
 acquire is the only network operation. normalize preserves dependency-closed
 source SVG and native effect metadata without compiler execution. compile is a
-separate pinned pure-Dart adapter. rebuild performs normalize+compile offline.
+separate step that compiles the normalized vectors. rebuild performs
+normalize+compile offline. Each step reads pubspec.lock once, before any write,
+and records the resolved xml, image, vector_graphics_compiler, vector_graphics
+and vector_graphics_codec versions as the manifest toolchain; compile replaces
+the normalize-time record. Every vector is compiled twice and a build fails
+when the two outputs differ.
 validate/promote bind canonical vector component paths and actual compiled
-payloads to dependency-closed source SVGs. Reviewed Interchange compiler/payload
-identities avoid recompilation during validation; a new source is compiled once
-per input identity and process with the pinned adapter flags. Preparation v3
+payloads to dependency-closed source SVGs: validation recompiles every vector
+from its evidence and requires identical bytes, and every payload header must
+match the manifest's vectorCodecFormat. Only preparation version 3 with a
+vectorCodecFormat validates. Preparation v3
 preserves v2's content-addressed original PNG witnesses for transparent tiles;
 empty records are decoded and hash-bound just like visible tiles, not inferred
 from byte size or trusted from the manifest. Crops must remain wholly inside
-the unchanged original artwork frame. Existing v1 packs lacking empty witnesses
-must be rebuilt offline before this validator can promote them.
-Existing published preparation-v2 three-map packs remain readable and validate
-against their own frozen calibration/source evidence, not newer calibrations.
-New rebuilds require v3's complete inventory; old raw partial inputs do not
-silently become complete candidates.
-promote retains prior versions and atomically replaces only active.json.
-No command mutates an active version.
+the unchanged original artwork frame. New rebuilds require v3's complete
+inventory; old raw partial inputs do not silently become complete candidates.
+promote atomically replaces only active.json. refresh keeps only the active
+generation. No command mutates an active version.
 assets prints the complete pubspec assets section for the promoted generation;
 Flutter directory declarations do not recursively include nested tiles.
 ''';
@@ -97,10 +102,12 @@ Future<void> main(List<String> arguments) async {
       case 'acquire':
         await acquireInputs(Directory(values['--raw']!));
       case 'rebuild' || 'normalize':
+        final toolchain = await _toolchain();
         final manifest = await rebuildCandidate(
           Directory(values['--raw']!),
           Directory(values['--candidate']!),
           compileVectors: command == 'rebuild',
+          toolchain: toolchain,
         );
         stdout.write(
           canonicalJson({
@@ -110,7 +117,10 @@ Future<void> main(List<String> arguments) async {
           }),
         );
       case 'compile':
-        await compileCandidate(Directory(values['--candidate']!));
+        await compileCandidate(
+          Directory(values['--candidate']!),
+          toolchain: await _toolchain(),
+        );
       case 'validate':
         await validateCandidate(Directory(values['--candidate']!));
       case 'promote':

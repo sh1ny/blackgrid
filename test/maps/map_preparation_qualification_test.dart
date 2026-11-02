@@ -3,6 +3,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
@@ -749,28 +750,17 @@ void main() {
   test('failed new generation preserves asset discovery for an older frozen floor calibration', () async {
     final older = await candidate('older');
     final olderManifest = await readManifest(older);
-    const legacyIds = {'interchange', 'thelab', 'icebreaker'};
-    olderManifest['preparationVersion'] = 2;
-    olderManifest.remove('supportedMapIds');
-    (olderManifest['maps'] as List).removeWhere(
-      (map) => !legacyIds.contains(map['id']),
-    );
-    expect((olderManifest['maps'] as List).map((map) => map['id']), [
-      'interchange',
-      'thelab',
-      'icebreaker',
-    ]);
+    expect(olderManifest['preparationVersion'], 3);
+    expect(olderManifest['maps'] as List, hasLength(13));
 
-    // Represent a previously published three-map generation with no evidence-owned
-    // marker floors. Its calibration, source index and output hashes remain
-    // coherent; only the authoring code now knows the newer assignments.
+    // Represent an earlier full generation whose frozen calibration has no
+    // evidence-owned marker floors for Icebreaker. Its calibration, source index
+    // and output hashes remain coherent; only the authoring code now knows the
+    // newer assignments.
     final calibrationFile = File('${older.path}/evidence/calibration.json');
     final olderCalibration = jsonDecode(
       await calibrationFile.readAsString(),
     ) as Map<String, dynamic>;
-    (olderCalibration['maps'] as List).removeWhere(
-      (map) => !legacyIds.contains(map['id']),
-    );
     final olderIceCalibration = (olderCalibration['maps'] as List)
         .cast<Map<String, dynamic>>()
         .singleWhere((map) => map['id'] == 'icebreaker');
@@ -826,8 +816,8 @@ void main() {
     expect(originalDirectories, contains('versions/$version/'));
     final publishedOlder = Directory('${packs.path}/versions/$version');
     final validatedOlder = await validateCandidate(publishedOlder);
-    expect(validatedOlder['preparationVersion'], 2);
-    expect(validatedOlder['maps'] as List, hasLength(3));
+    expect(validatedOlder['preparationVersion'], 3);
+    expect(validatedOlder['maps'] as List, hasLength(13));
     expect(
       calibrationFor('icebreaker').containsKey('markerFloorAssignments'),
       isTrue,
@@ -904,7 +894,7 @@ void main() {
       );
       final output = Directory('${temporary.path}/missing-candidate-$i');
       await expectLater(
-        rebuildCandidate(raw, output),
+        rebuildCandidate(raw, output, toolchain: fixtureToolchain),
         throwsA(isA<FileSystemException>()),
         reason: path,
       );
@@ -996,6 +986,7 @@ void main() {
         fixtures.raw,
         private,
         compileVectors: false,
+        toolchain: fixtureToolchain,
       );
       expect(manifest['vectorsCompiled'], isFalse);
       await validateCandidate(private, requireCompiled: false);
@@ -1003,8 +994,196 @@ void main() {
         promoteCandidate(private, Directory('${temporary.path}/packs')),
         throwsFormatException,
       );
-      await compileCandidate(private);
+      await compileCandidate(private, toolchain: fixtureToolchain);
       await validateCandidate(private);
     },
   );
+
+  group('toolchain, determinism and vector format', () {
+    String vecPath(Map<String, dynamic> manifest, int floor) {
+      final map = (manifest['maps'] as List).singleWhere(
+        (map) => map['id'] == 'interchange',
+      );
+      return map['floors'][floor]['artwork']['components'][0]['path'] as String;
+    }
+
+    test('rebuild records the given toolchain and no fixed versions', () async {
+      final manifest = await readManifest(fixtures.first);
+      expect(manifest['toolchain'], fixtureToolchain);
+      for (final key in [
+        'dependencies',
+        'compilerVersion',
+        'runtimeVectorVersion',
+      ]) {
+        expect(manifest.containsKey(key), isFalse, reason: key);
+      }
+    });
+
+    test(
+      'pack recording compiler 1.3.0 validates when vectors reproduce',
+      () async {
+        final private = await candidate('old-compiler');
+        final manifest = await validateCandidate(private);
+        expect(manifest['toolchain']['vector_graphics_compiler'], '1.3.0');
+        expect(manifest['vectorCodecFormat'], 1);
+      },
+    );
+
+    test('compile step replaces the normalize-time toolchain', () async {
+      final private = Directory('${temporary.path}/replace-toolchain');
+      final normalized = await rebuildCandidate(
+        fixtures.raw,
+        private,
+        compileVectors: false,
+        toolchain: {...fixtureToolchain, 'vector_graphics_compiler': '1.3.0'},
+      );
+      expect(normalized.containsKey('vectorCodecFormat'), isFalse);
+      await compileCandidate(
+        private,
+        toolchain: {...fixtureToolchain, 'vector_graphics_compiler': '1.3.4'},
+      );
+      final compiled = await readManifest(private);
+      expect(compiled['toolchain']['vector_graphics_compiler'], '1.3.4');
+      expect(compiled['vectorCodecFormat'], 1);
+      expect(compiled['vectorsCompiled'], isTrue);
+    });
+
+    test('unstable encoder leaves the candidate without a manifest', () async {
+      final private = Directory('${temporary.path}/unstable');
+      var calls = 0;
+      await expectLater(
+        rebuildCandidate(
+          fixtures.raw,
+          private,
+          toolchain: fixtureToolchain,
+          encode: (xml, name) => Uint8List.fromList([++calls]),
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('.vec'),
+          ),
+        ),
+      );
+      expect(File('${private.path}/manifest.json').existsSync(), isFalse);
+    });
+
+    test(
+      'substituted vec with matching output hash fails naming the path',
+      () async {
+        final private = await candidate('substituted');
+        final manifest = await readManifest(private);
+        final victim = vecPath(manifest, 0);
+        await packFile(private, victim).writeAsBytes(
+          await packFile(private, vecPath(manifest, 2)).readAsBytes(),
+        );
+        await saveManifest(private, manifest, refreshOutputs: true);
+        await expectLater(
+          validateCandidate(private),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains(victim),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('compiled pack records vectorCodecFormat 1', () async {
+      expect((await readManifest(fixtures.first))['vectorCodecFormat'], 1);
+    });
+
+    test('vec header format 2 against record 1 fails naming payload and both formats', () async {
+      final private = await candidate('header-two');
+      final manifest = await readManifest(private);
+      final path = vecPath(manifest, 0);
+      final file = packFile(private, path);
+      final bytes = await file.readAsBytes();
+      bytes[4] = 2;
+      await file.writeAsBytes(bytes);
+      await saveManifest(private, manifest, refreshOutputs: true);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains(path), contains('format 2'), contains('format 1')),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'compiled pack without vectorCodecFormat fails as not recorded',
+      () async {
+        for (final value in <Object?>[null, '1']) {
+          final private = await candidate('no-format-$value');
+          final manifest = await readManifest(private);
+          if (value == null) {
+            manifest.remove('vectorCodecFormat');
+          } else {
+            manifest['vectorCodecFormat'] = value;
+          }
+          await saveManifest(private, manifest);
+          await expectLater(
+            validateCandidate(private),
+            throwsA(
+              isA<FormatException>().having(
+                (error) => error.message,
+                'message',
+                contains('not recorded'),
+              ),
+            ),
+            reason: '$value',
+          );
+        }
+      },
+    );
+
+    test(
+      'normalized candidate has no format record and cannot be promoted',
+      () async {
+        final private = Directory('${temporary.path}/normalized');
+        final manifest = await rebuildCandidate(
+          fixtures.raw,
+          private,
+          compileVectors: false,
+          toolchain: fixtureToolchain,
+        );
+        expect(manifest.containsKey('vectorCodecFormat'), isFalse);
+        await validateCandidate(private, requireCompiled: false);
+        await expectLater(
+          promoteCandidate(private, Directory('${temporary.path}/packs')),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('Uncompiled'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('validator refuses preparation version 2', () async {
+      final private = await candidate('version-two');
+      final manifest = await readManifest(private);
+      manifest['preparationVersion'] = 2;
+      await saveManifest(private, manifest);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('Unsupported preparation version'), contains('2')),
+          ),
+        ),
+      );
+    });
+  });
 }

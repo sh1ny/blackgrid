@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as image;
 import 'package:vector_graphics_compiler/vector_graphics_compiler.dart'
     as vector;
+import 'package:yaml/yaml.dart';
 
 import 'calibration.dart';
 import 'quest_markers.dart';
@@ -48,29 +49,65 @@ Future<Map<String, dynamic>> _readJson(Directory root, String path) async =>
         as Map<String, dynamic>;
 String _hash(List<int> bytes) => sha256.convert(bytes).toString();
 
-// Independently frozen compiler-input -> payload identities for the reviewed
-// Interchange source, compiler 1.3.0 and the optimizer flags below. These are
-// not candidate-provided hashes: validation authenticates the actual picture,
-// including when another valid .vec is copied onto its canonical path.
-const _pinnedVectorHashes = {
-  '11e25b360e519002c247d009752f19181eea1ae369bb3c51c26494b5230b2734':
-      '8683e42dd3893d64c5ba2c7d459c96e63f47a98f7ebcfa331357ca873666d9ad',
-  '5fa97bd9a4acaa93644ce305f395b041d5eb8ec20f0db008c58f488273366504':
-      '4354bd9bf3096727f9485530d4de843aac626e507483cd592baeff08ff532ba7',
-  '77f8ec1fff31fd6e24e4232123e117181fe138560635e3dc307cc8ca3b4a2c84':
-      'e4bdc19947fee99a8a3ce0addeb96d983710f9c2e13665f9d1bb3e27211bdc70',
-  'ca28586c7a81d4034bb5ce9467bf8f5d4e8154bb7c7974ec6ebe60b3a1810062':
-      '00690f1c553fe2fa7511cf22a7c091e1aafcab4e4b2d520c3d37ea048b237823',
-  'd6857bf90b5c810f13023aa5751d26e58ae6c6eaafdb1a113f5e9deaff697a9f':
-      '37bb90587c5375e2273da694ceab1522f6e5936ac7ec8bf8fc6c27f796c3528f',
-  '1e49c92621de169bc95842598edd6e226f69000c074194f94f948a113d9dabb1':
-      'f9a5822f84df9b0ad07a7084eae5a22a2bf72acb7409ae6af86af5aef6ac4ff9',
-  'dbf9222ec02ef907312495d42346e048ec55f0a932ff14f967e26f89b6052cfb':
-      '7f663c61c40224b106c1de6806c776f9b5d06b6b396f7a8b7b78158385fa978d',
-  'e5dcbbfb8490b63db5e378a2f76205bde6592c0713ad500352bcc18833f4a38e':
-      '4263274e06d69d964f223997c175d18cd79858b12c338cfbc638ec20309a6c89',
-};
-final _compiledVectorHashes = Map<String, String>.of(_pinnedVectorHashes);
+/// Cache of compiler-input hash to payload hash for this process.
+///
+/// Only [_expectedVectorHash] fills it, with the real encoder, so an injected
+/// [VectorEncoder] can never supply an expected hash to validation.
+final _compiledVectorHashes = <String, String>{};
+
+/// Compiles SVG [xml] into a vector payload, named [debugName] in diagnostics.
+typedef VectorEncoder = Uint8List Function(String xml, String debugName);
+
+/// The packages whose resolved versions a pack records as its `toolchain`.
+const toolchainPackages = [
+  'xml',
+  'image',
+  'vector_graphics_compiler',
+  'vector_graphics',
+  'vector_graphics_codec',
+];
+
+/// Returns the resolved version of each [toolchainPackages] entry in a
+/// `pubspec.lock` text.
+///
+/// Throws a [FormatException] naming the first package the lock does not
+/// resolve.
+Map<String, String> toolchainFromLock(String lockYaml) {
+  final packages = switch (loadYaml(lockYaml)) {
+    YamlMap(:final nodes) => nodes['packages']?.value,
+    _ => null,
+  };
+  return {
+    for (final name in toolchainPackages)
+      name: switch (packages) {
+        YamlMap(:final nodes) => switch (nodes[name]?.value) {
+          YamlMap(:final nodes) when nodes['version']?.value is String =>
+            nodes['version']!.value as String,
+          _ => throw FormatException('pubspec.lock does not resolve $name'),
+        },
+        _ => throw FormatException('pubspec.lock does not resolve $name'),
+      },
+  };
+}
+
+const _vectorMagic = [0x62, 0x2d, 0x88, 0x00];
+
+/// Returns the codec format number in the header of a compiled vector payload.
+///
+/// The header is the magic bytes `62 2d 88 00` followed by one format byte.
+/// Throws a [FormatException] naming [path] when [bytes] is shorter than five
+/// bytes or does not start with the magic number.
+int vectorPayloadFormat(Uint8List bytes, String path) {
+  if (bytes.length < 5) {
+    throw FormatException('Vector payload $path is too short for a header');
+  }
+  for (var i = 0; i < _vectorMagic.length; i++) {
+    if (bytes[i] != _vectorMagic[i]) {
+      throw FormatException('Vector payload $path lacks the vector magic');
+    }
+  }
+  return bytes[4];
+}
 
 Uint8List _encodeVector(String xml, String debugName) => vector.encodeSvg(
   xml: xml,
@@ -83,10 +120,8 @@ Uint8List _encodeVector(String xml, String debugName) => vector.encodeSvg(
 
 String _expectedVectorHash(String xml, String debugName) {
   final sourceHash = _hash(utf8.encode(xml));
-  // Unpinned independently authored sources (including test fixtures) need one
-  // real compilation, never a hash supplied by the candidate. Cache only small
-  // identities, not SVG strings or compiled buffers. The production source
-  // takes the frozen fast path and is never recompiled during validation.
+  // Every source needs one real compilation per process, never a hash supplied
+  // by the candidate. Cache only small identities, not SVG strings or buffers.
   return _compiledVectorHashes.putIfAbsent(
     sourceHash,
     () => _hash(_encodeVector(xml, debugName)),
@@ -318,10 +353,18 @@ Future<void> acquireInputs(Directory root) async {
   }
 }
 
+/// Rebuilds a candidate pack offline from the frozen raw generation [raw].
+///
+/// The manifest records [toolchain] as the versions that built it. With
+/// [compileVectors], every vector is compiled twice through [encode] and the
+/// manifest records the payload format as `vectorCodecFormat`; without it the
+/// candidate has no `.vec` files and no format record.
 Future<Map<String, dynamic>> rebuildCandidate(
   Directory raw,
   Directory candidate, {
+  required Map<String, String> toolchain,
   bool compileVectors = true,
+  VectorEncoder encode = _encodeVector,
 }) async {
   if (await candidate.exists() && !(await candidate.list().isEmpty)) {
     throw const FormatException('Rebuild requires an empty fresh candidate');
@@ -353,6 +396,7 @@ Future<Map<String, dynamic>> rebuildCandidate(
   final maps = <Map<String, Object?>>[];
   final emptyTileWitnesses = <String>{};
   final decodedTiles = <String, PngInspection>{};
+  final vectorPaths = <String>[];
   await candidate.create(recursive: true);
   for (final untyped in calibration['maps'] as List) {
     final local = Map<String, Object?>.from(untyped as Map);
@@ -417,7 +461,13 @@ Future<Map<String, dynamic>> rebuildCandidate(
           await _write(candidate, compilerPath, utf8.encode(transferable.xml));
           final vectorPath = 'artwork/$mapId/$id.vec';
           if (compileVectors) {
-            await _compile(candidate, compilerPath, vectorPath);
+            await compileVector(
+              candidate,
+              compilerPath,
+              vectorPath,
+              encode: encode,
+            );
+            vectorPaths.add(vectorPath);
           }
           components.add({
             'id': id,
@@ -544,14 +594,9 @@ Future<Map<String, dynamic>> rebuildCandidate(
       'metadataBlob': metadataBlob,
       'primaryHashes': primarySourceHashes,
     },
-    'dependencies': {
-      'xml': '6.6.1',
-      'image': '4.8.0',
-      'vector_graphics_compiler': '1.3.0',
-      'vector_graphics_runtimeTarget': '1.2.3',
-    },
-    'compilerVersion': '1.3.0',
-    'runtimeVectorVersion': '1.2.3',
+    'toolchain': toolchain,
+    if (compileVectors)
+      'vectorCodecFormat': await _compiledVectorFormat(candidate, vectorPaths),
     'vectorsCompiled': compileVectors,
     'maps': maps,
     'outputs': await _outputHashes(candidate),
@@ -769,36 +814,79 @@ void _validateMetadataCalibration(
   }
 }
 
-Future<void> _compile(Directory root, String input, String output) async {
+/// Compiles the SVG at [input] under [root] into the payload at [output].
+///
+/// The input is encoded twice through [encode]. Throws a [FormatException]
+/// naming [output], without writing it, when the two payloads differ in any
+/// byte.
+Future<void> compileVector(
+  Directory root,
+  String input,
+  String output, {
+  VectorEncoder encode = _encodeVector,
+}) async {
   final xml = await packFile(root, input).readAsString();
-  final bytes = _encodeVector(xml, input);
-  _compiledVectorHashes.putIfAbsent(
-    _hash(utf8.encode(xml)),
-    () => _hash(bytes),
-  );
+  final bytes = encode(xml, input);
+  final again = encode(xml, input);
+  if (bytes.length != again.length ||
+      Iterable<int>.generate(bytes.length).any((i) => bytes[i] != again[i])) {
+    throw FormatException(
+      'Vector compiler output is not deterministic: $output',
+    );
+  }
   await _write(root, output, bytes);
 }
 
+/// Reads the header of every payload in [paths] and returns their shared
+/// format, or throws a [FormatException] when they disagree or none exist.
+Future<int> _compiledVectorFormat(Directory root, List<String> paths) async {
+  final formats = <int>{
+    for (final path in paths)
+      vectorPayloadFormat(await packFile(root, path).readAsBytes(), path),
+  };
+  return switch (formats.toList()) {
+    [final format] => format,
+    [] => throw const FormatException('No compiled vector payloads'),
+    _ => throw FormatException('Vector payload formats differ: $formats'),
+  };
+}
+
 /// Optional separate adapter: raw inputs and normalized scenes do not change.
-/// Manifest publication is last, so interrupted compilation remains unpromotable.
-Future<void> compileCandidate(Directory candidate) async {
+///
+/// Replaces the manifest's `toolchain` with [toolchain], the versions that
+/// compile the vectors, and records `vectorCodecFormat`. Manifest publication
+/// is last, so interrupted compilation remains unpromotable.
+Future<void> compileCandidate(
+  Directory candidate, {
+  required Map<String, String> toolchain,
+  VectorEncoder encode = _encodeVector,
+}) async {
   final manifest = await validateCandidate(candidate, requireCompiled: false);
   if (manifest['vectorsCompiled'] == true) {
     throw const FormatException('Candidate is already compiled');
   }
+  final vectorPaths = <String>[];
   for (final map in manifest['maps'] as List) {
     if (map['kind'] != 'vector') continue;
     for (final floor in map['floors'] as List) {
       if (_isRasterOverlay(floor as Map)) continue;
       for (final component in floor['artwork']['components'] as List) {
-        await _compile(
+        final path = component['path'] as String;
+        await compileVector(
           candidate,
           component['compilerSvg'] as String,
-          component['path'] as String,
+          path,
+          encode: encode,
         );
+        vectorPaths.add(path);
       }
     }
   }
+  manifest['toolchain'] = toolchain;
+  manifest['vectorCodecFormat'] = await _compiledVectorFormat(
+    candidate,
+    vectorPaths,
+  );
   manifest['vectorsCompiled'] = true;
   manifest['outputs'] = await _outputHashes(candidate);
   await _write(
@@ -899,31 +987,31 @@ Future<Map<String, dynamic>> validateCandidate(
   required('evidence/terms/svg-maps-LICENSE.md');
   final maps = (manifest['maps'] as List).cast<Map<String, dynamic>>();
   final version = manifest['preparationVersion'];
-  if (version != 2 && version != 3) {
-    throw const FormatException('Unsupported preparation version');
+  if (version != 3) {
+    throw FormatException('Unsupported preparation version $version');
   }
-  final expectedIds = version == 2
-      ? const {'interchange', 'thelab', 'icebreaker'}
-      : supportedMapSources.keys.toSet();
-  _requireMapInventory(maps, expectedIds);
-  if (version == 3) {
-    if (maps.any((map) => map['sourceKey'] != supportedMapSources[map['id']])) {
-      throw const FormatException('Candidate source identity contract changed');
-    }
-    if (canonicalJson(manifest['supportedMapIds']) !=
-        canonicalJson(supportedMapSources.keys.toList())) {
-      throw const FormatException(
-        'Candidate supported identity contract changed',
-      );
-    }
-    for (final path in const [
-      'quests/tasks.json',
-      'quests/tasks_en.json',
-      'quests/traders.json',
-      'quests/traders_en.json',
-    ]) {
-      required('evidence/$path');
-    }
+  _requireMapInventory(maps, supportedMapSources.keys.toSet());
+  if (maps.any((map) => map['sourceKey'] != supportedMapSources[map['id']])) {
+    throw const FormatException('Candidate source identity contract changed');
+  }
+  if (canonicalJson(manifest['supportedMapIds']) !=
+      canonicalJson(supportedMapSources.keys.toList())) {
+    throw const FormatException(
+      'Candidate supported identity contract changed',
+    );
+  }
+  for (final path in const [
+    'quests/tasks.json',
+    'quests/tasks_en.json',
+    'quests/traders.json',
+    'quests/traders_en.json',
+  ]) {
+    required('evidence/$path');
+  }
+  final compiled = requireCompiled || manifest['vectorsCompiled'] == true;
+  final recordedFormat = manifest['vectorCodecFormat'];
+  if (compiled && recordedFormat is! int) {
+    throw const FormatException('Pack vector format is not recorded');
   }
   final sourceIndex = await _readJson(candidate, 'evidence/sources.json');
   if (manifest['sourceGeneration'] !=
@@ -977,14 +1065,13 @@ Future<Map<String, dynamic>> validateCandidate(
       (await _readJson(candidate, 'evidence/markers/maps_en.json'))['data']
           as Map<String, dynamic>;
   final questSources = <String, Map<String, dynamic>>{
-    if (version == 3)
-      for (final path in const [
-        'quests/tasks.json',
-        'quests/tasks_en.json',
-        'quests/traders.json',
-        'quests/traders_en.json',
-      ])
-        path: await _readJson(candidate, 'evidence/$path'),
+    for (final path in const [
+      'quests/tasks.json',
+      'quests/tasks_en.json',
+      'quests/traders.json',
+      'quests/traders_en.json',
+    ])
+      path: await _readJson(candidate, 'evidence/$path'),
   };
   for (final map in maps) {
     final expected = calibrationsBySource[map['sourceKey']];
@@ -1002,8 +1089,7 @@ Future<Map<String, dynamic>> validateCandidate(
     if (canonicalJson(map['markers']) !=
         canonicalJson([
           ...prepareMarkers(sourceMarkers, translations, expected),
-          if (version == 3)
-            ..._prepareFrozenQuests(questSources, sourceMarkers, expected),
+          ..._prepareFrozenQuests(questSources, sourceMarkers, expected),
         ])) {
       throw const FormatException(
         'Markers differ from independently frozen source',
@@ -1014,7 +1100,7 @@ Future<Map<String, dynamic>> validateCandidate(
       sourceMetadata,
       map['sourceKey'] as String,
     );
-    if (version == 3) _validateMetadataCalibration(expected, upstream);
+    _validateMetadataCalibration(expected, upstream);
     final expectedFloors = reconcileFloors(expected, upstream);
     if (floors.length != expectedFloors.length) {
       throw const FormatException('Candidate lost floor families');
@@ -1106,17 +1192,26 @@ Future<Map<String, dynamic>> validateCandidate(
               'Vector native effect/source closure mismatch',
             );
           }
-          if (requireCompiled || manifest['vectorsCompiled'] == true) {
+          if (compiled) {
             final path = component['path'] as String;
             required(path);
-            if (manifest['compilerVersion'] != '1.3.0' ||
-                outputs[path] !=
-                    _expectedVectorHash(
-                      transferred.xml,
-                      component['compilerSvg'] as String,
-                    )) {
-              throw const FormatException(
-                'Vector payload differs from pinned source compilation',
+            final payloadFormat = vectorPayloadFormat(
+              await packFile(candidate, path).readAsBytes(),
+              path,
+            );
+            if (payloadFormat != recordedFormat) {
+              throw FormatException(
+                'Vector payload $path has format $payloadFormat but the '
+                'pack records format $recordedFormat',
+              );
+            }
+            if (outputs[path] !=
+                _expectedVectorHash(
+                  transferred.xml,
+                  component['compilerSvg'] as String,
+                )) {
+              throw FormatException(
+                'Vector payload differs from its source compilation: $path',
               );
             }
           }
