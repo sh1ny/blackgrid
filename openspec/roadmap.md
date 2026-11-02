@@ -82,7 +82,7 @@ The player sees how to reach the quests they want. A quest tree draws each trade
 ### M12 - hideout
 
 - An overview of all stations with their levels and upgrade requirements, the bonuses scaled by Hideout Management, and a history of finished crafts.
-- Every craft the built stations can run, ranked by profit per craft and per hour, with favourites and an item filter. Inputs are costed by the cheapest cash or barter route, and outputs at the Flea price after fees.
+- Every craft the built stations can run, ranked by profit per craft and per hour, with favourites and an item filter. Inputs are costed by the cheapest cash or barter route, and outputs at the Flea price after fees. The Flea fee is one shared calculation: tarkov.dev's current fee rates and base prices, scaled by the Intelligence Center level and Hideout Management. The M15 sales ledger reuses it ([#87](https://github.com/sh1ny/blackgrid/issues/87)).
 - Timers the player starts by hand for crafts, the Bitcoin Farm, the Water Collector filter and the Scav Case, with a "ready to collect" alert. The game logs no craft events: craft actions go out as the generic `items/moving` request with no body in the logs, and there are no hideout notifications (checked in the user's logs on 2026-11-01). Trader restocks are not logged either.
 
 Builds on M9's hideout levels.
@@ -107,6 +107,7 @@ Small and independent, so it can move earlier if wanted.
 - A wipe summary: quests over time and per trader, quest XP and roubles earned, craft profit, and the found-in-raid items the hideout still needs. It can be exported as an image.
 - Raid history from the logs: raids per map and per week, the most played map and the busiest day. Queues that never became raids can be removed. Extends M7's local stats.
 - A trader browser with stock, prices, resale profit per unit and per restock, favourites, hidden items and restock timers started by hand.
+- A Flea sales ledger ([#87](https://github.com/sh1ny/blackgrid/issues/87)), its own change: every sale with time, item, count, buyer, roubles received, the listing fee and net profit. The fee comes from M12's calculation and is shown as an estimate. A posted offer's whole fee counts once, even when only part of the offer sells. Stats from the player's own sales only: their best items and periods per wipe, and their top items in each period (week of wipe, day of week, time of day). Reading the exact fee from the offer screen is a possible later addition. Extends M7's local stats.
 
 ### M16 - portable progress
 
