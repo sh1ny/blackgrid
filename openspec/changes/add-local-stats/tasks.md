@@ -53,8 +53,8 @@ Rules for every group:
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0032-local-stats-identity-keyed-ledger.md` (MADR-short, `Status: accepted`, today's date): design D2 and D3 (ledger keyed by `LogRecordId`, millisecond times, insert-or-ignore, durable clear watermark written with the delete), the rejected counters and tombstones, reversal cost high for the stored format. Verify: the file exists with Status, Date, Context, Decision, Consequences.
-- [ ] 1.2 Update `openspec/architecture.md`: ADR-0032 row in the in-force index; the SQLite schema contract to `schemaVersion` 4 with the 3→4 step; a component row for `LocalStatsController` (`lib/application/local_stats_controller.dart`, `lib/domain/local_stats.dart`, `lib/ui/stats_dialog.dart`); state-ownership rows for the ledgers and the clear watermark (design State & Ownership). Verify: `grep -n "0032\|schemaVersion\` 4\|LocalStatsController" openspec/architecture.md` shows each.
+- [x] 1.1 Write `docs/adr/0032-local-stats-identity-keyed-ledger.md` (MADR-short, `Status: accepted`, today's date): design D2 and D3 (ledger keyed by `LogRecordId`, millisecond times, insert-or-ignore, durable clear watermark written with the delete), the rejected counters and tombstones, reversal cost high for the stored format. Verify: the file exists with Status, Date, Context, Decision, Consequences.
+- [x] 1.2 Update `openspec/architecture.md`: ADR-0032 row in the in-force index; the SQLite schema contract to `schemaVersion` 4 with the 3→4 step; a component row for `LocalStatsController` (`lib/application/local_stats_controller.dart`, `lib/domain/local_stats.dart`, `lib/ui/stats_dialog.dart`); state-ownership rows for the ledgers and the clear watermark (design State & Ownership). Verify: `grep -n "0032\|schemaVersion\` 4\|LocalStatsController" openspec/architecture.md` shows each.
 
 ## 2. Flea sales as lifecycle transitions
 
