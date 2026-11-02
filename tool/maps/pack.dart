@@ -2226,8 +2226,9 @@ String _refreshStamp(DateTime moment) {
 ///
 /// Until promotion nothing under [packs] changes. When the rebuild started
 /// and anything fails, the candidate is kept and a [MapPackRefreshFailure]
-/// names it; a failure after promotion also says that `active.json` already
-/// names the new generation and to run `mise run maps:rebuild` again. [encode] replaces the vector encoder of the rebuild only;
+/// names it. A failure before the rename deletes the staged pubspec file; one
+/// after promotion also says what already names the new generation and to run
+/// `mise run maps:rebuild` again. [encode] replaces the vector encoder of the rebuild only;
 /// validation always uses the real one.
 Future<MapPackRefresh> refreshActive(
   Directory packs,
@@ -2247,7 +2248,9 @@ Future<MapPackRefresh> refreshActive(
     '${(candidateParent ?? Directory('.dart_tool/maps')).path}'
     '/refresh-${_refreshStamp(now ?? DateTime.now())}',
   );
+  final temporary = File('${pubspec.path}.tmp');
   String? promoted;
+  var renamed = false;
   try {
     final (committed, rebuilt) = await _rebuildActive(
       packs,
@@ -2277,19 +2280,31 @@ Future<MapPackRefresh> refreshActive(
         ),
       ),
     );
-    final temporary = File('${pubspec.path}.tmp');
     await temporary.writeAsString(updated, flush: true);
     final id = await promoteCandidate(candidate, packs);
     promoted = id;
     await temporary.rename(pubspec.path);
+    renamed = true;
     final pruned = await pruneSupersededGenerations(packs, id);
     await candidate.delete(recursive: true);
     return MapPackRefresh(id: id, changed: report.changed, pruned: pruned);
   } catch (error) {
-    final after = promoted == null
-        ? ''
-        : '\nactive.json already names $promoted; run mise run maps:rebuild '
-              'again to bring pubspec.yaml and the generations in line';
+    if (!renamed) {
+      try {
+        if (await temporary.exists()) await temporary.delete();
+      } on FileSystemException catch (cleanup) {
+        stderr.writeln('Could not delete ${temporary.path}: $cleanup');
+      }
+    }
+    final after = switch ((promoted, renamed)) {
+      (null, _) => '',
+      (final id?, false) =>
+        '\nactive.json already names $id but pubspec.yaml does not; run '
+            'mise run maps:rebuild again to bring them in line',
+      (final id?, true) =>
+        '\nactive.json and pubspec.yaml already name $id; run '
+            'mise run maps:rebuild again to delete the superseded generations',
+    };
     if (await candidate.exists()) {
       throw MapPackRefreshFailure(
         '$error$after\nCandidate kept at ${candidate.path}',

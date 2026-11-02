@@ -1440,6 +1440,43 @@ void main() {
     });
 
     test(
+      'refresh whose promotion fails deletes the staged pubspec file',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final blocker = File('${packs.path}/active.next.json');
+
+        await expectLater(
+          refreshActive(
+            packs,
+            pubspec,
+            toolchain: newer,
+            assetRoot: 'assets/maps',
+            candidateParent: work,
+            now: stamp,
+            // The report runs after the leftover precheck and before staging,
+            // so the pointer swap in promotion finds a leftover and refuses.
+            log: (line) {
+              if (!blocker.existsSync()) blocker.writeAsStringSync('{}');
+            },
+          ),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('${work.path}/$candidateName'),
+                isNot(contains('already name')),
+              ),
+            ),
+          ),
+        );
+
+        expect(File('${pubspec.path}.tmp').existsSync(), isFalse);
+        expect(await pubspec.readAsString(), pubspecText);
+      },
+    );
+
+    test(
       'refresh that cannot stage the pubspec rewrite promotes nothing',
       () async {
         await promoteCandidate(fixtures.first, packs);
