@@ -25,7 +25,12 @@ void main() {
       enableClippingOptimizer: false,
       enableOverdrawOptimizer: false,
     );
-    expect(vectorPayloadFormat(bytes, 'tiny.vec'), preparedVectorCodecFormat);
+    final format = vectorPayloadFormat(bytes, 'tiny.vec');
+    expect(
+      format,
+      preparedVectorCodecFormat,
+      reason: unsupportedVectorFormatMessage(format, preparedVectorCodecFormat),
+    );
     expect(
       () => VectorGraphicsCodec().decode(ByteData.sublistView(bytes), null),
       returnsNormally,
@@ -34,8 +39,8 @@ void main() {
 
   test('format mismatch message names both formats and maps:rebuild', () {
     final message = unsupportedVectorFormatMessage(2, 1);
-    expect(message, contains('2'));
-    expect(message, contains('1'));
+    expect(message, contains('vector format 2 is not supported'));
+    expect(message, contains('decodes format 1'));
     expect(message, contains('mise run maps:rebuild'));
   });
 }
