@@ -24,7 +24,8 @@ const localStatsClearErrorMessage = 'Stats could not be cleared.';
 /// write and clear failures each keep their own message, and no failure stops
 /// the queue or escapes as an uncaught error.
 class LocalStatsController extends ChangeNotifier {
-  /// Subscribes to [transitions] and, when the mode is known, loads totals.
+  /// Subscribes to [transitions] and loads the clear time and, when the mode
+  /// is known, its totals.
   ///
   /// [mode] reads the app's current mode and [modeChanges] notifies when it may
   /// have changed. [clock] supplies the clear time. Subscribes here, so a
@@ -39,7 +40,7 @@ class LocalStatsController extends ChangeNotifier {
     _lastMode = _mode();
     _subscription = transitions.listen(_onTransition);
     _modeChanges.addListener(_onModeChanged);
-    if (modeKnown) _requestReload();
+    _requestReload();
   }
 
   final Listenable _modeChanges;
@@ -189,13 +190,12 @@ class LocalStatsController extends ChangeNotifier {
 
   Future<void> _reloadOnce() async {
     final mode = _mode();
-    if (mode == GameMode.unknown) {
-      _totals = LocalStatsTotals.empty;
-      _notify();
-      return;
-    }
     try {
-      final totals = await _store.readTotals(mode);
+      // The clear time is shared by every mode, so it loads even while the
+      // mode is unknown; totals never load for the unknown mode.
+      final totals = mode == GameMode.unknown
+          ? LocalStatsTotals.empty
+          : await _store.readTotals(mode);
       final since = await _store.readSince();
       if (_disposed) return;
       _totals = totals;

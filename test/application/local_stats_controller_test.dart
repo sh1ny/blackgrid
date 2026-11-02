@@ -145,6 +145,18 @@ void main() {
       expect(store.calls, ['sale:1']);
     });
 
+    test('unknown app mode still loads the clear time', () async {
+      store.sinceValue = DateTime(2026, 10, 1);
+      mode.value = GameMode.unknown;
+      controller = build();
+      await pumpEventQueue();
+
+      expect(controller.modeKnown, isFalse);
+      expect(controller.totals.isEmpty, isTrue);
+      expect(controller.since, DateTime(2026, 10, 1));
+      expect(store.reads, 0);
+    });
+
     test('mode change reloads the new mode\'s totals', () async {
       store.totalsByMode[GameMode.pve] = _totals(7);
       controller = build();
