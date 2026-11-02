@@ -12,11 +12,11 @@ Rules for every group:
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | map-zone-labels → Extracts and transits show their names beside their badges | Visible extract shows its name | test/ui/map_zone_labels_test.dart | a PmcExtracts marker paints its name right of its badge | red |
-| map-zone-labels → Extracts and transits show their names beside their badges | Other categories stay unnamed | test/domain/map_zone_style_test.dart | only the four exit keys have a label faction | red |
+| map-zone-labels → Extracts and transits show their names beside their badges | Other categories stay unnamed | test/domain/map_zone_style_test.dart | only the four exit keys have a label faction | green |
 | map-zone-labels → Extracts and transits show their names beside their badges | Hidden category draws no name | test/ui/map_zone_labels_test.dart | hiding ScavExtracts removes its badge and name only | red |
 | map-zone-labels → Extracts and transits show their names beside their badges | Extract with an empty name | test/ui/map_zone_labels_test.dart | a blank extract name paints its badge and no label | red |
 | map-zone-labels → Name labels are coloured by faction | Each faction draws its own colour | test/ui/map_zone_labels_test.dart | four factions paint four label colours over exit-green badges | red |
-| map-zone-labels → Name labels are coloured by faction | Palette rule rejects a bad label colour | test/domain/map_zone_style_test.dart | label palette meets contrast, hue band and distinctness rules | red |
+| map-zone-labels → Name labels are coloured by faction | Palette rule rejects a bad label colour | test/domain/map_zone_style_test.dart | label palette meets contrast, hue band and distinctness rules | green |
 | map-zone-labels → Name labels are coloured by faction | Highlighted extract keeps its faction name colour | test/ui/map_zone_labels_test.dart | a raid-highlighted Scav extract keeps its Scav label colour | red |
 | map-zone-labels → Name labels stay readable at every zoom | Zooming keeps the text size | test/ui/map_zone_labels_test.dart | zooming moves the label but keeps its font size | red |
 | map-zone-labels → Name labels stay readable at every zoom | Dimmed extract fades its name | test/ui/map_zone_labels_test.dart | a dimmed extract paints its name at 0.22 alpha | red |
@@ -27,7 +27,7 @@ Rules for every group:
 | map-zone-labels → Extract and transit outlines show on hover or selection | Hover reveals the outline | test/ui/map_zone_labels_test.dart | hovering an extract badge paints its outline until the pointer leaves | red |
 | map-zone-labels → Extract and transit outlines show on hover or selection | Moving into the revealed outline keeps it | test/ui/map_zone_labels_test.dart | moving from the badge into the revealed area keeps the outline | red |
 | map-zone-labels → Extract and transit outlines show on hover or selection | Selection keeps the outline | test/ui/map_zone_labels_test.dart | a selected extract keeps its outline after the pointer leaves | red |
-| map-zone-labels → Extract and transit outlines show on hover or selection | Hazard zone outline always shows | test/domain/map_zone_style_test.dart | outlineDrawn is true for non-exit keys at rest | red |
+| map-zone-labels → Extract and transit outlines show on hover or selection | Hazard zone outline always shows | test/domain/map_zone_style_test.dart | outlineDrawn is true for non-exit keys at rest | green |
 | map-zone-labels → Extract and transit outlines show on hover or selection | Pointer leaves the map | test/ui/map_zone_labels_test.dart | leaving the viewport clears the hovered outline | red |
 | map-zone-labels → A hidden outline is not a click target | Click inside a hidden extract area | test/maps/map_controller_test.dart | a hidden extract outline is not hit | red |
 | map-zone-labels → A hidden outline is not a click target | Click inside a drawn hazard zone | test/maps/map_controller_test.dart | a hazard outline is still hit | red |
@@ -42,8 +42,8 @@ Rules for every group:
 
 ## 1. Label and outline rules
 
-- [ ] 1.1 Write `test/domain/map_zone_style_test.dart` (rows "Other categories stay unnamed", "Palette rule rejects a bad label colour", "Hazard zone outline always shows"). Cover every key in `markerCategoryLabels`, plus an unknown key, for `labelFactionFor` and `outlineDrawn` with all four hover/selected combinations. Check the four label colours against `#090F0D` contrast ≥ 3:1, the 170°–190° hue band at ≥ 10% saturation, and pairwise distinctness, with a failure message that names the faction, colour and rule. Verify it fails because `lib/domain/map_zone_style.dart` does not exist yet.
-- [ ] 1.2 Implement `lib/domain/map_zone_style.dart` per design D1 and D3: `LabelFaction`, `labelFactionFor`, `labelColourFor` with the four colours, and `outlineDrawn`, with `///` docs. Verify that 1.1 passes and flip its three rows green.
+- [x] 1.1 Write `test/domain/map_zone_style_test.dart` (rows "Other categories stay unnamed", "Palette rule rejects a bad label colour", "Hazard zone outline always shows"). Cover every key in `markerCategoryLabels`, plus an unknown key, for `labelFactionFor` and `outlineDrawn` with all four hover/selected combinations. Check the four label colours against `#090F0D` contrast ≥ 3:1, the 170°–190° hue band at ≥ 10% saturation, and pairwise distinctness, with a failure message that names the faction, colour and rule. Verify it fails because `lib/domain/map_zone_style.dart` does not exist yet.
+- [x] 1.2 Implement `lib/domain/map_zone_style.dart` per design D1 and D3: `LabelFaction`, `labelFactionFor`, `labelColourFor` with the four colours, and `outlineDrawn`, with `///` docs. Verify that 1.1 passes and flip its three rows green.
 
 ## 2. Hit testing respects hidden outlines
 
