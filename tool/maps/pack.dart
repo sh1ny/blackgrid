@@ -1976,6 +1976,22 @@ class MapPackCheckFailure implements Exception {
 
 const _maxReportedPaths = 100;
 
+/// The report lines, then the changed paths and manifest values, as printed
+/// by both `check` and `refresh`.
+List<String> _reportDetails(PackChangeReport report) => [
+  ...report.lines,
+  if (report.paths.isNotEmpty) ...[
+    'Changed files:',
+    for (final path in report.paths.take(_maxReportedPaths)) '  $path',
+    if (report.paths.length > _maxReportedPaths)
+      '  ... and ${report.paths.length - _maxReportedPaths} more',
+  ],
+  if (report.valueKeys.isNotEmpty) ...[
+    'Changed manifest values:',
+    for (final key in report.valueKeys) '  $key',
+  ],
+];
+
 /// Rebuilds the active generation of [packs] into [candidate] from the
 /// generation's own carried inputs, and returns the verified committed
 /// generation with the rebuilt manifest.
@@ -1986,12 +2002,14 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
   Directory packs,
   Directory candidate, {
   required Map<String, String> toolchain,
+  VectorEncoder encode = _encodeVector,
 }) async {
   final committed = await verifyCommittedGeneration(packs);
   final rebuilt = await rebuildCandidate(
     await FrozenInputs.fromGeneration(committed.directory),
     candidate,
     toolchain: toolchain,
+    encode: encode,
   );
   return (committed, rebuilt);
 }
@@ -2022,22 +2040,221 @@ Future<String> checkActive(
     if (!report.changed) return packReproducedLine(committed.id, toolchain);
     throw MapPackCheckFailure(
       [
-        ...report.lines,
-        if (report.paths.isNotEmpty) ...[
-          'Changed files:',
-          for (final path in report.paths.take(_maxReportedPaths)) '  $path',
-          if (report.paths.length > _maxReportedPaths)
-            '  ... and ${report.paths.length - _maxReportedPaths} more',
-        ],
-        if (report.valueKeys.isNotEmpty) ...[
-          'Changed manifest values:',
-          for (final key in report.valueKeys) '  $key',
-        ],
+        ..._reportDetails(report),
         'Map pack is not reproducible with the installed toolchain. '
             'Run: mise run maps:rebuild',
       ].join('\n'),
     );
   } finally {
     await work.delete(recursive: true);
+  }
+}
+
+/// The line that opens the generated map asset block in `pubspec.yaml`.
+const mapPackAssetsBegin =
+    '    # BEGIN generated map pack assets (mise run maps:rebuild)';
+
+/// The line that closes the generated map asset block in `pubspec.yaml`.
+const mapPackAssetsEnd = '    # END generated map pack assets';
+
+/// Replaces exactly the lines between the asset block markers in [pubspec]
+/// with [lines], and returns the new text.
+///
+/// The text needs exactly one [mapPackAssetsBegin] line followed by exactly
+/// one [mapPackAssetsEnd] line; otherwise this throws a [FormatException]
+/// naming the missing, duplicated or misordered marker. Everything outside the
+/// block is returned byte for byte. Inserted lines use the line ending of the
+/// begin marker line (LF or CRLF).
+String replaceMapPackAssetBlock(String pubspec, List<String> lines) {
+  final parts = pubspec.split('\n');
+  List<int> find(String marker) => [
+    for (final (index, part) in parts.indexed)
+      if (part.trim() == marker.trim()) index,
+  ];
+  const beginName = 'BEGIN generated map pack assets';
+  const endName = 'END generated map pack assets';
+  final begins = find(mapPackAssetsBegin), ends = find(mapPackAssetsEnd);
+  for (final (found, name) in [(begins, beginName), (ends, endName)]) {
+    if (found.isEmpty) {
+      throw FormatException('pubspec.yaml is missing the $name marker');
+    }
+  }
+  for (final (found, name) in [(begins, beginName), (ends, endName)]) {
+    if (found.length > 1) {
+      throw FormatException('pubspec.yaml has the $name marker more than once');
+    }
+  }
+  final [begin] = begins;
+  final [end] = ends;
+  if (end < begin) {
+    throw const FormatException(
+      'pubspec.yaml has the $endName marker before the $beginName marker',
+    );
+  }
+  final cr = parts[begin].endsWith('\r') ? '\r' : '';
+  return [
+    ...parts.sublist(0, begin + 1),
+    for (final line in lines) '$line$cr',
+    ...parts.sublist(end),
+  ].join('\n');
+}
+
+/// The asset declaration lines for [directories] under the pack [root].
+///
+/// Each line is indented four spaces, as inside the `flutter: assets:` list.
+List<String> mapPackAssetLines(String root, List<String> directories) => [
+  for (final directory in directories) '    - $root/$directory',
+];
+
+/// Normalizes [root] and requires it to be a repo-relative pack folder.
+///
+/// Throws a [FormatException] for absolute paths, drive letters and `.`, `..`
+/// or empty segments, because the asset declarations are relative to the
+/// repository.
+String requireRepoRelativePackRoot(String root) {
+  final normalized = root.replaceAll('\\', '/');
+  if (normalized.startsWith('/') ||
+      normalized.contains(':') ||
+      normalized
+          .split('/')
+          .any((part) => part.isEmpty || part == '.' || part == '..')) {
+    throw const FormatException(
+      'Asset declarations require a repo-relative pack root',
+    );
+  }
+  return normalized;
+}
+
+/// Deletes every generation folder under `versions/` of [packs] except
+/// [activeId], and returns the deleted ids sorted.
+///
+/// Only folders whose name is 64 lowercase hex digits are generations.
+/// Staging folders, files and anything else are never touched.
+Future<List<String>> pruneSupersededGenerations(
+  Directory packs,
+  String activeId,
+) async {
+  final versions = Directory('${packs.path}/versions');
+  if (!await versions.exists()) return const [];
+  final generation = RegExp(r'^[0-9a-f]{64}$');
+  final doomed = <String>[];
+  await for (final entity in versions.list(followLinks: false)) {
+    if (entity is! Directory) continue;
+    final name = entity.path.replaceAll('\\', '/').split('/').last;
+    if (generation.hasMatch(name) && name != activeId) doomed.add(name);
+  }
+  doomed.sort();
+  for (final name in doomed) {
+    await Directory('${versions.path}/$name').delete(recursive: true);
+  }
+  return doomed;
+}
+
+/// What a successful [refreshActive] did.
+class MapPackRefresh {
+  /// Creates a result.
+  const MapPackRefresh({
+    required this.id,
+    required this.changed,
+    required this.pruned,
+  });
+
+  /// The new active generation id.
+  final String id;
+
+  /// Whether anything but the toolchain record differed (the owner check).
+  final bool changed;
+
+  /// The superseded generation ids that were deleted.
+  final List<String> pruned;
+}
+
+/// Thrown by [refreshActive] after the rebuild started and something failed.
+///
+/// [message] names the candidate folder, which is kept for inspection.
+class MapPackRefreshFailure implements Exception {
+  /// Creates a failure with [message].
+  const MapPackRefreshFailure(this.message);
+
+  /// The original error followed by the kept candidate folder.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+String _refreshStamp(DateTime moment) {
+  final utc = moment.toUtc();
+  String two(int value) => value.toString().padLeft(2, '0');
+  return '${utc.year.toString().padLeft(4, '0')}${two(utc.month)}'
+      '${two(utc.day)}T${two(utc.hour)}${two(utc.minute)}${two(utc.second)}Z';
+}
+
+/// Rebuilds the active generation under [packs] with [toolchain], promotes
+/// it, rewrites the asset block in [pubspec] and prunes superseded
+/// generations.
+///
+/// In order: the leftover precheck and the marker check (before any write);
+/// verification of the committed generation; the rebuild and its validation
+/// into `refresh-<UTC>` under [candidateParent] (default `.dart_tool/maps`);
+/// the change report through [log] (default stdout); promotion; the block
+/// rewrite through a temp file and a rename, declaring directories under
+/// [assetRoot]; pruning; and deleting the candidate.
+///
+/// Until promotion nothing under [packs] changes. When the rebuild started
+/// and anything fails, the candidate is kept and a [MapPackRefreshFailure]
+/// names it. [encode] replaces the vector encoder of the rebuild only;
+/// validation always uses the real one.
+Future<MapPackRefresh> refreshActive(
+  Directory packs,
+  File pubspec, {
+  required Map<String, String> toolchain,
+  required String assetRoot,
+  Directory? candidateParent,
+  DateTime? now,
+  VectorEncoder? encode,
+  void Function(String line)? log,
+}) async {
+  final void Function(String) say = log ?? stdout.writeln;
+  final root = requireRepoRelativePackRoot(assetRoot);
+  await requireNoInterruptedPromotion(packs);
+  replaceMapPackAssetBlock(await pubspec.readAsString(), const []);
+  final candidate = Directory(
+    '${(candidateParent ?? Directory('.dart_tool/maps')).path}'
+    '/refresh-${_refreshStamp(now ?? DateTime.now())}',
+  );
+  try {
+    final (committed, rebuilt) = await _rebuildActive(
+      packs,
+      candidate,
+      toolchain: toolchain,
+      encode: encode ?? _encodeVector,
+    );
+    final report = packChangeReport(committed.manifest, rebuilt);
+    _reportDetails(report).forEach(say);
+    say(
+      report.changed
+          ? 'Artwork changed: the owner must check the maps listed above in '
+                'the app before merge.'
+          : 'Only the toolchain record changed: no owner check is needed.',
+    );
+    final id = await promoteCandidate(candidate, packs);
+    final updated = replaceMapPackAssetBlock(
+      await pubspec.readAsString(),
+      mapPackAssetLines(root, await preparedAssetDirectories(packs)),
+    );
+    final temporary = File('${pubspec.path}.tmp');
+    await temporary.writeAsString(updated, flush: true);
+    await temporary.rename(pubspec.path);
+    final pruned = await pruneSupersededGenerations(packs, id);
+    await candidate.delete(recursive: true);
+    return MapPackRefresh(id: id, changed: report.changed, pruned: pruned);
+  } catch (error) {
+    if (await candidate.exists()) {
+      throw MapPackRefreshFailure(
+        '$error\nCandidate kept at ${candidate.path}',
+      );
+    }
+    rethrow;
   }
 }

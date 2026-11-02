@@ -1190,15 +1190,49 @@ void main() {
     });
   });
 
-  group('committed pack check', () {
-    Future<Map<String, String>> snapshot(Directory root) async => {
-      await for (final entity in root.list(recursive: true))
-        if (entity is File)
-          entity.path.replaceAll('\\', '/'): sha256
-              .convert(await entity.readAsBytes())
-              .toString(),
-    };
+  Future<Map<String, String>> snapshot(Directory root) async => {
+    await for (final entity in root.list(recursive: true))
+      if (entity is File)
+        entity.path.replaceAll('\\', '/'): sha256
+            .convert(await entity.readAsBytes())
+            .toString(),
+  };
 
+  // Assembled directly, not through promoteCandidate (which would recompile
+  // and refuse it): one .vec is another component's valid bytes. Returns the
+  // floor id and the substituted path.
+  Future<(String, String)> assembleOtherCompiler(Directory packs) async {
+    final other = Directory('${temporary.path}/other-compiler');
+    await copyPack(fixtures.first, other);
+    final manifest = await readManifest(other);
+    final map = (manifest['maps'] as List).singleWhere(
+      (map) => map['id'] == 'interchange',
+    );
+    final floorId = map['floors'][0]['id'] as String;
+    final victim =
+        map['floors'][0]['artwork']['components'][0]['path'] as String;
+    final donor =
+        map['floors'][2]['artwork']['components'][0]['path'] as String;
+    await packFile(
+      other,
+      victim,
+    ).writeAsBytes(await packFile(other, donor).readAsBytes());
+    await saveManifest(other, manifest, refreshOutputs: true);
+    final id = sha256
+        .convert(await packFile(other, 'manifest.json').readAsBytes())
+        .toString();
+    await copyPack(other, Directory('${packs.path}/versions/$id'));
+    await File('${packs.path}/active.json').writeAsString(
+      canonicalJson({
+        'schemaVersion': 1,
+        'version': id,
+        'manifest': 'versions/$id/manifest.json',
+      }),
+    );
+    return (floorId, victim);
+  }
+
+  group('committed pack check', () {
     Future<List<String>> leftovers(Directory checkTemp) async => [
       await for (final entity in checkTemp.list()) entity.path,
     ];
@@ -1233,34 +1267,7 @@ void main() {
     });
 
     test('check fails with the per-map summary listing a vec built by another compiler and names maps:rebuild', () async {
-      // Assembled directly: promoteCandidate would recompile and refuse it.
-      final other = Directory('${temporary.path}/other-compiler');
-      await copyPack(fixtures.first, other);
-      final manifest = await readManifest(other);
-      final map = (manifest['maps'] as List).singleWhere(
-        (map) => map['id'] == 'interchange',
-      );
-      final floorId = map['floors'][0]['id'] as String;
-      final victim =
-          map['floors'][0]['artwork']['components'][0]['path'] as String;
-      final donor =
-          map['floors'][2]['artwork']['components'][0]['path'] as String;
-      await packFile(
-        other,
-        victim,
-      ).writeAsBytes(await packFile(other, donor).readAsBytes());
-      await saveManifest(other, manifest, refreshOutputs: true);
-      final id = sha256
-          .convert(await packFile(other, 'manifest.json').readAsBytes())
-          .toString();
-      await copyPack(other, Directory('${packs.path}/versions/$id'));
-      await File('${packs.path}/active.json').writeAsString(
-        canonicalJson({
-          'schemaVersion': 1,
-          'version': id,
-          'manifest': 'versions/$id/manifest.json',
-        }),
-      );
+      final (floorId, victim) = await assembleOtherCompiler(packs);
       final before = await snapshot(packs);
       await expectLater(
         checkActive(packs, toolchain: fixtureToolchain, tempParent: checkTemp),
@@ -1282,5 +1289,220 @@ void main() {
       expect(await snapshot(packs), before);
       expect(await leftovers(checkTemp), isEmpty);
     });
+  });
+
+  group('refresh', () {
+    const begin =
+        '    # BEGIN generated map pack assets (mise run maps:rebuild)';
+    const end = '    # END generated map pack assets';
+    final stamp = DateTime.utc(2026, 11, 2, 10, 30, 15);
+    const candidateName = 'refresh-20261102T103015Z';
+    const owner =
+        'Artwork changed: the owner must check the maps listed above in the '
+        'app before merge.';
+    final newer = {...fixtureToolchain, 'vector_graphics_compiler': '1.3.4'};
+
+    late Directory packs;
+    late Directory work;
+    late File pubspec;
+    late List<String> log;
+    const pubspecText =
+        'name: x\nflutter:\n  assets:\n    - assets/app_icon/\n'
+        '$begin\n    - assets/maps/stale/\n$end\n    - assets/other/\n';
+    setUp(() async {
+      packs = Directory('${temporary.path}/refresh-packs');
+      work = Directory('${temporary.path}/work');
+      pubspec = File('${temporary.path}/pubspec.yaml');
+      await pubspec.writeAsString(pubspecText);
+      log = [];
+    });
+
+    Future<MapPackRefresh> refresh({
+      Map<String, String>? toolchain,
+      VectorEncoder? encode,
+    }) => refreshActive(
+      packs,
+      pubspec,
+      toolchain: toolchain ?? newer,
+      assetRoot: 'assets/maps',
+      candidateParent: work,
+      now: stamp,
+      encode: encode,
+      log: log.add,
+    );
+
+    Future<List<String>> versions() async => [
+      await for (final entity in Directory('${packs.path}/versions').list())
+        entity.path.replaceAll('\\', '/').split('/').last,
+    ]..sort();
+
+    Future<String> activeId() async =>
+        jsonDecode(
+              await File('${packs.path}/active.json').readAsString(),
+            )['version']
+            as String;
+
+    test('refresh with identical artwork promotes a new generation, rewrites the asset block and prunes the old generation', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final oldId = await activeId();
+      final oldDirectory = Directory('${packs.path}/versions/$oldId');
+      final oldFiles = await snapshot(oldDirectory);
+
+      final result = await refresh();
+
+      final newId = await activeId();
+      expect(newId, isNot(oldId));
+      expect(result.id, newId);
+      expect(result.pruned, [oldId]);
+      expect(await versions(), [newId]);
+      final newDirectory = Directory('${packs.path}/versions/$newId');
+      final newFiles = await snapshot(newDirectory);
+      Map<String, String> relative(Map<String, String> files, Directory root) =>
+          {
+            for (final entry in files.entries)
+              entry.key.substring(root.path.replaceAll('\\', '/').length + 1):
+                  entry.value,
+          };
+      final before = relative(oldFiles, oldDirectory);
+      final after = relative(newFiles, newDirectory);
+      expect(after.keys.toSet(), before.keys.toSet());
+      expect(
+        [
+          for (final key in after.keys)
+            if (after[key] != before[key]) key,
+        ],
+        ['manifest.json'],
+      );
+
+      final block = mapPackAssetLines(
+        'assets/maps',
+        await preparedAssetDirectories(packs),
+      );
+      expect(
+        await pubspec.readAsString(),
+        'name: x\nflutter:\n  assets:\n    - assets/app_icon/\n'
+        '$begin\n${block.join('\n')}\n$end\n    - assets/other/\n',
+      );
+      expect(block, contains('    - assets/maps/versions/$newId/'));
+      expect(block.join('\n'), isNot(contains(oldId)));
+
+      expect(log, isNot(contains(owner)));
+      expect(
+        log.last,
+        'Only the toolchain record changed: no owner check is needed.',
+      );
+      expect(result.changed, isFalse);
+      expect(work.existsSync() ? await work.list().toList() : [], isEmpty);
+    });
+
+    test('refresh reports changed artwork and the owner check', () async {
+      final (floorId, victim) = await assembleOtherCompiler(packs);
+      final oldId = await activeId();
+
+      final result = await refresh(toolchain: fixtureToolchain);
+
+      expect(result.changed, isTrue);
+      expect(log, contains('interchange $floorId: 1 changed file(s)'));
+      expect(log, contains('  $victim'));
+      expect(log.last, owner);
+      expect(log.indexOf('  $victim'), lessThan(log.indexOf(owner)));
+      final newId = await activeId();
+      expect(newId, isNot(oldId));
+      expect(await versions(), [newId]);
+      expect(await pubspec.readAsString(), contains('versions/$newId/'));
+      expect(await pubspec.readAsString(), isNot(contains(oldId)));
+      await validateCandidate(Directory('${packs.path}/versions/$newId'));
+    });
+
+    test('refresh with an invalid candidate deletes nothing and keeps active, pubspec and the named candidate', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final before = await snapshot(packs);
+      final candidate = '${work.path}/$candidateName';
+
+      await expectLater(
+        // Stable but wrong payloads: the real encoder in validation disagrees.
+        refresh(
+          encode: (xml, name) =>
+              Uint8List.fromList([0x62, 0x2d, 0x88, 0x00, 1, 7]),
+        ),
+        throwsA(
+          isA<MapPackRefreshFailure>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('.vec'), contains(candidate)),
+          ),
+        ),
+      );
+
+      expect(await snapshot(packs), before);
+      expect(await pubspec.readAsString(), pubspecText);
+      expect(Directory(candidate).existsSync(), isTrue);
+    });
+
+    test(
+      'refresh with a leftover fails before rebuilding and changes nothing',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final staging = Directory(
+          '${packs.path}/versions/.${'ab' * 32}.staging',
+        );
+        await staging.create();
+        final before = await snapshot(packs);
+
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                startsWith('Interrupted map pack promotion left '),
+                contains('.staging'),
+              ),
+            ),
+          ),
+        );
+        await staging.delete();
+        await File('${packs.path}/active.next.json').writeAsString('{}');
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('active.next.json'),
+            ),
+          ),
+        );
+        await File('${packs.path}/active.next.json').delete();
+
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsString(), pubspecText);
+        expect(work.existsSync(), isFalse);
+        expect(log, isEmpty);
+      },
+    );
+
+    test(
+      'refresh with missing pubspec markers fails before rebuilding',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        await pubspec.writeAsString(pubspecText.replaceAll('$end\n', ''));
+
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('END generated map pack assets'),
+            ),
+          ),
+        );
+        expect(await snapshot(packs), before);
+        expect(work.existsSync(), isFalse);
+      },
+    );
   });
 }

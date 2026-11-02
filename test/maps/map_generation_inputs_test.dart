@@ -209,6 +209,51 @@ void main() {
     );
   });
 
+  group('pruneSupersededGenerations', () {
+    test('pruning deletes only 64-hex non-active generations', () async {
+      final versions = Directory('${packs.path}/versions');
+      final old = 'ab' * 32;
+      final names = {
+        'old': old,
+        'old2': 'cd' * 32,
+        'upper': 'FE' * 32,
+        'short': 'ab' * 31,
+        'long': '${'ab' * 32}0',
+        'staging': '.${'ef' * 32}.staging',
+        'plain': 'notes',
+      };
+      for (final name in names.values) {
+        await File('${versions.path}/$name/keep.txt').create(recursive: true);
+      }
+      // A plain file whose name looks like an id is not a generation folder.
+      await File('${versions.path}/${'12' * 32}').writeAsString('x');
+
+      final deleted = await pruneSupersededGenerations(packs, generation.id);
+
+      expect(deleted, unorderedEquals([old, 'cd' * 32]));
+      final remaining = {
+        await for (final entity in versions.list())
+          entity.path.replaceAll('\\', '/').split('/').last,
+      };
+      expect(remaining, {
+        generation.id,
+        names['upper']!,
+        names['short']!,
+        names['long']!,
+        names['staging']!,
+        names['plain']!,
+        '12' * 32,
+      });
+      expect(generation.file('manifest.json').existsSync(), isTrue);
+    });
+
+    test('a packs folder without versions prunes nothing', () async {
+      final empty = await Directory.systemTemp.createTemp('blackgrid-prune-');
+      addTearDown(() => empty.delete(recursive: true));
+      expect(await pruneSupersededGenerations(empty, 'ab' * 32), isEmpty);
+    });
+  });
+
   group('requireNoInterruptedPromotion', () {
     test('clean packs folder passes', () async {
       await requireNoInterruptedPromotion(packs);

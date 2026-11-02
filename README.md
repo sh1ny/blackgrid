@@ -168,6 +168,7 @@ Scanner has a manual catalog inspection and an opt-in **live scan** switch. With
 | `release:prepare` / `release:tag` / `build:release` | [`tool/release/release.dart`](tool/release/release.dart): prepare a release commit, tag the merged release, build a versioned Release bundle (see **Releases and changelog**) |
 | `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart): download and verify pinned vision inputs |
 | `maps:check` | [`prepare.dart check`](tool/maps/prepare.dart): rebuilds the committed map pack offline and fails unless it reproduces byte for byte |
+| `maps:rebuild` | [`prepare.dart refresh`](tool/maps/prepare.dart): rebuilds the committed map pack with the installed toolchain, promotes it, rewrites the generated asset block in `pubspec.yaml` and deletes superseded generations. Prints the changed maps and, when artwork changed, the owner check |
 | `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart): offline check of a built Release bundle |
 | `capture:selftest` | Native capture self-test ([`selftest.ps1`](windows/capture/selftest.ps1)). Refuses unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms no game is running |
 | `qualification:freeze` / `:validate` / `:report` | M0 reference evidence tools in [`tool/qualification/`](tool/qualification/m0.dart) |
@@ -301,6 +302,7 @@ Runtime only loads the active pack. These commands are maintenance tools ([`prep
 | `promote --candidate <dir> --packs <root>` | Adds an immutable `versions/<sha256>/` and swaps [`active.json`](assets/maps/active.json) atomically |
 | `assets --packs <root>` | Prints the `pubspec.yaml` asset list; Flutter does not include nested tile folders by itself |
 | `check --packs <root>` | Rebuilds the active generation offline from the inputs it carries, into a temp folder, and fails unless it reproduces byte for byte. Only the recorded `toolchain` may differ. Run it as `mise run maps:check`; CI runs it on every PR |
+| `refresh --packs <root> --pubspec <file>` | Rebuilds, validates and promotes the active generation, rewrites the `pubspec.yaml` lines between the `BEGIN`/`END generated map pack assets` markers, then deletes every other generation folder. Run it as `mise run maps:rebuild` |
 
 A dependency bump that leaves `maps:check` passing needs no new pack. When it fails, the report lists the maps and floors whose files or manifest values changed.
 

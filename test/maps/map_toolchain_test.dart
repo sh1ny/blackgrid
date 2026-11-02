@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:test/test.dart';
 
 import '../../tool/maps/pack.dart';
+import '../../tool/maps/prepare.dart' show runPrepare;
 
 String _lock(Iterable<String> skip) {
   const versions = {
@@ -86,6 +87,39 @@ void main() {
           reason: '$bytes',
         );
       }
+    });
+  });
+
+  group('prepare refresh', () {
+    test('prepare refresh with an incomplete lock fails before creating a candidate', () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-refresh-lock-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      final lock = File('${root.path}/pubspec.lock');
+      await lock.writeAsString(_lock(const ['vector_graphics_codec']));
+      final work = Directory('${root.path}/.dart_tool/maps');
+      await expectLater(
+        runPrepare(
+          const [
+            'refresh',
+            '--packs',
+            'assets/maps',
+            '--pubspec',
+            'pubspec.yaml',
+          ],
+          lockPath: lock.path,
+          candidateParent: work,
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('vector_graphics_codec'),
+          ),
+        ),
+      );
+      expect(work.existsSync(), isFalse);
     });
   });
 

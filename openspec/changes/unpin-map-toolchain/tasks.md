@@ -32,7 +32,7 @@ Rules for every group:
 |---|---|---|---|---|
 | prepared-map-packs → A pack records the toolchain that built it | Build records the installed versions | test/maps/map_preparation_qualification_test.dart | rebuild records the given toolchain and no fixed versions | green |
 | prepared-map-packs → A pack records the toolchain that built it | A package is not resolved | test/maps/map_toolchain_test.dart | lock without vector_graphics_codec names the package | green |
-| prepared-map-packs → A pack records the toolchain that built it | A package is not resolved | test/maps/map_toolchain_test.dart | prepare refresh with an incomplete lock fails before creating a candidate | red |
+| prepared-map-packs → A pack records the toolchain that built it | A package is not resolved | test/maps/map_toolchain_test.dart | prepare refresh with an incomplete lock fails before creating a candidate | green |
 | prepared-map-packs → A pack records the toolchain that built it | An older recorded version still validates | test/maps/map_preparation_qualification_test.dart | pack recording compiler 1.3.0 validates when vectors reproduce | green |
 | prepared-map-packs → A pack records the toolchain that built it | Separate compile step records the compiling toolchain | test/maps/map_preparation_qualification_test.dart | compile step replaces the normalize-time toolchain | green |
 | prepared-map-packs → Compiled vectors are deterministic | Stable compiler | test/maps/map_toolchain_test.dart | stable encoder output is written | green |
@@ -60,16 +60,16 @@ Rules for every group:
 | prepared-map-packs → The committed pack is checked for reproducibility | Committed output was edited | test/maps/map_generation_inputs_test.dart | edited or extra generation file fails naming it | green |
 | prepared-map-packs → The committed pack is checked for reproducibility | Manifest no longer matches its generation id | test/maps/map_generation_inputs_test.dart | manifest hash differing from the id fails naming the id | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_change_report_test.dart | toolchain-only difference reports nothing and needs no owner check | green |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_preparation_qualification_test.dart | refresh with identical artwork promotes a new generation, rewrites the asset block and prunes the old generation | red |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_preparation_qualification_test.dart | refresh with identical artwork promotes a new generation, rewrites the asset block and prunes the old generation | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Manifest values change without a file change | test/maps/map_change_report_test.dart | displayCrop-only difference reports the map and needs the owner check | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Manifest values change without a file change | test/maps/map_change_report_test.dart | tile empty flag difference marks its floor; witness paths go to other | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Artwork bytes change | test/maps/map_change_report_test.dart | one vec and two tiles print woods Ground_Level 1 and thelab First_Level 2 | green |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Artwork bytes change | test/maps/map_preparation_qualification_test.dart | refresh reports changed artwork and the owner check | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Validation fails | test/maps/map_preparation_qualification_test.dart | refresh with an invalid candidate deletes nothing and keeps active, pubspec and the named candidate | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Asset declaration markers missing | test/maps/map_pack_assets_block_test.dart | missing duplicated or reversed markers fail naming the marker | red |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Artwork bytes change | test/maps/map_preparation_qualification_test.dart | refresh reports changed artwork and the owner check | green |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Validation fails | test/maps/map_preparation_qualification_test.dart | refresh with an invalid candidate deletes nothing and keeps active, pubspec and the named candidate | green |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Asset declaration markers missing | test/maps/map_pack_assets_block_test.dart | missing duplicated or reversed markers fail naming the marker | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Interrupted earlier promotion | test/maps/map_generation_inputs_test.dart | leftover precheck names a staging folder of any id or active.next.json | green |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Interrupted earlier promotion | test/maps/map_preparation_qualification_test.dart | refresh with a leftover fails before rebuilding and changes nothing | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_generation_inputs_test.dart | pruning deletes only 64-hex non-active generations | red |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Interrupted earlier promotion | test/maps/map_preparation_qualification_test.dart | refresh with a leftover fails before rebuilding and changes nothing | green |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_generation_inputs_test.dart | pruning deletes only 64-hex non-active generations | green |
 | prepared-map-packs → Only the active generation is ever used | Active generation loads | test/maps/map_scene_test.dart | loader reads only active.json and the generation it names | green |
 | prepared-map-packs → Only the active generation is ever used | Active generation is broken | test/maps/map_scene_test.dart | broken active manifest is a load error and no other generation is read | green |
 | prepared-map-packs → Only the active generation is ever used | Active generation is broken | test/maps/map_controller_test.dart | broken active pack surfaces as the map load error | green |
@@ -129,8 +129,8 @@ The committed pack itself (group 6) is also covered by extra tests: `test/maps/a
 
 ## 5. Refresh: one command, generated asset block, upgrade procedure
 
-- [ ] 5.1 Write failing fast tests in `test/maps/map_pack_assets_block_test.dart` for the marker block: one begin and one end in order → the lines between are replaced exactly and everything else is unchanged; missing, duplicated or reversed markers → an error naming the marker. Verify they fail.
-- [ ] 5.2 Implement `refresh` in `tool/maps/pack.dart`/`prepare.dart`, in D4's order:
+- [x] 5.1 Write failing fast tests in `test/maps/map_pack_assets_block_test.dart` for the marker block: one begin and one end in order → the lines between are replaced exactly and everything else is unchanged; missing, duplicated or reversed markers → an error naming the marker. Verify they fail.
+- [x] 5.2 Implement `refresh` in `tool/maps/pack.dart`/`prepare.dart`, in D4's order:
   - the leftover precheck and the marker check, before any write;
   - `verifyCommittedGeneration`, then rebuild into `.dart_tool/maps/refresh-<UTC>/`, then validate;
   - print `packChangeReport`, ending with `Artwork changed: the owner must check the maps listed above in the app before merge.` when anything but `toolchain` differs;
@@ -139,8 +139,8 @@ The committed pack itself (group 6) is also covered by extra tests: `test/maps/a
   - delete the candidate only after success; on failure keep it and name it.
 
   Add the `maps:rebuild` task to `mise.toml`. Verify the 5.1 tests turn green.
-- [ ] 5.3 Add the qualification tests for the refresh rows: identical artwork → a new generation, `active.json` moved, the block rewritten, the old generation deleted, and the report says only provenance changed with no owner check; changed artwork (the 4.3 setup) → the per-floor summary, the path and the owner check; invalid candidate → nothing promoted or deleted, active, pubspec and the kept candidate named; a leftover staging folder of another id or `active.next.json` → fails before rebuilding, nothing changes. Also add a `prepare.dart`-level test that `refresh` with a lock lacking `vector_graphics_codec` fails before `.dart_tool/maps/refresh-*` exists. Verify: the map qualification file passes; flip the rows green.
-- [ ] 5.4 Write the upgrade procedure in AGENTS.md, in a new "Map pack toolchain upgrades" section the weekly dependency agent reads:
+- [x] 5.3 Add the qualification tests for the refresh rows: identical artwork → a new generation, `active.json` moved, the block rewritten, the old generation deleted, and the report says only provenance changed with no owner check; changed artwork (the 4.3 setup) → the per-floor summary, the path and the owner check; invalid candidate → nothing promoted or deleted, active, pubspec and the kept candidate named; a leftover staging folder of another id or `active.next.json` → fails before rebuilding, nothing changes. Also add a `prepare.dart`-level test that `refresh` with a lock lacking `vector_graphics_codec` fails before `.dart_tool/maps/refresh-*` exists. Verify: the map qualification file passes; flip the rows green.
+- [x] 5.4 Write the upgrade procedure in AGENTS.md, in a new "Map pack toolchain upgrades" section the weekly dependency agent reads:
   - after changing `vector_graphics`, `vector_graphics_compiler`, `vector_graphics_codec`, `image` or `xml`, run `mise run test` and `mise run maps:check`;
   - if the check passes, nothing else is needed;
   - if it passes, the PR may quote its `Map pack <id> reproduced byte-identically with …` line as proof;
