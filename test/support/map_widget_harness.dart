@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/application/app_services.dart';
@@ -21,6 +20,7 @@ import 'package:http/testing.dart';
 import '../fixtures/m1/catalog/fixture.dart';
 import '../ui/support/scan_ui_support.dart';
 import 'm1_harness.dart';
+import 'prepared_pack_manifest.dart';
 
 /// A small prepared pack decoded by the production loader and resource owner.
 /// Marker positions are independent game coordinates, not mocked projections.
@@ -53,42 +53,28 @@ class MapWidgetHarness {
     final png = (await image.toByteData(format: ui.ImageByteFormat.png))!;
     image.dispose();
     picture.dispose();
+    final manifest = preparedPackManifest(
+      maps: [
+        for (final id in const ['shoreline', 'thelab'])
+          _map(
+            id,
+            sourceCategory: sourceCategory,
+            hazardOutline: hazardOutline,
+            extraMarkers: extraMarkers,
+          ),
+      ],
+    );
     final loader = PreparedMapPackLoader(
-      loadBytes: (path) async {
-        if (path == 'assets/maps/active.json') {
-          return _jsonBytes({
-            'schemaVersion': 1,
-            'version': 'widget-fixture',
-            'manifest': 'versions/widget-fixture/manifest.json',
-          });
-        }
-        if (path == 'assets/maps/versions/widget-fixture/manifest.json') {
-          return _jsonBytes({
-            'schemaVersion': 1,
-            'vectorsCompiled': true,
-            'runtimeVectorVersion': '1.2.3',
-            'maps': [
-              _map(
-                'shoreline',
-                sourceCategory: sourceCategory,
-                hazardOutline: hazardOutline,
-                extraMarkers: extraMarkers,
-              ),
-              _map(
-                'thelab',
-                sourceCategory: sourceCategory,
-                hazardOutline: hazardOutline,
-                extraMarkers: extraMarkers,
-              ),
-            ],
-          });
-        }
-        if (path == 'assets/maps/versions/widget-fixture/base.png' ||
-            path == 'assets/maps/versions/widget-fixture/upper.png') {
-          return png;
-        }
-        throw StateError('Unknown fixture asset: $path');
-      },
+      loadBytes: preparedPackBytes(
+        manifest,
+        other: (path) async {
+          if (path == 'assets/maps/versions/fixture/base.png' ||
+              path == 'assets/maps/versions/fixture/upper.png') {
+            return png;
+          }
+          throw StateError('Unknown fixture asset: $path');
+        },
+      ),
     );
     final wire = wireFixture();
     final scanLogs = scanPorts == null
@@ -131,9 +117,6 @@ class MapWidgetHarness {
     if (logs != null && logs.existsSync()) logs.deleteSync(recursive: true);
   }
 }
-
-ByteData _jsonBytes(Object value) =>
-    ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(value))));
 
 Map<String, Object?> _map(
   String id, {

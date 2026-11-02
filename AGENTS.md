@@ -39,3 +39,13 @@ These rules apply to every agent that writes or changes Dart, including subagent
 - Tag tests that need a built bundle, native DLLs or long runtimes `@Tags(['qualification'])`, so that `mise run test` stays a fast offline loop. A tag protects the loop; it does not excuse a slow test.
 - Never weaken an integrity, ownership or safety check to make a test faster.
 - Verify with `mise run analyze` and `mise run test`, which use the Flutter version pinned in `mise.toml`, not a bare `dart`/`flutter` from `PATH`. Format with `dart format`.
+
+## Map pack toolchain upgrades
+
+Applies when a change touches `vector_graphics`, `vector_graphics_compiler`, `vector_graphics_codec`, `image` or `xml` in `pubspec.yaml` or `pubspec.lock`, such as the weekly dependency update.
+
+- After the change, run `mise run test` and `mise run maps:check`.
+- If both pass, nothing else is needed. The PR may quote the `Map pack <id> reproduced byte-identically with ...` line that `maps:check` prints as proof.
+- If `maps:check` fails, run `mise run maps:rebuild`. Commit the new generation together with `assets/maps/active.json`, `pubspec.yaml` and the deleted old generation. This is a regeneration step like build_runner, not a code change.
+- If the rebuild prints `Artwork changed`, mark the PR "artwork changed: owner check" in its summary and include the per-map summary the rebuild printed. The owner then checks only those maps in the app before merge. Record that check as unverified until the owner reports it.
+- A codec-format test failure (`test/maps/vector_format_test.dart`) also needs `preparedVectorCodecFormat` updated in the same change, before `mise run maps:rebuild`.

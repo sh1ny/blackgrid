@@ -3,6 +3,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
@@ -749,28 +750,17 @@ void main() {
   test('failed new generation preserves asset discovery for an older frozen floor calibration', () async {
     final older = await candidate('older');
     final olderManifest = await readManifest(older);
-    const legacyIds = {'interchange', 'thelab', 'icebreaker'};
-    olderManifest['preparationVersion'] = 2;
-    olderManifest.remove('supportedMapIds');
-    (olderManifest['maps'] as List).removeWhere(
-      (map) => !legacyIds.contains(map['id']),
-    );
-    expect((olderManifest['maps'] as List).map((map) => map['id']), [
-      'interchange',
-      'thelab',
-      'icebreaker',
-    ]);
+    expect(olderManifest['preparationVersion'], 3);
+    expect(olderManifest['maps'] as List, hasLength(13));
 
-    // Represent a previously published three-map generation with no evidence-owned
-    // marker floors. Its calibration, source index and output hashes remain
-    // coherent; only the authoring code now knows the newer assignments.
+    // Represent an earlier full generation whose frozen calibration has no
+    // evidence-owned marker floors for Icebreaker. Its calibration, source index
+    // and output hashes remain coherent; only the authoring code now knows the
+    // newer assignments.
     final calibrationFile = File('${older.path}/evidence/calibration.json');
     final olderCalibration = jsonDecode(
       await calibrationFile.readAsString(),
     ) as Map<String, dynamic>;
-    (olderCalibration['maps'] as List).removeWhere(
-      (map) => !legacyIds.contains(map['id']),
-    );
     final olderIceCalibration = (olderCalibration['maps'] as List)
         .cast<Map<String, dynamic>>()
         .singleWhere((map) => map['id'] == 'icebreaker');
@@ -826,8 +816,8 @@ void main() {
     expect(originalDirectories, contains('versions/$version/'));
     final publishedOlder = Directory('${packs.path}/versions/$version');
     final validatedOlder = await validateCandidate(publishedOlder);
-    expect(validatedOlder['preparationVersion'], 2);
-    expect(validatedOlder['maps'] as List, hasLength(3));
+    expect(validatedOlder['preparationVersion'], 3);
+    expect(validatedOlder['maps'] as List, hasLength(13));
     expect(
       calibrationFor('icebreaker').containsKey('markerFloorAssignments'),
       isTrue,
@@ -904,7 +894,10 @@ void main() {
       );
       final output = Directory('${temporary.path}/missing-candidate-$i');
       await expectLater(
-        rebuildCandidate(raw, output),
+        FrozenInputs.open(raw).then(
+          (frozen) =>
+              rebuildCandidate(frozen, output, toolchain: fixtureToolchain),
+        ),
         throwsA(isA<FileSystemException>()),
         reason: path,
       );
@@ -993,9 +986,10 @@ void main() {
       // Normalization is a real current-calibration rebuild, not a compiled
       // pack with its flag edited. Reuse raw inputs without rewriting tiles.
       final manifest = await rebuildCandidate(
-        fixtures.raw,
+        await FrozenInputs.open(fixtures.raw),
         private,
         compileVectors: false,
+        toolchain: fixtureToolchain,
       );
       expect(manifest['vectorsCompiled'], isFalse);
       await validateCandidate(private, requireCompiled: false);
@@ -1003,8 +997,576 @@ void main() {
         promoteCandidate(private, Directory('${temporary.path}/packs')),
         throwsFormatException,
       );
-      await compileCandidate(private);
+      await compileCandidate(private, toolchain: fixtureToolchain);
       await validateCandidate(private);
     },
   );
+
+  group('toolchain, determinism and vector format', () {
+    String vecPath(Map<String, dynamic> manifest, int floor) {
+      final map = (manifest['maps'] as List).singleWhere(
+        (map) => map['id'] == 'interchange',
+      );
+      return map['floors'][floor]['artwork']['components'][0]['path'] as String;
+    }
+
+    test('rebuild records the given toolchain and no fixed versions', () async {
+      final manifest = await readManifest(fixtures.first);
+      expect(manifest['toolchain'], fixtureToolchain);
+      for (final key in [
+        'dependencies',
+        'compilerVersion',
+        'runtimeVectorVersion',
+      ]) {
+        expect(manifest.containsKey(key), isFalse, reason: key);
+      }
+    });
+
+    test(
+      'pack recording compiler 1.3.0 validates when vectors reproduce',
+      () async {
+        final private = await candidate('old-compiler');
+        final manifest = await validateCandidate(private);
+        expect(manifest['toolchain']['vector_graphics_compiler'], '1.3.0');
+        expect(manifest['vectorCodecFormat'], 1);
+      },
+    );
+
+    test('compile step replaces the normalize-time toolchain', () async {
+      final private = Directory('${temporary.path}/replace-toolchain');
+      final normalized = await rebuildCandidate(
+        await FrozenInputs.open(fixtures.raw),
+        private,
+        compileVectors: false,
+        toolchain: {...fixtureToolchain, 'vector_graphics_compiler': '1.3.0'},
+      );
+      expect(normalized.containsKey('vectorCodecFormat'), isFalse);
+      await compileCandidate(
+        private,
+        toolchain: {...fixtureToolchain, 'vector_graphics_compiler': '1.3.4'},
+      );
+      final compiled = await readManifest(private);
+      expect(compiled['toolchain']['vector_graphics_compiler'], '1.3.4');
+      expect(compiled['vectorCodecFormat'], 1);
+      expect(compiled['vectorsCompiled'], isTrue);
+    });
+
+    test('unstable encoder leaves the candidate without a manifest', () async {
+      final private = Directory('${temporary.path}/unstable');
+      var calls = 0;
+      await expectLater(
+        rebuildCandidate(
+          await FrozenInputs.open(fixtures.raw),
+          private,
+          toolchain: fixtureToolchain,
+          encode: (xml, name) => Uint8List.fromList([++calls]),
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('.vec'),
+          ),
+        ),
+      );
+      expect(File('${private.path}/manifest.json').existsSync(), isFalse);
+    });
+
+    test(
+      'substituted vec with matching output hash fails naming the path',
+      () async {
+        final private = await candidate('substituted');
+        final manifest = await readManifest(private);
+        final victim = vecPath(manifest, 0);
+        await packFile(private, victim).writeAsBytes(
+          await packFile(private, vecPath(manifest, 2)).readAsBytes(),
+        );
+        await saveManifest(private, manifest, refreshOutputs: true);
+        await expectLater(
+          validateCandidate(private),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains(victim),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('compiled pack records vectorCodecFormat 1', () async {
+      expect((await readManifest(fixtures.first))['vectorCodecFormat'], 1);
+    });
+
+    test('vec header format 2 against record 1 fails naming payload and both formats', () async {
+      final private = await candidate('header-two');
+      final manifest = await readManifest(private);
+      final path = vecPath(manifest, 0);
+      final file = packFile(private, path);
+      final bytes = await file.readAsBytes();
+      bytes[4] = 2;
+      await file.writeAsBytes(bytes);
+      await saveManifest(private, manifest, refreshOutputs: true);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains(path), contains('format 2'), contains('format 1')),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'compiled pack without vectorCodecFormat fails as not recorded',
+      () async {
+        for (final value in <Object?>[null, '1']) {
+          final private = await candidate('no-format-$value');
+          final manifest = await readManifest(private);
+          if (value == null) {
+            manifest.remove('vectorCodecFormat');
+          } else {
+            manifest['vectorCodecFormat'] = value;
+          }
+          await saveManifest(private, manifest);
+          await expectLater(
+            validateCandidate(private),
+            throwsA(
+              isA<FormatException>().having(
+                (error) => error.message,
+                'message',
+                contains('not recorded'),
+              ),
+            ),
+            reason: '$value',
+          );
+        }
+      },
+    );
+
+    test(
+      'normalized candidate has no format record and cannot be promoted',
+      () async {
+        final private = Directory('${temporary.path}/normalized');
+        final manifest = await rebuildCandidate(
+          await FrozenInputs.open(fixtures.raw),
+          private,
+          compileVectors: false,
+          toolchain: fixtureToolchain,
+        );
+        expect(manifest.containsKey('vectorCodecFormat'), isFalse);
+        await validateCandidate(private, requireCompiled: false);
+        await expectLater(
+          promoteCandidate(private, Directory('${temporary.path}/packs')),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('Uncompiled'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('validator refuses preparation version 2', () async {
+      final private = await candidate('version-two');
+      final manifest = await readManifest(private);
+      manifest['preparationVersion'] = 2;
+      await saveManifest(private, manifest);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('Unsupported preparation version'), contains('2')),
+          ),
+        ),
+      );
+    });
+  });
+
+  Future<Map<String, String>> snapshot(Directory root) async => {
+    await for (final entity in root.list(recursive: true))
+      if (entity is File)
+        entity.path.replaceAll('\\', '/'): sha256
+            .convert(await entity.readAsBytes())
+            .toString(),
+  };
+
+  // Assembled directly, not through promoteCandidate (which would recompile
+  // and refuse it): one .vec is another component's valid bytes. Returns the
+  // floor id and the substituted path.
+  Future<(String, String)> assembleOtherCompiler(Directory packs) async {
+    final other = Directory('${temporary.path}/other-compiler');
+    await copyPack(fixtures.first, other);
+    final manifest = await readManifest(other);
+    final map = (manifest['maps'] as List).singleWhere(
+      (map) => map['id'] == 'interchange',
+    );
+    final floorId = map['floors'][0]['id'] as String;
+    final victim =
+        map['floors'][0]['artwork']['components'][0]['path'] as String;
+    final donor =
+        map['floors'][2]['artwork']['components'][0]['path'] as String;
+    await packFile(
+      other,
+      victim,
+    ).writeAsBytes(await packFile(other, donor).readAsBytes());
+    await saveManifest(other, manifest, refreshOutputs: true);
+    final id = sha256
+        .convert(await packFile(other, 'manifest.json').readAsBytes())
+        .toString();
+    await copyPack(other, Directory('${packs.path}/versions/$id'));
+    await File('${packs.path}/active.json').writeAsString(
+      canonicalJson({
+        'schemaVersion': 1,
+        'version': id,
+        'manifest': 'versions/$id/manifest.json',
+      }),
+    );
+    return (floorId, victim);
+  }
+
+  group('committed pack check', () {
+    Future<List<String>> leftovers(Directory checkTemp) async => [
+      await for (final entity in checkTemp.list()) entity.path,
+    ];
+
+    late Directory packs;
+    late Directory checkTemp;
+    setUp(() async {
+      packs = Directory('${temporary.path}/packs');
+      checkTemp = await Directory('${temporary.path}/check-temp').create();
+    });
+
+    test('check passes when only the toolchain record differs and prints the reproduced line', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final before = await snapshot(packs);
+      final newer = {...fixtureToolchain, 'vector_graphics_compiler': '1.3.4'};
+      final line = await checkActive(
+        packs,
+        toolchain: newer,
+        tempParent: checkTemp,
+      );
+      final id = jsonDecode(
+        await File('${packs.path}/active.json').readAsString(),
+      )['version'];
+      expect(
+        line,
+        'Map pack $id reproduced byte-identically with xml 6.6.1, '
+        'image 4.12.0, vector_graphics_compiler 1.3.4, vector_graphics 1.2.5, '
+        'vector_graphics_codec 1.1.13.',
+      );
+      expect(await snapshot(packs), before);
+      expect(await leftovers(checkTemp), isEmpty);
+    });
+
+    test('check fails with the per-map summary listing a vec built by another compiler and names maps:rebuild', () async {
+      final (floorId, victim) = await assembleOtherCompiler(packs);
+      final before = await snapshot(packs);
+      await expectLater(
+        checkActive(packs, toolchain: fixtureToolchain, tempParent: checkTemp),
+        throwsA(
+          isA<MapPackCheckFailure>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('interchange $floorId: 1 changed file(s)'),
+              contains(victim),
+              endsWith(
+                'Map pack is not reproducible with the installed toolchain. '
+                'Run: mise run maps:rebuild',
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(await snapshot(packs), before);
+      expect(await leftovers(checkTemp), isEmpty);
+    });
+  });
+
+  group('refresh', () {
+    const begin =
+        '    # BEGIN generated map pack assets (mise run maps:rebuild)';
+    const end = '    # END generated map pack assets';
+    final stamp = DateTime.utc(2026, 11, 2, 10, 30, 15);
+    const candidateName = 'refresh-20261102T103015Z';
+    const owner =
+        'Artwork changed: the owner must check the maps listed above in the '
+        'app before merge.';
+    final newer = {...fixtureToolchain, 'vector_graphics_compiler': '1.3.4'};
+
+    late Directory packs;
+    late Directory work;
+    late File pubspec;
+    late List<String> log;
+    const pubspecText =
+        'name: x\nflutter:\n  assets:\n    - assets/app_icon/\n'
+        '$begin\n    - assets/maps/stale/\n$end\n    - assets/other/\n';
+    setUp(() async {
+      packs = Directory('${temporary.path}/refresh-packs');
+      work = Directory('${temporary.path}/work');
+      pubspec = File('${temporary.path}/pubspec.yaml');
+      await pubspec.writeAsString(pubspecText);
+      log = [];
+    });
+
+    Future<MapPackRefresh> refresh({
+      Map<String, String>? toolchain,
+      VectorEncoder? encode,
+    }) => refreshActive(
+      packs,
+      pubspec,
+      toolchain: toolchain ?? newer,
+      assetRoot: 'assets/maps',
+      candidateParent: work,
+      now: stamp,
+      encode: encode,
+      log: log.add,
+    );
+
+    Future<List<String>> versions() async => [
+      await for (final entity in Directory('${packs.path}/versions').list())
+        entity.path.replaceAll('\\', '/').split('/').last,
+    ]..sort();
+
+    Future<String> activeId() async =>
+        jsonDecode(
+              await File('${packs.path}/active.json').readAsString(),
+            )['version']
+            as String;
+
+    test('refresh with identical artwork promotes a new generation, rewrites the asset block and prunes the old generation', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final oldId = await activeId();
+      final oldDirectory = Directory('${packs.path}/versions/$oldId');
+      final oldFiles = await snapshot(oldDirectory);
+
+      final result = await refresh();
+
+      final newId = await activeId();
+      expect(newId, isNot(oldId));
+      expect(result.id, newId);
+      expect(result.pruned, [oldId]);
+      expect(await versions(), [newId]);
+      final newDirectory = Directory('${packs.path}/versions/$newId');
+      final newFiles = await snapshot(newDirectory);
+      Map<String, String> relative(Map<String, String> files, Directory root) =>
+          {
+            for (final entry in files.entries)
+              entry.key.substring(root.path.replaceAll('\\', '/').length + 1):
+                  entry.value,
+          };
+      final before = relative(oldFiles, oldDirectory);
+      final after = relative(newFiles, newDirectory);
+      expect(after.keys.toSet(), before.keys.toSet());
+      expect(
+        [
+          for (final key in after.keys)
+            if (after[key] != before[key]) key,
+        ],
+        ['manifest.json'],
+      );
+
+      final block = mapPackAssetLines(
+        'assets/maps',
+        await preparedAssetDirectories(packs),
+      );
+      expect(
+        await pubspec.readAsString(),
+        'name: x\nflutter:\n  assets:\n    - assets/app_icon/\n'
+        '$begin\n${block.join('\n')}\n$end\n    - assets/other/\n',
+      );
+      expect(block, contains('    - assets/maps/versions/$newId/'));
+      expect(block.join('\n'), isNot(contains(oldId)));
+
+      expect(log, isNot(contains(owner)));
+      expect(
+        log.last,
+        'Only the toolchain record changed: no owner check is needed.',
+      );
+      expect(result.changed, isFalse);
+      expect(work.existsSync() ? await work.list().toList() : [], isEmpty);
+    });
+
+    test('refresh reports changed artwork and the owner check', () async {
+      final (floorId, victim) = await assembleOtherCompiler(packs);
+      final oldId = await activeId();
+
+      final result = await refresh(toolchain: fixtureToolchain);
+
+      expect(result.changed, isTrue);
+      expect(log, contains('interchange $floorId: 1 changed file(s)'));
+      expect(log, contains('  $victim'));
+      expect(log.last, owner);
+      expect(log.indexOf('  $victim'), lessThan(log.indexOf(owner)));
+      final newId = await activeId();
+      expect(newId, isNot(oldId));
+      expect(await versions(), [newId]);
+      expect(await pubspec.readAsString(), contains('versions/$newId/'));
+      expect(await pubspec.readAsString(), isNot(contains(oldId)));
+      await validateCandidate(Directory('${packs.path}/versions/$newId'));
+    });
+
+    test('refresh with an invalid candidate deletes nothing and keeps active, pubspec and the named candidate', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final before = await snapshot(packs);
+      final candidate = '${work.path}/$candidateName';
+
+      await expectLater(
+        // Stable but wrong payloads: the real encoder in validation disagrees.
+        refresh(
+          encode: (xml, name) =>
+              Uint8List.fromList([0x62, 0x2d, 0x88, 0x00, 1, 7]),
+        ),
+        throwsA(
+          isA<MapPackRefreshFailure>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('.vec'), contains(candidate)),
+          ),
+        ),
+      );
+
+      expect(await snapshot(packs), before);
+      expect(await pubspec.readAsString(), pubspecText);
+      expect(Directory(candidate).existsSync(), isTrue);
+    });
+
+    test(
+      'refresh whose promotion fails deletes the staged pubspec file',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final blocker = File('${packs.path}/active.next.json');
+
+        await expectLater(
+          refreshActive(
+            packs,
+            pubspec,
+            toolchain: newer,
+            assetRoot: 'assets/maps',
+            candidateParent: work,
+            now: stamp,
+            // The report runs after the leftover precheck and before staging,
+            // so the pointer swap in promotion finds a leftover and refuses.
+            log: (line) {
+              if (!blocker.existsSync()) blocker.writeAsStringSync('{}');
+            },
+          ),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('${work.path}/$candidateName'),
+                isNot(contains('already name')),
+              ),
+            ),
+          ),
+        );
+
+        expect(File('${pubspec.path}.tmp').existsSync(), isFalse);
+        expect(await pubspec.readAsString(), pubspecText);
+      },
+    );
+
+    test(
+      'refresh that cannot stage the pubspec rewrite promotes nothing',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        // A directory where the staged pubspec goes makes the write fail.
+        await Directory('${pubspec.path}.tmp').create();
+
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('${work.path}/$candidateName'),
+                isNot(contains('active.json already names')),
+              ),
+            ),
+          ),
+        );
+
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsString(), pubspecText);
+      },
+    );
+
+    test(
+      'refresh with a leftover fails before rebuilding and changes nothing',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final staging = Directory(
+          '${packs.path}/versions/.${'ab' * 32}.staging',
+        );
+        await staging.create();
+        final before = await snapshot(packs);
+
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                startsWith('Interrupted map pack promotion left '),
+                contains('.staging'),
+              ),
+            ),
+          ),
+        );
+        await staging.delete();
+        await File('${packs.path}/active.next.json').writeAsString('{}');
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('active.next.json'),
+            ),
+          ),
+        );
+        await File('${packs.path}/active.next.json').delete();
+
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsString(), pubspecText);
+        expect(work.existsSync(), isFalse);
+        expect(log, isEmpty);
+      },
+    );
+
+    test(
+      'refresh with missing pubspec markers fails before rebuilding',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        await pubspec.writeAsString(pubspecText.replaceAll('$end\n', ''));
+
+        await expectLater(
+          refresh(),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('END generated map pack assets'),
+            ),
+          ),
+        );
+        expect(await snapshot(packs), before);
+        expect(work.existsSync(), isFalse);
+      },
+    );
+  });
 }

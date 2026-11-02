@@ -196,10 +196,23 @@ void main() {
       expect('${result.stderr}${result.stdout}', contains('v0.5.0 predates'));
     });
 
-    test('the tooling guard lets a tree with both tasks through', () {
+    test('the tooling guard refuses a tree without maps:check', () {
       final result = runGuard(
         '[tasks."release:verify-tag"]\nrun = "x"\n'
         '[tasks."package:release"]\nrun = "y"\n',
+      );
+      expect(result.exitCode, isNot(0));
+      expect(
+        '${result.stderr}${result.stdout}',
+        contains('v0.5.0 predates the map pack check'),
+      );
+    });
+
+    test('the tooling guard lets a tree with all three tasks through', () {
+      final result = runGuard(
+        '[tasks."release:verify-tag"]\nrun = "x"\n'
+        '[tasks."package:release"]\nrun = "y"\n'
+        '[tasks."maps:check"]\nrun = "z"\n',
       );
       expect(result.exitCode, 0, reason: '${result.stderr}');
     });

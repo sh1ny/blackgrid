@@ -5,6 +5,24 @@ import 'package:flutter/services.dart';
 import '../domain/settings.dart' show supportedMaps;
 import 'prepared_map.dart';
 
+/// The vector payload format this build of the app decodes.
+///
+/// A pack records the codec format its `.vec` payloads were written in. The
+/// loader compares that format, not a package version, because the format is
+/// the only part of the toolchain that decides whether `vector_graphics` can
+/// decode a payload; the packages that wrote it may be updated freely while the
+/// format stays the same. Change this value only together with a codec update
+/// that changes the format, and rebuild the pack in the same change.
+const int preparedVectorCodecFormat = 1;
+
+/// Explains that a pack's vector format differs from [supported].
+///
+/// [recorded] is the format the pack records. The message names both formats
+/// and the command that regenerates the pack.
+String unsupportedVectorFormatMessage(int recorded, int supported) =>
+    'Pack vector format $recorded is not supported; this app decodes format '
+    '$supported. Run: mise run maps:rebuild';
+
 /// Loads one coherent immutable version from a local active pointer.
 ///
 /// The optional byte callback receives complete asset paths, including
@@ -62,10 +80,10 @@ class PreparedMapPackLoader {
     if (manifest['schemaVersion'] != 1 || manifest['maps'] is! List) {
       throw const FormatException('Unsupported prepared manifest version.');
     }
-    if (manifest['vectorsCompiled'] != true ||
-        manifest['runtimeVectorVersion'] != '1.2.3') {
-      throw const FormatException(
-        'Pack is not qualified for vector_graphics 1.2.3.',
+    final preparationVersion = manifest['preparationVersion'];
+    if (preparationVersion != 3) {
+      throw FormatException(
+        'Unsupported prepared map version $preparationVersion.',
       );
     }
     final root = '${assetPrefix}versions/$version/';
@@ -77,48 +95,54 @@ class PreparedMapPackLoader {
       maps.add(PreparedMap.fromJson(value, assetRoot: root));
     }
     if (maps.isEmpty) throw const FormatException('Prepared pack has no maps.');
-    if (manifest['preparationVersion'] == 3) {
-      final supported = manifest['supportedMapIds'];
-      if (supported is! List ||
-          supported.length != supportedMaps.length ||
-          supported.any((id) => id is! String || id.isEmpty) ||
-          supported.toSet().length != supported.length ||
-          !supported.toSet().containsAll(supportedMaps) ||
-          maps.length != supported.length ||
-          maps.map((map) => map.id).toSet().length != maps.length ||
-          !supported.toSet().containsAll(maps.map((map) => map.id))) {
-        throw const FormatException(
-          'Incomplete prepared supported-map closure.',
-        );
+    final supported = manifest['supportedMapIds'];
+    if (supported is! List ||
+        supported.length != supportedMaps.length ||
+        supported.any((id) => id is! String || id.isEmpty) ||
+        supported.toSet().length != supported.length ||
+        !supported.toSet().containsAll(supportedMaps) ||
+        maps.length != supported.length ||
+        maps.map((map) => map.id).toSet().length != maps.length ||
+        !supported.toSet().containsAll(maps.map((map) => map.id))) {
+      throw const FormatException('Incomplete prepared supported-map closure.');
+    }
+    final outputEntries = manifest['outputs'];
+    if (outputEntries is! List) {
+      throw const FormatException('Missing prepared output closure.');
+    }
+    final outputs = <String>{};
+    for (final value in outputEntries) {
+      if (value is! Map<String, dynamic> || value['path'] is! String) {
+        throw const FormatException('Invalid prepared output identity.');
       }
-      final outputEntries = manifest['outputs'];
-      if (outputEntries is! List) {
-        throw const FormatException('Missing prepared output closure.');
+      final path = preparedAssetPath(root, value['path'] as String);
+      if (!outputs.add(path)) {
+        throw const FormatException('Duplicate prepared output identity.');
       }
-      final outputs = <String>{};
-      for (final value in outputEntries) {
-        if (value is! Map<String, dynamic> || value['path'] is! String) {
-          throw const FormatException('Invalid prepared output identity.');
-        }
-        final path = preparedAssetPath(root, value['path'] as String);
-        if (!outputs.add(path)) {
-          throw const FormatException('Duplicate prepared output identity.');
-        }
-      }
-      for (final map in maps) {
-        for (final path in [
-          for (final component in map.components) component.path,
-          for (final tile in map.tiles) tile.path,
-          for (final dependency in map.rasterDependencies)
-            ...dependency.assetPaths,
-        ]) {
-          if (!outputs.contains(path)) {
-            throw const FormatException(
-              'Prepared scene escapes output closure.',
-            );
-          }
+    }
+    for (final map in maps) {
+      for (final path in [
+        for (final component in map.components) component.path,
+        for (final tile in map.tiles) tile.path,
+        for (final dependency in map.rasterDependencies)
+          ...dependency.assetPaths,
+      ]) {
+        if (!outputs.contains(path)) {
+          throw const FormatException('Prepared scene escapes output closure.');
         }
       }
+    }
+    if (manifest['vectorsCompiled'] != true) {
+      throw const FormatException('Pack vectors are not compiled.');
+    }
+    final recorded = manifest['vectorCodecFormat'];
+    if (recorded is! int) {
+      throw const FormatException('Pack vector format is not recorded.');
+    }
+    if (recorded != preparedVectorCodecFormat) {
+      throw FormatException(
+        unsupportedVectorFormatMessage(recorded, preparedVectorCodecFormat),
+      );
     }
     return PreparedMapPack(version: version, assetRoot: root, maps: maps);
   }

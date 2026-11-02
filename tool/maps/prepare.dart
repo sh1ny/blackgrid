@@ -10,6 +10,8 @@ const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart validate --candidate <compiled-directory>
   dart run tool/maps/prepare.dart promote --candidate <compiled-directory> --packs <pack-root>
   dart run tool/maps/prepare.dart assets --packs <repo-relative-pack-root>
+  dart run tool/maps/prepare.dart check --packs <pack-root>
+  dart run tool/maps/prepare.dart refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
 
 Preparation v3 requires the complete canonical inventory:
 factory, customs, woods, shoreline, interchange, thelab, reserve, lighthouse,
@@ -43,22 +45,39 @@ qualification.
 
 acquire is the only network operation. normalize preserves dependency-closed
 source SVG and native effect metadata without compiler execution. compile is a
-separate pinned pure-Dart adapter. rebuild performs normalize+compile offline.
+separate step that compiles the normalized vectors. rebuild performs
+normalize+compile offline. Each step reads pubspec.lock once, before any write,
+and records the resolved xml, image, vector_graphics_compiler, vector_graphics
+and vector_graphics_codec versions as the manifest toolchain; compile replaces
+the normalize-time record. Every vector is compiled twice and a build fails
+when the two outputs differ.
 validate/promote bind canonical vector component paths and actual compiled
-payloads to dependency-closed source SVGs. Reviewed Interchange compiler/payload
-identities avoid recompilation during validation; a new source is compiled once
-per input identity and process with the pinned adapter flags. Preparation v3
+payloads to dependency-closed source SVGs: validation recompiles every vector
+from its evidence and requires identical bytes, and every payload header must
+match the manifest's vectorCodecFormat. Only preparation version 3 with a
+vectorCodecFormat validates. Preparation v3
 preserves v2's content-addressed original PNG witnesses for transparent tiles;
 empty records are decoded and hash-bound just like visible tiles, not inferred
 from byte size or trusted from the manifest. Crops must remain wholly inside
-the unchanged original artwork frame. Existing v1 packs lacking empty witnesses
-must be rebuilt offline before this validator can promote them.
-Existing published preparation-v2 three-map packs remain readable and validate
-against their own frozen calibration/source evidence, not newer calibrations.
-New rebuilds require v3's complete inventory; old raw partial inputs do not
-silently become complete candidates.
-promote retains prior versions and atomically replaces only active.json.
-No command mutates an active version.
+the unchanged original artwork frame. New rebuilds require v3's complete
+inventory; old raw partial inputs do not silently become complete candidates.
+promote atomically replaces only active.json. refresh keeps only the active
+generation. No command mutates an active version.
+check rebuilds the active generation offline from the inputs it carries, into
+a system temp folder that is always deleted, and succeeds only when every file
+and manifest value matches except the recorded toolchain. It fails before
+anything else when an interrupted promotion left active.next.json or a
+versions/.<id>.staging folder. A mismatch ends with the instruction to run
+mise run maps:rebuild.
+refresh is the one command that renews the committed pack: it fails first on an
+incomplete pubspec.lock, an interrupted promotion or missing/duplicated/
+misordered pubspec markers, verifies the active generation, rebuilds it into
+.dart_tool/maps/refresh-<UTC>/, validates it and prints the change report. When
+anything but the toolchain record differs, the report ends with the owner check.
+It then promotes the candidate, rewrites the pubspec lines between the
+"BEGIN/END generated map pack assets" markers, deletes every other 64-hex
+generation folder and the candidate. On a failure the candidate is kept and
+named. Run it as mise run maps:rebuild.
 assets prints the complete pubspec assets section for the promoted generation;
 Flutter directory declarations do not recursively include nested tiles.
 ''';
@@ -69,80 +88,109 @@ Future<void> main(List<String> arguments) async {
     return;
   }
   try {
-    final command = arguments.first;
-    final values = <String, String>{};
-    for (var i = 1; i < arguments.length; i += 2) {
-      if (i + 1 >= arguments.length ||
-          !arguments[i].startsWith('--') ||
-          values.containsKey(arguments[i])) {
-        throw const FormatException('Expected unique --key value arguments');
-      }
-      values[arguments[i]] = arguments[i + 1];
-    }
-    final required = switch (command) {
-      'acquire' => {'--raw'},
-      'rebuild' || 'normalize' => {'--raw', '--candidate'},
-      'compile' || 'validate' => {'--candidate'},
-      'promote' => {'--candidate', '--packs'},
-      'assets' => {'--packs'},
-      _ => throw FormatException('Unknown operation $command'),
-    };
-    if (values.keys.toSet().difference(required).isNotEmpty ||
-        required.difference(values.keys.toSet()).isNotEmpty) {
-      throw FormatException(
-        'Required arguments for $command: ${required.join(' ')}',
-      );
-    }
-    switch (command) {
-      case 'acquire':
-        await acquireInputs(Directory(values['--raw']!));
-      case 'rebuild' || 'normalize':
-        final manifest = await rebuildCandidate(
-          Directory(values['--raw']!),
-          Directory(values['--candidate']!),
-          compileVectors: command == 'rebuild',
-        );
-        stdout.write(
-          canonicalJson({
-            'operation': command,
-            'maps': (manifest['maps'] as List).length,
-            'vectorsCompiled': manifest['vectorsCompiled'],
-          }),
-        );
-      case 'compile':
-        await compileCandidate(Directory(values['--candidate']!));
-      case 'validate':
-        await validateCandidate(Directory(values['--candidate']!));
-      case 'promote':
-        final version = await promoteCandidate(
-          Directory(values['--candidate']!),
-          Directory(values['--packs']!),
-        );
-        stdout.write(
-          canonicalJson({
-            'version': version,
-            'manifest': 'versions/$version/manifest.json',
-          }),
-        );
-      case 'assets':
-        final root = values['--packs']!.replaceAll('\\', '/');
-        if (root.startsWith('/') ||
-            root.contains(':') ||
-            root
-                .split('/')
-                .any((part) => part.isEmpty || part == '.' || part == '..')) {
-          throw const FormatException(
-            'Asset declarations require a repo-relative pack root',
-          );
-        }
-        final directories = await preparedAssetDirectories(Directory(root));
-        stdout.writeln('  assets:');
-        for (final directory in directories) {
-          stdout.writeln('    - $root/$directory');
-        }
-    }
+    await runPrepare(arguments);
   } catch (error) {
     stderr.writeln('Map preparation failed: $error');
     exitCode = 1;
+  }
+}
+
+/// Runs one preparation operation from command-line [arguments].
+///
+/// Reads the resolved toolchain from [lockPath] before any write.
+/// [candidateParent] is where `refresh` creates its candidate (default `.dart_tool/maps`). Throws
+/// on any failure; [main] reports it.
+Future<void> runPrepare(
+  List<String> arguments, {
+  String lockPath = 'pubspec.lock',
+  Directory? candidateParent,
+}) async {
+  Future<Map<String, String>> readToolchain() async =>
+      toolchainFromLock(await File(lockPath).readAsString());
+  final command = arguments.first;
+  final values = <String, String>{};
+  for (var i = 1; i < arguments.length; i += 2) {
+    if (i + 1 >= arguments.length ||
+        !arguments[i].startsWith('--') ||
+        values.containsKey(arguments[i])) {
+      throw const FormatException('Expected unique --key value arguments');
+    }
+    values[arguments[i]] = arguments[i + 1];
+  }
+  final required = switch (command) {
+    'acquire' => {'--raw'},
+    'rebuild' || 'normalize' => {'--raw', '--candidate'},
+    'compile' || 'validate' => {'--candidate'},
+    'promote' => {'--candidate', '--packs'},
+    'assets' || 'check' => {'--packs'},
+    'refresh' => {'--packs', '--pubspec'},
+    _ => throw FormatException('Unknown operation $command'),
+  };
+  if (values.keys.toSet().difference(required).isNotEmpty ||
+      required.difference(values.keys.toSet()).isNotEmpty) {
+    throw FormatException(
+      'Required arguments for $command: ${required.join(' ')}',
+    );
+  }
+  switch (command) {
+    case 'acquire':
+      await acquireInputs(Directory(values['--raw']!));
+    case 'rebuild' || 'normalize':
+      final manifest = await rebuildCandidate(
+        await FrozenInputs.open(Directory(values['--raw']!)),
+        Directory(values['--candidate']!),
+        compileVectors: command == 'rebuild',
+        toolchain: await readToolchain(),
+      );
+      stdout.write(
+        canonicalJson({
+          'operation': command,
+          'maps': (manifest['maps'] as List).length,
+          'vectorsCompiled': manifest['vectorsCompiled'],
+        }),
+      );
+    case 'compile':
+      await compileCandidate(
+        Directory(values['--candidate']!),
+        toolchain: await readToolchain(),
+      );
+    case 'validate':
+      await validateCandidate(Directory(values['--candidate']!));
+    case 'promote':
+      final version = await promoteCandidate(
+        Directory(values['--candidate']!),
+        Directory(values['--packs']!),
+      );
+      stdout.write(
+        canonicalJson({
+          'version': version,
+          'manifest': 'versions/$version/manifest.json',
+        }),
+      );
+    case 'check':
+      stdout.writeln(
+        await checkActive(
+          Directory(values['--packs']!),
+          toolchain: await readToolchain(),
+        ),
+      );
+    case 'refresh':
+      final result = await refreshActive(
+        Directory(values['--packs']!),
+        File(values['--pubspec']!),
+        toolchain: await readToolchain(),
+        assetRoot: values['--packs']!,
+        candidateParent: candidateParent,
+      );
+      stdout.writeln('Map pack ${result.id} is now active.');
+    case 'assets':
+      final root = requireRepoRelativePackRoot(values['--packs']!);
+      stdout.writeln('  assets:');
+      for (final line in mapPackAssetLines(
+        root,
+        await preparedAssetDirectories(Directory(root)),
+      )) {
+        stdout.writeln(line);
+      }
   }
 }

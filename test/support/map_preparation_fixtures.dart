@@ -8,6 +8,15 @@ import 'package:image/image.dart' as image;
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
 
+/// A fixed toolchain record for fixture builds, never read from the lock.
+const fixtureToolchain = <String, String>{
+  'xml': '6.6.1',
+  'image': '4.12.0',
+  'vector_graphics_compiler': '1.3.0',
+  'vector_graphics': '1.2.5',
+  'vector_graphics_codec': '1.1.13',
+};
+
 // Owned by one qualification suite, never by a process-global cache. Only
 // private copies are returned to mutation tests; the two complete builds and
 // reduced template remain read-only after construction.
@@ -22,8 +31,16 @@ class MapPreparationFixtures {
   static Future<MapPreparationFixtures> create(Directory root) async {
     final fixtures = MapPreparationFixtures._(root);
     await materializeFullRaw(fixtures.raw);
-    await rebuildCandidate(fixtures.raw, fixtures.first);
-    await rebuildCandidate(fixtures.raw, fixtures.second);
+    await rebuildCandidate(
+      await FrozenInputs.open(fixtures.raw),
+      fixtures.first,
+      toolchain: fixtureToolchain,
+    );
+    await rebuildCandidate(
+      await FrozenInputs.open(fixtures.raw),
+      fixtures.second,
+      toolchain: fixtureToolchain,
+    );
     await fixtures._makeSmallTemplate();
     return fixtures;
   }

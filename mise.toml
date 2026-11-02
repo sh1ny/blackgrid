@@ -61,6 +61,14 @@ run = "dart run tool/vision/fetch_runtime.dart"
 description = "Check a built Release bundle offline; pass the bundle directory after --"
 run = "dart run tool/vision/check_bundle.dart"
 
+[tasks."maps:check"]
+description = "Rebuild the committed map pack offline into a temp folder and fail unless it reproduces byte for byte with the installed toolchain"
+run = "dart run tool/maps/prepare.dart check --packs assets/maps"
+
+[tasks."maps:rebuild"]
+description = "Rebuild the committed map pack with the installed toolchain, promote it, rewrite the pubspec asset block and delete superseded generations"
+run = "dart run tool/maps/prepare.dart refresh --packs assets/maps --pubspec pubspec.yaml"
+
 [tasks."release:prepare"]
 description = "Prepare a release branch and commit; pass the version after --"
 run = "dart run tool/release/release.dart prepare"

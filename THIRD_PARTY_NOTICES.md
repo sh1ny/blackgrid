@@ -13,7 +13,7 @@ The representative vector's technical selection was corrected from Streets to In
 
 The SVG repository licence is not a blanket licence for Labs/Icebreaker raster artwork. Published source and creator evidence is retained; a website software licence does not establish artwork permission. No separate owner-cleared permission is asserted. Inclusion follows the user's direction for this private implementation, not permission for a public release or a visibility change.
 
-Preparation-only dependencies are pinned to `xml 6.6.1` ([MIT](https://github.com/renggli/dart-xml)), `image 4.12.0` ([MIT](https://github.com/brendan-duncan/image)) and `vector_graphics_compiler 1.3.4` ([BSD-3-Clause](https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler)); none requires a Flutter engine. Native runtime `vector_graphics 1.2.5` is qualified separately before its runtime commitment. Resolved transitive notices/lock are integrated by the parent after package resolution.
+Preparation dependencies are `xml` ([MIT](https://github.com/renggli/dart-xml)), `image` ([MIT](https://github.com/brendan-duncan/image)) and `vector_graphics_compiler` ([BSD-3-Clause](https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler)), plus `vector_graphics` and `vector_graphics_codec`; none requires a Flutter engine. Their versions are the ones resolved in `pubspec.lock` and recorded in each pack's manifest under `toolchain`. Resolved transitive notices/lock are integrated by the parent after package resolution.
 
 ## M5 Map-owned saved-panel OCR
 

@@ -13,6 +13,8 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
 
+import '../support/prepared_pack_manifest.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -565,8 +567,10 @@ void main() {
       expect(controller.transform.scale, view.scale);
       expect(controller.transform.translationX, view.translationX);
       expect(controller.transform.translationY, view.translationY);
-      await controller.selectPersistedMap('woods');
-      expect(controller.selectedMapId, 'woods');
+      // A complete pack carries every supported map, so the unbundled case is
+      // an id the pack does not list.
+      await controller.selectPersistedMap('retired-map');
+      expect(controller.selectedMapId, 'retired-map');
       expect(controller.unavailable, isTrue);
       expect(controller.preparedMap, isNull);
       expect(controller.scene, isNull);
@@ -685,6 +689,43 @@ void main() {
       expect(pin.frameRevision, 0);
     },
   );
+
+  test('unsupported pack format surfaces as the map load error', () async {
+    final manifest = preparedPackManifest()..['vectorCodecFormat'] = 2;
+    final controller = _controllerFor(preparedPackBytes(manifest));
+    addTearDown(controller.dispose);
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(
+      controller.error,
+      contains(unsupportedVectorFormatMessage(2, preparedVectorCodecFormat)),
+    );
+    expect(controller.preparedMap, isNull);
+  });
+
+  test('broken active pack surfaces as the map load error', () async {
+    final controller = _controllerFor((path) async {
+      if (path.endsWith('active.json')) {
+        return preparedJsonBytes({
+          'schemaVersion': 1,
+          'version': 'broken',
+          'manifest': 'versions/broken/manifest.json',
+        });
+      }
+      return ByteData.sublistView(Uint8List.fromList(utf8.encode('{')));
+    });
+    addTearDown(controller.dispose);
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.error, startsWith('Map list could not be opened: '));
+    expect(controller.preparedMap, isNull);
+  });
+}
+
+MapController _controllerFor(Future<ByteData> Function(String) loadBytes) {
+  final loader = PreparedMapPackLoader(loadBytes: loadBytes);
+  return MapController(
+    loader: loader,
+    resources: NativeMapResourceOwner(loader),
+  );
 }
 
 MapController _controller({
@@ -693,27 +734,15 @@ MapController _controller({
   int rotation = 0,
 }) {
   final loader = PreparedMapPackLoader(
-    loadBytes: (path) async {
-      if (path.endsWith('active.json')) {
-        return _json({
-          'schemaVersion': 1,
-          'version': 'fixture',
-          'manifest': 'versions/fixture/manifest.json',
-        });
-      }
-      if (path.endsWith('manifest.json')) {
-        return _json({
-          'schemaVersion': 1,
-          'vectorsCompiled': true,
-          'runtimeVectorVersion': '1.2.3',
-          'maps': [
-            _map('interchange', markers: markers, rotation: rotation),
-            _map('icebreaker', exclusive: true),
-          ],
-        });
-      }
-      return artwork == null ? _picture() : artwork(path);
-    },
+    loadBytes: preparedPackBytes(
+      preparedPackManifest(
+        maps: [
+          _map('interchange', markers: markers, rotation: rotation),
+          _map('icebreaker', exclusive: true),
+        ],
+      ),
+      other: (path) async => artwork == null ? _picture() : artwork(path),
+    ),
   );
   return MapController(
     loader: loader,
@@ -825,8 +854,6 @@ Map<String, dynamic> _marker(
   'source': {'url': 'fixture'},
 };
 
-ByteData _json(Object value) =>
-    ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(value))));
 ByteData _picture() => ByteData.sublistView(
   compiler.encodeSvg(
     xml: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" fill="#336699"/></svg>',

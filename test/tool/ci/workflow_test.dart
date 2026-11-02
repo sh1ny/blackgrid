@@ -17,6 +17,7 @@ void main() {
   const gates = [
     'mise run analyze',
     'mise run test',
+    'mise run maps:check',
     'mise run build:release',
     'mise run ci:qualification',
     'mise run package:release',
@@ -170,16 +171,25 @@ void main() {
     expect(steps[install], isNot(contains('if')));
   });
 
-  test(
-    'gate steps run in order analyze, test, build:release, ci:qualification, '
-    'package:release',
-    () {
-      final indexes = [for (final g in gates) gateIndex(g)];
-      expect(indexes, everyElement(isNonNegative));
-      expect(indexes, [...indexes]..sort());
-      expect(indexes.toSet(), hasLength(gates.length));
-    },
-  );
+  test('gate steps run in order analyze, test, maps:check, build:release, '
+      'ci:qualification, package:release', () {
+    final indexes = [for (final g in gates) gateIndex(g)];
+    expect(indexes, everyElement(isNonNegative));
+    expect(indexes, [...indexes]..sort());
+    expect(indexes.toSet(), hasLength(gates.length));
+  });
+
+  test('the map pack check runs after test and before the release build, '
+      'with no env or condition', () {
+    final check = gateIndex('mise run maps:check');
+    expect(check, gateIndex('mise run test') + 1);
+    expect(check, lessThan(gateIndex('mise run build:release')));
+    expect(run(steps[check]), 'mise run maps:check');
+    expect(steps[check]['name'], 'Map pack check');
+    expect(steps[check], isNot(contains('env')));
+    expect(steps[check], isNot(contains('if')));
+    expect(steps[check], isNot(contains('continue-on-error')));
+  });
 
   test('the package step sets no env and has no condition', () {
     final step = steps[gateIndex('mise run package:release')];
@@ -207,6 +217,12 @@ void main() {
     final guardScript = run(steps[guard]);
     expect(guardScript, contains('release:verify-tag'));
     expect(guardScript, contains('package:release'));
+    // The map pack check has its own presence check and its own message.
+    expect(guardScript, contains('maps:check'));
+    expect(
+      guardScript,
+      contains(r'"$env:RELEASE_TAG predates the map pack check"'),
+    );
     expect(steps[guard]['shell'], 'pwsh');
     for (final i in [guard, verify]) {
       expect(steps[i]['if'], releaseOnly);
