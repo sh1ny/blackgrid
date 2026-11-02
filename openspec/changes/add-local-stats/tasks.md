@@ -37,19 +37,19 @@ Rules for every group:
 | local-stats → Clear empties stats and keeps them empty | Clear | test/data/local_stats_store_test.dart | clear empties every mode | green |
 | local-stats → Clear empties stats and keeps them empty | Replay after a clear and a restart | test/data/local_stats_store_test.dart | records at or before the clear time are not stored after reopen | green |
 | local-stats → Clear empties stats and keeps them empty | New activity after a clear | test/data/local_stats_store_test.dart | raid after the clear time is stored | green |
-| local-stats → Clear empties stats and keeps them empty | Clear fails | test/application/local_stats_controller_test.dart | failed clear keeps totals and shows the clear message | red |
+| local-stats → Clear empties stats and keeps them empty | Clear fails | test/application/local_stats_controller_test.dart | failed clear keeps totals and shows the clear message | green |
 | local-stats → The Stats dialog shows the current mode's stats | Stats for the current mode | test/ui/stats_dialog_test.dart | shows the current mode's maps by count, total and sales | red |
 | local-stats → The Stats dialog shows the current mode's stats | Empty stats | test/ui/stats_dialog_test.dart | empty mode shows no raids or flea sales message | red |
-| local-stats → The Stats dialog shows the current mode's stats | Mode not known yet | test/application/local_stats_controller_test.dart | unknown app mode loads no totals | red |
-| local-stats → The Stats dialog shows the current mode's stats | Mode changes while open | test/application/local_stats_controller_test.dart | mode change reloads the new mode's totals | red |
-| local-stats → The Stats dialog shows the current mode's stats | New sale while open | test/application/local_stats_controller_test.dart | stored sale reloads totals and notifies | red |
+| local-stats → The Stats dialog shows the current mode's stats | Mode not known yet | test/application/local_stats_controller_test.dart | unknown app mode loads no totals | green |
+| local-stats → The Stats dialog shows the current mode's stats | Mode changes while open | test/application/local_stats_controller_test.dart | mode change reloads the new mode's totals | green |
+| local-stats → The Stats dialog shows the current mode's stats | New sale while open | test/application/local_stats_controller_test.dart | stored sale reloads totals and notifies | green |
 | local-stats → Clearing asks for confirmation | Confirmed | test/ui/stats_dialog_test.dart | confirming clear empties the stats | red |
 | local-stats → Clearing asks for confirmation | Cancelled | test/ui/stats_dialog_test.dart | cancelling clear deletes nothing | red |
-| local-stats → Stats failures are visible and contained | Read fails | test/application/local_stats_controller_test.dart | failed read sets the read message | red |
-| local-stats → Stats failures are visible and contained | Write fails | test/application/local_stats_controller_test.dart | failed insert sets the write message and the next insert still runs | red |
-| local-stats → Stats failures are visible and contained | Write message survives a reload | test/application/local_stats_controller_test.dart | successful reload keeps the write message | red |
-| local-stats → Stats failures are visible and contained | Write message clears on the next write | test/application/local_stats_controller_test.dart | next successful insert clears the write message | red |
-| local-stats → Stats failures are visible and contained | Clear message survives a reload | test/application/local_stats_controller_test.dart | successful reload keeps the clear message | red |
+| local-stats → Stats failures are visible and contained | Read fails | test/application/local_stats_controller_test.dart | failed read sets the read message | green |
+| local-stats → Stats failures are visible and contained | Write fails | test/application/local_stats_controller_test.dart | failed insert sets the write message and the next insert still runs | green |
+| local-stats → Stats failures are visible and contained | Write message survives a reload | test/application/local_stats_controller_test.dart | successful reload keeps the write message | green |
+| local-stats → Stats failures are visible and contained | Write message clears on the next write | test/application/local_stats_controller_test.dart | next successful insert clears the write message | green |
+| local-stats → Stats failures are visible and contained | Clear message survives a reload | test/application/local_stats_controller_test.dart | successful reload keeps the clear message | green |
 
 ## 1. ADR and architecture
 
@@ -75,8 +75,8 @@ Rules for every group:
 
 ## 5. LocalStatsController
 
-- [ ] 5.1 Write failing tests in `test/application/local_stats_controller_test.dart` with a fake lifecycle source (a sync broadcast stream), a fake mode source and a fake `LocalStatsStore` whose calls can fail or be held by completers. Cover the controller rows of the test map, plus: writes run in publication order and a clear queued after a write runs after it; a read failure's message stays after a successful write; `dismissClearError()` clears the clear message (review S4); disposal stops notifications and drops queued work. Verify they fail because the controller does not exist.
-- [ ] 5.2 Implement `lib/application/local_stats_controller.dart` (design D4): subscribes to `transitions` in its constructor, one serial write queue for inserts and clear, one coalesced pending reload, `totals`/`since`/`modeKnown`, and `readError`, `writeError`, `clearError` with the spec's clearing rules. Verify: group 5 rows green.
+- [x] 5.1 Write failing tests in `test/application/local_stats_controller_test.dart` with a fake lifecycle source (a sync broadcast stream), a fake mode source and a fake `LocalStatsStore` whose calls can fail or be held by completers. Cover the controller rows of the test map, plus: writes run in publication order and a clear queued after a write runs after it; a read failure's message stays after a successful write; `dismissClearError()` clears the clear message (review S4); disposal stops notifications and drops queued work. Verify they fail because the controller does not exist.
+- [x] 5.2 Implement `lib/application/local_stats_controller.dart` (design D4): subscribes to `transitions` in its constructor, one serial write queue for inserts and clear, one coalesced pending reload, `totals`/`since`/`modeKnown`, and `readError`, `writeError`, `clearError` with the spec's clearing rules. Verify: group 5 rows green.
 
 ## 6. Stats dialog, header button and wiring
 
