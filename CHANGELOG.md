@@ -1,5 +1,29 @@
 # Blackgrid Changelog
 
+## v0.7.0 - 2026-11-02
+
+Blackgrid now follows your raid from the game's logs: the Map shows the raid phase, a timer strip shows time in raid, the run-through countdown and the scav cooldown, and a new Stats dialog counts your flea sales and raids per map, kept only on your PC.
+
+Added:
+- Each change's proposal carries a `## Release Notes` section, and `release:prepare` builds the release's changelog section from them with a summary you give it (#75)
+- `mise run release-notes` prints the draft notes for the next release, and `-- --check <proposal.md>` validates one proposal's section (#75)
+- The Map's saved-file inputs show the raid phase (in menus, in queue, match found, raid starting, in raid or raid ended), read from the game's application, backend and push-notification logs. (#76)
+- A "Raid logs:" line on the Map reports problems with the backend and push-notification logs, such as a notifications log the game has not written yet, without changing the "Logs:" line. (#76)
+- A timer strip under the header, on both Map and Scanner, shows time in raid, the run-through countdown (7:10 by default) and the scav cooldown, counted from the game's log times so a restart of Blackgrid mid-raid keeps them right. (#77)
+- The scav cooldown starts when a scav raid ends and uses tarkov.dev's base time, your Fence reputation and the hideout bonuses from your Tracker progress. It is kept per game mode and survives a restart. (#77)
+- A "Raid timers" section in Settings turns the timers on or off, chooses which show, and sets the run-through length and your Fence reputation. (#77)
+- A Stats dialog, opened from the header, shows the current mode's flea sales (sales, items sold, roubles earned) and raids per map, counted from the game's logs and kept across restarts. Nothing leaves your PC. (#79)
+- Clear stats empties every mode's stats after a confirmation; a restart of Blackgrid does not bring the cleared raids and sales back. (#79)
+
+Changed:
+- The changelog of every earlier release is rewritten in the new format (#75)
+
+Fixed:
+- Factory and The Lab are detected from the game logs during event raids (the `factory_event_preset` and `laboratory_event_preset` scenes). (#76)
+
+Removed:
+- git-cliff and `cliff.toml`; `CHANGELOG.md` is no longer regenerated from Git history (#75)
+
 ## v0.6.0 - 2026-11-01
 
 Blackgrid is now built, packaged and published without a developer's machine: hosted Windows CI runs every offline gate, a release produces a zip and an installer, and a pushed tag publishes the GitHub Release. The app has its own icon and logo, the source is MIT-licensed, and failures now say what failed while keeping your data.
