@@ -12,6 +12,8 @@ import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
 
+import '../support/prepared_pack_manifest.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final fixture = jsonDecode(
@@ -245,23 +247,7 @@ void main() {
         if (marker['id'] == consoleId || marker['id'] == unresolvedId) marker,
     ];
     final loader = PreparedMapPackLoader(
-      loadBytes: (path) async {
-        final json = path.endsWith('active.json')
-            ? {
-                'schemaVersion': 1,
-                'version': 'eligibility',
-                'manifest': 'versions/eligibility/manifest.json',
-              }
-            : {
-                'schemaVersion': 1,
-                'vectorsCompiled': true,
-                'runtimeVectorVersion': '1.2.3',
-                'maps': [isolated],
-              };
-        return ByteData.sublistView(
-          Uint8List.fromList(utf8.encode(jsonEncode(json))),
-        );
-      },
+      loadBytes: preparedPackBytes(preparedPackManifest(maps: [isolated])),
     );
     final controller = MapController(
       loader: loader,
@@ -415,9 +401,18 @@ void main() {
   );
 }
 
+// TEMPORARY until the committed pack is regenerated with a recorded
+// `vectorCodecFormat` (task 6.3): the committed manifest predates the record,
+// so it is stamped here. These tests check placement, not the format.
 PreparedMapPackLoader _loader() => PreparedMapPackLoader(
-  loadBytes: (path) async =>
-      ByteData.sublistView(await File(path).readAsBytes()),
+  loadBytes: (path) async {
+    final bytes = ByteData.sublistView(await File(path).readAsBytes());
+    if (!path.endsWith('manifest.json')) return bytes;
+    final manifest =
+        jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
+    manifest['vectorCodecFormat'] ??= preparedVectorCodecFormat;
+    return preparedJsonBytes(manifest);
+  },
 );
 
 void _expectSourceMarker(PreparedMarker marker, Map<String, dynamic> control) {

@@ -19,6 +19,7 @@ import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
 import '../support/map_preparation_fixtures.dart'
     show preparedMapMetadataFixture;
+import '../support/prepared_pack_manifest.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,27 +29,15 @@ void main() {
     () async {
       final paths = <String>[];
       final loader = PreparedMapPackLoader(
-        loadBytes: (path) async {
-          paths.add(path);
-          if (path.endsWith('active.json')) {
-            return _json({
-              'schemaVersion': 1,
-              'version': 'fixture',
-              'manifest': 'versions/fixture/manifest.json',
-            });
-          }
-          return _json({
-            'schemaVersion': 1,
-            'vectorsCompiled': true,
-            'runtimeVectorVersion': '1.2.3',
-            'maps': [_vectorMap()],
-          });
-        },
+        loadBytes: preparedPackBytes(
+          preparedPackManifest(maps: [_vectorMap()]),
+          requested: paths,
+        ),
       );
       final pack = await loader.load();
       expect(pack.version, 'fixture');
       expect(
-        pack.maps.single.components.first.path,
+        pack.byId['interchange']!.components.first.path,
         'assets/maps/versions/fixture/overlay.vec',
       );
       expect(paths, [
@@ -123,16 +112,106 @@ void main() {
     }
   });
 
-  test('version-two manifests keep the legacy partial-pack contract', () async {
-    final pack = await _manifestLoader({
-      'schemaVersion': 1,
-      'preparationVersion': 2,
-      'vectorsCompiled': true,
-      'runtimeVectorVersion': '1.2.3',
-      'maps': [_vectorMap()],
-    }).load();
-    expect(pack.maps.single.id, 'interchange');
+  test('loader refuses preparation version 2 naming it', () async {
+    final manifest = _completeManifest()..['preparationVersion'] = 2;
+    await expectLater(
+      _manifestLoader(manifest).load(),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          'Unsupported prepared map version 2.',
+        ),
+      ),
+    );
   });
+
+  test(
+    'loader accepts supported format whatever toolchain is recorded',
+    () async {
+      final manifest = _completeManifest()
+        ..['toolchain'] = {
+          'xml': '9.9.9',
+          'image': '9.9.9',
+          'vector_graphics_compiler': '9.9.9',
+          'vector_graphics': '9.9.9',
+          'vector_graphics_codec': '9.9.9',
+        };
+      expect(manifest['vectorCodecFormat'], 1);
+      final pack = await _manifestLoader(manifest).load();
+      expect(pack.maps, hasLength(_canonicalMapIds.length));
+    },
+  );
+
+  test('loader refuses format 2 naming both formats', () async {
+    final manifest = _completeManifest()..['vectorCodecFormat'] = 2;
+    await expectLater(
+      _manifestLoader(manifest).load(),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          unsupportedVectorFormatMessage(2, preparedVectorCodecFormat),
+        ),
+      ),
+    );
+  });
+
+  test('loader refuses a manifest without a vector format', () async {
+    final absent = _completeManifest()..remove('vectorCodecFormat');
+    final text = _completeManifest()..['vectorCodecFormat'] = '1';
+    final fractional = _completeManifest()..['vectorCodecFormat'] = 1.5;
+    for (final manifest in [absent, text, fractional]) {
+      await expectLater(
+        _manifestLoader(manifest).load(),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Pack vector format is not recorded.',
+          ),
+        ),
+        reason: '${manifest['vectorCodecFormat']}',
+      );
+    }
+  });
+
+  test('loader reads only active.json and the generation it names', () async {
+    final requested = <String>[];
+    final loader = PreparedMapPackLoader(
+      loadBytes: preparedPackBytes(_completeManifest(), requested: requested),
+    );
+    await loader.load();
+    expect(requested, [
+      'assets/maps/active.json',
+      'assets/maps/versions/fixture/manifest.json',
+    ]);
+  });
+
+  test(
+    'broken active manifest is a load error and no other generation is read',
+    () async {
+      final requested = <String>[];
+      final loader = PreparedMapPackLoader(
+        loadBytes: (path) async {
+          requested.add(path);
+          if (path.endsWith('active.json')) {
+            return preparedJsonBytes({
+              'schemaVersion': 1,
+              'version': 'broken',
+              'manifest': 'versions/broken/manifest.json',
+            });
+          }
+          return ByteData.sublistView(Uint8List.fromList(utf8.encode('{')));
+        },
+      );
+      await expectLater(loader.load(), throwsFormatException);
+      expect(requested, [
+        'assets/maps/active.json',
+        'assets/maps/versions/broken/manifest.json',
+      ]);
+    },
+  );
 
   test('all-family parser preserves authored frames floors and runtime quest filter identities', () {
     // Structural/parity coverage only. Authored calibration is not an
@@ -888,49 +967,18 @@ Map<String, dynamic> _marker(
   'source': <String, dynamic>{},
 };
 
-Map<String, dynamic> _completeManifest() {
-  final maps = [
+Map<String, dynamic> _completeManifest() => preparedPackManifest(
+  maps: [
     for (final source in supportedMapSources.values)
       preparedMapMetadataFixture(source),
-  ];
-  final paths = <String>{};
-  for (final raw in maps) {
-    final map = PreparedMap.fromJson(raw, assetRoot: '');
-    paths.addAll([
-      for (final component in map.components) component.path,
-      for (final tile in map.tiles) tile.path,
-      for (final dependency in map.rasterDependencies) ...dependency.assetPaths,
-    ]);
-  }
-  return {
-    'schemaVersion': 1,
-    'preparationVersion': 3,
-    'vectorsCompiled': true,
-    'runtimeVectorVersion': '1.2.3',
-    'supportedMapIds': [..._canonicalMapIds],
-    'maps': maps,
-    'outputs': [
-      for (final path in paths) {'path': path},
-    ],
-  };
-}
+  ],
+);
 
 PreparedMapPackLoader _manifestLoader(
   Map<String, dynamic> manifest, {
   List<String>? loaded,
 }) => PreparedMapPackLoader(
-  loadBytes: (path) async {
-    loaded?.add(path);
-    if (path.endsWith('active.json')) {
-      return _json({
-        'schemaVersion': 1,
-        'version': 'fixture',
-        'manifest': 'versions/fixture/manifest.json',
-      });
-    }
-    if (path.endsWith('manifest.json')) return _json(manifest);
-    throw StateError('Metadata loading must not decode artwork: $path');
-  },
+  loadBytes: preparedPackBytes(manifest, requested: loaded),
 );
 
 // These independently authored fixtures exercise the public production loader
