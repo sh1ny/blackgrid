@@ -174,8 +174,8 @@ The committed pack itself (group 6) is also covered by extra tests: `test/maps/a
 
 ## 7. Integration
 
-- [ ] 7.1 Run `mise run analyze`, `mise run test`, `mise exec -- flutter test --tags qualification test/maps/map_preparation_qualification_test.dart` and `mise run maps:check`, and `dart format` the changed Dart. Confirm every test-map row is green, `grep -rn "preparationVersion.*== 2\|version == 2" lib tool test` finds no v2 acceptance path, and roadmap entries `add-artwork-refresh` and `add-live-map-data` exist with no other companion app named in any changed file. Verify: all four commands exit 0.
-- [ ] 7.2 Run `openspec validate unpin-map-toolchain --strict` and `mise run release-notes -- --check openspec/changes/unpin-map-toolchain/proposal.md`. If 6.3 reported changed artwork, update the proposal's Release Notes to say so. Verify: both exit 0.
+- [x] 7.1 Run `mise run analyze`, `mise run test`, `mise exec -- flutter test --tags qualification test/maps/map_preparation_qualification_test.dart` and `mise run maps:check`, and `dart format` the changed Dart. Confirm every test-map row is green, `grep -rn "preparationVersion.*== 2\|version == 2" lib tool test` finds no v2 acceptance path, and roadmap entries `add-artwork-refresh` and `add-live-map-data` exist with no other companion app named in any changed file. Verify: all four commands exit 0.
+- [x] 7.2 Run `openspec validate unpin-map-toolchain --strict` and `mise run release-notes -- --check openspec/changes/unpin-map-toolchain/proposal.md`. If 6.3 reported changed artwork, update the proposal's Release Notes to say so. Verify: both exit 0.
 
 ## Workflow follow-up
 
