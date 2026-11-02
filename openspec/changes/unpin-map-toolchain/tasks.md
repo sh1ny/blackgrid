@@ -51,23 +51,23 @@ Rules for every group:
 | prepared-map-packs → The app accepts packs in the vector format it decodes | No format record | test/maps/map_scene_test.dart | loader refuses a manifest without a vector format | green |
 | prepared-map-packs → The app's supported vector format matches its vector runtime | Codec unchanged | test/maps/vector_format_test.dart | resolved codec writes and decodes the supported format | green |
 | prepared-map-packs → The app's supported vector format matches its vector runtime | Codec format changes | test/maps/vector_format_test.dart | format mismatch message names both formats and maps:rebuild | green |
-| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update with identical output | test/maps/map_change_report_test.dart | success line names the generation and the five versions | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update with identical output | test/maps/map_preparation_qualification_test.dart | check passes when only the toolchain record differs and prints the reproduced line | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update that changes output | test/maps/map_change_report_test.dart | changed vec is counted under its map and floor | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update that changes output | test/maps/map_preparation_qualification_test.dart | check fails with the per-map summary listing a vec built by another compiler and names maps:rebuild | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | A needed input is not carried | test/maps/map_generation_inputs_test.dart | reading an uncarried source names its path | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | Committed evidence was edited | test/maps/map_generation_inputs_test.dart | edited evidence fails naming the file | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | Committed output was edited | test/maps/map_generation_inputs_test.dart | edited or extra generation file fails naming it | red |
-| prepared-map-packs → The committed pack is checked for reproducibility | Manifest no longer matches its generation id | test/maps/map_generation_inputs_test.dart | manifest hash differing from the id fails naming the id | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_change_report_test.dart | toolchain-only difference reports nothing and needs no owner check | red |
+| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update with identical output | test/maps/map_change_report_test.dart | success line names the generation and the five versions | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update with identical output | test/maps/map_preparation_qualification_test.dart | check passes when only the toolchain record differs and prints the reproduced line | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update that changes output | test/maps/map_change_report_test.dart | changed vec is counted under its map and floor | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | Toolchain update that changes output | test/maps/map_preparation_qualification_test.dart | check fails with the per-map summary listing a vec built by another compiler and names maps:rebuild | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | A needed input is not carried | test/maps/map_generation_inputs_test.dart | reading an uncarried source names its path | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | Committed evidence was edited | test/maps/map_generation_inputs_test.dart | edited evidence fails naming the file | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | Committed output was edited | test/maps/map_generation_inputs_test.dart | edited or extra generation file fails naming it | green |
+| prepared-map-packs → The committed pack is checked for reproducibility | Manifest no longer matches its generation id | test/maps/map_generation_inputs_test.dart | manifest hash differing from the id fails naming the id | green |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_change_report_test.dart | toolchain-only difference reports nothing and needs no owner check | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_preparation_qualification_test.dart | refresh with identical artwork promotes a new generation, rewrites the asset block and prunes the old generation | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Manifest values change without a file change | test/maps/map_change_report_test.dart | displayCrop-only difference reports the map and needs the owner check | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Manifest values change without a file change | test/maps/map_change_report_test.dart | tile empty flag difference marks its floor; witness paths go to other | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Artwork bytes change | test/maps/map_change_report_test.dart | one vec and two tiles print woods Ground_Level 1 and thelab First_Level 2 | red |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Manifest values change without a file change | test/maps/map_change_report_test.dart | displayCrop-only difference reports the map and needs the owner check | green |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Manifest values change without a file change | test/maps/map_change_report_test.dart | tile empty flag difference marks its floor; witness paths go to other | green |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Artwork bytes change | test/maps/map_change_report_test.dart | one vec and two tiles print woods Ground_Level 1 and thelab First_Level 2 | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Artwork bytes change | test/maps/map_preparation_qualification_test.dart | refresh reports changed artwork and the owner check | red |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Validation fails | test/maps/map_preparation_qualification_test.dart | refresh with an invalid candidate deletes nothing and keeps active, pubspec and the named candidate | red |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Asset declaration markers missing | test/maps/map_pack_assets_block_test.dart | missing duplicated or reversed markers fail naming the marker | red |
-| prepared-map-packs → One command rebuilds and promotes the committed pack | Interrupted earlier promotion | test/maps/map_generation_inputs_test.dart | leftover precheck names a staging folder of any id or active.next.json | red |
+| prepared-map-packs → One command rebuilds and promotes the committed pack | Interrupted earlier promotion | test/maps/map_generation_inputs_test.dart | leftover precheck names a staging folder of any id or active.next.json | green |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Interrupted earlier promotion | test/maps/map_preparation_qualification_test.dart | refresh with a leftover fails before rebuilding and changes nothing | red |
 | prepared-map-packs → One command rebuilds and promotes the committed pack | Only provenance changes | test/maps/map_generation_inputs_test.dart | pruning deletes only 64-hex non-active generations | red |
 | prepared-map-packs → Only the active generation is ever used | Active generation loads | test/maps/map_scene_test.dart | loader reads only active.json and the generation it names | green |
@@ -107,12 +107,12 @@ The committed pack itself (group 6) is also covered by extra tests: `test/maps/a
 
 ## 4. Check: committed generation as input, closure precheck, CI gate
 
-- [ ] 4.1 Write failing fast tests in `test/maps/map_generation_inputs_test.dart` on a tiny synthetic generation folder (a few small files, a hand-built `sources.json` and manifest, no real maps):
+- [x] 4.1 Write failing fast tests in `test/maps/map_generation_inputs_test.dart` on a tiny synthetic generation folder (a few small files, a hand-built `sources.json` and manifest, no real maps):
   - `verifyCommittedGeneration`: manifest hash ≠ id → names the id; an edited output, an extra file or a missing file → names the path; a consistent folder passes;
   - `FrozenInputs.fromGeneration`: edited evidence → names the file; a tile source carried only by hash resolves to its artwork or witness bytes; an uncarried tile → `bytes()` names the path and `rebuild --raw`.
 
   Verify they fail for the missing functions.
-- [ ] 4.2 Implement in `tool/maps/pack.dart`:
+- [x] 4.2 Implement in `tool/maps/pack.dart`:
   - extract the output-closure part of `validateCandidate` (`pack.dart:851-885`) into a shared function used by both validation and `verifyCommittedGeneration`;
   - `FrozenInputs.fromGeneration`; `rebuildCandidate` takes `FrozenInputs`, and `rebuild --raw` and the fixtures pass `FrozenInputs.open`;
   - the leftover precheck (N5): any `active.next.json` or `versions/.*.staging` fails with `Interrupted map pack promotion left <path>; inspect and remove it, then rerun.`, before anything else;
@@ -120,12 +120,12 @@ The committed pack itself (group 6) is also covered by extra tests: `test/maps/a
   - `_rebuildActive` and `checkActive`: precheck, rebuild into a system-temp folder, compare canonical manifests without `toolchain`. On success print the success line. On a difference print the report, the differing paths and keys, and end with `Map pack is not reproducible with the installed toolchain. Run: mise run maps:rebuild`. Always delete the temp folder.
 
   Add `prepare.dart check --packs`. Also write the fast tests in `test/maps/map_change_report_test.dart` (on small hand-built manifests) and the leftover precheck tests in `map_generation_inputs_test.dart` first, red. Verify the 4.1 tests and these turn green.
-- [ ] 4.3 Add the qualification tests for the check rows, on "committed" fixture generations in a temp packs folder:
+- [x] 4.3 Add the qualification tests for the check rows, on "committed" fixture generations in a temp packs folder:
   - toolchain-only difference: promote a fixture built with toolchain compiler `1.3.0`, then check with `1.3.4` → passes, prints the reproduced line with `1.3.4`, and leaves the packs folder byte-identical;
   - "built by another compiler": assemble a generation directly, not through `promoteCandidate`, which would recompile and refuse it. Copy a fixture candidate, overwrite one `.vec` with another component's valid `.vec` bytes, update that output hash in the manifest, name the folder by the new manifest hash and point `active.json` at it. The closure precheck passes, and the check fails with that floor's summary line, listing that path and naming `mise run maps:rebuild`.
 
   Verify: the map qualification file passes; flip the rows green.
-- [ ] 4.4 Add the `maps:check` task to `mise.toml`. Add the unconditional `Map pack check` step (`mise run maps:check`) to `.github/workflows/gates.yml` after `Test` and before `Build Release`. Add a `maps:check` presence check with its own message to the release guard (N3). Add `mise run maps:check` to the ordered `gates` list and a guard assertion in `test/tool/ci/workflow_test.dart`. Update the README map tools table and the maintenance section. Verify: `mise run test` passes, including the workflow tests.
+- [x] 4.4 Add the `maps:check` task to `mise.toml`. Add the unconditional `Map pack check` step (`mise run maps:check`) to `.github/workflows/gates.yml` after `Test` and before `Build Release`. Add a `maps:check` presence check with its own message to the release guard (N3). Add `mise run maps:check` to the ordered `gates` list and a guard assertion in `test/tool/ci/workflow_test.dart`. Update the README map tools table and the maintenance section. Verify: `mise run test` passes, including the workflow tests.
 
 ## 5. Refresh: one command, generated asset block, upgrade procedure
 

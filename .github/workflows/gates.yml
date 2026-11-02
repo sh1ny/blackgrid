@@ -58,6 +58,10 @@ jobs:
               exit 1
             }
           }
+          if (-not $toml.Contains("[tasks.`"maps:check`"]")) {
+            Write-Error "$env:RELEASE_TAG predates the map pack check"
+            exit 1
+          }
 
       - name: Verify the release tag
         if: inputs.release_tag != ''
@@ -72,6 +76,9 @@ jobs:
 
       - name: Test
         run: mise run test
+
+      - name: Map pack check
+        run: mise run maps:check
 
       - name: Build Release
         run: mise run build:release

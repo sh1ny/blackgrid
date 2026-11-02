@@ -894,7 +894,10 @@ void main() {
       );
       final output = Directory('${temporary.path}/missing-candidate-$i');
       await expectLater(
-        rebuildCandidate(raw, output, toolchain: fixtureToolchain),
+        FrozenInputs.open(raw).then(
+          (frozen) =>
+              rebuildCandidate(frozen, output, toolchain: fixtureToolchain),
+        ),
         throwsA(isA<FileSystemException>()),
         reason: path,
       );
@@ -983,7 +986,7 @@ void main() {
       // Normalization is a real current-calibration rebuild, not a compiled
       // pack with its flag edited. Reuse raw inputs without rewriting tiles.
       final manifest = await rebuildCandidate(
-        fixtures.raw,
+        await FrozenInputs.open(fixtures.raw),
         private,
         compileVectors: false,
         toolchain: fixtureToolchain,
@@ -1032,7 +1035,7 @@ void main() {
     test('compile step replaces the normalize-time toolchain', () async {
       final private = Directory('${temporary.path}/replace-toolchain');
       final normalized = await rebuildCandidate(
-        fixtures.raw,
+        await FrozenInputs.open(fixtures.raw),
         private,
         compileVectors: false,
         toolchain: {...fixtureToolchain, 'vector_graphics_compiler': '1.3.0'},
@@ -1053,7 +1056,7 @@ void main() {
       var calls = 0;
       await expectLater(
         rebuildCandidate(
-          fixtures.raw,
+          await FrozenInputs.open(fixtures.raw),
           private,
           toolchain: fixtureToolchain,
           encode: (xml, name) => Uint8List.fromList([++calls]),
@@ -1149,7 +1152,7 @@ void main() {
       () async {
         final private = Directory('${temporary.path}/normalized');
         final manifest = await rebuildCandidate(
-          fixtures.raw,
+          await FrozenInputs.open(fixtures.raw),
           private,
           compileVectors: false,
           toolchain: fixtureToolchain,
@@ -1184,6 +1187,100 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('committed pack check', () {
+    Future<Map<String, String>> snapshot(Directory root) async => {
+      await for (final entity in root.list(recursive: true))
+        if (entity is File)
+          entity.path.replaceAll('\\', '/'): sha256
+              .convert(await entity.readAsBytes())
+              .toString(),
+    };
+
+    Future<List<String>> leftovers(Directory checkTemp) async => [
+      await for (final entity in checkTemp.list()) entity.path,
+    ];
+
+    late Directory packs;
+    late Directory checkTemp;
+    setUp(() async {
+      packs = Directory('${temporary.path}/packs');
+      checkTemp = await Directory('${temporary.path}/check-temp').create();
+    });
+
+    test('check passes when only the toolchain record differs and prints the reproduced line', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final before = await snapshot(packs);
+      final newer = {...fixtureToolchain, 'vector_graphics_compiler': '1.3.4'};
+      final line = await checkActive(
+        packs,
+        toolchain: newer,
+        tempParent: checkTemp,
+      );
+      final id = jsonDecode(
+        await File('${packs.path}/active.json').readAsString(),
+      )['version'];
+      expect(
+        line,
+        'Map pack $id reproduced byte-identically with xml 6.6.1, '
+        'image 4.12.0, vector_graphics_compiler 1.3.4, vector_graphics 1.2.5, '
+        'vector_graphics_codec 1.1.13.',
+      );
+      expect(await snapshot(packs), before);
+      expect(await leftovers(checkTemp), isEmpty);
+    });
+
+    test('check fails with the per-map summary listing a vec built by another compiler and names maps:rebuild', () async {
+      // Assembled directly: promoteCandidate would recompile and refuse it.
+      final other = Directory('${temporary.path}/other-compiler');
+      await copyPack(fixtures.first, other);
+      final manifest = await readManifest(other);
+      final map = (manifest['maps'] as List).singleWhere(
+        (map) => map['id'] == 'interchange',
+      );
+      final floorId = map['floors'][0]['id'] as String;
+      final victim =
+          map['floors'][0]['artwork']['components'][0]['path'] as String;
+      final donor =
+          map['floors'][2]['artwork']['components'][0]['path'] as String;
+      await packFile(
+        other,
+        victim,
+      ).writeAsBytes(await packFile(other, donor).readAsBytes());
+      await saveManifest(other, manifest, refreshOutputs: true);
+      final id = sha256
+          .convert(await packFile(other, 'manifest.json').readAsBytes())
+          .toString();
+      await copyPack(other, Directory('${packs.path}/versions/$id'));
+      await File('${packs.path}/active.json').writeAsString(
+        canonicalJson({
+          'schemaVersion': 1,
+          'version': id,
+          'manifest': 'versions/$id/manifest.json',
+        }),
+      );
+      final before = await snapshot(packs);
+      await expectLater(
+        checkActive(packs, toolchain: fixtureToolchain, tempParent: checkTemp),
+        throwsA(
+          isA<MapPackCheckFailure>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('interchange $floorId: 1 changed file(s)'),
+              contains(victim),
+              endsWith(
+                'Map pack is not reproducible with the installed toolchain. '
+                'Run: mise run maps:rebuild',
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(await snapshot(packs), before);
+      expect(await leftovers(checkTemp), isEmpty);
     });
   });
 }

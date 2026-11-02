@@ -131,39 +131,118 @@ String _expectedVectorHash(String xml, String debugName) {
 String _emptyTileWitnessPath(String sourceHash) =>
     'evidence/tile-alpha/$sourceHash.png';
 
+/// A hash-locked view of the raw inputs a pack is built from.
+///
+/// [open] reads a raw generation folder. [fromGeneration] reads a committed
+/// pack generation, which carries its own inputs.
 class FrozenInputs {
-  FrozenInputs._(this.root, this.index, this._paths);
-  final Directory root;
+  FrozenInputs._(this.index, this._files, this._unverified, this._missing);
+
+  /// The parsed `sources.json` index.
   final Map<String, dynamic> index;
-  final Set<String> _paths;
+  final Map<String, File> _files;
+
+  /// Expected hash of each carried file that is hashed when read, not on open.
+  final Map<String, String> _unverified;
+
+  /// Listed sources no file carries, with the message to throw reading each.
+  final Map<String, String> _missing;
+
+  /// Opens the raw generation at [root] and hashes every listed source.
   static Future<FrozenInputs> open(Directory root) async {
     final index = await _readJson(root, 'sources.json');
+    final files = <String, File>{};
+    for (final source in _sourceList(index)) {
+      final path = source['path'] as String;
+      if (files.containsKey(path)) {
+        throw FormatException('Duplicate frozen path $path');
+      }
+      final file = packFile(root, path);
+      if (_hash(await file.readAsBytes()) != source['sha256']) {
+        throw FormatException('Frozen input hash mismatch: $path');
+      }
+      _requireSourceUrl(source, path);
+      files[path] = file;
+    }
+    return FrozenInputs._(index, files, const {}, const {});
+  }
+
+  /// Opens a committed [generation] as a raw-input view.
+  ///
+  /// The index is `evidence/sources.json`. A source outside `tiles/` resolves
+  /// to `evidence/<path>` and is hashed against the index here. A tile source
+  /// resolves to any output of the generation whose recorded hash equals the
+  /// source hash (artwork or an `evidence/tile-alpha` witness), hashed when
+  /// read. A source nothing carries makes [bytes] throw, naming its path.
+  static Future<FrozenInputs> fromGeneration(Directory generation) async {
+    final index = await _readJson(generation, 'evidence/sources.json');
+    final manifest = await _readJson(generation, 'manifest.json');
+    final carriers = <String, String>{};
+    for (final output in manifest['outputs'] as List) {
+      carriers.putIfAbsent(
+        output['sha256'] as String,
+        () => output['path'] as String,
+      );
+    }
+    final id = generation.path
+        .replaceAll('\\', '/')
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .last;
+    final files = <String, File>{};
+    final unverified = <String, String>{};
+    final missing = <String, String>{};
+    final seen = <String>{};
+    for (final source in _sourceList(index)) {
+      final path = source['path'] as String;
+      if (!seen.add(path)) throw FormatException('Duplicate frozen path $path');
+      _requireSourceUrl(source, path);
+      final hash = source['sha256'] as String;
+      if (!path.startsWith('tiles/')) {
+        final file = packFile(generation, 'evidence/$path');
+        if (_hash(await file.readAsBytes()) != hash) {
+          throw FormatException('Frozen input hash mismatch: $path');
+        }
+        files[path] = file;
+      } else if (carriers[hash] case final carrier?) {
+        files[path] = packFile(generation, carrier);
+        unverified[path] = hash;
+      } else {
+        missing[path] =
+            'Frozen input $path is not carried by generation $id; rebuild '
+            'from a raw generation with prepare.dart rebuild --raw';
+      }
+    }
+    return FrozenInputs._(index, files, unverified, missing);
+  }
+
+  static List<Map<String, dynamic>> _sourceList(Map<String, dynamic> index) {
     if (index['schemaVersion'] != 1 || index['sources'] is! List) {
       throw const FormatException('Unsupported frozen inputs');
     }
-    final paths = <String>{};
-    for (final source in index['sources'] as List) {
-      final path = source['path'] as String;
-      if (!paths.add(path)) {
-        throw FormatException('Duplicate frozen path $path');
-      }
-      final bytes = await packFile(root, path).readAsBytes();
-      if (_hash(bytes) != source['sha256']) {
-        throw FormatException('Frozen input hash mismatch: $path');
-      }
-      if (Uri.tryParse(source['url'] as String)?.scheme != 'https' &&
-          source['url'] != 'blackgrid:calibration-v1') {
-        throw FormatException('Invalid frozen source URL: $path');
-      }
-    }
-    return FrozenInputs._(root, index, paths);
+    return (index['sources'] as List).cast<Map<String, dynamic>>();
   }
 
-  Future<Uint8List> bytes(String path) async {
-    if (!_paths.contains(path)) {
-      throw FormatException('Unfrozen dependency: $path');
+  static void _requireSourceUrl(Map<String, dynamic> source, String path) {
+    if (Uri.tryParse(source['url'] as String)?.scheme != 'https' &&
+        source['url'] != 'blackgrid:calibration-v1') {
+      throw FormatException('Invalid frozen source URL: $path');
     }
-    return packFile(root, path).readAsBytes();
+  }
+
+  /// Returns the bytes of the frozen source [path].
+  ///
+  /// Throws a [FormatException] when [path] is not a listed source or no file
+  /// carries it.
+  Future<Uint8List> bytes(String path) async {
+    if (_missing[path] case final message?) throw FormatException(message);
+    final file = _files[path];
+    if (file == null) throw FormatException('Unfrozen dependency: $path');
+    final bytes = await file.readAsBytes();
+    if (_unverified[path] case final expected? when _hash(bytes) != expected) {
+      throw FormatException('Frozen input hash mismatch: $path');
+    }
+    return bytes;
   }
 
   Future<String> text(String path) async => utf8.decode(await bytes(path));
@@ -353,14 +432,14 @@ Future<void> acquireInputs(Directory root) async {
   }
 }
 
-/// Rebuilds a candidate pack offline from the frozen raw generation [raw].
+/// Rebuilds a candidate pack offline from the [frozen] inputs.
 ///
 /// The manifest records [toolchain] as the versions that built it. With
 /// [compileVectors], every vector is compiled twice through [encode] and the
 /// manifest records the payload format as `vectorCodecFormat`; without it the
 /// candidate has no `.vec` files and no format record.
 Future<Map<String, dynamic>> rebuildCandidate(
-  Directory raw,
+  FrozenInputs frozen,
   Directory candidate, {
   required Map<String, String> toolchain,
   bool compileVectors = true,
@@ -369,7 +448,6 @@ Future<Map<String, dynamic>> rebuildCandidate(
   if (await candidate.exists() && !(await candidate.list().isEmpty)) {
     throw const FormatException('Rebuild requires an empty fresh candidate');
   }
-  final frozen = await FrozenInputs.open(raw);
   final calibration =
       jsonDecode(await frozen.text('calibration.json')) as Map<String, dynamic>;
   final metadata = jsonDecode(await frozen.text('metadata/maps.json')) as List;
@@ -921,6 +999,60 @@ Future<List<Map<String, Object?>>> _outputHashes(Directory root) async {
   ];
 }
 
+/// Requires the files under [root] to be exactly the manifest-listed [listed]
+/// outputs with exactly their recorded hashes, and returns path to hash.
+///
+/// Throws a [FormatException] naming the first duplicate, changed, extra or
+/// unlisted path, or the filesystem error for a missing listed file.
+Future<Map<String, String>> _verifyOutputClosure(
+  Directory root,
+  Object? listed,
+) async {
+  final outputs = <String, String>{};
+  for (final entry in listed as List) {
+    final path = entry['path'] as String;
+    if (outputs.containsKey(path)) {
+      throw FormatException('Duplicate output $path');
+    }
+    packFile(root, path);
+    outputs[path] = entry['sha256'] as String;
+  }
+  // Enumerate independently of the manifest and hash each actual output once.
+  // This inventory belongs to this verification only, not another pack boundary.
+  final actual = await _outputHashes(root);
+  final actualHashes = {
+    for (final entry in actual)
+      entry['path'] as String: entry['sha256'] as String,
+  };
+  for (final entry in outputs.entries) {
+    final actualHash = actualHashes[entry.key];
+    if (actualHash == null) {
+      // Preserve a filesystem error for a missing listed file without reading
+      // or hashing it again. Existing excluded files still fail output closure.
+      await packFile(root, entry.key).length();
+      throw FormatException(
+        'Candidate contains untracked or missing output bytes: ${entry.key}',
+      );
+    }
+    if (actualHash != entry.value) {
+      throw FormatException('Candidate output hash mismatch: ${entry.key}');
+    }
+  }
+  for (final path in actualHashes.keys) {
+    if (!outputs.containsKey(path)) {
+      throw FormatException(
+        'Candidate contains untracked or missing output bytes: $path',
+      );
+    }
+  }
+  if (canonicalJson(actual) != canonicalJson(listed)) {
+    throw const FormatException(
+      'Candidate contains untracked or missing output bytes',
+    );
+  }
+  return outputs;
+}
+
 Future<Map<String, dynamic>> validateCandidate(
   Directory candidate, {
   bool requireCompiled = true,
@@ -936,41 +1068,7 @@ Future<Map<String, dynamic>> validateCandidate(
       'Uncompiled vector candidate cannot be promoted',
     );
   }
-  final outputs = <String, String>{};
-  for (final entry in manifest['outputs'] as List) {
-    final path = entry['path'] as String;
-    if (outputs.containsKey(path)) {
-      throw FormatException('Duplicate output $path');
-    }
-    packFile(candidate, path);
-    outputs[path] = entry['sha256'] as String;
-  }
-  // Enumerate independently of the manifest and hash each actual output once.
-  // This inventory belongs to this validation only, not another pack boundary.
-  final actual = await _outputHashes(candidate);
-  final actualHashes = {
-    for (final entry in actual)
-      entry['path'] as String: entry['sha256'] as String,
-  };
-  for (final entry in outputs.entries) {
-    final actualHash = actualHashes[entry.key];
-    if (actualHash == null) {
-      // Preserve a filesystem error for a missing listed file without reading
-      // or hashing it again. Existing excluded files still fail output closure.
-      await packFile(candidate, entry.key).length();
-      throw const FormatException(
-        'Candidate contains untracked or missing output bytes',
-      );
-    }
-    if (actualHash != entry.value) {
-      throw FormatException('Candidate output hash mismatch: ${entry.key}');
-    }
-  }
-  if (canonicalJson(actual) != canonicalJson(manifest['outputs'])) {
-    throw const FormatException(
-      'Candidate contains untracked or missing output bytes',
-    );
-  }
+  final outputs = await _verifyOutputClosure(candidate, manifest['outputs']);
   void required(String path) {
     if (!outputs.containsKey(path)) {
       throw FormatException('Candidate closure missing $path');
@@ -1513,8 +1611,10 @@ List<Map<String, Object?>> prepareMarkers(
   return result;
 }
 
-/// Produces complete non-recursive Flutter asset declarations for one version.
-Future<List<String>> preparedAssetDirectories(Directory packs) async {
+/// Returns the generation id that `active.json` under [packs] names.
+///
+/// Throws a [FormatException] when the pointer is not well-formed.
+Future<String> _activeVersion(Directory packs) async {
   final pointer = await _readJson(packs, 'active.json');
   final version = pointer['version'];
   if (pointer['schemaVersion'] != 1 ||
@@ -1523,6 +1623,12 @@ Future<List<String>> preparedAssetDirectories(Directory packs) async {
       pointer['manifest'] != 'versions/$version/manifest.json') {
     throw const FormatException('Invalid prepared active pointer');
   }
+  return version;
+}
+
+/// Produces complete non-recursive Flutter asset declarations for one version.
+Future<List<String>> preparedAssetDirectories(Directory packs) async {
+  final version = await _activeVersion(packs);
   final prefix = 'versions/$version/';
   final manifest = await validateCandidate(Directory('${packs.path}/$prefix'));
   final directories = <String>{'', prefix};
@@ -1592,4 +1698,346 @@ Future<String> promoteCandidate(Directory candidate, Directory packs) async {
   );
   await next.rename(pointer.path);
   return version;
+}
+
+/// The active generation of a packs folder after [verifyCommittedGeneration].
+class CommittedGeneration {
+  /// Creates a verified generation record.
+  const CommittedGeneration(this.id, this.directory, this.manifest);
+
+  /// The generation id, which is the SHA-256 of its `manifest.json`.
+  final String id;
+
+  /// The generation folder, `versions/<id>` under the packs folder.
+  final Directory directory;
+
+  /// The parsed `manifest.json`.
+  final Map<String, dynamic> manifest;
+}
+
+/// Verifies that the active generation under [packs] is exactly what its
+/// manifest describes.
+///
+/// It needs none of the newer manifest fields, so it also accepts older
+/// generations. Throws a [FormatException] when the pointer is malformed, the
+/// manifest bytes do not hash to the generation id (naming the id), or the
+/// generation's files differ from `outputs` (naming the first path).
+Future<CommittedGeneration> verifyCommittedGeneration(Directory packs) async {
+  final id = await _activeVersion(packs);
+  final directory = Directory('${packs.path}/versions/$id');
+  final bytes = await packFile(directory, 'manifest.json').readAsBytes();
+  if (_hash(bytes) != id) {
+    throw FormatException('Manifest of generation $id does not hash to its id');
+  }
+  final manifest = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+  if (manifest['outputs'] is! List) {
+    throw FormatException('Generation $id manifest lists no outputs');
+  }
+  await _verifyOutputClosure(directory, manifest['outputs']);
+  return CommittedGeneration(id, directory, manifest);
+}
+
+/// Throws a [FormatException] when an earlier promotion under [packs] left
+/// `active.next.json` or any `versions/.<id>.staging` folder behind.
+Future<void> requireNoInterruptedPromotion(Directory packs) async {
+  final root = packs.path
+      .replaceAll('\\', '/')
+      .replaceFirst(RegExp(r'/+$'), '');
+  FormatException left(String path) => FormatException(
+    'Interrupted map pack promotion left $path; inspect and remove it, '
+    'then rerun.',
+  );
+  if (await File('$root/active.next.json').exists()) {
+    throw left('$root/active.next.json');
+  }
+  final versions = Directory('$root/versions');
+  if (!await versions.exists()) return;
+  final names = [
+    await for (final entity in versions.list(followLinks: false))
+      entity.path.replaceAll('\\', '/').split('/').last,
+  ]..sort();
+  for (final name in names) {
+    if (name.startsWith('.') && name.endsWith('.staging')) {
+      throw left('$root/versions/$name');
+    }
+  }
+}
+
+/// What differs between a committed manifest and its rebuild, by owner.
+class PackChangeReport {
+  /// Creates a report.
+  const PackChangeReport({
+    required this.lines,
+    required this.paths,
+    required this.valueKeys,
+  });
+
+  /// One summary line per group that changed, in manifest map order.
+  final List<String> lines;
+
+  /// Every output path that was added, removed or changed, sorted.
+  final List<String> paths;
+
+  /// The manifest values that differ outside `outputs`, as readable names.
+  final List<String> valueKeys;
+
+  /// Whether anything other than the provenance `toolchain` differs.
+  bool get changed => lines.isNotEmpty;
+}
+
+class _Tally {
+  int files = 0;
+  bool values = false;
+}
+
+/// Compares two manifests and groups every difference by owner.
+///
+/// Files are grouped by `(map id, floor id)`, `(map id, dependency id)` or
+/// `other` (evidence, notices and shared empty-tile witnesses). Manifest value
+/// differences mark their floor, their map (`<map id>`) or the `pack` group.
+/// The `toolchain` record is provenance and is never reported.
+PackChangeReport packChangeReport(
+  Map<String, dynamic> committed,
+  Map<String, dynamic> rebuilt,
+) {
+  Map<String, String> hashes(Map<String, dynamic> manifest) => {
+    for (final output in manifest['outputs'] as List)
+      output['path'] as String: output['sha256'] as String,
+  };
+  final before = hashes(committed), after = hashes(rebuilt);
+  final changedPaths = [
+    for (final path in {...before.keys, ...after.keys})
+      if (before[path] != after[path]) path,
+  ]..sort();
+
+  List<Map<String, dynamic>> listOf(Object? value) =>
+      (value as List? ?? const []).cast<Map<String, dynamic>>();
+  String same(Object? value) => canonicalJson(value);
+
+  final mapIds = <String>[];
+  final sides = <String, List<Map<String, dynamic>?>>{};
+  for (final (index, manifest) in [committed, rebuilt].indexed) {
+    for (final map in listOf(manifest['maps'])) {
+      final id = map['id'] as String;
+      if (!mapIds.contains(id)) mapIds.add(id);
+      (sides[id] ??= [null, null])[index] = map;
+    }
+  }
+
+  // Insertion order is the report order: per map, the map, then its floors and
+  // dependencies; then `pack` and `other`.
+  final tallies = <String, _Tally>{};
+  final owners = <String, String>{};
+  final valueKeys = <String>[];
+  _Tally tally(String label) => tallies.putIfAbsent(label, _Tally.new);
+
+  Object? artworkValues(Map<String, dynamic> entry) {
+    final artwork = (entry['artwork'] ?? const {}) as Map<String, dynamic>;
+    return {
+      for (final key in entry.keys)
+        if (key != 'artwork') key: entry[key],
+      'tiles': [
+        for (final tile in listOf(artwork['tiles']))
+          [tile['x'], tile['y'], tile['empty'], tile['alphaBounds']],
+      ],
+      'components': [
+        for (final component in listOf(artwork['components']))
+          [component['id'], component['effects']],
+      ],
+    };
+  }
+
+  void own(String label, Map<String, dynamic> entry) {
+    final artwork = (entry['artwork'] ?? const {}) as Map<String, dynamic>;
+    for (final component in listOf(artwork['components'])) {
+      for (final key in const ['sourceSvg', 'compilerSvg', 'path']) {
+        if (component[key] case final String path) owners[path] = label;
+      }
+    }
+    for (final tile in listOf(artwork['tiles'])) {
+      if (tile['path'] case final String path) owners[path] = label;
+    }
+  }
+
+  Map<String, dynamic>? mapValues(Map<String, dynamic>? map) => map == null
+      ? null
+      : {
+          for (final key in map.keys)
+            if (key != 'floors' && key != 'rasterDependencies') key: map[key],
+        };
+
+  for (final id in mapIds) {
+    final pair = sides[id]!;
+    tally(id);
+    final left = mapValues(pair[0]), right = mapValues(pair[1]);
+    if (left == null || right == null) {
+      tallies[id]!.values = true;
+      valueKeys.add(id);
+    } else {
+      for (final key in {...left.keys, ...right.keys}) {
+        if (same(left[key]) != same(right[key])) {
+          tallies[id]!.values = true;
+          valueKeys.add('$id $key');
+        }
+      }
+    }
+    for (final (prefix, key) in const [
+      ('', 'floors'),
+      ('dependency ', 'rasterDependencies'),
+    ]) {
+      final bySide = [
+        for (final map in pair)
+          {for (final entry in listOf(map?[key])) entry['id'] as String: entry},
+      ];
+      final entryIds = <String>{for (final side in bySide) ...side.keys};
+      for (final entryId in entryIds) {
+        final label = '$id $prefix$entryId';
+        final a = bySide[0][entryId], b = bySide[1][entryId];
+        for (final entry in [a, b]) {
+          if (entry != null) own(label, entry);
+        }
+        tally(label);
+        if (a == null ||
+            b == null ||
+            same(artworkValues(a)) != same(artworkValues(b))) {
+          tallies[label]!.values = true;
+          valueKeys.add('$label values');
+        }
+      }
+    }
+  }
+
+  for (final path in changedPaths) {
+    // Insert `other` last, after every map group.
+    final label = owners[path];
+    if (label != null) tally(label).files++;
+  }
+  const notPackKeys = {'toolchain', 'outputs', 'maps'};
+  final packKeys = {...committed.keys, ...rebuilt.keys}..removeAll(notPackKeys);
+  for (final key in packKeys.toList()..sort()) {
+    if (same(committed[key]) != same(rebuilt[key])) {
+      tally('pack').values = true;
+      valueKeys.add(key);
+    }
+  }
+  final unowned = changedPaths.where((path) => !owners.containsKey(path));
+  if (unowned.isNotEmpty) tally('other').files = unowned.length;
+
+  Map<String, dynamic> withoutToolchain(Map<String, dynamic> manifest) => {
+    for (final key in manifest.keys)
+      if (key != 'toolchain') key: manifest[key],
+  };
+  if (!tallies.values.any((t) => t.files > 0 || t.values) &&
+      same(withoutToolchain(committed)) != same(withoutToolchain(rebuilt))) {
+    tally('pack').values = true;
+    valueKeys.add('unattributed manifest values');
+  }
+
+  final lines = <String>[];
+  for (final MapEntry(key: label, value: t) in tallies.entries) {
+    if (t.files == 0 && !t.values) continue;
+    if (label == 'pack' || mapIds.contains(label)) {
+      lines.add('$label: manifest values changed');
+    } else {
+      lines.add(
+        '$label: ${t.files} changed file(s)'
+        '${t.values ? ', manifest values changed' : ''}',
+      );
+    }
+  }
+  return PackChangeReport(
+    lines: lines,
+    paths: changedPaths,
+    valueKeys: valueKeys,
+  );
+}
+
+/// The line `check` prints when the rebuild of generation [id] matched.
+String packReproducedLine(String id, Map<String, String> toolchain) {
+  final versions = [
+    for (final name in toolchainPackages) '$name ${toolchain[name]}',
+  ];
+  return 'Map pack $id reproduced byte-identically with ${versions.join(', ')}.';
+}
+
+/// Thrown by [checkActive] when the committed pack does not reproduce.
+///
+/// [toString] is the full multi-line report so the command prints it as is.
+class MapPackCheckFailure implements Exception {
+  /// Creates a failure with the full report [message].
+  const MapPackCheckFailure(this.message);
+
+  /// The summary, the differing paths and keys, and the closing instruction.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+const _maxReportedPaths = 100;
+
+/// Rebuilds the active generation of [packs] into [candidate] from the
+/// generation's own carried inputs, and returns the verified committed
+/// generation with the rebuilt manifest.
+///
+/// Verifies the committed generation first, so a comparison of manifests
+/// compares bytes. The rebuild validates the candidate it writes.
+Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
+  Directory packs,
+  Directory candidate, {
+  required Map<String, String> toolchain,
+}) async {
+  final committed = await verifyCommittedGeneration(packs);
+  final rebuilt = await rebuildCandidate(
+    await FrozenInputs.fromGeneration(committed.directory),
+    candidate,
+    toolchain: toolchain,
+  );
+  return (committed, rebuilt);
+}
+
+/// Rebuilds the active generation under [packs] with the installed
+/// [toolchain] and returns the line to print when it reproduces byte for byte.
+///
+/// Writes nothing under [packs]. The rebuild lives in a folder created under
+/// [tempParent] (default: the system temp folder) and is always deleted.
+/// Throws a [MapPackCheckFailure] with the per-map summary, the differing
+/// paths and manifest values, and the instruction to rebuild when it does not.
+Future<String> checkActive(
+  Directory packs, {
+  required Map<String, String> toolchain,
+  Directory? tempParent,
+}) async {
+  await requireNoInterruptedPromotion(packs);
+  final work = await (tempParent ?? Directory.systemTemp).createTemp(
+    'blackgrid-map-check-',
+  );
+  try {
+    final (committed, rebuilt) = await _rebuildActive(
+      packs,
+      Directory('${work.path}/candidate'),
+      toolchain: toolchain,
+    );
+    final report = packChangeReport(committed.manifest, rebuilt);
+    if (!report.changed) return packReproducedLine(committed.id, toolchain);
+    throw MapPackCheckFailure(
+      [
+        ...report.lines,
+        if (report.paths.isNotEmpty) ...[
+          'Changed files:',
+          for (final path in report.paths.take(_maxReportedPaths)) '  $path',
+          if (report.paths.length > _maxReportedPaths)
+            '  ... and ${report.paths.length - _maxReportedPaths} more',
+        ],
+        if (report.valueKeys.isNotEmpty) ...[
+          'Changed manifest values:',
+          for (final key in report.valueKeys) '  $key',
+        ],
+        'Map pack is not reproducible with the installed toolchain. '
+            'Run: mise run maps:rebuild',
+      ].join('\n'),
+    );
+  } finally {
+    await work.delete(recursive: true);
+  }
 }

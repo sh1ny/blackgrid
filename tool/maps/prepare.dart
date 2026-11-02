@@ -64,6 +64,12 @@ the unchanged original artwork frame. New rebuilds require v3's complete
 inventory; old raw partial inputs do not silently become complete candidates.
 promote atomically replaces only active.json. refresh keeps only the active
 generation. No command mutates an active version.
+check rebuilds the active generation offline from the inputs it carries, into
+a system temp folder that is always deleted, and succeeds only when every file
+and manifest value matches except the recorded toolchain. It fails before
+anything else when an interrupted promotion left active.next.json or a
+versions/.<id>.staging folder. A mismatch ends with the instruction to run
+mise run maps:rebuild.
 assets prints the complete pubspec assets section for the promoted generation;
 Flutter directory declarations do not recursively include nested tiles.
 ''';
@@ -89,7 +95,7 @@ Future<void> main(List<String> arguments) async {
       'rebuild' || 'normalize' => {'--raw', '--candidate'},
       'compile' || 'validate' => {'--candidate'},
       'promote' => {'--candidate', '--packs'},
-      'assets' => {'--packs'},
+      'assets' || 'check' => {'--packs'},
       _ => throw FormatException('Unknown operation $command'),
     };
     if (values.keys.toSet().difference(required).isNotEmpty ||
@@ -104,7 +110,7 @@ Future<void> main(List<String> arguments) async {
       case 'rebuild' || 'normalize':
         final toolchain = await _toolchain();
         final manifest = await rebuildCandidate(
-          Directory(values['--raw']!),
+          await FrozenInputs.open(Directory(values['--raw']!)),
           Directory(values['--candidate']!),
           compileVectors: command == 'rebuild',
           toolchain: toolchain,
@@ -133,6 +139,13 @@ Future<void> main(List<String> arguments) async {
             'version': version,
             'manifest': 'versions/$version/manifest.json',
           }),
+        );
+      case 'check':
+        stdout.writeln(
+          await checkActive(
+            Directory(values['--packs']!),
+            toolchain: await _toolchain(),
+          ),
         );
       case 'assets':
         final root = values['--packs']!.replaceAll('\\', '/');

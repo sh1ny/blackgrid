@@ -32,12 +32,12 @@ class MapPreparationFixtures {
     final fixtures = MapPreparationFixtures._(root);
     await materializeFullRaw(fixtures.raw);
     await rebuildCandidate(
-      fixtures.raw,
+      await FrozenInputs.open(fixtures.raw),
       fixtures.first,
       toolchain: fixtureToolchain,
     );
     await rebuildCandidate(
-      fixtures.raw,
+      await FrozenInputs.open(fixtures.raw),
       fixtures.second,
       toolchain: fixtureToolchain,
     );
