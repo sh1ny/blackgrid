@@ -170,6 +170,39 @@ void main() {
       expect(controller.totals.raidTotal, 7);
     });
 
+    test('failed read after a mode change shows no old mode totals', () async {
+      controller = build();
+      await pumpEventQueue();
+      expect(controller.totals.raidTotal, 3);
+
+      store.failRead = true;
+      mode.value = GameMode.pve;
+      await pumpEventQueue();
+
+      expect(controller.readError, localStatsReadErrorMessage);
+      expect(controller.totals.isEmpty, isTrue);
+    });
+
+    test('read for the old mode is not shown after a mode change', () async {
+      store.totalsByMode[GameMode.pve] = _totals(7);
+      store.holdRead = Completer<void>();
+      controller = build();
+      await pumpEventQueue();
+      expect(store.calls.last, 'read:pvp');
+
+      final shown = <int>[];
+      controller.addListener(() => shown.add(controller.totals.raidTotal));
+      mode.value = GameMode.pve;
+      await pumpEventQueue();
+
+      store.holdRead!.complete();
+      await pumpEventQueue();
+
+      expect(store.calls.last, 'read:pve');
+      expect(controller.totals.raidTotal, 7);
+      expect(shown, isNot(contains(3)));
+    });
+
     test('mode change to unknown clears the shown totals', () async {
       controller = build();
       await pumpEventQueue();

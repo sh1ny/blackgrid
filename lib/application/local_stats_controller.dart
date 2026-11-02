@@ -164,6 +164,10 @@ class LocalStatsController extends ChangeNotifier {
     final mode = _mode();
     if (mode == _lastMode) return;
     _lastMode = mode;
+    // The shown totals belong to the old mode; never show them under the new
+    // one, even when its read fails.
+    _totals = LocalStatsTotals.empty;
+    _notify();
     _requestReload();
   }
 
@@ -197,11 +201,13 @@ class LocalStatsController extends ChangeNotifier {
           ? LocalStatsTotals.empty
           : await _store.readTotals(mode);
       final since = await _store.readSince();
-      if (_disposed) return;
+      // A mode change during the read already queued a reload of the new mode.
+      if (_disposed || _mode() != mode) return;
       _totals = totals;
       _since = since;
       _readError = null;
     } catch (_) {
+      if (_mode() != mode) return;
       _readError = localStatsReadErrorMessage;
     }
     _notify();
