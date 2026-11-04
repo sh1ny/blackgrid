@@ -20,7 +20,7 @@ All eleven scenarios are added contracts and start red. Rows turn green only aft
 
 ## 1. Record the approved preparation boundary
 
-- [ ] 1.1 Write ADR-0034 `docs/adr/0034-metadata-refresh-preserves-prepared-artwork.md` from approved D1/D2 and update `openspec/architecture.md`'s index and prepared-pack boundary. Verify the ADR supplements ADR-0033, names the six-source restriction and preservation gate, retains owner checking, and changes no accepted ADR or runtime/pack format.
+- [x] 1.1 Write ADR-0034 `docs/adr/0034-metadata-refresh-preserves-prepared-artwork.md` from approved D1/D2 and update `openspec/architecture.md`'s index and prepared-pack boundary. Verify the ADR supplements ADR-0033, names the six-source restriction and preservation gate, retains owner checking, and changes no accepted ADR or runtime/pack format.
 
 ## 2. Prove boss projection and source validation
 
