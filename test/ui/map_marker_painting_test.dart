@@ -182,7 +182,11 @@ Future<_Fixture> _pump(
       home: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(8),
-          child: MapWorkspace(services: fixture.h.services),
+          child: MapWorkspace(
+            services: fixture.h.services,
+            detailsExpanded: false,
+            onDetailsExpandedChanged: (_) {},
+          ),
         ),
       ),
     ),

@@ -37,6 +37,7 @@ class MapWidgetHarness {
     MapMarkerIcons? markerIcons,
     List<Map<String, Object?>> extraMarkers = const [],
     bool artwork = true,
+    http.Client? client,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -90,13 +91,15 @@ class MapWidgetHarness {
         loader: loader,
         resources: NativeMapResourceOwner(loader),
       ),
-      client: MockClient((request) async {
-        final value = wire[request.url.pathSegments.last];
-        return http.Response(
-          jsonEncode(value ?? {}),
-          value == null ? 404 : 200,
-        );
-      }),
+      client:
+          client ??
+          MockClient((request) async {
+            final value = wire[request.url.pathSegments.last];
+            return http.Response(
+              jsonEncode(value ?? {}),
+              value == null ? 404 : 200,
+            );
+          }),
       panelOcr: panelOcr,
       markerIcons: markerIcons,
       scanLogDirectory: scanLogs,
@@ -222,6 +225,9 @@ Map<String, Object?> _marker(
   'source': {'fixture': true},
 };
 
+/// Pumps the map application with a prepared fixture and real application
+/// services. Set [autoDispose] to false when a test must dispose the harness
+/// before constructing a second database.
 Future<MapWidgetHarness> pumpMapFixture(
   WidgetTester tester, {
   Size size = const Size(1912, 823),
@@ -232,6 +238,8 @@ Future<MapWidgetHarness> pumpMapFixture(
   RaidPanelOcr? panelOcr,
   List<Map<String, Object?>> extraMarkers = const [],
   bool artwork = true,
+  http.Client? client,
+  bool autoDispose = true,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -247,9 +255,10 @@ Future<MapWidgetHarness> pumpMapFixture(
       panelOcr: panelOcr,
       extraMarkers: extraMarkers,
       artwork: artwork,
+      client: client,
     ),
   ))!;
-  addTearDown(harness.dispose);
+  if (autoDispose) addTearDown(harness.dispose);
   await tester.pumpWidget(BlackgridApp(services: harness.services));
   await settleMapFixture(tester, harness);
   return harness;

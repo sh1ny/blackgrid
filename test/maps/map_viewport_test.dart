@@ -701,61 +701,70 @@ void main() {
     );
   }
 
-  testWidgets('intersecting hazard remains painted with its anchor offscreen', (
-    tester,
-  ) async {
-    final h = await pumpMapFixture(
-      tester,
-      hazardOutline: [
-        {'x': -64, 'z': 224},
-        {'x': 160, 'z': 224},
-        {'x': 160, 'z': 160},
-        {'x': -64, 'z': 160},
-      ],
-    );
-    final maps = h.services.maps;
-    final anchor = maps.transform.sceneToViewport(ScenePoint(64, 64));
-    maps.panBy(-40 - anchor.x, 0);
-    await settleMapFixture(tester, h);
-    expect(maps.transform.sceneToViewport(ScenePoint(64, 64)).x, lessThan(-22));
-    final sample = maps.transform.sceneToViewport(ScenePoint(128, 64));
-    final size = tester.getSize(_viewport);
-    expect(sample.x, inExclusiveRange(0, size.width));
-    expect(sample.y, inExclusiveRange(0, size.height));
-    final painter = tester
-        .widget<CustomPaint>(
-          find
-              .descendant(of: _viewport, matching: find.byType(CustomPaint))
-              .first,
-        )
-        .painter!;
-    final rgba = await tester.runAsync(() async {
-      final recorder = ui.PictureRecorder();
-      painter.paint(Canvas(recorder), size);
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(
-        size.width.ceil(),
-        size.height.ceil(),
-      );
-      final pixels = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-      image.dispose();
-      picture.dispose();
-      return pixels!;
-    });
-    final pixel = (sample.y.floor() * size.width.ceil() + sample.x.floor()) * 4;
-    expect(
-      rgba!.getUint8(pixel),
-      greaterThan(rgba.getUint8(pixel + 2)),
-      reason: 'The visible hazard fill must tint the blue artwork red.',
-    );
-    await tester.tapAt(
-      tester.getTopLeft(_viewport) + Offset(sample.x, sample.y),
-    );
-    await settleMapFixture(tester, h);
-    expect(find.text('Ground hazard'), findsOneWidget);
-  });
   testWidgets(
-    'wheel zoom keeps the cursor anchor and logical-pixel hit target',
+    'visible outline with offscreen anchor retains selection without bubble',
+    (tester) async {
+      final h = await pumpMapFixture(
+        tester,
+        hazardOutline: [
+          {'x': -64, 'z': 224},
+          {'x': 160, 'z': 224},
+          {'x': 160, 'z': 160},
+          {'x': -64, 'z': 160},
+        ],
+      );
+      final maps = h.services.maps;
+      final anchor = maps.transform.sceneToViewport(ScenePoint(64, 64));
+      maps.panBy(-40 - anchor.x, 0);
+      await settleMapFixture(tester, h);
+      expect(
+        maps.transform.sceneToViewport(ScenePoint(64, 64)).x,
+        lessThan(-22),
+      );
+      final sample = maps.transform.sceneToViewport(ScenePoint(128, 64));
+      final size = tester.getSize(_viewport);
+      expect(sample.x, inExclusiveRange(0, size.width));
+      expect(sample.y, inExclusiveRange(0, size.height));
+      final painter = tester
+          .widget<CustomPaint>(
+            find
+                .descendant(of: _viewport, matching: find.byType(CustomPaint))
+                .first,
+          )
+          .painter!;
+      final rgba = await tester.runAsync(() async {
+        final recorder = ui.PictureRecorder();
+        painter.paint(Canvas(recorder), size);
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(
+          size.width.ceil(),
+          size.height.ceil(),
+        );
+        final pixels = await image.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        );
+        image.dispose();
+        picture.dispose();
+        return pixels!;
+      });
+      final pixel =
+          (sample.y.floor() * size.width.ceil() + sample.x.floor()) * 4;
+      expect(
+        rgba!.getUint8(pixel),
+        greaterThan(rgba.getUint8(pixel + 2)),
+        reason: 'The visible hazard fill must tint the blue artwork red.',
+      );
+      await tester.tapAt(
+        tester.getTopLeft(_viewport) + Offset(sample.x, sample.y),
+      );
+      await settleMapFixture(tester, h);
+      expect(h.services.maps.selectedMarkerProjection, isNotNull);
+      expect(find.byTooltip('Close marker details'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'wheel zoom keeps the cursor anchor, Details state and logical-pixel hit target',
     (tester) async {
       final h = await pumpMapFixture(tester);
       final bounds = tester.getRect(_viewport);
@@ -790,10 +799,19 @@ void main() {
         );
         await settleMapFixture(tester, h);
         expect(find.text('Ground exit'), findsOneWidget);
+        expect(find.text('Details'), findsOneWidget);
+        expect(
+          find.textContaining('Ground exit offline fixture details'),
+          findsNothing,
+        );
+        await tester.tap(find.text('Details'));
+        await tester.pumpAndSettle();
         expect(
           find.textContaining('Ground exit offline fixture details'),
           findsOneWidget,
         );
+        await tester.tap(find.text('Details'));
+        await tester.pumpAndSettle();
         await tester.tap(find.byTooltip('Close marker details'));
         await settleMapFixture(tester, h);
         await tester.tapAt(

@@ -13,7 +13,10 @@ import '../domain/map_zone_style.dart';
 import '../domain/marker_categories.dart';
 import '../domain/settings.dart';
 import '../maps/map_marker_icons.dart';
+import '../maps/marker_presentation.dart';
+import '../maps/marker_preview.dart';
 import '../maps/prepared_map.dart';
+import 'marker_popup.dart';
 import 'pin_editor.dart';
 import 'theme.dart';
 
@@ -26,8 +29,11 @@ const _positionHelp =
 
 /// The map controls listed in the map help, as (control, action) pairs.
 const _controlHelp = [
-  ('Drag or arrow keys', 'Pan the map'),
-  ('Mouse wheel or + / -', 'Zoom in or out'),
+  ('Select a marker badge or Browse', 'Open its anchored summary bubble'),
+  ('Scroll inside the bubble', 'Scroll the summary or expanded details'),
+  ('Details', 'Show bounded raw marker data for this app session'),
+  ('Drag or arrow keys outside the bubble', 'Pan the map'),
+  ('Mouse wheel or + / - outside the bubble', 'Zoom in or out'),
   ('Home', 'Fit the map to the view'),
   ('C', 'Center on your position'),
   ('Enter', 'Browse markers'),
@@ -39,15 +45,27 @@ const _controlHelp = [
 
 /// Native artwork and screen-space targets share the controller's view geometry.
 class MapWorkspace extends StatefulWidget {
-  const MapWorkspace({super.key, required this.services});
+  /// Creates the map viewport and its session-connected selection controls.
+  const MapWorkspace({
+    super.key,
+    required this.services,
+    required this.detailsExpanded,
+    required this.onDetailsExpandedChanged,
+  });
+
+  /// The initialized application services shared with the Map screen.
   final AppServices services;
+
+  /// Whether the current marker's bounded diagnostic details are expanded.
+  final bool detailsExpanded;
+
+  /// Updates the Map screen's session-wide Details preference.
+  final ValueChanged<bool> onDetailsExpandedChanged;
   @override
   State<MapWorkspace> createState() => _MapWorkspaceState();
 }
 
 class _MapWorkspaceState extends State<MapWorkspace> {
-  String? _selectedMarker;
-  int? _selectionGeneration;
   String? _hoveredMarker;
   int? _hoverGeneration;
 
@@ -86,11 +104,14 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     _focus.requestFocus();
     maps.setSelectedMarker(id);
     setState(() {
-      _selectedMarker = id;
-      _selectionGeneration = maps.contentGeneration;
       _selectedPin = null;
       _selectedPinMapId = null;
     });
+  }
+
+  void _closeMarker() {
+    _focus.requestFocus();
+    maps.setSelectedMarker(null);
   }
 
   /// The hovered marker id, unless the map or its content changed since.
@@ -232,8 +253,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     setState(() {
       _selectedPin = pinId;
       _selectedPinMapId = pinId == null ? null : maps.selectedMapId;
-      _selectedMarker = pinId == null ? marker?.marker.id : null;
-      _selectionGeneration = maps.contentGeneration;
     });
   }
 
@@ -258,6 +277,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
             ),
             Expanded(
               child: ListView.builder(
+                key: const ValueKey('marker-browser-list'),
                 itemCount: visible.length + visiblePins.length,
                 itemBuilder: (context, index) {
                   if (index < visible.length) {
@@ -303,8 +323,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     setState(() {
       _selectedPin = id.startsWith('pin:') ? id.substring(4) : null;
       _selectedPinMapId = _selectedPin == null ? null : mapId;
-      _selectedMarker = id.startsWith('marker:') ? id.substring(7) : null;
-      _selectionGeneration = maps.contentGeneration;
     });
   }
 
@@ -351,7 +369,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     } else if (key == LogicalKeyboardKey.escape) {
       maps.setSelectedMarker(null);
       setState(() {
-        _selectedMarker = null;
         _selectedPin = null;
         _selectedPinMapId = null;
       });
@@ -361,19 +378,33 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     return KeyEventResult.handled;
   }
 
+  Widget _buildMarkerPreview(PreparedMarker marker) {
+    final preview = previewMarkerDetails(marker);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (preview.shortened)
+          const Text(
+            'Preview shortened to stay within diagnostic limits.',
+            key: ValueKey('marker-preview-shortened'),
+          ),
+        SelectableText(preview.text),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([maps, widget.services.settings]),
+    listenable: Listenable.merge([
+      maps,
+      widget.services.settings,
+      widget.services.catalog,
+    ]),
     builder: (context, _) {
       final map = maps.preparedMap;
       final visible = maps.visibleMarkers();
-      PreparedMarker? selected;
-      for (final marker in visible) {
-        if (_selectionGeneration == maps.contentGeneration &&
-            marker.marker.id == _selectedMarker) {
-          selected = marker.marker;
-        }
-      }
+      final selectedProjection = maps.selectedMarkerProjection;
+      final selected = selectedProjection?.marker;
       CustomPin? selectedPin;
       if (_selectedPinMapId == maps.selectedMapId &&
           widget.services.settings.settings.markerFilters['CustomPins'] !=
@@ -471,103 +502,146 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                     child: Focus(
                       focusNode: _focus,
                       onKeyEvent: (_, event) => _key(event),
-                      child: Listener(
-                        onPointerSignal: (event) {
-                          if (event is PointerScrollEvent && map != null) {
-                            GestureBinding.instance.pointerSignalResolver
-                                .register(event, (_) {
-                                  maps.zoomAt(
-                                    ViewportPoint(
-                                      event.localPosition.dx,
-                                      event.localPosition.dy,
-                                    ),
-                                    event.scrollDelta.dy < 0 ? 1.15 : 1 / 1.15,
-                                  );
-                                });
-                          }
-                        },
-                        child: MouseRegion(
-                          onHover: _hover,
-                          onExit: (_) => _leave(),
-                          child: GestureDetector(
-                            key: const Key('native-map-viewport'),
-                            behavior: HitTestBehavior.opaque,
-                            onPanUpdate: map == null
-                                ? null
-                                : (event) => maps.panBy(
-                                    event.delta.dx,
-                                    event.delta.dy,
-                                  ),
-                            onTapUp: (event) => _select(
-                              ViewportPoint(
-                                event.localPosition.dx,
-                                event.localPosition.dy,
-                              ),
-                            ),
-                            onSecondaryTapUp: map == null
-                                ? null
-                                : (event) {
-                                    if (!widget.services.settings.busy) {
-                                      _createPinAt(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Listener(
+                            onPointerSignal: (event) {
+                              if (event is PointerScrollEvent && map != null) {
+                                GestureBinding.instance.pointerSignalResolver
+                                    .register(event, (_) {
+                                      maps.zoomAt(
                                         ViewportPoint(
                                           event.localPosition.dx,
                                           event.localPosition.dy,
                                         ),
+                                        event.scrollDelta.dy < 0
+                                            ? 1.15
+                                            : 1 / 1.15,
                                       );
-                                    }
-                                  },
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                CustomPaint(
-                                  painter: _MapPainter(
-                                    maps,
-                                    widget.services.markerIcons,
-                                    pins,
-                                    showPins:
-                                        widget
-                                            .services
-                                            .settings
-                                            .settings
-                                            .markerFilters['CustomPins'] !=
-                                        false,
-                                    selectedMarker: selected?.id,
-                                    hoveredMarker: _liveHover,
-                                    selectedPin: selectedPin?.id,
-                                    selectMarker: _selectMarker,
-                                    selectPin: (id) {
-                                      _focus.requestFocus();
-                                      maps.setSelectedMarker(null);
-                                      setState(() {
-                                        _selectedPin = id;
-                                        _selectedPinMapId = maps.selectedMapId;
-                                        _selectedMarker = null;
-                                      });
-                                    },
+                                    });
+                              }
+                            },
+                            child: MouseRegion(
+                              onHover: _hover,
+                              onExit: (_) => _leave(),
+                              child: GestureDetector(
+                                key: const Key('native-map-viewport'),
+                                behavior: HitTestBehavior.opaque,
+                                onPanUpdate: map == null
+                                    ? null
+                                    : (event) => maps.panBy(
+                                        event.delta.dx,
+                                        event.delta.dy,
+                                      ),
+                                onTapUp: (event) => _select(
+                                  ViewportPoint(
+                                    event.localPosition.dx,
+                                    event.localPosition.dy,
                                   ),
                                 ),
-                                if (maps.loading)
-                                  const Align(
-                                    alignment: Alignment.topCenter,
-                                    child: LinearProgressIndicator(),
-                                  ),
-                                if (maps.error != null || maps.unavailable)
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(24),
-                                      child: Text(
-                                        maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: GridColors.muted,
-                                        ),
+                                onSecondaryTapUp: map == null
+                                    ? null
+                                    : (event) {
+                                        if (!widget.services.settings.busy) {
+                                          _createPinAt(
+                                            ViewportPoint(
+                                              event.localPosition.dx,
+                                              event.localPosition.dy,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    CustomPaint(
+                                      painter: _MapPainter(
+                                        maps,
+                                        widget.services.markerIcons,
+                                        pins,
+                                        showPins:
+                                            widget
+                                                .services
+                                                .settings
+                                                .settings
+                                                .markerFilters['CustomPins'] !=
+                                            false,
+                                        selectedMarker: selected?.id,
+                                        hoveredMarker: _liveHover,
+                                        selectedPin: selectedPin?.id,
+                                        selectMarker: _selectMarker,
+                                        selectPin: (id) {
+                                          _focus.requestFocus();
+                                          maps.setSelectedMarker(null);
+                                          setState(() {
+                                            _selectedPin = id;
+                                            _selectedPinMapId =
+                                                maps.selectedMapId;
+                                          });
+                                        },
                                       ),
                                     ),
-                                  ),
-                              ],
+                                    if (maps.loading)
+                                      const Align(
+                                        alignment: Alignment.topCenter,
+                                        child: LinearProgressIndicator(),
+                                      ),
+                                    if (maps.error != null || maps.unavailable)
+                                      Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(24),
+                                          child: Text(
+                                            maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: GridColors.muted,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          if (selectedProjection != null &&
+                              selectedProjection.viewportPoint.x >= 0 &&
+                              selectedProjection.viewportPoint.y >= 0 &&
+                              selectedProjection.viewportPoint.x < size.width &&
+                              selectedProjection.viewportPoint.y < size.height)
+                            Builder(
+                              builder: (context) {
+                                final marker = selectedProjection.marker;
+                                final mode = widget.services.catalog.mode;
+                                final snapshot =
+                                    widget.services.catalog.snapshot;
+                                final matchingSnapshot = snapshot?.mode == mode
+                                    ? snapshot
+                                    : null;
+                                final presentation = presentMarker(
+                                  marker,
+                                  mapMarkers:
+                                      map?.markers ?? const <PreparedMarker>[],
+                                  activeMode: mode,
+                                  catalogSnapshot: matchingSnapshot,
+                                );
+                                return MarkerPopup(
+                                  presentation: presentation,
+                                  anchor: Offset(
+                                    selectedProjection.viewportPoint.x,
+                                    selectedProjection.viewportPoint.y,
+                                  ),
+                                  detailsExpanded: widget.detailsExpanded,
+                                  onDetailsExpandedChanged:
+                                      widget.onDetailsExpandedChanged,
+                                  onClose: _closeMarker,
+                                  detailsBuilder: (_) =>
+                                      _buildMarkerPreview(marker),
+                                );
+                              },
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -575,12 +649,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
               },
             ),
           ),
-          if (selected != null)
-            _MarkerDetails(
-              marker: selected,
-              metadata: maps.metadataFor(selected),
-              onClose: () => _selectMarker(null),
-            ),
           if (selectedPin != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -628,65 +696,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
           Text(
             map == null
                 ? 'No artwork loaded · saved files only; no live tracking'
-                : 'Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
+                : 'Select a marker for its summary · Details stay expanded for this app session · Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
             style: const TextStyle(color: GridColors.muted, fontSize: 12),
           ),
         ],
       );
     },
-  );
-}
-
-class _MarkerDetails extends StatelessWidget {
-  const _MarkerDetails({
-    required this.marker,
-    required this.metadata,
-    required this.onClose,
-  });
-  final PreparedMarker marker;
-  final MapMarkerMetadata metadata;
-  final VoidCallback onClose;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                marker.name,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            IconButton(
-              tooltip: 'Close marker details',
-              onPressed: onClose,
-              icon: const Icon(Icons.close),
-            ),
-          ],
-        ),
-        Text(
-          '${marker.category} / ${marker.filterKey} · X ${marker.position.x} · Z ${marker.position.z} · height ${marker.position.height ?? 'unknown'}',
-        ),
-        if (metadata.questNames.isNotEmpty)
-          Text('Quest: ${metadata.questNames.join(', ')}'),
-        if (metadata.traders.isNotEmpty)
-          Text('Trader: ${metadata.traders.join(', ')}'),
-        for (final link in metadata.questLinks) SelectableText(link),
-        SizedBox(
-          height: 80,
-          child: SingleChildScrollView(
-            child: SelectableText(
-              metadata.fields.entries
-                  .map((entry) => '${entry.key}: ${entry.value}')
-                  .join(' · '),
-            ),
-          ),
-        ),
-      ],
-    ),
   );
 }
 
