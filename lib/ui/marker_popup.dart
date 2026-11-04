@@ -14,10 +14,7 @@ class MarkerPopup extends StatelessWidget {
     super.key,
     required this.presentation,
     required this.anchor,
-    required this.detailsExpanded,
-    required this.onDetailsExpandedChanged,
     required this.onClose,
-    required this.detailsBuilder,
   });
 
   /// The prepared, player-facing summary to display.
@@ -26,17 +23,8 @@ class MarkerPopup extends StatelessWidget {
   /// The selected badge position in the popup's viewport coordinates.
   final Offset anchor;
 
-  /// Whether the current marker's bounded raw details are expanded.
-  final bool detailsExpanded;
-
-  /// Updates the session-owned details expansion state.
-  final ValueChanged<bool> onDetailsExpandedChanged;
-
   /// Clears the selected marker and returns focus to the map.
   final VoidCallback onClose;
-
-  /// Builds the bounded raw preview only while details are expanded.
-  final WidgetBuilder detailsBuilder;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -120,10 +108,7 @@ class MarkerPopup extends StatelessWidget {
                     onSecondaryTapUp: (_) {},
                     child: _PopupCard(
                       presentation: presentation,
-                      detailsExpanded: detailsExpanded,
-                      onDetailsExpandedChanged: onDetailsExpandedChanged,
                       onClose: onClose,
-                      detailsBuilder: detailsBuilder,
                     ),
                   ),
                 ),
@@ -143,10 +128,23 @@ class MarkerPopup extends StatelessWidget {
       onClose();
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.enter ||
-        event.logicalKey == LogicalKeyboardKey.numpadEnter ||
-        event.logicalKey == LogicalKeyboardKey.keyN ||
-        event.logicalKey == LogicalKeyboardKey.delete) {
+    if (const [
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.home,
+      LogicalKeyboardKey.add,
+      LogicalKeyboardKey.equal,
+      LogicalKeyboardKey.numpadAdd,
+      LogicalKeyboardKey.minus,
+      LogicalKeyboardKey.numpadSubtract,
+      LogicalKeyboardKey.keyC,
+      LogicalKeyboardKey.keyN,
+      LogicalKeyboardKey.enter,
+      LogicalKeyboardKey.numpadEnter,
+      LogicalKeyboardKey.delete,
+    ].contains(event.logicalKey)) {
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -154,19 +152,10 @@ class MarkerPopup extends StatelessWidget {
 }
 
 class _PopupCard extends StatelessWidget {
-  const _PopupCard({
-    required this.presentation,
-    required this.detailsExpanded,
-    required this.onDetailsExpandedChanged,
-    required this.onClose,
-    required this.detailsBuilder,
-  });
+  const _PopupCard({required this.presentation, required this.onClose});
 
   final MarkerPresentation presentation;
-  final bool detailsExpanded;
-  final ValueChanged<bool> onDetailsExpandedChanged;
   final VoidCallback onClose;
-  final WidgetBuilder detailsBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -240,24 +229,6 @@ class _PopupCard extends StatelessWidget {
                           Align(
                             alignment: AlignmentDirectional.centerStart,
                             child: Text(fact),
-                          ),
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: TextButton.icon(
-                            onPressed: () =>
-                                onDetailsExpandedChanged(!detailsExpanded),
-                            icon: Icon(
-                              detailsExpanded
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                            ),
-                            label: const Text('Details'),
-                          ),
-                        ),
-                        if (detailsExpanded)
-                          KeyedSubtree(
-                            key: const ValueKey('marker-preview'),
-                            child: detailsBuilder(context),
                           ),
                       ],
                     ),
@@ -384,10 +355,7 @@ Widget markerPopupPreview() => Center(
         facts: const ['Common supplies.'],
       ),
       anchor: const Offset(210, 160),
-      detailsExpanded: false,
-      onDetailsExpandedChanged: (_) {},
       onClose: () {},
-      detailsBuilder: (_) => const Text('Synthetic bounded details preview.'),
     ),
   ),
 );

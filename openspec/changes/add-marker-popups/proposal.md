@@ -60,3 +60,8 @@ Selected map markers show their information in a bubble at the marker instead of
 
 - Marker bubbles follow pan and zoom, stay inside the map view and support pointer and keyboard dismissal.
 - Marker summaries resolve key and required-item names from already loaded item data; unavailable names are stated rather than shown as IDs.
+
+### Fixed
+
+- Equally close overlapping map badges select the topmost visible marker, so boss badges open the boss information rather than an underlying generic spawn.
+- Map navigation shortcuts no longer pan or zoom the map while a marker bubble control has keyboard focus.

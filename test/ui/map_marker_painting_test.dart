@@ -182,11 +182,7 @@ Future<_Fixture> _pump(
       home: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(8),
-          child: MapWorkspace(
-            services: fixture.h.services,
-            detailsExpanded: false,
-            onDetailsExpandedChanged: (_) {},
-          ),
+          child: MapWorkspace(services: fixture.h.services),
         ),
       ),
     ),
@@ -516,7 +512,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Ground exit'), findsOneWidget);
-    // The details panel resizes the viewport, which moves the marker.
+    // The summary remains anchored while the selected badge is painted.
     await tester.pump();
     final selected = paints;
     _discAndRing(

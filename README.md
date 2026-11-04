@@ -266,7 +266,6 @@ History stores item ID, mode, source, UTC time and revision only. No telemetry, 
 | Select a marker badge or a marker in the accessible list | Show its summary in a bubble tethered to the badge |
 | Drag / mouse wheel outside the bubble | Pan / zoom at the cursor |
 | Operate controls or scroll inside the bubble | Use bubble controls or scroll its content without moving or selecting the map |
-| `Details` in the bubble | Expand or collapse the selected marker's bounded raw details; the choice lasts for the current app session |
 | Bubble `Close` or Escape | Dismiss the marker bubble and clear its linked highlights |
 | Arrow keys | Pan the map when its canvas has focus |
 | Home | Fit map |

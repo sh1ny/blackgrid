@@ -304,6 +304,107 @@ void main() {
     expect(find.byTooltip('Close pin details'), findsNothing);
   });
 
+  testWidgets('marker bubble shows summary without raw details', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    await _select(tester, h, ScenePoint(128, 128));
+
+    final popup = find.byKey(const ValueKey('marker-popup'));
+    expect(
+      find.descendant(of: popup, matching: find.text('Ground exit')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: popup, matching: find.text('PMC extracts')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: popup,
+        matching: find.textContaining('offline fixture details'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: popup, matching: find.text('Details')),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'focused popup controls isolate all map navigation keys without stealing child input',
+    (tester) async {
+      final h = await pumpMapFixture(tester);
+      await _select(tester, h, ScenePoint(128, 128));
+      var attempts = 0;
+      while (_focusedTooltip() != 'Close marker details' && attempts < 40) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        attempts++;
+      }
+      expect(_focusedTooltip(), 'Close marker details');
+
+      final navigationKeys = [
+        LogicalKeyboardKey.arrowLeft,
+        LogicalKeyboardKey.arrowRight,
+        LogicalKeyboardKey.arrowUp,
+        LogicalKeyboardKey.arrowDown,
+        LogicalKeyboardKey.home,
+        LogicalKeyboardKey.add,
+        LogicalKeyboardKey.equal,
+        LogicalKeyboardKey.numpadAdd,
+        LogicalKeyboardKey.minus,
+        LogicalKeyboardKey.numpadSubtract,
+        LogicalKeyboardKey.keyC,
+        LogicalKeyboardKey.keyN,
+        LogicalKeyboardKey.delete,
+      ];
+      for (final key in navigationKeys) {
+        final before = h.services.maps.transform;
+        await tester.sendKeyEvent(
+          key,
+          physicalKey: key == LogicalKeyboardKey.add
+              ? PhysicalKeyboardKey.equal
+              : null,
+        );
+        await settleMapFixture(tester, h);
+        final after = h.services.maps.transform;
+        expect(after.scale, before.scale, reason: '$key changed map scale');
+        expect(
+          after.translationX,
+          before.translationX,
+          reason: '$key changed map horizontal translation',
+        );
+        expect(
+          after.translationY,
+          before.translationY,
+          reason: '$key changed map vertical translation',
+        );
+        expect(find.byType(PinEditor), findsNothing);
+        expect(find.text('Visible map markers and pins'), findsNothing);
+      }
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await settleMapFixture(tester, h);
+      expect(find.byTooltip('Close marker details'), findsNothing);
+      expect(h.services.maps.selectedMarkerProjection, isNull);
+
+      await _select(tester, h, ScenePoint(128, 128));
+      attempts = 0;
+      while (_focusedTooltip() != 'Close marker details' && attempts < 40) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        attempts++;
+      }
+      expect(_focusedTooltip(), 'Close marker details');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await settleMapFixture(tester, h);
+      expect(find.byTooltip('Close marker details'), findsNothing);
+      expect(h.services.maps.selectedMarkerProjection, isNull);
+    },
+  );
+
   testWidgets('empty canvas and Escape clear marker selection', (tester) async {
     final h = await pumpMapFixture(tester);
     await _select(tester, h, ScenePoint(128, 128));
@@ -390,55 +491,6 @@ void main() {
       await tester.tap(find.byTooltip('Close marker details'));
       await settleMapFixture(tester, h);
     }
-  });
-
-  testWidgets('long bubble content scrolls within viewport', (tester) async {
-    final h = await pumpMapFixture(
-      tester,
-      size: const Size(800, 600),
-      extraMarkers: [
-        {
-          'id': 'long-marker',
-          'name': 'Long marker',
-          'floorId': 'ground',
-          'category': 'lootLoose',
-          'filterKey': 'lootLoose',
-          'position': {'x': 80, 'z': 80},
-          'details': {
-            'description': List.filled(4000, 'Long detail').join(' '),
-          },
-          'source': {'fixture': true},
-        },
-      ],
-    );
-    await _select(tester, h, ScenePoint(80, 176));
-    await tester.tap(find.text('Details'));
-    await tester.pumpAndSettle();
-    final popup = find.byKey(const ValueKey('marker-popup-scroll'));
-    expect(popup, findsOneWidget);
-    expect(find.textContaining('Long detail'), findsOneWidget);
-    await Scrollable.ensureVisible(
-      tester.element(find.byKey(const ValueKey('marker-preview-shortened'))),
-      alignment: .5,
-    );
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('marker-preview-shortened')).hitTestable(),
-      findsOneWidget,
-    );
-    final scrollable = tester.state<ScrollableState>(
-      find.descendant(of: popup, matching: find.byType(Scrollable)).first,
-    );
-    await tester.drag(popup, const Offset(0, -160));
-    await tester.pump();
-    expect(scrollable.position.pixels, greaterThan(0));
-    expect(
-      find.byTooltip('Close marker details').hitTestable(),
-      findsOneWidget,
-    );
-    await tester.tap(find.byTooltip('Close marker details'));
-    await settleMapFixture(tester, h);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('offscreen anchor hides and restores the same bubble', (
@@ -553,7 +605,7 @@ void main() {
     );
   });
 
-  testWidgets('bubble control and wheel do not operate the map', (
+  testWidgets('bubble summary and wheel do not operate the map', (
     tester,
   ) async {
     final h = await pumpMapFixture(tester);
@@ -561,8 +613,6 @@ void main() {
     final scale = h.services.maps.transform.scale;
     final anchorBefore =
         h.services.maps.selectedMarkerProjection!.viewportPoint;
-    await tester.tap(find.text('Details'));
-    await tester.pumpAndSettle();
     final popupRect = tester.getRect(
       find.byKey(const ValueKey('marker-popup')),
     );
@@ -665,38 +715,32 @@ void main() {
     expect(find.byTooltip('Close marker details'), findsOneWidget);
   });
 
-  testWidgets('focused controls and help modal take keyboard precedence', (
+  testWidgets('focused popup and help modal take keyboard precedence', (
     tester,
   ) async {
     final h = await pumpMapFixture(tester);
     await _select(tester, h, ScenePoint(128, 128));
     final popup = find.byKey(const ValueKey('marker-popup'));
     expect(popup, findsOneWidget);
-    final zoom = h.services.maps.transform.scale;
-    Focus.of(tester.element(find.text('Details'))).requestFocus();
-    await tester.pump();
+    final before = h.services.maps.transform;
+    var attempts = 0;
+    while (_focusedTooltip() != 'Close marker details' && attempts < 40) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      attempts++;
+    }
+    expect(_focusedTooltip(), 'Close marker details');
     _expectFocusInside(popup);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Ground exit offline fixture details'),
-      findsOneWidget,
-    );
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Ground exit offline fixture details'),
-      findsNothing,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Visible map markers and pins'), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
     await tester.pumpAndSettle();
     expect(find.byType(PinEditor), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.delete);
     await tester.pumpAndSettle();
     expect(find.text('Remove pin record?'), findsNothing);
-    expect(h.services.maps.transform.scale, zoom);
+    final after = h.services.maps.transform;
+    expect(after.scale, before.scale);
+    expect(after.translationX, before.translationX);
+    expect(after.translationY, before.translationY);
     await tester.tap(find.byTooltip('Map help'));
     await tester.pumpAndSettle();
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -863,81 +907,4 @@ void main() {
       expect(requests, afterFailure);
     },
   );
-
-  testWidgets('first collapsed details does not construct raw preview', (
-    tester,
-  ) async {
-    final h = await pumpMapFixture(tester);
-    await _select(tester, h, ScenePoint(128, 128));
-    expect(find.text('Details'), findsOneWidget);
-    expect(find.textContaining('offline fixture details'), findsNothing);
-    expect(find.byKey(const ValueKey('marker-preview')), findsNothing);
-    await tester.tap(find.text('Details'));
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Ground exit offline fixture details'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('marker-preview')), findsOneWidget);
-  });
-
-  testWidgets(
-    'expanded details follows current marker across tab and breakpoint',
-    (tester) async {
-      final h = await pumpMapFixture(tester);
-      await _select(tester, h, ScenePoint(128, 128));
-      await tester.tap(find.text('Details'));
-      await tester.pumpAndSettle();
-      await _openMarkerBrowser(tester);
-      await _chooseBrowserEntry(tester, 'Ground hazard');
-      await settleMapFixture(tester, h);
-      expect(
-        find.textContaining('Ground exit offline fixture details'),
-        findsNothing,
-      );
-      expect(
-        find.textContaining('Ground hazard offline fixture details'),
-        findsOneWidget,
-      );
-      tester.view.physicalSize = const Size(760, 900);
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Ground hazard offline fixture details'),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const ValueKey('nav-scanner')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('nav-map')));
-      await tester.pumpAndSettle();
-      expect(find.text('Details'), findsOneWidget);
-      expect(
-        find.textContaining('Ground hazard offline fixture details'),
-        findsOneWidget,
-      );
-    },
-  );
-
-  testWidgets('new app session starts details collapsed', (tester) async {
-    var firstDisposed = false;
-    final first = await pumpMapFixture(tester, autoDispose: false);
-    addTearDown(() async {
-      if (!firstDisposed) {
-        await first.dispose();
-        firstDisposed = true;
-      }
-    });
-    await _select(tester, first, ScenePoint(128, 128));
-    await tester.tap(find.text('Details'));
-    await tester.pumpAndSettle();
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.runAsync(first.dispose);
-    firstDisposed = true;
-    final second = await pumpMapFixture(tester);
-    await _select(tester, second, ScenePoint(128, 128));
-    expect(find.text('Details'), findsOneWidget);
-    expect(
-      find.textContaining('Ground exit offline fixture details'),
-      findsNothing,
-    );
-  });
 }

@@ -764,7 +764,7 @@ void main() {
     },
   );
   testWidgets(
-    'wheel zoom keeps the cursor anchor, Details state and logical-pixel hit target',
+    'wheel zoom keeps the cursor anchor and logical-pixel hit target',
     (tester) async {
       final h = await pumpMapFixture(tester);
       final bounds = tester.getRect(_viewport);
@@ -799,19 +799,7 @@ void main() {
         );
         await settleMapFixture(tester, h);
         expect(find.text('Ground exit'), findsOneWidget);
-        expect(find.text('Details'), findsOneWidget);
-        expect(
-          find.textContaining('Ground exit offline fixture details'),
-          findsNothing,
-        );
-        await tester.tap(find.text('Details'));
-        await tester.pumpAndSettle();
-        expect(
-          find.textContaining('Ground exit offline fixture details'),
-          findsOneWidget,
-        );
-        await tester.tap(find.text('Details'));
-        await tester.pumpAndSettle();
+        expect(find.textContaining('offline fixture details'), findsNothing);
         await tester.tap(find.byTooltip('Close marker details'));
         await settleMapFixture(tester, h);
         await tester.tapAt(
@@ -825,7 +813,7 @@ void main() {
   );
 
   testWidgets(
-    'hidden floors and categories remove paint, details and accessible targets',
+    'hidden floors and categories remove paint and accessible targets',
     (tester) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -1082,7 +1070,7 @@ void main() {
   }
 
   testWidgets(
-    'Scanner round trip retains Map view, floors and selected details',
+    'Scanner round trip retains Map view, floors and selected marker summary',
     (tester) async {
       final h = await pumpMapFixture(tester);
       await tester.tap(find.widgetWithText(FilterChip, 'Upper'));

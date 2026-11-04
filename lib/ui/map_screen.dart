@@ -217,9 +217,6 @@ class _MapScreenState extends State<MapScreen> {
   /// is deliberately not persisted: every launch starts collapsed.
   bool _inputsExpanded = false;
 
-  /// Whether the selected marker's bounded raw details are expanded this session.
-  bool _markerDetailsExpanded = false;
-
   Future<void> _showPins(BuildContext context) => showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -351,14 +348,7 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               const Divider(height: 1),
               const SizedBox(height: 10),
-              Expanded(
-                child: MapWorkspace(
-                  services: services,
-                  detailsExpanded: _markerDetailsExpanded,
-                  onDetailsExpandedChanged: (value) =>
-                      setState(() => _markerDetailsExpanded = value),
-                ),
-              ),
+              Expanded(child: MapWorkspace(services: services)),
               if (services.settings.error != null)
                 Text(
                   services.settings.error!,

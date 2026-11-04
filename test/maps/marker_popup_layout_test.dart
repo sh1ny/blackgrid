@@ -1,18 +1,15 @@
 import 'dart:ui' as ui;
 
-import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/maps/marker_presentation.dart';
-import 'package:blackgrid/maps/marker_preview.dart';
-import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/ui/marker_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-MarkerPresentation _presentation(String title) => MarkerPresentation(
-  title: title,
-  categoryLabel: 'Container',
-  facts: const ['A prepared marker fact.'],
-);
+MarkerPresentation _presentation(
+  String title, {
+  Iterable<String> facts = const ['A prepared marker fact.'],
+}) =>
+    MarkerPresentation(title: title, categoryLabel: 'Container', facts: facts);
 
 Future<List<bool>> _paintsTetherEndpoints(
   WidgetTester tester,
@@ -56,17 +53,6 @@ Future<List<bool>> _paintsTetherEndpoints(
   }))!;
 }
 
-PreparedMarker _marker(String id, String raw) => PreparedMarker(
-  id: id,
-  category: 'lootContainers',
-  filterKey: 'lootContainers',
-  name: id,
-  position: GamePoint(1, 2),
-  details: {'description': raw},
-  source: const {'mapId': 'synthetic-map'},
-  outline: const [],
-);
-
 void main() {
   testWidgets('zero viewport lays out no bubble without overflow', (
     tester,
@@ -80,10 +66,7 @@ void main() {
             child: MarkerPopup(
               presentation: _presentation('Zero viewport marker'),
               anchor: Offset.zero,
-              detailsExpanded: false,
-              onDetailsExpandedChanged: (_) {},
               onClose: () {},
-              detailsBuilder: (_) => const Text('Must remain lazy'),
             ),
           ),
         ),
@@ -110,10 +93,7 @@ void main() {
             child: MarkerPopup(
               presentation: _presentation('Tiny viewport marker'),
               anchor: const Offset(46, 34),
-              detailsExpanded: false,
-              onDetailsExpandedChanged: (_) {},
               onClose: () {},
-              detailsBuilder: (_) => const Text('Lazy details'),
             ),
           ),
         ),
@@ -155,10 +135,7 @@ void main() {
               child: MarkerPopup(
                 presentation: _presentation('Corner marker'),
                 anchor: anchor,
-                detailsExpanded: false,
-                onDetailsExpandedChanged: (_) {},
                 onClose: () {},
-                detailsBuilder: (_) => const Text('Lazy details'),
               ),
             ),
           ),
@@ -222,14 +199,12 @@ void main() {
           home: SizedBox.expand(
             key: const ValueKey('long-popup-viewport'),
             child: MarkerPopup(
-              presentation: _presentation('Interior marker'),
-              anchor: const Offset(210, 170),
-              detailsExpanded: true,
-              onDetailsExpandedChanged: (_) {},
-              onClose: () => closeCount++,
-              detailsBuilder: (_) => Text(
-                List<String>.filled(80, 'Long marker detail').join('\\n'),
+              presentation: _presentation(
+                'Interior marker',
+                facts: List<String>.filled(80, 'Long summary fact'),
               ),
+              anchor: const Offset(210, 170),
+              onClose: () => closeCount++,
             ),
           ),
         ),
@@ -276,74 +251,4 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-
-  testWidgets('collapsed details builder is lazy and follows current marker', (
-    tester,
-  ) async {
-    var selected = _marker('first-marker', 'first current marker details');
-    var expanded = false;
-    var closeCount = 0;
-    final buildsByMarker = <String, int>{};
-    await tester.pumpWidget(
-      MaterialApp(
-        home: StatefulBuilder(
-          builder: (context, setState) => Scaffold(
-            body: Center(
-              child: Column(
-                children: [
-                  TextButton(
-                    onPressed: () => setState(() {
-                      selected = _marker(
-                        'second-marker',
-                        'second current marker details',
-                      );
-                    }),
-                    child: const Text('Select second marker'),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    height: 320,
-                    child: MarkerPopup(
-                      presentation: _presentation(selected.name),
-                      anchor: const Offset(210, 160),
-                      detailsExpanded: expanded,
-                      onDetailsExpandedChanged: (value) =>
-                          setState(() => expanded = value),
-                      onClose: () => closeCount++,
-                      detailsBuilder: (context) {
-                        buildsByMarker.update(
-                          selected.id,
-                          (count) => count + 1,
-                          ifAbsent: () => 1,
-                        );
-                        return SelectableText(
-                          previewMarkerDetails(selected).text,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    expect(buildsByMarker, isEmpty);
-    await tester.tap(find.text('Details'));
-    await tester.pumpAndSettle();
-    expect(buildsByMarker, {'first-marker': 1});
-    expect(find.textContaining('first current marker details'), findsOneWidget);
-    await tester.tap(find.text('Select second marker'));
-    await tester.pumpAndSettle();
-    expect(buildsByMarker, {'first-marker': 1, 'second-marker': 1});
-    expect(find.textContaining('first current marker details'), findsNothing);
-    expect(
-      find.textContaining('second current marker details'),
-      findsOneWidget,
-    );
-    await tester.tap(find.byTooltip('Close marker details'));
-    await tester.pumpAndSettle();
-    expect(closeCount, 1);
-  });
 }

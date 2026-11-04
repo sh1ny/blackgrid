@@ -14,7 +14,6 @@ import '../domain/marker_categories.dart';
 import '../domain/settings.dart';
 import '../maps/map_marker_icons.dart';
 import '../maps/marker_presentation.dart';
-import '../maps/marker_preview.dart';
 import '../maps/prepared_map.dart';
 import 'marker_popup.dart';
 import 'pin_editor.dart';
@@ -30,8 +29,7 @@ const _positionHelp =
 /// The map controls listed in the map help, as (control, action) pairs.
 const _controlHelp = [
   ('Select a marker badge or Browse', 'Open its anchored summary bubble'),
-  ('Scroll inside the bubble', 'Scroll the summary or expanded details'),
-  ('Details', 'Show bounded raw marker data for this app session'),
+  ('Scroll inside the bubble', 'Scroll the marker summary'),
   ('Drag or arrow keys outside the bubble', 'Pan the map'),
   ('Mouse wheel or + / - outside the bubble', 'Zoom in or out'),
   ('Home', 'Fit the map to the view'),
@@ -46,21 +44,11 @@ const _controlHelp = [
 /// Native artwork and screen-space targets share the controller's view geometry.
 class MapWorkspace extends StatefulWidget {
   /// Creates the map viewport and its session-connected selection controls.
-  const MapWorkspace({
-    super.key,
-    required this.services,
-    required this.detailsExpanded,
-    required this.onDetailsExpandedChanged,
-  });
+  const MapWorkspace({super.key, required this.services});
 
   /// The initialized application services shared with the Map screen.
   final AppServices services;
 
-  /// Whether the current marker's bounded diagnostic details are expanded.
-  final bool detailsExpanded;
-
-  /// Updates the Map screen's session-wide Details preference.
-  final ValueChanged<bool> onDetailsExpandedChanged;
   @override
   State<MapWorkspace> createState() => _MapWorkspaceState();
 }
@@ -378,21 +366,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     return KeyEventResult.handled;
   }
 
-  Widget _buildMarkerPreview(PreparedMarker marker) {
-    final preview = previewMarkerDetails(marker);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (preview.shortened)
-          const Text(
-            'Preview shortened to stay within diagnostic limits.',
-            key: ValueKey('marker-preview-shortened'),
-          ),
-        SelectableText(preview.text),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([
@@ -632,12 +605,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                     selectedProjection.viewportPoint.x,
                                     selectedProjection.viewportPoint.y,
                                   ),
-                                  detailsExpanded: widget.detailsExpanded,
-                                  onDetailsExpandedChanged:
-                                      widget.onDetailsExpandedChanged,
                                   onClose: _closeMarker,
-                                  detailsBuilder: (_) =>
-                                      _buildMarkerPreview(marker),
                                 );
                               },
                             ),
@@ -696,7 +664,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
           Text(
             map == null
                 ? 'No artwork loaded · saved files only; no live tracking'
-                : 'Select a marker for its summary · Details stay expanded for this app session · Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
+                : 'Select a marker for its summary · Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
             style: const TextStyle(color: GridColors.muted, fontSize: 12),
           ),
         ],

@@ -253,11 +253,7 @@ Future<_Fixture> _pump(WidgetTester tester, {bool hold = false}) async {
           padding: const EdgeInsets.all(8),
           child: RepaintBoundary(
             key: fixture.boundary,
-            child: MapWorkspace(
-              services: fixture.h.services,
-              detailsExpanded: false,
-              onDetailsExpandedChanged: (_) {},
-            ),
+            child: MapWorkspace(services: fixture.h.services),
           ),
         ),
       ),
