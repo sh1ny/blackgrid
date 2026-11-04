@@ -796,6 +796,128 @@ void main() {
   );
 
   testWidgets(
+    'marker replacement resets summary scroll but same marker updates retain it',
+    (tester) async {
+      final wire = wireFixture();
+      final longLockType = List<String>.filled(
+        200,
+        'Long lock detail',
+      ).join(' ');
+      var localizedKey = 'Popup key before refresh';
+      final client = MockClient((request) async {
+        final translations = wire['items_en'] as Map<String, dynamic>;
+        final data = translations['data'] as Map<String, dynamic>;
+        data['item-a Name'] = localizedKey;
+        return http.Response(
+          jsonEncode(wire[request.url.pathSegments.last] ?? {}),
+          wire.containsKey(request.url.pathSegments.last) ? 200 : 404,
+        );
+      });
+      final h = await pumpMapFixture(
+        tester,
+        client: client,
+        extraMarkers: [
+          {
+            'id': 'catalog-lock',
+            'name': 'Catalog lock',
+            'floorId': 'ground',
+            'category': 'locks',
+            'filterKey': 'locks',
+            'position': {'x': 96, 'z': 96},
+            'details': {'key': 'item-a', 'lockType': longLockType},
+            'source': {'mapId': 'shoreline'},
+          },
+          {
+            'id': 'catalog-lock-second',
+            'name': 'Second catalog lock',
+            'floorId': 'ground',
+            'category': 'locks',
+            'filterKey': 'locks',
+            'position': {'x': 160, 'z': 96},
+            'details': {'key': 'item-a', 'lockType': longLockType},
+            'source': {'mapId': 'shoreline'},
+          },
+        ],
+      );
+
+      await _select(tester, h, ScenePoint(96, 160));
+      expect(
+        h.services.maps.selectedMarkerProjection?.marker.id,
+        'catalog-lock',
+      );
+      final scrollFinder = find.byKey(const ValueKey('marker-popup-scroll'));
+      final scrollable = find.descendant(
+        of: scrollFinder,
+        matching: find.byType(Scrollable),
+      );
+      var scrollState = tester.state<ScrollableState>(scrollable);
+      expect(scrollState.position.maxScrollExtent, greaterThan(0));
+      await tester.drag(scrollFinder, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      final retainedOffset = scrollState.position.pixels;
+      expect(retainedOffset, greaterThan(0));
+
+      h.services.maps.panBy(24, 12);
+      await settleMapFixture(tester, h);
+      scrollState = tester.state<ScrollableState>(scrollable);
+      expect(scrollState.position.pixels, retainedOffset);
+
+      localizedKey = 'Popup key after publication';
+      await tester.runAsync(() => h.services.catalog.refresh());
+      await tester.pumpAndSettle();
+      expect(find.textContaining(localizedKey), findsOneWidget);
+      scrollState = tester.state<ScrollableState>(scrollable);
+      expect(scrollState.position.pixels, retainedOffset);
+
+      await _openMarkerBrowser(tester);
+      await _chooseBrowserEntry(tester, 'Second catalog lock');
+      await settleMapFixture(tester, h);
+      expect(
+        h.services.maps.selectedMarkerProjection?.marker.id,
+        'catalog-lock-second',
+      );
+      expect(find.text('Second catalog lock'), findsOneWidget);
+      final replacementScrollState = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byKey(const ValueKey('marker-popup-scroll')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(
+        replacementScrollState.position.maxScrollExtent,
+        greaterThan(retainedOffset),
+      );
+      expect(replacementScrollState.position.pixels, 0);
+
+      await tester.drag(scrollFinder, const Offset(0, -80));
+      await tester.pumpAndSettle();
+      final secondOffset = replacementScrollState.position.pixels;
+      expect(secondOffset, greaterThan(0));
+
+      await _openMarkerBrowser(tester);
+      await _chooseBrowserEntry(tester, 'Catalog lock');
+      await settleMapFixture(tester, h);
+      expect(
+        h.services.maps.selectedMarkerProjection?.marker.id,
+        'catalog-lock',
+      );
+      expect(find.text('Catalog lock'), findsOneWidget);
+      final returnedScrollState = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byKey(const ValueKey('marker-popup-scroll')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(
+        returnedScrollState.position.maxScrollExtent,
+        greaterThan(secondOffset),
+      );
+      expect(returnedScrollState.position.pixels, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'matching catalog publication updates open bubble without requests',
     (tester) async {
       final wire = wireFixture();

@@ -253,6 +253,65 @@ void main() {
     },
   );
 
+  testWidgets('unchanged layout rebuild keeps the painted tether', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(420, 340);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const anchor = Offset(210, 170);
+    late VoidCallback rebuild;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = () => setState(() {});
+            return SizedBox.expand(
+              key: const ValueKey('unchanged-layout-viewport'),
+              child: MarkerPopup(
+                presentation: _presentation('Unchanged popup title'),
+                anchor: anchor,
+                onClose: () {},
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    final viewportFinder = find.byKey(
+      const ValueKey('unchanged-layout-viewport'),
+    );
+    final tetherFinder = find.byKey(const ValueKey('marker-popup-tether'));
+    final initialPainter = tester.widget<CustomPaint>(tetherFinder).painter!;
+    final popup = tester.getRect(find.byKey(const ValueKey('marker-popup')));
+    final tetherEnd = Offset(
+      anchor.dx.clamp(popup.left, popup.right).toDouble(),
+      anchor.dy.clamp(popup.top, popup.bottom).toDouble(),
+    );
+    expect(
+      await _paintsTetherEndpoints(tester, tetherFinder, viewportFinder, [
+        anchor,
+        tetherEnd,
+      ]),
+      everyElement(isTrue),
+    );
+
+    rebuild();
+    await tester.pump();
+    final rebuiltPainter = tester.widget<CustomPaint>(tetherFinder).painter!;
+    expect(rebuiltPainter, isNot(same(initialPainter)));
+    expect(
+      await _paintsTetherEndpoints(tester, tetherFinder, viewportFinder, [
+        anchor,
+        tetherEnd,
+      ]),
+      everyElement(isTrue),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'long interior popup remains tethered, scrollable, and closable',
     (tester) async {

@@ -150,11 +150,25 @@ class MarkerPopup extends StatelessWidget {
   }
 }
 
-class _PopupCard extends StatelessWidget {
+class _PopupCard extends StatefulWidget {
   const _PopupCard({required this.presentation, required this.onClose});
 
   final MarkerPresentation presentation;
   final VoidCallback onClose;
+
+  @override
+  State<_PopupCard> createState() => _PopupCardState();
+}
+
+class _PopupCardState extends State<_PopupCard> {
+  // The shared map PageStorage bucket must not restore another marker's offset.
+  final _scrollController = ScrollController(keepScrollOffset: false);
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +195,7 @@ class _PopupCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        presentation.categoryLabel,
+                        widget.presentation.categoryLabel,
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
@@ -191,7 +205,7 @@ class _PopupCard extends StatelessWidget {
                     Semantics(
                       label: 'Close marker details',
                       button: true,
-                      onTap: onClose,
+                      onTap: widget.onClose,
                       excludeSemantics: true,
                       child: IconButton(
                         tooltip: 'Close marker details',
@@ -203,7 +217,7 @@ class _PopupCard extends StatelessWidget {
                         visualDensity: compact
                             ? VisualDensity.compact
                             : VisualDensity.standard,
-                        onPressed: onClose,
+                        onPressed: widget.onClose,
                         icon: const Icon(Icons.close),
                       ),
                     ),
@@ -212,17 +226,18 @@ class _PopupCard extends StatelessWidget {
                 Flexible(
                   child: SingleChildScrollView(
                     key: const ValueKey('marker-popup-scroll'),
+                    controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          presentation.title,
+                          widget.presentation.title,
                           style: compact
                               ? Theme.of(context).textTheme.titleSmall
                               : Theme.of(context).textTheme.titleMedium,
                         ),
-                        for (final fact in presentation.facts)
-                          if (fact != presentation.title)
+                        for (final fact in widget.presentation.facts)
+                          if (fact != widget.presentation.title)
                             Align(
                               alignment: AlignmentDirectional.centerStart,
                               child: Text(fact),

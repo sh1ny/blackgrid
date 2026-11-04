@@ -67,3 +67,4 @@ Selected map markers show their information in a bubble at the marker instead of
 - Map navigation shortcuts no longer pan or zoom the map while a marker bubble control has keyboard focus.
 - Removing the current session's application log resets raid input even when the folder is deleted afterward.
 - Long marker names remain readable by scrolling, and untranslated spawn-zone identifiers use readable category labels.
+- Selecting a different marker starts its summary at the top, while updates to the current marker retain its scroll position.

@@ -600,6 +600,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                   catalogSnapshot: matchingSnapshot,
                                 );
                                 return MarkerPopup(
+                                  key: ValueKey(marker.id),
                                   presentation: presentation,
                                   anchor: Offset(
                                     selectedProjection.viewportPoint.x,
