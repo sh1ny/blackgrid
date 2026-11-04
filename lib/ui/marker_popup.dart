@@ -47,25 +47,24 @@ class MarkerPopup extends StatelessWidget {
       final padding = compact ? 4.0 : 8.0;
       final closeExtent = compact ? 36.0 : 48.0;
       final theme = Theme.of(context);
-      final titleStyle = DefaultTextStyle.of(context).style.merge(
-        compact ? theme.textTheme.titleSmall : theme.textTheme.titleMedium,
-      );
+      final categoryStyle = DefaultTextStyle.of(context).style
+          .merge(theme.textTheme.labelMedium);
       final cardWidth = math
           .min(_MarkerPopupLayoutDelegate._maxWidth, availableWidth)
           .toDouble();
-      final titleWidth = math
+      final categoryWidth = math
           .max(0, cardWidth - padding * 2 - closeExtent)
           .toDouble();
-      final titlePainter = TextPainter(
-        text: TextSpan(text: presentation.title, style: titleStyle),
+      final categoryPainter = TextPainter(
+        text: TextSpan(text: presentation.categoryLabel, style: categoryStyle),
         maxLines: 1,
         ellipsis: '…',
         textDirection: Directionality.of(context),
         textScaler: MediaQuery.textScalerOf(context),
-      )..layout(maxWidth: titleWidth);
+      )..layout(maxWidth: categoryWidth);
       final minimumCardHeight =
-          math.max(closeExtent, titlePainter.height) + padding * 2;
-      titlePainter.dispose();
+          math.max(closeExtent, categoryPainter.height) + padding * 2;
+      categoryPainter.dispose();
       if (availableWidth < closeExtent + padding * 2 ||
           availableHeight < minimumCardHeight) {
         return const SizedBox.shrink();
@@ -182,13 +181,11 @@ class _PopupCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        presentation.title,
+                        presentation.categoryLabel,
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
-                        style: compact
-                            ? Theme.of(context).textTheme.titleSmall
-                            : Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ),
                     Semantics(
@@ -218,18 +215,18 @@ class _PopupCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Text(
-                            presentation.categoryLabel,
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
+                        Text(
+                          presentation.title,
+                          style: compact
+                              ? Theme.of(context).textTheme.titleSmall
+                              : Theme.of(context).textTheme.titleMedium,
                         ),
                         for (final fact in presentation.facts)
-                          Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Text(fact),
-                          ),
+                          if (fact != presentation.title)
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Text(fact),
+                            ),
                       ],
                     ),
                   ),

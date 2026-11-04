@@ -29,6 +29,39 @@ void main() {
       },
     );
 
+    test('spawn zone-name fallbacks use the player-facing category label', () {
+      for (final zoneName in ['ZoneHotel_2', 'BotZoneKorr_t2']) {
+        final presentation = presentMarker(
+          _marker(
+            id: 'spawn-$zoneName',
+            category: 'spawns',
+            filterKey: 'ScavSpawns',
+            name: zoneName,
+            details: {'zoneName': zoneName},
+          ),
+        );
+
+        expect(presentation.title, 'Scav spawns');
+        expect(presentation.text, isNot(contains(zoneName)));
+      }
+    });
+
+    test('translated spawn names remain display titles', () {
+      const zoneName = 'ZoneHotel_2';
+      final presentation = presentMarker(
+        _marker(
+          id: 'translated-spawn',
+          category: 'spawns',
+          filterKey: 'ScavSpawns',
+          name: 'Old Gas Station',
+          details: const {'zoneName': zoneName},
+        ),
+      );
+
+      expect(presentation.title, 'Old Gas Station');
+      expect(presentation.text, isNot(contains(zoneName)));
+    });
+
     test(
       'catalog ID fallback is unavailable for lock and extract summaries',
       () {

@@ -82,8 +82,8 @@ Ownership: `lib/application/map_controller.dart` and `test/maps/map_controller_t
 
 ## 7. Integration gates
 
-- [ ] 7.1 After groups 5 and 6 land, run `mise run analyze` and `mise run test` and ensure all current test-map rows are green. These offline checks do not establish milestone-wide readability.
-- [ ] 7.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; ensure the release notes match summary-only behavior. Do not bump a version.
+- [x] 7.1 After groups 5 and 6 land, run `mise run analyze` and `mise run test` and ensure all current test-map rows are green. These offline checks do not establish milestone-wide readability.
+- [x] 7.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; ensure the release notes match summary-only behavior. Do not bump a version.
 - [x] 7.3 Obtain a fresh FULL design review of the amended decisions before implementing groups 5 and 6; the prior review approval is invalidated by the user-approved D4 reversal.
 
 ## Workflow follow-up

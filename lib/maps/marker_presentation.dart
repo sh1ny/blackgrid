@@ -111,9 +111,11 @@ MarkerPresentation presentMarker(
 
 String _displayName(PreparedMarker marker, String categoryLabel) {
   final name = marker.name.trim();
+  final sourceZoneName = _text(marker.details['zoneName']);
   if (name.isEmpty ||
       name.toLowerCase() == marker.category.toLowerCase() ||
       name.toLowerCase() == marker.filterKey.toLowerCase() ||
+      (marker.category == 'spawns' && name == sourceZoneName) ||
       name == marker.id ||
       name == marker.details['id'] ||
       name == marker.source['mapId'] ||

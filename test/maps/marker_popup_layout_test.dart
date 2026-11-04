@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 
+import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/maps/marker_presentation.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/ui/marker_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +56,72 @@ Future<List<bool>> _paintsTetherEndpoints(
 }
 
 void main() {
+  testWidgets(
+    'scaled narrow popup lets a long marker title scroll to its final glyph',
+    (tester) async {
+      const title =
+          'Abandoned northern ridge weapons cache behind the collapsed stone '
+          'shelter at the old signal station Z';
+      tester.view.physicalSize = const Size(260, 190);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final marker = PreparedMarker(
+        id: 'container-weapon-cache',
+        category: 'containers',
+        filterKey: 'Containers',
+        name: title,
+        position: GamePoint(1, 2),
+        details: const {},
+        source: const {'mapId': 'map-a'},
+        outline: const [],
+      );
+      var closeCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SizedBox.expand(
+            key: const ValueKey('long-title-viewport'),
+            child: MarkerPopup(
+              presentation: presentMarker(marker),
+              anchor: const Offset(130, 95),
+              onClose: () => closeCount++,
+            ),
+          ),
+        ),
+      );
+
+      final scrollFinder = find.byKey(const ValueKey('marker-popup-scroll'));
+      final scrollState = tester.state<ScrollableState>(
+        find.descendant(of: scrollFinder, matching: find.byType(Scrollable)),
+      );
+      final scrollableTitle = find.descendant(
+        of: scrollFinder,
+        matching: find.text(title),
+      );
+      final closeFinder = find.byTooltip('Close marker details');
+
+      expect(scrollableTitle, findsOneWidget);
+      expect(scrollState.position.maxScrollExtent, greaterThan(0));
+      expect(closeFinder.hitTestable(), findsOneWidget);
+
+      await tester.drag(scrollFinder, const Offset(0, -10000));
+      await tester.pumpAndSettle();
+
+      final titleRect = tester.getRect(scrollableTitle);
+      final scrollRect = tester.getRect(scrollFinder);
+      expect(scrollState.position.pixels, scrollState.position.maxScrollExtent);
+      expect(titleRect.bottom, lessThanOrEqualTo(scrollRect.bottom));
+      expect(closeFinder.hitTestable(), findsOneWidget);
+      await tester.tap(closeFinder);
+      await tester.pump();
+      expect(closeCount, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('zero viewport lays out no bubble without overflow', (
     tester,
   ) async {
