@@ -60,8 +60,8 @@ Apply discipline: each group lands its own red tests, implementation and applica
 
 ## 4. Final integration checks
 
-- [ ] 4.1 Run `mise run analyze` and `mise run test`; verify both exit zero and all test-map rows are green. These are offline checks, not a real-map readability judgment.
-- [ ] 4.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; verify both exit zero and Release Notes match delivered behavior. Release is disabled: do not bump a version.
+- [x] 4.1 Run `mise run analyze` and `mise run test`; verify both exit zero and all test-map rows are green. These are offline checks, not a real-map readability judgment.
+- [x] 4.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; verify both exit zero and Release Notes match delivered behavior. Release is disabled: do not bump a version.
 
 ## Workflow follow-up
 
