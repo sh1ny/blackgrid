@@ -2,11 +2,12 @@
 
 ## Test map
 
-All scenarios are new and start red. Named parameterized tests cover every alternative in their scenario; each row turns green only after its named test passes during apply. Tests use small synthetic fixtures and handwritten fakes, never a mocks package, real game, sleeps, or permanent source-text/wiring assertions.
+Named parameterized tests cover every alternative in their scenario; each row turns green only after its named test passes during apply. Existing green rows record the earlier implementation; new or changed rows are red pending this amendment. Tests use small synthetic fixtures and handwritten fakes, never a mocks package, real game, sleeps, or permanent source-text/wiring assertions.
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | map-marker-popups → Marker selection opens one bubble | Select a marker | test/maps/marker_popup_test.dart | selection by badge browser and accessibility preserves view | green |
+| map-marker-popups → Marker selection opens one bubble | Overlapping badges | test/maps/map_controller_test.dart | topmost equal-distance badge wins while nearest and inclusive radius remain | red |
 | map-marker-popups → Marker selection opens one bubble | Replace selection | test/maps/marker_popup_test.dart | selecting another marker replaces the bubble | green |
 | map-marker-popups → Marker selection opens one bubble | Stale browser result | test/maps/marker_popup_test.dart | stale browser result after content replacement is rejected | green |
 | map-marker-popups → Marker selection is cleared consistently | Close marker bubble | test/maps/marker_popup_test.dart | close clears selection bubble and linked highlights | green |
@@ -14,7 +15,7 @@ All scenarios are new and start red. Named parameterized tests cover every alter
 | map-marker-popups → Marker selection is cleared consistently | Empty map and Escape | test/maps/marker_popup_test.dart | empty canvas and Escape clear marker selection | green |
 | map-marker-popups → Bubble tracks the badge within the viewport | Pan and zoom | test/maps/marker_popup_test.dart | pan and zoom track the projected anchor at fixed text size | green |
 | map-marker-popups → Bubble tracks the badge within the viewport | Edge or small viewport | test/maps/marker_popup_test.dart | edge placements clamp prefer below and tether to anchor | green |
-| map-marker-popups → Bubble tracks the badge within the viewport | Long content | test/maps/marker_popup_test.dart | long bubble content scrolls within viewport | green |
+| map-marker-popups → Bubble tracks the badge within the viewport | Long content | test/maps/marker_popup_test.dart | long summary content scrolls within viewport | red |
 | map-marker-popups → Offscreen and ineligible selections differ | Anchor leaves and returns | test/maps/marker_popup_test.dart | offscreen anchor hides and restores the same bubble | green |
 | map-marker-popups → Offscreen and ineligible selections differ | Outline remains visible but anchor leaves | test/maps/map_viewport_test.dart | visible outline with offscreen anchor retains selection without bubble | green |
 | map-marker-popups → Offscreen and ineligible selections differ | Eligibility or content changes | test/maps/marker_popup_test.dart | floor category quest map and content invalidation clear selection | green |
@@ -22,6 +23,7 @@ All scenarios are new and start red. Named parameterized tests cover every alter
 | map-marker-popups → Bubble interaction respects map and focus | Operate and scroll inside bubble | test/maps/marker_popup_test.dart | bubble control and wheel do not operate the map | green |
 | map-marker-popups → Bubble interaction respects map and focus | Navigate outside bubble | test/maps/marker_popup_test.dart | uncovered canvas drag and wheel navigate with tracking | green |
 | map-marker-popups → Bubble interaction respects map and focus | Keyboard and help precedence | test/maps/marker_popup_test.dart | focused controls and help modal take keyboard precedence | green |
+| map-marker-popups → Bubble interaction respects map and focus | Popup focus isolates map navigation keys | test/maps/marker_popup_test.dart | focused popup controls isolate all map navigation keys without stealing child input | red |
 | map-marker-popups → Bubble interaction respects map and focus | Accessible dismissal | test/maps/marker_popup_test.dart | labelled keyboard close clears selection and restores usable map focus | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Quest and container | test/maps/marker_presentation_test.dart | quest objective and container show prepared names | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Linked extract and lock | test/maps/marker_presentation_test.dart | linked extract item count switch and lock key facts | green |
@@ -30,12 +32,11 @@ All scenarios are new and start red. Named parameterized tests cover every alter
 | map-marker-popups → Item names use only the matching loaded catalog | Loaded name and update | test/maps/marker_popup_test.dart | matching catalog publication updates open bubble without requests | green |
 | map-marker-popups → Item names use only the matching loaded catalog | Missing, mismatched or failed catalog | test/maps/marker_presentation_test.dart | absent mismatched missing and failed catalog names are unavailable | green |
 | map-marker-popups → Item names use only the matching loaded catalog | Failed refresh with last-good data | test/maps/marker_popup_test.dart | failed refresh retains matching last good key without requests | green |
-| map-marker-popups → Raw marker details are bounded and session-scoped | Lazy collapsed details | test/maps/marker_popup_test.dart | first collapsed details does not construct raw preview | green |
-| map-marker-popups → Raw marker details are bounded and session-scoped | Session preference and current marker | test/maps/marker_popup_test.dart | expanded details follows current marker across tab and breakpoint | green |
-| map-marker-popups → Raw marker details are bounded and session-scoped | Oversized source | test/maps/marker_preview_test.dart | bounded preview shortens large and deeply nested source | green |
-| map-marker-popups → Raw marker details are bounded and session-scoped | Next launch | test/maps/marker_popup_test.dart | new app session starts details collapsed | green |
+| map-marker-popups → Marker bubbles contain summaries only | Summary without raw details | test/maps/marker_popup_test.dart | marker bubble shows summary without raw details | red |
 
 Apply discipline: each group lands its own red tests, implementation and applicable API documentation together; run targeted tests with the official Dart MCP `run_tests` route at the relevant red and green steps. Before changing any exported signature, use LSP references and migrate every caller, with no compatibility shims. Use existing Dart/Flutter skills and AGENTS.md's Dart and Flutter code guidance; no new dependencies or native/game services. Keep the proposal's Release Notes current in the group if its delivered behavior changes.
+
+Groups 1–4 and their 14 checked task IDs are historical commit attribution, not current acceptance for retired raw preview or marker Details behavior. Group 5 removes that work; current acceptance is the revised specification and test map plus groups 5–7. Prior integration results predate this amendment.
 
 ## 1. Controller selection and uncropped eligibility
 
@@ -63,7 +64,29 @@ Apply discipline: each group lands its own red tests, implementation and applica
 - [x] 4.1 Run `mise run analyze` and `mise run test`; verify both exit zero and all test-map rows are green. These are offline checks, not a real-map readability judgment.
 - [x] 4.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; verify both exit zero and Release Notes match delivered behavior. Release is disabled: do not bump a version.
 
+## 5. Summary-only popup and keyboard isolation
+
+Ownership: UI and `test/maps/*` popup/viewport/presentation tests, plus `README.md`; do not edit `lib/application/map_controller.dart` or `test/maps/map_controller_test.dart`, which belong to group 6.
+
+- [ ] 5.1 Add red widget regressions for the summary-only scenario and all map navigation shortcut isolation while a popup control has focus, including ArrowLeft; verify child-handled input still works, Escape/modal precedence and uncovered map navigation remain correct. Replace the old preview-dependent long-scroll case with `long summary content scrolls within viewport` using genuinely long player-facing summary content. Keep existing scenario test names unless their behavior changes.
+- [ ] 5.2 Remove marker raw Details UI, preview implementation and preview-only tests, expansion preference/callbacks and all related callers and obsolete assertions, with no compatibility shims or cache. Implement popup-focus isolation for all map navigation shortcuts while letting child controls handle their own input and preserving Escape/modal precedence. Preserve `PreparedMarker.details` and `.source` for pure summaries, unrelated app Details, saved-pin behavior and existing catalog behavior. Use LSP references before changing exported APIs. Update `test/maps/map_viewport_test.dart` without losing its geometry and hit proofs; update `README.md` Map controls and applicable API documentation to the summary-only behavior. No pack/data regeneration or network changes.
+- [ ] 5.3 Verify the group 5 red cases pass with official Dart MCP targeted tests and retained popup/viewport/presentation coverage; update their test-map rows only on passing evidence. Preserve the widget preview as a summary-only isolated preview.
+
+## 6. Generic controller badge hit ordering
+
+Ownership: `lib/application/map_controller.dart` and `test/maps/map_controller_test.dart` only; group 5 owns UI and other map tests.
+
+- [ ] 6.1 Add red synthetic controller regression `topmost equal-distance badge wins while nearest and inclusive radius remain`: equal-position/equal-distance eligible badges with differing categories and paint order select the topmost, a strictly nearer badge wins regardless of order, exact-radius hits remain included, and outside-radius hits remain excluded. Preserve existing outline hit behavior.
+- [ ] 6.2 Fix generic `hitTestMarker` badge tie handling to honor topmost paint order without a boss special case; keep nearest-distance and inclusive-radius semantics. No data changes, fetches or pack regeneration.
+- [ ] 6.3 Verify the controller regression and relevant existing controller tests via official Dart MCP targeted tests; update its test-map row only on passing evidence.
+
+## 7. Integration gates
+
+- [ ] 7.1 After groups 5 and 6 land, run `mise run analyze` and `mise run test` and ensure all current test-map rows are green. These offline checks do not establish milestone-wide readability.
+- [ ] 7.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; ensure the release notes match summary-only behavior. Do not bump a version.
+- [x] 7.3 Obtain a fresh FULL design review of the amended decisions before implementing groups 5 and 6; the prior review approval is invalidated by the user-approved D4 reversal.
+
 ## Workflow follow-up
 
 - After implementation, follow the configured review, verification, archive and PR workflow separately; none is a tracked implementation task here.
-- Any later runtime visual smoke requires prior confirmation that no game is running; if that cannot be confirmed, do not launch. Agents never launch or test against the game. M8 real-map readability is a user-only milestone-close check after remaining M8 work is delivered; it has not been passed by this change.
+- The user reported the feel test worked fine on Release 0.7.0+403 at head `7bd9a60`; this is not the M8 milestone-wide readability assessment. Any later runtime visual smoke requires prior confirmation that no game is running; if that cannot be confirmed, do not launch. Agents never launch or test against the game. M8 real-map readability is a user-only milestone-close check after remaining M8 work is delivered; it has not been passed by this change.

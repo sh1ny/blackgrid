@@ -13,6 +13,10 @@ The map SHALL show one marker information bubble when an eligible built-in marke
 - **WHEN** a player selects an eligible marker by clicking its badge, choosing it in the marker browser, or activating its accessibility target
 - **THEN** one bubble shows that marker and the map view does not move
 
+#### Scenario: Overlapping badges
+- **WHEN** multiple eligible badges are within the inclusive hit radius at equal distance from a pointer selection
+- **THEN** the topmost painted badge is selected; a strictly nearer eligible badge wins regardless of paint order
+
 #### Scenario: Replace selection
 - **WHEN** a player selects a different eligible marker while a bubble is open
 - **THEN** the bubble shows the new marker and no bubble for the previous marker remains
@@ -85,6 +89,10 @@ The bubble SHALL expose named, keyboard-operable controls and SHALL consume its 
 - **WHEN** a bubble control has keyboard focus and the player presses Enter, N or Delete, or the map help dialog is open and Escape is pressed
 - **THEN** the focused control receives its applicable key without a map shortcut, or help closes without clearing marker selection, respectively
 
+#### Scenario: Popup focus isolates map navigation keys
+- **WHEN** a bubble control has focus and the player presses a map navigation shortcut, including an arrow key
+- **THEN** the map does not pan or zoom, and input handled by the focused control is not stolen
+
 #### Scenario: Accessible dismissal
 - **WHEN** a player navigates to the bubble's labelled Close control using the keyboard or assistive technology and activates it
 - **THEN** the marker selection clears and keyboard focus remains usable on the map
@@ -109,7 +117,7 @@ The bubble SHALL use player-facing category and marker names and show available 
 - **THEN** the bubble presents 35% as the boss spawn chance and does not claim it is the chance for that location
 
 ### Requirement: Item names use only the matching loaded catalog
-The bubble SHALL resolve item and key names from the already loaded catalog for the active mode, including its last-good snapshot, and SHALL update when that catalog changes. Opening or updating a bubble SHALL NOT initiate a catalog request. Unresolved names SHALL say they are unavailable; raw IDs SHALL appear only in Details.
+The bubble SHALL resolve item and key names from the already loaded catalog for the active mode, including its last-good snapshot, and SHALL update when that catalog changes. Opening or updating a bubble SHALL NOT initiate a catalog request. Unresolved names SHALL say they are unavailable without displaying raw IDs.
 
 #### Scenario: Loaded name and update
 - **WHEN** an active-mode catalog resolves a required item and a later active-mode catalog gives it a different name
@@ -123,21 +131,9 @@ The bubble SHALL resolve item and key names from the already loaded catalog for 
 - **WHEN** refresh fails but the active-mode last-good catalog contains the key
 - **THEN** the bubble continues to show that key's last-good name without a popup-triggered request
 
-### Requirement: Raw marker details are bounded and session-scoped
-The bubble SHALL keep raw category and filter keys, coordinates and source fields in a lazy Details section. Its expansion preference SHALL initially be collapsed, last for the app session across markers, tabs and layout changes, and never be saved. A diagnostic preview SHALL be bounded to 16 KiB and explicitly indicate when shortened.
+### Requirement: Marker bubbles contain summaries only
+The bubble SHALL show only player-facing marker summaries and SHALL NOT expose raw Details, diagnostic previews, category or filter keys, coordinates, or source fields. Prepared marker details and source SHALL remain available internally for summary derivation.
 
-#### Scenario: Lazy collapsed details
-- **WHEN** the first marker is selected after launch and Details is collapsed
-- **THEN** only its Details title is shown and raw preview content is not constructed
-
-#### Scenario: Session preference and current marker
-- **WHEN** the player expands Details, selects another marker, switches tabs and resizes across the compact breakpoint
-- **THEN** Details remains expanded and shows the current marker's diagnostic preview, not the previous marker's
-
-#### Scenario: Oversized source
-- **WHEN** expanded source data exceeds the preview or traversal bounds
-- **THEN** the diagnostic preview is at most 16 KiB and visibly says it was shortened
-
-#### Scenario: Next launch
-- **WHEN** the player expanded Details in a prior app session and starts the app again
-- **THEN** Details starts collapsed
+#### Scenario: Summary without raw details
+- **WHEN** a marker with raw category, filter, coordinates and source data is selected
+- **THEN** its available player-facing summary is shown without a Details control or raw diagnostic data
