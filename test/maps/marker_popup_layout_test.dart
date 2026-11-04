@@ -208,6 +208,75 @@ void main() {
     },
   );
 
+  testWidgets(
+    'long interior popup remains tethered, scrollable, and closable',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 340);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var closeCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SizedBox.expand(
+            key: const ValueKey('long-popup-viewport'),
+            child: MarkerPopup(
+              presentation: _presentation('Interior marker'),
+              anchor: const Offset(210, 170),
+              detailsExpanded: true,
+              onDetailsExpandedChanged: (_) {},
+              onClose: () => closeCount++,
+              detailsBuilder: (_) => Text(
+                List<String>.filled(80, 'Long marker detail').join('\\n'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final viewportFinder = find.byKey(const ValueKey('long-popup-viewport'));
+      final viewport = tester.getRect(viewportFinder);
+      final popup = tester.getRect(find.byKey(const ValueKey('marker-popup')));
+      final closeFinder = find.byTooltip('Close marker details');
+      final scrollableState = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byKey(const ValueKey('marker-popup-scroll')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(viewport.contains(popup.topLeft), isTrue);
+      expect(viewport.contains(popup.bottomRight), isTrue);
+      expect(scrollableState.position.maxScrollExtent, greaterThan(0));
+      expect(closeFinder.hitTestable(), findsOneWidget);
+      final tetherFinder = find.byKey(const ValueKey('marker-popup-tether'));
+      final tetherEnd = Offset(
+        const Offset(210, 170).dx.clamp(popup.left, popup.right).toDouble(),
+        const Offset(210, 170).dy.clamp(popup.top, popup.bottom).toDouble(),
+      );
+      expect(
+        await _paintsTetherEndpoints(tester, tetherFinder, viewportFinder, [
+          const Offset(210, 170),
+          tetherEnd,
+        ]),
+        everyElement(isTrue),
+      );
+
+      await tester.drag(
+        find.byKey(const ValueKey('marker-popup-scroll')),
+        const Offset(0, -500),
+      );
+      await tester.pumpAndSettle();
+      expect(scrollableState.position.pixels, greaterThan(0));
+      expect(closeFinder.hitTestable(), findsOneWidget);
+      await tester.tap(closeFinder);
+      await tester.pump();
+      expect(closeCount, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('collapsed details builder is lazy and follows current marker', (
     tester,
   ) async {

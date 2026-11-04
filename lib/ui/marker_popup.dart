@@ -75,12 +75,17 @@ class MarkerPopup extends StatelessWidget {
         textDirection: Directionality.of(context),
         textScaler: MediaQuery.textScalerOf(context),
       )..layout(maxWidth: titleWidth);
+      final minimumCardHeight =
+          math.max(closeExtent, titlePainter.height) + padding * 2;
+      titlePainter.dispose();
       if (availableWidth < closeExtent + padding * 2 ||
-          availableHeight <
-              math.max(closeExtent, titlePainter.height) + padding * 2) {
+          availableHeight < minimumCardHeight) {
         return const SizedBox.shrink();
       }
-      final layout = _MarkerPopupLayoutDelegate(anchor);
+      final layout = _MarkerPopupLayoutDelegate(
+        anchor,
+        minimumCardHeight: minimumCardHeight,
+      );
       return Focus(
         onKeyEvent: (_, event) => _handleKey(event),
         child: Shortcuts(
@@ -271,9 +276,10 @@ const _tetherLayoutId = 'tether';
 const _popupLayoutId = 'popup';
 
 class _MarkerPopupLayoutDelegate extends MultiChildLayoutDelegate {
-  _MarkerPopupLayoutDelegate(this.anchor);
+  _MarkerPopupLayoutDelegate(this.anchor, {required this.minimumCardHeight});
 
   final Offset anchor;
+  final double minimumCardHeight;
   Rect? popupRect;
 
   static const _gap = 10.0;
@@ -296,9 +302,18 @@ class _MarkerPopupLayoutDelegate extends MultiChildLayoutDelegate {
     final maxWidth = math
         .min(_maxWidth, math.max(0, size.width - margin * 2))
         .toDouble();
-    final maxHeight = math
+    final viewportMaxHeight = math
         .min(_maxHeight, math.max(0, size.height - margin * 2))
         .toDouble();
+    final availableAbove = anchor.dy - _gap - margin;
+    final availableBelow = size.height - margin - anchor.dy - _gap;
+    final availableOnBestSide = math.max(
+      0,
+      math.max(availableAbove, availableBelow),
+    );
+    final maxHeight = availableOnBestSide >= minimumCardHeight
+        ? math.min(viewportMaxHeight, availableOnBestSide).toDouble()
+        : viewportMaxHeight;
     final popupSize = layoutChild(
       _popupLayoutId,
       BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
@@ -323,7 +338,8 @@ class _MarkerPopupLayoutDelegate extends MultiChildLayoutDelegate {
 
   @override
   bool shouldRelayout(covariant _MarkerPopupLayoutDelegate oldDelegate) =>
-      anchor != oldDelegate.anchor;
+      anchor != oldDelegate.anchor ||
+      minimumCardHeight != oldDelegate.minimumCardHeight;
 }
 
 class _MarkerPopupTetherPainter extends CustomPainter {

@@ -4,8 +4,76 @@ import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/maps/marker_presentation.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 
+import '../fixtures/m1/catalog/fixture.dart';
+
 void main() {
   group('marker presentation', () {
+    test(
+      'quest description remains a fact when it matches the prepared title',
+      () {
+        const description =
+            'Travel to the north ridge and search every marked area for the '
+            'hidden objective.';
+        final marker = _marker(
+          id: 'quest-objective-3ef16a317852',
+          category: 'questObjectives',
+          filterKey: 'QuestObjectives',
+          name: description,
+          details: const {'description': description},
+        );
+
+        final presentation = presentMarker(marker);
+
+        expect(presentation.title, description);
+        expect(presentation.facts, contains(description));
+      },
+    );
+
+    test(
+      'catalog ID fallback is unavailable for lock and extract summaries',
+      () {
+        final wire = wireFixture();
+        final item = wire['items']['data']['items']['item-a'] as Map;
+        item['normalizedName'] = 'item-a';
+        (wire['items_en']['data'] as Map).remove('item-a Name');
+        final snapshot = fixtureCatalog(wire: wire);
+        expect(snapshot.items['item-a']!.name, 'item-a');
+
+        final lock = _marker(
+          id: 'lock-id',
+          category: 'locks',
+          filterKey: 'locks',
+          name: 'Gate lock',
+          details: const {'key': 'item-a'},
+        );
+        final extract = _marker(
+          id: 'extract-id',
+          category: 'extracts',
+          filterKey: 'PmcExtracts',
+          name: 'West exit',
+          details: const {
+            'transferItem': {'item': 'item-a'},
+          },
+        );
+
+        final lockText = presentMarker(
+          lock,
+          activeMode: GameMode.pvp,
+          catalogSnapshot: snapshot,
+        ).text;
+        final extractText = presentMarker(
+          extract,
+          activeMode: GameMode.pvp,
+          catalogSnapshot: snapshot,
+        ).text;
+
+        expect(lockText, contains('Key: unavailable'));
+        expect(lockText, isNot(contains('item-a')));
+        expect(extractText, contains('Item: unavailable'));
+        expect(extractText, isNot(contains('item-a')));
+      },
+    );
+
     test('quest objective and container show prepared names', () {
       final objective = _marker(
         id: 'objective-id',

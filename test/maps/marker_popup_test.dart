@@ -417,6 +417,11 @@ void main() {
     final popup = find.byKey(const ValueKey('marker-popup-scroll'));
     expect(popup, findsOneWidget);
     expect(find.textContaining('Long detail'), findsOneWidget);
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const ValueKey('marker-preview-shortened'))),
+      alignment: .5,
+    );
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('marker-preview-shortened')).hitTestable(),
       findsOneWidget,

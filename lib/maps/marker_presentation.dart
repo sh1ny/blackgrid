@@ -44,7 +44,7 @@ MarkerPresentation presentMarker(
       marker.filterKey == 'QuestItems' || marker.filterKey == 'QuestObjectives'
       ? _text(details['description'])
       : null;
-  if (description != null && description != title) facts.add(description);
+  if (description != null) facts.add(description);
 
   final quest = details['quest'];
   if (quest is Map) {
@@ -136,7 +136,7 @@ String _catalogName(String id, GameMode activeMode, CatalogSnapshot? snapshot) {
   if (activeMode != GameMode.unknown && snapshot?.mode == activeMode) {
     final item = snapshot!.items[id];
     final name = item?.id == id ? item?.name.trim() : null;
-    if (name != null && name.isNotEmpty) return name;
+    if (name != null && name.isNotEmpty && name != id) return name;
   }
   return 'unavailable';
 }
