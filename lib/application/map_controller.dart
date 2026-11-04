@@ -191,6 +191,7 @@ class MapController extends ChangeNotifier {
   void setCategoryVisibility(Map<String, bool> values) {
     if (_disposed || mapEquals(_categoryVisibility, values)) return;
     _categoryVisibility = Map.unmodifiable(values);
+    _clearSelectionIfIneligible();
     _invalidateMarkers();
     notifyListeners();
   }
@@ -210,6 +211,7 @@ class MapController extends ChangeNotifier {
     if (nextName == _questName && nextTrader == _questTrader) return;
     _questName = nextName;
     _questTrader = nextTrader;
+    _clearSelectionIfIneligible();
     _invalidateMarkers();
     notifyListeners();
   }
@@ -225,10 +227,29 @@ class MapController extends ChangeNotifier {
   /// Selection never changes the view; only explicitly source-linked switches
   /// receive a linked highlight.
   void setSelectedMarker(String? id) {
-    if (_disposed || id == _selectedMarkerId) return;
+    if (_disposed) return;
+    if (id != null && !_isMarkerEligible(id)) id = null;
+    if (id == _selectedMarkerId) return;
     _selectedMarkerId = id;
     _invalidateMarkers();
     notifyListeners();
+  }
+
+  bool _isMarkerEligible(String id) {
+    final floors = _floorSelection;
+    if (floors == null) return false;
+    for (final position
+        in _markerPositions[_selectedMapId] ?? const <_MarkerScenePosition>[]) {
+      if (position.marker.id == id && _markerEligible(position, floors)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _clearSelectionIfIneligible() {
+    final id = _selectedMarkerId;
+    if (id != null && !_isMarkerEligible(id)) _selectedMarkerId = null;
   }
 
   void setRaidHighlights(Set<String> ids) {
@@ -401,6 +422,7 @@ class MapController extends ChangeNotifier {
     }
     ++_generation;
     _floorSelection = value;
+    _clearSelectionIfIneligible();
     _invalidateMarkers();
     _floors[value.policy.mapId] = value;
     // A hidden floor must disappear immediately from art and marker hits.
@@ -490,6 +512,32 @@ class MapController extends ChangeNotifier {
     ]);
   }
 
+  /// The selected eligible marker projected independently of viewport culling.
+  ///
+  /// The projection uses the current view transform and shared marker eligibility
+  /// rules. It remains available when the marker anchor is outside the viewport,
+  /// and its [ProjectedMapMarker.dimmed] value reflects search without clearing
+  /// the selection.
+  ProjectedMapMarker? get selectedMarkerProjection {
+    final id = _selectedMarkerId;
+    final map = _preparedMap;
+    final floors = _floorSelection;
+    if (_disposed ||
+        id == null ||
+        map == null ||
+        floors == null ||
+        !_hasViewport) {
+      return null;
+    }
+    for (final projection in _projectedMarkers ??= _projectMarkers(
+      map,
+      floors,
+    )) {
+      if (projection.marker.marker.id == id) return projection.marker;
+    }
+    return null;
+  }
+
   void _invalidateMarkers() {
     _projectedMarkers = null;
     _visibleMarkerCache = null;
@@ -576,8 +624,9 @@ class MapController extends ChangeNotifier {
 
   /// Selects a visible marker with a fixed logical-pixel hit radius.
   ///
-  /// The nearest badge within [radius] wins. Otherwise the topmost marker
-  /// whose outline contains [point] is hit, but only while that outline is
+  /// The nearest badge within [radius] wins, with the topmost badge winning
+  /// equal-distance ties. Otherwise the topmost marker whose outline contains
+  /// [point] is hit, but only while that outline is
   /// drawn ([outlineDrawn]): an extract or transit outline counts only when
   /// its marker is the selected one or has the id [hoveredMarkerId].
   ///
@@ -598,7 +647,7 @@ class MapController extends ChangeNotifier {
       final dx = point.x - marker.viewportPoint.x;
       final dy = point.y - marker.viewportPoint.y;
       final candidate = dx * dx + dy * dy;
-      if (candidate <= distance) {
+      if (candidate <= distance && (nearest == null || candidate < distance)) {
         nearest = marker;
         distance = candidate;
       }

@@ -263,16 +263,19 @@ History stores item ID, mode, source, UTC time and revision only. No telemetry, 
 
 | Input | Action |
 |---|---|
-| Drag / mouse wheel | Pan / zoom at the cursor |
-| Arrow keys | Pan |
+| Select a marker badge or a marker in the accessible list | Show its summary in a bubble tethered to the badge |
+| Drag / mouse wheel outside the bubble | Pan / zoom at the cursor |
+| Operate controls or scroll inside the bubble | Use bubble controls or scroll its content without moving or selecting the map |
+| Bubble `Close` or Escape | Dismiss the marker bubble and clear its linked highlights |
+| Arrow keys | Pan the map when its canvas has focus |
 | Home | Fit map |
 | `+` `=` numpad `+` / `-` numpad `-` | Zoom in / out |
 | C | Center on the sampled player |
 | N | Add a pin at the view center |
-| Right-click | Add a pin at the cursor |
+| Right-click outside the bubble | Add a pin at the cursor |
 | Enter | Browse visible markers and pins |
 | Delete | Remove the selected pin |
-| Escape | Clear the selection |
+| Escape | Clear the focused map selection |
 
 Supported maps, as labelled in the UI: Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker, Labyrinth (IDs in [`settings.dart`](lib/domain/settings.dart), labels in [`theme.dart`](lib/ui/theme.dart)).
 </details>

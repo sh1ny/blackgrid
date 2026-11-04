@@ -250,6 +250,183 @@ void main() {
       );
     },
   );
+  test('selected marker projection survives an offscreen anchor and follows view transforms', () async {
+    final controller = _controller(
+      markers: [
+        _marker(
+          'exit',
+          'extracts',
+          8,
+          24,
+          outline: [
+            {'x': 8, 'z': 20, 'height': null},
+            {'x': 24, 'z': 20, 'height': null},
+            {'x': 24, 'z': 28, 'height': null},
+            {'x': 8, 'z': 28, 'height': null},
+          ],
+        ),
+      ],
+    );
+    addTearDown(controller.dispose);
+    controller.updateViewport(const Size(320, 320));
+    await controller.initialize(selectedMapId: 'interchange');
+
+    controller.setSelectedMarker('exit');
+    final selected = controller.selectedMarkerProjection!;
+    expect(selected.marker.id, 'exit');
+    expect(
+      selected.viewportPoint.x,
+      closeTo(
+        controller.transform.sceneToViewport(selected.scenePoint).x,
+        1e-9,
+      ),
+    );
+    expect(
+      selected.viewportPoint.y,
+      closeTo(
+        controller.transform.sceneToViewport(selected.scenePoint).y,
+        1e-9,
+      ),
+    );
+
+    controller.panBy(-150, 0);
+    final offscreen = controller.selectedMarkerProjection!;
+    expect(offscreen.viewportPoint.x, lessThan(0));
+    expect(
+      controller.visibleMarkers(margin: 0).single.marker.id,
+      'exit',
+      reason:
+          'The outline remains visible although the badge anchor is offscreen.',
+    );
+    expect(
+      offscreen.viewportPoint.x,
+      closeTo(
+        controller.transform.sceneToViewport(offscreen.scenePoint).x,
+        1e-9,
+      ),
+    );
+    expect(
+      offscreen.viewportPoint.y,
+      closeTo(
+        controller.transform.sceneToViewport(offscreen.scenePoint).y,
+        1e-9,
+      ),
+    );
+
+    controller.updateViewport(const Size(400, 300));
+    await _settled(controller);
+    final resized = controller.selectedMarkerProjection!;
+    expect(resized.marker.id, 'exit');
+    expect(
+      resized.viewportPoint.x,
+      closeTo(controller.transform.sceneToViewport(resized.scenePoint).x, 1e-9),
+    );
+    expect(
+      resized.viewportPoint.y,
+      closeTo(controller.transform.sceneToViewport(resized.scenePoint).y, 1e-9),
+    );
+    controller.setSearch('not this marker');
+    final dimmed = controller.selectedMarkerProjection!;
+    expect(dimmed.marker.id, 'exit');
+    expect(dimmed.dimmed, isTrue);
+  });
+
+  test('ineligible or replaced selected markers clear with linked highlights immediately', () async {
+    Future<MapController> selectedController() async {
+      final controller = _controller(
+        markers: [
+          _marker(
+            'quest-exit',
+            'extracts',
+            8,
+            24,
+            filterKey: 'QuestItems',
+            details: {
+              'id': 'source-exit',
+              'switches': ['source-switch'],
+              'quest': {
+                'name': 'Delivery',
+                'trader': {'name': 'Prapor'},
+              },
+            },
+          )..['floorId'] = 'Upper',
+          _marker(
+            'linked-switch',
+            'switches',
+            24,
+            24,
+            details: {'id': 'source-switch'},
+          ),
+        ],
+      );
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      controller.toggleFloor('Upper');
+      controller.setSelectedMarker('quest-exit');
+      expect(controller.selectedMarkerProjection, isNotNull);
+      expect(
+        controller.visibleMarkers().where((m) => m.linkedHighlighted),
+        isNotEmpty,
+      );
+      return controller;
+    }
+
+    Future<void> expectSynchronousClear(
+      void Function(MapController) invalidate,
+      void Function(MapController) reverse,
+    ) async {
+      final controller = await selectedController();
+      addTearDown(controller.dispose);
+      var notifications = 0;
+      var inconsistentNotification = false;
+      controller.addListener(() {
+        notifications++;
+        if (controller.selectedMarkerProjection != null ||
+            controller.visibleMarkers().any((m) => m.linkedHighlighted)) {
+          inconsistentNotification = true;
+        }
+      });
+      invalidate(controller);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(
+        controller.visibleMarkers().any((m) => m.linkedHighlighted),
+        isFalse,
+      );
+      expect(notifications, greaterThan(0));
+      expect(inconsistentNotification, isFalse);
+      reverse(controller);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(
+        controller.visibleMarkers().any((m) => m.linkedHighlighted),
+        isFalse,
+      );
+    }
+
+    await expectSynchronousClear(
+      (controller) => controller.setCategoryVisibility({'QuestItems': false}),
+      (controller) => controller.setCategoryVisibility({}),
+    );
+    await expectSynchronousClear(
+      (controller) => controller.setQuestFilters(name: 'missing'),
+      (controller) => controller.setQuestFilters(name: ''),
+    );
+    await expectSynchronousClear(
+      (controller) => controller.toggleFloor('Upper'),
+      (controller) => controller.toggleFloor('Upper'),
+    );
+
+    final controller = await selectedController();
+    addTearDown(controller.dispose);
+    await controller.selectPersistedMap('icebreaker');
+    expect(controller.selectedMarkerProjection, isNull);
+    await controller.selectPersistedMap('interchange');
+    expect(controller.selectedMarkerProjection, isNull);
+
+    controller.setSelectedMarker('quest-exit');
+    expect(controller.selectedMarkerProjection, isNotNull);
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.selectedMarkerProjection, isNull);
+  });
 
   test(
     'player center preserves scale and world heading uses existing geometry',
@@ -577,6 +754,104 @@ void main() {
       expect(controller.visibleMarkers(), isEmpty);
     },
   );
+
+  test('topmost equal-distance badge wins while nearest and inclusive radius remain', () async {
+    final coincident = _controller(
+      markers: [
+        _marker(
+          'generic-scav',
+          'spawns',
+          16,
+          16,
+          details: {
+            'sides': ['scav'],
+          },
+        ),
+        _marker(
+          'named-boss',
+          'bosses',
+          16,
+          16,
+          details: {'mob': 'bossTagilla'},
+        ),
+      ],
+    );
+    addTearDown(coincident.dispose);
+    coincident.updateViewport(const Size(320, 320));
+    await coincident.initialize(selectedMapId: 'interchange');
+    final coincidentPoint = coincident.visibleMarkers().first.viewportPoint;
+    expect(coincident.hitTestMarker(coincidentPoint)!.marker.id, 'named-boss');
+
+    final tied = _controller(
+      markers: [
+        _marker('left-switch', 'switches', 8, 16),
+        _marker('right-extract', 'extracts', 24, 16),
+      ],
+    );
+    addTearDown(tied.dispose);
+    tied.updateViewport(const Size(320, 320));
+    await tied.initialize(selectedMapId: 'interchange');
+    final tiedMarkers = tied.visibleMarkers();
+    final tiePoint = ViewportPoint(
+      (tiedMarkers[0].viewportPoint.x + tiedMarkers[1].viewportPoint.x) / 2,
+      (tiedMarkers[0].viewportPoint.y + tiedMarkers[1].viewportPoint.y) / 2,
+    );
+    expect(
+      tied.hitTestMarker(tiePoint, radius: 100)!.marker.id,
+      'right-extract',
+    );
+
+    final ordered = _controller(
+      markers: [
+        _marker('closer', 'switches', 16, 16),
+        _marker('later-but-farther', 'extracts', 17, 16),
+      ],
+    );
+    addTearDown(ordered.dispose);
+    ordered.updateViewport(const Size(320, 320));
+    await ordered.initialize(selectedMapId: 'interchange');
+    final orderedMarkers = ordered.visibleMarkers();
+    final anchor = orderedMarkers.first.viewportPoint;
+    expect(
+      ordered
+          .hitTestMarker(ViewportPoint(anchor.x + 3, anchor.y), radius: 18)!
+          .marker
+          .id,
+      'closer',
+    );
+    final boundary = _controller(
+      markers: [_marker('boundary', 'switches', 16, 16)],
+    );
+    addTearDown(boundary.dispose);
+    boundary.updateViewport(const Size(320, 320));
+    await boundary.initialize(selectedMapId: 'interchange');
+    final boundaryPoint = boundary.visibleMarkers().single.viewportPoint;
+    expect(
+      boundary
+          .hitTestMarker(
+            ViewportPoint(boundaryPoint.x + 18, boundaryPoint.y),
+            radius: 18,
+          )!
+          .marker
+          .id,
+      'boundary',
+    );
+    expect(
+      boundary.hitTestMarker(
+        ViewportPoint(boundaryPoint.x + 18.01, boundaryPoint.y),
+        radius: 18,
+      ),
+      isNull,
+    );
+    ordered.setCategoryVisibility({'Extracts': false});
+    expect(
+      ordered
+          .hitTestMarker(ViewportPoint(anchor.x + 3, anchor.y), radius: 18)!
+          .marker
+          .id,
+      'closer',
+    );
+  });
 
   test(
     'category/floor query and hit logic share cached viewport projections',

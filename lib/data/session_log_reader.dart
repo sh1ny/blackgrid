@@ -92,8 +92,7 @@ class SessionLogReader {
   final _pendingControl = <GameLogEvent>[];
   bool _needReset = false;
 
-  /// Whether the last selection found a newest session folder that has no
-  /// application log yet, as when the game has just created it.
+  /// Whether a different newest session folder has no application log yet.
   bool _folderAwaitsApplicationLog = false;
   bool _batch = false;
   bool _recordRejected = false;
@@ -290,7 +289,7 @@ class SessionLogReader {
 
     final application = newest(LogFile.application);
     if (application == null) {
-      _folderAwaitsApplicationLog = true;
+      _folderAwaitsApplicationLog = session.path != _session;
       return null;
     }
     return _Selection(
@@ -352,9 +351,10 @@ class SessionLogReader {
     if (selected == null) {
       if (_path != null || _session != null) {
         _reset(null, null);
-        // A new folder whose application log is not there yet is not a
-        // restart of the input: the folder change that follows interrupts
-        // the raid instead of discarding it.
+        // A different folder whose application log is not there yet is not
+        // a restart of the input: the folder change that follows interrupts
+        // the raid instead of discarding it. Losing the current folder's log
+        // does reset the input, even if the folder is removed afterward.
         if (!_folderAwaitsApplicationLog) _needReset = true;
       }
       _publish(
