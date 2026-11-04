@@ -155,6 +155,27 @@ void main() {
     expect(batches.expand((b) => b), [isA<LogInputReset>()]);
   });
 
+  test(
+    'removing the application before its session folder resets input',
+    () async {
+      final application = await write(
+        _older,
+        'application_000.log',
+        _app('GameStarted: x'),
+      );
+      await reader.bind(root.path);
+      batches.clear();
+
+      // Recursive deletion can expose the empty session to a watcher scan.
+      await application.delete();
+      await reader.rescan();
+      await Directory('${root.path}/$_older').delete();
+      await reader.rescan();
+
+      expect(batches.expand((b) => b), [isA<LogInputReset>()]);
+    },
+  );
+
   test('missing push log keeps application and backend events', () async {
     await write(_newer, 'application_000.log', _app('GameStarted: x'));
     await write(_newer, 'backend_000.log', _backendExit());

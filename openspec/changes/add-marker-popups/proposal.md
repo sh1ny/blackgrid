@@ -65,3 +65,4 @@ Selected map markers show their information in a bubble at the marker instead of
 
 - Equally close overlapping map badges select the topmost visible marker, so boss badges open the boss information rather than an underlying generic spawn.
 - Map navigation shortcuts no longer pan or zoom the map while a marker bubble control has keyboard focus.
+- Removing the current session's application log resets raid input even when the folder is deleted afterward.
