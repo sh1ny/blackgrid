@@ -86,6 +86,12 @@ Ownership: `lib/application/map_controller.dart` and `test/maps/map_controller_t
 - [x] 7.2 Run `openspec validate add-marker-popups --strict` and `mise run release-notes -- --check openspec/changes/add-marker-popups/proposal.md`; ensure the release notes match summary-only behavior. Do not bump a version.
 - [x] 7.3 Obtain a fresh FULL design review of the amended decisions before implementing groups 5 and 6; the prior review approval is invalidated by the user-approved D4 reversal.
 
+## Verification evidence
+
+- Amended FULL design review round 2: `VERDICT: APPROVE`, `CHANGES_APPLIED: n/a`, recorded before groups 5 and 6.
+- Final offline gate after the focused log-reader repair and readability corrections: `mise run analyze` passed with no issues; `mise run test` passed all 2,532 tests. The 84 affected popup, presentation and map UI tests also passed through official Dart MCP.
+- No native application or live-game verification was performed. The owner's earlier feel check is not the milestone-wide readability check.
+
 ## Workflow follow-up
 
 - After implementation, follow the configured review, verification, archive and PR workflow separately; none is a tracked implementation task here.
