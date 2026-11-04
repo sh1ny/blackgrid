@@ -624,8 +624,9 @@ class MapController extends ChangeNotifier {
 
   /// Selects a visible marker with a fixed logical-pixel hit radius.
   ///
-  /// The nearest badge within [radius] wins. Otherwise the topmost marker
-  /// whose outline contains [point] is hit, but only while that outline is
+  /// The nearest badge within [radius] wins, with the topmost badge winning
+  /// equal-distance ties. Otherwise the topmost marker whose outline contains
+  /// [point] is hit, but only while that outline is
   /// drawn ([outlineDrawn]): an extract or transit outline counts only when
   /// its marker is the selected one or has the id [hoveredMarkerId].
   ///
@@ -646,7 +647,7 @@ class MapController extends ChangeNotifier {
       final dx = point.x - marker.viewportPoint.x;
       final dy = point.y - marker.viewportPoint.y;
       final candidate = dx * dx + dy * dy;
-      if (candidate <= distance) {
+      if (candidate <= distance && (nearest == null || candidate < distance)) {
         nearest = marker;
         distance = candidate;
       }

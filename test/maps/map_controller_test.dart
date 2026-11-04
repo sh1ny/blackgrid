@@ -755,6 +755,104 @@ void main() {
     },
   );
 
+  test('topmost equal-distance badge wins while nearest and inclusive radius remain', () async {
+    final coincident = _controller(
+      markers: [
+        _marker(
+          'generic-scav',
+          'spawns',
+          16,
+          16,
+          details: {
+            'sides': ['scav'],
+          },
+        ),
+        _marker(
+          'named-boss',
+          'bosses',
+          16,
+          16,
+          details: {'mob': 'bossTagilla'},
+        ),
+      ],
+    );
+    addTearDown(coincident.dispose);
+    coincident.updateViewport(const Size(320, 320));
+    await coincident.initialize(selectedMapId: 'interchange');
+    final coincidentPoint = coincident.visibleMarkers().first.viewportPoint;
+    expect(coincident.hitTestMarker(coincidentPoint)!.marker.id, 'named-boss');
+
+    final tied = _controller(
+      markers: [
+        _marker('left-switch', 'switches', 8, 16),
+        _marker('right-extract', 'extracts', 24, 16),
+      ],
+    );
+    addTearDown(tied.dispose);
+    tied.updateViewport(const Size(320, 320));
+    await tied.initialize(selectedMapId: 'interchange');
+    final tiedMarkers = tied.visibleMarkers();
+    final tiePoint = ViewportPoint(
+      (tiedMarkers[0].viewportPoint.x + tiedMarkers[1].viewportPoint.x) / 2,
+      (tiedMarkers[0].viewportPoint.y + tiedMarkers[1].viewportPoint.y) / 2,
+    );
+    expect(
+      tied.hitTestMarker(tiePoint, radius: 100)!.marker.id,
+      'right-extract',
+    );
+
+    final ordered = _controller(
+      markers: [
+        _marker('closer', 'switches', 16, 16),
+        _marker('later-but-farther', 'extracts', 17, 16),
+      ],
+    );
+    addTearDown(ordered.dispose);
+    ordered.updateViewport(const Size(320, 320));
+    await ordered.initialize(selectedMapId: 'interchange');
+    final orderedMarkers = ordered.visibleMarkers();
+    final anchor = orderedMarkers.first.viewportPoint;
+    expect(
+      ordered
+          .hitTestMarker(ViewportPoint(anchor.x + 3, anchor.y), radius: 18)!
+          .marker
+          .id,
+      'closer',
+    );
+    final boundary = _controller(
+      markers: [_marker('boundary', 'switches', 16, 16)],
+    );
+    addTearDown(boundary.dispose);
+    boundary.updateViewport(const Size(320, 320));
+    await boundary.initialize(selectedMapId: 'interchange');
+    final boundaryPoint = boundary.visibleMarkers().single.viewportPoint;
+    expect(
+      boundary
+          .hitTestMarker(
+            ViewportPoint(boundaryPoint.x + 18, boundaryPoint.y),
+            radius: 18,
+          )!
+          .marker
+          .id,
+      'boundary',
+    );
+    expect(
+      boundary.hitTestMarker(
+        ViewportPoint(boundaryPoint.x + 18.01, boundaryPoint.y),
+        radius: 18,
+      ),
+      isNull,
+    );
+    ordered.setCategoryVisibility({'Extracts': false});
+    expect(
+      ordered
+          .hitTestMarker(ViewportPoint(anchor.x + 3, anchor.y), radius: 18)!
+          .marker
+          .id,
+      'closer',
+    );
+  });
+
   test(
     'category/floor query and hit logic share cached viewport projections',
     () async {

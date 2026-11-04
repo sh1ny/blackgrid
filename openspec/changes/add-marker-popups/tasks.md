@@ -7,7 +7,7 @@ Named parameterized tests cover every alternative in their scenario; each row tu
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | map-marker-popups → Marker selection opens one bubble | Select a marker | test/maps/marker_popup_test.dart | selection by badge browser and accessibility preserves view | green |
-| map-marker-popups → Marker selection opens one bubble | Overlapping badges | test/maps/map_controller_test.dart | topmost equal-distance badge wins while nearest and inclusive radius remain | red |
+| map-marker-popups → Marker selection opens one bubble | Overlapping badges | test/maps/map_controller_test.dart | topmost equal-distance badge wins while nearest and inclusive radius remain | green |
 | map-marker-popups → Marker selection opens one bubble | Replace selection | test/maps/marker_popup_test.dart | selecting another marker replaces the bubble | green |
 | map-marker-popups → Marker selection opens one bubble | Stale browser result | test/maps/marker_popup_test.dart | stale browser result after content replacement is rejected | green |
 | map-marker-popups → Marker selection is cleared consistently | Close marker bubble | test/maps/marker_popup_test.dart | close clears selection bubble and linked highlights | green |
@@ -15,7 +15,7 @@ Named parameterized tests cover every alternative in their scenario; each row tu
 | map-marker-popups → Marker selection is cleared consistently | Empty map and Escape | test/maps/marker_popup_test.dart | empty canvas and Escape clear marker selection | green |
 | map-marker-popups → Bubble tracks the badge within the viewport | Pan and zoom | test/maps/marker_popup_test.dart | pan and zoom track the projected anchor at fixed text size | green |
 | map-marker-popups → Bubble tracks the badge within the viewport | Edge or small viewport | test/maps/marker_popup_test.dart | edge placements clamp prefer below and tether to anchor | green |
-| map-marker-popups → Bubble tracks the badge within the viewport | Long content | test/maps/marker_popup_test.dart | long summary content scrolls within viewport | red |
+| map-marker-popups → Bubble tracks the badge within the viewport | Long content | test/maps/marker_popup_quest_test.dart | long summary content scrolls within viewport | red |
 | map-marker-popups → Offscreen and ineligible selections differ | Anchor leaves and returns | test/maps/marker_popup_test.dart | offscreen anchor hides and restores the same bubble | green |
 | map-marker-popups → Offscreen and ineligible selections differ | Outline remains visible but anchor leaves | test/maps/map_viewport_test.dart | visible outline with offscreen anchor retains selection without bubble | green |
 | map-marker-popups → Offscreen and ineligible selections differ | Eligibility or content changes | test/maps/marker_popup_test.dart | floor category quest map and content invalidation clear selection | green |
@@ -76,9 +76,9 @@ Ownership: UI and `test/maps/*` popup/viewport/presentation tests, plus `README.
 
 Ownership: `lib/application/map_controller.dart` and `test/maps/map_controller_test.dart` only; group 5 owns UI and other map tests.
 
-- [ ] 6.1 Add red synthetic controller regression `topmost equal-distance badge wins while nearest and inclusive radius remain`: equal-position/equal-distance eligible badges with differing categories and paint order select the topmost, a strictly nearer badge wins regardless of order, exact-radius hits remain included, and outside-radius hits remain excluded. Preserve existing outline hit behavior.
-- [ ] 6.2 Fix generic `hitTestMarker` badge tie handling to honor topmost paint order without a boss special case; keep nearest-distance and inclusive-radius semantics. No data changes, fetches or pack regeneration.
-- [ ] 6.3 Verify the controller regression and relevant existing controller tests via official Dart MCP targeted tests; update its test-map row only on passing evidence.
+- [x] 6.1 Add red synthetic controller regression `topmost equal-distance badge wins while nearest and inclusive radius remain`: equal-position/equal-distance eligible badges with differing categories and paint order select the topmost, a strictly nearer badge wins regardless of order, exact-radius hits remain included, and outside-radius hits remain excluded. Preserve existing outline hit behavior.
+- [x] 6.2 Fix generic `hitTestMarker` badge tie handling to honor topmost paint order without a boss special case; keep nearest-distance and inclusive-radius semantics. No data changes, fetches or pack regeneration.
+- [x] 6.3 Verify the controller regression and relevant existing controller tests via official Dart MCP targeted tests; update its test-map row only on passing evidence.
 
 ## 7. Integration gates
 
