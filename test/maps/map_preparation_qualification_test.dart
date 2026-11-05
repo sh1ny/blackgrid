@@ -368,6 +368,112 @@ void main() {
     );
   });
 
+  test('full-map source fixture retains boss occurrences and explicit empty coverage', () async {
+    final manifest = await readManifest(fixtures.first);
+    final customs = (manifest['maps'] as List).singleWhere(
+      (map) => map['id'] == 'customs',
+    );
+    final bosses = (customs['markers'] as List)
+        .where((marker) => marker['category'] == 'bosses')
+        .map((marker) => marker['details'] as Map)
+        .toList();
+    expect(bosses, hasLength(2));
+    expect(bosses.map((boss) => boss['mob']), everyElement('fixture-alpha'));
+    expect(
+      bosses.map((boss) => boss['position']),
+      everyElement({'x': 11.25, 'y': null, 'z': -4.5}),
+    );
+    expect(bosses.map((boss) => boss['spawnChance']), [.37, .23]);
+
+    final snapshot = jsonDecode(
+      await packFile(
+        fixtures.first,
+        'evidence/markers/maps.json',
+      ).readAsString(),
+    ) as Map<String, dynamic>;
+    final sourceBosses =
+        ((snapshot['data'] as Map<String, dynamic>)['maps']
+                as Map<String, dynamic>)['customs']['bosses']
+            as List;
+    expect((sourceBosses[2] as Map)['spawnLocations'], isEmpty);
+    expect(
+      ((sourceBosses[3] as Map)['spawnLocations'] as List).single['positions'],
+      isEmpty,
+    );
+  });
+
+  test('boss candidate corruption is rejected per map', () async {
+    for (final mutation in [
+      'missing position',
+      'extra position',
+      'moved map',
+      'changed mob',
+      'changed name',
+      'changed location',
+      'changed coordinate',
+      'changed rate',
+    ]) {
+      final private = await candidate('boss-$mutation');
+      final manifest = await readManifest(private);
+      final sourcePath = 'markers/maps.json';
+      final sourceFile = packFile(private, 'evidence/$sourcePath');
+      final snapshot =
+          jsonDecode(await sourceFile.readAsString()) as Map<String, dynamic>;
+      final data = snapshot['data'] as Map<String, dynamic>;
+      final maps = data['maps'] as Map<String, dynamic>;
+      final customs = maps['customs'] as Map<String, dynamic>;
+      final reserve = maps['reserve'] as Map<String, dynamic>;
+      final bosses = customs['bosses'] as List;
+      final boss = bosses.first as Map<String, dynamic>;
+      final location =
+          (boss['spawnLocations'] as List).first as Map<String, dynamic>;
+      final positions = location['positions'] as List;
+      switch (mutation) {
+        case 'missing position':
+          positions.removeAt(0);
+        case 'extra position':
+          positions.add({
+            ...(positions.first as Map<String, dynamic>),
+            'x': 21.5,
+          });
+        case 'moved map':
+          final moved = bosses.removeAt(0);
+          (reserve['bosses'] as List).add(moved);
+        case 'changed mob':
+          boss['mob'] = 'fixture-beta';
+        case 'changed name':
+          ((data['mobs'] as Map<String, dynamic>)['fixture-alpha']
+                  as Map<String, dynamic>)['name'] =
+              'CHANGED_FIXTURE_ALPHA';
+        case 'changed location':
+          location['name'] = 'Changed Customs stronghold';
+        case 'changed coordinate':
+          (positions.first as Map<String, dynamic>)['x'] = 11.5;
+        case 'changed rate':
+          boss['spawnChance'] = .38;
+      }
+      await sourceFile.writeAsString(canonicalJson(snapshot));
+      await _refreezeEvidence(private, manifest, sourcePath);
+      await saveManifest(private, manifest, refreshOutputs: true);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('Markers'),
+              contains('markers/maps.json'),
+              anyOf(contains('customs'), contains('reserve')),
+            ),
+          ),
+        ),
+        reason:
+            '$mutation must identify the affected map after hashes are refreshed',
+      );
+    }
+  });
+
   test('private mutation templates retain complete vector and dependency inventories with one raster base', () async {
     final private = await candidate('template-inventory');
     final manifest = await validateCandidate(private);
@@ -850,13 +956,7 @@ void main() {
     await saveManifest(forged, forgedManifest);
     await expectLater(
       validateCandidate(forged),
-      throwsA(
-        isA<FormatException>().having(
-          (error) => error.message,
-          'message',
-          'Markers differ from independently frozen source',
-        ),
-      ),
+      throwsA(isA<FormatException>()),
     );
     expect(await active.readAsString(), originalPointer);
     expect(await preparedAssetDirectories(packs), originalDirectories);

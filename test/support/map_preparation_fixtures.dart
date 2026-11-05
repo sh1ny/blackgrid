@@ -307,6 +307,28 @@ Uint8List png(int width, int height, {bool empty = false}) {
   return image.encodePng(picture);
 }
 
+Map<String, Object?> _fixtureBoss({
+  required String mob,
+  required num spawnChance,
+  required String location,
+  required num x,
+  required num? y,
+  required num z,
+  num locationChance = .5,
+}) => {
+  'mob': mob,
+  'spawnChance': spawnChance,
+  'spawnLocations': [
+    {
+      'name': location,
+      'spawnChance': locationChance,
+      'positions': [
+        {'x': x, 'y': y, 'z': z},
+      ],
+    },
+  ],
+};
+
 Future<Directory> materializeFullRaw(Directory raw) async {
   await raw.create();
   final sources = <Map<String, Object?>>[];
@@ -383,6 +405,22 @@ Future<Directory> materializeFullRaw(Directory raw) async {
     mapData[local['id'] as String] = {
       'id': local['id'],
       'normalizedName': local['sourceKey'],
+      if (local['id'] == 'interchange')
+        'switches': [
+          {
+            'id': '6b9023f26446d73433823e872e6d69688083beaf',
+            'name': 'Non-Kiba Alarms Switch',
+            'position': {'x': -46.555, 'y': 37.347, 'z': -55.202},
+            'bottom': 37.187,
+            'top': 37.507,
+            'outline': [
+              {'x': -46.81, 'y': 37.347, 'z': -55.517},
+              {'x': -46.3, 'y': 37.347, 'z': -55.517},
+              {'x': -46.3, 'y': 37.347, 'z': -54.887},
+              {'x': -46.81, 'y': 37.347, 'z': -54.887},
+            ],
+          },
+        ],
       if (local['id'] == 'icebreaker')
         'extracts': [
           {
@@ -397,7 +435,56 @@ Future<Directory> materializeFullRaw(Directory raw) async {
           'zoneName': 'Independently authored offline fixture',
         },
       ],
-      'bosses': [],
+      'bosses': switch (local['id']) {
+        'customs' => [
+          _fixtureBoss(
+            mob: 'fixture-alpha',
+            spawnChance: .37,
+            location: 'Customs stronghold',
+            locationChance: .81,
+            x: 11.25,
+            y: null,
+            z: -4.5,
+          ),
+          _fixtureBoss(
+            mob: 'fixture-alpha',
+            spawnChance: .23,
+            location: 'Customs stronghold',
+            locationChance: .67,
+            x: 11.25,
+            y: null,
+            z: -4.5,
+          ),
+          {
+            'mob': 'fixture-empty-location',
+            'spawnChance': .5,
+            'spawnLocations': <Object>[],
+          },
+          {
+            'mob': 'fixture-empty-position',
+            'spawnChance': .5,
+            'spawnLocations': [
+              {
+                'name': 'Empty position list',
+                'spawnChance': .5,
+                'positions': <Object>[],
+              },
+            ],
+          },
+        ],
+        'reserve' => [
+          _fixtureBoss(
+            mob: 'fixture-beta',
+            spawnChance: .62,
+            location: 'Reserve bunker',
+            locationChance: .19,
+            x: -8.5,
+            y: 2.25,
+            z: 17.75,
+          ),
+        ],
+        _ => <Object>[],
+      },
     };
     for (final family in [
       for (final floor in floors)
@@ -447,11 +534,29 @@ Future<Directory> materializeFullRaw(Directory raw) async {
     'markers/maps.json',
     utf8.encode(
       jsonEncode({
-        'data': {'maps': mapData},
+        'data': {
+          'maps': mapData,
+          'mobs': {
+            'fixture-alpha': {'name': 'FIXTURE_ALPHA'},
+            'fixture-beta': {'name': 'FIXTURE_BETA'},
+            'fixture-empty-location': {'name': 'FIXTURE_EMPTY_LOCATION'},
+            'fixture-empty-position': {'name': 'FIXTURE_EMPTY_POSITION'},
+          },
+        },
       }),
     ),
   );
-  await put('markers/maps_en.json', utf8.encode('{"data":{}}'));
+  await put(
+    'markers/maps_en.json',
+    utf8.encode(
+      jsonEncode({
+        'data': {
+          'FIXTURE_ALPHA': 'Translated Alpha',
+          'FIXTURE_BETA': 'Translated Beta',
+        },
+      }),
+    ),
+  );
   await put(
     'quests/tasks.json',
     utf8.encode('{"data":{"tasks":{},"questItems":{}}}'),

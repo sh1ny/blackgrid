@@ -13,6 +13,66 @@ import '../../tool/maps/svg.dart';
 import '../../tool/maps/calibration.dart';
 import '../support/map_preparation_fixtures.dart' show png;
 
+Map<String, dynamic> _fixtureBoss({
+  required String mob,
+  required num spawnChance,
+  required String location,
+  required num x,
+  required num? y,
+  required num z,
+  num locationChance = .5,
+}) => {
+  'mob': mob,
+  'spawnChance': spawnChance,
+  'spawnLocations': [
+    {
+      'name': location,
+      'spawnChance': locationChance,
+      'positions': [
+        {'x': x, 'y': y, 'z': z},
+      ],
+    },
+  ],
+};
+
+Map<String, dynamic> _bossSnapshot(String sourceKey, Object? bosses) => {
+  'data': <String, dynamic>{
+    'maps': <String, dynamic>{
+      sourceKey: {
+        'id': 'synthetic-$sourceKey',
+        'normalizedName': sourceKey,
+        'bosses': ?bosses,
+      },
+    },
+    'mobs': <String, dynamic>{
+      for (final mob in ['alpha', 'beta', 'control'])
+        mob: <String, dynamic>{'name': 'BOSS_${mob.toUpperCase()}'},
+    },
+  },
+};
+String _bossDiagnosticFact(String description) => switch (description) {
+  'missing bosses' ||
+  'wrong bosses array' ||
+  'boss record dictionary' => 'bosses',
+  'missing spawnLocations' || 'wrong spawnLocations array' => 'spawnLocations',
+  'location dictionary' ||
+  'missing positions' ||
+  'wrong positions array' => 'spawnLocations',
+  'missing mob' || 'wrong mob type' || 'unknown mob' || 'empty mob' => 'mob',
+  'missing boss chance' => 'spawnChance',
+  _ when description.startsWith('invalid boss chance') => 'spawnChance',
+  'missing location name' ||
+  'empty location name' ||
+  'invalid location name type' => 'name',
+  'position dictionary' => 'positions',
+  'missing x coordinate' => 'x',
+  'missing z coordinate' => 'z',
+  _ when description.startsWith('x ') => 'x',
+  _ when description.startsWith('z ') => 'z',
+  _ when description.startsWith('invalid height') => 'y',
+  _ => throw StateError('No diagnostic field for $description'),
+};
+
 void main() {
   late Directory temporary;
   setUp(() async {
@@ -416,6 +476,469 @@ void main() {
         'Transit to Woods',
         'UNTRANSLATED_DESC',
       ]);
+    },
+  );
+
+  test('boss positions preserve independently specified source facts', () {
+    final customs = prepareMarkers(
+      _bossSnapshot('customs', [
+        _fixtureBoss(
+          mob: 'alpha',
+          spawnChance: .37,
+          location: 'Customs stronghold',
+          locationChance: .81,
+          x: 11.25,
+          y: null,
+          z: -4.5,
+        ),
+      ]),
+      {'BOSS_ALPHA': 'Translated Alpha'},
+      calibrationFor('customs'),
+    );
+    final reserve = prepareMarkers(
+      _bossSnapshot('reserve', [
+        _fixtureBoss(
+          mob: 'beta',
+          spawnChance: .62,
+          location: 'Reserve bunker',
+          locationChance: .19,
+          x: -8.5,
+          y: 2.25,
+          z: 17.75,
+        ),
+      ]),
+      {'BOSS_BETA': 'Translated Beta'},
+      calibrationFor('reserve'),
+    );
+
+    expect(customs.single['category'], 'bosses');
+    expect(customs.single['name'], 'Translated Alpha');
+    expect(customs.single['position'], {'x': 11.25, 'z': -4.5, 'height': null});
+    expect(customs.single['details'], {
+      'position': {'x': 11.25, 'y': null, 'z': -4.5},
+      'mob': 'alpha',
+      'spawnChance': .37,
+      'location': 'Customs stronghold',
+    });
+    expect(reserve.single['name'], 'Translated Beta');
+    expect(reserve.single['position'], {'x': -8.5, 'z': 17.75, 'height': 2.25});
+    expect((reserve.single['details'] as Map)['spawnChance'], .62);
+    expect((reserve.single['details'] as Map)['location'], 'Reserve bunker');
+  });
+
+  test('boss repeated positions preserve occurrence facts', () {
+    final markers = prepareMarkers(
+      _bossSnapshot('customs', [
+        _fixtureBoss(
+          mob: 'alpha',
+          spawnChance: .22,
+          location: 'Repeated location',
+          locationChance: .41,
+          x: 5,
+          y: null,
+          z: 7,
+        ),
+        _fixtureBoss(
+          mob: 'alpha',
+          spawnChance: .76,
+          location: 'Repeated location',
+          locationChance: .93,
+          x: 5,
+          y: null,
+          z: 7,
+        ),
+      ]),
+      {'BOSS_ALPHA': 'Translated Alpha'},
+      calibrationFor('customs'),
+    );
+    expect(markers, hasLength(2));
+    expect(markers.map((marker) => (marker['details'] as Map)['spawnChance']), [
+      .22,
+      .76,
+    ]);
+    expect(
+      markers.map((marker) => (marker['details'] as Map)['position']),
+      everyElement({'x': 5, 'y': null, 'z': 7}),
+    );
+    expect(markers.map((marker) => marker['id']).toSet(), hasLength(2));
+  });
+
+  test(
+    'explicit empty boss location and position arrays have empty coverage',
+    () {
+      final emptyLocations = <String, Object?>{
+        'mob': 'alpha',
+        'spawnChance': .4,
+        'spawnLocations': <Object>[],
+      };
+      final emptyPositions = <String, Object?>{
+        'mob': 'beta',
+        'spawnChance': .5,
+        'spawnLocations': [
+          {'name': 'No positions', 'spawnChance': .6, 'positions': <Object>[]},
+        ],
+      };
+      final markers = prepareMarkers(
+        _bossSnapshot('customs', [
+          emptyLocations,
+          emptyPositions,
+          _fixtureBoss(
+            mob: 'control',
+            spawnChance: .7,
+            location: 'Nonempty control',
+            x: 1,
+            y: 2,
+            z: 3,
+          ),
+        ]),
+        {},
+        calibrationFor('customs'),
+      );
+      expect(markers, hasLength(1));
+      expect((markers.single['details'] as Map)['mob'], 'control');
+      expect(
+        (markers.single['details'] as Map)['location'],
+        'Nonempty control',
+      );
+    },
+  );
+
+  test('boss source rejects malformed required arrays and facts', () {
+    final valid = _fixtureBoss(
+      mob: 'alpha',
+      spawnChance: .4,
+      location: 'Valid location',
+      x: 1,
+      y: null,
+      z: 2,
+    );
+    final invalidBosses = <(String, Object?)>[
+      ('missing bosses', null),
+      ('wrong bosses array', {'not': 'an array'}),
+      ('boss record dictionary', ['not a dictionary']),
+      (
+        'missing spawnLocations',
+        [
+          {'mob': 'alpha', 'spawnChance': .4},
+        ],
+      ),
+      (
+        'wrong spawnLocations array',
+        [
+          {'mob': 'alpha', 'spawnChance': .4, 'spawnLocations': {}},
+        ],
+      ),
+      (
+        'location dictionary',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': ['not a dictionary'],
+          },
+        ],
+      ),
+      (
+        'missing positions',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': [
+              {'name': 'Here'},
+            ],
+          },
+        ],
+      ),
+      (
+        'wrong positions array',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': [
+              {'name': 'Here', 'positions': {}},
+            ],
+          },
+        ],
+      ),
+      (
+        'missing mob',
+        [
+          {'spawnChance': .4, 'spawnLocations': valid['spawnLocations']},
+        ],
+      ),
+      (
+        'wrong mob type',
+        [
+          {
+            'mob': {},
+            'spawnChance': .4,
+            'spawnLocations': valid['spawnLocations'],
+          },
+        ],
+      ),
+      (
+        'empty mob',
+        [
+          {
+            'mob': '',
+            'spawnChance': .4,
+            'spawnLocations': valid['spawnLocations'],
+          },
+        ],
+      ),
+      (
+        'unknown mob',
+        [
+          {
+            'mob': 'unknown',
+            'spawnChance': .4,
+            'spawnLocations': valid['spawnLocations'],
+          },
+        ],
+      ),
+      (
+        'missing boss chance',
+        [
+          {'mob': 'alpha', 'spawnLocations': valid['spawnLocations']},
+        ],
+      ),
+      (
+        'missing location name',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': [
+              {'positions': valid['spawnLocations']![0]['positions']},
+            ],
+          },
+        ],
+      ),
+      (
+        'empty location name',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': [
+              {
+                'name': '',
+                'positions': valid['spawnLocations']![0]['positions'],
+              },
+            ],
+          },
+        ],
+      ),
+      (
+        'invalid location name type',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': [
+              {
+                'name': 5,
+                'positions': valid['spawnLocations']![0]['positions'],
+              },
+            ],
+          },
+        ],
+      ),
+      (
+        'position dictionary',
+        [
+          {
+            'mob': 'alpha',
+            'spawnChance': .4,
+            'spawnLocations': [
+              {
+                'name': 'Here',
+                'positions': ['not a dictionary'],
+              },
+            ],
+          },
+        ],
+      ),
+      (
+        'missing x coordinate',
+        [
+          {
+            ...valid,
+            'spawnLocations': [
+              {
+                'name': 'Missing x',
+                'positions': [
+                  {'y': null, 'z': 2},
+                ],
+              },
+            ],
+          },
+        ],
+      ),
+      (
+        'missing z coordinate',
+        [
+          {
+            ...valid,
+            'spawnLocations': [
+              {
+                'name': 'Missing z',
+                'positions': [
+                  {'x': 1, 'y': null},
+                ],
+              },
+            ],
+          },
+        ],
+      ),
+      for (final axis in ['x', 'z'])
+        for (final value in ['bad', double.nan, double.infinity])
+          (
+            '$axis invalid $value',
+            [
+              _fixtureBoss(
+                  mob: 'alpha',
+                  spawnChance: .4,
+                  location: 'Invalid position',
+                  x: axis == 'x' && value is num ? value : 1,
+                  y: null,
+                  z: axis == 'z' && value is num ? value : 2,
+                )
+                ..['spawnLocations'] = [
+                  {
+                    'name': 'Invalid position',
+                    'positions': [
+                      {
+                        'x': axis == 'x' ? value : 1,
+                        'y': null,
+                        'z': axis == 'z' ? value : 2,
+                      },
+                    ],
+                  },
+                ],
+            ],
+          ),
+      for (final value in ['bad', double.nan, double.infinity])
+        (
+          'invalid height $value',
+          [
+            _fixtureBoss(
+                mob: 'alpha',
+                spawnChance: .4,
+                location: 'Invalid height',
+                x: 1,
+                y: value is num ? value : null,
+                z: 2,
+              )
+              ..['spawnLocations'] = [
+                {
+                  'name': 'Invalid height',
+                  'positions': [
+                    {'x': 1, 'y': value, 'z': 2},
+                  ],
+                },
+              ],
+          ],
+        ),
+      for (final chance in ['bad', double.nan, double.infinity, -.01, 1.01])
+        (
+          'invalid boss chance $chance',
+          [
+            {...valid, 'spawnChance': chance},
+          ],
+        ),
+    ];
+    void expectMalformed(
+      String description,
+      Map<String, dynamic> snapshot,
+      String fact,
+    ) {
+      expect(
+        () => prepareMarkers(snapshot, {}, calibrationFor('customs')),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('markers/maps.json'),
+              contains('customs'),
+              contains(fact),
+            ),
+          ),
+        ),
+        reason: description,
+      );
+    }
+
+    for (final (description, bosses) in invalidBosses) {
+      expectMalformed(
+        description,
+        _bossSnapshot('customs', bosses),
+        _bossDiagnosticFact(description),
+      );
+    }
+
+    final badDictionaryCases = <(String, Map<String, dynamic>, String)>[];
+    for (final (description, mutate, fact)
+        in <(String, void Function(Map<String, dynamic>), String)>[
+          ('missing mob dictionary', (data) => data.remove('mobs'), 'mobs'),
+          ('wrong mob dictionary type', (data) => data['mobs'] = [], 'mobs'),
+          (
+            'missing mob dictionary entry',
+            (data) => (data['mobs'] as Map).remove('alpha'),
+            'alpha',
+          ),
+          (
+            'wrong mob dictionary entry type',
+            (data) => (data['mobs'] as Map)['alpha'] = 'not a dictionary',
+            'alpha',
+          ),
+          (
+            'missing resolved mob name',
+            (data) => (data['mobs'] as Map)['alpha'] = {},
+            'name',
+          ),
+          (
+            'wrong resolved mob name type',
+            (data) => (data['mobs'] as Map)['alpha'] = {'name': 5},
+            'name',
+          ),
+        ]) {
+      final snapshot = _bossSnapshot('customs', [valid]);
+      mutate((snapshot['data'] as Map<String, dynamic>));
+      badDictionaryCases.add((description, snapshot, fact));
+    }
+    for (final (description, snapshot, fact) in badDictionaryCases) {
+      expectMalformed(description, snapshot, fact);
+    }
+  });
+
+  test(
+    'metadata source identities reject missing and duplicate supported maps',
+    () {
+      for (final entry in supportedMapSources.entries) {
+        final missing = _bossSnapshot(entry.value, []);
+        ((missing['data'] as Map)['maps'] as Map).remove(entry.value);
+        expect(
+          () => prepareMarkers(missing, {}, calibrationFor(entry.key)),
+          throwsA(isA<FormatException>()),
+          reason: 'missing ${entry.value}',
+        );
+
+        final duplicate = _bossSnapshot(entry.value, []);
+        ((duplicate['data'] as Map)['maps'] as Map)['duplicate'] = {
+          'id': 'duplicate-${entry.key}',
+          'normalizedName': entry.value,
+          'bosses': <Object>[],
+        };
+        expect(
+          () => prepareMarkers(duplicate, {}, calibrationFor(entry.key)),
+          throwsA(isA<FormatException>()),
+          reason: 'duplicate ${entry.value}',
+        );
+      }
     },
   );
 

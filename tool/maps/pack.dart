@@ -1197,8 +1197,9 @@ Future<Map<String, dynamic>> validateCandidate(
           ...prepareMarkers(sourceMarkers, translations, expected),
           ..._prepareFrozenQuests(questSources, sourceMarkers, expected),
         ])) {
-      throw const FormatException(
-        'Markers differ from independently frozen source',
+      throw FormatException(
+        'Markers differ from independently frozen source: '
+        'markers/maps.json: ${map['sourceKey']}',
       );
     }
     final floors = (map['floors'] as List).cast<Map<String, dynamic>>();
@@ -1476,16 +1477,48 @@ Future<void> _validateRasterGrid(
   if (!visible) throw const FormatException('Raster floor has no artwork');
 }
 
+/// Projects marker records for one calibrated source map.
+///
+/// Ordinary optional marker categories retain their existing fallback policy.
+/// Boss records are required source facts: their dictionaries, arrays,
+/// identities, coordinates and boss-wide probabilities must be well-formed.
 List<Map<String, Object?>> prepareMarkers(
   Map<String, dynamic> snapshot,
   Map<String, dynamic> translations,
   Map<String, Object?> calibration,
 ) {
   final sourceKey = calibration['sourceKey'] as String;
-  final data = snapshot['data'] as Map<String, dynamic>;
-  final source = (data['maps'] as Map<String, dynamic>).values
-      .cast<Map<String, dynamic>>()
-      .singleWhere((m) => m['normalizedName'] == sourceKey);
+  FormatException sourceError(String path, String fact, String reason) =>
+      FormatException('markers/maps.json: $sourceKey/$path: $fact $reason');
+
+  final rawData = snapshot['data'];
+  if (rawData is! Map<String, dynamic>) {
+    throw sourceError('data', 'data', 'must be a dictionary');
+  }
+  final data = rawData;
+  final rawMaps = data['maps'];
+  if (rawMaps is! Map) {
+    throw sourceError('maps', 'maps', 'must be a dictionary');
+  }
+  Map<String, dynamic>? matchingMap;
+  var matchingMaps = 0;
+  for (final rawMap in rawMaps.values) {
+    if (rawMap is Map && rawMap['normalizedName'] == sourceKey) {
+      if (rawMap is! Map<String, dynamic>) {
+        throw sourceError('maps', 'normalizedName', 'map record is malformed');
+      }
+      matchingMap = rawMap;
+      matchingMaps++;
+    }
+  }
+  if (matchingMaps != 1) {
+    throw sourceError(
+      'maps',
+      'normalizedName',
+      'expected exactly one supported map identity, found $matchingMaps',
+    );
+  }
+  final source = matchingMap!;
   final floorAssignments =
       calibration['markerFloorAssignments'] as Map<String, Object?>? ??
       const <String, Object?>{};
@@ -1596,21 +1629,130 @@ List<Map<String, Object?>> prepareMarkers(
       );
     }
   }
-  for (var b = 0; b < (source['bosses'] as List).length; b++) {
-    final boss = source['bosses'][b];
-    final label = (data['mobs'] as Map)[boss['mob']]['name'] as String;
-    for (var l = 0; l < (boss['spawnLocations'] as List).length; l++) {
-      final location = boss['spawnLocations'][l];
-      for (var p = 0; p < (location['positions'] as List).length; p++) {
+  final rawBosses = source['bosses'];
+  if (rawBosses is! List) {
+    throw sourceError('bosses', 'bosses', 'must be an array');
+  }
+  final rawMobs = data['mobs'];
+  for (var b = 0; b < rawBosses.length; b++) {
+    final bossPath = 'bosses/$b';
+    final rawBoss = rawBosses[b];
+    if (rawBoss is! Map) {
+      throw sourceError(bossPath, 'boss', 'must be a dictionary');
+    }
+    final boss = rawBoss;
+    final rawMob = boss['mob'];
+    if (rawMob is! String || rawMob.trim().isEmpty) {
+      throw sourceError(
+        '$bossPath/mob',
+        'mob',
+        'must be a nonempty identifier',
+      );
+    }
+    if (rawMobs is! Map) {
+      throw sourceError('$bossPath/mob', 'mobs', 'must be a dictionary');
+    }
+    final rawMobRecord = rawMobs[rawMob];
+    if (rawMobRecord is! Map) {
+      throw sourceError(
+        '$bossPath/mob',
+        'mob',
+        'dictionary entry "$rawMob" is missing or malformed',
+      );
+    }
+    final mobRecord = rawMobRecord;
+    final label = mobRecord['name'];
+    if (label is! String || label.trim().isEmpty) {
+      throw sourceError(
+        '$bossPath/mob',
+        'name',
+        'resolved mob name for "$rawMob" must be nonempty',
+      );
+    }
+    final rawChance = boss['spawnChance'];
+    if (rawChance is! num ||
+        !rawChance.isFinite ||
+        rawChance < 0 ||
+        rawChance > 1) {
+      throw sourceError(
+        '$bossPath/spawnChance',
+        'spawnChance',
+        'must be a finite probability in [0, 1]',
+      );
+    }
+    final rawLocations = boss['spawnLocations'];
+    if (rawLocations is! List) {
+      throw sourceError(
+        '$bossPath/spawnLocations',
+        'spawnLocations',
+        'must be an array',
+      );
+    }
+    for (var l = 0; l < rawLocations.length; l++) {
+      final locationPath = '$bossPath/spawnLocations/$l';
+      final rawLocation = rawLocations[l];
+      if (rawLocation is! Map) {
+        throw sourceError(
+          locationPath,
+          'spawnLocations',
+          'entry must be a dictionary',
+        );
+      }
+      final location = rawLocation;
+      final locationName = location['name'];
+      if (locationName is! String || locationName.trim().isEmpty) {
+        throw sourceError(
+          '$locationPath/name',
+          'name',
+          'must be a nonempty location identifier',
+        );
+      }
+      final rawPositions = location['positions'];
+      if (rawPositions is! List) {
+        throw sourceError(
+          '$locationPath/positions',
+          'positions',
+          'must be an array',
+        );
+      }
+      for (var p = 0; p < rawPositions.length; p++) {
+        final positionPath = '$locationPath/positions/$p';
+        final rawPosition = rawPositions[p];
+        if (rawPosition is! Map) {
+          throw sourceError(
+            positionPath,
+            'positions',
+            'entry must be a dictionary',
+          );
+        }
+        final position = rawPosition;
+        for (final axis in ['x', 'z']) {
+          final coordinate = position[axis];
+          if (coordinate is! num || !coordinate.isFinite) {
+            throw sourceError(
+              '$positionPath/$axis',
+              axis,
+              'must be a finite number',
+            );
+          }
+        }
+        final height = position['y'];
+        if (height != null && (height is! num || !height.isFinite)) {
+          throw sourceError(
+            '$positionPath/y',
+            'y',
+            'must be null or a finite number',
+          );
+        }
         add(
           'bosses',
           {
-            'position': location['positions'][p],
-            'mob': boss['mob'],
-            'spawnChance': boss['spawnChance'],
-            'location': location['name'],
+            'position': position,
+            'mob': rawMob,
+            'spawnChance': rawChance,
+            'location': locationName,
           },
-          'bosses/$b/spawnLocations/$l/positions/$p',
+          positionPath,
           label: label,
         );
       }
