@@ -3884,7 +3884,13 @@ stageArtworkRefresh(
   required MapBuildContext reviewedContext,
   bool reviewedCalibrationUpdate = false,
 }) async {
-  final raw = Directory('${stage.path}.raw');
+  final stagePath = stage.uri.toFilePath();
+  final separator = Platform.pathSeparator.codeUnitAt(0);
+  var end = stagePath.length;
+  while (end > 0 && stagePath.codeUnitAt(end - 1) == separator) {
+    end--;
+  }
+  final raw = Directory('${stagePath.substring(0, end)}.raw');
   for (final output in [stage, raw]) {
     final unsafe = unsafeOutputReason(
       output.path,

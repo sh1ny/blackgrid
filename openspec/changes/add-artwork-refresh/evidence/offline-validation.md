@@ -97,3 +97,15 @@ That case is now a scoped group with an immutable candidate from one real stage 
 Mounted verification of the complete artwork-refresh file, concurrency 1 with randomization seed 91 and no timeout override, passed all 14 tests with zero errors and terminal success in 184.084 seconds. The scoped real-stage setup took 15.992 seconds, the evidence-only assertions 0.091 seconds and the independent no-change case 16.684 seconds. A separate run selecting only `unchangedAndEvidenceOnlyStage unchangedStage` also passed with zero errors in 48.421 seconds, proving it does not require the evidence-only test to run first.
 
 `mise run analyze && mise run test -- --concurrency=1` passed again: analyzer clean and all 2,559 fast tests passed. The scenario mappings name both independent cases; tracked task completion and the accepted behavior contract are unchanged.
+
+## Trailing-directory staging fix
+
+Codex finding `4487155051` reproduced before the fix: both native-supported trailing-separator caller cases failed to refuse an existing raw sibling before reading inputs, and `changedArtworkStages` failed with `Rebuild requires an empty fresh candidate`. Scratch had incorrectly been created inside the candidate.
+
+The raw sibling is now derived from the SDK directory URI's file path with trailing native separators removed. The existing safety and freshness guards still check both outputs before input reads. The real staging qualification exercises a trailing separator.
+
+Verification after the fix:
+- Mounted Dart runner, `artwork_stage_path_test.dart` and `artwork_refresh_test.dart`, serial execution: 23 tests passed, zero errors; terminal `success: true`, 202.517 seconds.
+- Actual CLI: `mise exec -- dart run tool/maps/prepare.dart artwork-refresh --packs .dart_tool/artwork-refresh-trailing-smoke-6f0993b25b/packs --pubspec .dart_tool/artwork-refresh-trailing-smoke-6f0993b25b/pubspec.yaml --stage .dart_tool/artwork-refresh-trailing-smoke-6f0993b25b/candidate/`. Exit 0 in 66.38 seconds. Candidate manifest SHA-256: `9d03eee02129f83b0cca7ec0527376fadcd65af80fdf160349201812f2e4f260`. Repository assets, pointer and pubspec, and the disposable baseline remained byte-identical. No nested `.raw` remained; the raw sibling was removed. The exact task-owned smoke directory was deleted afterward.
+- `mise run analyze && mise run test -- --concurrency=1 && mise run maps:check`: passed in 453.88 seconds; analyzer clean, 2,561 fast tests passed, committed map pack reproduced byte-identically.
+- No desktop app, companion or game was launched or inspected. No live-game verification is claimed.

@@ -79,6 +79,15 @@ void main() {
     expect(await file.readAsString(), 'keep');
   });
 
+  for (final separator in Platform.isWindows ? ['/', r'\'] : ['/']) {
+    test('rejects a raw sibling with a trailing $separator', () async {
+      final stage = Directory('${root.path}/stage');
+      final file = File('${stage.path}.raw')..writeAsStringSync('keep');
+      await expectRefused(Directory('${stage.path}$separator'));
+      expect(await file.readAsString(), 'keep');
+    });
+  }
+
   test('rejects raw output colliding with the protected pubspec', () async {
     final stage = Directory('${root.path}/stage');
     pubspec = File('${stage.path}.raw');

@@ -754,7 +754,10 @@ void main() {
       final artworkPath =
           'artwork/${parts[1]}/${parts[2]}/${parts[3]}/${parts[4]}';
 
-      final staged = await _runStage(harness);
+      final staged = await _runStage(
+        harness,
+        stage: Directory('${harness.stage.path}${Platform.pathSeparator}'),
+      );
 
       expect(staged.diagnostics, isEmpty);
       expect(staged.report.changed, isTrue);
