@@ -4053,16 +4053,21 @@ stageArtworkRefresh(
       }
     }
 
+    final inspectedTileHashes = <String>{};
     for (var start = 0; start < jobs.length; start += 8) {
       await Future.wait(
         jobs.skip(start).take(8).map((job) async {
           final uri = Uri.parse(job.url);
           final bytes = await request(job.path, uri);
-          inspectPng(bytes);
+          final hash = _hash(bytes);
+          if (!inspectedTileHashes.contains(hash)) {
+            inspectPng(bytes);
+            inspectedTileHashes.add(hash);
+          }
           await addSource(job.path, {
             'path': job.path,
             'url': job.url,
-            'sha256': _hash(bytes),
+            'sha256': hash,
           }, bytes);
         }),
       );

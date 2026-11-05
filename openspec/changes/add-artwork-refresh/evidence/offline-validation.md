@@ -63,3 +63,27 @@ Several mounted test calls exceeded the MCP receive timeout after 30 seconds. A 
 One attempted `name` regex containing `|` was misquoted by the mounted Windows runner and launched no tests. The tool issue was reported; verification was rerun without that filter. This is not an application regression or a qualification pass.
 
 No final validation blocker remains. No desktop/game qualification or human visual-placement approval is implied by these results.
+
+## CI PNG inspection follow-up
+
+Hosted run `42079915995` at `b43ba95` exceeded the existing two-minute limit in `unchangedAndEvidenceOnlyStage`, `retainsSixAndSelectsReviewedCalibration` and `artworkReproducesWithoutRawStage`. Subsequent missing-file and cleanup errors followed timed-out test teardown.
+
+Staging now reuses successful PNG inspections by acquired SHA-256 within that stage, matching the builder's content-identity strategy. Every tile is still fetched, hashed and recorded. Distinct content is inspected before entering the successful-inspection set. Shared fixtures, assertions and timeouts were not relaxed.
+
+The resumed mounted run of `test/maps/artwork_refresh_test.dart`, with concurrency 1 and no timeout override, completed with 13 passing tests, zero errors and terminal success in 195.787 seconds. This includes rejection of a distinct invalid tile after valid tiles without producing a ready candidate or changing active state. The three formerly timed-out cases completed locally as follows; these are local measurements, not hosted-run measurements:
+
+| Test | Seconds |
+| --- | ---: |
+| `unchangedAndEvidenceOnlyStage` | 30.531 |
+| `retainsSixAndSelectsReviewedCalibration` | 15.048 |
+| `artworkReproducesWithoutRawStage` | 32.914 |
+
+`mise run analyze && mise run test -- --concurrency=1 && mise run maps:check` passed: analyzer clean, 2,559 fast tests passed, and generation `cefe97a6658f56550ca9466c9e261d8cbd57b044705e5ca453999d9903aa0993` reproduced byte-identically. Serial validation is the owner's approved local override for the remaining PR pushes; repository configuration is unchanged.
+
+The actual optimized CLI also passed, using current authored source admission against a disposable copy:
+
+```text
+mise exec -- dart run tool/maps/prepare.dart artwork-refresh --packs .dart_tool/artwork-refresh-ci-smoke-9c224fe08c/packs --pubspec .dart_tool/artwork-refresh-ci-smoke-9c224fe08c/pubspec.yaml --stage .dart_tool/artwork-refresh-ci-smoke-9c224fe08c/candidate
+```
+
+Exit 0 in 69.75 seconds; candidate manifest SHA-256 `9d03eee02129f83b0cca7ec0527376fadcd65af80fdf160349201812f2e4f260`. It reported artwork and manifest/evidence differences without publishing. Repository assets, pointer and pubspec and the disposable baseline remained byte-identical; acquisition scratch was absent on return. The task-owned disposable root was deleted afterward. No desktop app, companion or game was launched or inspected. The interrupted run before the owner's stop request is not counted as a pass.

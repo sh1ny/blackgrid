@@ -954,6 +954,29 @@ void main() {
       );
     }, tags: ['qualification']);
 
+    test('distinctInvalidTileIsRejectedAfterValidTiles', () async {
+      final harness = await _stageHarness();
+      harness.transport.changedTile = null;
+      final tiles = harness.transport.routes.entries
+          .where((entry) => entry.value.startsWith('tiles/'))
+          .toList();
+      final invalidTile = tiles.last;
+      harness.transport.overrides[invalidTile.value] = png(1, 1);
+      final pointer = await harness.activePointer();
+      final manifest = await harness.baselineManifest();
+      final pubspec = await harness.pubspec.readAsString();
+
+      await expectLater(_runStage(harness), throwsA(isA<FormatException>()));
+      expect(harness.transport.requested, contains(tiles.first.key));
+      expect(harness.transport.requested, contains(invalidTile.key));
+      expect(await packFile(harness.stage, 'manifest.json').exists(), isFalse);
+      await harness.expectUnchanged(
+        pointer: pointer,
+        manifest: manifest,
+        pubspecText: pubspec,
+      );
+    }, tags: ['qualification']);
+
     test('failuresDoNotPublish', () async {
       final harness = await _stageHarness();
       final metadataUrl = Uri.parse(primarySourceUrls['metadata/maps.json']!);
