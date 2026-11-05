@@ -1515,6 +1515,221 @@ void main() {
             )['version']
             as String;
 
+    const unusedTilePath =
+        'tiles/customs/Ground_Level/unused-qualification.png';
+
+    Future<Directory> candidateWithUnusedIndexedTile(String name) async {
+      final private = Directory('${temporary.path}/$name');
+      await copyPack(fixtures.first, private);
+      final manifest = await readManifest(private);
+      final indexFile = packFile(private, 'evidence/sources.json');
+      final index =
+          jsonDecode(await indexFile.readAsString()) as Map<String, dynamic>;
+      (index['sources'] as List).add({
+        'path': unusedTilePath,
+        'url': 'https://example.invalid/$unusedTilePath',
+        'sha256': sha256
+            .convert(utf8.encode('unused and not carried'))
+            .toString(),
+      });
+      final indexBytes = utf8.encode(canonicalJson(index));
+      await indexFile.writeAsBytes(indexBytes);
+      manifest['sourceGeneration'] = sha256.convert(indexBytes).toString();
+      await saveManifest(private, manifest, refreshOutputs: true);
+      await validateCandidate(private);
+      return private;
+    }
+
+    Future<Directory> metadataReplacements(String name) async {
+      final replacements = Directory('${temporary.path}/$name');
+      for (final path in const [
+        'markers/maps.json',
+        'markers/maps_en.json',
+        'quests/tasks.json',
+        'quests/tasks_en.json',
+        'quests/traders.json',
+        'quests/traders_en.json',
+      ]) {
+        final target = packFile(replacements, path);
+        await target.parent.create(recursive: true);
+        await target.writeAsBytes(
+          await packFile(fixtures.raw, path).readAsBytes(),
+        );
+      }
+      return replacements;
+    }
+
+    Future<String> assembleMissingRequiredTileGeneration(
+      Directory destination,
+    ) async {
+      final source = Directory('${temporary.path}/missing-required-tile');
+      await copyPack(fixtures.first, source);
+      final manifest = await readManifest(source);
+      final indexFile = packFile(source, 'evidence/sources.json');
+      final index =
+          jsonDecode(await indexFile.readAsString()) as Map<String, dynamic>;
+      final neededPath = rawTilePath('thelab', 'First_Level', 15, 15);
+      final sourceRecord = (index['sources'] as List).singleWhere(
+        (record) => record['path'] == neededPath,
+      ) as Map<String, dynamic>;
+      sourceRecord['sha256'] = sha256
+          .convert(utf8.encode('deliberately uncarried required tile'))
+          .toString();
+      final indexBytes = utf8.encode(canonicalJson(index));
+      await indexFile.writeAsBytes(indexBytes);
+      manifest['sourceGeneration'] = sha256.convert(indexBytes).toString();
+      await saveManifest(source, manifest, refreshOutputs: true);
+
+      final id = sha256
+          .convert(await packFile(source, 'manifest.json').readAsBytes())
+          .toString();
+      await copyPack(source, Directory('${destination.path}/versions/$id'));
+      await File('${destination.path}/active.json').writeAsString(
+        canonicalJson({
+          'schemaVersion': 1,
+          'version': id,
+          'manifest': 'versions/$id/manifest.json',
+        }),
+      );
+      return neededPath;
+    }
+
+    test('metadata refresh rejects a needed uncarried generation input without promotion', () async {
+      packs = Directory('${temporary.path}/needed-input-packs');
+      work = Directory('${temporary.path}/needed-input-work');
+      final neededPath = await assembleMissingRequiredTileGeneration(packs);
+      final before = await snapshot(packs);
+      final pointerBefore = await File('${packs.path}/active.json')
+          .readAsBytes();
+      final pubspecBefore = await pubspec.readAsBytes();
+      final active = await verifyCommittedGeneration(packs);
+      final frozen = await FrozenInputs.fromGeneration(active.directory);
+      await expectLater(
+        frozen.bytes(neededPath),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains(neededPath), contains('not carried by generation')),
+          ),
+        ),
+      );
+      final replacements = await metadataReplacements(
+        'needed-input-metadata-replacements',
+      );
+      final metadataInputs = await frozen.withMetadata(replacements);
+      final candidatePath = '${work.path}/$candidateName';
+
+      await expectLater(
+        refresh(metadataInputs: metadataInputs),
+        throwsA(
+          isA<MapPackRefreshFailure>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains(neededPath), contains(candidatePath)),
+          ),
+        ),
+      );
+      expect(await snapshot(packs), before);
+      expect(
+        await File('${packs.path}/active.json').readAsBytes(),
+        pointerBefore,
+      );
+      expect(await pubspec.readAsBytes(), pubspecBefore);
+      expect(Directory(candidatePath).existsSync(), isTrue);
+    });
+
+    test(
+      'metadata refresh succeeds with unused uncarried indexed tile',
+      () async {
+        final private = await candidateWithUnusedIndexedTile(
+          'unused-indexed-tile',
+        );
+        await promoteCandidate(private, packs);
+        final oldId = await activeId();
+        final oldDirectory = Directory('${packs.path}/versions/$oldId');
+        final frozen = await FrozenInputs.fromGeneration(oldDirectory);
+        await expectLater(
+          frozen.bytes(unusedTilePath),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains(unusedTilePath),
+                contains('not carried by generation'),
+              ),
+            ),
+          ),
+        );
+
+        final replacements = await metadataReplacements(
+          'generation-metadata-replacements',
+        );
+        final metadataInputs = await frozen.withMetadata(replacements);
+        final result = await refresh(metadataInputs: metadataInputs);
+        expect(await activeId(), result.id);
+        expect(result.pruned, [oldId]);
+      },
+    );
+
+    test('metadata refresh rejects changed or missing replacement inputs without promotion', () async {
+      for (final (failure, path, removeFile) in [
+        ('changed', 'markers/maps.json', false),
+        ('missing', 'quests/tasks_en.json', true),
+      ]) {
+        packs = Directory('${temporary.path}/replacement-failure-$failure');
+        work = Directory('${temporary.path}/replacement-work-$failure');
+        await promoteCandidate(
+          await candidateWithUnusedIndexedTile('replacement-baseline-$failure'),
+          packs,
+        );
+        final before = await snapshot(packs);
+        final pointerBefore = await File('${packs.path}/active.json')
+            .readAsBytes();
+        final pubspecBefore = await pubspec.readAsBytes();
+        final active =
+            jsonDecode(utf8.decode(pointerBefore)) as Map<String, dynamic>;
+        final generation = Directory(
+          '${packs.path}/${active['manifest'] as String}',
+        ).parent;
+        final frozen = await FrozenInputs.fromGeneration(generation);
+        final replacements = await metadataReplacements(
+          'replacement-failure-inputs-$failure',
+        );
+        final metadataInputs = await frozen.withMetadata(replacements);
+        final replacement = packFile(replacements, path);
+        if (removeFile) {
+          await replacement.delete();
+        } else {
+          await replacement.writeAsString(
+            'mutated after metadata view creation',
+          );
+        }
+
+        final candidatePath = '${work.path}/$candidateName';
+        await expectLater(
+          refresh(metadataInputs: metadataInputs),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains(path), contains(candidatePath)),
+            ),
+          ),
+          reason: failure,
+        );
+        expect(await snapshot(packs), before, reason: failure);
+        expect(
+          await File('${packs.path}/active.json').readAsBytes(),
+          pointerBefore,
+          reason: failure,
+        );
+        expect(await pubspec.readAsBytes(), pubspecBefore, reason: failure);
+        expect(Directory(candidatePath).existsSync(), isTrue, reason: failure);
+      }
+    });
+
     test('metadata refresh promotes all maps while preserving artwork and reviewed ownership', () async {
       await promoteCandidate(fixtures.first, packs);
       final oldId = await activeId();

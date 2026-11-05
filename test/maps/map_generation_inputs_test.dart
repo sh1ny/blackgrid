@@ -26,13 +26,30 @@ class _Generation {
 
   static String get emptyPath => 'evidence/tile-alpha/${_hash(empty)}.png';
 
-  static Future<_Generation> create(Directory packs) async {
+  static Future<_Generation> create(
+    Directory packs, {
+    bool includeMetadata = false,
+  }) async {
     final stage = Directory('${packs.path}/stage');
+    final metadataPaths = [
+      'markers/maps.json',
+      'markers/maps_en.json',
+      'quests/tasks.json',
+      'quests/tasks_en.json',
+      'quests/traders.json',
+      'quests/traders_en.json',
+    ];
+    final metadata = {
+      for (final path in metadataPaths) path: utf8.encode('baseline:$path'),
+    };
     final files = <String, List<int>>{
       'NOTICE.txt': utf8.encode('notice'),
       'artwork/m/F/0/0.png': visible,
       emptyPath: empty,
       'evidence/terms/a.md': terms,
+      if (includeMetadata)
+        for (final entry in metadata.entries)
+          'evidence/${entry.key}': entry.value,
     };
     final index = {
       'schemaVersion': 1,
@@ -57,6 +74,13 @@ class _Generation {
           'url': 'https://example.invalid/2_0.png',
           'sha256': _hash(utf8.encode('never carried')),
         },
+        if (includeMetadata)
+          for (final entry in metadata.entries)
+            {
+              'path': entry.key,
+              'url': 'https://example.invalid/${entry.key}',
+              'sha256': _hash(entry.value),
+            },
       ],
     };
     files['evidence/sources.json'] = utf8.encode(canonicalJson(index));
@@ -862,6 +886,103 @@ void main() {
         );
       },
     );
+  });
+
+  group('FrozenInputs.withMetadata', () {
+    test('generation metadata view preserves missing inputs and detects replacement mutation', () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-metadata-view-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      final packs = Directory('${root.path}/packs');
+      await packs.create();
+      final generation = await _Generation.create(packs, includeMetadata: true);
+      final before = <String, List<int>>{};
+      await for (final entity in generation.directory.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (entity is! File) continue;
+        final relative = entity.path
+            .replaceAll('\\', '/')
+            .substring(
+              generation.directory.path.replaceAll('\\', '/').length + 1,
+            );
+        before[relative] = await entity.readAsBytes();
+      }
+      final indexBefore = jsonDecode(
+        utf8.decode(before['evidence/sources.json']!),
+      ) as Map<String, dynamic>;
+      final replacements = Directory('${root.path}/replacements');
+      const paths = [
+        'markers/maps.json',
+        'markers/maps_en.json',
+        'quests/tasks.json',
+        'quests/tasks_en.json',
+        'quests/traders.json',
+        'quests/traders_en.json',
+      ];
+      final replacementBytes = <String, List<int>>{};
+      for (final path in paths) {
+        final bytes = utf8.encode('replacement:$path');
+        replacementBytes[path] = bytes;
+        final file = File('${replacements.path}/$path');
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(bytes);
+      }
+
+      final frozen = await FrozenInputs.fromGeneration(generation.directory);
+      final metadata = await frozen.withMetadata(replacements);
+      final expectedIndex =
+          jsonDecode(jsonEncode(indexBefore)) as Map<String, dynamic>;
+      for (final source in expectedIndex['sources'] as List) {
+        if (paths.contains(source['path'])) {
+          source['sha256'] = _hash(replacementBytes[source['path']]!);
+        }
+      }
+      expect(canonicalJson(metadata.index), canonicalJson(expectedIndex));
+      for (final path in paths) {
+        expect(await metadata.bytes(path), replacementBytes[path]);
+      }
+      await expectLater(
+        metadata.bytes('tiles/m/F/2_0.png'),
+        _formatMessage(
+          allOf(
+            contains('tiles/m/F/2_0.png'),
+            contains(generation.id),
+            contains('rebuild --raw'),
+          ),
+        ),
+      );
+      expect(
+        await generation.file('evidence/sources.json').readAsBytes(),
+        before['evidence/sources.json'],
+      );
+      for (final entry in before.entries) {
+        expect(
+          await generation.file(entry.key).readAsBytes(),
+          entry.value,
+          reason: entry.key,
+        );
+      }
+      expect(
+        (metadata.index['sources'] as List).where(
+          (source) => !paths.contains(source['path']),
+        ),
+        equals(
+          (indexBefore['sources'] as List).where(
+            (source) => !paths.contains(source['path']),
+          ),
+        ),
+      );
+
+      await File('${replacements.path}/markers/maps.json')
+          .writeAsString('mutated after view creation');
+      await expectLater(
+        metadata.bytes('markers/maps.json'),
+        _formatMessage(contains('markers/maps.json')),
+      );
+    });
   });
 
   group('pruneSupersededGenerations', () {

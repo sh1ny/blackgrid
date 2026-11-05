@@ -63,6 +63,6 @@ Refresh the bundled map metadata across supported maps so boss markers and spawn
 
 ### Fixed
 
-- Restore boss locations absent from the old bundled snapshot, including the reported Kollontay locations on Streets and Glukhar locations on Reserve, with source-to-pack coverage checks.
+- Refresh boss and non-boss metadata across all 13 supported maps, restoring the reported Kollontay locations on Streets and Glukhar locations on Reserve with independently audited source-to-pack coverage.
 - Reject malformed boss source facts and missing or ambiguous supported-map identities with source and map diagnostics, while preserving repeated positions and explicit empty coverage.
 - Prevent metadata-only renewal from changing prepared artwork, calibration or reviewed marker floor ownership; keep normal rebuilds offline.

@@ -70,12 +70,12 @@
     },
     {
       "path": "markers/maps.json",
-      "sha256": "f598c4aa40386b9d79fbfc1676d9cba8e78193237ae7064d38e2a88c077b8967",
+      "sha256": "42459cdf31b7d4007d08cb88ceae788ee186d6e150cb1c30a088557ddf2e131e",
       "url": "https://json.tarkov.dev/regular/maps"
     },
     {
       "path": "markers/maps_en.json",
-      "sha256": "9e67ea086a0153ae24be45e6ac55a9fcbb30024ce0a48a10bf18873d0f330bcd",
+      "sha256": "debb3a5cc54a8f68a73931532712dab7d50f41ee86dd1a48ade1def85dfb982e",
       "url": "https://json.tarkov.dev/regular/maps_en"
     },
     {
@@ -85,17 +85,17 @@
     },
     {
       "path": "quests/tasks.json",
-      "sha256": "71ae5cde9ba77d355b74a9283025cfa594d7df7e51c893246156025c357220df",
+      "sha256": "e0778cf624faee00840045df43d80f5a81d68ce096a3576a4bd0246b5fcfc959",
       "url": "https://json.tarkov.dev/regular/tasks"
     },
     {
       "path": "quests/tasks_en.json",
-      "sha256": "e6edb0e3e527a598e1ef1d4599af73d9086f4a915f1ee4af53b862ef334c20a7",
+      "sha256": "4ef5967e0f4f2a80e0b1891b45f20055f0272f9f902b37c711fa89f89ee30b62",
       "url": "https://json.tarkov.dev/regular/tasks_en"
     },
     {
       "path": "quests/traders.json",
-      "sha256": "710816c86b7bb2542f2ed9f240785c13fe827792604dba37fce9d79233f17da3",
+      "sha256": "dfd4b4bdd4be65ece0f875bad6a1bc41f7f8d9cdce931852b3b89aea89401ebd",
       "url": "https://json.tarkov.dev/regular/traders"
     },
     {

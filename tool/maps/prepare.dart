@@ -73,16 +73,16 @@ versions/.<id>.staging folder. A mismatch ends with the instruction to run
 mise run maps:rebuild.
 The CLI's refresh rebuilds the active generation from its carried inputs; it
 does not acquire a new source snapshot. An explicit metadata renewal is an
-apply-time staged operation through `refreshActive(metadataInputs: ...)`: start
-with the verified generation's complete frozen input closure, replace only
-`markers/maps.json`, `markers/maps_en.json`, `quests/tasks.json`,
-`quests/tasks_en.json`, `quests/traders.json` and `quests/traders_en.json`
-with the exact regular-mode REST bytes and source URLs, update those six source
-hashes, and open the complete stage as `FrozenInputs`. Do not use `acquire` for
-this boundary or add a refresh CLI flag. The existing refresh owner verifies
-the baseline and source closure, rebuilds and validates every map, then rejects
-any changed preserved output or reviewed marker floor assignment before it
-prints the report or promotes.
+apply-time staged operation through `refreshActive(metadataInputs: ...)`: verify
+the active generation, acquire only the six fixed regular-mode REST responses
+into a fresh stage, then derive `FrozenInputs.withMetadata` from the committed
+generation-backed build-read closure. The derived index changes only those six
+hashes; all other carried and missing source behavior stays unchanged, so
+unused historical index entries are not materialized and artwork is not
+fetched. Do not use `acquire` for this boundary or add a refresh CLI flag. The
+existing refresh owner verifies the baseline and source closure, rebuilds and
+validates every map, then rejects any changed preserved output or reviewed
+marker floor assignment before it prints the report or promotes.
 
 Both refresh paths fail first on an incomplete pubspec.lock, an interrupted
 promotion or missing/duplicated/misordered pubspec markers. After validation,

@@ -253,6 +253,57 @@ class FrozenInputs {
   }
 
   Future<String> text(String path) async => utf8.decode(await bytes(path));
+
+  /// Creates a view that replaces only the six approved metadata sources.
+  ///
+  /// Reads each replacement from [replacements] to bind its exact bytes into a
+  /// derived source index. Replacement files are checked against those hashes
+  /// every time they are read through [bytes]. Existing carried and missing
+  /// source behavior is retained for all other paths, and this instance's
+  /// index and backing files are not changed.
+  Future<FrozenInputs> withMetadata(Directory replacements) async {
+    final sources = _sourceList(index);
+    final files = Map<String, File>.of(_files);
+    final unverified = Map<String, String>.of(_unverified);
+    final sourceIndex = <String, Map<String, dynamic>>{};
+    for (final source in sources) {
+      final path = source['path'] as String;
+      if (sourceIndex.containsKey(path)) {
+        throw FormatException('Duplicate frozen path $path');
+      }
+      sourceIndex[path] = source;
+    }
+
+    final updatedSources = <Map<String, dynamic>>[];
+    for (final source in sources) {
+      final path = source['path'] as String;
+      if (!_metadataReplacementPaths.contains(path)) {
+        updatedSources.add(Map<String, dynamic>.of(source));
+        continue;
+      }
+      final file = packFile(replacements, path);
+      late final List<int> bytes;
+      try {
+        bytes = await file.readAsBytes();
+      } on FileSystemException catch (error) {
+        throw FormatException(
+          'Metadata replacement source is unavailable: $path ($error)',
+        );
+      }
+      final hash = _hash(bytes);
+      files[path] = file;
+      unverified[path] = hash;
+      updatedSources.add({...source, 'sha256': hash});
+    }
+    for (final path in _metadataReplacementPaths) {
+      if (!sourceIndex.containsKey(path)) {
+        throw FormatException('Baseline is missing metadata source $path');
+      }
+    }
+
+    final derivedIndex = <String, dynamic>{...index, 'sources': updatedSources};
+    return FrozenInputs._(derivedIndex, files, unverified, _missing);
+  }
 }
 
 class PngInspection {
