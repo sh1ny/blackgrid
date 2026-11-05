@@ -14,6 +14,77 @@ import '../../tool/maps/calibration.dart';
 
 import '../support/map_preparation_fixtures.dart';
 
+Future<FrozenInputs> _stageMetadataInputs(
+  Directory source,
+  Directory destination, {
+  double? bossX,
+  double? ordinaryX,
+  bool removeReviewedConsole = false,
+  Map<String, Object?> sourceJsonOverrides = const {},
+}) async {
+  await for (final entity in source.list(recursive: true)) {
+    if (entity is! File) continue;
+    final relative = entity.path
+        .replaceAll('\\', '/')
+        .substring(source.path.replaceAll('\\', '/').length + 1);
+    final target = packFile(destination, relative);
+    await target.parent.create(recursive: true);
+    await target.writeAsBytes(await entity.readAsBytes());
+  }
+
+  final markerFile = packFile(destination, 'markers/maps.json');
+  final snapshot =
+      jsonDecode(await markerFile.readAsString()) as Map<String, dynamic>;
+  final data = snapshot['data'] as Map<String, dynamic>;
+  final maps = data['maps'] as Map<String, dynamic>;
+  final reserve = maps.values.singleWhere(
+    (map) => map['normalizedName'] == 'reserve',
+  ) as Map<String, dynamic>;
+  if (bossX != null) {
+    final bosses = reserve['bosses'] as List;
+    final boss = bosses.first as Map<String, dynamic>;
+    final locations = boss['spawnLocations'] as List;
+    final positions =
+        (locations.first as Map<String, dynamic>)['positions'] as List;
+    (positions.first as Map<String, dynamic>)['x'] = bossX;
+  }
+  if (ordinaryX != null) {
+    final woods = maps.values.singleWhere(
+      (map) => map['normalizedName'] == 'woods',
+    ) as Map<String, dynamic>;
+    ((woods['spawns'] as List).first as Map<String, dynamic>)['position']['x'] =
+        ordinaryX;
+  }
+  if (removeReviewedConsole) {
+    final interchange = maps.values.singleWhere(
+      (map) => map['normalizedName'] == 'interchange',
+    ) as Map<String, dynamic>;
+    interchange.remove('switches');
+  }
+  await markerFile.writeAsString(canonicalJson(snapshot));
+
+  final indexFile = packFile(destination, 'sources.json');
+  for (final entry in sourceJsonOverrides.entries) {
+    await packFile(
+      destination,
+      entry.key,
+    ).writeAsString(canonicalJson(entry.value));
+  }
+
+  final index =
+      jsonDecode(await indexFile.readAsString()) as Map<String, dynamic>;
+  for (final sourcePath in {'markers/maps.json', ...sourceJsonOverrides.keys}) {
+    final sourceRecord = (index['sources'] as List).singleWhere(
+      (entry) => entry['path'] == sourcePath,
+    );
+    sourceRecord['sha256'] = sha256
+        .convert(await packFile(destination, sourcePath).readAsBytes())
+        .toString();
+  }
+  await indexFile.writeAsString(canonicalJson(index));
+  return FrozenInputs.open(destination);
+}
+
 Future<void> _refreezeEvidence(
   Directory candidate,
   Map<String, dynamic> manifest,
@@ -1420,6 +1491,7 @@ void main() {
     Future<MapPackRefresh> refresh({
       Map<String, String>? toolchain,
       VectorEncoder? encode,
+      FrozenInputs? metadataInputs,
     }) => refreshActive(
       packs,
       pubspec,
@@ -1428,6 +1500,7 @@ void main() {
       candidateParent: work,
       now: stamp,
       encode: encode,
+      metadataInputs: metadataInputs,
       log: log.add,
     );
 
@@ -1441,6 +1514,347 @@ void main() {
               await File('${packs.path}/active.json').readAsString(),
             )['version']
             as String;
+
+    test('metadata refresh promotes all maps while preserving artwork and reviewed ownership', () async {
+      await promoteCandidate(fixtures.first, packs);
+      final oldId = await activeId();
+      final oldDirectory = Directory('${packs.path}/versions/$oldId');
+      final oldManifest = await readManifest(oldDirectory);
+      final oldFiles = await snapshot(oldDirectory);
+      final stage = Directory('${temporary.path}/metadata-stage');
+      final metadataInputs = await _stageMetadataInputs(
+        fixtures.raw,
+        stage,
+        bossX: 123.5,
+        ordinaryX: 51.25,
+      );
+
+      final result = await refresh(metadataInputs: metadataInputs);
+      final newId = await activeId();
+      final newDirectory = Directory('${packs.path}/versions/$newId');
+      final newManifest = await readManifest(newDirectory);
+      final oldMaps = {
+        for (final map in oldManifest['maps'] as List)
+          map['id'] as String: map as Map<String, dynamic>,
+      };
+      final newMaps = {
+        for (final map in newManifest['maps'] as List)
+          map['id'] as String: map as Map<String, dynamic>,
+      };
+      expect(newMaps.keys, unorderedEquals(supportedMapSources.keys));
+      for (final id in newMaps.keys) {
+        final before = Map<String, dynamic>.from(oldMaps[id]!)
+          ..remove('markers');
+        final after = Map<String, dynamic>.from(newMaps[id]!)
+          ..remove('markers');
+        expect(canonicalJson(after), canonicalJson(before), reason: id);
+      }
+      final reserveBoss = (newMaps['reserve']!['markers'] as List)
+          .cast<Map<String, dynamic>>()
+          .singleWhere((marker) => marker['category'] == 'bosses');
+      expect(reserveBoss['position']['x'], 123.5);
+      final woodsSpawn = (newMaps['woods']!['markers'] as List)
+          .cast<Map<String, dynamic>>()
+          .singleWhere(
+            (marker) =>
+                marker['name'] == 'Independently authored offline fixture',
+          );
+      expect(woodsSpawn['position']['x'], 51.25);
+
+      final newFiles = await snapshot(newDirectory);
+      String relative(String path, Directory directory) =>
+          path.substring(directory.path.replaceAll('\\', '/').length + 1);
+      final oldByPath = {
+        for (final entry in oldFiles.entries)
+          relative(entry.key, oldDirectory): entry.value,
+      };
+      final newByPath = {
+        for (final entry in newFiles.entries)
+          relative(entry.key, newDirectory): entry.value,
+      };
+      expect(newByPath.keys, unorderedEquals(oldByPath.keys));
+      expect(
+        [
+          for (final path in newByPath.keys)
+            if (newByPath[path] != oldByPath[path]) path,
+        ],
+        unorderedEquals([
+          'evidence/markers/maps.json',
+          'evidence/sources.json',
+          'manifest.json',
+        ]),
+      );
+      expect(result.changed, isTrue);
+      expect(result.id, newId);
+      expect(result.pruned, [oldId]);
+      expect(await versions(), [newId]);
+      expect(log.any((line) => line.contains('reserve')), isTrue);
+      expect(log.any((line) => line.contains('woods')), isTrue);
+      expect(log.last, contains('Metadata changed:'));
+      expect(log.last, contains('owner must check'));
+      expect(await pubspec.readAsString(), contains('versions/$newId/'));
+      expect(await pubspec.readAsString(), isNot(contains(oldId)));
+    });
+
+    test(
+      'metadata refresh rejects altered evidence without promotion',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        final pubspecBefore = await pubspec.readAsBytes();
+        final stage = Directory('${temporary.path}/altered-metadata');
+        final metadataInputs = await _stageMetadataInputs(fixtures.raw, stage);
+        final markerFile = packFile(stage, 'markers/maps.json');
+        final altered =
+            jsonDecode(await markerFile.readAsString()) as Map<String, dynamic>
+              ..['alteration'] = 'unrecorded';
+        await markerFile.writeAsString(canonicalJson(altered));
+
+        final candidate = '${work.path}/$candidateName';
+        await expectLater(
+          refresh(metadataInputs: metadataInputs),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains('markers/maps.json'), contains(candidate)),
+            ),
+          ),
+        );
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsBytes(), pubspecBefore);
+        expect(Directory(candidate).existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'metadata refresh rejects disappeared reviewed markers before promotion',
+      () async {
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        final pubspecBefore = await pubspec.readAsBytes();
+        final stage = Directory('${temporary.path}/removed-reviewed-marker');
+        final metadataInputs = await _stageMetadataInputs(
+          fixtures.raw,
+          stage,
+          removeReviewedConsole: true,
+        );
+        final candidate = '${work.path}/$candidateName';
+
+        await expectLater(
+          refresh(metadataInputs: metadataInputs),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('switches:6b9023f26446d73433823e872e6d69688083beaf:0'),
+                contains(candidate),
+              ),
+            ),
+          ),
+        );
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsBytes(), pubspecBefore);
+        expect(Directory(candidate).existsSync(), isTrue);
+      },
+    );
+
+    test('metadata refresh rejects malformed required source dictionaries by source', () async {
+      final malformed = <(String, Object?)>[
+        for (final path in const [
+          'markers/maps.json',
+          'markers/maps_en.json',
+          'quests/tasks.json',
+          'quests/tasks_en.json',
+          'quests/traders.json',
+          'quests/traders_en.json',
+        ]) ...[
+          (path, <Object?>[]),
+          (path, {'data': <Object?>[]}),
+        ],
+        (
+          'quests/tasks.json',
+          {
+            'data': {'tasks': <Object?>[], 'questItems': <String, Object?>{}},
+          },
+        ),
+        (
+          'quests/tasks.json',
+          {
+            'data': {'tasks': <String, Object?>{}, 'questItems': <Object?>[]},
+          },
+        ),
+      ];
+
+      for (final (index, entry) in malformed.indexed) {
+        final (path, payload) = entry;
+        final key = '${path.replaceAll('/', '-')}-$index';
+        packs = Directory('${temporary.path}/malformed-packs-$key');
+        work = Directory('${temporary.path}/malformed-work-$key');
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        final pubspecBefore = await pubspec.readAsBytes();
+        final stage = Directory('${temporary.path}/malformed-stage-$key');
+        final metadataInputs = await _stageMetadataInputs(
+          fixtures.raw,
+          stage,
+          sourceJsonOverrides: {path: payload},
+        );
+
+        await expectLater(
+          refresh(metadataInputs: metadataInputs),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains(path), contains('${work.path}/$candidateName')),
+            ),
+          ),
+          reason: '$path: $payload',
+        );
+        expect(await snapshot(packs), before, reason: key);
+        expect(await pubspec.readAsBytes(), pubspecBefore, reason: key);
+      }
+    });
+
+    test(
+      'metadata refresh rejects table admission and identity errors',
+      () async {
+        final admissionFailures = <String, void Function(Map<String, dynamic>)>{
+          'added source path': (index) => (index['sources'] as List).add({
+            'path': 'extra.json',
+            'url': 'https://example.invalid/extra.json',
+            'sha256': sha256.convert(utf8.encode('extra')).toString(),
+          }),
+          'removed source path': (index) => (index['sources'] as List)
+              .removeWhere((source) => source['path'] == 'metadata/maps.json'),
+          'changed source URL': (index) =>
+              ((index['sources'] as List).singleWhere(
+                    (source) => source['path'] == 'markers/maps.json',
+                  ) as Map<String, dynamic>)['url'] =
+                  'https://example.invalid/changed',
+          'changed non-metadata hash': (index) =>
+              ((index['sources'] as List).singleWhere(
+                (source) => source['path'] == 'calibration.json',
+              ) as Map<String, dynamic>)['sha256'] = sha256
+                  .convert(utf8.encode('changed'))
+                  .toString(),
+        };
+        for (final entry in admissionFailures.entries) {
+          packs = Directory('${temporary.path}/packs-${entry.key}');
+          work = Directory('${temporary.path}/work-${entry.key}');
+          await promoteCandidate(fixtures.first, packs);
+          final before = await snapshot(packs);
+          final pubspecBefore = await pubspec.readAsBytes();
+          final stage = Directory('${temporary.path}/admission-${entry.key}');
+          final metadataInputs = await _stageMetadataInputs(
+            fixtures.raw,
+            stage,
+          );
+          entry.value(metadataInputs.index);
+
+          await expectLater(
+            refresh(metadataInputs: metadataInputs),
+            throwsFormatException,
+            reason: entry.key,
+          );
+          expect(await snapshot(packs), before, reason: entry.key);
+          expect(await pubspec.readAsBytes(), pubspecBefore, reason: entry.key);
+          expect(
+            Directory('${work.path}/$candidateName').existsSync(),
+            isFalse,
+            reason: entry.key,
+          );
+        }
+
+        packs = Directory('${temporary.path}/packs-missing-map-identity');
+        work = Directory('${temporary.path}/work-missing-map-identity');
+        await promoteCandidate(fixtures.first, packs);
+        final missingBefore = await snapshot(packs);
+        final missingPubspecBefore = await pubspec.readAsBytes();
+        final missingStage = Directory(
+          '${temporary.path}/missing-map-identity',
+        );
+        final missingInputs = await _stageMetadataInputs(
+          fixtures.raw,
+          missingStage,
+        );
+        final missingMarkerFile = packFile(missingStage, 'markers/maps.json');
+        final missingSnapshot = jsonDecode(
+          await missingMarkerFile.readAsString(),
+        ) as Map<String, dynamic>;
+        final missingMaps =
+            (missingSnapshot['data'] as Map<String, dynamic>)['maps']
+                as Map<String, dynamic>;
+        final reserveKey = missingMaps.entries
+            .singleWhere((entry) => entry.value['normalizedName'] == 'reserve')
+            .key;
+        missingMaps.remove(reserveKey);
+        await missingMarkerFile.writeAsString(canonicalJson(missingSnapshot));
+        final missingRecord = (missingInputs.index['sources'] as List)
+            .singleWhere((source) => source['path'] == 'markers/maps.json');
+        missingRecord['sha256'] = sha256
+            .convert(await missingMarkerFile.readAsBytes())
+            .toString();
+        await expectLater(
+          refresh(metadataInputs: missingInputs),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('reserve'),
+                contains('${work.path}/$candidateName'),
+              ),
+            ),
+          ),
+        );
+        expect(await snapshot(packs), missingBefore);
+        expect(await pubspec.readAsBytes(), missingPubspecBefore);
+        expect(Directory('${work.path}/$candidateName').existsSync(), isTrue);
+
+        packs = Directory('${temporary.path}/packs-duplicate-map-identity');
+        work = Directory('${temporary.path}/work-duplicate-map-identity');
+        await promoteCandidate(fixtures.first, packs);
+        final before = await snapshot(packs);
+        final pubspecBefore = await pubspec.readAsBytes();
+        final stage = Directory('${temporary.path}/duplicate-map-identity');
+        final metadataInputs = await _stageMetadataInputs(fixtures.raw, stage);
+        final markerFile = packFile(stage, 'markers/maps.json');
+        final sourceSnapshot =
+            jsonDecode(await markerFile.readAsString()) as Map<String, dynamic>;
+        final data = sourceSnapshot['data'] as Map<String, dynamic>;
+        final maps = data['maps'] as Map<String, dynamic>;
+        maps['duplicate-reserve'] = Map<String, dynamic>.from(
+          maps.values.singleWhere((map) => map['normalizedName'] == 'reserve'),
+        );
+        await markerFile.writeAsString(canonicalJson(sourceSnapshot));
+        final index = metadataInputs.index;
+        final markerRecord = (index['sources'] as List).singleWhere(
+          (source) => source['path'] == 'markers/maps.json',
+        );
+        markerRecord['sha256'] = sha256
+            .convert(await markerFile.readAsBytes())
+            .toString();
+        await expectLater(
+          refresh(metadataInputs: metadataInputs),
+          throwsA(
+            isA<MapPackRefreshFailure>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('reserve'),
+                contains('${work.path}/$candidateName'),
+              ),
+            ),
+          ),
+        );
+        expect(await snapshot(packs), before);
+        expect(await pubspec.readAsBytes(), pubspecBefore);
+        expect(Directory('${work.path}/$candidateName').existsSync(), isTrue);
+      },
+    );
 
     test('refresh with identical artwork promotes a new generation, rewrites the asset block and prunes the old generation', () async {
       await promoteCandidate(fixtures.first, packs);

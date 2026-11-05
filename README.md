@@ -305,9 +305,11 @@ Runtime only loads the active pack. These commands are maintenance tools ([`prep
 | `promote --candidate <dir> --packs <root>` | Adds an immutable `versions/<sha256>/` and swaps [`active.json`](assets/maps/active.json) atomically |
 | `assets --packs <root>` | Prints the `pubspec.yaml` asset list; Flutter does not include nested tile folders by itself |
 | `check --packs <root>` | Rebuilds the active generation offline from the inputs it carries, into a temp folder, and fails unless it reproduces byte for byte. Only the recorded `toolchain` may differ. Run it as `mise run maps:check`; CI runs it on every PR |
-| `refresh --packs <root> --pubspec <file>` | Rebuilds, validates and promotes the active generation, rewrites the `pubspec.yaml` lines between the `BEGIN`/`END generated map pack assets` markers, then deletes every other generation folder. Run it as `mise run maps:rebuild` |
+| `refresh --packs <root> --pubspec <file>` | Rebuilds the committed inputs offline, validates and promotes the candidate, rewrites the `pubspec.yaml` lines between the `BEGIN`/`END generated map pack assets` markers, then deletes every other generation folder. Run it as `mise run maps:rebuild`; it does not download fresh metadata |
 
-A dependency bump that leaves `maps:check` passing needs no new pack. When it fails, the report lists the maps and floors whose files or manifest values changed.
+A dependency bump that leaves `maps:check` passing needs no new pack. When it fails, the report lists the maps and floors whose files or manifest values changed. The ordinary `refresh` command rebuilds the exact frozen inputs carried by the active generation; neither it nor `mise run maps:rebuild` fetches current REST metadata.
+
+An explicit metadata renewal is a separate staged operation, not a new CLI mode. It starts from the verified active generation's complete raw-input closure, replaces only the six regular-mode map, task, trader and English JSON responses, records their exact bytes, URLs and hashes, then passes the opened `FrozenInputs` to the existing `refreshActive(metadataInputs: ...)` owner. That branch rebuilds and semantically validates the full candidate, rejects any change to prepared artwork, calibration or reviewed marker ownership, and uses the same map report, asset-block replacement, promotion, pruning and recovery path. The report still requires the owner to check changed maps before merge. A failure after rebuilding begins keeps and names the candidate; follow the reported recovery boundary rather than deleting it or retrying blindly.
 
 `<use>` references to symbols the publisher deleted (Customs `path493`, Streets stairs) are dropped, as a browser does. Any other missing symbol fails preparation.
 </details>

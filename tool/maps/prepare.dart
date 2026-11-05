@@ -43,14 +43,16 @@ inventory or uncompiled-vector promotion is supported. Acquisition alone is
 not evidence of source closure or independent placement/redistribution
 qualification.
 
-acquire is the only network operation. normalize preserves dependency-closed
-source SVG and native effect metadata without compiler execution. compile is a
-separate step that compiles the normalized vectors. rebuild performs
-normalize+compile offline. Each step reads pubspec.lock once, before any write,
-and records the resolved xml, image, vector_graphics_compiler, vector_graphics
-and vector_graphics_codec versions as the manifest toolchain; compile replaces
-the normalize-time record. Every vector is compiled twice and a build fails
-when the two outputs differ.
+acquire is the only network operation exposed by this CLI. normalize preserves
+dependency-closed source SVG and native effect metadata without compiler
+execution. compile is a separate step that compiles the normalized vectors.
+rebuild performs normalize+compile offline. check and refresh also rebuild
+offline from the exact frozen inputs carried by the active generation:
+`mise run maps:rebuild` does not download fresh metadata. Each step reads
+pubspec.lock once, before any write, and records the resolved xml, image,
+vector_graphics_compiler, vector_graphics and vector_graphics_codec versions
+as the manifest toolchain; compile replaces the normalize-time record. Every
+vector is compiled twice and a build fails when the two outputs differ.
 validate/promote bind canonical vector component paths and actual compiled
 payloads to dependency-closed source SVGs: validation recompiles every vector
 from its evidence and requires identical bytes, and every payload header must
@@ -69,15 +71,27 @@ and manifest value matches except the recorded toolchain. It fails before
 anything else when an interrupted promotion left active.next.json or a
 versions/.<id>.staging folder. A mismatch ends with the instruction to run
 mise run maps:rebuild.
-refresh is the one command that renews the committed pack: it fails first on an
-incomplete pubspec.lock, an interrupted promotion or missing/duplicated/
-misordered pubspec markers, verifies the active generation, rebuilds it into
-.dart_tool/maps/refresh-<UTC>/, validates it and prints the change report. When
-anything but the toolchain record differs, the report ends with the owner check.
-It then promotes the candidate, rewrites the pubspec lines between the
-"BEGIN/END generated map pack assets" markers, deletes every other 64-hex
-generation folder and the candidate. On a failure the candidate is kept and
-named. Run it as mise run maps:rebuild.
+The CLI's refresh rebuilds the active generation from its carried inputs; it
+does not acquire a new source snapshot. An explicit metadata renewal is an
+apply-time staged operation through `refreshActive(metadataInputs: ...)`: start
+with the verified generation's complete frozen input closure, replace only
+`markers/maps.json`, `markers/maps_en.json`, `quests/tasks.json`,
+`quests/tasks_en.json`, `quests/traders.json` and `quests/traders_en.json`
+with the exact regular-mode REST bytes and source URLs, update those six source
+hashes, and open the complete stage as `FrozenInputs`. Do not use `acquire` for
+this boundary or add a refresh CLI flag. The existing refresh owner verifies
+the baseline and source closure, rebuilds and validates every map, then rejects
+any changed preserved output or reviewed marker floor assignment before it
+prints the report or promotes.
+
+Both refresh paths fail first on an incomplete pubspec.lock, an interrupted
+promotion or missing/duplicated/misordered pubspec markers. After validation,
+the existing owner reports changed maps and requires the owner to check them
+before merge, rewrites the pubspec lines between the "BEGIN/END generated map
+pack assets" markers, promotes the candidate, prunes superseded generations
+and removes the candidate. A failure after rebuilding starts keeps and names
+the candidate; follow its reported recovery state rather than deleting it or
+retrying blindly. Run the offline CLI refresh as mise run maps:rebuild.
 assets prints the complete pubspec assets section for the promoted generation;
 Flutter directory declarations do not recursively include nested tiles.
 ''';

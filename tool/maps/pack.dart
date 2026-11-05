@@ -45,8 +45,7 @@ Future<void> _write(Directory root, String path, List<int> bytes) async {
 }
 
 Future<Map<String, dynamic>> _readJson(Directory root, String path) async =>
-    jsonDecode(await packFile(root, path).readAsString())
-        as Map<String, dynamic>;
+    _decodeRequiredJsonObject(await packFile(root, path).readAsString(), path);
 String _hash(List<int> bytes) => sha256.convert(bytes).toString();
 
 /// Cache of compiler-input hash to payload hash for this process.
@@ -440,6 +439,48 @@ Future<void> acquireInputs(Directory root) async {
   }
 }
 
+Map<String, dynamic> _decodeRequiredJsonObject(String text, String path) {
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(text);
+  } on FormatException catch (error) {
+    throw FormatException('Invalid JSON $path: ${error.message}');
+  }
+  if (decoded is! Map<String, dynamic>) {
+    throw FormatException('Expected a JSON object in $path');
+  }
+  return decoded;
+}
+
+Future<Map<String, dynamic>> _readFrozenSourceObject(
+  FrozenInputs frozen,
+  String path,
+) async {
+  final String text;
+  try {
+    text = await frozen.text(path);
+  } on FormatException catch (error) {
+    throw FormatException(
+      'Invalid required source bytes $path: ${error.message}',
+    );
+  }
+  return _decodeRequiredJsonObject(text, path);
+}
+
+Map<String, dynamic> _requiredSourceDictionary(
+  Map<String, dynamic> source,
+  String path,
+  String key,
+) {
+  final value = source[key];
+  if (value is! Map<String, dynamic>) {
+    throw FormatException(
+      'Malformed required source dictionary $path: "$key" must be an object',
+    );
+  }
+  return value;
+}
+
 /// Rebuilds a candidate pack offline from the [frozen] inputs.
 ///
 /// The manifest records [toolchain] as the versions that built it. With
@@ -459,22 +500,34 @@ Future<Map<String, dynamic>> rebuildCandidate(
   final calibration =
       jsonDecode(await frozen.text('calibration.json')) as Map<String, dynamic>;
   final metadata = jsonDecode(await frozen.text('metadata/maps.json')) as List;
-  final markerSnapshot = jsonDecode(
-    await frozen.text('markers/maps.json'),
-  ) as Map<String, dynamic>;
-  final translations =
-      (jsonDecode(await frozen.text('markers/maps_en.json'))
-              as Map<String, dynamic>)['data']
-          as Map<String, dynamic>;
-  final questSources = <String, Map<String, dynamic>>{
-    for (final path in const [
-      'quests/tasks.json',
-      'quests/tasks_en.json',
-      'quests/traders.json',
-      'quests/traders_en.json',
-    ])
-      path: jsonDecode(await frozen.text(path)) as Map<String, dynamic>,
-  };
+  final markerSnapshot = await _readFrozenSourceObject(
+    frozen,
+    'markers/maps.json',
+  );
+  final markerData = _requiredSourceDictionary(
+    markerSnapshot,
+    'markers/maps.json',
+    'data',
+  );
+  _requiredSourceDictionary(markerData, 'markers/maps.json', 'maps');
+  final markerTranslations = await _readFrozenSourceObject(
+    frozen,
+    'markers/maps_en.json',
+  );
+  final translations = _requiredSourceDictionary(
+    markerTranslations,
+    'markers/maps_en.json',
+    'data',
+  );
+  final questSources = <String, Map<String, dynamic>>{};
+  for (final path in const [
+    'quests/tasks.json',
+    'quests/tasks_en.json',
+    'quests/traders.json',
+    'quests/traders_en.json',
+  ]) {
+    questSources[path] = await _readFrozenSourceObject(frozen, path);
+  }
   _requireMapInventory(
     (calibration['maps'] as List).cast<Map>(),
     supportedMapSources.keys.toSet(),
@@ -713,27 +766,57 @@ List<Map<String, Object?>> _prepareFrozenQuests(
   Map<String, dynamic> markerSnapshot,
   Map<String, Object?> local,
 ) {
-  final maps = (markerSnapshot['data'] as Map)['maps'] as Map;
+  final markerData = _requiredSourceDictionary(
+    markerSnapshot,
+    'markers/maps.json',
+    'data',
+  );
+  final maps = _requiredSourceDictionary(
+    markerData,
+    'markers/maps.json',
+    'maps',
+  );
   final source = maps.values.cast<Map>().singleWhere(
     (map) => map['normalizedName'] == local['sourceKey'],
   );
-  final taskData = sources['quests/tasks.json']!['data'] as Map;
+  final taskPath = 'quests/tasks.json';
+  final taskData = _requiredSourceDictionary(
+    sources[taskPath]!,
+    taskPath,
+    'data',
+  );
+  final tasks = _requiredSourceDictionary(taskData, taskPath, 'tasks');
+  final questItems = _requiredSourceDictionary(
+    taskData,
+    taskPath,
+    'questItems',
+  );
+  final taskTranslationsPath = 'quests/tasks_en.json';
+  final taskTranslations = _requiredSourceDictionary(
+    sources[taskTranslationsPath]!,
+    taskTranslationsPath,
+    'data',
+  );
+  final traderPath = 'quests/traders.json';
+  final traders = _requiredSourceDictionary(
+    sources[traderPath]!,
+    traderPath,
+    'data',
+  );
+  final traderTranslationsPath = 'quests/traders_en.json';
+  final traderTranslations = _requiredSourceDictionary(
+    sources[traderTranslationsPath]!,
+    traderTranslationsPath,
+    'data',
+  );
   return prepareQuestMarkers(
     mapId: source['id'] as String,
-    tasks: Map<String, dynamic>.from(taskData['tasks'] as Map),
-    questItems: Map<String, dynamic>.from(taskData['questItems'] as Map),
-    translations: Map<String, dynamic>.from(
-      sources['quests/tasks_en.json']!['data'] as Map,
-    ),
-    questItemTranslations: Map<String, dynamic>.from(
-      sources['quests/tasks_en.json']!['data'] as Map,
-    ),
-    traders: Map<String, dynamic>.from(
-      sources['quests/traders.json']!['data'] as Map,
-    ),
-    traderTranslations: Map<String, dynamic>.from(
-      sources['quests/traders_en.json']!['data'] as Map,
-    ),
+    tasks: tasks,
+    questItems: questItems,
+    translations: taskTranslations,
+    questItemTranslations: taskTranslations,
+    traders: traders,
+    traderTranslations: traderTranslations,
   );
 }
 
@@ -1166,10 +1249,22 @@ Future<Map<String, dynamic>> validateCandidate(
     candidate,
     'evidence/markers/maps.json',
   );
+  final sourceMarkerData = _requiredSourceDictionary(
+    sourceMarkers,
+    'markers/maps.json',
+    'data',
+  );
+  _requiredSourceDictionary(sourceMarkerData, 'markers/maps.json', 'maps');
   final decodedTiles = <String, PngInspection>{};
-  final translations =
-      (await _readJson(candidate, 'evidence/markers/maps_en.json'))['data']
-          as Map<String, dynamic>;
+  final markerTranslations = await _readJson(
+    candidate,
+    'evidence/markers/maps_en.json',
+  );
+  final translations = _requiredSourceDictionary(
+    markerTranslations,
+    'markers/maps_en.json',
+    'data',
+  );
   final questSources = <String, Map<String, dynamic>>{
     for (final path in const [
       'quests/tasks.json',
@@ -2151,6 +2246,269 @@ List<String> _reportDetails(PackChangeReport report) => [
   ],
 ];
 
+const _metadataReplacementPaths = {
+  'markers/maps.json',
+  'markers/maps_en.json',
+  'quests/tasks.json',
+  'quests/tasks_en.json',
+  'quests/traders.json',
+  'quests/traders_en.json',
+};
+
+bool _sameMapExcept(
+  Map<dynamic, dynamic> before,
+  Map<dynamic, dynamic> after,
+  Set<String> excluded,
+) {
+  final beforeKeys = before.keys
+      .where((key) => !excluded.contains(key))
+      .toSet();
+  final afterKeys = after.keys.where((key) => !excluded.contains(key)).toSet();
+  if (beforeKeys.length != afterKeys.length ||
+      !beforeKeys.containsAll(afterKeys) ||
+      !afterKeys.containsAll(beforeKeys)) {
+    return false;
+  }
+  for (final key in beforeKeys) {
+    if (canonicalJson(before[key]) != canonicalJson(after[key])) return false;
+  }
+  return true;
+}
+
+/// Rejects replacement source indexes outside the approved metadata closure.
+///
+/// The candidate must retain every baseline path and non-replacement record.
+/// Only the six regular-mode REST hashes may be replaced.
+void validateMetadataSourceIndex(
+  Map<String, dynamic> baseline,
+  Map<String, dynamic> candidate,
+) {
+  List<Map<String, dynamic>> sources(Map<String, dynamic> index) {
+    if (index['schemaVersion'] != 1 || index['sources'] is! List) {
+      throw const FormatException('Unsupported metadata source index');
+    }
+    return (index['sources'] as List).cast<Map<String, dynamic>>();
+  }
+
+  final baselineSources = sources(baseline);
+  final candidateSources = sources(candidate);
+  Map<String, Map<String, dynamic>> byPath(List<Map<String, dynamic>> records) {
+    final result = <String, Map<String, dynamic>>{};
+    for (final record in records) {
+      final path = record['path'];
+      if (path is! String || result.containsKey(path)) {
+        throw FormatException(
+          'Duplicate or invalid metadata source path: $path',
+        );
+      }
+      result[path] = record;
+    }
+    return result;
+  }
+
+  final before = byPath(baselineSources), after = byPath(candidateSources);
+  final baselinePaths = before.keys.toSet(),
+      candidatePaths = after.keys.toSet();
+  if (!_metadataReplacementPaths.every(before.containsKey)) {
+    throw const FormatException(
+      'Baseline is missing one or more approved metadata sources',
+    );
+  }
+  if (baselinePaths.length != candidatePaths.length ||
+      !baselinePaths.containsAll(candidatePaths) ||
+      !candidatePaths.containsAll(baselinePaths)) {
+    final changed =
+        {...baselinePaths, ...candidatePaths}
+            .where(
+              (path) =>
+                  baselinePaths.contains(path) != candidatePaths.contains(path),
+            )
+            .toList()
+          ..sort();
+    throw FormatException(
+      'Metadata source path inventory changed: ${changed.join(', ')}',
+    );
+  }
+  if (!baselineSources.indexed.every(
+    (entry) => entry.$2['path'] == candidateSources[entry.$1]['path'],
+  )) {
+    throw const FormatException('Metadata source record order changed');
+  }
+
+  for (final path in before.keys) {
+    final oldRecord = before[path]!;
+    final newRecord = after[path]!;
+    if (_metadataReplacementPaths.contains(path)) {
+      if (!_sameMapExcept(oldRecord, newRecord, const {'sha256'})) {
+        throw FormatException('Metadata source record changed: $path');
+      }
+      if (newRecord['sha256'] is! String) {
+        throw FormatException('Metadata source hash is invalid: $path');
+      }
+    } else if (canonicalJson(oldRecord) != canonicalJson(newRecord)) {
+      throw FormatException('Non-metadata source record changed: $path');
+    }
+  }
+  if (!_sameMapExcept(baseline, candidate, const {'sources'})) {
+    throw const FormatException('Metadata source index fields changed');
+  }
+}
+
+/// Rejects artifact changes outside the refreshed metadata evidence.
+///
+/// Map records may change, but non-marker map data, all non-metadata output
+/// hashes, manifest settings and reviewed floor assignments must stay fixed.
+void validateMetadataPreservation(
+  Map<String, dynamic> baseline,
+  Map<String, dynamic> candidate,
+) {
+  List<Map<String, dynamic>> maps(Map<String, dynamic> manifest) {
+    final raw = manifest['maps'];
+    if (raw is! List) {
+      throw const FormatException('Metadata refresh manifest has no maps');
+    }
+    return raw.cast<Map<String, dynamic>>();
+  }
+
+  Map<String, Map<String, dynamic>> byMap(List<Map<String, dynamic>> records) {
+    final result = <String, Map<String, dynamic>>{};
+    for (final map in records) {
+      final id = map['id'];
+      if (id is! String || result.containsKey(id)) {
+        throw FormatException('Metadata refresh has invalid map identity: $id');
+      }
+      result[id] = map;
+    }
+    return result;
+  }
+
+  final beforeMaps = byMap(maps(baseline));
+  final afterMaps = byMap(maps(candidate));
+  if (beforeMaps.length != afterMaps.length ||
+      !beforeMaps.keys.toSet().containsAll(afterMaps.keys) ||
+      !afterMaps.keys.toSet().containsAll(beforeMaps.keys)) {
+    throw const FormatException('Metadata refresh changed the map inventory');
+  }
+
+  Map<String, Map<String, dynamic>> markersById(
+    Map<String, dynamic> map,
+    String mapId,
+  ) {
+    final raw = map['markers'];
+    if (raw is! List) {
+      throw FormatException('Metadata refresh map $mapId has no markers');
+    }
+    final result = <String, Map<String, dynamic>>{};
+    for (final marker in raw.cast<Map<String, dynamic>>()) {
+      final id = marker['id'];
+      if (id is! String || result.containsKey(id)) {
+        throw FormatException(
+          'Metadata refresh has invalid marker identity on $mapId: $id',
+        );
+      }
+      result[id] = marker;
+    }
+    return result;
+  }
+
+  Map? assignmentOf(Map<String, dynamic> marker) {
+    final source = marker['source'];
+    if (source is! Map) return null;
+    final assignment = source['floorAssignment'];
+    return assignment is Map ? assignment : null;
+  }
+
+  Map<String, Object?> ownershipVolume(Map<String, dynamic> marker) => {
+    'position': marker['position'],
+    'heightBand': marker['heightBand'],
+    'outline': marker['outline'],
+  };
+
+  for (final id in beforeMaps.keys) {
+    final before = beforeMaps[id]!;
+    final after = afterMaps[id]!;
+    if (!_sameMapExcept(before, after, const {'markers'})) {
+      throw FormatException('Metadata refresh changed preserved map data: $id');
+    }
+
+    final previousMarkers = markersById(before, id);
+    final nextMarkers = markersById(after, id);
+    for (final entry in previousMarkers.entries) {
+      final previousAssignment = assignmentOf(entry.value);
+      if (previousAssignment == null) continue;
+      final markerId = entry.key;
+      final next = nextMarkers[markerId];
+      if (next == null) {
+        throw FormatException(
+          'Metadata refresh removed reviewed marker: $id/$markerId',
+        );
+      }
+      final nextAssignment = assignmentOf(next);
+      if (nextAssignment == null ||
+          canonicalJson(nextAssignment) != canonicalJson(previousAssignment) ||
+          canonicalJson(ownershipVolume(next)) !=
+              canonicalJson(ownershipVolume(entry.value)) ||
+          next['floorId'] != entry.value['floorId'] ||
+          next['floorId'] != previousAssignment['floorId']) {
+        throw FormatException(
+          'Metadata refresh changed reviewed marker ownership: $id/$markerId',
+        );
+      }
+    }
+  }
+
+  Map<String, String> outputHashes(Map<String, dynamic> manifest) {
+    final raw = manifest['outputs'];
+    if (raw is! List) {
+      throw const FormatException('Metadata refresh manifest has no outputs');
+    }
+    final result = <String, String>{};
+    for (final rawOutput in raw) {
+      if (rawOutput is! Map<String, dynamic>) {
+        throw const FormatException('Metadata refresh output is malformed');
+      }
+      final path = rawOutput['path'];
+      final hash = rawOutput['sha256'];
+      if (path is! String || hash is! String || result.containsKey(path)) {
+        throw FormatException('Metadata refresh output is invalid: $path');
+      }
+      result[path] = hash;
+    }
+    return result;
+  }
+
+  final beforeOutputs = outputHashes(baseline);
+  final afterOutputs = outputHashes(candidate);
+  if (beforeOutputs.length != afterOutputs.length ||
+      !beforeOutputs.keys.toSet().containsAll(afterOutputs.keys) ||
+      !afterOutputs.keys.toSet().containsAll(beforeOutputs.keys)) {
+    throw const FormatException(
+      'Metadata refresh changed the output inventory',
+    );
+  }
+  final mutableEvidence = {
+    'evidence/sources.json',
+    for (final path in _metadataReplacementPaths) 'evidence/$path',
+  };
+  for (final entry in beforeOutputs.entries) {
+    if (!mutableEvidence.contains(entry.key) &&
+        afterOutputs[entry.key] != entry.value) {
+      throw FormatException(
+        'Metadata refresh changed preserved output hash: ${entry.key}',
+      );
+    }
+  }
+
+  if (!_sameMapExcept(baseline, candidate, const {
+    'sourceGeneration',
+    'outputs',
+    'maps',
+    'toolchain',
+  })) {
+    throw const FormatException('Metadata refresh changed manifest settings');
+  }
+}
+
 /// Rebuilds the active generation of [packs] into [candidate] from the
 /// generation's own carried inputs, and returns the verified committed
 /// generation with the rebuilt manifest.
@@ -2370,8 +2728,11 @@ String _refreshStamp(DateTime moment) {
 /// and anything fails, the candidate is kept and a [MapPackRefreshFailure]
 /// names it. A failure before the rename deletes the staged pubspec file; one
 /// after promotion also says what already names the new generation and to run
-/// `mise run maps:rebuild` again. [encode] replaces the vector encoder of the rebuild only;
-/// validation always uses the real one.
+/// `mise run maps:rebuild` again. When [metadataInputs] is omitted, the
+/// committed generation's inputs are rebuilt as usual. When supplied, only its
+/// six replacement metadata sources may differ from the verified baseline.
+/// [encode] replaces the vector encoder of the rebuild only; validation
+/// always uses the real one.
 Future<MapPackRefresh> refreshActive(
   Directory packs,
   File pubspec, {
@@ -2380,6 +2741,7 @@ Future<MapPackRefresh> refreshActive(
   Directory? candidateParent,
   DateTime? now,
   VectorEncoder? encode,
+  FrozenInputs? metadataInputs,
   void Function(String line)? log,
 }) async {
   final void Function(String) say = log ?? stdout.writeln;
@@ -2394,18 +2756,39 @@ Future<MapPackRefresh> refreshActive(
   String? promoted;
   var renamed = false;
   try {
-    final (committed, rebuilt) = await _rebuildActive(
-      packs,
-      candidate,
-      toolchain: toolchain,
-      encode: encode ?? _encodeVector,
-    );
+    late CommittedGeneration committed;
+    late Map<String, dynamic> rebuilt;
+    if (metadataInputs == null) {
+      (committed, rebuilt) = await _rebuildActive(
+        packs,
+        candidate,
+        toolchain: toolchain,
+        encode: encode ?? _encodeVector,
+      );
+    } else {
+      committed = await verifyCommittedGeneration(packs);
+      final baselineInputs = await FrozenInputs.fromGeneration(
+        committed.directory,
+      );
+      validateMetadataSourceIndex(baselineInputs.index, metadataInputs.index);
+      await candidate.create(recursive: true);
+      rebuilt = await rebuildCandidate(
+        metadataInputs,
+        candidate,
+        toolchain: toolchain,
+        encode: encode ?? _encodeVector,
+      );
+      validateMetadataPreservation(committed.manifest, rebuilt);
+    }
     final report = packChangeReport(committed.manifest, rebuilt);
     _reportDetails(report).forEach(say);
     say(
       report.changed
-          ? 'Artwork changed: the owner must check the maps listed above in '
-                'the app before merge.'
+          ? metadataInputs == null
+                ? 'Artwork changed: the owner must check the maps listed above '
+                      'in the app before merge.'
+                : 'Metadata changed: the owner must check the maps listed '
+                      'above in the app before merge.'
           : 'Only the toolchain record changed: no owner check is needed.',
     );
     final manifestBytes = await packFile(
