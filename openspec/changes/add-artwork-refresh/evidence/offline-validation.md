@@ -109,3 +109,11 @@ Verification after the fix:
 - Actual CLI: `mise exec -- dart run tool/maps/prepare.dart artwork-refresh --packs .dart_tool/artwork-refresh-trailing-smoke-6f0993b25b/packs --pubspec .dart_tool/artwork-refresh-trailing-smoke-6f0993b25b/pubspec.yaml --stage .dart_tool/artwork-refresh-trailing-smoke-6f0993b25b/candidate/`. Exit 0 in 66.38 seconds. Candidate manifest SHA-256: `9d03eee02129f83b0cca7ec0527376fadcd65af80fdf160349201812f2e4f260`. Repository assets, pointer and pubspec, and the disposable baseline remained byte-identical. No nested `.raw` remained; the raw sibling was removed. The exact task-owned smoke directory was deleted afterward.
 - `mise run analyze && mise run test -- --concurrency=1 && mise run maps:check`: passed in 453.88 seconds; analyzer clean, 2,561 fast tests passed, committed map pack reproduced byte-identically.
 - No desktop app, companion or game was launched or inspected. No live-game verification is claimed.
+
+## Separator-only stage refusal
+
+Kody finding `4487359348` exposed a Windows boundary case. `/` was already refused by freshness checks, but `//` reached a missing pubspec with an empty derived scratch stem. The new caller regression failed before the fix with `PathNotFoundException` instead of preflight refusal.
+
+An empty stem is now refused before scratch construction or input reads. Mounted path/staging verification passed all 24 tests with zero errors and terminal `success: true` in 180.203 seconds. A disposable direct probe confirmed `/`, `//` and the native separator fail before fetching and leave the working-directory `.raw` type unchanged. Actual CLI `artwork-refresh --packs assets/maps --pubspec .dart_tool/artwork-refresh-root-missing-pubspec.yaml --stage //` exited 1 with directory-name refusal rather than reading the missing pubspec. The probe and its exact temporary directory were removed.
+
+`mise run analyze && mise run test -- --concurrency=1` passed in 427.67 seconds: analyzer clean and all 2,562 fast tests passed. No desktop app, companion or game was launched or inspected.

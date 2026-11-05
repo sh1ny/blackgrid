@@ -3890,6 +3890,9 @@ stageArtworkRefresh(
   while (end > 0 && stagePath.codeUnitAt(end - 1) == separator) {
     end--;
   }
+  if (end == 0) {
+    throw const FormatException('Artwork staging requires a directory name');
+  }
   final raw = Directory('${stagePath.substring(0, end)}.raw');
   for (final output in [stage, raw]) {
     final unsafe = unsafeOutputReason(

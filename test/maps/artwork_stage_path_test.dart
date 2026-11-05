@@ -55,6 +55,11 @@ void main() {
     },
   );
 
+  test('rejects a separator-only stage before input reads', () async {
+    await expectLater(run(Directory('//')), throwsA(isA<FormatException>()));
+    expect(fetches, 0);
+  });
+
   test('rejects a missing stage through a linked pack ancestor', () async {
     final alias = Link('${root.path}/alias');
     await alias.create(packs.path);

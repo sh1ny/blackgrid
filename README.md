@@ -314,7 +314,7 @@ For fresh artwork staging and publication, source URLs and expected hashes remai
 
 Staging fetches, hashes and records every raster tile, inspecting each distinct tile content for valid PNG dimensions and alpha bounds.
 
-Staging output must be outside the active pack tree. Both the candidate stage and its `.raw` sibling must be fresh paths; paths that are links or have linked ancestors are refused, as are collisions with the pubspec. Trailing directory separators are accepted; acquisition scratch remains a sibling, not a child of the candidate.
+Staging output must be outside the active pack tree. Both the candidate stage and its `.raw` sibling must be fresh paths; paths that are links or have linked ancestors are refused, as are collisions with the pubspec. The stage must have a directory name. Trailing directory separators are accepted; acquisition scratch remains a sibling, not a child of the candidate.
 
 The operator must serialize every writer to a pack root, including `refresh`, `artwork-publish` and bare `promote`. Baseline rechecking detects sequential changes before publication, not concurrent writers; it is not a lock. On interruption, follow the command's report of pointer, pubspec, pruning and candidate-cleanup state before retrying. Bare `promote` remains pointer-only: it does not rewrite `pubspec.yaml`, prune old generations or provide the full publication transaction. An owner check remains required before merge for any change beyond the toolchain record, including metadata, manifest and evidence-only changes. A genuine no-change or toolchain-only result requires no owner check; command success is not proof of human review or a new review gate.
 
