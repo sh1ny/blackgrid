@@ -22,6 +22,10 @@ A metadata refresh SHALL derive every supported map's markers from a fresh regul
 - **WHEN** carried metadata bytes no longer match their recorded source hash
 - **THEN** validation fails naming the source and the candidate cannot be promoted
 
+#### Scenario: Renewal tolerates unused uncarried indexed sources
+- **WHEN** a verified baseline generation indexes an unused source whose bytes it does not carry, and a metadata renewal replaces the six permitted metadata inputs
+- **THEN** renewal can rebuild and validate from the generation-backed build-read closure without acquiring that unused source, while retaining the exact source index inventory and unchanged non-metadata records; a missing input needed by the build or replacement bytes changed after staging still fails validation and prevents promotion
+
 ### Requirement: Boss position coverage is preserved per source map
 
 Each source boss location position SHALL produce exactly one boss marker in its supported source map, preserving mob identity, resolved name, location, coordinates and boss-wide spawn chance under the existing label rules. Validation SHALL reject missing, extra, misassigned or altered records. Multiplicity SHALL be preserved. Explicitly empty location or position lists SHALL produce no invented position markers.

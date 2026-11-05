@@ -17,7 +17,8 @@ TIER: FULL
 
 Scope and user choices are in `proposal.md`. Planning starts at `faab9db`, with active generation `ed26414539f458929025f4ef2c3413d3457c7b3e5b9f2e2adfb4dc20c24bba5f`.
 
-- `FrozenInputs.fromGeneration` reconstructs and verifies carried source files, including tile carriers (`tool/maps/pack.dart:146-254`). Its public `index` and `bytes` permit staging a complete raw input set without reacquiring artwork.
+- `FrozenInputs.fromGeneration` reconstructs and verifies carried source files, including tile carriers, while retaining missing entries for indexed but uncarried sources (`tool/maps/pack.dart:146-254`). A source index is an exact historical inventory, not proof that every indexed byte was carried. The archived `unpin-map-toolchain` design (Context, lines 33–37) measured 8,960 indexed tiles, of which 8,483 were carried and 477 unused SVG-floor tiles were not; the builder never reads those 477. ADR-0033 D4 requires carrying every source the build reads, not every indexed source. The attempted full-raw materialization failed at `tiles/customs/Ground_Level/0/10.png`; no acquisition or promotion occurred.
+- The user approved correcting D1/D2 to the existing generation-backed build-read closure rather than reconstructing the full historical inventory. ADR-0034 supplements ADR-0033 without changing the preservation or source-reading decision: its complete raw input closure means the build-read closure, not every historical index entry. No accepted ADR change or new ADR is needed for this clarification.
 - `acquireInputs` fetches artwork, metadata and terms as well as marker dictionaries; it is deliberately not used for this refresh (`pack.dart:292-438`). `primarySourceHashes` pins artwork/geometry sources, not the six replacement REST inputs (`tool/maps/calibration.dart:16-29`). Mutable REST inputs are nevertheless hash-bound by `evidence/sources.json` and `sourceGeneration`; do not weaken either binding.
 - `rebuildCandidate` rebuilds every floor using frozen inputs and the installed toolchain (`pack.dart:449-688`). `validateCandidate` recomputes the full marker list through the same preparation functions (`pack.dart:1159-1235`); this catches candidate corruption, but is not an independent oracle for a bug shared with the builder.
 - `prepareMarkers` expands `bosses[].spawnLocations[].positions[]`, preserving mob, location and boss-wide chance, then resolves names through the mob dictionary and English translations (`pack.dart:1480-1618`). Generic spawns containing category `boss` are not named boss records.
@@ -31,8 +32,8 @@ The saved current REST response was compared offline with all 13 supported sourc
 
 ### D1: Restrict replacement to the existing six REST inputs
 
-- **Choice:** Stage the active generation's complete verified raw input set. Replace only the paths below, record their actual acquired byte hashes in a canonical source index, and open the staged set through `FrozenInputs.open`. Use HTTPS JSON REST only; retain the existing regular-mode boundary and all other evidence byte-for-byte.
-- **Rejected:** Run broad `acquire`, change artwork/calibration, introduce mode-specific runtime datasets, or patch prepared markers directly; each changes the approved boundary or loses reproducibility.
+- **Choice:** Verify the active generation and acquire only the six paths below into an owned stage. Construct a generation-backed `FrozenInputs` view using a narrow instance method `withMetadata(Directory replacements)` on the `FrozenInputs.fromGeneration` result. The method reads only those fixed relative paths, hashes their exact bytes, and derives a new index without mutating the baseline. It retains the baseline's carried inputs and missing-entry behavior, substitutes only those six files, and verifies each replacement against its recorded hash when read, including after the view is opened. Use HTTPS JSON REST only; retain the existing regular-mode boundary and all other evidence byte-for-byte.
+- **Rejected:** Materialize every historical index entry, run broad `acquire`, change artwork/calibration, introduce a generic overlay or input injection API, introduce mode-specific runtime datasets, or patch prepared markers directly; these either demand unused unavailable bytes, change the approved boundary or lose reproducibility.
 - **Reversal cost:** medium.
 - **Important:** yes; changes the data players see and preserves an external integration boundary.
 - **Chosen by:** user (S1 and S2).
@@ -48,7 +49,7 @@ The saved current REST response was compared offline with all 13 supported sourc
 
 ### D2: Extend refresh ownership, not the CLI or the pack format
 
-- **Choice:** Add optional `FrozenInputs? metadataInputs` to `refreshActive`. Omission preserves its existing behavior. The metadata branch verifies the active baseline first, checks the replacement source closure against D1, rebuilds using that input through the existing builder, validates the candidate and checks baseline preservation before any promotion. Reuse the existing report, asset replacement, pruning and failure path. Keep acquisition in disposable apply-time orchestration; no new permanent acquisition command or generic candidate-injection callback.
+- **Choice:** Add optional `FrozenInputs? metadataInputs` to `refreshActive`. Omission preserves its existing behavior. The metadata branch verifies the active baseline first, checks the replacement source index and build-read closure against D1, rebuilds using the staged generation-backed view through the existing builder, validates the candidate and checks baseline preservation before any promotion. Uncarried indexed sources remain missing and fail normally if needed; neither `FrozenInputs.open` nor `FrozenInputs.fromGeneration` changes its existing semantics. Reuse the existing report, asset replacement, pruning and failure path. Keep acquisition in disposable apply-time orchestration; no new permanent acquisition command, generic overlay or candidate-injection callback.
 - **Rejected:** Duplicate refresh/promotion orchestration in a throwaway script, or introduce a separate refresh subsystem. The former repeats failure handling; the latter exceeds the corrective scope.
 - **Reversal cost:** medium.
 - **Important:** yes; extends a shared preparation interface.
@@ -87,7 +88,7 @@ Audit ordering is explicit: before calling refresh, the disposable orchestrator 
 
 ## Validation Map
 
-No check in this table has run during planning. Add the tests during apply, observe their intended failures where behavior is new, and only mark task-map rows green after named checks pass.
+The original eleven scenarios have observed green results in the task map. The newly added staging scenario remains red until its named checks pass; observe intended failures for new behavior and mark its task-map row green only after the checks succeed.
 
 | Added spec scenario | Automated check and cheapest complete layer |
 |---|---|
@@ -95,6 +96,7 @@ No check in this table has run during planning. Add the tests during apply, obse
 | Source identity is missing or ambiguous | `test/maps/map_preparation_test.dart`: `metadata source identities reject missing and duplicate supported maps`; qualification metadata-refresh rejection cases prove no promotion |
 | Required metadata is malformed | `test/maps/map_preparation_test.dart`: `boss source rejects malformed required arrays and facts`; parameterize absent/wrong arrays, dictionary failures, bad mob/location, nonnumeric/nonfinite coordinates, invalid chance and nullable-height control |
 | Acquired evidence is altered | Existing `frozen source hash changes and missing files fail` plus `test/maps/map_preparation_qualification_test.dart`: `metadata refresh rejects altered evidence without promotion` |
+| Renewal tolerates unused uncarried indexed sources | `test/maps/map_generation_inputs_test.dart`: `generation metadata view preserves missing inputs and detects replacement mutation` verifies a synthetic otherwise-valid generation's unused indexed uncarried tile, baseline immutability, needed-missing failure and changed replacement hash rejection; `test/maps/map_preparation_qualification_test.dart`: `metadata refresh succeeds with unused uncarried indexed tile` exercises the staged view through real refresh and promotion |
 | Boss records retain their source facts | `test/maps/map_preparation_test.dart`: `boss positions preserve independently specified source facts`; use at least two distinct maps, different boss-wide/location probabilities, translated names and exact expected coordinates |
 | Same-count corruption is rejected | `test/maps/map_preparation_qualification_test.dart`: `boss candidate corruption is rejected per map`; parameterize missing/extra/moved-map records and changed mob/name/location/coordinate/rate, including equal-total corruptions |
 | Repeated boss positions retain multiplicity | `test/maps/map_preparation_test.dart`: `boss repeated positions preserve occurrence facts`; qualification source fixture and independent real-pack multiset audit retain duplicate occurrences |
@@ -107,6 +109,7 @@ Additional admission/transaction invariants:
 
 - `test/maps/map_generation_inputs_test.dart`: `metadata admission accepts only the six replacement source records`; reject added/removed paths, URL changes, changed non-replacement hashes or other source-record fields. Check the successful replacement case too. The refresh qualification rejection table asserts these errors leave active pointer, pubspec and generation inventory byte-identical.
 - Make the positive full-map raw fixture genuinely satisfy existing reviewed ownership: add the exact Interchange console source id and complete reviewed position/height band/outline from its existing calibration to `test/support/map_preparation_fixtures.dart`. Keep that calibration assignment intact. Retain the existing Icebreaker helipad extract and all ordinary marker controls. Add a small named-boss source record on supported maps and representative duplicates/empty arrays without production-sized images or buffers.
+- Construct an otherwise-valid synthetic generation with an indexed unused tile absent from its carried files. At the cheapest unit layer verify `withMetadata` succeeds without reading it, retains its missing status and the unchanged baseline index and bytes, rejects a needed missing source on read, and rejects a replacement modified after view creation on read. The qualification flow builds the six-file stage, constructs the generation-backed view and successfully refreshes that generation; needed-missing and mutated-replacement failures must prevent promotion under the existing failure and candidate-preservation gates.
 - The successful replacement fixture must change at least one non-boss marker and one boss fact so it proves a complete metadata refresh, not only a boss append. Independently assert the expected facts, not just nonempty lists or growth.
 - For semantic candidate mutations, update output/source index hashes when the mutated file requires it so the check reaches semantic validation rather than only an outer hash refusal. Do not weaken either check.
 - Preservation drift that cannot arise through the public refresh inputs without an unrelated earlier validation failure is tested directly through the pure comparison functions using already-valid baseline/candidate structures. No generic candidate-injection API is introduced merely to force such a state. The removed reviewed-marker case reaches the real refresh gate and proves its placement before promotion.
@@ -141,7 +144,7 @@ sequenceDiagram
     participant B as Builder and validator
     O->>S: Acquire six inputs sequentially
     S-->>O: Exact response bytes
-    O->>O: Stage and hash complete input closure
+    O->>O: Stage six files and derive generation-backed view
     O->>R: Verified metadataInputs
     R->>R: Verify active baseline and permitted input differences
     R->>B: Rebuild from staged sources
@@ -168,7 +171,7 @@ flowchart LR
 
 | State | Owner (sole writer) | Lifetime | Invalidation / rebuild | Authoritative copy |
 |---|---|---|---|---|
-| Acquired replacement bytes and staging index | Apply orchestrator | One refresh attempt | A failed/incomplete acquisition is discarded or retained only for diagnosis; never mixed into active data | Exact six responses and canonical staged source index |
+| Acquired replacement bytes and staging index | Apply orchestrator and generation-backed input view | One refresh attempt | A failed/incomplete acquisition is discarded or retained only for diagnosis; never mixed into active data | Exact six responses and derived canonical source index |
 | Baseline | Existing committed-generation verifier; read-only during staging | Until successful promotion | A corrupt baseline stops before rebuild | Active pointer plus hash-verified generation |
 | Candidate | Existing builder/validator under refresh | One attempt | Existing failure path retains and names a failed candidate | Candidate manifest and carried evidence |
 | Pointer, generated asset block, retained generations | Existing refresh/promotion flow | Repository lifetime | Existing recovery if interrupted after pointer replacement | Active generation and matching asset declarations |
@@ -227,8 +230,8 @@ Uncapped whole-file input size is retained deliberately: this corrective change 
 ## ADRs
 
 - **In force, constraining this change:** ADR-0005 as amended by ADR-0033 (offline, immutable prepared packs, source closure, existing promotion/report/owner gates); ADR-0029 (proposal release notes). No existing accepted ADR is edited.
-- **To record during apply:** ADR-0034, `metadata-refresh-preserves-prepared-artwork`, documenting D1/D2's narrow replacement-source and baseline-preservation contract; update the architecture index and prepared-pack boundary section. It supplements, not supersedes, ADR-0033.
+- **Recorded during apply:** ADR-0034, `metadata-refresh-preserves-prepared-artwork`, documents D1/D2's narrow replacement-source and baseline-preservation contract and supplements, not supersedes, ADR-0033. Its source closure is the build-read closure described above; this clarification does not change its decision.
 
 ## Open Questions
 
-None that change scope or approach. Apply-time source contents and the owner check are verification inputs, not unresolved design decisions. No production code, acquisition, regeneration or app launch occurs during planning.
+None that change scope or approach. Apply-time source contents and the owner check are verification inputs, not unresolved design decisions. The staging correction itself changes planning artifacts only; renewed review precedes resumed implementation.

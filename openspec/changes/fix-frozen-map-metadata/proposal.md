@@ -7,7 +7,7 @@ M8's marker bubbles expose stale frozen map data: the current bundle has no Koll
 ## What Changes
 
 - Acquire a fresh, hash-recorded regular-mode snapshot of the six existing marker, task, trader and English-translation REST inputs for all 13 supported maps. Derive the complete marker inventory, not hand edits for two bosses.
-- Stage a new generation from the active pack's verified carried inputs, preserve artwork and calibration, and extend the existing refresh function with a narrow replacement-metadata input option and preservation checks. Reuse its offline build, validation and promotion machinery; do not edit an active generation in place.
+- Stage six replacement files and construct a generation-backed input view from the active pack's verified carried inputs; preserve artwork and calibration. Extend the existing refresh function with a narrow replacement-metadata input option and preservation checks. Reuse its offline build, validation and promotion machinery; do not edit an active generation in place or reacquire unused historical artwork inputs.
 - Prove per-map boss-position coverage, including identity, resolved name, location, position, rate and multiplicity. Report source entries with no positions rather than inventing locations.
 - Review the all-map metadata diff, verify unchanged artwork/frames/floors/pin geometry, and ship only after the owner checks the listed changed maps.
 - Keep runtime behavior unchanged: bundled data only, no popup-triggered requests, no new cache or mode-specific map dataset. Artwork refresh, runtime live-map data, new maps, location labels, package upgrades and a permanent acquisition-command redesign remain out of scope.
@@ -43,7 +43,7 @@ DECISION_MAKING: important
 
 ### S2: Keep artwork and runtime boundaries unchanged
 
-- **Choice:** Preserve carried artwork, calibration and floor inventory; keep popups offline and retain current runtime loading. Extend the existing refresh function with a narrow replacement-metadata option, reusing promotion and recovery without adding a CLI command.
+- **Choice:** Preserve carried artwork, calibration and floor inventory; keep popups offline and retain current runtime loading. Extend the existing refresh function with a narrow replacement-metadata option and a six-file generation-backed staging view, reusing promotion and recovery without adding a CLI command. The user approved correcting staging to the existing build-read input closure rather than reconstructing every historically indexed source.
 - **Rejected:** Broad acquisition of new artwork, runtime downloads, or a new general refresh subsystem; these belong to separate roadmap work. Disposable orchestration alone would duplicate the existing refresh function's promotion and recovery sequencing.
 - **Reversal cost:** medium.
 - **Important:** yes; preserves the user-visible scope boundary and extends a shared preparation interface.
