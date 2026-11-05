@@ -24,15 +24,15 @@ An explicit refresh operation SHALL acquire fresh artwork, required interactive 
 
 ### Requirement: Fresh sources and identities require reviewed admission
 
-Fresh observations SHALL require admission by existing reviewed source configuration; downloading SHALL NOT approve them. Required supported identities SHALL be unique and complete. Newly unsupported identities relative to baseline discovery SHALL receive separate-integration guidance; pre-existing unsupported entries SHALL NOT alone block staging. Discovery SHALL NOT make unsupported maps selectable.
+Fresh sources SHALL follow reviewed admission: locked primary sources and required terms need identity, URL, revision where available, expected hash and provenance; raster tiles need reviewed calibration, exact URLs and frozen hash integrity, not prior byte approval. Supported identities SHALL be unique and complete. New unsupported identities SHALL receive integration guidance, never become selectable; existing unsupported entries SHALL NOT alone block staging.
 
 #### Scenario: Changed locked source
 - **WHEN** a locked source's observed identity or bytes differ from reviewed configuration
-- **THEN** staging identifies the source and approved and observed hashes where available and refuses admission until the exact identity, revision, URL and hash are updated through the existing reviewed source configuration
+- **THEN** staging identifies the source and approved and observed hashes where available and refuses admission until the exact identity, revision where available, URL and hash are updated through reviewed source configuration
 
 #### Scenario: Reviewed source matches
-- **WHEN** the reviewed source identity, revision, URL and hash match acquired bytes and other checks pass
-- **THEN** the candidate may use those bytes with their recorded provenance
+- **WHEN** a locked primary source or required terms document matches reviewed identity, revision where available, URL and expected hash, or raster tiles match reviewed calibration and exact configured URLs with verified acquired hashes
+- **THEN** the candidate may use those bytes with recorded provenance; raster hashes prove frozen integrity without claiming pre-reviewed tile bytes, and URL drift or frozen-byte corruption is rejected
 
 #### Scenario: Supported identity is invalid or a new unsupported identity appears
 - **WHEN** a required supported identity is missing, duplicate, ambiguous or malformed, or discovery identifies an unsupported map absent from baseline metadata
