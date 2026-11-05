@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as image;
@@ -3883,16 +3884,22 @@ stageArtworkRefresh(
   required MapBuildContext reviewedContext,
   bool reviewedCalibrationUpdate = false,
 }) async {
-  if (await stage.exists()) {
-    throw FormatException(
-      'Artwork staging requires a fresh candidate directory: ${stage.path}',
-    );
-  }
   final raw = Directory('${stage.path}.raw');
-  if (await raw.exists()) {
-    throw FormatException(
-      'Artwork staging requires a fresh raw directory: ${raw.path}',
+  for (final output in [stage, raw]) {
+    final unsafe = unsafeOutputReason(
+      output.path,
+      protectedDirectories: [packs.path],
+      protectedFiles: [pubspec.path],
     );
+    if (unsafe != null) {
+      throw FormatException('Unsafe artwork staging path: $unsafe');
+    }
+    if (await FileSystemEntity.type(output.path, followLinks: false) !=
+        FileSystemEntityType.notFound) {
+      throw FormatException(
+        'Artwork staging requires a fresh directory: ${output.path}',
+      );
+    }
   }
   replaceMapPackAssetBlock(await pubspec.readAsString(), const []);
   await requireNoInterruptedPromotion(packs);
