@@ -67,4 +67,8 @@ Prepare fresh map artwork for review without automatically changing the active m
 
 ### Added
 
-- Stage fresh artwork with source and calibration checks and a per-map change report; publish the staged candidate separately.
+- Stage fresh artwork with source and calibration checks and a per-map change report; publish the exact staged candidate separately with interrupted-publication recovery diagnostics.
+
+### Changed
+
+- Keep offline map checks, rebuilds and metadata-only renewal tied to the active generation's frozen calibration, source locks and notices while newer artwork configuration is pending.

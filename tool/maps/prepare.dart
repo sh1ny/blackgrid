@@ -15,6 +15,7 @@ const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart check --packs <pack-root>
   dart run tool/maps/prepare.dart refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
   dart run tool/maps/prepare.dart artwork-refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml> --stage <fresh-directory> [--reviewed-calibration-update]
+  dart run tool/maps/prepare.dart artwork-publish --candidate <staged-directory> --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
 
 Preparation v3 requires the complete canonical inventory:
 factory, customs, woods, shoreline, interchange, thelab, reserve, lighthouse,
@@ -94,6 +95,25 @@ dependency and marker-ownership validation. The stage directory must be new;
 acquisition scratch is removed on exit, while a candidate left by a later
 build failure is kept for diagnosis. Use another fresh stage directory on
 retry. Nothing is published, and the active pointer and pubspec are untouched.
+An explicit `artwork-publish --candidate <dir> --packs <root> --pubspec <file>`
+verifies the current active generation and every candidate output and frozen
+source, checks locked sources against current reviewed URLs, hashes, repository
+revisions and provenance, and checks raster source URLs against current reviewed
+calibration. It prints the comparison with the current baseline and publishes
+that exact candidate without rebuilding. The operator retains the candidate
+after success or failure. Serialize every writer to a pack root, including
+`refresh`, `artwork-publish` and bare `promote`; this check is not a lock and
+cannot prevent concurrent writes. Failures name whether the pointer, pubspec,
+pruning or candidate cleanup took effect. Inspect the reported state before
+retrying; after a pointer switch, use the existing recovery guidance rather than
+assuming the command succeeded. `promote --candidate ... --packs ...` remains a
+pointer-only operation and does not update `pubspec.yaml` or prune generations.
+
+The report is not proof of human review. When anything other than the toolchain
+record changes—including artwork, metadata, manifest or evidence-only changes—
+the existing before-merge owner check remains the operator's responsibility.
+A true no-change or toolchain-only outcome needs no owner check; automated
+command success does not create a new review gate.
 An explicit metadata renewal is an apply-time staged operation through
 `refreshActive(metadataInputs: ...)`: verify
 the active generation, acquire only the six fixed regular-mode REST responses
@@ -176,6 +196,7 @@ Future<void> runPrepare(
     'assets' || 'check' => {'--packs'},
     'refresh' => {'--packs', '--pubspec'},
     'artwork-refresh' => {'--packs', '--pubspec', '--stage'},
+    'artwork-publish' => {'--candidate', '--packs', '--pubspec'},
     _ => throw FormatException('Unknown operation $command'),
   };
   if (values.keys.toSet().difference(required).isNotEmpty ||
@@ -236,6 +257,18 @@ Future<void> runPrepare(
         candidateParent: candidateParent,
       );
       stdout.writeln('Map pack ${result.id} is now active.');
+    case 'artwork-publish':
+      final result = await publishStagedCandidate(
+        Directory(values['--candidate']!),
+        Directory(values['--packs']!),
+        File(values['--pubspec']!),
+        assetRoot: values['--packs']!,
+        reviewedContext: MapBuildContext.reviewedConfiguration(),
+      );
+      stdout.writeln(
+        'Published candidate ${result.id}; staged candidate retained at '
+        '${values['--candidate']}.',
+      );
     case 'artwork-refresh':
       final client = http.Client();
       try {

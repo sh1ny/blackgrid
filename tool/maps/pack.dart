@@ -3218,7 +3218,7 @@ Future<List<String>> pruneSupersededGenerations(
   return doomed;
 }
 
-/// What a successful [refreshActive] did.
+/// Describes a successful map-pack publication.
 class MapPackRefresh {
   /// Creates a result.
   const MapPackRefresh({
@@ -3237,9 +3237,9 @@ class MapPackRefresh {
   final List<String> pruned;
 }
 
-/// Thrown by [refreshActive] after the rebuild started and something failed.
+/// Describes a failed publication and its actual recovery state.
 ///
-/// [message] names the candidate folder, which is kept for inspection.
+/// [message] names the candidate folder when it remains available.
 class MapPackRefreshFailure implements Exception {
   /// Creates a failure with [message].
   const MapPackRefreshFailure(this.message);
@@ -3249,6 +3249,459 @@ class MapPackRefreshFailure implements Exception {
 
   @override
   String toString() => message;
+}
+
+/// Supplies the narrow filesystem operations used by shared pack publication.
+abstract interface class MapPackPublicationOperations {
+  /// Writes the staged asset declaration file.
+  Future<void> stagePubspec(File temporary, String contents);
+
+  /// Promotes the validated candidate and switches the active pointer.
+  Future<String> promote(Directory candidate, Directory packs);
+
+  /// Replaces the pubspec file with its staged replacement.
+  Future<void> renamePubspec(File temporary, File destination);
+
+  /// Removes superseded generations and returns their ids.
+  Future<List<String>> prune(Directory packs, String activeId);
+
+  /// Removes an owned candidate after successful publication.
+  Future<void> cleanup(Directory candidate);
+}
+
+/// Publishes one already-staged candidate through the pack transaction.
+///
+/// The candidate is verified against [reviewedContext] and the current active
+/// baseline before any active files are changed. The staged directory remains
+/// operator-owned and is retained after successful publication.
+Future<MapPackRefresh> publishStagedCandidate(
+  Directory candidate,
+  Directory packs,
+  File pubspec, {
+  required String assetRoot,
+  required MapBuildContext reviewedContext,
+  MapPackPublicationOperations? operations,
+  void Function(String line)? log,
+}) async {
+  final root = requireRepoRelativePackRoot(assetRoot);
+  await requireNoInterruptedPromotion(packs);
+  replaceMapPackAssetBlock(await pubspec.readAsString(), const []);
+
+  final baseline = await verifyCommittedGeneration(packs);
+  final manifest = await validateCandidate(candidate);
+  await _validateArtworkCandidateAdmission(
+    candidate,
+    manifest,
+    reviewedContext,
+  );
+  validateArtworkOwnershipPreservation(baseline.manifest, manifest);
+  final report = packChangeReport(baseline.manifest, manifest);
+  final void Function(String) say = log ?? stdout.writeln;
+  _reportDetails(report).forEach(say);
+  say(
+    report.changed
+        ? 'A non-toolchain change requires the existing before-merge owner '
+              'check; command success is not human-review proof.'
+        : 'No changes outside the toolchain record: no owner check is needed.',
+  );
+
+  return runMapPackPublicationTransaction(
+    candidate: candidate,
+    packs: packs,
+    pubspec: pubspec,
+    assetRoot: root,
+    operations: operations ?? _FileSystemMapPackPublicationOperations(),
+    expectedBaselineId: baseline.id,
+    changed: report.changed,
+    deleteCandidateOnSuccess: false,
+  );
+}
+
+/// Runs the report-independent transaction for an already-validated candidate.
+///
+/// It stages the pubspec replacement, rechecks the baseline immediately before
+/// promotion, invokes the validated candidate promotion, replaces the pubspec,
+/// prunes superseded versions, and optionally removes a caller-owned candidate.
+/// A failure reports the actual pointer/pubspec state and keeps the candidate
+/// when it still exists.
+Future<MapPackRefresh> runMapPackPublicationTransaction({
+  required Directory candidate,
+  required Directory packs,
+  required File pubspec,
+  required String assetRoot,
+  required MapPackPublicationOperations operations,
+  String? expectedBaselineId,
+  bool changed = false,
+  bool deleteCandidateOnSuccess = true,
+}) async {
+  final root = requireRepoRelativePackRoot(assetRoot);
+  await requireNoInterruptedPromotion(packs);
+  final originalPubspec = await pubspec.readAsString();
+  replaceMapPackAssetBlock(originalPubspec, const []);
+  final baseline = await verifyCommittedGeneration(packs);
+  if (expectedBaselineId != null && baseline.id != expectedBaselineId) {
+    throw FormatException(
+      'Active baseline changed before publication: expected '
+      '$expectedBaselineId, observed ${baseline.id}',
+    );
+  }
+
+  final manifestBytes = await packFile(
+    candidate,
+    'manifest.json',
+  ).readAsBytes();
+  final id = _hash(manifestBytes);
+  final manifest = jsonDecode(utf8.decode(manifestBytes));
+  if (manifest is! Map<String, dynamic>) {
+    throw const FormatException('Candidate manifest must be an object');
+  }
+  final updated = replaceMapPackAssetBlock(
+    originalPubspec,
+    mapPackAssetLines(root, assetDirectoriesOf(id, manifest)),
+  );
+  final temporary = File('${pubspec.path}.tmp');
+  var pruningStarted = false;
+  var cleanupStarted = false;
+
+  try {
+    await operations.stagePubspec(temporary, updated);
+
+    await requireNoInterruptedPromotion(packs);
+    final current = await verifyCommittedGeneration(packs);
+    if (current.id != baseline.id) {
+      throw FormatException(
+        'Active baseline changed during publication: expected ${baseline.id}, '
+        'observed ${current.id}',
+      );
+    }
+
+    final promotedId = await operations.promote(candidate, packs);
+    if (promotedId != id || await _activeVersion(packs) != id) {
+      throw FormatException(
+        'Promotion did not publish the exact candidate generation $id',
+      );
+    }
+
+    await operations.renamePubspec(temporary, pubspec);
+    if (await pubspec.readAsString() != updated) {
+      throw const FileSystemException(
+        'Pubspec replacement did not install the staged declaration block',
+      );
+    }
+
+    pruningStarted = true;
+    final pruned = await operations.prune(packs, id);
+    if (deleteCandidateOnSuccess) {
+      cleanupStarted = true;
+      await operations.cleanup(candidate);
+    }
+    return MapPackRefresh(id: id, changed: changed, pruned: pruned);
+  } catch (error) {
+    if (await temporary.exists()) {
+      try {
+        await temporary.delete();
+      } on FileSystemException catch (cleanupError) {
+        stderr.writeln('Could not delete ${temporary.path}: $cleanupError');
+      }
+    }
+
+    final activeId = await _publicationActiveId(packs);
+    final pubspecInstalled =
+        await pubspec.exists() && await pubspec.readAsString() == updated;
+    final remaining = await _remainingGenerationIds(packs, id);
+    final targetDetails =
+        'Publication targets: packs ${packs.path}; pubspec ${pubspec.path}.';
+    final recovery = _publicationRecoveryAction(packs, pubspec, root);
+    final phase = switch ((activeId == id, pubspecInstalled)) {
+      (false, _) when activeId == baseline.id =>
+        'The active pointer remains unchanged at ${baseline.id}; the pubspec '
+            'does not name $id.',
+      (false, _) =>
+        'The active pointer no longer names baseline ${baseline.id}; it now '
+            'names ${activeId ?? 'an unreadable value'}. The pubspec '
+            '${pubspecInstalled ? 'names' : 'does not name'} $id.',
+      (true, false) =>
+        'active.json already names $id but pubspec.yaml does not. $recovery',
+      (true, true) when pruningStarted && remaining.isNotEmpty =>
+        'active.json and pubspec.yaml already name $id; pruning was '
+            'interrupted. Remaining generations: ${remaining.join(', ')}. '
+            '$recovery',
+      (true, true) when pruningStarted =>
+        'active.json and pubspec.yaml already name $id; pruning took effect '
+            'before the operation reported failure. $recovery',
+      (true, _) when id == baseline.id && originalPubspec == updated =>
+        'The active generation and pubspec already matched $id; no pointer or '
+            'pubspec change is observable.',
+      (true, true) =>
+        'active.json and pubspec.yaml already name $id; inspect the '
+            'publication state before retrying.',
+    };
+    final phaseWithTargets = '$phase $targetDetails';
+    final candidateExists = await candidate.exists();
+    final cleanup = switch ((cleanupStarted, candidateExists)) {
+      (true, true) => 'Candidate cleanup did not remove ${candidate.path}.',
+      (true, false) =>
+        'Candidate cleanup took effect before the operation failed.',
+      (false, true) => 'Candidate kept at ${candidate.path}.',
+      (false, false) => 'Candidate ${candidate.path} is no longer present.',
+    };
+    throw MapPackRefreshFailure('$error\n$phaseWithTargets\n$cleanup');
+  }
+}
+
+String _publicationRecoveryAction(
+  Directory packs,
+  File pubspec,
+  String assetRoot,
+) {
+  final packPath = packs.path.replaceAll('\\', '/');
+  if (packPath != assetRoot) {
+    return 'Inspect or repair only these named targets before retrying; '
+        'the repository-root maps:rebuild alias does not apply.';
+  }
+  if (assetRoot == 'assets/maps' && pubspec.path == 'pubspec.yaml') {
+    return 'Recover with `mise run maps:rebuild`.';
+  }
+  return 'Recover with `dart run tool/maps/prepare.dart refresh --packs '
+      '"$assetRoot" --pubspec "${pubspec.path}"`.';
+}
+
+Future<String?> _publicationActiveId(Directory packs) async {
+  try {
+    return await _activeVersion(packs);
+  } on Object {
+    return null;
+  }
+}
+
+Future<List<String>> _remainingGenerationIds(
+  Directory packs,
+  String activeId,
+) async {
+  final versions = Directory('${packs.path}/versions');
+  if (!await versions.exists()) return const [];
+  final generation = RegExp(r'^[0-9a-f]{64}$');
+  final remaining = <String>[];
+  await for (final entity in versions.list(followLinks: false)) {
+    if (entity is! Directory) continue;
+    final name = entity.path.replaceAll('\\', '/').split('/').last;
+    if (generation.hasMatch(name) && name != activeId) remaining.add(name);
+  }
+  remaining.sort();
+  return remaining;
+}
+
+class _FileSystemMapPackPublicationOperations
+    implements MapPackPublicationOperations {
+  @override
+  Future<void> stagePubspec(File temporary, String contents) async {
+    await temporary.writeAsString(contents, flush: true);
+  }
+
+  @override
+  Future<String> promote(Directory candidate, Directory packs) =>
+      promoteCandidate(candidate, packs);
+
+  @override
+  Future<void> renamePubspec(File temporary, File destination) async {
+    await temporary.rename(destination.path);
+  }
+
+  @override
+  Future<List<String>> prune(Directory packs, String activeId) =>
+      pruneSupersededGenerations(packs, activeId);
+
+  @override
+  Future<void> cleanup(Directory candidate) async {
+    await candidate.delete(recursive: true);
+  }
+}
+
+bool _sameBytes(List<int> left, List<int> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
+}
+
+Set<String> _requiredArtworkSourcePaths() => {
+  'metadata/maps.json',
+  ..._artworkRefreshTermPaths,
+  for (final entry in additionalVectorSources.entries)
+    '${entry.key}/${entry.value['file']}',
+  vectorSourcePath,
+};
+
+Future<void> _validateArtworkCandidateAdmission(
+  Directory candidate,
+  Map<String, dynamic> manifest,
+  MapBuildContext reviewedContext,
+) async {
+  final reviewedLock = reviewedContext.sourceLock;
+  _validateArtworkSourceConfiguration(reviewedLock);
+  final candidateLock = manifest['sourceLock'];
+  if (candidateLock is! Map<String, dynamic>) {
+    throw const FormatException(
+      'Artwork candidate has no reviewed source lock',
+    );
+  }
+  final currentCalibration = reviewedContext.calibration;
+  final candidateCalibration = await _readJson(
+    candidate,
+    'evidence/calibration.json',
+  );
+  if (canonicalJson(candidateCalibration) !=
+      canonicalJson(currentCalibration)) {
+    throw const FormatException(
+      'Artwork candidate calibration differs from current reviewed calibration',
+    );
+  }
+  if (!_sameBytes(
+    await packFile(candidate, 'NOTICE.txt').readAsBytes(),
+    reviewedContext.noticeBytes,
+  )) {
+    throw const FormatException(
+      'Artwork candidate NOTICE.txt differs from current reviewed notice bytes',
+    );
+  }
+
+  const lockedFields = [
+    'primaryUrls',
+    'primaryHashes',
+    'primaryRepositoryRevisions',
+    'primaryGitBlobs',
+    'primaryProvenance',
+  ];
+  final requiredPaths = _requiredArtworkSourcePaths();
+  final currentValues = <String, Map<String, String>>{
+    for (final field in lockedFields)
+      field: _requiredSourceLockMap(reviewedLock, field),
+  };
+  final candidateValues = <String, Map<String, String>>{
+    for (final field in lockedFields)
+      field: _requiredSourceLockMap(candidateLock, field),
+  };
+  final rawIndex = await _readJson(candidate, 'evidence/sources.json');
+  final rawSources = rawIndex['sources'];
+  if (rawSources is! List) {
+    throw const FormatException('Artwork candidate has no frozen source list');
+  }
+  final sourcesByPath = <String, Map<String, dynamic>>{};
+  for (final raw in rawSources) {
+    if (raw is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Artwork candidate source record is malformed',
+      );
+    }
+    final path = raw['path'];
+    if (path is! String || sourcesByPath.containsKey(path)) {
+      throw FormatException('Duplicate or invalid artwork source path: $path');
+    }
+    sourcesByPath[path] = raw;
+  }
+
+  for (final path in requiredPaths) {
+    for (final field in lockedFields) {
+      final expected = currentValues[field]![path];
+      final requiredLock = switch (field) {
+        'primaryUrls' || 'primaryHashes' || 'primaryProvenance' => true,
+        _ => false,
+      };
+      if ((requiredLock && expected == null) ||
+          candidateValues[field]![path] != expected) {
+        throw FormatException(
+          'Artwork candidate current reviewed $field admission differs for $path',
+        );
+      }
+    }
+    final expectedUrl = currentValues['primaryUrls']![path]!;
+    final expectedHash = currentValues['primaryHashes']![path]!;
+    final source = sourcesByPath[path];
+    if (source == null) {
+      throw FormatException(
+        'Artwork candidate frozen source record is missing: $path',
+      );
+    }
+    final bytes = await packFile(candidate, 'evidence/$path').readAsBytes();
+    validateLockedSourceRecord(
+      path: path,
+      source: source,
+      bytes: bytes,
+      expectedUrl: expectedUrl,
+      expectedSha256: expectedHash,
+      expectedRepositoryRevision:
+          currentValues['primaryRepositoryRevisions']![path],
+      expectedGitBlobSha1: currentValues['primaryGitBlobs']![path],
+    );
+    if (source['provenance'] != currentValues['primaryProvenance']![path]) {
+      throw FormatException(
+        'Artwork candidate reviewed provenance differs for $path',
+      );
+    }
+    if (source['repositoryRevision'] !=
+            currentValues['primaryRepositoryRevisions']![path] ||
+        source['gitBlobSha1'] != currentValues['primaryGitBlobs']![path]) {
+      throw FormatException(
+        'Artwork candidate pinned repository evidence differs for $path',
+      );
+    }
+  }
+
+  final metadata = jsonDecode(
+    await packFile(candidate, 'evidence/metadata/maps.json').readAsString(),
+  ) as List;
+  for (final rawLocal
+      in (currentCalibration['maps'] as List).cast<Map<String, dynamic>>()) {
+    final local = Map<String, Object?>.from(rawLocal);
+    final upstream = interactiveMetadata(
+      metadata,
+      local['sourceKey'] as String,
+    );
+    final resources = <Map<String, Object?>>[
+      for (final floor in reconcileFloors(local, upstream))
+        if (floor['sourceTileUrl'] != null) floor,
+    ];
+    for (final rawDependency
+        in (local['rasterDependencies'] as List? ?? const <Object?>[])) {
+      if (rawDependency is! Map) {
+        throw FormatException(
+          'Artwork candidate raster dependency is malformed: ${local['id']}',
+        );
+      }
+      resources.add({
+        ...Map<String, Object?>.from(rawDependency),
+        'id': 'dependency-${rawDependency['id']}',
+      });
+    }
+    for (final resource in resources) {
+      final mapId = local['id'] as String;
+      final floorId = resource['id'] as String;
+      final url = resource['sourceTileUrl'] as String;
+      for (var x = 0; x < 16; x++) {
+        for (var y = 0; y < 16; y++) {
+          final path = rawTilePath(mapId, floorId, x, y);
+          final source = sourcesByPath[path];
+          if (source == null) {
+            throw FormatException(
+              'Artwork candidate frozen raster source is missing: $path',
+            );
+          }
+          final observedUrl = source['url'];
+          if (observedUrl is! String) {
+            throw FormatException(
+              'Artwork candidate raster source URL is invalid: $path',
+            );
+          }
+          validateRasterTileSourceUrl(
+            path: path,
+            observedUrl: observedUrl,
+            expectedUrl: tileUrl(url, x, y),
+          );
+        }
+      }
+    }
+  }
 }
 
 String _refreshStamp(DateTime moment) {
@@ -3262,23 +3715,21 @@ String _refreshStamp(DateTime moment) {
 /// it, rewrites the asset block in [pubspec] and prunes superseded
 /// generations.
 ///
-/// In order: the leftover precheck and the marker check (before any write);
-/// verification of the committed generation; the rebuild and its validation
-/// into `refresh-<UTC>` under [candidateParent] (default `.dart_tool/maps`);
-/// the change report through [log] (default stdout); staging the rewritten
-/// block, declaring directories under [assetRoot], in a temp file next to
-/// [pubspec]; promotion; the rename of that file over [pubspec]; pruning; and
-/// deleting the candidate.
+/// In order: the leftover-promotion precheck and the marker check; verification
+/// of the committed generation; the rebuild and validation into
+/// `refresh-<UTC>` under [candidateParent] (default `.dart_tool/maps`); the
+/// existing change report through [log] (default stdout); then the shared
+/// publication transaction, which stages the replacement asset block, promotes
+/// the validated candidate, replaces [pubspec], prunes superseded generations
+/// and removes this refresh-owned candidate.
 ///
-/// Until promotion nothing under [packs] changes. When the rebuild started
-/// and anything fails, the candidate is kept and a [MapPackRefreshFailure]
-/// names it. A failure before the rename deletes the staged pubspec file; one
-/// after promotion also says what already names the new generation and to run
-/// `mise run maps:rebuild` again. When [metadataInputs] is omitted, the
-/// committed generation's inputs are rebuilt as usual. When supplied, only its
-/// six replacement metadata sources may differ from the verified baseline.
-/// [encode] replaces the vector encoder of the rebuild only; validation
-/// always uses the real one.
+/// The publication transaction rechecks the committed baseline immediately
+/// before promotion and reports the actual pointer, pubspec, pruning and
+/// candidate-cleanup state after an interruption. When [metadataInputs] is
+/// omitted, the committed generation's inputs are rebuilt as usual. When
+/// supplied, only its six replacement metadata sources may differ from the
+/// verified baseline. [encode] replaces the vector encoder of the rebuild only;
+/// validation always uses the real one.
 Future<MapPackRefresh> refreshActive(
   Directory packs,
   File pubspec, {
@@ -3298,9 +3749,6 @@ Future<MapPackRefresh> refreshActive(
     '${(candidateParent ?? Directory('.dart_tool/maps')).path}'
     '/refresh-${_refreshStamp(now ?? DateTime.now())}',
   );
-  final temporary = File('${pubspec.path}.tmp');
-  String? promoted;
-  var renamed = false;
   try {
     late CommittedGeneration committed;
     late Map<String, dynamic> rebuilt;
@@ -3338,51 +3786,24 @@ Future<MapPackRefresh> refreshActive(
                       'above in the app before merge.'
           : 'Only the toolchain record changed: no owner check is needed.',
     );
-    final manifestBytes = await packFile(
-      candidate,
-      'manifest.json',
-    ).readAsBytes();
-    final updated = replaceMapPackAssetBlock(
-      await pubspec.readAsString(),
-      mapPackAssetLines(
-        root,
-        assetDirectoriesOf(
-          _hash(manifestBytes),
-          jsonDecode(utf8.decode(manifestBytes)) as Map<String, dynamic>,
-        ),
-      ),
+    return await runMapPackPublicationTransaction(
+      candidate: candidate,
+      packs: packs,
+      pubspec: pubspec,
+      assetRoot: root,
+      operations: _FileSystemMapPackPublicationOperations(),
+      expectedBaselineId: committed.id,
+      changed: report.changed,
+      deleteCandidateOnSuccess: true,
     );
-    await temporary.writeAsString(updated, flush: true);
-    final id = await promoteCandidate(candidate, packs);
-    promoted = id;
-    await temporary.rename(pubspec.path);
-    renamed = true;
-    final pruned = await pruneSupersededGenerations(packs, id);
-    await candidate.delete(recursive: true);
-    return MapPackRefresh(id: id, changed: report.changed, pruned: pruned);
+  } on MapPackRefreshFailure {
+    rethrow;
   } catch (error) {
-    if (!renamed) {
-      try {
-        if (await temporary.exists()) await temporary.delete();
-      } on FileSystemException catch (cleanup) {
-        stderr.writeln('Could not delete ${temporary.path}: $cleanup');
-      }
-    }
-    final after = switch ((promoted, renamed)) {
-      (null, _) => '',
-      (final id?, false) =>
-        '\nactive.json already names $id but pubspec.yaml does not; run '
-            'mise run maps:rebuild again to bring them in line',
-      (final id?, true) =>
-        '\nactive.json and pubspec.yaml already name $id; run '
-            'mise run maps:rebuild again to delete the superseded generations',
-    };
     if (await candidate.exists()) {
       throw MapPackRefreshFailure(
-        '$error$after\nCandidate kept at ${candidate.path}',
+        '$error\nCandidate kept at ${candidate.path}',
       );
     }
-    if (promoted != null) throw MapPackRefreshFailure('$error$after');
     rethrow;
   }
 }
@@ -3404,13 +3825,7 @@ void _validateArtworkSourceConfiguration(Map<String, dynamic> sourceLock) {
   );
   final blobs = _requiredSourceLockMap(sourceLock, 'primaryGitBlobs');
   final provenance = _requiredSourceLockMap(sourceLock, 'primaryProvenance');
-  final requiredPaths = {
-    'metadata/maps.json',
-    ..._artworkRefreshTermPaths,
-    for (final entry in additionalVectorSources.entries)
-      '${entry.key}/${entry.value['file']}',
-    vectorSourcePath,
-  };
+  final requiredPaths = _requiredArtworkSourcePaths();
   for (final path in requiredPaths) {
     final expectedUrl = primarySourceUrls[path];
     final expectedHash = hashes[path];
