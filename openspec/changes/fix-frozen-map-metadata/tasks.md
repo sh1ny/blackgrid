@@ -51,8 +51,8 @@ Ownership: exact acquired source bytes, new prepared generation, active pointer,
 
 ## 5. Final integration gates
 
-- [ ] 5.1 Run `mise run analyze`, `mise run test`, `mise run maps:check`, `openspec validate fix-frozen-map-metadata --strict` and `mise run release-notes -- --check openspec/changes/fix-frozen-map-metadata/proposal.md`; also run the targeted offline map-preparation qualification suite through the mounted runner with the qualification tag enabled. Verify successful terminal outcomes, byte-identical active-pack reproduction and all twelve mapped scenarios green. Never run game-dependent qualification or set `BLACKGRID_NO_GAMES_RUNNING` on this machine.
-- [ ] 5.2 [evidence] Capture exact integration outcomes, generation binding, task/test-map completeness and the separately attributed owner result or waiting state → evidence/verification.md. Verify the file is present, non-empty and committed with this task, no runtime/game check is claimed, and no release/version bump occurred. An outstanding user task prevents archive/merge readiness even when automated gates pass.
+- [x] 5.1 Run `mise run analyze`, `mise run test`, `mise run maps:check`, `openspec validate fix-frozen-map-metadata --strict` and `mise run release-notes -- --check openspec/changes/fix-frozen-map-metadata/proposal.md`; also run the targeted offline map-preparation qualification suite through the mounted runner with the qualification tag enabled. Verify successful terminal outcomes, byte-identical active-pack reproduction and all twelve mapped scenarios green. Never run game-dependent qualification or set `BLACKGRID_NO_GAMES_RUNNING` on this machine.
+- [x] 5.2 [evidence] Capture exact integration outcomes, generation binding, task/test-map completeness and the separately attributed owner result or waiting state → evidence/verification.md. Verify the file is present, non-empty and committed with this task, no runtime/game check is claimed, and no release/version bump occurred. An outstanding user task prevents archive/merge readiness even when automated gates pass.
 
 ## Workflow follow-up
 
