@@ -128,4 +128,10 @@ The independent source audit observed 54 empty-coverage occurrences. Each group 
 
 ## Qualification and owner check
 
-Before real acquisition, the generation-view implementation passed 68 focused regression tests and 3 targeted qualification tests on synthetic fixtures. The actual refresh and independent returned-generation audit above provide the real-pack smoke evidence. The final offline gates passed; exact outcomes are recorded in [verification.md](verification.md). The owner check is explicitly waiting on the user for this exact generation (task 4.4). No app/game was launched or inspected; neither in-app map readability nor the M8 readability check is claimed as passed. No release/version bump was made.
+Before real acquisition, the generation-view implementation passed 68 focused regression tests and 3 targeted qualification tests on synthetic fixtures. The actual refresh and independent returned-generation audit above provide the real-pack smoke evidence. The final offline gates passed; exact outcomes are recorded in [verification.md](verification.md).
+
+On 2026-11-05, the owner tested local Windows bundle `0.7.0+406`, whose bundled active pointer was verified to name generation `cefe97a6658f56550ca9466c9e261d8cbd57b044705e5ca453999d9903aa0993`, and reported: "OK it's identical to tarkov.dev." The owner explicitly accepted this change: "as far as this change is concerned, we're good." This completes user task 4.4 for that generation; it does not claim source-versus-game accuracy or close M8's overall readability criterion.
+
+The owner requested a separate follow-up for separating Raiders, Rogues and similar non-boss AI from boss spawns: [issue #89](https://github.com/sh1ny/blackgrid/issues/89). That classification work is not part of this metadata correction.
+
+Agents did not launch or inspect the app or game. The local bundle build and offline bundle checks passed; no release or source-version bump was made.

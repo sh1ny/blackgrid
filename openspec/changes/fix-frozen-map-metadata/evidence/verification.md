@@ -35,12 +35,20 @@ The new closure checks prove that unused uncarried indexed inputs remain listed 
 
 The real preparation API was exercised against the acquired six-source snapshot. Its independent returned-generation audit found zero boss multiset mismatches, zero forbidden source-index changes and zero preserved map/output differences. No fixed live boss totals or rates serve as future acceptance gates.
 
-Agent/evidence tasks 1.1–4.3 and 5.1–5.2 are complete once this evidence is committed with group 5. Task 4.4 remains user-owned and unticked. Completion of automated checks is not archive or merge readiness.
+All fourteen tracked tasks are complete, including the separately attributed owner acceptance of task 4.4 below. No archive, PR or merge is implied by recording that acceptance; the applicable workflow gates remain separate.
 
 ## Owner result and safety boundary
 
-**Waiting on the user:** task 4.4, for generation `cefe97a6658f56550ca9466c9e261d8cbd57b044705e5ca453999d9903aa0993` only. All thirteen maps were reported changed; the owner check includes Reserve Glukhar, Streets Kollontay, names/rates, placement/floors and readable non-boss information. No owner result has been reported.
+**Owner accepted on 2026-11-05:** after receiving local Windows bundle `0.7.0+406`, the owner reported "OK it's identical to tarkov.dev" and "as far as this change is concerned, we're good." This completes task 4.4 for generation `cefe97a6658f56550ca9466c9e261d8cbd57b044705e5ca453999d9903aa0993`. The result is user-reported, not agent-performed UI verification.
 
-No application launch, game inspection/control or live-game qualification occurred. `BLACKGRID_NO_GAMES_RUNNING` was not set. No application-runtime check, source-versus-game accuracy, owner presentation approval or M8-wide readability acceptance is claimed. No release or version bump occurred.
+The local build used the pinned Flutter toolchain with build name `0.7.0`, build number `406` and `BLACKGRID_VERSION=0.7.0+406`. The official release command had refused the uncommitted roadmap entry authored during planning; that release guard was not changed. A direct local Release build then succeeded, followed by `mise run bundle:check -- build/windows/x64/runner/Release`; all eight offline bundle-check groups passed. The built bundle's `data/flutter_assets/assets/maps/active.json` was verified to name the exact generation above.
+
+Built artifact binding (SHA-256):
+- `build/windows/x64/runner/Release/blackgrid.exe`: `1489872f9ee40405b86ec269fc9200851a6a3b9b5a0e9bfcf2cd6b0d977f6410`.
+- `build/windows/x64/runner/Release/data/app.so`: `c7972ade3471777c5432fdc47e74f80440deb959d9d81c8d77f3443da588e20e`.
+
+The owner's requested classification follow-up is [issue #89](https://github.com/sh1ny/blackgrid/issues/89): separate Raiders, Rogues and other non-boss AI from boss spawns. It does not block this accepted metadata correction.
+
+Before building, a name-only process inventory confirmed Tarkov and BEService were absent. Agents did not launch or inspect the app or game, and `BLACKGRID_NO_GAMES_RUNNING` was not set. No agent-performed application-runtime check, source-versus-game accuracy or M8-wide readability acceptance is claimed. No release or source-version bump occurred.
 
 Disposable acquisition/audit scripts and reporter files are scaffolding, not permanent CLI interfaces. Their observed results are captured in these generation-bound evidence files; owned scratch files are removed after recording the verification.
