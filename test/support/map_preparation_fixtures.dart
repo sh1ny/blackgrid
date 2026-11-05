@@ -30,15 +30,18 @@ class MapPreparationFixtures {
 
   static Future<MapPreparationFixtures> create(Directory root) async {
     final fixtures = MapPreparationFixtures._(root);
+    final context = MapBuildContext.reviewedConfiguration();
     await materializeFullRaw(fixtures.raw);
     await rebuildCandidate(
       await FrozenInputs.open(fixtures.raw),
       fixtures.first,
+      context: context,
       toolchain: fixtureToolchain,
     );
     await rebuildCandidate(
       await FrozenInputs.open(fixtures.raw),
       fixtures.second,
+      context: context,
       toolchain: fixtureToolchain,
     );
     await fixtures._makeSmallTemplate();

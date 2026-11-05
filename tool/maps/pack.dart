@@ -306,6 +306,88 @@ class FrozenInputs {
   }
 }
 
+/// Supplies one builder invocation with its reviewed or generation-owned
+/// calibration, source lock, and exact notice bytes.
+class MapBuildContext {
+  MapBuildContext._({
+    required Map<String, dynamic> calibration,
+    required Map<String, dynamic> sourceLock,
+    required List<int> noticeBytes,
+  }) : calibration = _freezeMap(calibration),
+       sourceLock = _freezeMap(sourceLock),
+       noticeBytes = List<int>.unmodifiable(noticeBytes);
+
+  static Map<String, dynamic> _freezeMap(Map<String, dynamic> value) =>
+      Map<String, dynamic>.unmodifiable({
+        for (final entry in value.entries) entry.key: _freezeJson(entry.value),
+      });
+
+  static Object? _freezeJson(Object? value) => switch (value) {
+    Map map => Map<String, dynamic>.unmodifiable({
+      for (final entry in map.entries)
+        entry.key as String: _freezeJson(entry.value),
+    }),
+    List list => List<Object?>.unmodifiable([
+      for (final item in list) _freezeJson(item),
+    ]),
+    _ => value,
+  };
+
+  /// The calibration snapshot used to validate and build each map.
+  final Map<String, dynamic> calibration;
+
+  /// The source lock recorded in the output manifest.
+  final Map<String, dynamic> sourceLock;
+
+  /// The exact bytes written to `NOTICE.txt`.
+  final List<int> noticeBytes;
+
+  /// Creates the reviewed configuration context for a fresh raw generation.
+  ///
+  /// Fresh admission uses current authored calibration and source identities;
+  /// it does not infer approval from acquired bytes.
+  factory MapBuildContext.reviewedConfiguration() => MapBuildContext._(
+    calibration: {
+      'schemaVersion': 1,
+      'maps': [
+        for (final key in supportedMapSources.values) calibrationFor(key),
+      ],
+    },
+    sourceLock: {
+      'vectorSourceRevision': vectorSourceRevision,
+      'vectorSourceUrl': vectorSourceUrl,
+      'vectorSourceBlob': vectorSourceBlob,
+      'metadataRepositoryRevision': metadataRepositoryRevision,
+      'metadataBlob': metadataBlob,
+      'primaryHashes': primarySourceHashes,
+    },
+    noticeBytes: utf8.encode(artworkNotices),
+  );
+
+  /// Reads the frozen build context from a verified active generation.
+  ///
+  /// [generation] must come from [verifyCommittedGeneration].
+  static Future<MapBuildContext> fromGeneration(
+    CommittedGeneration generation,
+  ) async {
+    final sourceLock = generation.manifest['sourceLock'];
+    if (sourceLock is! Map<String, dynamic>) {
+      throw const FormatException('Verified generation has no source lock');
+    }
+    return MapBuildContext._(
+      calibration: await _readJson(
+        generation.directory,
+        'evidence/calibration.json',
+      ),
+      sourceLock: sourceLock,
+      noticeBytes: await packFile(
+        generation.directory,
+        'NOTICE.txt',
+      ).readAsBytes(),
+    );
+  }
+}
+
 class PngInspection {
   const PngInspection(this.empty, this.left, this.top, this.right, this.bottom);
   final bool empty;
@@ -532,8 +614,11 @@ Map<String, dynamic> _requiredSourceDictionary(
   return value;
 }
 
-/// Rebuilds a candidate pack offline from the [frozen] inputs.
+/// Rebuilds a candidate pack offline from the [frozen] inputs and [context].
 ///
+/// Raw generations use reviewed configuration context; existing workflows use
+/// the verified active generation's frozen calibration, source lock, and
+/// exact notice bytes.
 /// The manifest records [toolchain] as the versions that built it. With
 /// [compileVectors], every vector is compiled twice through [encode] and the
 /// manifest records the payload format as `vectorCodecFormat`; without it the
@@ -541,6 +626,7 @@ Map<String, dynamic> _requiredSourceDictionary(
 Future<Map<String, dynamic>> rebuildCandidate(
   FrozenInputs frozen,
   Directory candidate, {
+  required MapBuildContext context,
   required Map<String, String> toolchain,
   bool compileVectors = true,
   VectorEncoder encode = _encodeVector,
@@ -548,8 +634,14 @@ Future<Map<String, dynamic>> rebuildCandidate(
   if (await candidate.exists() && !(await candidate.list().isEmpty)) {
     throw const FormatException('Rebuild requires an empty fresh candidate');
   }
-  final calibration =
+  final frozenCalibration =
       jsonDecode(await frozen.text('calibration.json')) as Map<String, dynamic>;
+  if (canonicalJson(context.calibration) != canonicalJson(frozenCalibration)) {
+    throw const FormatException(
+      'Builder context calibration differs from frozen inputs',
+    );
+  }
+  final calibration = context.calibration;
   final metadata = jsonDecode(await frozen.text('metadata/maps.json')) as List;
   final markerSnapshot = await _readFrozenSourceObject(
     frozen,
@@ -591,7 +683,6 @@ Future<Map<String, dynamic>> rebuildCandidate(
   for (final untyped in calibration['maps'] as List) {
     final local = Map<String, Object?>.from(untyped as Map);
     final sourceKey = local['sourceKey'] as String;
-    _validateCalibration(local);
     final upstream = interactiveMetadata(metadata, sourceKey);
     _validateMetadataCalibration(local, upstream);
     final floors = reconcileFloors(local, upstream);
@@ -770,20 +861,13 @@ Future<Map<String, dynamic>> rebuildCandidate(
     'evidence/sources.json',
     utf8.encode(canonicalJson(frozen.index)),
   );
-  await _write(candidate, 'NOTICE.txt', utf8.encode(artworkNotices));
+  await _write(candidate, 'NOTICE.txt', context.noticeBytes);
   final manifest = <String, dynamic>{
     'schemaVersion': 1,
     'preparationVersion': 3,
     'supportedMapIds': supportedMapSources.keys.toList(),
     'sourceGeneration': _hash(utf8.encode(canonicalJson(frozen.index))),
-    'sourceLock': {
-      'vectorSourceRevision': vectorSourceRevision,
-      'vectorSourceUrl': vectorSourceUrl,
-      'vectorSourceBlob': vectorSourceBlob,
-      'metadataRepositoryRevision': metadataRepositoryRevision,
-      'metadataBlob': metadataBlob,
-      'primaryHashes': primarySourceHashes,
-    },
+    'sourceLock': context.sourceLock,
     'toolchain': toolchain,
     if (compileVectors)
       'vectorCodecFormat': await _compiledVectorFormat(candidate, vectorPaths),
@@ -988,17 +1072,6 @@ Set<String> _vectorSelectionIds(List<Map<String, Object?>> floors) => {
   for (final floor in floors) floor['id'] as String,
   for (final floor in floors) ..._floorComponents(floor),
 };
-
-// New builds require the currently authored calibration. Reading an already
-// published generation instead validates against its hash-locked evidence.
-void _validateCalibration(Map<String, Object?> local) {
-  final expected = calibrationFor(local['sourceKey'] as String);
-  if (canonicalJson(local) != canonicalJson(expected)) {
-    throw FormatException(
-      'Calibration revision mismatch for ${local['sourceKey']}; changes require a new preparation revision',
-    );
-  }
-}
 
 void _validateMetadataCalibration(
   Map<String, Object?> local,
@@ -2576,6 +2649,7 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
   final rebuilt = await rebuildCandidate(
     await FrozenInputs.fromGeneration(committed.directory),
     candidate,
+    context: await MapBuildContext.fromGeneration(committed),
     toolchain: toolchain,
     encode: encode,
   );
@@ -2826,6 +2900,7 @@ Future<MapPackRefresh> refreshActive(
       rebuilt = await rebuildCandidate(
         metadataInputs,
         candidate,
+        context: await MapBuildContext.fromGeneration(committed),
         toolchain: toolchain,
         encode: encode ?? _encodeVector,
       );

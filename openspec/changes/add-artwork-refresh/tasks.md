@@ -2,7 +2,7 @@
 
 ## Test map
 
-All 15 delta scenarios below are proposed **red / unrun**. Requirement and scenario names match `specs/prepared-map-packs/spec.md`; test names and layers match `design.md`. During apply, turn a row green only after its named test passes. These are proposed tests, not execution evidence.
+The 15 delta scenarios below started **red / unrun**. Requirement and scenario names match `specs/prepared-map-packs/spec.md`; test names and layers match `design.md`. During apply, a row turns green only after its named test passes. Green rows record observed verification; remaining red rows are not execution evidence.
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
@@ -19,8 +19,8 @@ All 15 delta scenarios below are proposed **red / unrun**. Requirement and scena
 | Explicit publication uses the staged candidate | Candidate is explicitly published | `test/maps/artwork_publication_test.dart` | `publishesStagedCandidate` | red |
 | Explicit publication uses the staged candidate | Corrupt candidate or invalid baseline | `test/maps/artwork_publication_test.dart` | `invalidCandidateOrBaselineDoesNotWrite` | red |
 | Explicit publication uses the staged candidate | Publication is interrupted | `test/maps/artwork_publication_test.dart` | `reportsPublicationRecoveryPhases` | red |
-| Existing offline and metadata-only workflows remain independent | Pending source and calibration changes | `test/maps/artwork_compatibility_test.dart` | `pendingConfigDoesNotContaminateBaseline` | red |
-| Existing offline and metadata-only workflows remain independent | Metadata-only preservation fails | `test/maps/artwork_compatibility_test.dart` | `metadataPreservationRejectsDrift` | red |
+| Existing offline and metadata-only workflows remain independent | Pending source and calibration changes | `test/maps/artwork_compatibility_test.dart` | `pendingConfigDoesNotContaminateBaseline` | green |
+| Existing offline and metadata-only workflows remain independent | Metadata-only preservation fails | `test/maps/artwork_compatibility_test.dart` | `metadataPreservationRejectsDrift` | green |
 
 ## Apply conventions
 
@@ -30,8 +30,8 @@ Follow `AGENTS.md`, including its game safety boundary: do not inspect or launch
 
 Dart group: follow `AGENTS.md` and read the four `.claude/skills/{dart-add-unit-test,dart-run-static-analysis,dart-use-pattern-matching,dart-write-documentation}/SKILL.md` instructions.
 
-- [ ] 1.1 Write and run red `pendingConfigDoesNotContaminateBaseline` and `metadataPreservationRejectsDrift`: pending source lock, notice and calibration changes cannot contaminate offline no-fetch check/rebuild or valid six-source metadata renewal; parameterize preserved artwork, calibration, notice, non-six record and ownership drift and assert rejection before active writes.
-- [ ] 1.2 Give the single shared builder a required explicit context containing verified frozen calibration, manifest `sourceLock` and exact `NOTICE.txt` bytes; migrate all callers, including raw rebuild/normalize, active check/rebuild and metadata renewal, without a compatibility shim. Derive existing workflow context from the verified active generation; retain source-index, reproduction, six-source preservation and ownership validation. Fresh admission uses reviewed configuration, not an implicit global fallback. Update relevant existing docs and API comments; if the implemented boundary needs a durable supplementary ADR, record it without rewriting accepted ADRs and update the architecture index, otherwise do not add one. Rerun 1.1 tests to green and update their map rows.
+- [x] 1.1 Write and run red `pendingConfigDoesNotContaminateBaseline` and `metadataPreservationRejectsDrift`: pending source lock, notice and calibration changes cannot contaminate offline no-fetch check/rebuild or valid six-source metadata renewal; parameterize preserved artwork, calibration, notice, non-six record and ownership drift and assert rejection before active writes.
+- [x] 1.2 Give the single shared builder a required explicit context containing verified frozen calibration, manifest `sourceLock` and exact `NOTICE.txt` bytes; migrate all callers, including raw rebuild/normalize, active check/rebuild and metadata renewal, without a compatibility shim. Derive existing workflow context from the verified active generation; retain source-index, reproduction, six-source preservation and ownership validation. Fresh admission uses reviewed configuration, not an implicit global fallback. Update relevant existing docs and API comments; if the implemented boundary needs a durable supplementary ADR, record it without rewriting accepted ADRs and update the architecture index, otherwise do not add one. Rerun 1.1 tests to green and update their map rows.
 
 ## 2. Fresh admission, staging and frozen evidence
 

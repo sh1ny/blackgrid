@@ -46,8 +46,9 @@ qualification.
 acquire is the only network operation exposed by this CLI. normalize preserves
 dependency-closed source SVG and native effect metadata without compiler
 execution. compile is a separate step that compiles the normalized vectors.
-rebuild performs normalize+compile offline. check and refresh also rebuild
-offline from the exact frozen inputs carried by the active generation:
+rebuild performs normalize+compile offline with the reviewed configuration
+context. check and refresh rebuild offline from the exact frozen inputs and
+builder context carried by the verified active generation:
 `mise run maps:rebuild` does not download fresh metadata. Each step reads
 pubspec.lock once, before any write, and records the resolved xml, image,
 vector_graphics_compiler, vector_graphics and vector_graphics_codec versions
@@ -79,10 +80,11 @@ into a fresh stage, then derive `FrozenInputs.withMetadata` from the committed
 generation-backed build-read closure. The derived index changes only those six
 hashes; all other carried and missing source behavior stays unchanged, so
 unused historical index entries are not materialized and artwork is not
-fetched. Do not use `acquire` for this boundary or add a refresh CLI flag. The
-existing refresh owner verifies the baseline and source closure, rebuilds and
-validates every map, then rejects any changed preserved output or reviewed
-marker floor assignment before it prints the report or promotes.
+fetched. Do not use `acquire` for this boundary or add a refresh CLI flag.
+The existing refresh owner verifies the baseline and source closure, rebuilds
+with the generation's frozen calibration, source lock and exact NOTICE.txt
+bytes, validates every map, then rejects any changed preserved output or
+reviewed marker floor assignment before it prints the report or promotes.
 
 Both refresh paths fail first on an incomplete pubspec.lock, an interrupted
 promotion or missing/duplicated/misordered pubspec markers. After validation,
@@ -153,6 +155,7 @@ Future<void> runPrepare(
       final manifest = await rebuildCandidate(
         await FrozenInputs.open(Directory(values['--raw']!)),
         Directory(values['--candidate']!),
+        context: MapBuildContext.reviewedConfiguration(),
         compileVectors: command == 'rebuild',
         toolchain: await readToolchain(),
       );
