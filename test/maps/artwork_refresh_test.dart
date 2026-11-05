@@ -779,69 +779,86 @@ void main() {
       );
     }, tags: ['qualification']);
 
-    test('unchangedAndEvidenceOnlyStage', () async {
-      final harness = await _stageHarness(
-        nonCanonicalBaselineCalibration: true,
-      );
-      harness.transport.changedTile = null;
-      final pointer = await harness.activePointer();
-      final activeManifest = await harness.baselineManifest();
-      final baselineCalibrationBytes = await packFile(
-        harness.baseline.directory,
-        'evidence/calibration.json',
-      ).readAsBytes();
-      final pubspec = await harness.pubspec.readAsString();
+    group('unchangedAndEvidenceOnlyStage', () {
+      late _StageHarness sharedHarness;
+      late String pointer;
+      late String activeManifest;
+      late String pubspec;
+      late Uint8List baselineCalibrationBytes;
+      late ({
+        Directory candidate,
+        Map<String, dynamic> manifest,
+        PackChangeReport report,
+        List<String> diagnostics,
+      })
+      staged;
 
-      final staged = await _runStage(harness);
-
-      expect(staged.report.changed, isTrue);
-      expect(staged.report.paths, contains('evidence/sources.json'));
-      expect(
-        staged.report.paths.every((path) => !path.startsWith('artwork/')),
-        isTrue,
-      );
-      expect(staged.report.valueKeys, contains('sourceGeneration'));
-      expect(staged.diagnostics, isEmpty);
-      expect(
-        await packFile(
-          staged.candidate,
+      setUpAll(() async {
+        sharedHarness = await _stageHarness(
+          nonCanonicalBaselineCalibration: true,
+        );
+        sharedHarness.transport.changedTile = null;
+        pointer = await sharedHarness.activePointer();
+        activeManifest = await sharedHarness.baselineManifest();
+        baselineCalibrationBytes = await packFile(
+          sharedHarness.baseline.directory,
           'evidence/calibration.json',
-        ).readAsBytes(),
-        baselineCalibrationBytes,
-      );
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: activeManifest,
-        pubspecText: pubspec,
-      );
+        ).readAsBytes();
+        pubspec = await sharedHarness.pubspec.readAsString();
+        staged = await _runStage(sharedHarness);
+      });
 
-      final promotedId = await promoteCandidate(
-        staged.candidate,
-        harness.packs,
-      );
-      final promotedPointer = await harness.activePointer();
-      final promoted = await verifyCommittedGeneration(harness.packs);
-      final promotedManifest = await packFile(
-        promoted.directory,
-        'manifest.json',
-      ).readAsBytes();
-      final promotedPubspec = await harness.pubspec.readAsBytes();
-      final unchanged = await _runStage(
-        harness,
-        stage: Directory('${harness.root.path}/stage-second'),
-      );
-      expect(unchanged.report.changed, isFalse);
-      expect(unchanged.report.paths, isEmpty);
-      expect(unchanged.report.valueKeys, isEmpty);
-      expect(await harness.activePointer(), promotedPointer);
-      expect(
-        await packFile(promoted.directory, 'manifest.json').readAsBytes(),
-        promotedManifest,
-      );
-      expect(await harness.pubspec.readAsBytes(), promotedPubspec);
-      expect(promoted.id, promotedId);
-      expect((await verifyCommittedGeneration(harness.packs)).id, promotedId);
-    }, tags: ['qualification']);
+      test('evidenceOnlyStage', () async {
+        expect(staged.report.changed, isTrue);
+        expect(staged.report.paths, contains('evidence/sources.json'));
+        expect(
+          staged.report.paths.every((path) => !path.startsWith('artwork/')),
+          isTrue,
+        );
+        expect(staged.report.valueKeys, contains('sourceGeneration'));
+        expect(staged.diagnostics, isEmpty);
+        expect(
+          await packFile(
+            staged.candidate,
+            'evidence/calibration.json',
+          ).readAsBytes(),
+          baselineCalibrationBytes,
+        );
+        await sharedHarness.expectUnchanged(
+          pointer: pointer,
+          manifest: activeManifest,
+          pubspecText: pubspec,
+        );
+      }, tags: ['qualification']);
+
+      test('unchangedStage', () async {
+        final harness = await _stageHarness();
+        harness.transport.changedTile = null;
+        final promotedId = await promoteCandidate(
+          staged.candidate,
+          harness.packs,
+        );
+        final promotedPointer = await harness.activePointer();
+        final promoted = await verifyCommittedGeneration(harness.packs);
+        final promotedManifest = await packFile(
+          promoted.directory,
+          'manifest.json',
+        ).readAsBytes();
+        final promotedPubspec = await harness.pubspec.readAsBytes();
+        final unchanged = await _runStage(harness);
+        expect(unchanged.report.changed, isFalse);
+        expect(unchanged.report.paths, isEmpty);
+        expect(unchanged.report.valueKeys, isEmpty);
+        expect(await harness.activePointer(), promotedPointer);
+        expect(
+          await packFile(promoted.directory, 'manifest.json').readAsBytes(),
+          promotedManifest,
+        );
+        expect(await harness.pubspec.readAsBytes(), promotedPubspec);
+        expect(promoted.id, promotedId);
+        expect((await verifyCommittedGeneration(harness.packs)).id, promotedId);
+      }, tags: ['qualification']);
+    });
 
     test('retainsSixAndSelectsReviewedCalibration', () async {
       final harness = await _stageHarness();

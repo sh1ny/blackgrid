@@ -87,3 +87,13 @@ mise exec -- dart run tool/maps/prepare.dart artwork-refresh --packs .dart_tool/
 ```
 
 Exit 0 in 69.75 seconds; candidate manifest SHA-256 `9d03eee02129f83b0cca7ec0527376fadcd65af80fdf160349201812f2e4f260`. It reported artwork and manifest/evidence differences without publishing. Repository assets, pointer and pubspec and the disposable baseline remained byte-identical; acquisition scratch was absent on return. The task-owned disposable root was deleted afterward. No desktop app, companion or game was launched or inspected. The interrupted run before the owner's stop request is not counted as a pass.
+
+## Independent staging scenario lifecycles
+
+Hosted run `42117085884` at `7d0f8dd` passed 137 qualification tests, with four accepted skips, but the combined `unchangedAndEvidenceOnlyStage` case still exceeded two minutes. The other two former timeout cases passed. The remaining case performed two complete real stages and promotion within one timed test.
+
+That case is now a scoped group with an immutable candidate from one real stage in `setUpAll`. `evidenceOnlyStage` checks its actual evidence-only report, exact noncanonical calibration bytes and unchanged active state. `unchangedStage` promotes that real candidate into a separate private harness and performs one real stage, retaining all no-change report, pointer, manifest, pubspec and committed-id assertions. The tests do not mutate the shared candidate or depend on each other. Production code, timeouts, fixture source admission and compilation/validation gates are unchanged by this lifecycle split.
+
+Mounted verification of the complete artwork-refresh file, concurrency 1 with randomization seed 91 and no timeout override, passed all 14 tests with zero errors and terminal success in 184.084 seconds. The scoped real-stage setup took 15.992 seconds, the evidence-only assertions 0.091 seconds and the independent no-change case 16.684 seconds. A separate run selecting only `unchangedAndEvidenceOnlyStage unchangedStage` also passed with zero errors in 48.421 seconds, proving it does not require the evidence-only test to run first.
+
+`mise run analyze && mise run test -- --concurrency=1` passed again: analyzer clean and all 2,559 fast tests passed. The scenario mappings name both independent cases; tracked task completion and the accepted behavior contract are unchanged.

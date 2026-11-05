@@ -7,7 +7,7 @@ The 15 delta scenarios below started **red / unrun**. Requirement and scenario n
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | Fresh artwork is staged independently of publication | Changed artwork stages without publication | `test/maps/artwork_refresh_test.dart` | `changedArtworkStages` | green |
-| Fresh artwork is staged independently of publication | No artwork change or evidence-only change | `test/maps/artwork_refresh_test.dart` | `unchangedAndEvidenceOnlyStage` | green |
+| Fresh artwork is staged independently of publication | No artwork change or evidence-only change | `test/maps/artwork_refresh_test.dart` | `unchangedAndEvidenceOnlyStage evidenceOnlyStage`; `unchangedAndEvidenceOnlyStage unchangedStage` | green |
 | Fresh artwork is staged independently of publication | Baseline inputs and reviewed calibration | `test/maps/artwork_refresh_test.dart` | `retainsSixAndSelectsReviewedCalibration` | green |
 | Fresh artwork is staged independently of publication | Fetch or candidate failure | `test/maps/artwork_refresh_test.dart` | `failuresDoNotPublish` | green |
 | Fresh sources and identities require reviewed admission | Changed locked source | `test/maps/artwork_refresh_test.dart` | `changedLockNamesBothHashes` | green |
