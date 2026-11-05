@@ -838,6 +838,31 @@ void main() {
   });
 
   group('FrozenInputs.fromGeneration', () {
+    test('requiredEvidenceCorruptionRejected', () async {
+      final terms = generation.file('evidence/terms/a.md');
+      await terms.delete();
+      await expectLater(
+        FrozenInputs.fromGeneration(generation.directory),
+        throwsA(
+          predicate<Object>((error) => error.toString().contains('terms/a.md')),
+        ),
+      );
+      await terms.writeAsBytes(_Generation.terms);
+      await terms.writeAsString('corrupt');
+      await expectLater(
+        FrozenInputs.fromGeneration(generation.directory),
+        _formatMessage(contains('terms/a.md')),
+      );
+
+      await terms.writeAsBytes(_Generation.terms);
+      final frozen = await FrozenInputs.fromGeneration(generation.directory);
+      await generation.file('artwork/m/F/0/0.png').writeAsString('corrupt');
+      await expectLater(
+        frozen.bytes('tiles/m/F/0_0.png'),
+        _formatMessage(contains('tiles/m/F/0_0.png')),
+      );
+    });
+
     test('evidence sources resolve under evidence and tiles by hash', () async {
       final frozen = await FrozenInputs.fromGeneration(generation.directory);
       expect(await frozen.bytes('terms/a.md'), _Generation.terms);

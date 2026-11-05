@@ -24,6 +24,79 @@ final primarySourceHashes = Map<String, String>.unmodifiable({
       'ee4022e968c052d2920251ba2181b5ebd9ffb45c5c69bdea916bd9f3a6e7031a',
   'terms/svg-maps-LICENSE.md':
       '1349a4b6148492b44f629e64eed676612e234fe9a839e4f3b277c1482c8849f1',
+  'terms/tarkov-dev-README.md':
+      '1a07d3558899569814a6ee4e37f5011f46166fd2584c1aa524c60b2b77d2a329',
+  'terms/tarkov-dev-software-LICENSE.txt':
+      'c09d89375d8cc6974aefde661be64dd16a946d34ec75b091e77553fabbfc47f2',
+  'terms/tarkovbot-creator.html':
+      '98158c5979e8cbd4cd0ab456e9ed4911e262ce29183af4fc1cce7d0a724b2477',
+});
+
+/// Exact upstream URLs authorized by the current reviewed source configuration.
+final primarySourceUrls = Map<String, String>.unmodifiable({
+  'metadata/maps.json':
+      'https://raw.githubusercontent.com/the-hideout/tarkov-dev/'
+      '$metadataRepositoryRevision/src/data/maps.json',
+  vectorSourcePath: '$vectorSourceRoot/Interchange.svg',
+  for (final entry in additionalVectorSources.entries)
+    '${entry.key}/${entry.value['file']}':
+        '$vectorSourceRoot/${entry.value['file']}',
+  'terms/svg-maps-README.md': '$vectorSourceRoot/README.md',
+  'terms/svg-maps-LICENSE.md': '$vectorSourceRoot/LICENSE.md',
+  'terms/tarkov-dev-README.md':
+      'https://raw.githubusercontent.com/the-hideout/tarkov-dev/'
+      '$metadataRepositoryRevision/README.md',
+  'terms/tarkov-dev-software-LICENSE.txt':
+      'https://raw.githubusercontent.com/the-hideout/tarkov-dev/'
+      '$metadataRepositoryRevision/LICENSE',
+  'terms/tarkovbot-creator.html': 'https://tarkovbot.eu/',
+});
+
+/// Repository commits required for sources whose upstream is versioned.
+final primarySourceRepositoryRevisions = Map<String, String>.unmodifiable({
+  'metadata/maps.json': metadataRepositoryRevision,
+  vectorSourcePath: vectorSourceRevision,
+  for (final entry in additionalVectorSources.entries)
+    '${entry.key}/${entry.value['file']}': vectorSourceRevision,
+  'terms/svg-maps-README.md': vectorSourceRevision,
+  'terms/svg-maps-LICENSE.md': vectorSourceRevision,
+  'terms/tarkov-dev-README.md': metadataRepositoryRevision,
+  'terms/tarkov-dev-software-LICENSE.txt': metadataRepositoryRevision,
+});
+
+/// Repository blob IDs independently recorded for reviewed repository sources.
+final primarySourceGitBlobs = Map<String, String>.unmodifiable({
+  'metadata/maps.json': metadataBlob,
+  vectorSourcePath: vectorSourceBlob,
+});
+
+/// Evidence explaining how each reviewed source identity was established.
+final primarySourceProvenance = Map<String, String>.unmodifiable({
+  'metadata/maps.json':
+      'Retrieved from the-hideout/tarkov-dev at $metadataRepositoryRevision, '
+      'src/data/maps.json.',
+  vectorSourcePath:
+      'Retrieved from the-hideout/tarkov-dev-svg-maps at '
+      '$vectorSourceRevision, Interchange.svg.',
+  for (final entry in additionalVectorSources.entries)
+    '${entry.key}/${entry.value['file']}':
+        'Retrieved from the-hideout/tarkov-dev-svg-maps at '
+        '$vectorSourceRevision, ${entry.value['file']}.',
+  'terms/svg-maps-README.md':
+      'Retrieved from the-hideout/tarkov-dev-svg-maps at '
+      '$vectorSourceRevision, README.md.',
+  'terms/svg-maps-LICENSE.md':
+      'Retrieved from the-hideout/tarkov-dev-svg-maps at '
+      '$vectorSourceRevision, LICENSE.md.',
+  'terms/tarkov-dev-README.md':
+      'Retrieved from the-hideout/tarkov-dev at $metadataRepositoryRevision, '
+      'README.md.',
+  'terms/tarkov-dev-software-LICENSE.txt':
+      'Retrieved from the-hideout/tarkov-dev at $metadataRepositoryRevision, '
+      'LICENSE.',
+  'terms/tarkovbot-creator.html':
+      'Retrieved from https://tarkovbot.eu/ and locked to reviewed '
+      'SHA-256 bytes; this mutable website has no repository revision.',
 });
 const vectorSourceRoot =
     'https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/$vectorSourceRevision';

@@ -68,6 +68,10 @@ run = "dart run tool/maps/prepare.dart check --packs assets/maps"
 [tasks."maps:rebuild"]
 description = "Rebuild the committed map pack with the installed toolchain, promote it, rewrite the pubspec asset block and delete superseded generations"
 run = "dart run tool/maps/prepare.dart refresh --packs assets/maps --pubspec pubspec.yaml"
+[tasks."maps:artwork:refresh"]
+description = "Stage a fresh artwork candidate without publication; pass --stage <fresh-directory> and optionally --reviewed-calibration-update after --"
+run = "dart run tool/maps/prepare.dart artwork-refresh --packs assets/maps --pubspec pubspec.yaml"
+
 
 [tasks."release:prepare"]
 description = "Prepare a release branch and commit; pass the version after --"

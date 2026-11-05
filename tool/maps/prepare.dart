@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
+
 import 'pack.dart';
 
 const usage = '''Independent offline map preparation (standalone Dart)
@@ -12,6 +14,7 @@ const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart assets --packs <repo-relative-pack-root>
   dart run tool/maps/prepare.dart check --packs <pack-root>
   dart run tool/maps/prepare.dart refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
+  dart run tool/maps/prepare.dart artwork-refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml> --stage <fresh-directory> [--reviewed-calibration-update]
 
 Preparation v3 requires the complete canonical inventory:
 factory, customs, woods, shoreline, interchange, thelab, reserve, lighthouse,
@@ -43,9 +46,11 @@ inventory or uncompiled-vector promotion is supported. Acquisition alone is
 not evidence of source closure or independent placement/redistribution
 qualification.
 
-acquire is the only network operation exposed by this CLI. normalize preserves
-dependency-closed source SVG and native effect metadata without compiler
-execution. compile is a separate step that compiles the normalized vectors.
+acquire downloads the complete raw inventory for offline rebuilds;
+artwork-refresh selectively downloads current reviewed artwork sources and
+builds a fresh non-publishing candidate. normalize preserves dependency-closed
+source SVG and native effect metadata without compiler execution. compile is a
+separate step that compiles the normalized vectors.
 rebuild performs normalize+compile offline with the reviewed configuration
 context. check and refresh rebuild offline from the exact frozen inputs and
 builder context carried by the verified active generation:
@@ -73,8 +78,24 @@ anything else when an interrupted promotion left active.next.json or a
 versions/.<id>.staging folder. A mismatch ends with the instruction to run
 mise run maps:rebuild.
 The CLI's refresh rebuilds the active generation from its carried inputs; it
-does not acquire a new source snapshot. An explicit metadata renewal is an
-apply-time staged operation through `refreshActive(metadataInputs: ...)`: verify
+does not acquire a new source snapshot. The separate `artwork-refresh` operation
+retains the verified generation's six regular-mode snapshots while acquiring
+only reviewed metadata, primary vector sources, the five locked terms documents
+and raster resources, then builds a compiled non-publishing candidate and
+prints changed maps, floors, files and manifest values. Exact source URLs and
+hashes come from reviewed configuration; repository revisions and provenance
+are recorded where available. The mutable website has no invented revision.
+Reviewed calibration supplies exact raster resource URLs; acquired raster
+hashes establish candidate integrity, not prior-byte approval. By default the
+reviewed calibration must match the generation. The explicit
+`--reviewed-calibration-update` option selects and freezes current reviewed
+calibration, which still must reconcile and pass geometry, frame, floor,
+dependency and marker-ownership validation. The stage directory must be new;
+acquisition scratch is removed on exit, while a candidate left by a later
+build failure is kept for diagnosis. Use another fresh stage directory on
+retry. Nothing is published, and the active pointer and pubspec are untouched.
+An explicit metadata renewal is an apply-time staged operation through
+`refreshActive(metadataInputs: ...)`: verify
 the active generation, acquire only the six fixed regular-mode REST responses
 into a fresh stage, then derive `FrozenInputs.withMetadata` from the committed
 generation-backed build-read closure. The derived index changes only those six
@@ -86,11 +107,11 @@ with the generation's frozen calibration, source lock and exact NOTICE.txt
 bytes, validates every map, then rejects any changed preserved output or
 reviewed marker floor assignment before it prints the report or promotes.
 
-Both refresh paths fail first on an incomplete pubspec.lock, an interrupted
-promotion or missing/duplicated/misordered pubspec markers. After validation,
-the existing owner reports changed maps and requires the owner to check them
-before merge, rewrites the pubspec lines between the "BEGIN/END generated map
-pack assets" markers, promotes the candidate, prunes superseded generations
+The publication refresh paths fail first on an incomplete pubspec.lock, an
+interrupted promotion or missing/duplicated/misordered pubspec markers. After
+validation, the existing owner reports changed maps and requires the owner to
+check them before merge, rewrites the pubspec lines between the "BEGIN/END
+generated map pack assets" markers, promotes the candidate, prunes superseded generations
 and removes the candidate. A failure after rebuilding starts keeps and names
 the candidate; follow its reported recovery state rather than deleting it or
 retrying blindly. Run the offline CLI refresh as mise run maps:rebuild.
@@ -125,13 +146,27 @@ Future<void> runPrepare(
       toolchainFromLock(await File(lockPath).readAsString());
   final command = arguments.first;
   final values = <String, String>{};
-  for (var i = 1; i < arguments.length; i += 2) {
+  var reviewedCalibrationUpdate = false;
+  var i = 1;
+  while (i < arguments.length) {
+    final key = arguments[i];
+    if (key == '--reviewed-calibration-update') {
+      if (command != 'artwork-refresh' || reviewedCalibrationUpdate) {
+        throw const FormatException(
+          '--reviewed-calibration-update is valid once on artwork-refresh',
+        );
+      }
+      reviewedCalibrationUpdate = true;
+      i++;
+      continue;
+    }
     if (i + 1 >= arguments.length ||
-        !arguments[i].startsWith('--') ||
-        values.containsKey(arguments[i])) {
+        !key.startsWith('--') ||
+        values.containsKey(key)) {
       throw const FormatException('Expected unique --key value arguments');
     }
-    values[arguments[i]] = arguments[i + 1];
+    values[key] = arguments[i + 1];
+    i += 2;
   }
   final required = switch (command) {
     'acquire' => {'--raw'},
@@ -140,6 +175,7 @@ Future<void> runPrepare(
     'promote' => {'--candidate', '--packs'},
     'assets' || 'check' => {'--packs'},
     'refresh' => {'--packs', '--pubspec'},
+    'artwork-refresh' => {'--packs', '--pubspec', '--stage'},
     _ => throw FormatException('Unknown operation $command'),
   };
   if (values.keys.toSet().difference(required).isNotEmpty ||
@@ -200,6 +236,58 @@ Future<void> runPrepare(
         candidateParent: candidateParent,
       );
       stdout.writeln('Map pack ${result.id} is now active.');
+    case 'artwork-refresh':
+      final client = http.Client();
+      try {
+        final result = await stageArtworkRefresh(
+          Directory(values['--packs']!),
+          File(values['--pubspec']!),
+          stage: Directory(values['--stage']!),
+          toolchain: await readToolchain(),
+          reviewedContext: MapBuildContext.reviewedConfiguration(),
+          reviewedCalibrationUpdate: reviewedCalibrationUpdate,
+          fetch: (uri) async {
+            final response = await client.get(
+              uri,
+              headers: {
+                'User-Agent': 'Blackgrid/1 independent offline map preparation',
+                'Accept': '*/*',
+              },
+            );
+            if (response.statusCode != 200) {
+              throw HttpException(
+                'Required source returned HTTP ${response.statusCode}',
+                uri: uri,
+              );
+            }
+            return response.bodyBytes;
+          },
+        );
+        stdout.writeln('Candidate: ${result.candidate.path}');
+        for (final line in result.report.lines) {
+          stdout.writeln(line);
+        }
+        if (result.report.paths.isNotEmpty) {
+          stdout.writeln('Changed files:');
+          for (final path in result.report.paths) {
+            stdout.writeln('  $path');
+          }
+        }
+        if (result.report.valueKeys.isNotEmpty) {
+          stdout.writeln('Changed manifest values:');
+          for (final key in result.report.valueKeys) {
+            stdout.writeln('  $key');
+          }
+        }
+        for (final diagnostic in result.diagnostics) {
+          stdout.writeln('Diagnostic: $diagnostic');
+        }
+        stdout.writeln(
+          'Nothing was published. Review and qualify this candidate before any separate publication.',
+        );
+      } finally {
+        client.close();
+      }
     case 'assets':
       final root = requireRepoRelativePackRoot(values['--packs']!);
       stdout.writeln('  assets:');

@@ -169,6 +169,7 @@ Scanner has a manual catalog inspection and an opt-in **live scan** switch. With
 | `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart): download and verify pinned vision inputs |
 | `maps:check` | [`prepare.dart check`](tool/maps/prepare.dart): rebuilds the committed map pack offline and fails unless it reproduces byte for byte |
 | `maps:rebuild` | [`prepare.dart refresh`](tool/maps/prepare.dart): rebuilds the committed map pack with the installed toolchain, promotes it, rewrites the generated asset block in `pubspec.yaml` and deletes superseded generations. Prints the changed maps and, when artwork changed, the owner check |
+| `maps:artwork:refresh` | [`prepare.dart artwork-refresh`](tool/maps/prepare.dart): fetches reviewed fresh artwork sources, retains the six frozen snapshots, and builds a report-bearing candidate in a fresh stage directory without publication |
 | `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart): offline check of a built Release bundle |
 | `capture:selftest` | Native capture self-test ([`selftest.ps1`](windows/capture/selftest.ps1)). Refuses unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms no game is running |
 | `qualification:freeze` / `:validate` / `:report` | M0 reference evidence tools in [`tool/qualification/`](tool/qualification/m0.dart) |
@@ -299,13 +300,17 @@ Runtime only loads the active pack. These commands are maintenance tools ([`prep
 
 | Command | Does |
 |---|---|
-| `acquire --raw <dir>` | The only network step: freezes artwork, metadata and terms into a fresh hash-locked directory |
+| `acquire --raw <dir>` | Fetches the complete artwork, metadata and terms inventory into a fresh hash-locked raw directory for a later offline rebuild |
 | `rebuild --raw <dir> --candidate <dir>` | `normalize` + `compile`, offline with reviewed calibration, source-lock and notice configuration |
 | `validate --candidate <dir>` | Checks every hash, vector payload and tile witness |
 | `promote --candidate <dir> --packs <root>` | Adds an immutable `versions/<sha256>/` and swaps [`active.json`](assets/maps/active.json) atomically |
 | `assets --packs <root>` | Prints the `pubspec.yaml` asset list; Flutter does not include nested tile folders by itself |
 | `check --packs <root>` | Rebuilds the active generation offline from its inputs and generation-owned calibration, source lock and exact notice bytes, into a temp folder, and fails unless it reproduces byte for byte. Only the recorded `toolchain` may differ. Run it as `mise run maps:check`; CI runs it on every PR |
 | `refresh --packs <root> --pubspec <file>` | Rebuilds the committed inputs offline, validates and promotes the candidate, rewrites the `pubspec.yaml` lines between the `BEGIN`/`END generated map pack assets` markers, then deletes every other generation folder. Run it as `mise run maps:rebuild`; it does not download fresh metadata |
+| `artwork-refresh --packs <root> --pubspec <file> --stage <fresh-dir> [--reviewed-calibration-update]` | Fetches only current reviewed artwork metadata, source vectors, five terms documents and the reviewed raster resources, then builds and reports a compiled candidate. It retains the verified generation's six regular-mode snapshots and does not publish, rewrite `pubspec.yaml` or change `active.json`. Run as `mise run maps:artwork:refresh -- --stage <fresh-dir>`; use a new stage directory for each attempt |
+For fresh artwork staging, all primary source and terms URLs/hashes are fixed in reviewed configuration; repository revisions and provenance are recorded where available. The mutable TarkovBOT terms page has a byte lock and provenance but no invented repository revision. Raster tiles are admitted by exact resource URLs from reviewed calibration; their acquired hashes freeze candidate integrity, not prior-byte approval. Runtime never silently rewrites reviewed hashes from observed responses.
+
+Without `--reviewed-calibration-update`, the reviewed configuration must match the active generation's frozen calibration; a mismatch names its path and stops before acquisition. The opt-in flag selects and freezes the current reviewed calibration, which must still reconcile against current metadata and pass the normal geometry, frame, floor, dependency and marker-ownership checks. Staging needs a path that does not exist. The active pack and pubspec are never written; temporary acquired inputs are removed after the build. If candidate construction fails after it begins, keep the named stage for diagnosis and use a different fresh stage path on the next attempt. Review the reported maps, floors, files and manifest values; the command does not publish or qualify owner approval.
 
 A dependency bump that leaves `maps:check` passing needs no new pack. When it fails, the report lists the maps and floors whose files or manifest values changed. The ordinary `refresh` command rebuilds the exact frozen inputs carried by the verified active generation, using that generation's frozen calibration, manifest `sourceLock` and exact `NOTICE.txt` bytes; neither it nor `mise run maps:rebuild` fetches current REST metadata. Raw `rebuild` and `normalize` instead receive an explicit context from reviewed configuration.
 
