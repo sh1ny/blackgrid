@@ -8,6 +8,10 @@ import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
 
 import '../../tool/maps/pack.dart';
+
+import 'package:blackgrid/maps/live_map_normalizer.dart'
+    show canonicalJson, prepareMarkers;
+
 import '../support/map_preparation_fixtures.dart';
 
 const _assetBegin =
@@ -240,9 +244,6 @@ void main() {
               'drifted-calibration',
       'notice': (candidate) =>
           _output(candidate, 'NOTICE.txt')['sha256'] = 'drifted-notice',
-      'ownership': (candidate) => _marker(candidate)['floorId'] = 'other-floor',
-      'ownership removal': (candidate) =>
-          _map(candidate)['markers'] = <Object?>[],
     };
 
     for (final entry in mutations.entries) {
@@ -288,12 +289,6 @@ Map<String, dynamic> _output(Map<String, dynamic> manifest, String path) =>
     (manifest['outputs'] as List).cast<Map<String, dynamic>>().singleWhere(
       (output) => output['path'] == path,
     );
-
-Map<String, dynamic> _map(Map<String, dynamic> manifest) =>
-    (manifest['maps'] as List).cast<Map<String, dynamic>>().single;
-
-Map<String, dynamic> _marker(Map<String, dynamic> manifest) =>
-    (_map(manifest)['markers'] as List).cast<Map<String, dynamic>>().single;
 
 Future<Map<String, List<int>>> _snapshot(Directory root) async {
   final files = <String, List<int>>{};

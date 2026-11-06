@@ -57,4 +57,4 @@ Map markers can receive upstream corrections without rebuilding the artwork or i
 ### Changed
 
 - Successful map-data updates replace marker facts immediately while retaining map navigation, floors, filters and saved pins; marker selection closes when content changes.
-- Metadata refresh accepts structurally valid upstream content changes instead of freezing historical markers or floor overrides; artwork and calibration integrity remain separately protected.
+- Shared runtime and offline normalization accepts valid upstream additions, removals, edits and empty collections. Historical floor overrides apply only while reviewed identity and placement assumptions match; artwork, calibration and frozen-source integrity remain separately protected.

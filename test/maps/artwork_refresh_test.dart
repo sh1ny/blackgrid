@@ -8,6 +8,9 @@ import 'package:test/test.dart';
 
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
+
+import 'package:blackgrid/maps/live_map_normalizer.dart' show canonicalJson;
+
 import '../support/map_preparation_fixtures.dart';
 
 String _hash(List<int> bytes) => sha256.convert(bytes).toString();
@@ -248,6 +251,46 @@ Future<_StageHarness> _stageHarness({
     context: context,
     transport: transport,
     baseline: await verifyCommittedGeneration(packs),
+  );
+}
+
+Future<_StageHarness> _withRetainedMarkerSource(
+  _StageHarness harness,
+  void Function(Map<String, dynamic>) change,
+) async {
+  final raw = Directory('${harness.root.path}/evolved-raw');
+  await copyPack((await _fixtures()).raw, raw);
+  final sourceFile = packFile(raw, 'markers/maps.json');
+  final source =
+      jsonDecode(await sourceFile.readAsString()) as Map<String, dynamic>;
+  change(source);
+  final bytes = utf8.encode(canonicalJson(source));
+  await sourceFile.writeAsBytes(bytes);
+  final indexFile = packFile(raw, 'sources.json');
+  final index =
+      jsonDecode(await indexFile.readAsString()) as Map<String, dynamic>;
+  final record = (index['sources'] as List)
+      .cast<Map<String, dynamic>>()
+      .singleWhere((entry) => entry['path'] == 'markers/maps.json');
+  record['sha256'] = _hash(bytes);
+  await indexFile.writeAsString(canonicalJson(index));
+  final candidate = Directory('${harness.root.path}/evolved-candidate');
+  await rebuildCandidate(
+    await FrozenInputs.open(raw),
+    candidate,
+    context: await MapBuildContext.fromGeneration(harness.baseline),
+    toolchain: fixtureToolchain,
+  );
+  await promoteCandidate(candidate, harness.packs);
+  await raw.delete(recursive: true);
+  return _StageHarness(
+    root: harness.root,
+    packs: harness.packs,
+    pubspec: harness.pubspec,
+    stage: harness.stage,
+    context: harness.context,
+    transport: harness.transport,
+    baseline: await verifyCommittedGeneration(harness.packs),
   );
 }
 
@@ -594,16 +637,16 @@ void main() {
       final pointer = await harness.activePointer();
       final activeManifest = await harness.baselineManifest();
       final pubspec = await harness.pubspec.readAsString();
-      final changedCalibration = jsonDecode(
+      final calibration = jsonDecode(
         canonicalJson(harness.context.calibration),
       ) as Map<String, dynamic>;
-      final interchangeCalibration = (changedCalibration['maps'] as List)
+      final interchange = (calibration['maps'] as List)
           .cast<Map<String, dynamic>>()
           .singleWhere((map) => map['sourceKey'] == 'interchange');
-      (interchangeCalibration['geometry']['affine'] as List)[0] =
-          (interchangeCalibration['geometry']['affine'][0] as num) + 1;
+      final affine = interchange['geometry']['affine'] as List;
+      affine[0] = (affine[0] as num) + 1;
       final changedContext = MapBuildContext.reviewed(
-        calibration: changedCalibration,
+        calibration: calibration,
         sourceLock: harness.context.sourceLock,
         noticeBytes: harness.context.noticeBytes,
       );
@@ -622,126 +665,100 @@ void main() {
         manifest: activeManifest,
         pubspecText: pubspec,
       );
-
-      final fixtures = await _fixtures();
-      final baseline = await readManifest(fixtures.first);
-      final baselineMap = (baseline['maps'] as List)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((map) => map['id'] == 'interchange');
-      final mapId = baselineMap['id'] as String;
-      final baselineMarker = (baselineMap['markers'] as List)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((marker) => marker['source']['floorAssignment'] != null);
-      final markerId = baselineMarker['id'] as String;
-      final originalFloorId =
-          baselineMarker['source']['floorAssignment']['floorId'] as String;
-      final changedFloorId = originalFloorId == 'Second_Floor'
-          ? 'Third_Floor'
-          : 'Second_Floor';
-
-      Map<String, dynamic> copy() =>
-          jsonDecode(canonicalJson(baseline)) as Map<String, dynamic>;
-      Map<String, dynamic> selectedMarker(Map<String, dynamic> manifest) =>
-          ((manifest['maps'] as List).cast<Map<String, dynamic>>().singleWhere(
-                    (map) => map['id'] == mapId,
-                  )['markers']
-                  as List)
-              .cast<Map<String, dynamic>>()
-              .singleWhere((marker) => marker['id'] == markerId);
-
-      expect(
-        () => validateArtworkOwnershipPreservation(baseline, baseline),
-        returnsNormally,
-      );
-
-      final removed = copy();
-      ((removed['maps'] as List).cast<Map<String, dynamic>>().singleWhere(
-                (map) => map['id'] == mapId,
-              )['markers']
-              as List)
-          .removeWhere((marker) => marker['id'] == markerId);
-      final assignmentRemoved = copy();
-      selectedMarker(assignmentRemoved)['source']['floorAssignment'] = null;
-      selectedMarker(assignmentRemoved).remove('floorId');
-      final changedAssignment = copy();
-      selectedMarker(
-        changedAssignment,
-      )['source']['floorAssignment']['floorId'] = changedFloorId;
-      selectedMarker(changedAssignment)['floorId'] = changedFloorId;
-      final changedVolume = copy();
-      selectedMarker(changedVolume)['position']['x'] =
-          (selectedMarker(changedVolume)['position']['x'] as num) + 1;
-
-      for (final (label, candidate) in [
-        ('removed', removed),
-        ('assignment removed', assignmentRemoved),
-        ('assignment changed', changedAssignment),
-        ('owned volume changed', changedVolume),
-      ]) {
-        await expectLater(
-          Future<void>.sync(
-            () => validateArtworkOwnershipPreservation(baseline, candidate),
-          ),
-          throwsA(
-            isA<FormatException>().having(
-              (error) => error.message,
-              'message',
-              allOf(contains(mapId), contains(markerId)),
-            ),
-          ),
-          reason: label,
-        );
-      }
-      harness.transport.changedTile = null;
-      final reviewedCalibration = jsonDecode(
-        canonicalJson(harness.context.calibration),
-      ) as Map<String, dynamic>;
-      final reviewedInterchange = (reviewedCalibration['maps'] as List)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((map) => map['sourceKey'] == 'interchange');
-      final assignments = Map<String, Object?>.from(
-        reviewedInterchange['markerFloorAssignments'] as Map,
-      );
-      final reviewedAssignment = Map<String, Object?>.from(
-        assignments.values.single as Map,
-      );
-      reviewedAssignment['floorId'] = changedFloorId;
-      assignments[assignments.keys.single] = reviewedAssignment;
-      reviewedInterchange['markerFloorAssignments'] = assignments;
-      final ownershipContext = MapBuildContext.reviewed(
-        calibration: reviewedCalibration,
-        sourceLock: harness.context.sourceLock,
-        noticeBytes: harness.context.noticeBytes,
-      );
-      await expectLater(
-        _runStage(
-          harness,
-          context: ownershipContext,
-          reviewedCalibrationUpdate: true,
-        ),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'message',
-            allOf(
-              contains('reviewed marker ownership'),
-              contains('interchange'),
-              contains(markerId),
-            ),
-          ),
-        ),
-      );
-      expect(
-        await packFile(harness.stage, 'manifest.json').exists(),
-        isFalse,
-        reason: 'an ownership-rejected build is not a ready candidate',
-      );
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: activeManifest,
-        pubspecText: pubspec,
-      );
     }, tags: ['qualification']);
+
+    test(
+      'staging and frozen reproduction omit stale marker overrides',
+      () async {
+        final initial = await _stageHarness();
+        final baselineMap = (initial.baseline.manifest['maps'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere((map) => map['id'] == 'interchange');
+        final mapId = baselineMap['id'] as String;
+        final baselineMarker = (baselineMap['markers'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere(
+              (marker) => marker['source']['floorAssignment'] != null,
+            );
+        final markerId = baselineMarker['id'] as String;
+        final markerParts = markerId.split(':');
+        final sourceCategory = markerParts.first;
+        final sourceId = markerParts[1];
+        final harness = await _withRetainedMarkerSource(initial, (snapshot) {
+          final maps = snapshot['data']['maps'] as Map;
+          final interchange = maps.values.singleWhere(
+            (source) => source['normalizedName'] == 'interchange',
+          ) as Map<String, dynamic>;
+          (interchange[sourceCategory] as List).removeWhere(
+            (source) => source['id'] == sourceId,
+          );
+        });
+        harness.transport.changedTile = null;
+        final pointer = await harness.activePointer();
+        final activeManifest = await harness.baselineManifest();
+        final pubspec = await harness.pubspec.readAsString();
+        final staged = await _runStage(harness);
+        final stagedMap = (staged.manifest['maps'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere((map) => map['id'] == mapId);
+        expect(
+          (stagedMap['markers'] as List).any(
+            (marker) => marker['id'] == markerId,
+          ),
+          isFalse,
+          reason:
+              'valid source evolution must not resurrect its stale override',
+        );
+        final baselineArtifacts = (harness.baseline.manifest['outputs'] as List)
+            .cast<Map<String, dynamic>>()
+            .where(
+              (output) => (output['path'] as String).startsWith('artwork/'),
+            );
+        final stagedHashes = {
+          for (final output
+              in (staged.manifest['outputs'] as List)
+                  .cast<Map<String, dynamic>>())
+            output['path']: output['sha256'],
+        };
+        for (final output in baselineArtifacts) {
+          expect(stagedHashes[output['path']], output['sha256']);
+        }
+
+        final reproducedPacks = Directory(
+          '${harness.root.path}/reproduced-packs',
+        );
+        await reproducedPacks.create();
+        final reproducedCandidate = Directory(
+          '${harness.root.path}/reproduced-source-candidate',
+        );
+        await copyPack(staged.candidate, reproducedCandidate);
+        await promoteCandidate(reproducedCandidate, reproducedPacks);
+        final committed = await verifyCommittedGeneration(reproducedPacks);
+        final rebuilt = await rebuildCandidate(
+          await FrozenInputs.fromGeneration(committed.directory),
+          Directory('${harness.root.path}/reproduced-candidate'),
+          context: await MapBuildContext.fromGeneration(committed),
+          toolchain: fixtureToolchain,
+        );
+        final rebuiltMap = (rebuilt['maps'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere((map) => map['id'] == mapId);
+        expect(
+          (rebuiltMap['markers'] as List).any(
+            (marker) => marker['id'] == markerId,
+          ),
+          isFalse,
+        );
+        expect(packChangeReport(committed.manifest, rebuilt).changed, isFalse);
+
+        await harness.expectUnchanged(
+          pointer: pointer,
+          manifest: activeManifest,
+          pubspecText: pubspec,
+        );
+      },
+      tags: ['qualification'],
+    );
 
     test('changedArtworkStages', () async {
       final harness = await _stageHarness();
@@ -762,10 +779,6 @@ void main() {
       expect(staged.diagnostics, isEmpty);
       expect(staged.report.changed, isTrue);
       expect(staged.report.paths, contains(artworkPath));
-      expect(
-        staged.report.lines,
-        contains(contains('${parts[1]} ${parts[2]}: 1 changed file(s)')),
-      );
       expect(
         staged.report.valueKeys,
         contains('${parts[1]} ${parts[2]} values'),
@@ -923,6 +936,46 @@ void main() {
           (uri) => uri.toString().contains('/regular/'),
         ),
         isFalse,
+      );
+    }, tags: ['qualification']);
+
+    test('staging accepts missing and unsupported metadata maps independently of artwork', () async {
+      final initial = await _stageHarness();
+      final harness = await _withRetainedMarkerSource(initial, (snapshot) {
+        final maps = snapshot['data']['maps'] as Map<String, dynamic>;
+        maps.removeWhere(
+          (_, source) => source['normalizedName'] == 'interchange',
+        );
+        maps['new-upstream-map'] = {
+          'id': 'new-upstream-map',
+          'normalizedName': 'new-upstream-map',
+          'bosses': <dynamic>[],
+        };
+      });
+      final pointer = await harness.activePointer();
+      final activeManifest = await harness.baselineManifest();
+      final pubspec = await harness.pubspec.readAsString();
+      final staged = await _runStage(harness);
+      final tilePath = harness.transport.routes[harness.transport.changedTile]!;
+      final tileParts = tilePath.split('/');
+      final artworkPath =
+          'artwork/${tileParts[1]}/${tileParts[2]}/${tileParts[3]}/${tileParts[4]}';
+
+      expect(staged.report.changed, isTrue);
+      expect(staged.report.paths, contains(artworkPath));
+      expect(staged.manifest['supportedMapIds'], supportedMapSources.keys);
+      expect(
+        (staged.manifest['maps'] as List).map((map) => map['sourceKey']),
+        isNot(contains('new-upstream-map')),
+      );
+      final interchange = (staged.manifest['maps'] as List)
+          .cast<Map<String, dynamic>>()
+          .singleWhere((map) => map['id'] == 'interchange');
+      expect(interchange['markers'], isEmpty);
+      await harness.expectUnchanged(
+        pointer: pointer,
+        manifest: activeManifest,
+        pubspecText: pubspec,
       );
     }, tags: ['qualification']);
 

@@ -8,6 +8,9 @@ import 'package:image/image.dart' as image;
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
 
+import 'package:blackgrid/maps/live_map_normalizer.dart'
+    show canonicalJson, prepareMarkers;
+
 /// A fixed toolchain record for fixture builds, never read from the lock.
 const fixtureToolchain = <String, String>{
   'xml': '6.6.1',

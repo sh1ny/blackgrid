@@ -9,6 +9,10 @@ import 'package:xml/xml.dart';
 import 'package:blackgrid/domain/settings.dart' show supportedMaps;
 
 import '../../tool/maps/pack.dart';
+
+import 'package:blackgrid/maps/live_map_normalizer.dart'
+    show canonicalJson, prepareMarkers;
+
 import '../../tool/maps/svg.dart';
 import '../../tool/maps/calibration.dart';
 import '../support/map_preparation_fixtures.dart' show png;
@@ -379,68 +383,77 @@ void main() {
     );
   });
 
-  test('known Interchange console ownership is identity and full-volume bound, not height inference', () {
+  test('conditional floor override requires matching synthetic identity and full volume', () {
     final console = <String, dynamic>{
-      'id': '6b9023f26446d73433823e872e6d69688083beaf',
-      'name': 'Non-Kiba Alarms Switch',
-      'position': {'x': -46.555, 'y': 37.347, 'z': -55.202},
-      'bottom': 37.187,
-      'top': 37.507,
+      'id': 'synthetic-console',
+      'name': 'Synthetic console',
+      'position': {'x': 4, 'y': 3, 'z': 2},
+      'bottom': 2,
+      'top': 4,
       'outline': [
-        {'x': -46.81, 'y': 37.347, 'z': -55.517},
-        {'x': -46.3, 'y': 37.347, 'z': -55.517},
-        {'x': -46.3, 'y': 37.347, 'z': -54.887},
-        {'x': -46.81, 'y': 37.347, 'z': -54.887},
+        {'x': 3, 'y': 3, 'z': 1},
+        {'x': 5, 'y': 3, 'z': 1},
+        {'x': 5, 'y': 3, 'z': 3},
+        {'x': 3, 'y': 3, 'z': 3},
       ],
     };
-    final snapshot = <String, dynamic>{
+    final reviewedVolume = {
+      'position': console['position'],
+      'heightBand': [console['bottom'], console['top']],
+      'outline': console['outline'],
+    };
+    final calibration = {
+      ...calibrationFor('interchange'),
+      'markerFloorAssignments': {
+        'switches:synthetic-console:0': {
+          'floorId': 'Synthetic_Floor',
+          'sourceVolume': reviewedVolume,
+        },
+      },
+    };
+    Map<String, dynamic> snapshot(Map<String, dynamic> source) => {
       'data': {
         'maps': {
           'interchange': {
-            'id': '5714dbc024597771384a510d',
+            'id': 'synthetic-interchange',
             'normalizedName': 'interchange',
-            'switches': [
-              console,
-              {...console, 'id': 'unreviewed-same-name'},
-              {...console, 'id': 'cross-floor-volume', 'bottom': 27, 'top': 38},
-              {
-                'id': 'unknown-height',
-                'position': {'x': 0, 'y': null, 'z': 0},
-              },
-            ],
+            'switches': [source],
             'bosses': <Object>[],
           },
         },
       },
     };
-    final calibration = calibrationFor('interchange');
-    final markers = prepareMarkers(snapshot, {}, calibration);
-    expect(markers.first['floorId'], 'Second_Floor');
-    expect(markers.first['details'], console);
-    expect(markers.first['position'], {
-      'x': -46.555,
-      'z': -55.202,
-      'height': 37.347,
-    });
-    expect(markers.first['heightBand'], [37.187, 37.507]);
-    expect(
-      markers.skip(1).map((marker) => marker['floorId']),
-      everyElement(isNull),
-    );
-    expect((markers.last['position'] as Map)['height'], isNull);
 
-    // A later changed snapshot must not reuse a stale reviewed annotation.
-    console['top'] = 1001;
+    final matching = prepareMarkers(snapshot(console), {}, calibration).single;
+    expect(matching['floorId'], 'Synthetic_Floor');
     expect(
-      () => prepareMarkers(snapshot, {}, calibration),
-      throwsFormatException,
+      (matching['source'] as Map)['floorAssignment'],
+      containsPair('floorId', 'Synthetic_Floor'),
     );
-    console['top'] = 37.507;
-    (console['outline'] as List).first['x'] = 121.0;
-    expect(
-      () => prepareMarkers(snapshot, {}, calibration),
-      throwsFormatException,
-    );
+
+    for (final changed in [
+      {...console, 'id': 'synthetic-unreviewed-same-name'},
+      {...console, 'bottom': 1},
+      {
+        ...console,
+        'position': {'x': 4.5, 'y': 3, 'z': 2},
+      },
+      {
+        ...console,
+        'position': {'x': 4, 'y': 3.5, 'z': 2},
+      },
+      {
+        ...console,
+        'outline': [
+          ...(console['outline'] as List).cast<Map<String, dynamic>>().skip(1),
+          {'x': 3, 'y': 3, 'z': 3},
+        ],
+      },
+    ]) {
+      final marker = prepareMarkers(snapshot(changed), {}, calibration).single;
+      expect(marker.containsKey('floorId'), isFalse);
+      expect((marker['source'] as Map).containsKey('floorAssignment'), isFalse);
+    }
   });
 
   test(
@@ -915,32 +928,29 @@ void main() {
     }
   });
 
-  test(
-    'metadata source identities reject missing and duplicate supported maps',
-    () {
-      for (final entry in supportedMapSources.entries) {
-        final missing = _bossSnapshot(entry.value, []);
-        ((missing['data'] as Map)['maps'] as Map).remove(entry.value);
-        expect(
-          () => prepareMarkers(missing, {}, calibrationFor(entry.key)),
-          throwsA(isA<FormatException>()),
-          reason: 'missing ${entry.value}',
-        );
+  test('absent metadata map is empty and duplicate identity is rejected', () {
+    for (final entry in supportedMapSources.entries) {
+      final missing = _bossSnapshot(entry.value, []);
+      ((missing['data'] as Map)['maps'] as Map).remove(entry.value);
+      expect(
+        prepareMarkers(missing, {}, calibrationFor(entry.value)),
+        isEmpty,
+        reason: 'missing ${entry.value} yields an empty inventory',
+      );
 
-        final duplicate = _bossSnapshot(entry.value, []);
-        ((duplicate['data'] as Map)['maps'] as Map)['duplicate'] = {
-          'id': 'duplicate-${entry.key}',
-          'normalizedName': entry.value,
-          'bosses': <Object>[],
-        };
-        expect(
-          () => prepareMarkers(duplicate, {}, calibrationFor(entry.key)),
-          throwsA(isA<FormatException>()),
-          reason: 'duplicate ${entry.value}',
-        );
-      }
-    },
-  );
+      final duplicate = _bossSnapshot(entry.value, []);
+      ((duplicate['data'] as Map)['maps'] as Map)['duplicate'] = {
+        'id': 'duplicate-${entry.key}',
+        'normalizedName': entry.value,
+        'bosses': <Object>[],
+      };
+      expect(
+        () => prepareMarkers(duplicate, {}, calibrationFor(entry.value)),
+        throwsA(isA<FormatException>()),
+        reason: 'duplicate ${entry.value}',
+      );
+    }
+  });
 
   test('canonical manifest bytes do not depend on insertion order', () {
     expect(
