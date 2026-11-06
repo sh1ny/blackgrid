@@ -122,6 +122,32 @@ class StatsMeta extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// One complete normalized live-map snapshot for a game mode.
+@DataClassName('LiveMapSnapshotRecord')
+class LiveMapSnapshots extends Table {
+  IntColumn get mode => integer()();
+  IntColumn get checkedAt => integer()();
+  IntColumn get formatVersion => integer()();
+  IntColumn get normalizerVersion => integer()();
+  TextColumn get compatibilityFingerprint => text()();
+  BlobColumn get normalizedPayload => blob()();
+  TextColumn get normalizedSha256 => text()();
+  @override
+  Set<Column> get primaryKey => {mode};
+}
+
+/// One exact upstream response body belonging to a live-map snapshot.
+class LiveMapSources extends Table {
+  IntColumn get mode => integer().references(LiveMapSnapshots, #mode)();
+  TextColumn get dataset => text()();
+  BlobColumn get body => blob()();
+  TextColumn get bodySha256 => text()();
+  TextColumn get etag => text().nullable()();
+  TextColumn get lastModified => text().nullable()();
+  @override
+  Set<Column> get primaryKey => {mode, dataset};
+}
+
 /// The settings read from the database and whether the stored record was
 /// unreadable.
 class StoredSettings {
@@ -168,6 +194,8 @@ class NewerDatabaseException implements Exception {
     RaidStatRecords,
     FleaSaleRecords,
     StatsMeta,
+    LiveMapSnapshots,
+    LiveMapSources,
   ],
 )
 class BlackgridDatabase extends _$BlackgridDatabase
@@ -176,13 +204,13 @@ class BlackgridDatabase extends _$BlackgridDatabase
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 4 || from >= to) {
+      if (from < 1 || to != 5 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
@@ -194,6 +222,10 @@ class BlackgridDatabase extends _$BlackgridDatabase
           await m.createTable(statsMeta);
           await m.createIndex(raidStatRecordsModeStart);
           await m.createIndex(fleaSaleRecordsMode);
+        }
+        if (from < 5) {
+          await m.createTable(liveMapSnapshots);
+          await m.createTable(liveMapSources);
         }
       });
     },

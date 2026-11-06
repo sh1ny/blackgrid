@@ -366,7 +366,9 @@ mise exec -- dart run drift_dev schema dump lib/data/database.dart drift_schemas
 mise exec -- dart run drift_dev schema generate drift_schemas test/data/generated
 ```
 
-Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger.
+Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger, version 3 the item-icon cache, and version 4 local raid/sale statistics. Version 5 adds `live_map_snapshots` and `live_map_sources` without replacing those user records.
+
+`LiveMapCacheStore` keeps one complete snapshot per known game mode. A transaction replaces the normalized payload and all six exact source bodies and validators together. Reads verify their digests, complete map/source identities, normalized structure, and format/normalizer/mapping/projection/floor compatibility. Compatible data does not expire with age; artwork paths and compiler versions are not authority gates. Missing data returns no snapshot; rejected data also reports a per-read diagnostic and never supplies validators. Shared materialization and serialized-size guards apply before payload decoding or private byte copies.
 </details>
 
 <details>

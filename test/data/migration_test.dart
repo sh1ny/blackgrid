@@ -40,7 +40,7 @@ void main() {
     );
     final db = BlackgridDatabase(schema.newConnection());
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 4);
+    await verifier.migrateAndValidate(db, db.schemaVersion);
     expect(
       await db
           .customSelect(
@@ -92,7 +92,7 @@ void main() {
         );
         final db = BlackgridDatabase(schema.newConnection());
         addTearDown(db.close);
-        await verifier.migrateAndValidate(db, 4);
+        await verifier.migrateAndValidate(db, db.schemaVersion);
         expect(
           await db
               .customSelect(
@@ -163,7 +163,7 @@ void main() {
       final db = BlackgridDatabase(schema.newConnection());
       addTearDown(db.close);
       addTearDown(schema.close);
-      await verifier.migrateAndValidate(db, 4);
+      await verifier.migrateAndValidate(db, db.schemaVersion);
       expect((await db.readSettings()).settings.selectedMap, 'woods');
       expect((await db.readPins()).pins.single.id, 'pin-1');
       expect((await db.readActivity()).rows.single.revision, 7);

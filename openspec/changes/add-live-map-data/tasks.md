@@ -20,8 +20,8 @@
 | runtime-map-data → Last-good data and honest fallback | Old cache and failure | test/application/live_map_data_controller_test.dart | old compatible cache remains authoritative after failure | red |
 | runtime-map-data → Last-good data and honest fallback | Cache unavailable | test/application/live_map_data_controller_test.dart | pve without cache shows labelled regular bundled fallback | red |
 | runtime-map-data → Last-good data and honest fallback | Broken bundle | test/application/live_map_data_controller_test.dart | cached metadata cannot hide active pack failure | red |
-| runtime-map-data → Cache compatibility is checked | Compatible cache | test/data/live_map_cache_test.dart | intact compatible mode cache survives restart regardless of age | red |
-| runtime-map-data → Cache compatibility is checked | Incompatible cache | test/data/live_map_cache_test.dart | corrupt or incompatible cache and validators lose authority | red |
+| runtime-map-data → Cache compatibility is checked | Compatible cache | test/data/live_map_cache_test.dart | intact compatible mode cache survives restart regardless of age | green |
+| runtime-map-data → Cache compatibility is checked | Incompatible cache | test/data/live_map_cache_test.dart | corrupt or incompatible cache and validators lose authority | green |
 | runtime-map-data → Refresh scheduling and status are separate | Independent map refresh status | test/widgets/live_map_settings_test.dart | map status stays independent while navigation remains available | red |
 | runtime-map-data → Refresh scheduling and status are separate | Manual refresh | test/widgets/live_map_settings_test.dart | manual map refresh does not refresh items | red |
 | runtime-map-data → Concurrent refreshes preserve selected-mode authority | Mode changes during refresh | test/application/live_map_data_controller_test.dart | mode switch fences late cache and refresh results | red |
@@ -74,8 +74,8 @@
 
 ## 3. Durable compatible mode snapshots
 
-- [ ] 3.1 Before implementation write and run red `live_map_cache_test.dart` tests mapped above for three mode-isolated caches, version/normalizer/mapping/calibration/override fingerprints, six raw-body and normalized-payload digests and validator records, corrupted/truncated/inconsistent payloads, and unchanged artwork/compiler versions not invalidating compatible data. Include additive migration preserving existing preferences, pins, history and other user rows and transaction rollback preserving old snapshots; verify intended failures.
-- [ ] 3.2 Add versioned Drift cache schema and atomic mode snapshot read/write, raw/normalized integrity and compatibility checks; reject incompatible authority and its validators, and preserve user records. Run group 3.1 tests to green, document public storage and compatibility contracts, and update release notes for any material implementation differences.
+- [x] 3.1 Before implementation write and run red `live_map_cache_test.dart` tests mapped above for three mode-isolated caches, version/normalizer/mapping/calibration/override fingerprints, six raw-body and normalized-payload digests and validator records, corrupted/truncated/inconsistent payloads, and unchanged artwork/compiler versions not invalidating compatible data. Include additive migration preserving existing preferences, pins, history and other user rows and transaction rollback preserving old snapshots; verify intended failures.
+- [x] 3.2 Add versioned Drift cache schema and atomic mode snapshot read/write, raw/normalized integrity and compatibility checks; reject incompatible authority and its validators, and preserve user records. Run group 3.1 tests to green, document public storage and compatibility contracts, and update release notes for any material implementation differences.
 
 ## 4. Bounded acquisition and expansion
 
