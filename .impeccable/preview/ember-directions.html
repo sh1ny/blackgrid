@@ -470,7 +470,7 @@ function mapSvgB() {
 }
 
 function mapMainB() {
-  const menu = st.mapMenu ? `<div class="em-menu mapmenu" role="menu"><div class="em-mh">Maps</div>${MAPS.map(m => `<button class="em-mi" role="menuitem" data-act="pickmap" data-v="${m}" aria-current="${m===st.map}">${m}${m===st.map ? icon('i-check') : ''}</button>`).join('')}<hr><p class="note">Follow logs picks the map from the game logs when a raid starts. Choosing a map here turns that off until you turn it back on in Settings.</p></div>` : '';
+  const menu = st.mapMenu ? `<div class="em-menu mapmenu" role="menu"><div class="em-mh">Maps</div>${MAPS.map(m => `<button class="em-mi" role="menuitem" data-act="pickmap" data-v="${m}" aria-current="${m===st.map}">${m}${m===st.map ? icon('i-check') : ''}</button>`).join('')}<hr><p class="note">Follow logs picks the map from the game logs when a raid starts. Choosing a map here turns that off until you turn it back on in Settings.</p><hr><button class="em-mi" role="menuitem">Read latest screenshot</button></div>` : '';
   return `<div class="mapwrap">${mapSvgB()}
     <div class="mapbar">
       <button class="mappick" data-act="mapmenu" aria-expanded="${st.mapMenu}" title="Switch map"><span class="mapname">${st.map}</span>${icon('i-chev')}</button>
