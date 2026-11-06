@@ -20,8 +20,8 @@ The change has no specs (`skip_specs: true`): it adds design documents and chang
 
 ## 3. Before-redesign record
 
-- [ ] 3.1 Capture the reachable screens of the Release build of `2343fb2` into `.impeccable/review/current/` read-only, with Escape from Tarkov confirmed not running, and redact local paths
-- [ ] 3.2 Write `PROVENANCE.md` (file, screen and state, window size, date, method, states not captured) and `DESIGN.before.md`
+- [x] 3.1 Capture the reachable screens of the Release build of `2343fb2` into `.impeccable/review/current/` read-only, with Escape from Tarkov confirmed not running, and redact local paths
+- [x] 3.2 Write `PROVENANCE.md` (file, screen and state, window size, date, method, states not captured) and `DESIGN.before.md`
 
 ## 4. DESIGN.md
 
