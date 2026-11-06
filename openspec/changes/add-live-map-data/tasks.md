@@ -62,7 +62,7 @@
 
 ## 1. Architectural authority
 
-- [ ] 1.1 Record accepted `docs/adr/0035-live-map-data.md` (confirm 0035 is still the next unused number at apply), partly superseding only ADR-0005's bundled-marker boundary and ADR-0034's runtime prohibition and historical marker-preservation portions. Preserve artwork, calibration, integrity and ADR-0033 reproduction requirements; verify the new ADR and `openspec/architecture.md` index describe precedence without editing accepted ADRs.
+- [x] 1.1 Record accepted `docs/adr/0035-live-map-data.md` (confirm 0035 is still the next unused number at apply), partly superseding only ADR-0005's bundled-marker boundary and ADR-0034's runtime prohibition and historical marker-preservation portions. Preserve artwork, calibration, integrity and ADR-0033 reproduction requirements; verify the new ADR and `openspec/architecture.md` index describe precedence without editing accepted ADRs.
 
 ## 2. Shared normalizer and offline renewal
 
