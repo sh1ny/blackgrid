@@ -1066,8 +1066,12 @@ void main() {
       final output = Directory('${temporary.path}/missing-candidate-$i');
       await expectLater(
         FrozenInputs.open(raw).then(
-          (frozen) =>
-              rebuildCandidate(frozen, output, toolchain: fixtureToolchain),
+          (frozen) => rebuildCandidate(
+            frozen,
+            output,
+            context: MapBuildContext.reviewedConfiguration(),
+            toolchain: fixtureToolchain,
+          ),
         ),
         throwsA(isA<FileSystemException>()),
         reason: path,
@@ -1159,6 +1163,7 @@ void main() {
       final manifest = await rebuildCandidate(
         await FrozenInputs.open(fixtures.raw),
         private,
+        context: MapBuildContext.reviewedConfiguration(),
         compileVectors: false,
         toolchain: fixtureToolchain,
       );
@@ -1208,6 +1213,7 @@ void main() {
       final normalized = await rebuildCandidate(
         await FrozenInputs.open(fixtures.raw),
         private,
+        context: MapBuildContext.reviewedConfiguration(),
         compileVectors: false,
         toolchain: {...fixtureToolchain, 'vector_graphics_compiler': '1.3.0'},
       );
@@ -1229,6 +1235,7 @@ void main() {
         rebuildCandidate(
           await FrozenInputs.open(fixtures.raw),
           private,
+          context: MapBuildContext.reviewedConfiguration(),
           toolchain: fixtureToolchain,
           encode: (xml, name) => Uint8List.fromList([++calls]),
         ),
@@ -1325,6 +1332,7 @@ void main() {
         final manifest = await rebuildCandidate(
           await FrozenInputs.open(fixtures.raw),
           private,
+          context: MapBuildContext.reviewedConfiguration(),
           compileVectors: false,
           toolchain: fixtureToolchain,
         );

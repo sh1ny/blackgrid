@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as image;
@@ -306,6 +307,106 @@ class FrozenInputs {
   }
 }
 
+/// Supplies one builder invocation with its reviewed or generation-owned
+/// calibration, source lock, and exact notice bytes.
+class MapBuildContext {
+  MapBuildContext._({
+    required Map<String, dynamic> calibration,
+    required Map<String, dynamic> sourceLock,
+    required List<int> noticeBytes,
+  }) : calibration = _freezeMap(calibration),
+       sourceLock = _freezeMap(sourceLock),
+       noticeBytes = List<int>.unmodifiable(noticeBytes);
+
+  static Map<String, dynamic> _freezeMap(Map<String, dynamic> value) =>
+      Map<String, dynamic>.unmodifiable({
+        for (final entry in value.entries) entry.key: _freezeJson(entry.value),
+      });
+
+  static Object? _freezeJson(Object? value) => switch (value) {
+    Map map => Map<String, dynamic>.unmodifiable({
+      for (final entry in map.entries)
+        entry.key as String: _freezeJson(entry.value),
+    }),
+    List list => List<Object?>.unmodifiable([
+      for (final item in list) _freezeJson(item),
+    ]),
+    _ => value,
+  };
+
+  /// The calibration snapshot used to validate and build each map.
+  final Map<String, dynamic> calibration;
+
+  /// The source lock recorded in the output manifest.
+  final Map<String, dynamic> sourceLock;
+
+  /// The exact bytes written to `NOTICE.txt`.
+  final List<int> noticeBytes;
+
+  /// Creates a context from explicitly reviewed configuration snapshots.
+  ///
+  /// This is intended for tooling and deterministic tests. Runtime acquisition
+  /// must use [reviewedConfiguration] or the verified active generation.
+  factory MapBuildContext.reviewed({
+    required Map<String, dynamic> calibration,
+    required Map<String, dynamic> sourceLock,
+    required List<int> noticeBytes,
+  }) => MapBuildContext._(
+    calibration: calibration,
+    sourceLock: sourceLock,
+    noticeBytes: noticeBytes,
+  );
+
+  /// Creates the reviewed configuration context for a fresh raw generation.
+  ///
+  /// Fresh admission uses current authored calibration and source identities;
+  /// it does not infer approval from acquired bytes.
+  factory MapBuildContext.reviewedConfiguration() => MapBuildContext._(
+    calibration: {
+      'schemaVersion': 1,
+      'maps': [
+        for (final key in supportedMapSources.values) calibrationFor(key),
+      ],
+    },
+    sourceLock: {
+      'vectorSourceRevision': vectorSourceRevision,
+      'vectorSourceUrl': vectorSourceUrl,
+      'vectorSourceBlob': vectorSourceBlob,
+      'metadataRepositoryRevision': metadataRepositoryRevision,
+      'metadataBlob': metadataBlob,
+      'primaryHashes': primarySourceHashes,
+      'primaryUrls': primarySourceUrls,
+      'primaryRepositoryRevisions': primarySourceRepositoryRevisions,
+      'primaryGitBlobs': primarySourceGitBlobs,
+      'primaryProvenance': primarySourceProvenance,
+    },
+    noticeBytes: utf8.encode(artworkNotices),
+  );
+
+  /// Reads the frozen build context from a verified active generation.
+  ///
+  /// [generation] must come from [verifyCommittedGeneration].
+  static Future<MapBuildContext> fromGeneration(
+    CommittedGeneration generation,
+  ) async {
+    final sourceLock = generation.manifest['sourceLock'];
+    if (sourceLock is! Map<String, dynamic>) {
+      throw const FormatException('Verified generation has no source lock');
+    }
+    return MapBuildContext._(
+      calibration: await _readJson(
+        generation.directory,
+        'evidence/calibration.json',
+      ),
+      sourceLock: sourceLock,
+      noticeBytes: await packFile(
+        generation.directory,
+        'NOTICE.txt',
+      ).readAsBytes(),
+    );
+  }
+}
+
 class PngInspection {
   const PngInspection(this.empty, this.left, this.top, this.right, this.bottom);
   final bool empty;
@@ -339,12 +440,313 @@ PngInspection inspectPng(Uint8List bytes, {int expectedSize = 256}) {
   return PngInspection(right == 0, left, top, right, bottom);
 }
 
+/// Verifies a fetched source against its reviewed identity and byte lock.
+///
+/// The source record must name [path], [expectedUrl], and the approved hash.
+void validateLockedSourceRecord({
+  required String path,
+  required Map<String, dynamic> source,
+  required List<int> bytes,
+  required String expectedUrl,
+  required String expectedSha256,
+  String? expectedRepositoryRevision,
+  String? expectedGitBlobSha1,
+}) {
+  final observedHash = _hash(bytes);
+  final observedUrl = source['url'];
+  final observedRecordHash = source['sha256'];
+  final mismatches = <String>[];
+  if (source['path'] != path) {
+    mismatches.add('identity ${source['path']}');
+  }
+  if (observedUrl != expectedUrl) {
+    mismatches.add('URL $observedUrl');
+  }
+  if (observedRecordHash != expectedSha256 || observedHash != expectedSha256) {
+    mismatches.add(
+      'recorded SHA-256 $observedRecordHash, acquired SHA-256 $observedHash',
+    );
+  }
+  if (expectedRepositoryRevision != null &&
+      source['repositoryRevision'] != expectedRepositoryRevision) {
+    mismatches.add('repository revision ${source['repositoryRevision']}');
+  }
+  if (expectedGitBlobSha1 != null &&
+      source['gitBlobSha1'] != expectedGitBlobSha1) {
+    mismatches.add('Git blob ${source['gitBlobSha1']}');
+  }
+  if (mismatches.isNotEmpty) {
+    throw FormatException(
+      'Locked source $path differs from reviewed identity: '
+      '${mismatches.join('; ')}; approved SHA-256 $expectedSha256, '
+      'observed SHA-256 $observedHash',
+    );
+  }
+}
+
+/// Diagnoses new unsupported identities and rejects invalid supported metadata.
+///
+/// [currentMetadata] is fresh upstream map metadata and [baselineMetadata] is
+/// the verified baseline's frozen metadata. [supportedSourceKeys] is the
+/// complete authored source-key inventory.
+List<String> validateFreshMapIdentities(
+  List<dynamic> currentMetadata,
+  List<dynamic> baselineMetadata, {
+  required List<String> supportedSourceKeys,
+}) {
+  Map<String, int> counts(
+    List<dynamic> metadata,
+    String label, {
+    bool checkSupportedShapes = false,
+  }) {
+    final result = <String, int>{};
+    for (final (index, value) in metadata.indexed) {
+      if (value is! Map<String, dynamic>) {
+        throw FormatException(
+          '$label record $index is malformed: expected a map identity record',
+        );
+      }
+      final identity = value['normalizedName'];
+      if (identity is! String || identity.isEmpty) {
+        throw FormatException(
+          '$label record $index has malformed normalizedName: $identity',
+        );
+      }
+      if (checkSupportedShapes && supportedSourceKeys.contains(identity)) {
+        final maps = value['maps'];
+        if (maps is! List) {
+          throw FormatException(
+            'Supported map identity $identity has malformed maps metadata',
+          );
+        }
+        var interactiveCount = 0;
+        for (final map in maps) {
+          if (map is! Map<String, dynamic>) {
+            throw FormatException(
+              'Supported map identity $identity has a malformed map projection',
+            );
+          }
+          if (map['key'] == identity && map['projection'] == 'interactive') {
+            interactiveCount++;
+          }
+        }
+        if (interactiveCount != 1) {
+          throw FormatException(
+            'Supported map identity $identity must have exactly one '
+            'interactive projection; found $interactiveCount',
+          );
+        }
+      }
+      result.update(identity, (count) => count + 1, ifAbsent: () => 1);
+    }
+    return result;
+  }
+
+  final current = counts(
+    currentMetadata,
+    'Fresh map metadata',
+    checkSupportedShapes: true,
+  );
+  final baseline = counts(baselineMetadata, 'Baseline map metadata');
+  for (final sourceKey in supportedSourceKeys) {
+    final count = current[sourceKey] ?? 0;
+    if (count != 1) {
+      throw FormatException(
+        'Supported map identity $sourceKey must appear exactly once; found $count',
+      );
+    }
+  }
+  return [
+    for (final identity in current.keys)
+      if (!supportedSourceKeys.contains(identity) &&
+          !baseline.containsKey(identity))
+        'New upstream identity "$identity" is unsupported; add it through '
+            'authored tool and runtime integration before it can be selected.',
+  ];
+}
+
+/// Verifies that a raster tile was fetched from its reviewed expanded URL.
+///
+/// Tile bytes are hash-locked after acquisition; this check does not claim a
+/// pre-reviewed byte hash.
+/// Selects frozen baseline calibration or explicitly reviewed current calibration.
+///
+/// Without [reviewedCalibrationUpdate], reports the first named discrepancy
+/// instead of silently replacing the baseline.
+Map<String, dynamic> selectArtworkRefreshCalibration({
+  required Map<String, dynamic> baseline,
+  required Map<String, dynamic> reviewed,
+  bool reviewedCalibrationUpdate = false,
+}) {
+  if (reviewedCalibrationUpdate) return reviewed;
+
+  Object? firstDifference(Object? before, Object? after, String path) {
+    if (before is Map && after is Map) {
+      final keys = {...before.keys, ...after.keys}.toList()
+        ..sort((a, b) => '$a'.compareTo('$b'));
+      for (final key in keys) {
+        final childPath = '$path.$key';
+        if (!before.containsKey(key) || !after.containsKey(key)) {
+          return childPath;
+        }
+        final difference = firstDifference(before[key], after[key], childPath);
+        if (difference != null) return difference;
+      }
+      return null;
+    }
+    if (before is List && after is List) {
+      if (before.length != after.length) return '$path.length';
+      for (var index = 0; index < before.length; index++) {
+        final difference = firstDifference(
+          before[index],
+          after[index],
+          '$path[$index]',
+        );
+        if (difference != null) return difference;
+      }
+      return null;
+    }
+    return before == after ? null : path;
+  }
+
+  final beforeMaps = baseline['maps'];
+  final afterMaps = reviewed['maps'];
+  if (beforeMaps is! List || afterMaps is! List) {
+    throw const FormatException(
+      'Reviewed calibration has malformed map inventory',
+    );
+  }
+  final common = {
+    for (final key in baseline.keys)
+      if (key != 'maps') key: baseline[key],
+  };
+  final reviewedCommon = {
+    for (final key in reviewed.keys)
+      if (key != 'maps') key: reviewed[key],
+  };
+  final commonDifference = firstDifference(
+    common,
+    reviewedCommon,
+    'calibration',
+  );
+  if (commonDifference != null) {
+    throw FormatException(
+      'Reviewed calibration differs from baseline at $commonDifference; '
+      'use --reviewed-calibration-update after authored review.',
+    );
+  }
+  if (beforeMaps.length != afterMaps.length) {
+    throw const FormatException(
+      'Reviewed calibration map inventory differs from baseline',
+    );
+  }
+  for (var index = 0; index < beforeMaps.length; index++) {
+    final before = beforeMaps[index];
+    final after = afterMaps[index];
+    if (before is! Map<String, dynamic> || after is! Map<String, dynamic>) {
+      throw FormatException('Malformed calibration map at index $index');
+    }
+    final sourceKey = before['sourceKey'];
+    if (sourceKey is! String || after['sourceKey'] != sourceKey) {
+      throw FormatException(
+        'Reviewed calibration map identity differs from baseline at index '
+        '$index: $sourceKey vs ${after['sourceKey']}',
+      );
+    }
+    final difference = firstDifference(before, after, 'calibration.$sourceKey');
+    if (difference != null) {
+      throw FormatException(
+        'Reviewed calibration differs from baseline at $difference; '
+        'use --reviewed-calibration-update after authored review.',
+      );
+    }
+  }
+  return baseline;
+}
+
+void validateRasterTileSourceUrl({
+  required String path,
+  required String observedUrl,
+  required String expectedUrl,
+}) {
+  if (observedUrl != expectedUrl ||
+      Uri.tryParse(observedUrl)?.scheme != 'https' ||
+      Uri.tryParse(expectedUrl)?.scheme != 'https') {
+    throw FormatException(
+      'Raster source URL mismatch for $path: expected $expectedUrl, '
+      'observed $observedUrl',
+    );
+  }
+}
+
+Map<String, String> _requiredSourceLockMap(
+  Map<String, dynamic> sourceLock,
+  String key,
+) {
+  final raw = sourceLock[key];
+  if (raw is! Map) {
+    throw FormatException('Reviewed source lock has no $key configuration');
+  }
+  final result = <String, String>{};
+  for (final entry in raw.entries) {
+    if (entry.key is! String || entry.value is! String) {
+      throw FormatException('Reviewed source lock has malformed $key data');
+    }
+    result[entry.key as String] = entry.value as String;
+  }
+  return result;
+}
+
+Map<String, Object?> _lockedSourceRecord(
+  String path,
+  Uri uri,
+  List<int> bytes,
+  Map<String, dynamic> sourceLock,
+) {
+  final urls = _requiredSourceLockMap(sourceLock, 'primaryUrls');
+  final hashes = _requiredSourceLockMap(sourceLock, 'primaryHashes');
+  final revisions = _requiredSourceLockMap(
+    sourceLock,
+    'primaryRepositoryRevisions',
+  );
+  final blobs = _requiredSourceLockMap(sourceLock, 'primaryGitBlobs');
+  final provenance = _requiredSourceLockMap(sourceLock, 'primaryProvenance');
+  final expectedUrl = urls[path];
+  final expectedHash = hashes[path];
+  final expectedProvenance = provenance[path];
+  if (expectedUrl == null ||
+      expectedHash == null ||
+      expectedProvenance == null ||
+      expectedProvenance.isEmpty) {
+    throw FormatException('Required reviewed source lock is incomplete: $path');
+  }
+  final record = <String, dynamic>{
+    'path': path,
+    'url': uri.toString(),
+    'sha256': _hash(bytes),
+    'provenance': expectedProvenance,
+    'repositoryRevision': ?revisions[path],
+    'gitBlobSha1': ?blobs[path],
+  };
+  validateLockedSourceRecord(
+    path: path,
+    source: record,
+    bytes: bytes,
+    expectedUrl: expectedUrl,
+    expectedSha256: expectedHash,
+    expectedRepositoryRevision: revisions[path],
+    expectedGitBlobSha1: blobs[path],
+  );
+  return record;
+}
+
 Future<void> acquireInputs(Directory root) async {
   if (await root.exists()) {
     throw const FormatException('Acquisition requires a fresh raw directory');
   }
   await root.create(recursive: true);
   final client = http.Client();
+  final sourceLock = MapBuildContext.reviewedConfiguration().sourceLock;
   final sources = <Map<String, Object?>>[];
   Future<Uint8List> fetch(String path, String url) async {
     final response = await client.get(
@@ -361,21 +763,23 @@ Future<void> acquireInputs(Directory root) async {
       );
     }
     final bytes = response.bodyBytes;
-    final expectedHash = primarySourceHashes[path];
-    if (expectedHash != null && _hash(bytes) != expectedHash) {
-      throw FormatException(
-        'Upstream changed locked source $path; review a new source generation before acquisition',
-      );
-    }
     if (path.endsWith('.png')) inspectPng(bytes);
+    final source = primarySourceUrls.containsKey(path)
+        ? _lockedSourceRecord(path, Uri.parse(url), bytes, sourceLock)
+        : <String, Object?>{'path': path, 'url': url, 'sha256': _hash(bytes)};
     await _write(root, path, bytes);
-    sources.add({'path': path, 'url': url, 'sha256': _hash(bytes)});
+    sources.add(source);
     return bytes;
   }
 
   try {
     final metadata = jsonDecode(
-      utf8.decode(await fetch('metadata/maps.json', metadataUrl)),
+      utf8.decode(
+        await fetch(
+          'metadata/maps.json',
+          primarySourceUrls['metadata/maps.json']!,
+        ),
+      ),
     ) as List;
     await fetch('markers/maps.json', markerUrl);
     for (final resource in const {
@@ -387,18 +791,18 @@ Future<void> acquireInputs(Directory root) async {
       await fetch(resource.key, resource.value);
     }
     await fetch('markers/maps_en.json', '${markerUrl}_en');
-    await fetch(vectorSourcePath, vectorSourceUrl);
+    await fetch(vectorSourcePath, primarySourceUrls[vectorSourcePath]!);
     sources.last.addAll({
-      'repositoryUrl': '$vectorSourceRoot/Interchange.svg',
-      'repositoryRevision': vectorSourceRevision,
-      'gitBlobSha1': vectorSourceBlob,
+      'termsPaths': ['terms/svg-maps-README.md', 'terms/svg-maps-LICENSE.md'],
+      'privateUse': 'user-directed-private-implementation',
+      'publicRedistribution': 'not-owner-cleared',
     });
     for (final entry in additionalVectorSources.entries) {
       final filename = entry.value['file']!;
       final path = '${entry.key}/$filename';
       // Pin immutable publisher bytes rather than relying on mutable CDN
       // caching. The selected served rendition was independently observed.
-      await fetch(path, '$vectorSourceRoot/$filename');
+      await fetch(path, primarySourceUrls[path]!);
       sources.last.addAll({
         'servedUrl': 'https://assets.tarkov.dev/maps/svg/$filename',
         'repositoryRevision': vectorSourceRevision,
@@ -411,13 +815,16 @@ Future<void> acquireInputs(Directory root) async {
     await fetch('terms/svg-maps-LICENSE.md', '$vectorSourceRoot/LICENSE.md');
     await fetch(
       'terms/tarkov-dev-README.md',
-      'https://raw.githubusercontent.com/the-hideout/tarkov-dev/main/README.md',
+      primarySourceUrls['terms/tarkov-dev-README.md']!,
     );
     await fetch(
       'terms/tarkov-dev-software-LICENSE.txt',
-      'https://raw.githubusercontent.com/the-hideout/tarkov-dev/main/LICENSE',
+      primarySourceUrls['terms/tarkov-dev-software-LICENSE.txt']!,
     );
-    await fetch('terms/tarkovbot-creator.html', 'https://tarkovbot.eu/');
+    await fetch(
+      'terms/tarkovbot-creator.html',
+      primarySourceUrls['terms/tarkovbot-creator.html']!,
+    );
     final calibration = [
       for (final key in supportedMapSources.values) calibrationFor(key),
     ];
@@ -532,8 +939,11 @@ Map<String, dynamic> _requiredSourceDictionary(
   return value;
 }
 
-/// Rebuilds a candidate pack offline from the [frozen] inputs.
+/// Rebuilds a candidate pack offline from the [frozen] inputs and [context].
 ///
+/// Raw generations use reviewed configuration context; existing workflows use
+/// the verified active generation's frozen calibration, source lock, and
+/// exact notice bytes.
 /// The manifest records [toolchain] as the versions that built it. With
 /// [compileVectors], every vector is compiled twice through [encode] and the
 /// manifest records the payload format as `vectorCodecFormat`; without it the
@@ -541,6 +951,7 @@ Map<String, dynamic> _requiredSourceDictionary(
 Future<Map<String, dynamic>> rebuildCandidate(
   FrozenInputs frozen,
   Directory candidate, {
+  required MapBuildContext context,
   required Map<String, String> toolchain,
   bool compileVectors = true,
   VectorEncoder encode = _encodeVector,
@@ -548,8 +959,14 @@ Future<Map<String, dynamic>> rebuildCandidate(
   if (await candidate.exists() && !(await candidate.list().isEmpty)) {
     throw const FormatException('Rebuild requires an empty fresh candidate');
   }
-  final calibration =
+  final frozenCalibration =
       jsonDecode(await frozen.text('calibration.json')) as Map<String, dynamic>;
+  if (canonicalJson(context.calibration) != canonicalJson(frozenCalibration)) {
+    throw const FormatException(
+      'Builder context calibration differs from frozen inputs',
+    );
+  }
+  final calibration = context.calibration;
   final metadata = jsonDecode(await frozen.text('metadata/maps.json')) as List;
   final markerSnapshot = await _readFrozenSourceObject(
     frozen,
@@ -591,7 +1008,6 @@ Future<Map<String, dynamic>> rebuildCandidate(
   for (final untyped in calibration['maps'] as List) {
     final local = Map<String, Object?>.from(untyped as Map);
     final sourceKey = local['sourceKey'] as String;
-    _validateCalibration(local);
     final upstream = interactiveMetadata(metadata, sourceKey);
     _validateMetadataCalibration(local, upstream);
     final floors = reconcileFloors(local, upstream);
@@ -770,20 +1186,13 @@ Future<Map<String, dynamic>> rebuildCandidate(
     'evidence/sources.json',
     utf8.encode(canonicalJson(frozen.index)),
   );
-  await _write(candidate, 'NOTICE.txt', utf8.encode(artworkNotices));
+  await _write(candidate, 'NOTICE.txt', context.noticeBytes);
   final manifest = <String, dynamic>{
     'schemaVersion': 1,
     'preparationVersion': 3,
     'supportedMapIds': supportedMapSources.keys.toList(),
     'sourceGeneration': _hash(utf8.encode(canonicalJson(frozen.index))),
-    'sourceLock': {
-      'vectorSourceRevision': vectorSourceRevision,
-      'vectorSourceUrl': vectorSourceUrl,
-      'vectorSourceBlob': vectorSourceBlob,
-      'metadataRepositoryRevision': metadataRepositoryRevision,
-      'metadataBlob': metadataBlob,
-      'primaryHashes': primarySourceHashes,
-    },
+    'sourceLock': context.sourceLock,
     'toolchain': toolchain,
     if (compileVectors)
       'vectorCodecFormat': await _compiledVectorFormat(candidate, vectorPaths),
@@ -988,17 +1397,6 @@ Set<String> _vectorSelectionIds(List<Map<String, Object?>> floors) => {
   for (final floor in floors) floor['id'] as String,
   for (final floor in floors) ..._floorComponents(floor),
 };
-
-// New builds require the currently authored calibration. Reading an already
-// published generation instead validates against its hash-locked evidence.
-void _validateCalibration(Map<String, Object?> local) {
-  final expected = calibrationFor(local['sourceKey'] as String);
-  if (canonicalJson(local) != canonicalJson(expected)) {
-    throw FormatException(
-      'Calibration revision mismatch for ${local['sourceKey']}; changes require a new preparation revision',
-    );
-  }
-}
 
 void _validateMetadataCalibration(
   Map<String, Object?> local,
@@ -2405,6 +2803,103 @@ void validateMetadataSourceIndex(
   }
 }
 
+/// Rejects changes to reviewed marker ownership in a candidate manifest.
+void validateArtworkOwnershipPreservation(
+  Map<String, dynamic> baseline,
+  Map<String, dynamic> candidate,
+) {
+  List<Map<String, dynamic>> maps(Map<String, dynamic> manifest) {
+    final raw = manifest['maps'];
+    if (raw is! List) {
+      throw const FormatException('Artwork candidate manifest has no maps');
+    }
+    return raw.cast<Map<String, dynamic>>();
+  }
+
+  Map<String, Map<String, dynamic>> byMap(
+    List<Map<String, dynamic>> records,
+    String label,
+  ) {
+    final result = <String, Map<String, dynamic>>{};
+    for (final map in records) {
+      final id = map['id'];
+      if (id is! String || result.containsKey(id)) {
+        throw FormatException('Artwork $label has invalid map identity: $id');
+      }
+      result[id] = map;
+    }
+    return result;
+  }
+
+  Map<String, Map<String, dynamic>> markers(
+    Map<String, dynamic> map,
+    String mapId,
+    String label,
+  ) {
+    final raw = map['markers'];
+    if (raw is! List) {
+      throw FormatException('Artwork $label map $mapId has no markers');
+    }
+    final result = <String, Map<String, dynamic>>{};
+    for (final marker in raw.cast<Map<String, dynamic>>()) {
+      final id = marker['id'];
+      if (id is! String || result.containsKey(id)) {
+        throw FormatException(
+          'Artwork $label has invalid marker identity on $mapId: $id',
+        );
+      }
+      result[id] = marker;
+    }
+    return result;
+  }
+
+  Map? assignment(Map<String, dynamic> marker) {
+    final source = marker['source'];
+    if (source is! Map) return null;
+    final value = source['floorAssignment'];
+    return value is Map ? value : null;
+  }
+
+  Map<String, Object?> volume(Map<String, dynamic> marker) => {
+    'position': marker['position'],
+    'heightBand': marker['heightBand'],
+    'outline': marker['outline'],
+  };
+
+  final beforeMaps = byMap(maps(baseline), 'baseline');
+  final afterMaps = byMap(maps(candidate), 'candidate');
+  for (final mapEntry in beforeMaps.entries) {
+    final mapId = mapEntry.key;
+    final afterMap = afterMaps[mapId];
+    if (afterMap == null) {
+      throw FormatException('Artwork candidate removed map $mapId');
+    }
+    final oldMarkers = markers(mapEntry.value, mapId, 'baseline');
+    final newMarkers = markers(afterMap, mapId, 'candidate');
+    for (final entry in oldMarkers.entries) {
+      final oldAssignment = assignment(entry.value);
+      if (oldAssignment == null) continue;
+      final path = '$mapId/${entry.key}';
+      final next = newMarkers[entry.key];
+      if (next == null) {
+        throw FormatException(
+          'Artwork candidate removed reviewed marker: $path',
+        );
+      }
+      final newAssignment = assignment(next);
+      if (newAssignment == null ||
+          canonicalJson(newAssignment) != canonicalJson(oldAssignment) ||
+          canonicalJson(volume(next)) != canonicalJson(volume(entry.value)) ||
+          next['floorId'] != entry.value['floorId'] ||
+          next['floorId'] != oldAssignment['floorId']) {
+        throw FormatException(
+          'Artwork candidate changed reviewed marker ownership: $path',
+        );
+      }
+    }
+  }
+}
+
 /// Rejects artifact changes outside the refreshed metadata evidence.
 ///
 /// Map records may change, but non-marker map data, all non-metadata output
@@ -2576,6 +3071,7 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
   final rebuilt = await rebuildCandidate(
     await FrozenInputs.fromGeneration(committed.directory),
     candidate,
+    context: await MapBuildContext.fromGeneration(committed),
     toolchain: toolchain,
     encode: encode,
   );
@@ -2723,7 +3219,7 @@ Future<List<String>> pruneSupersededGenerations(
   return doomed;
 }
 
-/// What a successful [refreshActive] did.
+/// Describes a successful map-pack publication.
 class MapPackRefresh {
   /// Creates a result.
   const MapPackRefresh({
@@ -2742,9 +3238,9 @@ class MapPackRefresh {
   final List<String> pruned;
 }
 
-/// Thrown by [refreshActive] after the rebuild started and something failed.
+/// Describes a failed publication and its actual recovery state.
 ///
-/// [message] names the candidate folder, which is kept for inspection.
+/// [message] names the candidate folder when it remains available.
 class MapPackRefreshFailure implements Exception {
   /// Creates a failure with [message].
   const MapPackRefreshFailure(this.message);
@@ -2754,6 +3250,459 @@ class MapPackRefreshFailure implements Exception {
 
   @override
   String toString() => message;
+}
+
+/// Supplies the narrow filesystem operations used by shared pack publication.
+abstract interface class MapPackPublicationOperations {
+  /// Writes the staged asset declaration file.
+  Future<void> stagePubspec(File temporary, String contents);
+
+  /// Promotes the validated candidate and switches the active pointer.
+  Future<String> promote(Directory candidate, Directory packs);
+
+  /// Replaces the pubspec file with its staged replacement.
+  Future<void> renamePubspec(File temporary, File destination);
+
+  /// Removes superseded generations and returns their ids.
+  Future<List<String>> prune(Directory packs, String activeId);
+
+  /// Removes an owned candidate after successful publication.
+  Future<void> cleanup(Directory candidate);
+}
+
+/// Publishes one already-staged candidate through the pack transaction.
+///
+/// The candidate is verified against [reviewedContext] and the current active
+/// baseline before any active files are changed. The staged directory remains
+/// operator-owned and is retained after successful publication.
+Future<MapPackRefresh> publishStagedCandidate(
+  Directory candidate,
+  Directory packs,
+  File pubspec, {
+  required String assetRoot,
+  required MapBuildContext reviewedContext,
+  MapPackPublicationOperations? operations,
+  void Function(String line)? log,
+}) async {
+  final root = requireRepoRelativePackRoot(assetRoot);
+  await requireNoInterruptedPromotion(packs);
+  replaceMapPackAssetBlock(await pubspec.readAsString(), const []);
+
+  final baseline = await verifyCommittedGeneration(packs);
+  final manifest = await validateCandidate(candidate);
+  await _validateArtworkCandidateAdmission(
+    candidate,
+    manifest,
+    reviewedContext,
+  );
+  validateArtworkOwnershipPreservation(baseline.manifest, manifest);
+  final report = packChangeReport(baseline.manifest, manifest);
+  final void Function(String) say = log ?? stdout.writeln;
+  _reportDetails(report).forEach(say);
+  say(
+    report.changed
+        ? 'A non-toolchain change requires the existing before-merge owner '
+              'check; command success is not human-review proof.'
+        : 'No changes outside the toolchain record: no owner check is needed.',
+  );
+
+  return runMapPackPublicationTransaction(
+    candidate: candidate,
+    packs: packs,
+    pubspec: pubspec,
+    assetRoot: root,
+    operations: operations ?? _FileSystemMapPackPublicationOperations(),
+    expectedBaselineId: baseline.id,
+    changed: report.changed,
+    deleteCandidateOnSuccess: false,
+  );
+}
+
+/// Runs the report-independent transaction for an already-validated candidate.
+///
+/// It stages the pubspec replacement, rechecks the baseline immediately before
+/// promotion, invokes the validated candidate promotion, replaces the pubspec,
+/// prunes superseded versions, and optionally removes a caller-owned candidate.
+/// A failure reports the actual pointer/pubspec state and keeps the candidate
+/// when it still exists.
+Future<MapPackRefresh> runMapPackPublicationTransaction({
+  required Directory candidate,
+  required Directory packs,
+  required File pubspec,
+  required String assetRoot,
+  required MapPackPublicationOperations operations,
+  String? expectedBaselineId,
+  bool changed = false,
+  bool deleteCandidateOnSuccess = true,
+}) async {
+  final root = requireRepoRelativePackRoot(assetRoot);
+  await requireNoInterruptedPromotion(packs);
+  final originalPubspec = await pubspec.readAsString();
+  replaceMapPackAssetBlock(originalPubspec, const []);
+  final baseline = await verifyCommittedGeneration(packs);
+  if (expectedBaselineId != null && baseline.id != expectedBaselineId) {
+    throw FormatException(
+      'Active baseline changed before publication: expected '
+      '$expectedBaselineId, observed ${baseline.id}',
+    );
+  }
+
+  final manifestBytes = await packFile(
+    candidate,
+    'manifest.json',
+  ).readAsBytes();
+  final id = _hash(manifestBytes);
+  final manifest = jsonDecode(utf8.decode(manifestBytes));
+  if (manifest is! Map<String, dynamic>) {
+    throw const FormatException('Candidate manifest must be an object');
+  }
+  final updated = replaceMapPackAssetBlock(
+    originalPubspec,
+    mapPackAssetLines(root, assetDirectoriesOf(id, manifest)),
+  );
+  final temporary = File('${pubspec.path}.tmp');
+  var pruningStarted = false;
+  var cleanupStarted = false;
+
+  try {
+    await operations.stagePubspec(temporary, updated);
+
+    await requireNoInterruptedPromotion(packs);
+    final current = await verifyCommittedGeneration(packs);
+    if (current.id != baseline.id) {
+      throw FormatException(
+        'Active baseline changed during publication: expected ${baseline.id}, '
+        'observed ${current.id}',
+      );
+    }
+
+    final promotedId = await operations.promote(candidate, packs);
+    if (promotedId != id || await _activeVersion(packs) != id) {
+      throw FormatException(
+        'Promotion did not publish the exact candidate generation $id',
+      );
+    }
+
+    await operations.renamePubspec(temporary, pubspec);
+    if (await pubspec.readAsString() != updated) {
+      throw const FileSystemException(
+        'Pubspec replacement did not install the staged declaration block',
+      );
+    }
+
+    pruningStarted = true;
+    final pruned = await operations.prune(packs, id);
+    if (deleteCandidateOnSuccess) {
+      cleanupStarted = true;
+      await operations.cleanup(candidate);
+    }
+    return MapPackRefresh(id: id, changed: changed, pruned: pruned);
+  } catch (error) {
+    if (await temporary.exists()) {
+      try {
+        await temporary.delete();
+      } on FileSystemException catch (cleanupError) {
+        stderr.writeln('Could not delete ${temporary.path}: $cleanupError');
+      }
+    }
+
+    final activeId = await _publicationActiveId(packs);
+    final pubspecInstalled =
+        await pubspec.exists() && await pubspec.readAsString() == updated;
+    final remaining = await _remainingGenerationIds(packs, id);
+    final targetDetails =
+        'Publication targets: packs ${packs.path}; pubspec ${pubspec.path}.';
+    final recovery = _publicationRecoveryAction(packs, pubspec, root);
+    final phase = switch ((activeId == id, pubspecInstalled)) {
+      (false, _) when activeId == baseline.id =>
+        'The active pointer remains unchanged at ${baseline.id}; the pubspec '
+            'does not name $id.',
+      (false, _) =>
+        'The active pointer no longer names baseline ${baseline.id}; it now '
+            'names ${activeId ?? 'an unreadable value'}. The pubspec '
+            '${pubspecInstalled ? 'names' : 'does not name'} $id.',
+      (true, false) =>
+        'active.json already names $id but pubspec.yaml does not. $recovery',
+      (true, true) when pruningStarted && remaining.isNotEmpty =>
+        'active.json and pubspec.yaml already name $id; pruning was '
+            'interrupted. Remaining generations: ${remaining.join(', ')}. '
+            '$recovery',
+      (true, true) when pruningStarted =>
+        'active.json and pubspec.yaml already name $id; pruning took effect '
+            'before the operation reported failure. $recovery',
+      (true, _) when id == baseline.id && originalPubspec == updated =>
+        'The active generation and pubspec already matched $id; no pointer or '
+            'pubspec change is observable.',
+      (true, true) =>
+        'active.json and pubspec.yaml already name $id; inspect the '
+            'publication state before retrying.',
+    };
+    final phaseWithTargets = '$phase $targetDetails';
+    final candidateExists = await candidate.exists();
+    final cleanup = switch ((cleanupStarted, candidateExists)) {
+      (true, true) => 'Candidate cleanup did not remove ${candidate.path}.',
+      (true, false) =>
+        'Candidate cleanup took effect before the operation failed.',
+      (false, true) => 'Candidate kept at ${candidate.path}.',
+      (false, false) => 'Candidate ${candidate.path} is no longer present.',
+    };
+    throw MapPackRefreshFailure('$error\n$phaseWithTargets\n$cleanup');
+  }
+}
+
+String _publicationRecoveryAction(
+  Directory packs,
+  File pubspec,
+  String assetRoot,
+) {
+  final packPath = packs.path.replaceAll('\\', '/');
+  if (packPath != assetRoot) {
+    return 'Inspect or repair only these named targets before retrying; '
+        'the repository-root maps:rebuild alias does not apply.';
+  }
+  if (assetRoot == 'assets/maps' && pubspec.path == 'pubspec.yaml') {
+    return 'Recover with `mise run maps:rebuild`.';
+  }
+  return 'Recover with `dart run tool/maps/prepare.dart refresh --packs '
+      '"$assetRoot" --pubspec "${pubspec.path}"`.';
+}
+
+Future<String?> _publicationActiveId(Directory packs) async {
+  try {
+    return await _activeVersion(packs);
+  } on Object {
+    return null;
+  }
+}
+
+Future<List<String>> _remainingGenerationIds(
+  Directory packs,
+  String activeId,
+) async {
+  final versions = Directory('${packs.path}/versions');
+  if (!await versions.exists()) return const [];
+  final generation = RegExp(r'^[0-9a-f]{64}$');
+  final remaining = <String>[];
+  await for (final entity in versions.list(followLinks: false)) {
+    if (entity is! Directory) continue;
+    final name = entity.path.replaceAll('\\', '/').split('/').last;
+    if (generation.hasMatch(name) && name != activeId) remaining.add(name);
+  }
+  remaining.sort();
+  return remaining;
+}
+
+class _FileSystemMapPackPublicationOperations
+    implements MapPackPublicationOperations {
+  @override
+  Future<void> stagePubspec(File temporary, String contents) async {
+    await temporary.writeAsString(contents, flush: true);
+  }
+
+  @override
+  Future<String> promote(Directory candidate, Directory packs) =>
+      promoteCandidate(candidate, packs);
+
+  @override
+  Future<void> renamePubspec(File temporary, File destination) async {
+    await temporary.rename(destination.path);
+  }
+
+  @override
+  Future<List<String>> prune(Directory packs, String activeId) =>
+      pruneSupersededGenerations(packs, activeId);
+
+  @override
+  Future<void> cleanup(Directory candidate) async {
+    await candidate.delete(recursive: true);
+  }
+}
+
+bool _sameBytes(List<int> left, List<int> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
+}
+
+Set<String> _requiredArtworkSourcePaths() => {
+  'metadata/maps.json',
+  ..._artworkRefreshTermPaths,
+  for (final entry in additionalVectorSources.entries)
+    '${entry.key}/${entry.value['file']}',
+  vectorSourcePath,
+};
+
+Future<void> _validateArtworkCandidateAdmission(
+  Directory candidate,
+  Map<String, dynamic> manifest,
+  MapBuildContext reviewedContext,
+) async {
+  final reviewedLock = reviewedContext.sourceLock;
+  _validateArtworkSourceConfiguration(reviewedLock);
+  final candidateLock = manifest['sourceLock'];
+  if (candidateLock is! Map<String, dynamic>) {
+    throw const FormatException(
+      'Artwork candidate has no reviewed source lock',
+    );
+  }
+  final currentCalibration = reviewedContext.calibration;
+  final candidateCalibration = await _readJson(
+    candidate,
+    'evidence/calibration.json',
+  );
+  if (canonicalJson(candidateCalibration) !=
+      canonicalJson(currentCalibration)) {
+    throw const FormatException(
+      'Artwork candidate calibration differs from current reviewed calibration',
+    );
+  }
+  if (!_sameBytes(
+    await packFile(candidate, 'NOTICE.txt').readAsBytes(),
+    reviewedContext.noticeBytes,
+  )) {
+    throw const FormatException(
+      'Artwork candidate NOTICE.txt differs from current reviewed notice bytes',
+    );
+  }
+
+  const lockedFields = [
+    'primaryUrls',
+    'primaryHashes',
+    'primaryRepositoryRevisions',
+    'primaryGitBlobs',
+    'primaryProvenance',
+  ];
+  final requiredPaths = _requiredArtworkSourcePaths();
+  final currentValues = <String, Map<String, String>>{
+    for (final field in lockedFields)
+      field: _requiredSourceLockMap(reviewedLock, field),
+  };
+  final candidateValues = <String, Map<String, String>>{
+    for (final field in lockedFields)
+      field: _requiredSourceLockMap(candidateLock, field),
+  };
+  final rawIndex = await _readJson(candidate, 'evidence/sources.json');
+  final rawSources = rawIndex['sources'];
+  if (rawSources is! List) {
+    throw const FormatException('Artwork candidate has no frozen source list');
+  }
+  final sourcesByPath = <String, Map<String, dynamic>>{};
+  for (final raw in rawSources) {
+    if (raw is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Artwork candidate source record is malformed',
+      );
+    }
+    final path = raw['path'];
+    if (path is! String || sourcesByPath.containsKey(path)) {
+      throw FormatException('Duplicate or invalid artwork source path: $path');
+    }
+    sourcesByPath[path] = raw;
+  }
+
+  for (final path in requiredPaths) {
+    for (final field in lockedFields) {
+      final expected = currentValues[field]![path];
+      final requiredLock = switch (field) {
+        'primaryUrls' || 'primaryHashes' || 'primaryProvenance' => true,
+        _ => false,
+      };
+      if ((requiredLock && expected == null) ||
+          candidateValues[field]![path] != expected) {
+        throw FormatException(
+          'Artwork candidate current reviewed $field admission differs for $path',
+        );
+      }
+    }
+    final expectedUrl = currentValues['primaryUrls']![path]!;
+    final expectedHash = currentValues['primaryHashes']![path]!;
+    final source = sourcesByPath[path];
+    if (source == null) {
+      throw FormatException(
+        'Artwork candidate frozen source record is missing: $path',
+      );
+    }
+    final bytes = await packFile(candidate, 'evidence/$path').readAsBytes();
+    validateLockedSourceRecord(
+      path: path,
+      source: source,
+      bytes: bytes,
+      expectedUrl: expectedUrl,
+      expectedSha256: expectedHash,
+      expectedRepositoryRevision:
+          currentValues['primaryRepositoryRevisions']![path],
+      expectedGitBlobSha1: currentValues['primaryGitBlobs']![path],
+    );
+    if (source['provenance'] != currentValues['primaryProvenance']![path]) {
+      throw FormatException(
+        'Artwork candidate reviewed provenance differs for $path',
+      );
+    }
+    if (source['repositoryRevision'] !=
+            currentValues['primaryRepositoryRevisions']![path] ||
+        source['gitBlobSha1'] != currentValues['primaryGitBlobs']![path]) {
+      throw FormatException(
+        'Artwork candidate pinned repository evidence differs for $path',
+      );
+    }
+  }
+
+  final metadata = jsonDecode(
+    await packFile(candidate, 'evidence/metadata/maps.json').readAsString(),
+  ) as List;
+  for (final rawLocal
+      in (currentCalibration['maps'] as List).cast<Map<String, dynamic>>()) {
+    final local = Map<String, Object?>.from(rawLocal);
+    final upstream = interactiveMetadata(
+      metadata,
+      local['sourceKey'] as String,
+    );
+    final resources = <Map<String, Object?>>[
+      for (final floor in reconcileFloors(local, upstream))
+        if (floor['sourceTileUrl'] != null) floor,
+    ];
+    for (final rawDependency
+        in (local['rasterDependencies'] as List? ?? const <Object?>[])) {
+      if (rawDependency is! Map) {
+        throw FormatException(
+          'Artwork candidate raster dependency is malformed: ${local['id']}',
+        );
+      }
+      resources.add({
+        ...Map<String, Object?>.from(rawDependency),
+        'id': 'dependency-${rawDependency['id']}',
+      });
+    }
+    for (final resource in resources) {
+      final mapId = local['id'] as String;
+      final floorId = resource['id'] as String;
+      final url = resource['sourceTileUrl'] as String;
+      for (var x = 0; x < 16; x++) {
+        for (var y = 0; y < 16; y++) {
+          final path = rawTilePath(mapId, floorId, x, y);
+          final source = sourcesByPath[path];
+          if (source == null) {
+            throw FormatException(
+              'Artwork candidate frozen raster source is missing: $path',
+            );
+          }
+          final observedUrl = source['url'];
+          if (observedUrl is! String) {
+            throw FormatException(
+              'Artwork candidate raster source URL is invalid: $path',
+            );
+          }
+          validateRasterTileSourceUrl(
+            path: path,
+            observedUrl: observedUrl,
+            expectedUrl: tileUrl(url, x, y),
+          );
+        }
+      }
+    }
+  }
 }
 
 String _refreshStamp(DateTime moment) {
@@ -2767,23 +3716,21 @@ String _refreshStamp(DateTime moment) {
 /// it, rewrites the asset block in [pubspec] and prunes superseded
 /// generations.
 ///
-/// In order: the leftover precheck and the marker check (before any write);
-/// verification of the committed generation; the rebuild and its validation
-/// into `refresh-<UTC>` under [candidateParent] (default `.dart_tool/maps`);
-/// the change report through [log] (default stdout); staging the rewritten
-/// block, declaring directories under [assetRoot], in a temp file next to
-/// [pubspec]; promotion; the rename of that file over [pubspec]; pruning; and
-/// deleting the candidate.
+/// In order: the leftover-promotion precheck and the marker check; verification
+/// of the committed generation; the rebuild and validation into
+/// `refresh-<UTC>` under [candidateParent] (default `.dart_tool/maps`); the
+/// existing change report through [log] (default stdout); then the shared
+/// publication transaction, which stages the replacement asset block, promotes
+/// the validated candidate, replaces [pubspec], prunes superseded generations
+/// and removes this refresh-owned candidate.
 ///
-/// Until promotion nothing under [packs] changes. When the rebuild started
-/// and anything fails, the candidate is kept and a [MapPackRefreshFailure]
-/// names it. A failure before the rename deletes the staged pubspec file; one
-/// after promotion also says what already names the new generation and to run
-/// `mise run maps:rebuild` again. When [metadataInputs] is omitted, the
-/// committed generation's inputs are rebuilt as usual. When supplied, only its
-/// six replacement metadata sources may differ from the verified baseline.
-/// [encode] replaces the vector encoder of the rebuild only; validation
-/// always uses the real one.
+/// The publication transaction rechecks the committed baseline immediately
+/// before promotion and reports the actual pointer, pubspec, pruning and
+/// candidate-cleanup state after an interruption. When [metadataInputs] is
+/// omitted, the committed generation's inputs are rebuilt as usual. When
+/// supplied, only its six replacement metadata sources may differ from the
+/// verified baseline. [encode] replaces the vector encoder of the rebuild only;
+/// validation always uses the real one.
 Future<MapPackRefresh> refreshActive(
   Directory packs,
   File pubspec, {
@@ -2803,9 +3750,6 @@ Future<MapPackRefresh> refreshActive(
     '${(candidateParent ?? Directory('.dart_tool/maps')).path}'
     '/refresh-${_refreshStamp(now ?? DateTime.now())}',
   );
-  final temporary = File('${pubspec.path}.tmp');
-  String? promoted;
-  var renamed = false;
   try {
     late CommittedGeneration committed;
     late Map<String, dynamic> rebuilt;
@@ -2826,6 +3770,7 @@ Future<MapPackRefresh> refreshActive(
       rebuilt = await rebuildCandidate(
         metadataInputs,
         candidate,
+        context: await MapBuildContext.fromGeneration(committed),
         toolchain: toolchain,
         encode: encode ?? _encodeVector,
       );
@@ -2842,51 +3787,331 @@ Future<MapPackRefresh> refreshActive(
                       'above in the app before merge.'
           : 'Only the toolchain record changed: no owner check is needed.',
     );
-    final manifestBytes = await packFile(
-      candidate,
-      'manifest.json',
-    ).readAsBytes();
-    final updated = replaceMapPackAssetBlock(
-      await pubspec.readAsString(),
-      mapPackAssetLines(
-        root,
-        assetDirectoriesOf(
-          _hash(manifestBytes),
-          jsonDecode(utf8.decode(manifestBytes)) as Map<String, dynamic>,
-        ),
-      ),
+    return await runMapPackPublicationTransaction(
+      candidate: candidate,
+      packs: packs,
+      pubspec: pubspec,
+      assetRoot: root,
+      operations: _FileSystemMapPackPublicationOperations(),
+      expectedBaselineId: committed.id,
+      changed: report.changed,
+      deleteCandidateOnSuccess: true,
     );
-    await temporary.writeAsString(updated, flush: true);
-    final id = await promoteCandidate(candidate, packs);
-    promoted = id;
-    await temporary.rename(pubspec.path);
-    renamed = true;
-    final pruned = await pruneSupersededGenerations(packs, id);
-    await candidate.delete(recursive: true);
-    return MapPackRefresh(id: id, changed: report.changed, pruned: pruned);
+  } on MapPackRefreshFailure {
+    rethrow;
   } catch (error) {
-    if (!renamed) {
-      try {
-        if (await temporary.exists()) await temporary.delete();
-      } on FileSystemException catch (cleanup) {
-        stderr.writeln('Could not delete ${temporary.path}: $cleanup');
-      }
-    }
-    final after = switch ((promoted, renamed)) {
-      (null, _) => '',
-      (final id?, false) =>
-        '\nactive.json already names $id but pubspec.yaml does not; run '
-            'mise run maps:rebuild again to bring them in line',
-      (final id?, true) =>
-        '\nactive.json and pubspec.yaml already name $id; run '
-            'mise run maps:rebuild again to delete the superseded generations',
-    };
     if (await candidate.exists()) {
       throw MapPackRefreshFailure(
-        '$error$after\nCandidate kept at ${candidate.path}',
+        '$error\nCandidate kept at ${candidate.path}',
       );
     }
-    if (promoted != null) throw MapPackRefreshFailure('$error$after');
     rethrow;
+  }
+}
+
+const _artworkRefreshTermPaths = {
+  'terms/svg-maps-README.md',
+  'terms/svg-maps-LICENSE.md',
+  'terms/tarkov-dev-README.md',
+  'terms/tarkov-dev-software-LICENSE.txt',
+  'terms/tarkovbot-creator.html',
+};
+
+void _validateArtworkSourceConfiguration(Map<String, dynamic> sourceLock) {
+  final urls = _requiredSourceLockMap(sourceLock, 'primaryUrls');
+  final hashes = _requiredSourceLockMap(sourceLock, 'primaryHashes');
+  final revisions = _requiredSourceLockMap(
+    sourceLock,
+    'primaryRepositoryRevisions',
+  );
+  final blobs = _requiredSourceLockMap(sourceLock, 'primaryGitBlobs');
+  final provenance = _requiredSourceLockMap(sourceLock, 'primaryProvenance');
+  final requiredPaths = _requiredArtworkSourcePaths();
+  for (final path in requiredPaths) {
+    final expectedUrl = primarySourceUrls[path];
+    final expectedHash = hashes[path];
+    final expectedProvenance = provenance[path];
+    if (expectedUrl == null ||
+        urls[path] != expectedUrl ||
+        expectedHash == null ||
+        expectedHash.isEmpty ||
+        expectedProvenance == null ||
+        expectedProvenance.isEmpty) {
+      throw FormatException(
+        'Required reviewed source lock is incomplete: $path',
+      );
+    }
+    final expectedRevision = primarySourceRepositoryRevisions[path];
+    if (revisions[path] != expectedRevision) {
+      throw FormatException(
+        'Reviewed repository revision is missing or changed for $path',
+      );
+    }
+    final expectedBlob = primarySourceGitBlobs[path];
+    if (blobs[path] != expectedBlob) {
+      throw FormatException(
+        'Reviewed Git blob is missing or changed for $path',
+      );
+    }
+  }
+}
+
+/// Acquires sources admitted by reviewed configuration and builds a candidate
+/// without publishing.
+///
+/// The active generation supplies the six retained regular-mode snapshots.
+/// Raster URLs come from reviewed calibration; acquired raster hashes freeze
+/// candidate integrity but do not approve prior bytes. Without
+/// [reviewedCalibrationUpdate], a calibration mismatch fails before fetches.
+/// When true, the reviewed configuration is selected and must pass the same
+/// candidate validation. [stage] must be a new directory. Temporary acquired
+/// inputs are removed on exit; a built candidate is retained after a later
+/// failure for diagnosis. Retrying requires another fresh stage directory.
+Future<
+  ({
+    Directory candidate,
+    Map<String, dynamic> manifest,
+    PackChangeReport report,
+    List<String> diagnostics,
+  })
+>
+stageArtworkRefresh(
+  Directory packs,
+  File pubspec, {
+  required Directory stage,
+  required Map<String, String> toolchain,
+  required Future<Uint8List> Function(Uri uri) fetch,
+  required MapBuildContext reviewedContext,
+  bool reviewedCalibrationUpdate = false,
+}) async {
+  final stagePath = stage.uri.toFilePath();
+  final separator = Platform.pathSeparator.codeUnitAt(0);
+  var end = stagePath.length;
+  while (end > 0 && stagePath.codeUnitAt(end - 1) == separator) {
+    end--;
+  }
+  if (end == 0) {
+    throw const FormatException('Artwork staging requires a directory name');
+  }
+  final raw = Directory('${stagePath.substring(0, end)}.raw');
+  for (final output in [stage, raw]) {
+    final unsafe = unsafeOutputReason(
+      output.path,
+      protectedDirectories: [packs.path],
+      protectedFiles: [pubspec.path],
+    );
+    if (unsafe != null) {
+      throw FormatException('Unsafe artwork staging path: $unsafe');
+    }
+    if (await FileSystemEntity.type(output.path, followLinks: false) !=
+        FileSystemEntityType.notFound) {
+      throw FormatException(
+        'Artwork staging requires a fresh directory: ${output.path}',
+      );
+    }
+  }
+  replaceMapPackAssetBlock(await pubspec.readAsString(), const []);
+  await requireNoInterruptedPromotion(packs);
+  final active = await verifyCommittedGeneration(packs);
+  final baselineContext = await MapBuildContext.fromGeneration(active);
+  _validateArtworkSourceConfiguration(reviewedContext.sourceLock);
+  final calibration = selectArtworkRefreshCalibration(
+    baseline: baselineContext.calibration,
+    reviewed: reviewedContext.calibration,
+    reviewedCalibrationUpdate: reviewedCalibrationUpdate,
+  );
+  final context = MapBuildContext.reviewed(
+    calibration: calibration,
+    sourceLock: reviewedContext.sourceLock,
+    noticeBytes: reviewedContext.noticeBytes,
+  );
+  final baselineInputs = await FrozenInputs.fromGeneration(active.directory);
+  final baselineMetadata =
+      jsonDecode(await baselineInputs.text('metadata/maps.json')) as List;
+  final diagnostics = <String>[];
+  final sourceRecords = <String, Map<String, Object?>>{};
+  try {
+    await raw.create(recursive: true);
+
+    Future<void> addSource(
+      String path,
+      Map<String, Object?> record,
+      List<int> bytes,
+    ) async {
+      if (sourceRecords.containsKey(path)) {
+        throw FormatException('Duplicate artwork source path: $path');
+      }
+      await _write(raw, path, bytes);
+      sourceRecords[path] = record;
+    }
+
+    Future<Uint8List> request(String path, Uri uri) async {
+      final Uint8List bytes;
+      try {
+        bytes = await fetch(uri);
+      } catch (error) {
+        throw FormatException(
+          'Could not acquire required artwork source $path from $uri: $error',
+        );
+      }
+      return bytes;
+    }
+
+    Future<Uint8List> acquirePrimary(String path) async {
+      final urls = _requiredSourceLockMap(context.sourceLock, 'primaryUrls');
+      final url = urls[path];
+      if (url == null || url != primarySourceUrls[path]) {
+        throw FormatException(
+          'Required reviewed source URL is missing or changed: $path',
+        );
+      }
+      final uri = Uri.parse(url);
+      final bytes = await request(path, uri);
+      final record = _lockedSourceRecord(path, uri, bytes, context.sourceLock);
+      await addSource(path, Map<String, Object?>.from(record), bytes);
+      return bytes;
+    }
+
+    final metadataBytes = await acquirePrimary('metadata/maps.json');
+    final metadata = jsonDecode(utf8.decode(metadataBytes)) as List;
+    diagnostics.addAll(
+      validateFreshMapIdentities(
+        metadata,
+        baselineMetadata,
+        supportedSourceKeys: supportedMapSources.values.toList(),
+      ),
+    );
+
+    final requiredSourcePaths = <String>{
+      ..._artworkRefreshTermPaths,
+      for (final entry in (calibration['maps'] as List).cast<Map>())
+        if (entry['kind'] == 'vector')
+          entry['sourceSvgPath'] as String? ?? vectorSourcePath,
+    };
+    for (final path in requiredSourcePaths.toList()..sort()) {
+      await acquirePrimary(path);
+    }
+
+    final baselineSourceRecords = <String, Map<String, dynamic>>{};
+    for (final source in FrozenInputs._sourceList(baselineInputs.index)) {
+      final path = source['path'] as String;
+      if (baselineSourceRecords.containsKey(path)) {
+        throw FormatException('Duplicate baseline source path: $path');
+      }
+      baselineSourceRecords[path] = source;
+    }
+    for (final path in _metadataReplacementPaths) {
+      final record = baselineSourceRecords[path];
+      if (record == null) {
+        throw FormatException('Verified generation is missing source $path');
+      }
+      final bytes = await baselineInputs.bytes(path);
+      await addSource(path, Map<String, Object?>.from(record), bytes);
+    }
+
+    final calibrationBytes = reviewedCalibrationUpdate
+        ? utf8.encode(canonicalJson(context.calibration))
+        : await baselineInputs.bytes('calibration.json');
+    await addSource('calibration.json', {
+      'path': 'calibration.json',
+      'url': 'blackgrid:calibration-v1',
+      'sha256': _hash(calibrationBytes),
+    }, calibrationBytes);
+
+    final jobs = <({String path, String url})>[];
+    for (final rawLocal in (calibration['maps'] as List).cast<Map>()) {
+      final local = Map<String, Object?>.from(rawLocal);
+      final upstream = interactiveMetadata(
+        metadata,
+        local['sourceKey'] as String,
+      );
+      _validateMetadataCalibration(local, upstream);
+      final floors = reconcileFloors(local, upstream);
+      final resources = <Map<String, Object?>>[
+        for (final floor in floors)
+          if (floor['sourceTileUrl'] != null) floor,
+        for (final rawDependency
+            in (local['rasterDependencies'] as List? ?? []))
+          {
+            ...Map<String, Object?>.from(rawDependency as Map),
+            'id': 'dependency-${rawDependency['id']}',
+          },
+      ];
+      for (final resource in resources) {
+        final sourceTileUrl = resource['sourceTileUrl'];
+        if (sourceTileUrl is! String || sourceTileUrl.isEmpty) {
+          throw FormatException(
+            'Reviewed raster resource has no source URL: '
+            '${local['id']}/${resource['id']}',
+          );
+        }
+        final mapId = local['id'] as String;
+        final floorId = resource['id'] as String;
+        for (var x = 0; x < 16; x++) {
+          for (var y = 0; y < 16; y++) {
+            final path = rawTilePath(mapId, floorId, x, y);
+            final url = tileUrl(sourceTileUrl, x, y);
+            validateRasterTileSourceUrl(
+              path: path,
+              observedUrl: url,
+              expectedUrl: tileUrl(sourceTileUrl, x, y),
+            );
+            jobs.add((path: path, url: url));
+          }
+        }
+      }
+    }
+
+    final inspectedTileHashes = <String>{};
+    for (var start = 0; start < jobs.length; start += 8) {
+      await Future.wait(
+        jobs.skip(start).take(8).map((job) async {
+          final uri = Uri.parse(job.url);
+          final bytes = await request(job.path, uri);
+          final hash = _hash(bytes);
+          if (!inspectedTileHashes.contains(hash)) {
+            inspectPng(bytes);
+            inspectedTileHashes.add(hash);
+          }
+          await addSource(job.path, {
+            'path': job.path,
+            'url': job.url,
+            'sha256': hash,
+          }, bytes);
+        }),
+      );
+    }
+
+    final sources = sourceRecords.values.toList()
+      ..sort((a, b) => (a['path'] as String).compareTo(b['path'] as String));
+    final sourceIndex = <String, Object?>{
+      'schemaVersion': 1,
+      'vectorSourceRevision': vectorSourceRevision,
+      'metadataRepositoryRevision': metadataRepositoryRevision,
+      'metadataBlob': metadataBlob,
+      'sources': sources,
+    };
+    await _write(raw, 'sources.json', utf8.encode(canonicalJson(sourceIndex)));
+    final frozen = await FrozenInputs.open(raw);
+    final manifest = await rebuildCandidate(
+      frozen,
+      stage,
+      context: context,
+      toolchain: toolchain,
+    );
+    try {
+      validateArtworkOwnershipPreservation(active.manifest, manifest);
+    } on FormatException {
+      await packFile(stage, 'manifest.json').delete();
+      rethrow;
+    }
+    return (
+      candidate: stage,
+      manifest: manifest,
+      report: packChangeReport(active.manifest, manifest),
+      diagnostics: List<String>.unmodifiable(diagnostics),
+    );
+  } finally {
+    if (await raw.exists()) await raw.delete(recursive: true);
   }
 }
