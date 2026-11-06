@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ember specimen</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="specimen.css">
+</head>
+<body class="em sp-body">
+<svg width="0" height="0" class="sp-defs" aria-hidden="true">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l8.5 15h-17z"/><path d="M12 10v4M12 16.8v.2"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/></symbol>
+</svg>
+<header class="sp-head">
+  <h1 class="em-display">Ember</h1>
+  <p class="em-prose-small">A quiet, dark-first workbench system: layered near-blacks, hairlines, one warm accent, two type voices. Both rooms below use the same token names. Sample content is placeholder text.</p>
+</header>
+<main class="sp-rooms">
+<!-- the same markup twice: once per theme -->
+<section class="sp-room" data-theme="dark" aria-label="Dark theme">
+  <h2 class="em-label">Dark</h2>
+  <div class="sp-grid">
+    <div class="em-panel">
+      <div class="em-ui-heading">Buttons</div>
+      <div class="sp-line"><button class="em-btn" data-variant="primary"><svg class="em-icon"><use href="#i-plus"/></svg>New item</button><button class="em-btn">Details</button><button class="em-btn" data-variant="quiet">Reload</button><button class="em-btn" disabled>Disabled</button></div>
+      <div class="sp-line"><button class="em-btn" data-size="large">Large action</button><button class="em-ib" aria-label="Search"><svg class="em-icon"><use href="#i-search"/></svg></button><button class="em-ib" aria-pressed="true" aria-label="Sidebar"><svg class="em-icon"><use href="#i-panel"/></svg></button><a class="em-link" href="#top">Text link</a></div>
+      <div class="em-ui-heading">Segmented and chips</div>
+      <div class="sp-line"><div class="em-seg" role="tablist"><button role="tab" aria-selected="true">Write</button><button role="tab" aria-selected="false">Board</button><button role="tab" aria-selected="false">Canvas</button></div></div>
+      <div class="em-chips"><button class="em-chip" aria-pressed="true">All</button><button class="em-chip" aria-pressed="false">People</button><button class="em-chip" aria-pressed="false">Places</button><span class="em-chip">Read-only tag</span></div>
+    </div>
+    <div class="em-panel">
+      <div class="em-ui-heading">Fields</div>
+      <label class="em-field"><span>Title</span><input class="em-input em-headline" value="Example title"></label>
+      <label class="em-field"><span>Year</span><input class="em-input" value="1185" aria-invalid="true"><small class="em-error">End year comes before the start year. Not saved yet.</small></label>
+      <div class="em-field"><span>Kind</span><div class="em-fixed"><svg class="em-icon"><use href="#i-lock"/></svg>Fixed after creation</div></div>
+      <div class="sp-line"><span class="em-save">Saved</span><span class="em-save" data-state="busy">Saving…</span><span class="em-save" data-state="bad">Not saved</span><kbd class="em-kbd">Ctrl K</kbd></div>
+    </div>
+    <div class="em-panel">
+      <div class="em-ui-heading">Banners</div>
+      <div class="em-banner"><svg class="em-icon"><use href="#i-info"/></svg><div><b>Nothing changed</b>An info note explains what was kept.</div></div>
+      <div class="em-banner" data-tone="warn"><svg class="em-icon"><use href="#i-alert"/></svg><div><b>Changed elsewhere</b>Your draft is kept; nothing was merged.<div class="em-acts"><button class="em-btn">Keep mine</button><button class="em-btn">Load theirs</button></div></div></div>
+      <div class="em-banner" data-tone="error"><svg class="em-icon"><use href="#i-alert"/></svg><div><b>Couldn’t save</b>The edit is still here.<div class="em-acts"><button class="em-btn">Retry save</button></div></div></div>
+    </div>
+    <div class="em-panel">
+      <div class="em-ui-heading">Rows, cards and monograms</div>
+      <div><button class="em-row" aria-current="true"><span class="em-monogram" data-size="sm">AB</span>Current row<em>454</em></button><button class="em-row"><span class="em-monogram" data-size="sm">CD</span>Another row<em>41</em></button></div>
+      <div class="em-card" aria-current="true"><b class="em-serif">A card title</b><span class="em-prose-small sp-muted">Three lines of serif excerpt at most, in Ink Secondary, so a column of cards stays scannable.</span><span class="em-label">120 words</span></div>
+      <p class="em-prose-small">Prose with a <span class="em-ref" tabindex="0" role="button">linked reference</span> that opens its record beside the text.</p>
+    </div>
+    <div class="sp-float">
+      <div class="em-menu" role="menu" aria-label="Example menu"><div class="em-mh">Choose one</div><button class="em-mi" role="menuitem"><span class="em-monogram" data-size="sm">EF</span><span>First choice<small>With a short description</small></span></button><button class="em-mi" role="menuitem"><span class="em-monogram" data-size="sm">GH</span><span>Second choice<small>Another description</small></span></button><hr><button class="em-mi" role="menuitem"><svg class="em-icon"><use href="#i-plus"/></svg><span>Create “query”</span></button></div>
+      <div class="em-toast">Moved “Item” to position 3 <button class="em-link">Undo</button></div>
+    </div>
+    <div class="em-panel sp-type">
+      <div class="em-ui-heading">Type</div>
+      <div class="em-display">Display 30</div>
+      <div class="em-headline">Headline 22</div>
+      <div class="em-title">Title 19</div>
+      <p class="em-prose">Prose 17/1.75. The words that belong to the user are set in the serif; the words that belong to the tool are set in the sans.</p>
+      <div>Body 13 · tabular 0123456789</div>
+      <div class="em-label">Label 11.5</div>
+    </div>
+  </div>
+</section>
+<section class="sp-room" data-theme="light" aria-label="Light theme" id="light-room"></section>
+</main>
+<script type="module" src="specimen.js"></script>
+</body>
+</html>

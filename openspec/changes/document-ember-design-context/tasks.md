@@ -12,7 +12,7 @@ The change has no specs (`skip_specs: true`): it adds design documents and chang
 
 ## 1. Brand kit
 
-- [ ] 1.1 Copy `F:\Dev\Orca\Workspace\mythspine-html\brand` into `brand/` as real files, with the OFL licence texts beside the fonts `brand/flutter/` not wired into `lib/`, and `brand/**` excluded in `analysis_options.yaml`; verify with a recursive file comparison against the source
+- [x] 1.1 Copy `F:\Dev\Orca\Workspace\mythspine-html\brand` into `brand/` as real files, with the OFL licence texts beside the fonts `brand/flutter/` not wired into `lib/`, and `brand/**` excluded in `analysis_options.yaml`; verify with a recursive file comparison against the source
 
 ## 2. Product record
 

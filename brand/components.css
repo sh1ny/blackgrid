@@ -1,0 +1,103 @@
+/* Ember components. Requires tokens.css. Every class is prefixed `em-` so it can sit beside an existing app's CSS.
+   State lives in ARIA attributes (aria-pressed, aria-selected, aria-current, aria-invalid) rather than modifier classes. */
+
+/* ---------- base (opt in by adding .em to <body> or any root). :where() keeps it at zero specificity so components win. ---------- */
+.em { background: var(--canvas); color: var(--ink); font: var(--type-body); font-feature-settings: "tnum" 1; -webkit-font-smoothing: antialiased; }
+:where(.em) *, :where(.em) *::before, :where(.em) *::after { box-sizing: border-box; }
+:where(.em) ::selection { background: var(--accent-soft); color: var(--ink); }
+:where(.em) :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-s); }
+:where(.em) button, :where(.em) input, :where(.em) textarea, :where(.em) select { font: inherit; color: inherit; }
+:where(.em) button { background: none; border: 0; padding: 0; cursor: pointer; }
+:where(.em) button:disabled { cursor: not-allowed; opacity: .45; }
+:where(.em) svg.em-icon { width: var(--size-icon); height: var(--size-icon); fill: none; stroke: currentColor; stroke-width: var(--size-icon-stroke); stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.em-serif { font-family: var(--font-serif); }
+.em-display { font: var(--type-display); letter-spacing: var(--type-display-tracking); text-wrap: balance; }
+.em-headline { font: var(--type-headline); letter-spacing: var(--type-headline-tracking); }
+.em-title { font: var(--type-title); letter-spacing: var(--type-title-tracking); }
+.em-prose { font: var(--type-prose); color: var(--prose); max-width: 66ch; }
+.em-prose-small { font: var(--type-prose-small); color: var(--prose); }
+.em-ui-heading { font: var(--type-ui-heading); }
+.em-label { font: var(--type-label); color: var(--ink-tertiary); }
+.em-hint { color: var(--ink-tertiary); font-size: 12px; }
+.em-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- buttons ---------- */
+.em-btn { height: var(--size-control); padding: 0 var(--space-md); border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hairline-strong); color: var(--ink); font: var(--type-control); white-space: nowrap; }
+.em-btn:hover:not(:disabled) { background: var(--hover); }
+.em-btn svg.em-icon { width: 14px; height: 14px; }
+.em-btn[data-variant="primary"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.em-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--accent); filter: brightness(1.07); }
+.em-btn[data-variant="quiet"] { border-color: transparent; color: var(--ink-secondary); }
+.em-btn[data-size="large"] { height: var(--size-control-large); padding: 0 var(--space-lg); font-size: 13px; }
+.em-ib { width: var(--size-control); height: var(--size-control); border-radius: var(--radius-m); display: inline-grid; place-items: center; color: var(--ink-secondary); flex: none; }
+.em-ib:hover:not(:disabled), .em-ib[aria-pressed="true"] { background: var(--hover); color: var(--ink); }
+.em-link { color: var(--accent-text); font-weight: 500; font-size: 12px; }
+.em-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- segmented control ---------- */
+.em-seg { display: inline-flex; padding: 2px; border-radius: var(--radius-pill); background: var(--raised); border: 1px solid var(--hairline); flex: none; }
+.em-seg > button { height: var(--size-segment); padding: 0 var(--space-md); border-radius: var(--radius-pill); color: var(--ink-secondary); font: var(--type-control); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.em-seg > button:hover { color: var(--ink); }
+.em-seg > button[aria-selected="true"], .em-seg > button[aria-pressed="true"] { background: var(--segment-on); color: var(--ink); box-shadow: var(--shadow-seated); }
+
+/* ---------- chips ---------- */
+.em-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.em-chip { height: var(--size-chip); padding: 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--hairline-strong); color: var(--ink-secondary); font: var(--type-label); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.em-chip[aria-pressed="true"], .em-chip[aria-current="true"] { border-color: var(--accent-line); color: var(--accent-text); background: var(--accent-soft); }
+
+/* ---------- fields ---------- */
+.em-field { display: grid; gap: 6px; }
+.em-field > span { color: var(--ink-secondary); font-weight: 500; font-size: 12px; }
+.em-input, .em-textarea, .em-select { width: 100%; background: var(--raised); border: 1px solid var(--hairline-strong); border-radius: var(--radius-m); padding: 7px 10px; color: var(--ink); outline: 0; }
+.em-textarea { min-height: 92px; resize: vertical; font: var(--type-prose-small); }
+.em-input:focus, .em-textarea:focus, .em-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.em-input[aria-invalid="true"], .em-textarea[aria-invalid="true"] { border-color: var(--err-line); }
+.em-field .em-error { color: var(--err-ink); font-size: 12px; }
+.em-fixed { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px dashed var(--hairline-strong); border-radius: var(--radius-m); color: var(--ink-secondary); }
+
+/* ---------- containers ---------- */
+.em-panel { background: var(--panel); border: 1px solid var(--hairline); border-radius: var(--radius-l); padding: 18px; display: grid; gap: 14px; }
+.em-card { background: var(--raised); border: 1px solid var(--hairline); border-radius: var(--radius-m); padding: 10px 12px; display: grid; gap: 6px; }
+.em-card:hover { border-color: var(--hairline-strong); }
+.em-card[aria-current="true"] { border-color: var(--accent-line); box-shadow: inset 3px 0 0 var(--accent); }
+.em-row { display: flex; align-items: center; gap: var(--space-sm); padding: 6px 8px; min-height: var(--size-row); border-radius: var(--radius-m); color: var(--ink-secondary); width: 100%; text-align: left; }
+.em-row:hover, .em-row[aria-current="true"] { background: var(--hover); color: var(--ink); }
+.em-row em { font-style: normal; color: var(--ink-tertiary); font-size: 11.5px; margin-left: auto; }
+.em-row:hover em, .em-row[aria-current="true"] em { color: var(--ink-secondary); } /* tertiary ink drops below 4.5:1 on Hover */
+
+/* ---------- banners ---------- */
+.em-banner { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-l); font-size: 12.5px; line-height: 1.45; background: var(--raised); border: 1px solid var(--hairline-strong); color: var(--ink-secondary); }
+.em-banner b { display: block; font-weight: 500; color: var(--ink); }
+.em-banner[data-tone="warn"] { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.em-banner[data-tone="warn"] b { color: var(--warn-strong); }
+.em-banner[data-tone="error"] { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+.em-banner[data-tone="error"] b { color: inherit; }
+.em-banner .em-acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.em-banner .em-btn { height: 24px; font-size: 12px; padding: 0 10px; color: inherit; border-color: currentColor; }
+
+/* ---------- floating layers (the only things with a shadow) ---------- */
+.em-menu { min-width: 220px; background: var(--raised); border: 1px solid var(--hairline-strong); border-radius: var(--radius-l); box-shadow: var(--shadow-float); padding: 6px; }
+.em-menu .em-mi { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border-radius: var(--radius-m); text-align: left; }
+.em-menu .em-mi:hover, .em-menu .em-mi:focus-visible { background: var(--hover); outline: 0; }
+.em-menu .em-mi small { display: block; color: var(--ink-tertiary); font-size: 11.5px; }
+.em-menu .em-mh { padding: 6px 10px 4px; color: var(--ink-tertiary); font: var(--type-label); }
+.em-menu hr { border: 0; border-top: 1px solid var(--hairline); margin: 6px 4px; }
+.em-toast { display: inline-flex; align-items: center; gap: 12px; background: var(--raised); border: 1px solid var(--hairline-strong); box-shadow: var(--shadow-float); border-radius: var(--radius-pill); padding: 8px 14px; color: var(--ink); font: var(--type-control); font-weight: 400; }
+.em-toast .em-link { font-size: inherit; }
+.em-scrim { position: fixed; inset: 0; background: var(--scrim); }
+
+/* ---------- small parts ---------- */
+.em-kbd { font: 11px var(--font-sans); color: var(--ink-secondary); background: var(--hover); border: 1px solid var(--hairline-strong); border-radius: var(--radius-s); padding: 1px 6px; white-space: nowrap; }
+.em-save { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-secondary); font-size: 12px; }
+.em-save::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.em-save[data-state="busy"]::before { background: var(--accent); }
+.em-save[data-state="bad"]::before { background: var(--err-ink); }
+.em-monogram { width: 48px; height: 48px; border-radius: var(--radius-l); background: var(--raised); border: 1px solid var(--hairline-strong); display: grid; place-items: center; font: 500 17px var(--font-serif); color: var(--accent-text); flex: none; object-fit: cover; }
+.em-monogram[data-size="sm"] { width: 24px; height: 24px; border-radius: var(--radius-s); font-size: 11px; }
+.em-ref { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent-line); text-decoration-thickness: 1.5px; text-underline-offset: 4px; cursor: pointer; border-radius: var(--radius-s); }
+.em-ref:hover, .em-ref[aria-current="true"] { background: var(--accent-soft); text-decoration-color: var(--accent); }
+.em-badge { min-width: 15px; height: 15px; padding: 0 4px; border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink); font: 600 9.5px/15px var(--font-sans); text-align: center; }
+
+/* ---------- motion: the one family ---------- */
+.em-panel-anim { transition: width var(--motion-panel) var(--ease-panel), transform var(--motion-panel) var(--ease-panel); }
+@media (prefers-reduced-motion: reduce) { .em-panel-anim { transition-duration: 1ms; } }
