@@ -576,7 +576,7 @@ The status bar holds status that can be changed in one click: the game mode (cli
 | Section | Settings |
 |---|---|
 | General | Theme (System, Dark, Light; X8), game mode (PvP, PvE, Seasonal; also in the status bar) |
-| Live scan | Live scan on/off (also in the status bar), scan key, scan on click, record scan frames |
+| Live scan | Live scan on/off (also in the status bar), scan key, record scan frames. A click scans whenever live scan is on, as today; there is no separate setting for it |
 | Item data | Refresh item data, with its freshness |
 | Tracker progress | Use Tracker progress, token (save, remove), refresh progress |
 | Game files | Game log folder, screenshot folder, follow logs |

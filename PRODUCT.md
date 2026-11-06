@@ -55,7 +55,7 @@ It does this without touching the game. It reads only the game's log files, the 
 ## Brand Commitments
 
 - The product name is **Blackgrid**. The name and application branding must not contain "Tarkov" (STRATEGY.md).
-- Blackgrid is a sibling of Mythspine and uses the **Ember** brand kit (`brand/`). Someone who uses both apps should recognise them as one family (user, 2026-11-06). Ember supersedes STRATEGY.md's older brand line ("Dark Material 3, charcoal surfaces, restrained gold accents, green healthy/ready/success states"). STRATEGY.md's own wording is updated in a later plan edit.
+- Blackgrid is a sibling of Mythspine and uses the **Ember** brand kit (`brand/`). Someone who uses both apps should recognise them as one family (user, 2026-11-06). Ember supersedes STRATEGY.md's older brand line ("Dark Material 3, charcoal surfaces, restrained gold accents, green healthy/ready/success states"). STRATEGY.md now names Ember too.
 - The hex logo with the "BLACKGRID" wordmark and the "TRACK. PLAN. SURVIVE." tagline is a brand asset. It keeps its tracked capitals and is exempt from Ember's sentence-case rule (user, 2026-11-06).
 - Blackgrid ships both Ember rooms with a System/Dark/Light switch (user, 2026-11-06).
 - No military decoration or visual clutter (STRATEGY.md).
