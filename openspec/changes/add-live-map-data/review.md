@@ -2,37 +2,36 @@
 
 ## Metadata
 
-- **Round:** 4
-- **Prior round:** Round 3 FULL review recorded APPROVE_WITH_CHANGES with CHANGES_APPLIED: no: M2 was the sole Moderate finding, with two Required Changes addressing eager per-marker search amplification. No Critical findings or Suggestions. Round 1's M1 budget finding was accepted as resolved at the planning gate in round 2; the user-approved compact S7/D5 subsequently superseded the earlier expanded-representation choice. No consecutive REVISE rounds.
-- **Reviewer:** fresh-context subagent (OMP, CompactDesignReview), performing the requested focused required-change recheck.
-- **Reviewed:** Recorded round-3 `openspec/changes/add-live-map-data/review.md`; amended `design.md:200-250`, including Derived consumer state and Resource Bounds; amended compact/search scenarios and bounded-data requirement in `specs/runtime-map-data/spec.md:50-108`; amended test-map row and task 4.6 in `tasks.md:12-28,84-94`. Prior FULL-review artifact/source/ADR context is retained, not independently re-audited in this focused round.
-- **Skills:** All four named skills were loaded from the exact supplied installed paths during the preceding FULL review: `F:/Dev/Dart/blackgrid/.claude/skills/dart-use-pattern-matching/SKILL.md`, `dart-write-documentation/SKILL.md`, `dart-add-unit-test/SKILL.md`, and `dart-run-static-analysis/SKILL.md`. No named skill was unavailable. Repository handwritten-fake, deterministic synchronization and lowest-complete-layer constraints remain applicable. No workflow skill invoked.
-- **Planning context:** The preceding FULL review established this checkout as planning root and no referenced stores or unresolved references. No authoring transcript read.
-- **Review boundary:** Planning changes only. No implementation verification, tests, builds, analyzer, formatting, commands, app/game interaction, capture or process-memory inspection performed in this recheck. Only this scratch result file was written.
+- **Round:** 5
+- **Prior round:** Round 3 FULL review identified M2, eager per-marker search amplification, and required two planning/test-plan changes. Round 4 verified both and recorded APPROVE_WITH_CHANGES with CHANGES_APPLIED: yes. Round 1's M1 incremental-budget finding was accepted at the planning gate in round 2; user-approved compact S7/D5 subsequently superseded only the prior expanded-runtime representation choice. No consecutive REVISE rounds.
+- **Reviewer:** fresh-context subagent (OMP, CompactDesignReview), performing the requested wording-only recheck against the accepted Required Changes.
+- **Reviewed:** Current `openspec/changes/add-live-map-data/specs/runtime-map-data/spec.md:50-102`, particularly the shortened requirements and expanded scenario clauses at lines 57-85; recorded round-4 `review.md`; retained compact/derived-state/publication/resource design in `design.md:208-240`; retained test-map row and task 4.6 in `tasks.md:18-26,88-94`. Prior FULL-review source and ADR context is preserved, not re-audited.
+- **Skills:** The four requested skills were loaded from the supplied installed paths during the preceding FULL review: `F:/Dev/Dart/blackgrid/.claude/skills/dart-use-pattern-matching/SKILL.md`, `dart-write-documentation/SKILL.md`, `dart-add-unit-test/SKILL.md`, and `dart-run-static-analysis/SKILL.md`. No named skill was unavailable. Repository handwritten-fake, deterministic synchronization and lowest-complete-layer rules remain applicable. No workflow skill invoked.
+- **Planning context:** Previously established repo-local planning root, with no referenced stores or unresolved references. No authoring transcript read.
+- **Review boundary:** Planning-wording equivalence only. No tests, builds, analyzer, formatting, command execution, implementation verification, app/game interaction, captures or process-memory inspection. No validation result independently exercised. Only this scratch result file was written.
 
-This verdict covers the reviewed contents and verified Required Changes. Other subsequent proposal/spec/design edits, except an edit confined to the proposal's Release Notes section, void it.
+This verdict covers the reviewed wording and retained Required Changes. Other subsequent proposal/spec/design edits, except an edit confined to the proposal's Release Notes section, void it.
 
 ## Findings
 
 ### Critical (blocking)
 
-None recorded in round 3; no new audit performed.
+None from the preceding FULL review; no new audit performed.
 
 ### Moderate
 
-**M2 — Resolved at the planning/design gate.** Both Required Changes are applied in the reviewed artifacts.
+**M2 — Remains resolved at the planning/design gate.** The concise requirements and existing scenario clauses retain both Required Changes:
 
-1. **Derived-state representation, ownership and budgets are explicit.** The new Derived consumer state paragraph in `design.md` requires replacing eager per-marker flattened `searchText` with shared fact-aware search or bounded traversal over shared segments. It preserves the existing searchable scalar facts, unknown task/source facts, geometry exclusions, case-insensitive substring/phrase and comma-separated OR behavior, expressly including matches across scalar-separating spaces. This addresses the actual downstream expansion reported in round 3 rather than merely making nested map access local.
+- The compact requirement still mandates direct normalization into shared immutable facts and lightweight references through serialization, cache loading and publication, local reads, unchanged shared parser/frozen offline bytes, and no quest-tracking scope. Its Shared facts remain local and complete scenario expressly retains complete source/derived facts, optional-field absence, logical marker/source identities, quest/objective/item relationships, business identities distinct from pool references, and no recursive occurrence copies or network reads. Moving this specificity into the scenario does not remove it.
+- Shared searchable facts remain compact still requires real publication and search within an injected budget without per-marker flattened full-fact strings, preserving searchable fields, geometry exclusions, case-insensitive substring/phrase and comma-separated OR semantics. The retained Derived consumer state paragraph in `design.md` additionally preserves unknown source facts and cross-scalar-space matches, inventory ownership/retirement, stale-result fencing and current-query-only memoization.
+- The shortened bounded-data requirement retains 256 MiB materialized and 64 MiB serialized limits, conservative reservation before allocation across the pipeline, derived state, transient buffers, overlapping generations, charging shared ownership/references and full copies, non-expanding unchanged search semantics, inventory retirement and no past-query cache. The existing overflow scenario now explicitly names distinct facts, reference/marker collections, derived search/projection/metadata state, transient buffers and expanded intermediates; rejection precedes oversized allocation/copy/serialization and persistence/publication, reports a resource failure and preserves durable/active authority or bundled fallback. The retained design clarifies accounting once per actual owned fact representation plus every reference slot; this is not a discount for copied references or expanded intermediates.
+- The red test-map row and task 4.6 still require the actual `MapController` publication/search repeated-task regression and distinct-derived-state overflow/authority preservation at model/controller layers. Full frozen-source runtime qualification remains a separate scenario and mapped test. No passing test or completed implementation is inferred from these plans.
 
-   The same paragraph makes normalized text/segments inventory-generation-owned, limits query memoization to the current query, retires derived state with the generation and fences stale results. It requires pre-allocation charges for normalized strings, segment/reference collections, query metadata, projections and transient buffers, including retained old/new generations, under the unchanged 256 MiB cap. Oversized distinct derived state rejects before durable commit or activation. The Resource Bounds section repeats the shared-budget and no-per-occurrence-flattening obligations. The amended `runtime-map-data` resource requirement makes derived search/projection/metadata storage, transient buffers, overlapping generations, retirement and nonaccumulating query caches normative. Neither approved cap nor frozen offline output changes.
-
-2. **The regression plan reaches real publication and search.** The added Shared searchable facts remain compact scenario is assertable: many positions share one large searchable task fact; actual publication and search remain within an injected materialization budget without full-fact strings per marker, while preserving inclusion/exclusion and matching semantics. Its test-map row names `test/maps/map_controller_test.dart` and `test/domain/map_marker_query_test.dart`, with shared-search compactness and distinct-derived-fact authority-preservation coverage marked red, not claimed as passing.
-
-   Revised task 4.6 explicitly requires real `MapController` publication/search with that fixture and a distinct-derived-state overflow case, pre-allocation guarding of derived state, and genuine-oversize authority-preservation regressions before implementation. Combined with the normative resource requirement's rejection-before-persistence/publication and unchanged last-good/active authority, this covers the requested fitting and rejecting paths at the lowest complete model/controller layers. Existing deterministic handwritten-fake constraints remain in force. The separate complete-frozen-runtime qualification scenario and test-map row remain separate acceptance, not a substitute for the synthetic amplification regression.
+The wording change introduces no new decision and does not reopen M2.
 
 ### Suggestions
 
-None recorded in round 3; no new audit performed.
+None from the preceding FULL review; no new audit performed.
 
 ## Verdict
 
@@ -40,12 +39,13 @@ VERDICT: APPROVE_WITH_CHANGES
 
 ## Required Changes
 
-1. **M2 — Specify and budget derived consumer state: verified applied.** The new design paragraph, amended Resource Bounds and normative runtime-data requirement explicitly cover compact search representation, semantics, inventory ownership/invalidation, query-cache bounds, pre-allocation accounting, overlapping generations and pre-commit/pre-activation failure under unchanged limits.
-2. **M2 — Exercise actual publication/search: verified applied.** The added normative scenario, red test-map row and revised task 4.6 require the real publication/search amplification regression and distinct-derived-state overflow/authority-preservation coverage. Full frozen-source qualification remains separate.
+1. **M2 — Derived consumer representation, ownership and budget: verified retained.** The concise runtime requirements, explicit shared-search and overflow scenarios, and retained design cover shared/non-expanding search, complete semantics, generation ownership, query-cache bounds, pre-allocation accounting and unchanged authority on rejection under unchanged caps.
+2. **M2 — Actual publication/search regression plan: verified retained.** The mapped red tests and task 4.6 retain fitting shared-task publication/search and distinct-derived-state overflow/authority-preservation cases. The separate complete-frozen qualification requirement remains intact.
 
 CHANGES_APPLIED: yes
 
 ## Rebuttals
 
-- **M2:** Accepted as fixed in the planning artifacts by this reviewer. No waiver or rebuttal needed. This does not assert that compact search, its accounting or the regressions have been implemented or passed; compact implementation remains the parent's subsequent work.
-- **Prior M1:** Round 2's accepted planning resolution remains historical context. Incremental budget enforcement, unchanged 256 MiB/64 MiB caps, complete facts/source identities and byte-identical frozen offline output remain required. User-approved compact S7/D5 supersedes only the former expanded-runtime representation choice. The previously reported full-fixture resource failure is not recertified or declared fixed here.
+- **M2:** Round 4's acceptance remains valid for the reviewed wording clarification. Both Required Changes remain applied at the planning gate; no waiver or substantive reversal was introduced.
+- **Prior M1:** Its accepted incremental-budget contract remains in force. Compact S7/D5 supersedes the former expanded-runtime choice, not complete facts/source identities, the 256 MiB/64 MiB limits, or byte-identical frozen offline output.
+- **Implementation boundary:** This review does not establish that compact implementation or regressions are complete, that any test passes, or that the previously reported full-source runtime resource failure is fixed.

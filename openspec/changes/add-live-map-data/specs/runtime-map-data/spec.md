@@ -55,11 +55,11 @@ Acquisition SHALL reject redirects and bound each request to 30 seconds and 16 M
 - **THEN** acquisition fails, preserves the last-good snapshot and reports the failure without an automatic retry
 
 ### Requirement: Compact runtime facts remain complete and local
-Runtime snapshots SHALL store reusable immutable facts once and reference them from lightweight per-occurrence marker records, directly during normalization and through serialization, cache loading and publication. They SHALL preserve complete source and derived facts, optional-field absence, logical marker and source identities, and quest/objective/item relationships. Pool references SHALL NOT replace business identities. Reading marker facts SHALL remain local and SHALL NOT trigger network requests. The shared semantic parser and frozen offline output SHALL remain unchanged; quest tracking is outside this change.
+Runtime snapshots SHALL normalize directly into shared immutable facts and lightweight marker references, retaining that representation through serialization, cache loading and publication. They SHALL preserve complete logical facts, optional absence and business identities, with local reads and no network detail requests. The shared parser and frozen offline bytes SHALL remain unchanged. Quest tracking is outside this change.
 
 #### Scenario: Shared facts remain local and complete
 - **WHEN** many markers refer to the same task, objective or location with nested facts
-- **THEN** the compact snapshot retains those complete facts once with per-marker references, and popup, search, filters and identity reads resolve the same logical values without per-marker recursive copies or requests
+- **THEN** the compact snapshot retains complete source and derived facts once with per-marker references, preserving optional-field absence, logical marker/source identities and quest/objective/item relationships; pool references do not replace business identities, and popup, search, filters and identity reads resolve the same logical values locally without per-marker recursive copies or network requests
 
 #### Scenario: Shared searchable facts remain compact
 - **WHEN** many marker positions reference one task containing a large searchable nested fact
@@ -74,15 +74,15 @@ Runtime snapshots SHALL store reusable immutable facts once and reference them f
 - **THEN** it publishes and reloads complete marker facts within the unchanged default budgets, while the offline pack still reproduces byte-identically
 
 ### Requirement: Expanded marker data is resource bounded
-Runtime normalization SHALL limit the serialized normalized snapshot to 64 MiB and conservatively accounted materialized runtime data to 256 MiB. Shared immutable compact facts SHALL be charged once per owned representation plus their reference slots; any expanded intermediate or copied occurrence SHALL be charged in full. Limits SHALL apply incrementally before allocation to source decoding/handoff, compact construction, serialization, cache validation, publication and derived search/projection/metadata state and transient buffers, including overlapping retained generations. Derived searchable facts SHALL remain shared or otherwise non-expanding, preserve existing search semantics and retire with their inventory; query caches SHALL NOT accumulate across queries. Exceeding either limit, including genuinely oversized distinct derived state, SHALL report a resource failure before persistence/publication without replacing the last-good snapshot or active markers.
+Runtime data SHALL stay within 256 MiB materialized and 64 MiB serialized. Reserve conservative charges before allocation across decoding/handoff, construction, encoding, cache/storage and publication, including derived state, transient buffers and overlapping generations. Charge shared owned facts plus references once, copies in full. Search SHALL remain non-expanding with unchanged semantics, retire with its inventory and retain no past-query cache.
 
 #### Scenario: Expanded candidate fits
 - **WHEN** a complete valid candidate's incremental normalization and serialization remain within both budgets
 - **THEN** it can proceed to atomic persistence and publication
 
 #### Scenario: Nested marker expansion exceeds a budget
-- **WHEN** genuinely oversized distinct facts, reference/marker collections or any expanded intermediate would make a structurally valid candidate exceed either runtime-data budget
-- **THEN** normalization stops before the oversized copy or serialization, reports a resource failure, and preserves the prior durable and active snapshot or bundled fallback
+- **WHEN** genuinely oversized distinct facts, reference/marker collections, derived search/projection/metadata state, transient buffers or any expanded intermediate would make a structurally valid candidate exceed either runtime-data budget
+- **THEN** normalization stops before the oversized allocation, copy or serialization and before persistence/publication, reports a resource failure, and preserves the prior durable and active snapshot or bundled fallback
 
 ### Requirement: Last-good data and honest fallback
 For the selected mode, the system SHALL use its compatible validated last-good snapshot regardless of age, including after a failed refresh. Without one, it SHALL use the active bundled pack's regular-mode marker inventory and identify it as a regular-mode bundled fallback, not as selected-mode live data. Cached metadata SHALL NOT hide a failure to load the active bundled artwork pack.
