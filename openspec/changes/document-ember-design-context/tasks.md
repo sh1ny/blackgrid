@@ -16,7 +16,7 @@ The change has no specs (`skip_specs: true`): it adds design documents and chang
 
 ## 2. Product record
 
-- [ ] 2.1 Write `PRODUCT.md` (impeccable product schema 1) from STRATEGY.md, the README, the code and the owner's answers, including the brand lockup exemption and the theme switch
+- [x] 2.1 Write `PRODUCT.md` (impeccable product schema 1) from STRATEGY.md, the README, the code and the owner's answers, including the brand lockup exemption and the theme switch
 
 ## 3. Before-redesign record
 
