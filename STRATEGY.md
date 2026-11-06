@@ -80,4 +80,4 @@ Technical choices, migration classification, validation gates, and replacement c
 
 **One-liner:** A desktop tactical companion for raid-time decisions.
 
-**Key message:** Blackgrid is the product name; the name and application branding must not contain “Tarkov”. Dark Material 3, charcoal surfaces, restrained gold accents, green healthy/ready/success states, and clear typography — no military decoration or visual clutter.
+**Key message:** Blackgrid is the product name; the name and application branding must not contain “Tarkov”. Blackgrid uses Ember, the brand kit it shares with Mythspine (`brand/`, applied in [DESIGN.md](DESIGN.md); user decision 2026-11-06): layered near-black surfaces and a warm paper-light theme, one warm accent kept for what the player is touching, Geist for the tool and Literata for item and map names, and verdicts told apart at a glance — no military decoration or visual clutter.

@@ -35,9 +35,35 @@ The native map reads like tarkov.dev's: named places, labelled extracts and a bu
    Fixes to tarkov.dev's data then reach players without a pack rebuild or a release. Artwork, calibration and location labels stay in the prepared pack.
 7. `add-location-labels` - carry tarkov.dev's place labels (`maps.json`, already frozen in the pack's evidence: 303 labels on 10 maps) into a new pack version, with a rights note (user decision 2026-10-30: use tarkov.dev's data); draw them on the canvas behind the markers at a fixed screen size, with rotation and a halo, hidden on other floors by height band and thinned when zoomed far out.
 
-## Next: M9 - local progress tracker
+## Next: M8.5 - Ember interface
 
-The rules at the top of Later apply to M9 too.
+Added 2026-11-06 (user decision): Blackgrid is redesigned on Ember, the brand kit it shares with Mythspine, in the "Answer strip" layout (Direction B). It runs after M8 and before M9. The design authority is [DESIGN.md](../DESIGN.md) with its Blackgrid extensions X1–X14; the before state is recorded in `.impeccable/review/current/`.
+
+**Exit criteria:**
+- Both Ember rooms are built from the DESIGN.md tokens, and Settings has a System/Dark/Light switch that is saved and restored. Proved by widget tests. (agent)
+- Each of the six verdicts shows its own plate as DESIGN.md X1 describes, with its reason never clipped. Proved by widget tests. (agent)
+- On Map and Scanner, in a wide window and at 960 px, the answer strip is the first thing under the top bar, and no settings panel sits above it. Proved by geometry widget tests. (agent)
+- Selection on the map is Ember; the quest and loot roles are off the amber band and still pass the at-least-3:1 badge contrast check. A new ADR supersedes those parts of ADR-0023. (agent)
+- Every setting that today sits in a Map or Scanner rail or the Settings dialog is reachable on the Settings page (DESIGN.md X12), and nothing is lost: marker switches with their icons, the map picker, the floor control, the marker and quest filters, the raid timers and Found in raid all still work. Proved by widget tests. (agent)
+- Geist and Literata are bundled as font assets, with their OFL texts in the third-party notices. (agent)
+- In both rooms, on a second monitor and alt-tabbed full window, the verdict reads at a glance, and the map and dialogs look right. (user)
+
+**Proposed split** (agent draft 2026-11-06, not yet agreed; the user agrees or changes it when M8.5 is promoted to Now):
+1. `document-ember-design-context` - the brand kit, PRODUCT.md, the before-redesign record and DESIGN.md. No app code.
+2. `adopt-ember-theme` - bundle the fonts with their licences, bring the kit's Flutter tokens and theme into `lib/` and build both rooms, add the theme switch, and replace the old colours and panel styling. Verdict plates (X1) and the freshness tag (X3) land on today's layout.
+3. `add-answer-strip` - the Direction B shell (X10, X11): top bar with the Map/Scanner switch, raid timers and labelled Settings, Stats and Import; the answer strip on both areas with Found in raid beside the verdict; the inspector with history rows that show item pictures (X14); the clickable status bar; the Answer First Rule at every width (X7). Drops the raw item ID under item names.
+4. `restyle-map-workspace` - the map takes the main column with the map picker and floor control on it; the Map inspector gets the marker filters and the marker list with icons and switches (X13); selection becomes Ember with the new ADR for the role colours; and the marker bubble shows spawn chances as whole percentages.
+5. `restyle-dialogs` - the Settings page with its seven sections (X12), Stats, Import, Map help and the bottom sheets in Ember, and the startup screen with the exempt brand lockup (X9).
+
+The approved layout is the B view, round 2, of `.impeccable/preview/ember-directions.html` (owner, 2026-11-06).
+
+## Later
+
+The milestones below run in this order after M8.5, starting with M9. M10 was planned with the user on 2026-10-30; M11–M19 were added on 2026-11-01 from the user's future-ideas list.
+
+**Rules for everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
+
+### M9 - local progress tracker
 
 Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackgrid tracks quest and hideout progress itself, on the player's machine. The tracker is built so sync can be added later, but it syncs nothing. The existing read-only progress-site token stays exactly as it is until this milestone's last change replaces everything it provides.
 
@@ -63,12 +89,6 @@ Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackg
 - **Why our own tracker:** showing tasks, availability, needed items and the hideout has to be built in Blackgrid either way, because a third-party API returns only IDs and states. Syncing with someone else's service adds daily request quotas, tokens the user must create, polling, conflict handling and terms of use, and it still cannot write hideout or trader progress. A local tracker has none of these limits and works offline. Blackgrid never writes to the progress site.
 - **Sync-ready from the first release:** tarkov.dev IDs in every key, with game mode and wipe; each app downloads tarkov.dev data itself, so a sync service would only ever hold the player's progress; the rules package gives web and mobile the same answers as the desktop. The extra cost now is one or two tasks in this change, and the event history also gives undo, log replay and the wipe summary.
 - **Upkeep:** the availability rules are the hardest part (alternatives, must-be-failed prerequisites, faction and edition rules) and need checking every wipe.
-
-## Later
-
-The milestones below run in this order after M9. M10 was planned with the user on 2026-10-30; M11–M19 were added on 2026-11-01 from the user's future-ideas list.
-
-**Rules for everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
 
 ### M10 - alerts and window behaviour
 

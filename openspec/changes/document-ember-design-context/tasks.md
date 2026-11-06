@@ -31,8 +31,8 @@ The change has no specs (`skip_specs: true`): it adds design documents and chang
 
 ## 5. Plan edits
 
-- [ ] 5.1 Add M8.5 "Ember interface" to `openspec/roadmap.md` as Next, with exit criteria and a proposed split, and move M9 to the head of Later with its agreed split unchanged
-- [ ] 5.2 Replace STRATEGY.md's brand line with Ember
+- [x] 5.1 Add M8.5 "Ember interface" to `openspec/roadmap.md` as Next, with exit criteria and a proposed split, and move M9 to the head of Later with its agreed split unchanged
+- [x] 5.2 Replace STRATEGY.md's brand line with Ember
 
 ## 6. Verification
 
