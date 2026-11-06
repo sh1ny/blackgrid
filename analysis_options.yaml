@@ -4,3 +4,5 @@ analyzer:
   exclude:
     - build/**
     - windows/**
+    # The Ember brand kit is a verbatim copy; its Flutter files are not app code until M8.5 moves them into lib/.
+    - brand/**

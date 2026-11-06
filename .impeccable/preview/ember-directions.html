@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Blackgrid on Ember: direction preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../brand/tokens.css">
+<link rel="stylesheet" href="../../brand/components.css">
+<style>
+/* Blackgrid extensions from DESIGN.md (X1-X14). Static preview only: the app is Flutter; nothing here ships. */
+:root, [data-theme="dark"] {
+  --ok-fill: #6fcf8e; --ok-on-fill: #0c0c0e; --ok-bg: rgba(111,207,142,.10); --ok-line: rgba(111,207,142,.32); --ok-ink: #a6e3ba; --ok-strong: #cdeed8;
+  --map-ground: #0c0c0e; --map-block: #17171b; --map-block-line: #26262c; --map-road: #1f1f24; --map-label: #87837c;
+}
+[data-theme="light"] {
+  --ok-fill: #1f6b3b; --ok-on-fill: #ffffff; --ok-bg: #e8f5ec; --ok-line: #b5dcc2; --ok-ink: #1f6b3b; --ok-strong: #154d2a;
+  --map-ground: #0c0c0e; --map-block: #17171b; --map-block-line: #26262c; --map-road: #1f1f24; --map-label: #87837c;
+}
+html, body { margin: 0; min-height: 100%; }
+body { background: #050506; color: #e8e6e1; font: 400 13px/1.45 "Geist", system-ui, sans-serif; }
+::selection { background: rgba(233,161,75,.25); }
+
+/* ---------- preview controls (not part of the design) ---------- */
+.pv { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; padding: 14px 24px; border-bottom: 1px solid rgba(255,255,255,.08); background: #0a0a0c; position: sticky; top: 0; z-index: 10; }
+.pv h1 { font: 500 17px/1.2 "Literata", Georgia, serif; margin: 0 12px 0 0; letter-spacing: -0.01em; color: #e8e6e1; }
+.pv label { display: flex; align-items: center; gap: 8px; color: #aaa69f; font: 500 11.5px/1.45 "Geist", sans-serif; }
+.pv .note { color: #87837c; font-size: 12px; flex-basis: 100%; }
+.pv .note b { color: #aaa69f; font-weight: 500; }
+.stage { padding: 24px; display: grid; justify-content: center; }
+.win { border: 1px solid rgba(255,255,255,.1); border-radius: 10px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.6); height: 860px; display: grid; grid-template-rows: 44px auto 1fr 28px; }
+.win[data-w="wide"] { width: 1440px; }
+.win[data-w="narrow"] { width: 960px; }
+.win[data-w="narrow"] .body[data-inspector="on"] { grid-template-columns: minmax(0,1fr); position: relative; }
+.win[data-w="narrow"] .inspector { position: absolute; top: 0; right: 0; bottom: 0; width: 352px; box-shadow: var(--shadow-float); border-left-color: var(--hairline-strong); }
+.caption { margin: 14px auto 0; max-width: 960px; color: #87837c; font-size: 12px; text-align: center; }
+
+/* ---------- shell ---------- */
+.topbar { display: flex; align-items: center; gap: 14px; padding: 0 12px 0 14px; background: var(--canvas); border-bottom: 1px solid var(--hairline); min-width: 0; }
+.lockup { display: flex; align-items: center; gap: 9px; flex: none; }
+.lockup svg { width: 22px; height: 22px; }
+.lockup b { font: 700 14px/1 "Geist", sans-serif; letter-spacing: .14em; color: var(--ink); }
+.lockup small { font: 500 9px/1 "Geist", sans-serif; letter-spacing: .18em; color: var(--ink-tertiary); }
+.lockup span { display: grid; gap: 3px; }
+.search { flex: 1 1 260px; max-width: 420px; display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 6px 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--hairline-strong); background: var(--raised); color: var(--ink-tertiary); min-width: 140px; }
+.search .em-kbd { margin-left: auto; }
+.topbar .spacer { flex: 1; }
+.tools { display: flex; gap: 2px; flex: none; }
+.status { display: flex; align-items: center; gap: 18px; padding: 0 14px; background: var(--canvas); border-top: 1px solid var(--hairline); color: var(--ink-secondary); font-size: 12px; white-space: nowrap; overflow: hidden; }
+.status .live::before { background: var(--accent); }
+.status .push { margin-left: auto; }
+.status .timer { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ---------- X1 verdict plates ---------- */
+.plate { display: inline-flex; align-items: center; gap: 12px; height: 44px; padding: 0 16px; border-radius: var(--radius-m); border: 1px solid transparent; font: 600 22px/1.2 "Geist", sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plate[data-v="keep"] { background: var(--ok-fill); color: var(--ok-on-fill); }
+.plate[data-v="later"] { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-strong); }
+.plate[data-v="check"] { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-strong); }
+.plate[data-v="flea"], .plate[data-v="trader"] { background: var(--raised); border-color: var(--hairline); color: var(--ink-secondary); }
+.plate[data-v="flea"] b, .plate[data-v="trader"] b { color: var(--ink); font-weight: 600; }
+.plate[data-v="na"] { border: 1px dashed var(--ink-tertiary); color: var(--ink-tertiary); }
+.reason { color: var(--ink-secondary); margin-top: 6px; max-width: 46ch; }
+.reason b { color: var(--ink); font-weight: 500; }
+
+/* ---------- X3 freshness tag ---------- */
+.fresh { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: var(--radius-s); font: 500 11.5px/1 "Geist", sans-serif; color: var(--ink-tertiary); }
+.fresh[data-stale] { background: var(--warn-bg); color: var(--warn-ink); }
+
+/* ---------- X5 item frame ---------- */
+.frame { display: grid; place-items: center; background: var(--raised); border-radius: var(--radius-l); flex: none; }
+.frame svg { width: 70%; height: 70%; }
+
+/* ---------- X10 answer strip ---------- */
+.strip { container-type: inline-size; background: var(--panel); border-bottom: 1px solid var(--hairline); }
+.strip-in { display: flex; align-items: center; gap: 18px; padding: 14px 16px; flex-wrap: wrap; }
+.strip .who { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 0 1 300px; }
+.strip .who .frame { width: 48px; height: 48px; }
+.strip .who .em-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip .who .em-label { display: block; margin-top: 2px; }
+.strip .answer { flex: 1 1 360px; min-width: 0; }
+.strip .answer .row1 { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.strip .money { display: grid; grid-template-columns: auto auto; gap: 2px 14px; align-items: baseline; flex: none; font-variant-numeric: tabular-nums; }
+.strip .money dt { color: var(--ink-tertiary); font-size: 12px; }
+.strip .money dd { margin: 0; color: var(--ink); font-weight: 500; text-align: right; }
+.strip .money dd small { color: var(--ink-tertiary); font-weight: 400; margin-left: 6px; }
+.strip .empty { display: flex; align-items: center; gap: 14px; color: var(--ink-secondary); }
+@container (max-width: 1000px) {
+  .strip .who { flex-basis: 100%; }
+  .strip .answer { flex-basis: 0; }
+}
+
+/* ---------- main areas ---------- */
+.body { min-height: 0; display: grid; background: var(--canvas); overflow: hidden; }
+.body[data-inspector="on"] { grid-template-columns: minmax(0,1fr) 352px; }
+.inspector { background: var(--panel); border-left: 1px solid var(--hairline); padding: 16px; overflow: auto; display: grid; align-content: start; gap: 18px; }
+.inspector h3, .main h3 { font: 600 13px/1.45 "Geist", sans-serif; margin: 0 0 6px; color: var(--ink); }
+.ihead { display: flex; align-items: center; justify-content: space-between; }
+.main { overflow: auto; padding: 18px 20px; display: grid; gap: 22px; align-content: start; }
+.cols { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); gap: 28px; }
+.dense { display: grid; }
+.dense .r { display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 8px; border-radius: var(--radius-s); color: var(--ink-secondary); }
+.dense .r:hover { background: var(--hover); color: var(--ink); }
+.dense .r .n { margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dense .r .t { color: var(--ink-tertiary); font-size: 11.5px; min-width: 64px; }
+.dense .r .ok { color: var(--ok-ink); }
+.dense .r .wn { color: var(--warn-ink); }
+.dense .r:hover .t { color: var(--ink-secondary); }
+.sub { color: var(--ink-tertiary); font-size: 12px; margin: -2px 0 8px; }
+.ev { display: flex; gap: 12px; align-items: center; }
+.ev .crop { width: 120px; height: 72px; border-radius: var(--radius-m); background: repeating-conic-gradient(var(--raised) 0 25%, var(--hover) 0 50%) 0 0/12px 12px; border: 1px solid var(--hairline); flex: none; }
+.ev p { margin: 0; color: var(--ink-secondary); }
+.hist { display: grid; gap: 2px; }
+.hist .em-row { gap: 10px; }
+.hist .em-row .frame { width: 24px; height: 24px; border-radius: var(--radius-s); }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot[data-v="keep"], .dot[data-v="later"] { background: var(--ok-fill); }
+.dot[data-v="later"] { background: transparent; border: 1.5px solid var(--ok-fill); }
+.dot[data-v="check"] { background: var(--warn-ink); }
+.dot[data-v="flea"], .dot[data-v="trader"] { background: var(--ink-tertiary); }
+.dot[data-v="na"] { border: 1.5px dashed var(--ink-tertiary); }
+
+/* ---------- map ---------- */
+.mapwrap { position: relative; background: var(--map-ground); overflow: hidden; }
+.mapwrap > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mapbar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+.mapbar > * { pointer-events: auto; }
+.mapbar .em-seg { background: rgba(24,24,28,.92); border-color: rgba(255,255,255,.08); }
+.mapbar .em-seg > button { color: #aaa69f; }
+.mapbar .em-seg > button[aria-pressed="true"] { background: #26262c; color: #e8e6e1; }
+.mapname { font: 500 19px/1.2 "Literata", Georgia, serif; letter-spacing: -0.01em; color: #e8e6e1; margin-right: 6px; }
+.mapzoom { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 2px; background: rgba(24,24,28,.92); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius-m); padding: 2px; }
+.mapzoom button { width: 28px; height: 28px; border-radius: 6px; color: #aaa69f; display: grid; place-items: center; }
+.bubble { position: absolute; width: 300px; background: #18181c; color: #e8e6e1; border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-l); box-shadow: 0 12px 32px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35); padding: 12px 14px; display: grid; gap: 8px; }
+.bubble .k { color: #87837c; font: 500 11.5px/1.45 "Geist", sans-serif; }
+.bubble .ttl { font: 500 19px/1.2 "Literata", Georgia, serif; letter-spacing: -0.01em; }
+.bubble .dense .r { color: #aaa69f; } .bubble .dense .r .n { color: #e8e6e1; }
+.bubble .close { position: absolute; top: 8px; right: 8px; color: #87837c; }
+.legend { display: grid; gap: 4px; }
+.legend .em-row { min-height: 28px; }
+.swatch { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+
+/* ---------- B round 2 (owner feedback, 2026-11-06) ---------- */
+/* raid timers in the top bar (choice 1a) */
+.timers { display: flex; align-items: center; gap: 14px; flex: none; font-size: 12px; color: var(--ink-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.timers b { color: var(--ink); font-weight: 500; margin-left: 6px; }
+.timers .run b { color: var(--warn-ink); }
+.timers .sep { width: 1px; height: 18px; background: var(--hairline-strong); }
+.tools .em-btn { height: 28px; padding: 0 10px; }
+.win[data-w="narrow"] .tools .txt, .win[data-w="narrow"] .lockup span, .win[data-w="narrow"] .search .em-kbd { display: none; }
+.win[data-w="narrow"] .timers { gap: 10px; }
+/* clickable status bar items */
+.status button { color: inherit; font: inherit; display: inline-flex; align-items: center; gap: 4px; padding: 0 4px; margin: 0 -4px; height: 22px; border-radius: var(--radius-s); }
+.status button:hover { color: var(--ink); background: var(--hover); }
+.status .em-icon { width: 12px; height: 12px; }
+.status .live[data-state="off"]::before { background: var(--ink-tertiary); }
+/* found in raid sits with the verdict */
+.fir { display: flex; align-items: center; gap: 8px; }
+/* history rows with pictures */
+.hist .em-row { min-height: 38px; gap: 10px; }
+.hist .em-row .frame { width: 30px; height: 30px; border-radius: var(--radius-s); }
+.hist .em-row .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* map picker (point 2) */
+.mappick { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 12px; border-radius: var(--radius-m); background: rgba(24,24,28,.92); border: 1px solid rgba(255,255,255,.08); color: #e8e6e1; }
+.mappick:hover { border-color: rgba(255,255,255,.18); }
+.mappick .mapname { margin: 0; font-size: 17px; }
+.mappick .em-icon { color: #aaa69f; }
+.mapmenu { position: absolute; top: 52px; left: 12px; z-index: 3; width: 260px; }
+.mapmenu .em-mi[aria-current="true"] { color: var(--ink); font-weight: 500; }
+.mapmenu .em-mi .em-icon { margin-left: auto; color: var(--accent-text); }
+.mapmenu .note { padding: 6px 10px 4px; color: var(--ink-tertiary); font-size: 11.5px; }
+/* marker list with the real icons and switches (point 1) */
+.mfilters { display: grid; gap: 8px; margin-bottom: 10px; }
+.mfilters .em-input { height: 30px; padding: 0 10px; }
+.mfilters .em-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.mkhead { display: flex; align-items: center; gap: 12px; margin: 2px 0 4px; }
+.mkhead .em-link { font-size: 12px; }
+.mkgrp { color: var(--ink-tertiary); font: 500 11.5px/1.45 "Geist", sans-serif; padding: 10px 8px 2px; }
+.mk { display: flex; align-items: center; gap: 10px; min-height: 30px; padding: 0 8px; border-radius: var(--radius-m); color: var(--ink-secondary); width: 100%; text-align: left; }
+.mk:hover { background: var(--hover); color: var(--ink); }
+.mk em { font-style: normal; margin-left: auto; color: var(--ink-tertiary); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.mk[aria-pressed="false"] { color: var(--ink-tertiary); }
+.mk[aria-pressed="false"] .badge { opacity: .38; }
+.badge { width: 22px; height: 22px; flex: none; }
+.sw { width: 28px; height: 16px; border-radius: 999px; background: var(--hairline-strong); position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink-tertiary); }
+[aria-pressed="true"] > .sw { background: var(--ink-secondary); }
+[aria-pressed="true"] > .sw::after { left: 14px; background: var(--canvas); }
+/* settings page (choice 4a, points 5 and 6) */
+.settings { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 0; background: var(--canvas); }
+.win[data-w="narrow"] .settings { grid-template-columns: 172px minmax(0,1fr); }
+.settings nav { background: var(--panel); border-right: 1px solid var(--hairline); padding: 12px 8px; display: grid; align-content: start; gap: 2px; overflow: auto; }
+.settings nav .back { margin: 0 0 10px; }
+.settings .pane { overflow: auto; padding: 22px 32px 48px; }
+.settings .pane > div { max-width: 720px; display: grid; gap: 30px; }
+.setsec h2 { margin: 0 0 2px; }
+.setsec > .sub { margin: 0 0 6px; }
+.set { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 24px; align-items: center; padding: 11px 0; border-top: 1px solid var(--hairline); }
+.set > span { color: var(--ink); }
+.set > small { color: var(--ink-tertiary); font-size: 12px; grid-column: 1; }
+.set > .c { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; align-items: center; }
+.set > .c .em-input { width: 220px; height: 30px; padding: 0 10px; }
+.set > .c .em-input.short { width: 84px; }
+.set > .c .em-input.wide { width: 300px; }
+.set > .c .em-select { height: 30px; padding: 0 8px; width: auto; }
+.set .sw { cursor: pointer; }
+.where { color: var(--ink-tertiary); font-size: 12px; }
+
+/* ---------- direction A: workbench ---------- */
+.winA { grid-template-rows: 44px 1fr 28px; }
+.bodyA { display: grid; grid-template-columns: 52px 268px minmax(0,1fr) 352px; min-height: 0; background: var(--canvas); }
+.rail { background: var(--canvas); border-right: 1px solid var(--hairline); display: grid; align-content: start; justify-items: center; gap: 4px; padding-top: 8px; }
+.rail .em-ib[aria-current="true"] { background: var(--accent-soft); color: var(--accent-text); }
+.side { background: var(--panel); border-right: 1px solid var(--hairline); padding: 12px 8px; overflow: auto; }
+.side h3 { margin: 4px 8px 8px; }
+.mainA { padding: 28px 32px; overflow: auto; display: grid; gap: 20px; align-content: start; }
+.mainA .head { display: flex; gap: 20px; align-items: center; }
+.mainA .head .frame { width: 96px; height: 96px; }
+
+/* ---------- direction C: split ---------- */
+.bodyC { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); min-height: 0; background: var(--canvas); }
+.paneC { border-left: 1px solid var(--hairline); display: grid; grid-template-rows: auto auto 1fr; min-height: 0; }
+.paneC .answerC { padding: 16px; border-bottom: 1px solid var(--hairline); background: var(--panel); display: grid; gap: 10px; }
+.paneC .tabs { padding: 10px 16px; border-bottom: 1px solid var(--hairline); }
+.paneC .content { padding: 14px 16px; overflow: auto; display: grid; gap: 18px; align-content: start; }
+</style>
+</head>
+<body>
+
+<div class="pv em" data-theme="dark">
+  <h1>Blackgrid on Ember</h1>
+  <label>Direction
+    <div class="em-seg" id="c-dir">
+      <button data-v="A">A Workbench</button><button data-v="B" aria-pressed="true">B Answer strip</button><button data-v="C">C Split</button>
+    </div>
+  </label>
+  <label>Area
+    <div class="em-seg" id="c-area"><button data-v="scanner" aria-pressed="true">Scanner</button><button data-v="map">Map</button><button data-v="settings">Settings</button></div>
+  </label>
+  <label>Verdict
+    <select class="em-select" id="c-verdict" style="width:auto;height:28px;padding:0 8px">
+      <option value="keep">Keep</option><option value="later">Keep for later</option><option value="check" selected>Check / May Need</option>
+      <option value="flea">Flea</option><option value="trader">Trader</option><option value="na">Price unavailable</option><option value="none">No item yet</option>
+    </select>
+  </label>
+  <label>Theme
+    <div class="em-seg" id="c-theme"><button data-v="dark" aria-pressed="true">Dark</button><button data-v="light">Light</button></div>
+  </label>
+  <label>Window
+    <div class="em-seg" id="c-width"><button data-v="wide" aria-pressed="true">1440 px</button><button data-v="narrow">960 px</button></div>
+  </label>
+  <label id="c-insp-wrap">Inspector
+    <div class="em-seg" id="c-insp"><button data-v="on" aria-pressed="true">Open</button><button data-v="off">Closed</button></div>
+  </label>
+  <p class="note"><b>Static mock-up, not the app.</b> Item names, prices, needs and the map are illustrative. Colours, type, radii and controls come from <code>brand/tokens.css</code>, <code>brand/components.css</code> and DESIGN.md's Blackgrid extensions. The map is abstract geometry standing in for the real artwork. B is the direction you picked; A and C are here only to compare. <b>B, round 2:</b> real marker icons with switches, map picker, raid timers in the top bar, pictures in history, labelled Settings and a full Settings page. Marker switches, the map picker, Settings and the status bar items are clickable.</p>
+</div>
+
+<div class="stage"><div id="win"></div><p class="caption" id="caption"></p></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 16 16"><path d="M2.5 13.5h11M4.5 11V7.5M8 11V4M11.5 11V9"/></symbol>
+    <symbol id="i-import" viewBox="0 0 16 16"><path d="M8 2.5v7.5M5 7l3 3 3-3M3 12.5h10"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M10 3v10"/></symbol>
+    <symbol id="i-map" viewBox="0 0 16 16"><path d="M2 4l4-1.5 4 1.5 4-1.5v9.5l-4 1.5-4-1.5-4 1.5z M6 2.5v9.5M10 4v9.5"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 16 16"><path d="M2.5 5.5v-3h3M10.5 2.5h3v3M13.5 10.5v3h-3M5.5 13.5h-3v-3"/><rect x="5.5" y="5.5" width="5" height="5" rx="1"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 16 16"><path d="M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 9.8 8 14 8 14z"/><circle cx="8" cy="6.5" r="1.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 16 16"><path d="M3 8h10"/></symbol>
+    <symbol id="i-list" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="M4.5 6.5 8 10l3.5-3.5"/></symbol>
+    <symbol id="i-back" viewBox="0 0 16 16"><path d="M9.5 3.5 5 8l4.5 4.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 16 16"><path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3"/></symbol>
+    <symbol id="i-hex" viewBox="0 0 24 24"><path d="M12 2.5 20.2 7.25v9.5L12 21.5 3.8 16.75v-9.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5 16 9.8v4.4L12 16.5 8 14.2V9.8z" fill="currentColor" opacity=".9"/></symbol>
+  </defs>
+</svg>
+
+<script>
+const ITEMS = {
+  keep:   { name: 'Graphics card', short: 'GPU', how: 'Picked by search · just now',
+            plate: 'Keep', reason: '<b>Needed now:</b> Bitcoin farm level 2 needs 2. You have 1.',
+            flea: '₽412,000', fleaSlot: '₽206,000 / slot', trader: '₽236,000', traderWho: 'Therapist', fresh: 'prices 11:08', stale: false },
+  later:  { name: 'Gas analyzer', short: 'Gas', how: 'Accepted scan · 12 s ago',
+            plate: 'Keep for later', reason: '<b>Needed later:</b> Medstation level 2 (not built yet) and one quest you have not started.',
+            flea: '₽31,500', fleaSlot: '₽15,750 / slot', trader: '₽17,900', traderWho: 'Therapist', fresh: 'prices 11:08', stale: false },
+  check:  { name: 'Salewa first aid kit', short: 'Salewa', how: 'History · 3 min ago',
+            plate: 'Check / May Need', reason: '<b>Flea price is 3 h old</b>, and one hideout use needs it found in raid. FIR status unknown.',
+            flea: '₽21,800', fleaSlot: '₽10,900 / slot', trader: '₽9,400', traderWho: 'Therapist', fresh: 'price 3 h old', stale: true },
+  flea:   { name: 'Bolts', short: 'Bolts', how: 'Accepted scan · 4 s ago',
+            plate: 'Flea <b>₽38,277</b>', reason: 'No quest or hideout needs it. Flea pays ₽21,000 more than the best trader.',
+            flea: '₽38,277', fleaSlot: '₽38,277 / slot', trader: '₽17,100', traderWho: 'Mechanic', fresh: 'prices 11:08', stale: false },
+  trader: { name: 'Pack of sugar', short: 'Sugar', how: 'Picked by search · just now',
+            plate: 'Trader <b>₽24,600</b>', reason: 'No quest or hideout needs it. Therapist pays more than Flea after fees.',
+            flea: '₽23,900', fleaSlot: '₽23,900 / slot', trader: '₽24,600', traderWho: 'Therapist', fresh: 'prices 11:08', stale: false },
+  na:     { name: 'Dogtag BEAR', short: 'Tag', how: 'Accepted scan · 8 s ago',
+            plate: 'Price unavailable', reason: 'No Flea or trader price for this item in this game mode.',
+            flea: '—', fleaSlot: 'not sold', trader: '—', traderWho: 'none', fresh: 'prices 11:08', stale: false },
+};
+const NEEDS = {
+  keep:   [['Hideout','Bitcoin farm L2','<span class="ok">1 / 2</span>'],['Hideout','Bitcoin farm L3','0 / 3'],['Quest','Shopping List','—']],
+  later:  [['Hideout','Medstation L2','0 / 1'],['Quest','Health Care Privacy 4','0 / 1']],
+  check:  [['Hideout','Medstation L1','<span class="wn">FIR?</span>'],['Quest','none active','—']],
+  flea:   [['Hideout','none','—'],['Quest','none','—']],
+  trader: [['Hideout','none','—'],['Quest','none','—']],
+  na:     [['Hideout','none','—'],['Quest','none','—']],
+};
+const HIST = [['keep','Graphics card','just now'],['flea','Bolts','4 s'],['later','Gas analyzer','12 s'],['check','Salewa first aid kit','3 min'],['trader','Pack of sugar','5 min'],['na','Dogtag BEAR','8 min']];
+const st = { dir: 'B', area: 'scanner', verdict: 'check', theme: 'dark', width: 'wide', insp: 'on', mapMenu: false, map: 'Streets of Tarkov', back: 'scanner', live: true, mode: 'PvP', trader: 'All' };
+
+// Marker icons are the project's own glyphs (ADR-0023), loaded from assets/map_markers at runtime.
+// Role colours come from the manifest; quest and loot leave the amber band now that Ember marks the
+// selection (owner decision Q3). Those two values are proposals; the ADR that supersedes ADR-0023 fixes them.
+const ROLE = { exit: '#48D28B', danger: '#FF5252', boss: '#E57CE5', spawn: '#C9CDBF', quest: '#8CB4FF', loot: '#7ED9C6', utility: '#B7A6F0', pin: '#40C4FF' };
+const MK = [
+  ['Extracts', [['PmcExtracts','PMC extracts','exit',6,1],['ScavExtracts','Scav extracts','exit',5,1],['SharedExtracts','Shared extracts','exit',2,1],['Transits','Transits','exit',3,1]]],
+  ['Quests',   [['QuestItems','Quest items','quest',4,1],['QuestObjectives','Quest objectives','quest',9,1]]],
+  ['Danger',   [['Hazards','Hazards','danger',7,0],['HazardZones','Hazard zones','danger',5,1],['stationaryWeapons','Stationary weapons','danger',6,0]]],
+  ['Bosses',   [['BossSpawns','Bosses','boss',4,1],['CultistSpawns','Cultists','boss',3,0]]],
+  ['Spawns',   [['PmcSpawns','PMC spawns','spawn',12,0],['ScavSpawns','Scav spawns','spawn',18,0]]],
+  ['Loot',     [['lootContainers','Containers','loot',64,0],['lootLoose','Loose loot','loot',41,0]]],
+  ['Utility',  [['locks','Locks','utility',22,0],['Switches','Switches','utility',3,0],['BtrStops','BTR stops','utility',8,1]]],
+  ['Yours',    [['CustomPins','Saved pins','pin',2,1]]],
+];
+const MKROLE = {}; const ON = {};
+for (const [, rows] of MK) for (const [k, , r, , on] of rows) { MKROLE[k] = r; ON[k] = !!on; }
+const GLYPH = {};
+const FILE = { PmcExtracts:'pmc_extracts', ScavExtracts:'scav_extracts', SharedExtracts:'shared_extracts', Transits:'transits', QuestItems:'quest_items', QuestObjectives:'quest_objectives', Hazards:'hazards', HazardZones:'hazard_zones', stationaryWeapons:'stationary_weapons', BossSpawns:'boss_spawns', CultistSpawns:'cultist_spawns', PmcSpawns:'pmc_spawns', ScavSpawns:'scav_spawns', lootContainers:'loot_containers', lootLoose:'loot_loose', locks:'locks', Switches:'switches', BtrStops:'btr_stops', CustomPins:'custom_pins' };
+async function loadGlyphs() {
+  await Promise.all(Object.entries(FILE).map(async ([k, f]) => {
+    try {
+      const t = await (await fetch(`../../assets/map_markers/${f}.svg`)).text();
+      GLYPH[k] = t.replace(/<\?xml[^>]*>/, '').replace(/\s(width|height)="24"/g, '').replace(/(fill|stroke)="(#ffffff|#fff|white)"/gi, '$1="currentColor"');
+    } catch { /* opened from file://: badges fall back to a dot */ }
+  }));
+  render();
+}
+// A badge drawn the way ADR-0023 describes: dark disc, role-coloured ring, glyph tinted by role.
+function badge(k, x, y, sel = false) {
+  const c = ROLE[MKROLE[k]];
+  const g = GLYPH[k] ? GLYPH[k].replace('<svg', '<svg x="-8" y="-8" width="16" height="16"') : `<circle r="4" fill="currentColor"/>`;
+  const ring = sel ? `<circle r="17" fill="none" stroke="#e9a14b" stroke-width="1.5" opacity=".55"/><circle r="14" fill="#090F0D" stroke="#e9a14b" stroke-width="2.5"/>` : `<circle r="12" fill="#090F0D" stroke="currentColor" stroke-width="2"/>`;
+  return `<g transform="translate(${x} ${y})" color="${c}">${ring}${g}</g>`;
+}
+const badgeIcon = (k) => `<svg class="badge" viewBox="-13 -13 26 26" aria-hidden="true">${badge(k, 0, 0)}</svg>`;
+const MAPS = ['Customs','Factory','Ground Zero','Interchange','Labyrinth','Lighthouse','Reserve','Shoreline','Streets of Tarkov','The Lab','Woods'];
+const TRADERS = ['All','Prapor','Therapist','Fence','Skier','Peacekeeper','Mechanic','Ragman','Jaeger','Ref','Lightkeeper'];
+
+const icon = (id, cls='') => `<svg class="em-icon ${cls}" viewBox="0 0 16 16"><use href="#${id}"/></svg>`;
+const itemArt = (short) => `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="10" width="30" height="20" rx="3" fill="none" stroke="var(--ink-tertiary)" stroke-width="1.5"/><text x="20" y="24" text-anchor="middle" font-family="Geist" font-size="8" font-weight="600" fill="var(--ink-secondary)">${short}</text></svg>`;
+
+const lockup = () => `<div class="lockup"><svg viewBox="0 0 24 24" style="color:var(--ink)"><use href="#i-hex"/></svg><span><b>BLACKGRID</b><small>TRACK. PLAN. SURVIVE.</small></span></div>`;
+const tools = (withPanel) => `<div class="tools">${withPanel ? `<button class="em-ib" title="Inspector" aria-pressed="${st.insp==='on'}" data-act="insp">${icon('i-panel')}</button>` : ''}<button class="em-ib" title="Stats">${icon('i-chart')}</button><button class="em-ib" title="Import">${icon('i-import')}</button><button class="em-ib" title="Settings">${icon('i-gear')}</button></div>`;
+const search = () => `<div class="search">${icon('i-search')}<span>Search items</span><span class="em-kbd">Ctrl K</span></div>`;
+const areaSeg = () => `<div class="em-seg"><button data-act="area" data-v="map" aria-pressed="${st.area==='map'}">${icon('i-map')}Map</button><button data-act="area" data-v="scanner" aria-pressed="${st.area==='scanner'}">${icon('i-scan')}Scanner</button></div>`;
+const statusBar = () => `<div class="status"><span>Mode: PvP</span><span>Item data 11:08</span><span>Tracker up to date</span><span class="em-save live" data-state="busy">Live scan on · F9 or click</span><span class="push">In raid <span class="timer">23:41</span></span></div>`;
+
+// B round 2: timers in the top bar, labelled tools, clickable status items.
+const timers = () => `<div class="timers" title="From the game logs. Choose which timers show in Settings → Raid timers."><span>In raid<b>3:48</b></span><span class="sep"></span><span class="run">Run-through<b>3:22</b></span><span class="sep"></span><span>Scav<b>14:05</b></span></div>`;
+const toolsB = () => `<div class="tools"><button class="em-ib" title="Inspector" aria-pressed="${st.insp==='on'}" data-act="insp">${icon('i-panel')}</button><button class="em-btn" data-variant="quiet" title="Stats">${icon('i-chart')}<span class="txt">Stats</span></button><button class="em-btn" data-variant="quiet" title="Import">${icon('i-import')}<span class="txt">Import</span></button><button class="em-btn" data-variant="quiet" title="Settings" data-act="settings" ${st.area==='settings' ? 'aria-pressed="true" style="background:var(--hover);color:var(--ink)"' : ''}>${icon('i-gear')}<span class="txt">Settings</span></button></div>`;
+const statusB = () => `<div class="status">
+  <button data-act="mode" title="Game mode. Click to switch; also in Settings → General.">Mode: ${st.mode}${icon('i-chev')}</button>
+  <button data-act="goset" data-sec="data" title="Item data freshness. Click to refresh or see sources.">Item data 11:08</button>
+  <button data-act="goset" data-sec="tracker">Tracker up to date</button>
+  <button class="em-save live" data-state="${st.live ? 'busy' : 'off'}" data-act="live" title="Click to turn live scan ${st.live ? 'off' : 'on'}. Key and options in Settings → Live scan.">${st.live ? 'Live scan on · F9 or click' : 'Live scan off'}</button></div>`;
+
+function plate(v) { return `<span class="plate" data-v="${v}">${ITEMS[v].plate}</span>`; }
+
+function strip() {
+  if (st.verdict === 'none') return `<div class="strip"><div class="strip-in"><div class="empty"><div class="frame" style="width:48px;height:48px">${icon('i-search')}</div><div><div class="em-title">Find an item</div><span class="em-label">Press Ctrl K, or press F9 over an item in the game's inspect window.</span></div></div></div></div>`;
+  const it = ITEMS[st.verdict];
+  return `<div class="strip"><div class="strip-in">
+    <div class="who"><div class="frame">${itemArt(it.short)}</div><div style="min-width:0"><div class="em-title">${it.name}</div><span class="em-label">${it.how}</span></div></div>
+    <div class="answer"><div class="row1">${plate(st.verdict)}${st.dir === 'B' ? `<div class="fir" title="Found in raid, for this item only. Changes the verdict when a need requires it."><span class="em-label">Found in raid</span><div class="em-seg"><button aria-pressed="true">Unknown</button><button>Yes</button><button>No</button></div></div>` : ''}</div><div class="reason">${it.reason}</div></div>
+    <dl class="money"><dt>Flea</dt><dd>${it.flea}<small>${it.fleaSlot}</small></dd><dt>Trader</dt><dd>${it.trader}<small>${it.traderWho}</small></dd><dt></dt><dd><span class="fresh" ${it.stale ? 'data-stale' : ''}>${it.fresh}</span></dd></dl>
+  </div></div>`;
+}
+
+function needsRows(v) { return (NEEDS[v] || []).map(([t, what, n]) => `<div class="r"><span class="t">${t}</span>${what}<span class="n">${n}</span></div>`).join(''); }
+function histRows(cur) { return HIST.map(([v, name, ago]) => `<button class="em-row" aria-current="${v===cur}"><span class="dot" data-v="${v}"></span>${name}<em>${ago}</em></button>`).join(''); }
+
+function scannerMain() {
+  const v = st.verdict === 'none' ? null : st.verdict;
+  const it = v ? ITEMS[v] : null;
+  return `<div class="main">
+    <div class="cols">
+      <section><h3>Why</h3><p class="sub">${v ? 'What this item is still needed for, from your progress.' : 'Pick or scan an item to see its needs.'}</p>
+        <div class="dense">${v ? needsRows(v) : ''}</div></section>
+      <section><h3>Prices</h3><p class="sub">${v ? 'Per item and per inventory slot. Flea after fees.' : '—'}</p>
+        <div class="dense">${it ? `<div class="r"><span class="t">Flea</span>Last 24 h low<span class="n">${it.flea}</span></div><div class="r"><span class="t">Trader</span>${it.traderWho}<span class="n">${it.trader}</span></div><div class="r"><span class="t">Per slot</span>Best<span class="n">${it.fleaSlot.replace(' / slot','')}</span></div><div class="r"><span class="t">Updated</span>tarkov.dev<span class="n"><span class="fresh" ${it.stale?'data-stale':''}>${it.fresh}</span></span></div>` : ''}</div></section>
+    </div>
+    <section><h3>Scan evidence</h3><p class="sub">The last picture live scan read, and how sure it was.</p>
+      <div class="ev"><div class="crop"></div><p>${v ? `Matched <b style="color:var(--ink);font-weight:500">${it.name}</b> in 140 ms. Next best candidate far behind.` : 'No scan yet. Live scan is listening for F9 or a click.'}</p></div></section>
+  </div>`;
+}
+
+function histRowsB(cur) {
+  return HIST.map(([v, name, ago]) => `<button class="em-row" aria-current="${v===cur}"><div class="frame">${itemArt(ITEMS[v].short)}</div><span class="nm">${name}</span><span class="dot" data-v="${v}" title="${ITEMS[v].plate.replace(/<[^>]+>/g,'')}"></span><em>${ago}</em></button>`).join('');
+}
+
+function scannerInspector() {
+  return `<aside class="inspector">
+    <section><div class="ihead"><h3>Recent items</h3><button class="em-link">Clear</button></div><div class="hist">${histRowsB(st.verdict)}</div></section>
+    <section><h3>Live scan</h3><p class="sub">${st.live ? 'On. F9 or a click reads a small picture around the mouse.' : 'Off.'} Never touches the game. Turn it on or off from the status bar; key and options are in <button class="em-link" data-act="goset" data-sec="scan">Settings</button>.</p></section>
+  </aside>`;
+}
+
+function mapSvg() {
+  // Abstract geometry standing in for the map artwork.
+  const blocks = [[80,90,160,110],[270,70,120,150],[420,110,190,90],[640,80,140,130],[110,260,130,170],[280,270,210,120],[530,240,110,170],[680,260,170,110],[90,470,200,100],[330,430,150,140],[520,450,180,110],[740,420,120,160]];
+  let s = `<svg viewBox="0 0 940 640" preserveAspectRatio="xMidYMid meet"><rect width="940" height="640" fill="var(--map-ground)"/>`;
+  s += `<path d="M0 235 H940 M0 410 H940 M250 0 V640 M505 0 V640 M720 0 V640" stroke="var(--map-road)" stroke-width="14"/>`;
+  for (const [x,y,w,h] of blocks) s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--map-block)" stroke="var(--map-block-line)"/>`;
+  s += `<g font-family="Literata" font-size="12" fill="var(--map-label)" text-anchor="middle"><text x="350" y="165">Concordia</text><text x="585" y="330">Pinewood hotel</text><text x="190" y="525">Cardinal</text><text x="800" y="320">Lexos</text></g>`;
+  // extracts (ADR-0023 faction colours) with name labels
+  const ex = [[45,330,'#7be495','Scav checkpoint'],[895,590,'#7be495','Tram'],[895,150,'#8cb4ff','Car extract'],[45,590,'#d29bf2','Transit: Lighthouse']];
+  for (const [x,y,c,l] of ex) s += `<g><rect x="${x-9}" y="${y-9}" width="18" height="18" rx="5" fill="#090f0d" stroke="${c}" stroke-width="1.5"/><path d="M${x-4} ${y}h8M${x+1} ${y-4}l4 4-4 4" stroke="${c}" stroke-width="1.5" fill="none"/><text x="${x + (x>470?-16:16)}" y="${y+4}" font-family="Geist" font-size="12" font-weight="500" fill="${c}" text-anchor="${x>470?'end':'start'}">${l}</text></g>`;
+  // bosses
+  for (const [x,y] of [[460,180],[610,330]]) s += `<g><circle cx="${x}" cy="${y}" r="10" fill="#090f0d" stroke="#e57ce5" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="3.5" fill="#e57ce5"/></g>`;
+  // selected boss marker in Ember
+  s += `<g><circle cx="380" cy="350" r="17" fill="none" stroke="#e9a14b" stroke-width="1.5" opacity=".55"/><circle cx="380" cy="350" r="11" fill="#090f0d" stroke="#e9a14b" stroke-width="2"/><circle cx="380" cy="350" r="4" fill="#e9a14b"/></g>`;
+  // player position from the last screenshot
+  s += `<g transform="translate(560 520) rotate(-35)"><circle r="16" fill="rgba(232,230,225,.08)"/><path d="M0 -12 L7 8 L0 4 L-7 8 Z" fill="#e8e6e1"/></g>`;
+  s += `</svg>`;
+  return s;
+}
+
+function mapMain() {
+  return `<div class="mapwrap">${mapSvg()}
+    <div class="mapbar"><span class="mapname">Streets of Tarkov</span>
+      <div class="em-seg"><button>Underground</button><button aria-pressed="true">Ground</button><button>Upper</button></div>
+      <div class="em-seg"><button aria-pressed="true">Extracts</button><button aria-pressed="true">Bosses</button><button>Quests</button><button>Loot</button></div></div>
+    <div class="bubble" style="left:calc(380 / 940 * 100% + 26px);top:calc(350 / 640 * 100% - 70px)">
+      <button class="close em-ib">${icon('i-x')}</button>
+      <span class="k">Boss spawn</span><div class="ttl">Kollontay</div>
+      <div class="dense"><div class="r"><span class="t">Chance</span>Per raid<span class="n">57%</span></div><div class="r"><span class="t">Guards</span>With him<span class="n">4</span></div></div>
+    </div>
+    <div class="mapzoom"><button>${icon('i-plus')}</button><button>${icon('i-minus')}</button></div>
+  </div>`;
+}
+
+// Illustrative positions in the 940 × 640 stand-in map.
+const PLACES = {
+  PmcExtracts: [[895,590,'Tram'],[45,120,'Klimov street']], ScavExtracts: [[45,330,'Scav checkpoint']], SharedExtracts: [[895,150,'Car extract']], Transits: [[45,590,'Transit: Lighthouse']],
+  QuestItems: [[330,140],[700,330]], QuestObjectives: [[560,140],[420,520],[790,215]],
+  Hazards: [[300,585],[650,600]], HazardZones: [[150,200]], stationaryWeapons: [[505,300]],
+  BossSpawns: [[460,180],[610,330]], CultistSpawns: [[200,380],[820,520]],
+  PmcSpawns: [[120,560],[860,60]], ScavSpawns: [[250,330],[620,420],[720,120]],
+  lootContainers: [[140,140],[340,300],[590,480],[790,470],[460,120]], lootLoose: [[210,300],[540,280],[700,500]],
+  locks: [[300,100],[580,410]], Switches: [[640,180]], BtrStops: [[250,235],[505,410],[720,235]], CustomPins: [[440,560],[160,450]],
+};
+function mapSvgB() {
+  const blocks = [[80,90,160,110],[270,70,120,150],[420,110,190,90],[640,80,140,130],[110,260,130,170],[280,270,210,120],[530,240,110,170],[680,260,170,110],[90,470,200,100],[330,430,150,140],[520,450,180,110],[740,420,120,160]];
+  let s = `<svg viewBox="0 0 940 640" preserveAspectRatio="xMidYMid meet"><rect width="940" height="640" fill="var(--map-ground)"/>`;
+  s += `<path d="M0 235 H940 M0 410 H940 M250 0 V640 M505 0 V640 M720 0 V640" stroke="var(--map-road)" stroke-width="14"/>`;
+  for (const [x,y,w,h] of blocks) s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--map-block)" stroke="var(--map-block-line)"/>`;
+  s += `<g font-family="Literata" font-size="12" fill="var(--map-label)" text-anchor="middle"><text x="350" y="165">Concordia</text><text x="585" y="345">Pinewood hotel</text><text x="190" y="525">Cardinal</text><text x="800" y="320">Lexos</text></g>`;
+  for (const [k, pts] of Object.entries(PLACES)) {
+    if (!ON[k]) continue;
+    for (const [x, y, label] of pts) {
+      s += badge(k, x, y);
+      if (label) { const right = x > 470; s += `<text x="${x + (right ? -18 : 18)}" y="${y + 4}" font-family="Geist" font-size="12" font-weight="500" fill="${ROLE[MKROLE[k]]}" text-anchor="${right ? 'end' : 'start'}" paint-order="stroke" stroke="#0c0c0e" stroke-width="3">${label}</text>`; }
+    }
+  }
+  if (ON.BossSpawns) s += badge('BossSpawns', 380, 350, true);
+  s += `<g transform="translate(560 540) rotate(-35)"><circle r="16" fill="rgba(232,230,225,.08)"/><path d="M0 -12 L7 8 L0 4 L-7 8 Z" fill="#e8e6e1"/></g>`;
+  return s + `</svg>`;
+}
+
+function mapMainB() {
+  const menu = st.mapMenu ? `<div class="em-menu mapmenu" role="menu"><div class="em-mh">Maps</div>${MAPS.map(m => `<button class="em-mi" role="menuitem" data-act="pickmap" data-v="${m}" aria-current="${m===st.map}">${m}${m===st.map ? icon('i-check') : ''}</button>`).join('')}<hr><p class="note">Follow logs picks the map from the game logs when a raid starts. Choosing a map here turns that off until you turn it back on in Settings.</p><hr><button class="em-mi" role="menuitem">Read latest screenshot</button></div>` : '';
+  return `<div class="mapwrap">${mapSvgB()}
+    <div class="mapbar">
+      <button class="mappick" data-act="mapmenu" aria-expanded="${st.mapMenu}" title="Switch map"><span class="mapname">${st.map}</span>${icon('i-chev')}</button>
+      <div class="em-seg" title="Floor"><button aria-pressed="true" title="Follows your position from the last screenshot">Auto</button><button>Underground</button><button>Ground</button><button>2</button><button>3</button><button>4</button><button>5</button></div>
+    </div>${menu}
+    ${ON.BossSpawns ? `<div class="bubble" style="left:calc(380 / 940 * 100% + 26px);top:calc(350 / 640 * 100% - 70px)">
+      <button class="close em-ib">${icon('i-x')}</button>
+      <span class="k">Boss spawn</span><div class="ttl">Kollontay</div>
+      <div class="dense"><div class="r"><span class="t">Chance</span>Per raid<span class="n">57%</span></div><div class="r"><span class="t">Guards</span>With him<span class="n">4</span></div></div>
+    </div>` : ''}
+    <div class="mapzoom"><button>${icon('i-plus')}</button><button>${icon('i-minus')}</button></div>
+  </div>`;
+}
+
+function mapInspectorB() {
+  const groups = MK.map(([g, rows]) => `<div class="mkgrp">${g}</div>` + rows.map(([k, l, , n]) => `<button class="mk" data-act="mk" data-v="${k}" aria-pressed="${ON[k]}">${badgeIcon(k)}${l}<em>${n}</em><span class="sw"></span></button>`).join('')).join('');
+  return `<aside class="inspector">
+    <section><h3>This raid</h3><p class="sub">From your last O-panel screenshot, 6 min ago.</p>
+      <div class="dense"><div class="r"><span class="t">Extract</span>Tram<span class="n"><span class="ok" style="color:var(--ok-ink)">open</span></span></div><div class="r"><span class="t">Extract</span>Scav checkpoint<span class="n">open</span></div><div class="r"><span class="t">Extract</span>Car extract<span class="n">₽7,000</span></div></div></section>
+    <section><h3>Markers</h3>
+      <div class="mfilters">
+        <input class="em-input" placeholder="Find markers: door, tunnel" title="Comma means OR. Markers that don't match are dimmed, not hidden.">
+        <input class="em-input" placeholder="Quest name contains">
+        <div class="em-chips" aria-label="Quest trader">${TRADERS.map(t => `<button class="em-chip" data-act="trader" data-v="${t}" aria-pressed="${t===st.trader}">${t}</button>`).join('')}</div>
+      </div>
+      <div class="mkhead"><span class="em-label">Show on map</span><span class="spacer" style="flex:1"></span><button class="em-link" data-act="mkall" data-v="1">Show all</button><button class="em-link" data-act="mkall" data-v="0">Hide all</button></div>
+      ${groups}</section>
+    <section><div class="ihead"><h3>Pins</h3><button class="em-btn" data-variant="quiet">${icon('i-pin')}Add pin</button></div><div class="dense"><div class="r">${badgeIcon('CustomPins')}Stash door<span class="n">Ground</span></div><div class="r">${badgeIcon('CustomPins')}Key spawn<span class="n">2</span></div></div></section>
+  </aside>`;
+}
+
+// Settings page (choice 4a). Every setting that used to live in a side panel or the dialog has a home here.
+const SW = (on, act = '') => `<span class="c"><button aria-pressed="${on}" ${act} style="display:flex"><span class="sw"></span></button></span>`;
+const SET_SECTIONS = [
+  ['general', 'General', 'How Blackgrid looks and which game mode it reads.', [
+    ['Theme', 'Follows Windows unless you pick one. The map stays dark in both.', `<span class="c"><div class="em-seg"><button aria-pressed="true">System</button><button>Dark</button><button>Light</button></div></span>`],
+    ['Game mode', 'Prices and progress for this mode. Also from the status bar.', `<span class="c"><div class="em-seg"><button aria-pressed="true">PvP</button><button>PvE</button><button>Seasonal</button></div></span>`],
+  ]],
+  ['scan', 'Live scan', 'Reads a small picture around the mouse when you press the key or click. Never touches the game.', [
+    ['Live scan', 'Also from the status bar.', SW(st.live, 'data-act="live"')],
+    ['Scan key', 'Press it over an item in the game’s inspect window.', `<span class="c"><select class="em-select"><option>F8</option><option selected>F9</option><option>F10</option></select></span>`],
+    ['Record scan frames', 'Saves each picture live scan reads, for troubleshooting.', SW(false)],
+  ]],
+  ['data', 'Item data', 'Prices and item details from tarkov.dev.', [
+    ['Item data', 'Up to date · prices 11:08 · items 06:00', `<span class="c"><button class="em-btn">${icon('i-refresh')}Refresh item data</button></span>`],
+  ]],
+  ['tracker', 'Tracker progress', 'Blackgrid only reads your progress. Your token needs the GP permission.', [
+    ['Use Tracker progress', 'Up to date · 12:38', SW(true)],
+    ['Token', 'Saved for PvP. Stored encrypted for your Windows account.', `<span class="c"><input class="em-input" type="password" value="••••••••••••"><button class="em-btn">Save</button><button class="em-btn" data-variant="quiet">Remove</button></span>`],
+    ['Progress', 'Read now instead of waiting for the next refresh.', `<span class="c"><button class="em-btn">${icon('i-refresh')}Refresh progress</button></span>`],
+  ]],
+  ['files', 'Game files', 'Where Blackgrid reads the game’s logs and your screenshots. It only reads them.', [
+    ['Game log folder', 'Found automatically.', `<span class="c"><input class="em-input wide" value="…\\Escape from Tarkov\\Logs"><button class="em-btn">${icon('i-folder')}Browse</button></span>`],
+    ['Screenshot folder', 'For your position and the extracts list.', `<span class="c"><input class="em-input wide" value="…\\Documents\\Escape from Tarkov\\Screenshots"><button class="em-btn">${icon('i-folder')}Browse</button></span>`],
+    ['Follow logs', 'Use the map found in the game logs. Choosing a map yourself turns this off; the logs are still watched.', SW(true)],
+  ]],
+  ['timers', 'Raid timers', 'Shown in the top bar. Computed from the game logs.', [
+    ['Show raid timers', 'Hides all three when off.', SW(true)],
+    ['Time in raid', '', SW(true)], ['Run-through', 'Counts down to the run-through limit.', SW(true)], ['Scav cooldown', '', SW(true)],
+    ['Run-through length', 'm:ss, from 1:00 to 30:00.', `<span class="c"><input class="em-input short" value="7:10"></span>`],
+    ['Fence reputation', 'For PvP, with two decimals. Used for the scav cooldown.', `<span class="c"><input class="em-input short" value="2.35"></span>`],
+  ]],
+  ['map', 'Map', 'Marker switches and filters live on the Map screen.', [
+    ['Save marker filters', 'Keep marker switches and filters between sessions.', SW(true)],
+  ]],
+];
+function renderSettings() {
+  const sec = st.sec || 'general';
+  return `<div class="settings">
+    <nav><button class="em-btn back" data-variant="quiet" data-act="area" data-v="${st.back}">${icon('i-back')}Back to ${st.back === 'map' ? 'Map' : 'Scanner'}</button>
+      ${SET_SECTIONS.map(([id, t]) => `<button class="em-row" data-act="sec" data-v="${id}" aria-current="${id===sec}">${t}</button>`).join('')}</nav>
+    <div class="pane" id="setpane"><div>
+      <div><div class="em-display" style="font-size:28px">Settings</div><p class="where">Saved as you change them.</p></div>
+      ${SET_SECTIONS.map(([id, t, d, rows]) => `<section class="setsec" id="sec-${id}"><h2 class="em-title">${t}</h2><p class="sub">${d}</p>${rows.map(([l, h, c]) => `<div class="set"><span>${l}</span>${h ? `<small>${h}</small>` : ''}${c}</div>`).join('')}</section>`).join('')}
+    </div></div></div>`;
+}
+
+function mapInspector() {
+  const L = [['#7be495','PMC and Scav extracts','6'],['#8cb4ff','Shared extracts','2'],['#d29bf2','Transits','3'],['#e57ce5','Bosses','4'],['#c9cdbf','Spawns','hidden']];
+  return `<aside class="inspector">
+    <section><h3>This raid</h3><p class="sub">From your last O-panel screenshot, 6 min ago.</p>
+      <div class="dense"><div class="r"><span class="t">Extract</span>Tram<span class="n"><span class="ok" style="color:var(--ok-ink)">open</span></span></div><div class="r"><span class="t">Extract</span>Scav checkpoint<span class="n">open</span></div><div class="r"><span class="t">Extract</span>Car extract<span class="n">₽7,000</span></div></div></section>
+    <section><h3>Markers</h3><div class="legend">${L.map(([c,l,n]) => `<button class="em-row"><span class="swatch" style="background:${c}"></span>${l}<em>${n}</em></button>`).join('')}</div></section>
+    <section><div class="ihead"><h3>Pins</h3><button class="em-btn" data-variant="quiet">${icon('i-pin')}Add pin</button></div><p class="sub">No pins on this map yet.</p></section>
+  </aside>`;
+}
+
+function renderB() {
+  const insp = st.insp === 'on';
+  const top = `<header class="topbar">${lockup()}${areaSeg()}${search()}<span class="spacer"></span>${timers()}${toolsB()}</header>`;
+  if (st.area === 'settings') return `<div class="win em" data-w="${st.width}" style="grid-template-rows:44px 1fr 28px">${top}${renderSettings()}${statusB()}</div>`;
+  const body = st.area === 'scanner' ? scannerMain() + (insp ? scannerInspector() : '') : mapMainB() + (insp ? mapInspectorB() : '');
+  return `<div class="win em" data-w="${st.width}">
+    ${top}
+    ${strip()}
+    <div class="body" data-inspector="${insp ? 'on' : 'off'}">${body}</div>
+    ${statusB()}
+  </div>`;
+}
+
+function aInspector(v) {
+  const it = ITEMS[v];
+  return `<aside class="inspector">
+    <section><h3>Scan evidence</h3><p class="sub">The last picture live scan read.</p><div class="ev"><div class="crop"></div><p>Matched ${it.name} in 140 ms.</p></div></section>
+    <section><h3>Live scan</h3><div class="em-chips"><span class="em-chip" aria-pressed="true">On</span><span class="em-chip">Key: F9</span><span class="em-chip">Click to scan</span></div></section>
+    <section><h3>Sources</h3><div class="dense"><div class="r"><span class="t">Items</span>tarkov.dev<span class="n"><span class="fresh" ${it.stale?'data-stale':''}>${it.fresh}</span></span></div><div class="r"><span class="t">Progress</span>Tracker<span class="n">up to date</span></div></div></section>
+  </aside>`;
+}
+
+function renderA() {
+  const v = st.verdict === 'none' ? 'check' : st.verdict; const it = ITEMS[v];
+  const main = st.area === 'scanner'
+    ? `<div class="mainA"><div class="head"><div class="frame">${itemArt(it.short)}</div><div><div class="em-display">${it.name}</div><span class="em-label">${it.how}</span></div></div>
+        <div>${plate(v)}<div class="reason">${it.reason}</div></div>
+        <div class="cols"><section><h3>Why</h3><div class="dense">${needsRows(v)}</div></section><section><h3>Prices</h3><div class="dense"><div class="r"><span class="t">Flea</span>Last 24 h low<span class="n">${it.flea}</span></div><div class="r"><span class="t">Trader</span>${it.traderWho}<span class="n">${it.trader}</span></div></div></section></div></div>`
+    : `<div class="mapwrap">${mapSvg()}<div class="mapbar"><span class="mapname">Streets of Tarkov</span><div class="em-seg"><button>Underground</button><button aria-pressed="true">Ground</button><button>Upper</button></div></div></div>`;
+  return `<div class="win winA em" data-w="${st.width}">
+    <header class="topbar">${lockup()}${search()}<span class="spacer"></span>${tools(false)}</header>
+    <div class="bodyA" style="${st.width==='narrow' ? 'grid-template-columns:52px 220px minmax(0,1fr)' : ''}">
+      <nav class="rail"><button class="em-ib" aria-current="${st.area==='map'}" data-act="area" data-v="map">${icon('i-map')}</button><button class="em-ib" aria-current="${st.area==='scanner'}" data-act="area" data-v="scanner">${icon('i-scan')}</button><button class="em-ib">${icon('i-list')}</button></nav>
+      <aside class="side"><h3>${st.area==='scanner' ? 'Recent items' : 'Maps'}</h3><div class="hist">${st.area==='scanner' ? histRows(v) : ['Customs','Factory','Interchange','Lighthouse','Reserve','Shoreline','Streets of Tarkov','Woods'].map(m => `<button class="em-row" aria-current="${m.startsWith('Streets')}">${m}</button>`).join('')}</div></aside>
+      ${main}
+      ${st.width==='narrow' ? '' : (st.area==='scanner' ? aInspector(v) : mapInspector())}
+    </div>${statusBar()}</div>`;
+}
+
+function renderC() {
+  const v = st.verdict === 'none' ? 'check' : st.verdict; const it = ITEMS[v];
+  return `<div class="win winA em" data-w="${st.width}">
+    <header class="topbar">${lockup()}${search()}<span class="spacer"></span>${tools(false)}</header>
+    <div class="bodyC">${mapMain()}
+      <div class="paneC">
+        <div class="answerC"><div style="display:flex;gap:12px;align-items:center"><div class="frame" style="width:48px;height:48px">${itemArt(it.short)}</div><div><div class="em-title">${it.name}</div><span class="em-label">${it.how}</span></div></div><div>${plate(v)}<div class="reason">${it.reason}</div></div></div>
+        <div class="tabs"><div class="em-seg"><button aria-pressed="true">Item</button><button>Marker</button><button>Raid</button><button>History</button></div></div>
+        <div class="content"><section><h3>Why</h3><div class="dense">${needsRows(v)}</div></section><section><h3>Prices</h3><div class="dense"><div class="r"><span class="t">Flea</span>Last 24 h low<span class="n">${it.flea}</span></div><div class="r"><span class="t">Trader</span>${it.traderWho}<span class="n">${it.trader}</span></div></div></section></div>
+      </div></div>${statusBar()}</div>`;
+}
+
+const CAPTIONS = {
+  B: 'B · Answer strip, round 2: the verdict strip sits under the top bar on both Map and Scanner; raid timers sit in the top bar; Found in raid sits with the verdict. Details open in the inspector on the right. Settings opens as a full page. Quest (blue) and loot (sea green) marker colours are proposals for the ADR that moves them off the amber band.',
+  A: 'A · Workbench (for comparison): Ember’s full frame with an icon rail, side list, main view and docked inspector. Closest to Mythspine; more chrome before the answer.',
+  C: 'C · Split companion (for comparison): map and item side by side all the time; the area control and the strip are gone. Densest; the map loses half its width.',
+};
+
+function render() {
+  document.documentElement.dataset.theme = st.theme;
+  document.getElementById('win').innerHTML = st.dir === 'A' ? renderA() : st.dir === 'C' ? renderC() : renderB();
+  document.getElementById('caption').textContent = CAPTIONS[st.dir];
+  document.getElementById('c-insp-wrap').style.display = st.dir === 'B' ? '' : 'none';
+  for (const [id, key] of [['c-dir','dir'],['c-area','area'],['c-theme','theme'],['c-width','width'],['c-insp','insp']])
+    for (const b of document.querySelectorAll(`#${id} > button`)) b.setAttribute('aria-pressed', String(b.dataset.v === st[key]));
+}
+function bindSeg(id, key) { document.getElementById(id).addEventListener('click', e => { const b = e.target.closest('button'); if (b) { st[key] = b.dataset.v; if (key === 'width') st.insp = b.dataset.v === 'narrow' ? 'off' : 'on'; render(); } }); }
+bindSeg('c-dir','dir'); bindSeg('c-area','area'); bindSeg('c-theme','theme'); bindSeg('c-width','width'); bindSeg('c-insp','insp');
+document.getElementById('c-verdict').addEventListener('change', e => { st.verdict = e.target.value; render(); });
+document.getElementById('win').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) { if (st.mapMenu && !e.target.closest('.mapmenu')) { st.mapMenu = false; render(); } return; }
+  const a = b.dataset.act, v = b.dataset.v;
+  let scrollTo = null;
+  if (a === 'area') st.area = v;
+  if (a === 'insp') st.insp = st.insp === 'on' ? 'off' : 'on';
+  if (a === 'settings') { if (st.area === 'settings') st.area = st.back; else { if (st.area !== 'settings') st.back = st.area; st.area = 'settings'; } }
+  if (a === 'goset') { if (st.area !== 'settings') st.back = st.area; st.area = 'settings'; st.sec = b.dataset.sec; scrollTo = st.sec; }
+  if (a === 'sec') { st.sec = v; scrollTo = v; }
+  if (a === 'live') st.live = !st.live;
+  if (a === 'mode') st.mode = { PvP: 'PvE', PvE: 'Seasonal', Seasonal: 'PvP' }[st.mode];
+  if (a === 'mapmenu') st.mapMenu = !st.mapMenu;
+  if (a === 'pickmap') { st.map = v; st.mapMenu = false; }
+  if (a === 'mk') ON[v] = !ON[v];
+  if (a === 'mkall') for (const k in ON) ON[k] = v === '1';
+  if (a === 'trader') st.trader = v;
+  render();
+  if (scrollTo) document.getElementById(`sec-${scrollTo}`)?.scrollIntoView({ block: 'start' });
+});
+// Optional state in the URL hash, e.g. #dir=B&area=map&verdict=keep&theme=light&width=narrow
+for (const [k, v] of new URLSearchParams(location.hash.slice(1))) if (k in st) st[k] = v;
+document.getElementById('c-verdict').value = st.verdict;
+render();
+loadGlyphs();
+</script>
+</body>
+</html>
