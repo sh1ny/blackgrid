@@ -11,6 +11,7 @@ M8's map labels and popups currently depend on frozen regular-mode marker facts,
 - Validate downloaded format and parser-required structure before saving and activating a complete candidate. Accept valid content changes, including removed quests/markers/maps, empty collections, changed coordinates, names and spawn rates. Keep compatible last-good data only after acquisition, structural/parsing or storage failure, otherwise use the active bundled pack's regular-mode markers with honest fallback/source labelling.
 - Immediately replace marker facts on success while preserving the map view, floor, saved pins and user filters; clear marker selection and its bubble when content changes.
 - Show map-data source, mode, last check and failure independently of item-data status.
+- Keep runtime marker data compact through normalization, caching and publication: markers reference shared immutable facts locally, preserving complete quest/objective/item identities and facts without adding quest tracking or changing frozen offline output or the approved resource caps.
 - Keep selectable artwork inventory, geometry, calibration and future location labels pack-owned. Historical marker-floor overrides apply only while their identity and placement assumptions still match; disappeared or changed markers cannot block refresh or be resurrected by an override.
 - Amend offline metadata renewal's content-freezing gates too: verify candidate structure and derivation from its own source, not equality with historical marker content. Preserve non-metadata artwork/calibration integrity separately. Do not add runtime artwork, automatic artwork admission for new maps, polling, automatic retries, a new settings toggle or an Ember redesign.
 
@@ -45,6 +46,7 @@ Source: setting
 | S4 | Separate Settings refresh/status, automatic background refresh at startup/mode selection, no polling/retry/toggle | Combined item/map refresh | Low: UI and scheduling | yes: user-visible behaviour | user |
 | S5 | Runtime metadata only; artwork, calibration and labels remain prepared | Runtime artwork or additional map admission | High: rendering/calibration boundary | yes: binds future changes | user |
 | S6 | Upstream owns content: validate format/parser-required structure, accept valid additions/removals/edits/empty collections in runtime and offline renewal; stale floor overrides never veto refresh | Historical marker identity/count/coordinate/hash equality as an admission gate | Medium: normalization, offline gates and ADR contract | yes: binds future changes, user-visible behaviour | user |
+| S7 | Store shared runtime facts once with lightweight marker references; preserve all facts, source identities and unchanged resource caps and frozen output | Expanded per-marker copies, raising the cap or rejecting the baseline dataset | Medium: runtime encoding and local fact resolution | yes: binds future changes, including later quest work | user |
 
 ## Release Notes
 
@@ -58,3 +60,4 @@ Map markers can receive upstream corrections without rebuilding the artwork or i
 
 - Successful map-data updates replace marker facts immediately while retaining map navigation, floors, filters and saved pins; marker selection closes when content changes.
 - Shared runtime and offline normalization accepts valid upstream additions, removals, edits and empty collections. Historical floor overrides apply only while reviewed identity and placement assumptions match; artwork, calibration and frozen-source integrity remain separately protected.
+- Runtime snapshots share complete facts between markers instead of expanding them repeatedly, keeping local marker details available within the existing resource limits.

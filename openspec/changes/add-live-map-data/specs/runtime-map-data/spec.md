@@ -54,15 +54,34 @@ Acquisition SHALL reject redirects and bound each request to 30 seconds and 16 M
 - **WHEN** a source exceeds a byte or time limit or redirects
 - **THEN** acquisition fails, preserves the last-good snapshot and reports the failure without an automatic retry
 
+### Requirement: Compact runtime facts remain complete and local
+Runtime snapshots SHALL store reusable immutable facts once and reference them from lightweight per-occurrence marker records, directly during normalization and through serialization, cache loading and publication. They SHALL preserve complete source and derived facts, optional-field absence, logical marker and source identities, and quest/objective/item relationships. Pool references SHALL NOT replace business identities. Reading marker facts SHALL remain local and SHALL NOT trigger network requests. The shared semantic parser and frozen offline output SHALL remain unchanged; quest tracking is outside this change.
+
+#### Scenario: Shared facts remain local and complete
+- **WHEN** many markers refer to the same task, objective or location with nested facts
+- **THEN** the compact snapshot retains those complete facts once with per-marker references, and popup, search, filters and identity reads resolve the same logical values without per-marker recursive copies or requests
+
+#### Scenario: Shared searchable facts remain compact
+- **WHEN** many marker positions reference one task containing a large searchable nested fact
+- **THEN** real publication and local search retain a shared or non-expanding search representation within the injected materialization budget, preserving searchable fields, geometry exclusions, case-insensitive substring/phrase and comma-separated OR behavior without a flattened full-fact string per marker
+
+#### Scenario: Malformed compact reference is rejected
+- **WHEN** a compact payload contains a missing, out-of-range, cyclic or malformed fact reference
+- **THEN** it is rejected before persistence or publication without changing existing durable or active authority
+
+#### Scenario: Complete frozen runtime qualification
+- **WHEN** the active pack's complete carried six-source closure is acquired and revalidated through the runtime pipeline
+- **THEN** it publishes and reloads complete marker facts within the unchanged default budgets, while the offline pack still reproduces byte-identically
+
 ### Requirement: Expanded marker data is resource bounded
-Runtime normalization SHALL limit the serialized normalized snapshot to 64 MiB and conservatively accounted recursively materialized marker data to 256 MiB. The limits SHALL be enforced incrementally before repeated nested records are copied or oversized serialization is allocated. Exceeding either limit SHALL report a resource failure without replacing the last-good snapshot or active markers.
+Runtime normalization SHALL limit the serialized normalized snapshot to 64 MiB and conservatively accounted materialized runtime data to 256 MiB. Shared immutable compact facts SHALL be charged once per owned representation plus their reference slots; any expanded intermediate or copied occurrence SHALL be charged in full. Limits SHALL apply incrementally before allocation to source decoding/handoff, compact construction, serialization, cache validation, publication and derived search/projection/metadata state and transient buffers, including overlapping retained generations. Derived searchable facts SHALL remain shared or otherwise non-expanding, preserve existing search semantics and retire with their inventory; query caches SHALL NOT accumulate across queries. Exceeding either limit, including genuinely oversized distinct derived state, SHALL report a resource failure before persistence/publication without replacing the last-good snapshot or active markers.
 
 #### Scenario: Expanded candidate fits
 - **WHEN** a complete valid candidate's incremental normalization and serialization remain within both budgets
 - **THEN** it can proceed to atomic persistence and publication
 
 #### Scenario: Nested marker expansion exceeds a budget
-- **WHEN** repeated task, objective and location details would make a structurally valid candidate exceed either expanded-data budget
+- **WHEN** genuinely oversized distinct facts, reference/marker collections or any expanded intermediate would make a structurally valid candidate exceed either runtime-data budget
 - **THEN** normalization stops before the oversized copy or serialization, reports a resource failure, and preserves the prior durable and active snapshot or bundled fallback
 
 ### Requirement: Last-good data and honest fallback
