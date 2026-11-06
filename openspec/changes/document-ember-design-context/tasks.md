@@ -36,4 +36,4 @@ The change has no specs (`skip_specs: true`): it adds design documents and chang
 
 ## 6. Verification
 
-- [ ] 6.1 Run `openspec validate document-ember-design-context`, the release-notes check and `mise run analyze` (the owner waived the local `mise run test` for this documents-only change; CI runs it on the PR), and confirm no file under `lib/`, `test/`, `assets/`, `windows/` or `tool/` changed
+- [x] 6.1 Run `openspec validate document-ember-design-context`, the release-notes check and `mise run analyze` (the owner waived the local `mise run test` for this documents-only change; CI runs it on the PR), and confirm no file under `lib/`, `test/`, `assets/`, `windows/` or `tool/` changed
