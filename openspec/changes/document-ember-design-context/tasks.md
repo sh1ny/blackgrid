@@ -25,9 +25,9 @@ The change has no specs (`skip_specs: true`): it adds design documents and chang
 
 ## 4. DESIGN.md
 
-- [ ] 4.1 Start `DESIGN.md` from `brand/BRAND.md`, rename it for Blackgrid, keep the shared system, and add the Blackgrid extensions X1–X14 and the "Owner decisions (2026-11-06)" table
-- [ ] 4.2 Build the static mock-up `.impeccable/preview/ember-directions.html` (Directions A, B and C on the kit's CSS and the project's marker glyphs), revise B from the owner's review into round 2, and record the round 2 decisions in DESIGN.md (X11–X14, R1–R7, C1–C4)
-- [ ] 4.3 Write the sidecar `.impeccable/design.json` from DESIGN.md, run `impeccable doctor --json`, and confirm only the accepted `platform-native-evidence` mention remains
+- [x] 4.1 Start `DESIGN.md` from `brand/BRAND.md`, rename it for Blackgrid, keep the shared system, and add the Blackgrid extensions X1–X14 and the "Owner decisions (2026-11-06)" table
+- [x] 4.2 Build the static mock-up `.impeccable/preview/ember-directions.html` (Directions A, B and C on the kit's CSS and the project's marker glyphs), revise B from the owner's review into round 2, and record the round 2 decisions in DESIGN.md (X11–X14, R1–R7, C1–C4)
+- [x] 4.3 Write the sidecar `.impeccable/design.json` from DESIGN.md, run `impeccable doctor --json`, and confirm only the accepted `platform-native-evidence` mention remains
 
 ## 5. Plan edits
 

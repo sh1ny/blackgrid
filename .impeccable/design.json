@@ -1,0 +1,1199 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T15:05:40+00:00",
+  "title": "Design System: Blackgrid",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Accent",
+        "canonical": "#e9a14b",
+        "theme": "dark",
+        "tonalRamp": [
+          "#382815",
+          "#63431d",
+          "#986120",
+          "#d8831d",
+          "#df9f53",
+          "#e1bb8e",
+          "#e9d8c3",
+          "#f7f3ee"
+        ]
+      },
+      "accent-text": {
+        "role": "primary",
+        "displayName": "Accent Text",
+        "canonical": "#eeab5c",
+        "theme": "dark",
+        "tonalRamp": [
+          "#382814",
+          "#64431c",
+          "#9a611e",
+          "#db821a",
+          "#e29f50",
+          "#e2bb8d",
+          "#ead8c3",
+          "#f7f3ed"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Accent Ink",
+        "canonical": "#1a1206",
+        "theme": "dark",
+        "tonalRamp": [
+          "#342918",
+          "#5c4524",
+          "#8c652c",
+          "#c58930",
+          "#d1a461",
+          "#d8be97",
+          "#e5d9c7",
+          "#f6f3ef"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Accent Soft",
+        "canonical": "rgba(233,161,75,.13)",
+        "theme": "dark"
+      },
+      "accent-line": {
+        "role": "primary",
+        "displayName": "Accent Line",
+        "canonical": "rgba(233,161,75,.42)",
+        "theme": "dark"
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus",
+        "canonical": "#e9a14b",
+        "theme": "dark",
+        "tonalRamp": [
+          "#382815",
+          "#63431d",
+          "#986120",
+          "#d8831d",
+          "#df9f53",
+          "#e1bb8e",
+          "#e9d8c3",
+          "#f7f3ee"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "#0c0c0e",
+        "theme": "dark",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565662",
+          "#717184",
+          "#9292a0",
+          "#b4b4bc",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#121215",
+        "theme": "dark",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565662",
+          "#717184",
+          "#9292a0",
+          "#b4b4bc",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "canonical": "#18181c",
+        "theme": "dark",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565662",
+          "#717184",
+          "#9292a0",
+          "#b4b4bc",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover",
+        "canonical": "#1f1f24",
+        "theme": "dark",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565661",
+          "#717183",
+          "#9292a0",
+          "#b4b4bc",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "press": {
+        "role": "neutral",
+        "displayName": "Press",
+        "canonical": "#26262c",
+        "theme": "dark",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565661",
+          "#727283",
+          "#9292a0",
+          "#b4b4bb",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(255,255,255,.07)",
+        "theme": "dark"
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "rgba(255,255,255,.12)",
+        "theme": "dark"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#e8e6e1",
+        "theme": "dark",
+        "tonalRamp": [
+          "#292823",
+          "#46423a",
+          "#666052",
+          "#8a816b",
+          "#a59e8d",
+          "#bfbbb1",
+          "#d9d8d3",
+          "#f3f3f1"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#aaa69f",
+        "theme": "dark",
+        "tonalRamp": [
+          "#282725",
+          "#42403d",
+          "#605d57",
+          "#827c73",
+          "#9e9a94",
+          "#bbb8b4",
+          "#d8d7d5",
+          "#f3f2f2"
+        ]
+      },
+      "ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Ink Tertiary",
+        "canonical": "#87837c",
+        "theme": "dark",
+        "tonalRamp": [
+          "#272725",
+          "#42403e",
+          "#5f5d58",
+          "#807c75",
+          "#9d9a95",
+          "#bab8b5",
+          "#d7d6d5",
+          "#f3f2f2"
+        ]
+      },
+      "prose": {
+        "role": "neutral",
+        "displayName": "Prose",
+        "canonical": "#dcd9d2",
+        "theme": "dark",
+        "tonalRamp": [
+          "#292723",
+          "#45423a",
+          "#656052",
+          "#89806b",
+          "#a49d8e",
+          "#bebab1",
+          "#d9d7d3",
+          "#f3f3f2"
+        ]
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "Ok",
+        "canonical": "#6fcf8e",
+        "theme": "dark",
+        "tonalRamp": [
+          "#1b3122",
+          "#295638",
+          "#36824e",
+          "#3fb665",
+          "#6cc689",
+          "#9dd2ae",
+          "#cae2d2",
+          "#eff5f1"
+        ]
+      },
+      "warn-bg": {
+        "role": "status",
+        "displayName": "Warn Bg",
+        "canonical": "rgba(232,128,92,.08)",
+        "theme": "dark"
+      },
+      "warn-line": {
+        "role": "status",
+        "displayName": "Warn Line",
+        "canonical": "rgba(232,128,92,.28)",
+        "theme": "dark"
+      },
+      "warn-ink": {
+        "role": "status",
+        "displayName": "Warn Ink",
+        "canonical": "#f0b49a",
+        "theme": "dark",
+        "tonalRamp": [
+          "#372016",
+          "#61331f",
+          "#944523",
+          "#d35722",
+          "#dc7f56",
+          "#dfa891",
+          "#e8cfc4",
+          "#f7f1ee"
+        ]
+      },
+      "warn-strong": {
+        "role": "status",
+        "displayName": "Warn Strong",
+        "canonical": "#f7d0bd",
+        "theme": "dark",
+        "tonalRamp": [
+          "#382015",
+          "#63341d",
+          "#984720",
+          "#d85a1d",
+          "#df8153",
+          "#e1a98e",
+          "#e9d0c3",
+          "#f7f1ee"
+        ]
+      },
+      "err-bg": {
+        "role": "status",
+        "displayName": "Err Bg",
+        "canonical": "rgba(240,96,96,.08)",
+        "theme": "dark"
+      },
+      "err-line": {
+        "role": "status",
+        "displayName": "Err Line",
+        "canonical": "rgba(240,96,96,.3)",
+        "theme": "dark"
+      },
+      "err-ink": {
+        "role": "status",
+        "displayName": "Err Ink",
+        "canonical": "#f3a3a0",
+        "theme": "dark",
+        "tonalRamp": [
+          "#371615",
+          "#62201d",
+          "#972521",
+          "#d7241e",
+          "#df5853",
+          "#e0928f",
+          "#e9c5c3",
+          "#f7eeee"
+        ]
+      },
+      "light-accent": {
+        "role": "primary",
+        "displayName": "Light Accent",
+        "canonical": "#d98a2b",
+        "theme": "light",
+        "tonalRamp": [
+          "#362817",
+          "#5f4321",
+          "#916127",
+          "#ce8227",
+          "#d79f5b",
+          "#dcbb93",
+          "#e7d8c5",
+          "#f6f3ee"
+        ]
+      },
+      "light-accent-text": {
+        "role": "primary",
+        "displayName": "Light Accent Text",
+        "canonical": "#8a4c05",
+        "theme": "light",
+        "tonalRamp": [
+          "#3b2812",
+          "#694316",
+          "#a36115",
+          "#ea820b",
+          "#ec9f46",
+          "#e8bb87",
+          "#edd8c0",
+          "#f8f3ed"
+        ]
+      },
+      "light-accent-ink": {
+        "role": "primary",
+        "displayName": "Light Accent Ink",
+        "canonical": "#1d1206",
+        "theme": "light",
+        "tonalRamp": [
+          "#352718",
+          "#5d4122",
+          "#8e5e2a",
+          "#c97e2c",
+          "#d49c5e",
+          "#dab995",
+          "#e6d7c6",
+          "#f6f2ee"
+        ]
+      },
+      "light-accent-soft": {
+        "role": "primary",
+        "displayName": "Light Accent Soft",
+        "canonical": "rgba(217,138,43,.14)",
+        "theme": "light"
+      },
+      "light-accent-line": {
+        "role": "primary",
+        "displayName": "Light Accent Line",
+        "canonical": "rgba(186,108,18,.5)",
+        "theme": "light"
+      },
+      "light-focus": {
+        "role": "primary",
+        "displayName": "Light Focus",
+        "canonical": "#8a4c05",
+        "theme": "light",
+        "tonalRamp": [
+          "#3b2812",
+          "#694316",
+          "#a36115",
+          "#ea820b",
+          "#ec9f46",
+          "#e8bb87",
+          "#edd8c0",
+          "#f8f3ed"
+        ]
+      },
+      "light-canvas": {
+        "role": "neutral",
+        "displayName": "Light Canvas",
+        "canonical": "#f7f6f3",
+        "theme": "light",
+        "tonalRamp": [
+          "#2b2822",
+          "#494437",
+          "#6b634d",
+          "#928663",
+          "#aba287",
+          "#c2bdad",
+          "#dbd9d1",
+          "#f3f3f1"
+        ]
+      },
+      "light-panel": {
+        "role": "neutral",
+        "displayName": "Light Panel",
+        "canonical": "#efede9",
+        "theme": "light",
+        "tonalRamp": [
+          "#2a2723",
+          "#474239",
+          "#686050",
+          "#8d8168",
+          "#a79e8b",
+          "#c0baaf",
+          "#dad7d2",
+          "#f3f3f1"
+        ]
+      },
+      "light-raised": {
+        "role": "neutral",
+        "displayName": "Light Raised",
+        "canonical": "#ffffff",
+        "theme": "light",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#5c5c5c",
+          "#7a7a7a",
+          "#999999",
+          "#b8b8b8",
+          "#d6d6d6",
+          "#f2f2f2"
+        ]
+      },
+      "light-hover": {
+        "role": "neutral",
+        "displayName": "Light Hover",
+        "canonical": "#e6e3de",
+        "theme": "light",
+        "tonalRamp": [
+          "#292723",
+          "#46413a",
+          "#665e51",
+          "#8b7f6a",
+          "#a59c8d",
+          "#bfb9b0",
+          "#dad7d3",
+          "#f3f2f1"
+        ]
+      },
+      "light-press": {
+        "role": "neutral",
+        "displayName": "Light Press",
+        "canonical": "#dcd8d1",
+        "theme": "light",
+        "tonalRamp": [
+          "#292723",
+          "#46413a",
+          "#665f51",
+          "#8b7f6a",
+          "#a59c8d",
+          "#bfbab0",
+          "#d9d7d3",
+          "#f3f2f1"
+        ]
+      },
+      "light-hairline": {
+        "role": "neutral",
+        "displayName": "Light Hairline",
+        "canonical": "rgba(30,24,16,.09)",
+        "theme": "light"
+      },
+      "light-hairline-strong": {
+        "role": "neutral",
+        "displayName": "Light Hairline Strong",
+        "canonical": "rgba(30,24,16,.15)",
+        "theme": "light"
+      },
+      "light-ink": {
+        "role": "neutral",
+        "displayName": "Light Ink",
+        "canonical": "#1d1b18",
+        "theme": "light",
+        "tonalRamp": [
+          "#282724",
+          "#44413c",
+          "#635d55",
+          "#867d6f",
+          "#a19b91",
+          "#bdb9b3",
+          "#d8d7d4",
+          "#f3f2f2"
+        ]
+      },
+      "light-ink-secondary": {
+        "role": "neutral",
+        "displayName": "Light Ink Secondary",
+        "canonical": "#565149",
+        "theme": "light",
+        "tonalRamp": [
+          "#282724",
+          "#43413c",
+          "#625d56",
+          "#847d71",
+          "#a09b92",
+          "#bcb9b3",
+          "#d8d7d4",
+          "#f3f2f2"
+        ]
+      },
+      "light-ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Light Ink Tertiary",
+        "canonical": "#6c675e",
+        "theme": "light",
+        "tonalRamp": [
+          "#282725",
+          "#43413d",
+          "#615d57",
+          "#837d72",
+          "#9f9b93",
+          "#bbb9b4",
+          "#d8d7d5",
+          "#f3f2f2"
+        ]
+      },
+      "light-prose": {
+        "role": "neutral",
+        "displayName": "Light Prose",
+        "canonical": "#2a2722",
+        "theme": "light",
+        "tonalRamp": [
+          "#292724",
+          "#44413b",
+          "#645e54",
+          "#877e6e",
+          "#a29b90",
+          "#bdb9b2",
+          "#d9d7d4",
+          "#f3f2f2"
+        ]
+      },
+      "light-ok": {
+        "role": "status",
+        "displayName": "Light Ok",
+        "canonical": "#2f9a57",
+        "theme": "light",
+        "tonalRamp": [
+          "#1a3223",
+          "#28583a",
+          "#338452",
+          "#3bba6a",
+          "#69c98d",
+          "#9cd4b1",
+          "#c9e3d3",
+          "#eff5f1"
+        ]
+      },
+      "light-warn-bg": {
+        "role": "status",
+        "displayName": "Light Warn Bg",
+        "canonical": "#fbeee6",
+        "theme": "light",
+        "tonalRamp": [
+          "#362216",
+          "#60381f",
+          "#934f24",
+          "#d16624",
+          "#da8a58",
+          "#deaf92",
+          "#e8d2c5",
+          "#f6f1ee"
+        ]
+      },
+      "light-warn-line": {
+        "role": "status",
+        "displayName": "Light Warn Line",
+        "canonical": "#efc6b0",
+        "theme": "light",
+        "tonalRamp": [
+          "#352218",
+          "#5d3722",
+          "#8e4d29",
+          "#ca632b",
+          "#d5875d",
+          "#daad95",
+          "#e6d1c6",
+          "#f6f1ee"
+        ]
+      },
+      "light-warn-ink": {
+        "role": "status",
+        "displayName": "Light Warn Ink",
+        "canonical": "#8a3d1c",
+        "theme": "light",
+        "tonalRamp": [
+          "#352018",
+          "#5d3422",
+          "#8e4829",
+          "#ca5b2b",
+          "#d4815e",
+          "#daaa95",
+          "#e6d0c6",
+          "#f6f1ee"
+        ]
+      },
+      "light-warn-strong": {
+        "role": "status",
+        "displayName": "Light Warn Strong",
+        "canonical": "#6e2d10",
+        "theme": "light",
+        "tonalRamp": [
+          "#372016",
+          "#61331e",
+          "#954623",
+          "#d45821",
+          "#dc7f56",
+          "#dfa990",
+          "#e8cfc4",
+          "#f7f1ee"
+        ]
+      },
+      "light-err-bg": {
+        "role": "status",
+        "displayName": "Light Err Bg",
+        "canonical": "#fbeaea",
+        "theme": "light",
+        "tonalRamp": [
+          "#351717",
+          "#5e2121",
+          "#902828",
+          "#cc2929",
+          "#d65c5c",
+          "#db9494",
+          "#e7c6c6",
+          "#f6eeee"
+        ]
+      },
+      "light-err-line": {
+        "role": "status",
+        "displayName": "Light Err Line",
+        "canonical": "#efbcbc",
+        "theme": "light",
+        "tonalRamp": [
+          "#341919",
+          "#5b2424",
+          "#8b2d2d",
+          "#c43131",
+          "#d06262",
+          "#d89797",
+          "#e5c7c7",
+          "#f6efef"
+        ]
+      },
+      "light-err-ink": {
+        "role": "status",
+        "displayName": "Light Err Ink",
+        "canonical": "#9b2420",
+        "theme": "light",
+        "tonalRamp": [
+          "#351918",
+          "#5d2422",
+          "#8e2d2a",
+          "#c9312c",
+          "#d4625e",
+          "#da9795",
+          "#e6c7c6",
+          "#f6efee"
+        ]
+      },
+      "map-ground": {
+        "role": "content",
+        "displayName": "Map Ground",
+        "canonical": "#0c0c0e",
+        "theme": "dark",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565662",
+          "#717184",
+          "#9292a0",
+          "#b4b4bc",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "light-map-ground": {
+        "role": "content",
+        "displayName": "Light Map Ground",
+        "canonical": "#0c0c0e",
+        "theme": "light",
+        "tonalRamp": [
+          "#252528",
+          "#3c3c43",
+          "#565662",
+          "#717184",
+          "#9292a0",
+          "#b4b4bc",
+          "#d4d4d8",
+          "#f2f2f3"
+        ]
+      },
+      "ok-fill": {
+        "role": "status",
+        "displayName": "Ok Fill",
+        "canonical": "#6fcf8e",
+        "theme": "dark",
+        "tonalRamp": [
+          "#13391f",
+          "#206034",
+          "#2f8e4e",
+          "#40bf69",
+          "#66cc87",
+          "#94dbab",
+          "#c2ebcf",
+          "#ecf9f0"
+        ]
+      },
+      "ok-on-fill": {
+        "role": "status",
+        "displayName": "Ok On Fill",
+        "canonical": "#0c0c0e",
+        "theme": "dark",
+        "tonalRamp": [
+          "#232329",
+          "#3b3b45",
+          "#575766",
+          "#767689",
+          "#9191a1",
+          "#b2b2bd",
+          "#d3d3d9",
+          "#f1f1f3"
+        ]
+      },
+      "ok-bg": {
+        "role": "status",
+        "displayName": "Ok Bg",
+        "canonical": "rgba(111,207,142,.10)",
+        "theme": "dark",
+        "tonalRamp": [
+          "#13391f",
+          "#206034",
+          "#2f8e4e",
+          "#40bf69",
+          "#66cc87",
+          "#94dbab",
+          "#c2ebcf",
+          "#ecf9f0"
+        ]
+      },
+      "ok-line": {
+        "role": "status",
+        "displayName": "Ok Line",
+        "canonical": "rgba(111,207,142,.32)",
+        "theme": "dark",
+        "tonalRamp": [
+          "#13391f",
+          "#206034",
+          "#2f8e4e",
+          "#40bf69",
+          "#66cc87",
+          "#94dbab",
+          "#c2ebcf",
+          "#ecf9f0"
+        ]
+      },
+      "ok-ink": {
+        "role": "status",
+        "displayName": "Ok Ink",
+        "canonical": "#a6e3ba",
+        "theme": "dark",
+        "tonalRamp": [
+          "#123a1f",
+          "#1f6134",
+          "#2d904d",
+          "#3dc269",
+          "#64ce87",
+          "#92ddab",
+          "#c1ebcf",
+          "#ecf9f0"
+        ]
+      },
+      "ok-strong": {
+        "role": "status",
+        "displayName": "Ok Strong",
+        "canonical": "#cdeed8",
+        "theme": "dark",
+        "tonalRamp": [
+          "#133920",
+          "#205f35",
+          "#308d4f",
+          "#41be6b",
+          "#67cb88",
+          "#94dbac",
+          "#c2ead0",
+          "#ecf9f0"
+        ]
+      },
+      "light-ok-fill": {
+        "role": "status",
+        "displayName": "Light Ok Fill",
+        "canonical": "#1f6b3b",
+        "theme": "light",
+        "tonalRamp": [
+          "#113b21",
+          "#1d6337",
+          "#2a9251",
+          "#39c66d",
+          "#61d18a",
+          "#90dfad",
+          "#c0edd0",
+          "#ebf9f0"
+        ]
+      },
+      "light-ok-on-fill": {
+        "role": "status",
+        "displayName": "Light Ok On Fill",
+        "canonical": "#ffffff",
+        "theme": "light",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#5e5e5e",
+          "#808080",
+          "#999999",
+          "#b8b8b8",
+          "#d6d6d6",
+          "#f2f2f2"
+        ]
+      },
+      "light-ok-bg": {
+        "role": "status",
+        "displayName": "Light Ok Bg",
+        "canonical": "#e8f5ec",
+        "theme": "light",
+        "tonalRamp": [
+          "#173520",
+          "#275936",
+          "#398450",
+          "#4db26c",
+          "#71c18a",
+          "#9bd4ad",
+          "#c6e6d0",
+          "#edf7f0"
+        ]
+      },
+      "light-ok-line": {
+        "role": "status",
+        "displayName": "Light Ok Line",
+        "canonical": "#b5dcc2",
+        "theme": "light",
+        "tonalRamp": [
+          "#193422",
+          "#295738",
+          "#3d8053",
+          "#52ad70",
+          "#75bd8d",
+          "#9ed1af",
+          "#c8e5d1",
+          "#eef7f1"
+        ]
+      },
+      "light-ok-ink": {
+        "role": "status",
+        "displayName": "Light Ok Ink",
+        "canonical": "#1f6b3b",
+        "theme": "light",
+        "tonalRamp": [
+          "#113b21",
+          "#1d6337",
+          "#2a9251",
+          "#39c66d",
+          "#61d18a",
+          "#90dfad",
+          "#c0edd0",
+          "#ebf9f0"
+        ]
+      },
+      "light-ok-strong": {
+        "role": "status",
+        "displayName": "Light Ok Strong",
+        "canonical": "#154d2a",
+        "theme": "light",
+        "tonalRamp": [
+          "#113b21",
+          "#1d6337",
+          "#2a9251",
+          "#39c66e",
+          "#61d18b",
+          "#90dfae",
+          "#c0edd1",
+          "#ebf9f0"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The title of the thing being worked on: the item or map name (Q4)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Empty-state headings, title fields in forms."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "The name of a record in a side panel."
+      },
+      "prose": {
+        "displayName": "Prose",
+        "purpose": "Long-form user text in a 66ch column."
+      },
+      "prose-small": {
+        "displayName": "Prose Small",
+        "purpose": "Summaries, notes, pin descriptions."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The whole UI default, tabular figures."
+      },
+      "ui-heading": {
+        "displayName": "UI Heading",
+        "purpose": "Panel titles and in-chrome headings."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, segments, toasts."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Section labels, counts, chips, status bar, freshness tags. Sentence case."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Source or code views only."
+      },
+      "verdict": {
+        "displayName": "Verdict",
+        "purpose": "The verdict word and its price on a verdict plate only (X1, owner-approved exception to the Flat Chrome Scale Rule, Q1)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 12px 32px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35)",
+        "light": "0 12px 32px rgba(40,30,20,.14), 0 2px 6px rgba(40,30,20,.08)",
+        "purpose": "Only for things that float: menus, palette, toasts, tooltips, overlay sheets, the marker bubble."
+      },
+      {
+        "name": "seated",
+        "value": "0 1px 2px rgba(0,0,0,.25)",
+        "light": "0 1px 2px rgba(29,27,24,.12)",
+        "purpose": "The selected segment."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 3px rgba(233,161,75,.13)",
+        "purpose": "Text inputs while focused, with an Ember border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "panel",
+        "value": "200ms cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "The only motion: sidebar collapse, inspector open/stretch/collapse, overlay sheets and drawers. 1ms under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "inspector-overlay",
+        "value": "1080px",
+        "purpose": "At or below, the inspector becomes an overlay sheet from the right."
+      },
+      {
+        "name": "drawer",
+        "value": "760px",
+        "purpose": "At or below, rail and sidebar become one slide-in drawer."
+      }
+    ],
+    "scrim": {
+      "dark": "rgba(0,0,0,.4)",
+      "light": "rgba(30,24,16,.18)"
+    },
+    "segmentOn": {
+      "dark": "#26262c",
+      "light": "#ffffff"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per view: Ember fill, pill.",
+      "html": "<button class=\"ds-btn-primary\">Refresh item data</button>",
+      "css": ".ds-btn-primary { font-family: Geist, system-ui, sans-serif; font-size: 12.5px; font-weight: 500; height: 28px; padding: 0 12px; border-radius: 999px; border: 0; background: #e9a14b; color: #1a1206; cursor: pointer; } .ds-btn-primary:hover { filter: brightness(1.07); } .ds-btn-primary:focus-visible { outline: 2px solid #e9a14b; outline-offset: 2px; }"
+    },
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Transparent pill with a strong hairline; most actions.",
+      "html": "<button class=\"ds-btn\">Settings</button>",
+      "css": ".ds-btn { font-family: Geist, system-ui, sans-serif; font-size: 12.5px; font-weight: 500; height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: transparent; color: #e8e6e1; cursor: pointer; } .ds-btn:hover { background: #1f1f24; } .ds-btn:focus-visible { outline: 2px solid #e9a14b; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Lifted Card field; Ember border and halo on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search items (Ctrl K)\">",
+      "css": ".ds-input { font-family: Geist, system-ui, sans-serif; font-size: 13px; background: #18181c; color: #e8e6e1; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 7px 10px; width: 260px; } .ds-input::placeholder { color: #87837c; } .ds-input:focus { outline: none; border-color: #e9a14b; box-shadow: 0 0 0 3px rgba(233,161,75,.13); }"
+    },
+    {
+      "name": "Segmented Area Switch",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "Map | Scanner as a segmented control.",
+      "html": "<div class=\"ds-seg\"><button aria-pressed=\"true\">Map</button><button>Scanner</button></div>",
+      "css": ".ds-seg { display: inline-flex; padding: 2px; gap: 2px; background: #18181c; border: 1px solid rgba(255,255,255,.07); border-radius: 999px; } .ds-seg button { font-family: Geist, system-ui, sans-serif; font-size: 12.5px; font-weight: 500; height: 24px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: #aaa69f; cursor: pointer; } .ds-seg button[aria-pressed=true] { background: #26262c; color: #e8e6e1; box-shadow: 0 1px 2px rgba(0,0,0,.25); } .ds-seg button:focus-visible { outline: 2px solid #e9a14b; outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Marker category filter; pressed takes Ember Glow.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"true\">PMC extracts</button> <button class=\"ds-chip\">Bosses</button>",
+      "css": ".ds-chip { font-family: Geist, system-ui, sans-serif; font-size: 11.5px; font-weight: 500; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: transparent; color: #aaa69f; cursor: pointer; } .ds-chip:hover { background: #1f1f24; } .ds-chip[aria-pressed=true] { background: rgba(233,161,75,.13); border-color: rgba(233,161,75,.42); color: #eeab5c; } .ds-chip:focus-visible { outline: 2px solid #e9a14b; outline-offset: 2px; }"
+    },
+    {
+      "name": "Verdict Plates",
+      "kind": "custom",
+      "refersTo": "verdict-keep",
+      "description": "Blackgrid extension X1: 44px plates with the verdict in Geist 600 22px; Keep solid green, Keep for later the green triplet, Check the warning triplet, Flea and Trader neutral, Price unavailable dashed. Never Ember.",
+      "html": "<div class=\"ds-vd ds-vd-keep\">Keep</div> <div class=\"ds-vd ds-vd-later\">Keep for later</div> <div class=\"ds-vd ds-vd-check\">Check / May Need</div> <div class=\"ds-vd ds-vd-sell\">Flea <b>₽38,277</b></div> <div class=\"ds-vd ds-vd-na\">Price unavailable</div>",
+      "css": ".ds-vd { font-family: Geist, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 8px; font-size: 22px; font-weight: 600; line-height: 1.2; margin: 4px; border: 1px solid transparent; font-variant-numeric: tabular-nums; } .ds-vd-keep { background: #6fcf8e; color: #0c0c0e; } .ds-vd-later { background: rgba(111,207,142,.10); border-color: rgba(111,207,142,.32); color: #cdeed8; } .ds-vd-check { background: rgba(232,128,92,.08); border-color: rgba(232,128,92,.28); color: #f7d0bd; } .ds-vd-sell { background: #18181c; color: #aaa69f; } .ds-vd-sell b { color: #e8e6e1; font-weight: 600; } .ds-vd-na { color: #87837c; border: 1px dashed #87837c; }"
+    },
+    {
+      "name": "Dense Data Row",
+      "kind": "custom",
+      "refersTo": "row-dense",
+      "description": "Blackgrid extension X2: 24px tabular row with right-aligned numbers.",
+      "html": "<div class=\"ds-dense\"><span>Therapist</span><span class=\"n\">₽7,695</span></div><div class=\"ds-dense\"><span>Flea, per slot</span><span class=\"n\">₽19,138</span></div>",
+      "css": ".ds-dense { font-family: Geist, system-ui, sans-serif; display: flex; justify-content: space-between; height: 24px; align-items: center; padding: 0 8px; border-radius: 6px; font-size: 13px; color: #aaa69f; width: 280px; font-variant-numeric: tabular-nums; } .ds-dense:hover { background: #1f1f24; color: #e8e6e1; } .ds-dense .n { color: #e8e6e1; }"
+    },
+    {
+      "name": "Freshness Tag",
+      "kind": "custom",
+      "refersTo": "freshness-tag",
+      "description": "Blackgrid extension X3: data age beside the value; stale turns Warm Warning.",
+      "html": "<span class=\"ds-fresh\">updated 12:38</span> <span class=\"ds-fresh ds-fresh-stale\">price 3 h old</span>",
+      "css": ".ds-fresh { font-family: Geist, system-ui, sans-serif; display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 6px; font-size: 11.5px; font-weight: 500; color: #87837c; } .ds-fresh-stale { background: rgba(232,128,92,.08); color: #f0b49a; }"
+    },
+    {
+      "name": "Status Bar with Live-Scan State",
+      "kind": "custom",
+      "refersTo": "status-bar",
+      "description": "Ember status bar; live scan reuses the save-state dot (extension X4).",
+      "html": "<div class=\"ds-status\"><span><i class=\"d d-on\"></i>Live scan on · F8 or click</span><span>Seasonal</span><span>Item data up to date</span></div>",
+      "css": ".ds-status { font-family: Geist, system-ui, sans-serif; display: flex; gap: 16px; align-items: center; height: 28px; padding: 0 12px; background: #0c0c0e; border-top: 1px solid rgba(255,255,255,.07); color: #87837c; font-size: 11.5px; font-weight: 500; } .ds-status .d { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; } .ds-status .d-on { background: #e9a14b; }"
+    },
+    {
+      "name": "Answer Strip",
+      "kind": "custom",
+      "refersTo": "answer-strip",
+      "description": "Blackgrid extension X10 (Direction B): one full-width strip under the top bar on Map and Scanner with item frame, serif item name, verdict plate and reason, price and freshness.",
+      "html": "<div class=\"ds-as\"><div class=\"ds-as-frame\">GPU</div><div class=\"ds-as-name\">Graphics card</div><div class=\"ds-as-verdict\"><div class=\"ds-as-plate\">Keep</div><div class=\"ds-as-reason\">Needed for Bitcoin farm level 2</div></div><div class=\"ds-as-price\">₽412,000 <span class=\"ds-as-fresh\">prices 11:08</span></div></div>",
+      "css": ".ds-as { display: flex; align-items: center; gap: 16px; height: 76px; padding: 0 16px; background: #121215; border-bottom: 1px solid rgba(255,255,255,.07); font-family: Geist, system-ui, sans-serif; font-size: 13px; color: #e8e6e1; } .ds-as-frame { width: 48px; height: 48px; border-radius: 12px; background: #18181c; display: grid; place-items: center; font-size: 11.5px; font-weight: 500; color: #eeab5c; } .ds-as-name { font-family: Literata, Georgia, serif; font-size: 19px; font-weight: 500; letter-spacing: -0.01em; } .ds-as-verdict { display: flex; flex-direction: column; gap: 2px; } .ds-as-plate { height: 44px; padding: 0 16px; border-radius: 8px; background: #6fcf8e; color: #0c0c0e; font-size: 22px; font-weight: 600; display: inline-flex; align-items: center; } .ds-as-reason { color: #aaa69f; } .ds-as-price { margin-left: auto; font-variant-numeric: tabular-nums; } .ds-as-fresh { margin-left: 8px; font-size: 11.5px; font-weight: 500; color: #87837c; }"
+    },
+    {
+      "name": "Toggle Switch",
+      "kind": "toggle",
+      "refersTo": "toggle-switch",
+      "description": "Marker types and Settings rows (X12, X13). Ink, not Ember, so the only amber near the map stays the selection.",
+      "html": "<button class=\"ds-sw\" aria-pressed=\"true\" aria-label=\"Bosses\"></button> <button class=\"ds-sw\" aria-pressed=\"false\" aria-label=\"Loose loot\"></button>",
+      "css": ".ds-sw { width: 28px; height: 16px; border-radius: 999px; border: 0; padding: 0; background: rgba(255,255,255,.12); position: relative; cursor: pointer; } .ds-sw::after { content: \"\"; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #87837c; } .ds-sw[aria-pressed=\"true\"] { background: #aaa69f; } .ds-sw[aria-pressed=\"true\"]::after { left: 14px; background: #0c0c0e; } .ds-sw:focus-visible { outline: 2px solid #e9a14b; outline-offset: 2px; }"
+    },
+    {
+      "name": "Marker Row",
+      "kind": "list-item",
+      "refersTo": "toggle-switch",
+      "description": "One marker type in the Map inspector (X13): badge in its role colour, name, count on this map, switch. Off dims the badge and name.",
+      "html": "<button class=\"ds-mk\" aria-pressed=\"true\"><span class=\"ds-mk-b\" style=\"border-color:#e57ce5\"></span>Bosses<em>4</em><span class=\"ds-sw-i\"></span></button>",
+      "css": ".ds-mk { display: flex; align-items: center; gap: 10px; width: 280px; min-height: 30px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: #aaa69f; font: 400 13px Geist, system-ui, sans-serif; cursor: pointer; } .ds-mk:hover { background: #1f1f24; color: #e8e6e1; } .ds-mk em { margin-left: auto; font-style: normal; font-size: 11.5px; color: #87837c; } .ds-mk-b { width: 18px; height: 18px; border-radius: 50%; background: #090f0d; border: 2px solid; box-sizing: border-box; } .ds-mk[aria-pressed=\"false\"] { color: #87837c; } .ds-mk[aria-pressed=\"false\"] .ds-mk-b { opacity: .38; } .ds-sw-i { width: 28px; height: 16px; border-radius: 999px; background: #aaa69f; position: relative; } .ds-sw-i::after { content: \"\"; position: absolute; top: 2px; left: 14px; width: 12px; height: 12px; border-radius: 50%; background: #0c0c0e; }"
+    },
+    {
+      "name": "History Row with Picture",
+      "kind": "list-item",
+      "refersTo": "history-row",
+      "description": "Recent items in the Scanner inspector (X14): 30px item picture, name, verdict dot, age.",
+      "html": "<button class=\"ds-hr\"><span class=\"ds-hr-f\"></span><span class=\"ds-hr-n\">Salewa first aid kit</span><span class=\"ds-hr-d\"></span><em>3 min</em></button>",
+      "css": ".ds-hr { display: flex; align-items: center; gap: 10px; width: 300px; min-height: 38px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: #aaa69f; font: 400 13px Geist, system-ui, sans-serif; cursor: pointer; } .ds-hr:hover { background: #1f1f24; color: #e8e6e1; } .ds-hr-f { width: 30px; height: 30px; border-radius: 6px; background: #18181c; flex: none; } .ds-hr-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-hr-d { width: 8px; height: 8px; border-radius: 50%; background: #f0b49a; flex: none; } .ds-hr em { margin-left: auto; font-style: normal; font-size: 11.5px; color: #87837c; }"
+    },
+    {
+      "name": "Raid Timers",
+      "kind": "status",
+      "refersTo": "answer-strip",
+      "description": "Top-bar raid timers (X11). Run-through takes warn ink while it counts down.",
+      "html": "<div class=\"ds-tm\"><span>In raid<b>3:48</b></span><i></i><span class=\"run\">Run-through<b>3:22</b></span><i></i><span>Scav<b>14:05</b></span></div>",
+      "css": ".ds-tm { display: flex; align-items: center; gap: 14px; font: 400 12px Geist, system-ui, sans-serif; color: #87837c; font-variant-numeric: tabular-nums; } .ds-tm b { margin-left: 6px; color: #e8e6e1; font-weight: 500; } .ds-tm .run b { color: #f0b49a; } .ds-tm i { width: 1px; height: 18px; background: rgba(255,255,255,.12); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lamplit Workbench",
+    "overview": "A dark room, one warm lamp, and the work in the middle of the bench. Ember is for tools people stay inside for long sessions (editors, knowledge tools, planners, consoles), not for marketing pages. The user's material sits in the centre; navigation is compact, quiet and always within one keystroke. Surfaces are layered near-blacks separated by hairlines. The only warm light in the room is the accent, Ember, and it is spent on whatever the user is touching: the current selection, linked references, the caret, keyboard focus and the one primary action.\n\nDensity is deliberate. The chrome uses compact Geist at 13px with tabular figures, so lists, counts and metadata stay legible at a glance. Long-form content switches to Literata at 17px with a 1.75 line height, so reading stays comfortable. Information is shown rather than hidden behind drill-downs, but every surface stays calm: monochrome one-stroke icons, pill controls, soft 8–12px corners, no decorative art.\n\nEmber was first built for Mythspine, a desktop writing app. Blackgrid is its sibling: a desktop companion that sits beside a game and answers \"keep this item or sell it?\" and \"where am I, and where are my extracts?\". Someone who uses both apps should recognise one family. The owner confirmed this reading of Ember's two voices for Blackgrid (2026-11-06, Q4). The subject on screen is the item being judged or the map being read, so its name takes the serif title roles. Everything Blackgrid computes or reports is the tool speaking, in Geist. The player's own words are pin labels and notes, in Literata.",
+    "keyCharacteristics": [
+      "Dark-first; a warm paper-light theme mirrors the same structure under the same token names.",
+      "One accent, Ember, reserved for selection, links, caret, focus and primary actions.",
+      "Layered near-black surfaces divided by hairlines; shadows only on floating layers.",
+      "Two type voices: compact Geist for the tool, Literata for the user's own words.",
+      "Pills for controls, soft 8–12px corners for containers.",
+      "One motion family: panels slide, stretch and collapse in 200ms with an exponential ease-out. Nothing else animates."
+    ],
+    "rules": [
+      {
+        "name": "The One Lamp Rule",
+        "body": "Ember is the only hue in the chrome. It marks what the user is touching and nothing decorative. If two Ember fills compete on one screen, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Ember Rule",
+        "body": "Ember as a fill and Ember as text are different tokens. Small text and focus rings use Ember Text / Focus; never set small text in the raw fill colour on paper.",
+        "section": "colors"
+      },
+      {
+        "name": "The Same Room Rule",
+        "body": "Light and dark share every token name, every structure and the same accent. A component may not branch on theme except through tokens (the scrim is the one documented exception, and it is a token too).",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "User content is Literata; tool content is Geist. Never set a control in the serif or a long paragraph of user content in the sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Chrome Scale Rule",
+        "body": "Chrome text lives between 11px and 13px. Anything bigger is a serif title belonging to the subject on screen.",
+        "section": "typography"
+      },
+      {
+        "name": "The Centre Holds Rule",
+        "body": "Opening, stretching or closing a side panel never replaces the central subject. Whatever the user is working on, including an unsaved draft, stays mounted underneath.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Desk Rule",
+        "body": "Docked surfaces never cast shadows. If it is part of the shell, it is separated by tone and a hairline; if it floats, it gets Float.",
+        "section": "elevation & depth"
+      },
+      {
+        "name": "The Pill Means Press Rule",
+        "body": "Pills are for controls; containers get soft corners. A pill-shaped container (except a toast or a graph node) or a square button is off-system.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Motion Rule",
+        "body": "Only the panel family moves: sidebar collapse, inspector open/stretch/collapse, overlay sheets and drawers, all at 200ms on `cubic-bezier(.16, 1, .3, 1)`. Hovers, tabs, menus, the palette, toasts and banners change instantly. Reduced-motion users get effectively instant panels (1ms). Direct manipulation (dragging, panning, zooming) follows the pointer and lands instantly; that is not animation.",
+        "section": "motion"
+      },
+      {
+        "name": "The Answer First Rule",
+        "body": "At every width, the current item's verdict and its reason are the first thing in the main column, above the fold. Settings, evidence and history may collapse, move into the inspector, or drop below; they never go above the answer.",
+        "section": "blackgrid extensions"
+      }
+    ],
+    "dos": [
+      "**Do** spend Ember only on what the user is touching, and keep one primary button per view.",
+      "**Do** separate docked regions with tone and a hairline; save shadows for things that float.",
+      "**Do** set the user's own words in Literata and everything the tool says in Geist.",
+      "**Do** show state in words as well as colour (Saved, Not saved, Changed elsewhere) and say what was kept when something fails.",
+      "**Do** give every drag a keyboard and menu equivalent, and pair every spatial view with a non-spatial one.",
+      "**Do** design both rooms at once: every new token gets a dark and a light value."
+    ],
+    "donts": [
+      "**Don't** add a second accent hue, gradients, glows or decorative illustration to the chrome.",
+      "**Don't** use uppercase labels, letter-spaced small caps or chrome text larger than 13px.",
+      "**Don't** put shadows on docked panels or cards at rest.",
+      "**Don't** animate hovers, tabs, menus or toasts.",
+      "**Don't** make square buttons or pill-shaped containers.",
+      "**Don't** imply something saved, synced or exported when it did not."
+    ]
+  }
+}
