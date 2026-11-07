@@ -99,6 +99,110 @@ void main() {
     expect(limitedOwner.retainedMaterializedBytes, limitedReserved);
   });
 
+  test('shared query traversal is bounded across marker contexts', () {
+    final inner = _CountingMap({
+      'first': 'Bridge',
+      'position': 'hidden-geometry',
+      'last': 'Omega',
+    });
+    final shared = _CountingList([
+      '',
+      'Alpha',
+      inner,
+      <Object?>[],
+      <String, Object?>{},
+      271828,
+      true,
+      for (var i = 0; i < 24; i++) 'fact-$i',
+    ]);
+    var reserved = 0;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) => reserved += bytes,
+      releaseMaterialized: (bytes) => reserved -= bytes,
+    );
+    final markers = [
+      for (var i = 0; i < 24; i++)
+        MapMarkerMetadata(
+          name: 'Marker $i',
+          type: 'Kind',
+          category: 'prefix$i',
+          details: {'shared': shared, 'end': 'Tail', 'position': 'hidden-root'},
+          source: const {'name': '  Origin  ', 'other': 'hidden-source'},
+          owner: owner,
+        ),
+    ];
+
+    void bounded(String query, List<bool> expected) {
+      final listBefore = shared.visits;
+      final mapBefore = inner.visits;
+      expect([
+        for (final marker in markers) marker.matchesSearch([query]),
+      ], expected);
+      expect(shared.visits - listBefore, lessThanOrEqualTo(shared.length));
+      expect(inner.visits - mapBefore, lessThanOrEqualTo(1));
+      expect(owner.retainedMaterializedBytes, reserved);
+    }
+
+    final all = List<bool>.filled(markers.length, true);
+    final none = List<bool>.filled(markers.length, false);
+    bounded('not-present', none);
+    final afterAbsent = reserved;
+    bounded('not-present', none);
+    expect(reserved, afterAbsent);
+    bounded('alpha bridge omega 271828 true fact-0', all);
+    bounded('tail origin', all);
+    bounded('hidden-geometry', none);
+    bounded('hidden-root', none);
+    bounded('hidden-source', none);
+    bounded('marker 2 kind prefix2  alpha', [
+      for (var i = 0; i < markers.length; i++) i == 2,
+    ]);
+    bounded('not-present', none);
+    expect(reserved, afterAbsent);
+  });
+
+  test('admitted shared query workspace survives plan replacement', () {
+    var reserved = 0;
+    var ceiling = 1 << 30;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) {
+        if (reserved + bytes > ceiling) throw StateError('budget exceeded');
+        reserved += bytes;
+      },
+      releaseMaterialized: (bytes) => reserved -= bytes,
+    );
+    final shared = _CountingMap({
+      for (var i = 0; i < 40; i++) 'item-$i': ['value-$i', 'suffix'],
+    });
+    final markers = [
+      for (var i = 0; i < 24; i++)
+        MapMarkerMetadata(
+          name: 'Marker $i',
+          type: 'Kind',
+          category: 'Category',
+          details: {'shared': shared},
+          source: const {'name': 'Origin'},
+          owner: owner,
+        ),
+    ];
+    final baseline = reserved;
+    // This admits two overlapping small term plans, but not a graph-sized
+    // query cache. Replacements must reuse generation-owned summary slots.
+    ceiling = baseline + 1024;
+    for (final query in ['absent', 'value-39', 'suffix origin', 'absent']) {
+      for (final marker in markers) {
+        expect(marker.matchesSearch([query]), query != 'absent');
+      }
+      expect(reserved, lessThanOrEqualTo(ceiling));
+      expect(owner.retainedMaterializedBytes, reserved);
+    }
+    final finalPlan = reserved;
+    for (final marker in markers) {
+      expect(marker.matchesSearch(['absent']), isFalse);
+    }
+    expect(reserved, finalPlan);
+  });
+
   test('search scratch is admitted before a large scalar is searched', () {
     var reserved = 0;
     const budget = 52000;

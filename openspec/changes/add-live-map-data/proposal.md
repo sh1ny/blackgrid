@@ -63,3 +63,4 @@ Map markers can receive upstream corrections without rebuilding the artwork or i
 - Runtime snapshots share complete facts between markers instead of expanding them repeatedly, keeping local marker details available within the existing resource limits.
 - Normalization releases temporary budget reservations when marker delivery fails.
 - Refresh progress stays visible during startup cache reads; extreme offscreen geometry no longer interrupts rendering, and shared facts stay bounded during publication.
+- Non-empty marker searches reuse exact shared-fact query summaries while preserving complete phrase matching.

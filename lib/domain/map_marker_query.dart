@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 /// Accounts for derived metadata and search workspace for one live-map
 /// generation.
 class MapMarkerMetadataOwner {
@@ -16,8 +18,13 @@ class MapMarkerMetadataOwner {
   _SearchPlan? _currentPlan;
   Map<Object, _ScratchMeasurement>? _searchScratchMeasurements;
   int _scratchMeasurementTransaction = 0;
+  int _searchPlanSerial = 0;
 
-  void _rememberScratchMeasurement(Object value, int bytes, int transaction) {
+  int _measureContainer(
+    Object value,
+    int transaction,
+    int Function(Object?) measure,
+  ) {
     var measurements = _searchScratchMeasurements;
     if (measurements == null) {
       _reserve(128);
@@ -29,11 +36,83 @@ class MapMarkerMetadataOwner {
         rethrow;
       }
     }
-    _reserve(128);
+    final cached = measurements[value];
+    if (cached != null) return cached.bytes;
+
+    bool hasTokens(Object? child) {
+      if (child is String || child is num || child is bool) return true;
+      if (child is Map || child is List) {
+        return measurements![child]!.hasToken;
+      }
+      return false;
+    }
+
+    var cost = 160;
+    _reserve(cost);
     try {
-      measurements[value] = _ScratchMeasurement(bytes, transaction);
+      var maximum = 0;
+      var count = 0;
+      var allTokens = true;
+      final isMap = value is Map;
+      List<Object?>? indexed;
+
+      void include(Object? child) {
+        final childBytes = measure(child);
+        if (childBytes > maximum) maximum = childBytes;
+        if (hasTokens(child)) {
+          count++;
+          if (isMap) {
+            if (indexed == null) {
+              _reserve(64);
+              cost += 64;
+              indexed = <Object?>[];
+            }
+            _reserve(16);
+            cost += 16;
+            indexed!.add(child);
+          }
+        } else {
+          allTokens = false;
+        }
+      }
+
+      if (value is Map) {
+        for (final entry in value.entries) {
+          if (!const {'position', 'outline', 'size'}.contains(entry.key)) {
+            include(entry.value);
+          }
+        }
+      } else {
+        for (final child in value as List) {
+          include(child);
+        }
+      }
+
+      List<Object?> children;
+      if (isMap) {
+        children = indexed ?? const [];
+      } else if (count == 0) {
+        children = const [];
+      } else if (allTokens) {
+        children = value as List<Object?>;
+      } else {
+        final indexCost = 64 + count * 16;
+        _reserve(indexCost);
+        cost += indexCost;
+        children = <Object?>[];
+        for (final child in value as List) {
+          if (hasTokens(child)) children.add(child);
+        }
+      }
+      measurements[value] = _ScratchMeasurement(
+        maximum,
+        transaction,
+        cost,
+        children,
+      );
+      return maximum;
     } catch (_) {
-      _release(128);
+      _release(cost);
       rethrow;
     }
   }
@@ -41,13 +120,13 @@ class MapMarkerMetadataOwner {
   void _rollbackScratchMeasurements(int transaction) {
     final measurements = _searchScratchMeasurements;
     if (measurements == null) return;
-    var removed = 0;
+    var removedBytes = 0;
     measurements.removeWhere((_, measurement) {
       if (measurement.transaction != transaction) return false;
-      removed++;
+      removedBytes += measurement.cost;
       return true;
     });
-    _release(removed * 128);
+    _release(removedBytes);
     if (measurements.isEmpty) {
       _searchScratchMeasurements = null;
       _release(128);
@@ -86,15 +165,6 @@ class MapMarkerMetadataOwner {
     _retainedMaterializedBytes -= bytes;
   }
 
-  T _withScratch<T>(int bytes, T Function() action) {
-    _reserve(bytes);
-    try {
-      return action();
-    } finally {
-      _release(bytes);
-    }
-  }
-
   _SearchPlan _planFor(Iterable<String> terms) {
     final current = _currentPlan;
     if (current != null && current.matchesTerms(terms)) return current;
@@ -119,9 +189,19 @@ class MapMarkerMetadataOwner {
           needles.add(_SearchNeedle(term, needle, _prefixTable(needle)));
         }
       }
-      final plan = _SearchPlan(needles, cost);
+      if (_searchPlanSerial == 0x7fffffffffffffff) {
+        for (final measurement
+            in _searchScratchMeasurements?.values ??
+                const <_ScratchMeasurement>[]) {
+          measurement.stamp = 0;
+        }
+        _searchPlanSerial = 0;
+      }
+      final plan = _SearchPlan(needles, cost, ++_searchPlanSerial);
       _currentPlan = plan;
-      if (current != null) _release(current.retainedBytes);
+      if (current != null) {
+        _release(current.retainedBytes);
+      }
       return plan;
     } catch (_) {
       _release(cost);
@@ -257,10 +337,27 @@ class _SearchNeedle {
 }
 
 class _SearchPlan {
-  const _SearchPlan(this.needles, this.retainedBytes);
+  _SearchPlan(this.needles, this.retainedBytes, this.stamp)
+    : _limit = needles.fold<int>(
+        0,
+        (longest, needle) =>
+            needle.text.length > longest ? needle.text.length : longest,
+      ),
+      _positions = List<int>.filled(needles.length, 0),
+      _window = Uint16List(
+        needles.fold<int>(
+          0,
+          (longest, needle) =>
+              needle.text.length > longest ? needle.text.length : longest,
+        ),
+      );
 
   final List<_SearchNeedle> needles;
   final int retainedBytes;
+  final int stamp;
+  final int _limit;
+  final List<int> _positions;
+  final Uint16List _window;
 
   bool matchesTerms(Iterable<String> terms) {
     var index = 0;
@@ -274,83 +371,188 @@ class _SearchPlan {
     return index == needles.length;
   }
 
+  void _reset() {
+    for (var i = 0; i < _positions.length; i++) {
+      _positions[i] = 0;
+    }
+  }
+
+  bool _accept(int code) {
+    var found = false;
+    for (var i = 0; i < needles.length; i++) {
+      final needle = needles[i];
+      var position = _positions[i];
+      while (position > 0 && needle.text.codeUnitAt(position) != code) {
+        position = needle.prefix[position - 1];
+      }
+      if (needle.text.codeUnitAt(position) == code) position++;
+      if (position == needle.text.length) {
+        found = true;
+        position = needle.prefix[position - 1];
+      }
+      _positions[i] = position;
+    }
+    return found;
+  }
+
   bool matches(MapMarkerMetadata metadata, MapMarkerMetadataOwner owner) {
     if (needles.isEmpty) return true;
-    return owner._withScratch(needles.length * 8 + 32, () {
-      final positions = List<int>.filled(needles.length, 0);
-      var found = 0;
-      var hasToken = false;
+    // Finish memoizing before using the plan's single reusable KMP workspace.
+    for (final value in metadata.fields.values) {
+      _prepare(value, owner);
+    }
+    _reset();
+    var hasToken = false;
+    bool append(Object? value) {
+      if (!_hasToken(value, owner)) return false;
+      if (hasToken && _accept(32)) return true;
+      hasToken = true;
+      return _apply(value, owner);
+    }
 
-      bool accept(Object value) {
-        if (found > 0) return true;
-        final scalar = value is String ? value : value.toString();
-        if (hasToken) {
-          for (var index = 0; index < needles.length; index++) {
-            final needle = needles[index].text;
-            positions[index] = _advance(
-              needle,
-              needles[index].prefix,
-              positions[index],
-              32,
-            );
-            if (positions[index] == needle.length) {
-              found++;
-              positions[index] = needles[index].prefix[needle.length - 1];
-            }
-          }
-        }
-        if (found > 0) return true;
-        hasToken = true;
-        {
-          final folded = owner._fold(scalar);
-          for (var unit = 0; unit < folded.length && found == 0; unit++) {
-            final code = folded.codeUnitAt(unit);
-            for (var index = 0; index < needles.length; index++) {
-              final needle = needles[index].text;
-              positions[index] = _advance(
-                needle,
-                needles[index].prefix,
-                positions[index],
-                code,
-              );
-              if (positions[index] == needle.length) {
-                found++;
-                positions[index] = needles[index].prefix[needle.length - 1];
-              }
-            }
-          }
-        }
-        return found > 0;
-      }
+    if (append(metadata.name) ||
+        append(metadata.type) ||
+        append(metadata.category)) {
+      return true;
+    }
+    for (final value in metadata.fields.values) {
+      if (append(value)) return true;
+    }
+    if (_text(metadata._sourceName) case final String provenance) {
+      if (append(provenance)) return true;
+    }
+    return false;
+  }
 
-      if (accept(metadata.name) ||
-          accept(metadata.type) ||
-          accept(metadata.category) ||
-          _visitSearchValues(metadata.fields, accept)) {
-        return true;
+  bool _hasToken(Object? value, MapMarkerMetadataOwner owner) {
+    if (value is String || value is num || value is bool) return true;
+    if (value is Map || value is List) {
+      return owner._searchScratchMeasurements![value]!.hasToken;
+    }
+    return false;
+  }
+
+  int _length(Object? value, MapMarkerMetadataOwner owner) {
+    if (value is String || value is num || value is bool) {
+      final text = owner._fold(value is String ? value : value.toString());
+      return text.length < _limit ? text.length : _limit;
+    }
+    if (value is Map || value is List) {
+      return owner._searchScratchMeasurements![value]!.length;
+    }
+    return 0;
+  }
+
+  void _prepare(Object? value, MapMarkerMetadataOwner owner) {
+    if (value is! Map && value is! List) return;
+    final measurement = owner._searchScratchMeasurements![value]!;
+    final summary = measurement;
+    if (summary.stamp == stamp) return;
+    final children = measurement.children;
+    for (final child in children) {
+      _prepare(child, owner);
+    }
+
+    var length = 0;
+    var first = true;
+    for (final child in children) {
+      if (!first && length < _limit) length++;
+      length += _length(child, owner);
+      if (length > _limit) length = _limit;
+      first = false;
+    }
+    summary.length = length;
+    summary.found = false;
+    summary.stamp = stamp;
+
+    _reset();
+    first = true;
+    for (final child in children) {
+      if ((!first && _accept(32)) || _apply(child, owner)) {
+        summary.found = true;
+        break;
       }
-      if (_text(metadata._sourceName) case final String provenance) {
-        return accept(provenance);
+      first = false;
+    }
+  }
+
+  bool _apply(Object? value, MapMarkerMetadataOwner owner) {
+    if (value is String || value is num || value is bool) {
+      final text = owner._fold(value is String ? value : value.toString());
+      for (var i = 0; i < text.length; i++) {
+        if (_accept(text.codeUnitAt(i))) return true;
       }
       return false;
+    }
+    if (value is! Map && value is! List) return false;
+    final summary = owner._searchScratchMeasurements![value]!;
+    if (summary.found) return true;
+    final count = summary.length < _limit ? summary.length : _limit;
+    var found = false;
+    _emit(value, owner, count, false, (code) {
+      if (_accept(code)) found = true;
     });
+    if (found) return true;
+    if (summary.length == _limit) {
+      _reset();
+      var used = 0;
+      _emit(value, owner, _limit - 1, true, (code) {
+        _window[used++] = code;
+      });
+      while (used > 0) {
+        if (_accept(_window[--used])) return true;
+      }
+    }
+    return false;
+  }
+
+  int _emit(
+    Object? value,
+    MapMarkerMetadataOwner owner,
+    int remaining,
+    bool reverse,
+    void Function(int) accept,
+  ) {
+    if (remaining == 0) return 0;
+    if (value is String || value is num || value is bool) {
+      final text = owner._fold(value is String ? value : value.toString());
+      final count = text.length < remaining ? text.length : remaining;
+      for (var i = 0; i < count; i++) {
+        accept(text.codeUnitAt(reverse ? text.length - 1 - i : i));
+      }
+      return count;
+    }
+    if (value is! Map && value is! List) return 0;
+    final measurement = owner._searchScratchMeasurements![value]!;
+    final children = measurement.children;
+    var index = reverse ? children.length - 1 : 0;
+    var emitted = 0;
+    var first = true;
+    while (index >= 0 && index < children.length && emitted < remaining) {
+      if (!first) {
+        accept(32);
+        emitted++;
+        if (emitted == remaining) break;
+      }
+      emitted += _emit(
+        children[index],
+        owner,
+        remaining - emitted,
+        reverse,
+        accept,
+      );
+      first = false;
+      index += reverse ? -1 : 1;
+    }
+    return emitted;
   }
 }
 
-/// Commas are OR separators; empty terms do not accidentally match everything.
-List<String> mapSearchTerms(String value) => List.unmodifiable(
-  value
-      .split(',')
-      .map((term) => term.trim().toLowerCase())
-      .where((term) => term.isNotEmpty),
-);
-
-int _advance(String needle, List<int> prefix, int position, int code) {
-  while (position > 0 && needle.codeUnitAt(position) != code) {
-    position = prefix[position - 1];
-  }
-  if (needle.codeUnitAt(position) == code) position++;
-  return position;
+abstract class _SharedSearchSummary {
+  int stamp = 0;
+  int length = 0;
+  bool get hasToken;
+  bool found = false;
 }
 
 List<int> _prefixTable(String value) {
@@ -364,6 +566,14 @@ List<int> _prefixTable(String value) {
   }
   return result;
 }
+
+/// Commas are OR separators; empty terms do not accidentally match everything.
+List<String> mapSearchTerms(String value) => List.unmodifiable(
+  value
+      .split(',')
+      .map((term) => term.trim().toLowerCase())
+      .where((term) => term.isNotEmpty),
+);
 
 int _metadataCost(
   Map<String, dynamic> details,
@@ -461,11 +671,16 @@ Iterable<String> _ids(Object? value) sync* {
   }
 }
 
-class _ScratchMeasurement {
-  const _ScratchMeasurement(this.bytes, this.transaction);
+class _ScratchMeasurement extends _SharedSearchSummary {
+  _ScratchMeasurement(this.bytes, this.transaction, this.cost, this.children);
 
   final int bytes;
   final int transaction;
+  final int cost;
+  final List<Object?> children;
+
+  @override
+  bool get hasToken => children.isNotEmpty;
 }
 
 // Reserve one conservative lowercase workspace, not a copy per inventory fact.
@@ -491,28 +706,7 @@ int _searchScratchBytes(
     if (value is num || value is bool) return _numericSearchScratchBytes;
     if (value == null || (value is! Map && value is! List)) return 0;
 
-    final cached = owner._searchScratchMeasurements?[value];
-    if (cached != null) return cached.bytes;
-
-    var maximum = 0;
-    void include(Object? child) {
-      final bytes = measure(child);
-      if (bytes > maximum) maximum = bytes;
-    }
-
-    if (value is Map) {
-      for (final entry in value.entries) {
-        if (!const {'position', 'outline', 'size'}.contains(entry.key)) {
-          include(entry.value);
-        }
-      }
-    } else if (value is List) {
-      for (final item in value) {
-        include(item);
-      }
-    }
-    owner._rememberScratchMeasurement(value, maximum, transaction);
-    return maximum;
+    return owner._measureContainer(value, transaction, measure);
   }
 
   var maximum = measure(name);
@@ -538,22 +732,4 @@ int _searchScratchBytes(
     }
   }
   return maximum;
-}
-
-bool _visitSearchValues(Object? value, bool Function(Object) accept) {
-  if (value is String || value is num || value is bool) {
-    return accept(value!);
-  } else if (value is Map) {
-    for (final entry in value.entries) {
-      if (!const {'position', 'outline', 'size'}.contains(entry.key) &&
-          _visitSearchValues(entry.value, accept)) {
-        return true;
-      }
-    }
-  } else if (value is List) {
-    for (final item in value) {
-      if (_visitSearchValues(item, accept)) return true;
-    }
-  }
-  return false;
 }
