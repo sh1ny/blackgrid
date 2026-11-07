@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:blackgrid/domain/map_marker_query.dart';
 import 'package:test/test.dart';
 
@@ -28,6 +30,73 @@ void main() {
     final afterMatching = owner.retainedMaterializedBytes;
     expect(metadata.every((item) => item.matchesSearch(['x' * 128])), isTrue);
     expect(owner.retainedMaterializedBytes, afterMatching);
+  });
+
+  test('shared fact scratch measurement visits each container once', () {
+    final leaf = 'deep-${'z' * 4096}-needle';
+    final nested = _CountingMap({'value': leaf, 'number': 271828});
+    final shared = _CountingList([nested, true, 'final scalar']);
+    var reserved = 0;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) => reserved += bytes,
+      releaseMaterialized: (bytes) => reserved -= bytes,
+    );
+
+    MapMarkerMetadata makeMarker(int index) => MapMarkerMetadata(
+      name: 'Marker $index',
+      type: 'Switches',
+      category: 'switches',
+      details: {
+        'shared': shared,
+        'unique': 'individual-$index',
+        'position': 'excluded-position',
+      },
+      source: const {},
+      owner: owner,
+    );
+
+    final first = makeMarker(0);
+    final mapVisits = nested.visits;
+    final listVisits = shared.visits;
+    expect(mapVisits, greaterThan(0));
+    expect(listVisits, greaterThan(0));
+    final others = [for (var i = 1; i < 24; i++) makeMarker(i)];
+    expect(nested.visits, mapVisits);
+    expect(shared.visits, listVisits);
+    expect(owner.retainedMaterializedBytes, reserved);
+    expect(reserved, greaterThanOrEqualTo(128 + leaf.length * 12));
+
+    for (final marker in [first, ...others]) {
+      expect(marker.matchesSearch(['deep-', 'not present']), isTrue);
+      expect(marker.matchesSearch(['271828']), isTrue);
+      expect(marker.matchesSearch(['true final scalar']), isTrue);
+      expect(marker.matchesSearch(['excluded-position']), isFalse);
+    }
+    expect(others.last.matchesSearch(['individual-23']), isTrue);
+    expect(first.matchesSearch(['individual-23']), isFalse);
+
+    var limitedReserved = 0;
+    final limitedOwner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) {
+        if (limitedReserved + bytes > 4096) {
+          throw StateError('scratch budget exceeded');
+        }
+        limitedReserved += bytes;
+      },
+      releaseMaterialized: (bytes) => limitedReserved -= bytes,
+    );
+    expect(
+      () => MapMarkerMetadata(
+        name: 'Limited',
+        type: 'Switches',
+        category: 'switches',
+        details: {'shared': shared},
+        source: const {},
+        owner: limitedOwner,
+      ),
+      throwsStateError,
+    );
+    expect(limitedOwner.retainedMaterializedBytes, limitedReserved);
   });
 
   test('search scratch is admitted before a large scalar is searched', () {
@@ -206,4 +275,53 @@ void main() {
       expect(exit.linkedSwitchIds.contains('Door'), isFalse);
     },
   );
+}
+
+class _CountingMap extends MapBase<String, dynamic> {
+  _CountingMap(this._values);
+
+  final Map<String, dynamic> _values;
+  int visits = 0;
+
+  @override
+  Iterable<String> get keys {
+    visits++;
+    return _values.keys;
+  }
+
+  @override
+  dynamic operator [](Object? key) => _values[key];
+
+  @override
+  void operator []=(String key, dynamic value) =>
+      throw UnsupportedError('immutable');
+
+  @override
+  void clear() => throw UnsupportedError('immutable');
+
+  @override
+  dynamic remove(Object? key) => throw UnsupportedError('immutable');
+}
+
+class _CountingList extends ListBase<Object?> {
+  _CountingList(this._values);
+
+  final List<Object?> _values;
+  int visits = 0;
+
+  @override
+  int get length => _values.length;
+
+  @override
+  set length(int value) => throw UnsupportedError('immutable');
+
+  @override
+  Object? operator [](int index) {
+    visits++;
+    return _values[index];
+  }
+
+  @override
+  void operator []=(int index, Object? value) =>
+      throw UnsupportedError('immutable');
 }

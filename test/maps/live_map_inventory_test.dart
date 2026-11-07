@@ -135,6 +135,99 @@ void main() {
       },
     );
 
+    test('pooled generated input containers remain charged until disposal', () {
+      const count = 64;
+      final sources = _sources();
+      final data = sources.tasks['data']! as Map<String, dynamic>;
+      final task =
+          (data['tasks']! as Map<String, dynamic>)['task-1']!
+              as Map<String, dynamic>;
+      final objective =
+          (task['objectives']! as List<dynamic>).single as Map<String, dynamic>;
+      // The long, distinct identities make the generated per-occurrence
+      // source and identity maps substantial without duplicating the task.
+      final suffix = List.filled(512, 'x').join();
+      objective['zones'] = <dynamic>[
+        for (var index = 0; index < count; index++)
+          {
+            'id': 'zone-$index-$suffix',
+            'map': 'source-customs',
+            'position': {'x': index, 'y': index + 1, 'z': index + 2},
+          },
+      ];
+
+      LiveMapInventory build(LiveMapBudget budget) =>
+          LiveMapInventory.fromSources(
+            sources: sources,
+            bindings: [
+              LiveMapBinding(
+                sourceKey: 'customs',
+                mapId: 'customs',
+                calibration: calibrationFor('customs'),
+              ),
+            ],
+            mode: 'pve',
+            budget: budget,
+          );
+
+      const preexistingBytes = 1024;
+      final adequateBudget = LiveMapBudget()
+        ..reserveMaterialized(preexistingBytes);
+      final inventory = build(adequateBudget);
+      final markers = inventory.maps['customs']!;
+      expect(markers, hasLength(count));
+      final sharedTask = markers.first.details['sourceTask'];
+      expect(
+        markers.every(
+          (marker) => identical(marker.details['sourceTask'], sharedTask),
+        ),
+        isTrue,
+      );
+      expect((sharedTask as Map<String, dynamic>)['unknownFutureFact'], {
+        'nested': [
+          {'label': _largeFact},
+        ],
+      });
+      expect(
+        markers.map((marker) => marker.source['originalIdentity']['zoneId']),
+        [for (var index = 0; index < count; index++) 'zone-$index-$suffix'],
+      );
+      expect(markers.map((marker) => marker.id).toSet(), hasLength(count));
+      expect(
+        adequateBudget.materializedBytes,
+        greaterThanOrEqualTo(preexistingBytes),
+      );
+      expect(
+        adequateBudget.materializedBytes,
+        lessThanOrEqualTo(
+          inventory.retainedMaterializedBytes + preexistingBytes,
+        ),
+      );
+
+      // The output plus 50% leaves room for the pool's reference index and
+      // one marker's transient work, but not all the input maps held as keys.
+      final constrained = LiveMapBudget(
+        maxMaterializedBytes:
+            preexistingBytes + inventory.retainedMaterializedBytes * 3 ~/ 2,
+      )..reserveMaterialized(preexistingBytes);
+      expect(
+        () => build(constrained),
+        throwsA(isA<LiveMapResourceLimitException>()),
+      );
+      // A failed build may retain its partial output charges, but not the
+      // pool's temporary input-key/index charges after the pool is disposed.
+      expect(
+        constrained.materializedBytes,
+        greaterThanOrEqualTo(preexistingBytes),
+      );
+      expect(
+        constrained.materializedBytes,
+        lessThanOrEqualTo(
+          inventory.retainedMaterializedBytes + preexistingBytes,
+        ),
+      );
+    });
+
     test('freezes nested source facts against later input mutation', () {
       final sources = _sources();
       final inventory = LiveMapInventory.fromSources(

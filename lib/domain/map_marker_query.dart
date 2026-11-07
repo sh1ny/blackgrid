@@ -14,6 +14,45 @@ class MapMarkerMetadataOwner {
   int _retainedMaterializedBytes = 0;
   int _searchScratchCapacity = 0;
   _SearchPlan? _currentPlan;
+  Map<Object, _ScratchMeasurement>? _searchScratchMeasurements;
+  int _scratchMeasurementTransaction = 0;
+
+  void _rememberScratchMeasurement(Object value, int bytes, int transaction) {
+    var measurements = _searchScratchMeasurements;
+    if (measurements == null) {
+      _reserve(128);
+      try {
+        measurements = Map<Object, _ScratchMeasurement>.identity();
+        _searchScratchMeasurements = measurements;
+      } catch (_) {
+        _release(128);
+        rethrow;
+      }
+    }
+    _reserve(128);
+    try {
+      measurements[value] = _ScratchMeasurement(bytes, transaction);
+    } catch (_) {
+      _release(128);
+      rethrow;
+    }
+  }
+
+  void _rollbackScratchMeasurements(int transaction) {
+    final measurements = _searchScratchMeasurements;
+    if (measurements == null) return;
+    var removed = 0;
+    measurements.removeWhere((_, measurement) {
+      if (measurement.transaction != transaction) return false;
+      removed++;
+      return true;
+    });
+    _release(removed * 128);
+    if (measurements.isEmpty) {
+      _searchScratchMeasurements = null;
+      _release(128);
+    }
+  }
 
   // Fold one scalar at a time instead of retaining copies of the inventory.
   String _fold(String scalar) => scalar.toLowerCase();
@@ -113,16 +152,23 @@ class MapMarkerMetadata {
     const excluded = {'position', 'outline', 'size', 'bottom', 'top'};
     final retainedCost = _metadataCost(details, source, excluded);
     final constructionScratch = 192 + category.length * 4;
-    final scratchAdmission = _owner._admitSearchScratch(
-      _searchScratchBytes(name, type, category, details, source),
-    );
+    final transaction = ++_owner._scratchMeasurementTransaction;
+    var scratchAdmission = 0;
+    var metadataReserved = false;
     try {
+      scratchAdmission = _owner._admitSearchScratch(
+        _searchScratchBytes(
+          name,
+          type,
+          category,
+          details,
+          source,
+          _owner,
+          transaction,
+        ),
+      );
       _owner._reserve(retainedCost + constructionScratch);
-    } catch (_) {
-      _owner._releaseSearchScratch(scratchAdmission);
-      rethrow;
-    }
-    try {
+      metadataReserved = true;
       fields = Map.unmodifiable({
         for (final entry in details.entries)
           if (!excluded.contains(entry.key)) entry.key: entry.value,
@@ -159,8 +205,9 @@ class MapMarkerMetadata {
           type == 'QuestObjectives' ||
           category.toLowerCase().contains('quest');
     } catch (_) {
-      _owner._release(retainedCost + constructionScratch);
+      if (metadataReserved) _owner._release(retainedCost + constructionScratch);
       _owner._releaseSearchScratch(scratchAdmission);
+      _owner._rollbackScratchMeasurements(transaction);
       rethrow;
     }
     _owner._release(constructionScratch);
@@ -414,6 +461,13 @@ Iterable<String> _ids(Object? value) sync* {
   }
 }
 
+class _ScratchMeasurement {
+  const _ScratchMeasurement(this.bytes, this.transaction);
+
+  final int bytes;
+  final int transaction;
+}
+
 // Reserve one conservative lowercase workspace, not a copy per inventory fact.
 const _searchScratchBaseBytes = 128;
 const _searchScratchBytesPerCodeUnit = 12;
@@ -426,41 +480,63 @@ int _searchScratchBytes(
   String category,
   Map<String, dynamic> details,
   Map<String, dynamic> source,
+  MapMarkerMetadataOwner owner,
+  int transaction,
 ) {
-  var maximum =
-      _searchScratchBaseBytes + name.length * _searchScratchBytesPerCodeUnit;
-  void includeString(String value) {
-    final bytes =
-        _searchScratchBaseBytes + value.length * _searchScratchBytesPerCodeUnit;
-    if (bytes > maximum) maximum = bytes;
-  }
-
-  includeString(type);
-  includeString(category);
-  final sourceName = source['name'];
-  if (sourceName is String) includeString(sourceName);
-
-  void visit(Object? value) {
+  int measure(Object? value) {
     if (value is String) {
-      includeString(value);
-    } else if (value is num || value is bool) {
-      if (maximum < _numericSearchScratchBytes) {
-        maximum = _numericSearchScratchBytes;
-      }
-    } else if (value is Map) {
+      return _searchScratchBaseBytes +
+          value.length * _searchScratchBytesPerCodeUnit;
+    }
+    if (value is num || value is bool) return _numericSearchScratchBytes;
+    if (value == null || (value is! Map && value is! List)) return 0;
+
+    final cached = owner._searchScratchMeasurements?[value];
+    if (cached != null) return cached.bytes;
+
+    var maximum = 0;
+    void include(Object? child) {
+      final bytes = measure(child);
+      if (bytes > maximum) maximum = bytes;
+    }
+
+    if (value is Map) {
       for (final entry in value.entries) {
         if (!const {'position', 'outline', 'size'}.contains(entry.key)) {
-          visit(entry.value);
+          include(entry.value);
         }
       }
     } else if (value is List) {
       for (final item in value) {
-        visit(item);
+        include(item);
       }
     }
+    owner._rememberScratchMeasurement(value, maximum, transaction);
+    return maximum;
   }
 
-  visit(details);
+  var maximum = measure(name);
+  void include(Object? value) {
+    final bytes = measure(value);
+    if (bytes > maximum) maximum = bytes;
+  }
+
+  include(type);
+  include(category);
+  final sourceName = source['name'];
+  if (sourceName is String) include(sourceName);
+  // The details root is transient; only cache searchable nested containers.
+  for (final entry in details.entries) {
+    if (!const {
+      'position',
+      'outline',
+      'size',
+      'bottom',
+      'top',
+    }.contains(entry.key)) {
+      include(entry.value);
+    }
+  }
   return maximum;
 }
 

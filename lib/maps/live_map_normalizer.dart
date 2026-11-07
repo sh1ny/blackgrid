@@ -234,7 +234,7 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
         ...questMarkers,
       ]);
     } finally {
-      if (onMarker != null && bindingBytes > 0) {
+      if (bindingBytes > 0) {
         releaseMaterialization?.call(bindingBytes);
       }
     }

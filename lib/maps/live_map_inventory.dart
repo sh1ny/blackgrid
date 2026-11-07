@@ -984,7 +984,8 @@ class _FactPool {
 
     try {
       measure(value);
-      poolBytes = toCharge.length * 32;
+      // Identity keys keep the original input graphs alive until disposal.
+      poolBytes = toCharge.length * 32 + factBytes;
       _budget.reserveMaterialized(poolBytes);
       poolReservationMade = true;
       final copied = <Object>[];

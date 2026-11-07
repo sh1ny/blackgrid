@@ -674,11 +674,18 @@ class MapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  ViewportPoint? _trySceneToViewport(ScenePoint point) {
+    final x = point.x * _transform.scale + _transform.translationX;
+    final y = point.y * _transform.scale + _transform.translationY;
+    if (!x.isFinite || !y.isFinite) return null;
+    return ViewportPoint(x, y);
+  }
+
   ViewportPoint? get playerViewportPoint {
     final map = _preparedMap;
     final player = _playerPosition;
     if (map == null || player == null) return null;
-    return _transform.sceneToViewport(map.gameToScene(player));
+    return _trySceneToViewport(map.gameToScene(player));
   }
 
   /// A projected direction, not an arbitrary glyph-angle convention.
@@ -940,10 +947,18 @@ class MapController extends ChangeNotifier {
       if (!_markerEligible(position, floors)) {
         continue;
       }
-      final point = _transform.sceneToViewport(position.point);
-      final outline = List<ViewportPoint>.unmodifiable(
-        position.outline.map(_transform.sceneToViewport),
-      );
+      final point = _trySceneToViewport(position.point);
+      if (point == null) continue;
+      final vertices = <ViewportPoint>[];
+      for (final sceneVertex in position.outline) {
+        final vertex = _trySceneToViewport(sceneVertex);
+        if (vertex == null) {
+          vertices.clear();
+          break;
+        }
+        vertices.add(vertex);
+      }
+      final outline = List<ViewportPoint>.unmodifiable(vertices);
       var left = point.x;
       var right = point.x;
       var top = point.y;

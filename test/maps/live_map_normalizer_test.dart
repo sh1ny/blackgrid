@@ -265,6 +265,63 @@ _normalizeForMap({
 }
 
 void main() {
+  test('non-streaming normalization releases binding scratch', () {
+    final binding = LiveMapBinding(
+      sourceKey: 'customs',
+      mapId: 'customs',
+      calibration: calibrationFor('customs'),
+    );
+    LiveMapSourceBodies sources(Map<String, dynamic> maps) =>
+        LiveMapSourceBodies(
+          maps: maps,
+          mapTranslations: {'data': <String, dynamic>{}},
+          tasks: _taskSource(includeTask: false, includeQuestItem: false),
+          taskTranslations: _taskTranslations(),
+          traders: _traderSource(),
+          traderTranslations: _traderTranslations(),
+        );
+
+    const existing = 73;
+    var reserved = existing;
+    var sawReservation = false;
+    void reserve(int bytes) {
+      reserved += bytes;
+      if (bytes > 0) sawReservation = true;
+    }
+
+    void release(int bytes) {
+      reserved -= bytes;
+    }
+
+    final empty = sources(_mapSource(customs: _mapRecord('customs')));
+    final result = normalizeLiveMapData(
+      sources: empty,
+      bindings: [binding],
+      mode: 'regular',
+      reserveMaterialization: reserve,
+      releaseMaterialization: release,
+    );
+    expect(result, {'customs': isEmpty});
+    expect(sawReservation, isTrue);
+    expect(reserved, existing);
+
+    reserved = existing;
+    sawReservation = false;
+    final invalid = sources(_mapSource(customs: _mapRecord('customs', id: '')));
+    expect(
+      () => normalizeLiveMapData(
+        sources: invalid,
+        bindings: [binding],
+        mode: 'regular',
+        reserveMaterialization: reserve,
+        releaseMaterialization: release,
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(sawReservation, isTrue);
+    expect(reserved, existing);
+  });
+
   test('streaming callback failure releases normalization scratch', () {
     final maps = _mapSource(
       customs: _mapRecord(

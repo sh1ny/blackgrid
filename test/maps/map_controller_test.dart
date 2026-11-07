@@ -256,6 +256,97 @@ void main() {
       );
     },
   );
+  test(
+    'overflowing viewport markers retain inventory and recover after zoom',
+    () async {
+      const extreme = 1e306;
+      final controller = _controller(
+        markers: [
+          _marker(
+            'overflow-anchor',
+            'hazards',
+            extreme,
+            16,
+            outline: _square(15, 17),
+          ),
+          _marker(
+            'overflow-outline',
+            'switches',
+            16,
+            16,
+            outline: [
+              {'x': 15, 'z': 15, 'height': null},
+              {'x': extreme, 'z': 15, 'height': null},
+              {'x': 17, 'z': 17, 'height': null},
+            ],
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      controller.setSelectedMarker('overflow-anchor');
+      controller.setPlayerSample(GamePoint(extreme, 16));
+
+      final inventory = controller.activeMarkers;
+      final generation = controller.contentGeneration;
+      final selectedBefore = controller.selectedMarkerProjection!;
+      final playerBefore = controller.playerViewportPoint!;
+      expect(selectedBefore.viewportPoint.x.isFinite, isTrue);
+      expect(playerBefore.x.isFinite, isTrue);
+      expect(selectedBefore.outline, hasLength(4));
+      expect(controller.visibleMarkers().map((marker) => marker.marker.id), [
+        'overflow-anchor',
+        'overflow-outline',
+      ]);
+
+      controller.zoomAt(ViewportPoint(160, 160), 100);
+      expect(
+        (selectedBefore.scenePoint.x * controller.transform.scale).isInfinite,
+        isTrue,
+      );
+      expect(controller.activeMarkers, same(inventory));
+      expect(controller.contentGeneration, generation);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(controller.playerViewportPoint, isNull);
+      final visible = controller.visibleMarkers();
+      expect(visible.map((marker) => marker.marker.id), ['overflow-outline']);
+      final safe = visible.single;
+      expect(safe.viewportPoint.x, closeTo(160, 1e-9));
+      expect(safe.viewportPoint.y, closeTo(160, 1e-9));
+      expect(safe.outline, isEmpty);
+      expect(
+        controller.hitTestMarker(safe.viewportPoint)?.marker.id,
+        'overflow-outline',
+      );
+      expect(
+        controller.hitTestMarker(ViewportPoint(100, 100), radius: 1),
+        isNull,
+      );
+
+      controller.fit();
+      expect(controller.activeMarkers, same(inventory));
+      expect(controller.contentGeneration, generation);
+      final recovered = controller.selectedMarkerProjection!;
+      expect(recovered.marker, same(selectedBefore.marker));
+      expect(recovered.viewportPoint.x, selectedBefore.viewportPoint.x);
+      expect(recovered.outline, hasLength(4));
+      expect(controller.playerViewportPoint!.x, playerBefore.x);
+      final restored = controller.visibleMarkers();
+      expect(restored.map((marker) => marker.marker.id), [
+        'overflow-anchor',
+        'overflow-outline',
+      ]);
+      expect(restored.last.outline, hasLength(3));
+      expect(
+        restored.last.outline.every(
+          (point) => point.x.isFinite && point.y.isFinite,
+        ),
+        isTrue,
+      );
+    },
+  );
+
   test('selected marker projection survives an offscreen anchor and follows view transforms', () async {
     final controller = _controller(
       markers: [

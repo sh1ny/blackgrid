@@ -363,6 +363,8 @@ class _Store implements LiveMapStore {
   Completer<void>? commitGate;
   Completer<void>? commitStarted;
   Object? commitFailure;
+  Object? readFailure;
+  Object? rejectedCache;
 
   void holdRead(GameMode mode) {
     final gate = Completer<void>();
@@ -380,7 +382,16 @@ class _Store implements LiveMapStore {
   }) async {
     reads.add(mode);
     final snapshot = snapshots[mode];
+    final failure = readFailure;
+    final rejection = rejectedCache;
+    readFailure = null;
+    rejectedCache = null;
     await _readGates.remove(mode)?.future;
+    if (failure != null) throw failure;
+    if (rejection != null) {
+      onRejected?.call(rejection);
+      return null;
+    }
     return snapshot?.compatibility.fingerprint == compatibility.fingerprint
         ? snapshot
         : null;
@@ -631,6 +642,87 @@ void main() {
         expect(publications.whereType<LiveMapSnapshot>(), isEmpty);
       },
     );
+
+    test(
+      'initial cache completion preserves an active manual refresh',
+      () async {
+        final cached = _snapshot(
+          mode: GameMode.pve,
+          pack: _customsPack,
+          bindings: _customsBindings,
+          markerId: 'pending-refresh-cache',
+          checkedAt: _oldCheck,
+        );
+        final client = _ControlledClient(holdMode: GameMode.pve);
+        final store = _Store()
+          ..snapshots[GameMode.pve] = cached
+          ..holdRead(GameMode.pve);
+        final rig = _Rig(client: client, store: store);
+        addTearDown(() {
+          store.releaseRead(GameMode.pve);
+          return rig.close();
+        });
+
+        final selecting = rig.select(GameMode.pve);
+        final refreshing = rig.controller.refresh();
+        await client.requestsStarted(1);
+        expect(rig.controller.state.refreshing, isTrue);
+
+        store.releaseRead(GameMode.pve);
+        await selecting;
+        expect(rig.controller.state.source, LiveMapDataSource.cached);
+        expect(rig.controller.state.checkedAt, _oldCheck);
+        expect(
+          rig.publications.whereType<LiveMapSnapshot>().last,
+          same(cached),
+        );
+        expect(rig.controller.state.refreshing, isTrue);
+
+        client.answerMode(GameMode.pve);
+        await refreshing;
+        expect(rig.controller.state.source, LiveMapDataSource.refreshed);
+        expect(rig.controller.state.refreshing, isFalse);
+      },
+    );
+
+    for (final rejected in [false, true]) {
+      test(
+        rejected
+            ? 'rejected initial cache preserves an active manual refresh'
+            : 'failed initial cache read preserves an active manual refresh',
+        () async {
+          final failure = FormatException('invalid cache');
+          final client = _ControlledClient(holdMode: GameMode.pve);
+          final store = _Store()..holdRead(GameMode.pve);
+          if (rejected) {
+            store.rejectedCache = failure;
+          } else {
+            store.readFailure = failure;
+          }
+          final rig = _Rig(client: client, store: store);
+          addTearDown(() {
+            store.releaseRead(GameMode.pve);
+            return rig.close();
+          });
+
+          final selecting = rig.select(GameMode.pve);
+          final refreshing = rig.controller.refresh();
+          await client.requestsStarted(1);
+          expect(rig.controller.state.refreshing, isTrue);
+
+          store.releaseRead(GameMode.pve);
+          await selecting;
+          expect(rig.controller.state.source, LiveMapDataSource.bundled);
+          expect(rig.controller.state.failure, same(failure));
+          expect(rig.controller.state.refreshing, isTrue);
+
+          client.answerMode(GameMode.pve);
+          await refreshing;
+          expect(rig.controller.state.source, LiveMapDataSource.refreshed);
+          expect(rig.controller.state.refreshing, isFalse);
+        },
+      );
+    }
 
     test(
       'slow initial cache read remains authoritative after refresh failure',

@@ -185,7 +185,7 @@ class LiveMapDataController extends ChangeNotifier {
             checkedAt: snapshot.checkedAt,
             failure:
                 cacheFailure ?? (_state.mode == mode ? _state.failure : null),
-            refreshing: false,
+            refreshing: _joinFor(mode) != null,
           ),
         );
         _publicationGeneration[mode] = publicationGeneration + 1;
@@ -197,7 +197,7 @@ class LiveMapDataController extends ChangeNotifier {
             source: LiveMapDataSource.bundled,
             checkedAt: null,
             failure: cacheFailure,
-            refreshing: false,
+            refreshing: _joinFor(mode) != null,
           ),
         );
       }
@@ -210,7 +210,7 @@ class LiveMapDataController extends ChangeNotifier {
             source: LiveMapDataSource.bundled,
             checkedAt: null,
             failure: failure,
-            refreshing: false,
+            refreshing: _joinFor(mode) != null,
           ),
         );
       }

@@ -62,3 +62,4 @@ Map markers can receive upstream corrections without rebuilding the artwork or i
 - Shared runtime and offline normalization accepts valid upstream additions, removals, edits and empty collections. Historical floor overrides apply only while reviewed identity and placement assumptions match; artwork, calibration and frozen-source integrity remain separately protected.
 - Runtime snapshots share complete facts between markers instead of expanding them repeatedly, keeping local marker details available within the existing resource limits.
 - Normalization releases temporary budget reservations when marker delivery fails.
+- Refresh progress stays visible during startup cache reads; extreme offscreen geometry no longer interrupts rendering, and shared facts stay bounded during publication.
