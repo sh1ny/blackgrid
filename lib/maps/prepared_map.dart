@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../domain/map_coordinates.dart';
 import '../domain/map_floors.dart';
 import '../domain/map_geometry.dart';
+import 'live_map_normalizer.dart';
 
 /// An immutable inventory resolved from one active pack version.
 class PreparedMapPack {
@@ -19,6 +20,17 @@ class PreparedMapPack {
   final String version;
   final String assetRoot;
   final List<PreparedMap> maps;
+
+  /// Runtime bindings retained from reviewed prepared-manifest metadata.
+  List<LiveMapBinding> get liveMapBindings => List.unmodifiable([
+    for (final map in maps)
+      if (map.sourceKey case final String sourceKey)
+        LiveMapBinding(
+          sourceKey: sourceKey,
+          mapId: map.id,
+          calibration: map.liveMapCalibration,
+        ),
+  ]);
   late final Map<String, PreparedMap> byId;
 }
 
@@ -37,6 +49,8 @@ class PreparedMap {
     required this.markers,
     required this.attribution,
     required this.rasterDependencies,
+    required this.sourceKey,
+    required this.liveMapCalibration,
     this.tileLayout,
   }) {
     categories = Set.unmodifiable(markers.map((marker) => marker.filterKey));
@@ -344,6 +358,25 @@ class PreparedMap {
         );
       }
     }
+    final liveMapCalibration = <String, dynamic>{
+      if (json['sourceKey'] is String) 'sourceKey': json['sourceKey'],
+      'geometry': rawGeometry,
+      'floors': [
+        for (final floor in rawFloors)
+          {
+            for (final key in [
+              'id',
+              'heightBand',
+              'base',
+              'exclusive',
+              'attachedIds',
+            ])
+              if (floor.containsKey(key)) key: floor[key],
+          },
+      ],
+      if (json.containsKey('markerFloorAssignments'))
+        'markerFloorAssignments': json['markerFloorAssignments'],
+    };
     return PreparedMap._(
       id: id,
       name: _string(json, 'name'),
@@ -360,6 +393,10 @@ class PreparedMap {
       attribution: _immutableObject(
         _object(json['attribution'], 'attribution'),
       ),
+      sourceKey: json['sourceKey'] is String
+          ? json['sourceKey'] as String
+          : null,
+      liveMapCalibration: _immutableObject(liveMapCalibration),
     );
   }
 
@@ -375,6 +412,12 @@ class PreparedMap {
   final MapTileLayout? tileLayout;
   final List<PreparedMarker> markers;
   final Map<String, dynamic> attribution;
+
+  /// The exact upstream map identity when the manifest carries one.
+  final String? sourceKey;
+
+  /// Reviewed calibration and conditional marker-floor evidence.
+  final Map<String, dynamic> liveMapCalibration;
 
   /// Frozen alternate source renditions, not duplicate scene layers.
   ///
@@ -648,13 +691,74 @@ class PreparedMarker {
     this.floorId,
     this.heightBand,
   });
+
+  /// Creates a marker whose nested facts are already owned and immutable.
+  factory PreparedMarker.fromSharedFacts({
+    required String id,
+    required String category,
+    required String filterKey,
+    required String name,
+    required GamePoint position,
+    required Map<String, dynamic> details,
+    required Map<String, dynamic> source,
+    required List<GamePoint> outline,
+    String? floorId,
+    HeightBand? heightBand,
+  }) => PreparedMarker._shared(
+    id: id,
+    category: category,
+    filterKey: filterKey,
+    name: name,
+    position: position,
+    details: details,
+    source: source,
+    outline: outline,
+    floorId: floorId,
+    heightBand: heightBand,
+  );
+
+  PreparedMarker._shared({
+    required this.id,
+    required this.category,
+    required this.filterKey,
+    required this.name,
+    required this.position,
+    required this.details,
+    required this.source,
+    required this.outline,
+    this.floorId,
+    this.heightBand,
+  });
   factory PreparedMarker.fromJson(Map<String, dynamic> json) {
     final category = _string(json, 'category');
     final details = _immutableObject(_object(json['details'], 'details'));
+    final source = _immutableObject(_object(json['source'], 'source'));
+    return _parseMarker(json, category, details, source);
+  }
+
+  /// Parses marker headers while retaining already-frozen fact maps.
+  factory PreparedMarker.fromJsonWithSharedFacts(
+    Map<String, dynamic> json, {
+    required Map<String, dynamic> details,
+    required Map<String, dynamic> source,
+  }) {
+    final category = _string(json, 'category');
+    return _parseMarker(json, category, details, source);
+  }
+
+  static PreparedMarker _parseMarker(
+    Map<String, dynamic> json,
+    String category,
+    Map<String, dynamic> details,
+    Map<String, dynamic> source,
+  ) {
     final rawBand = json['heightBand'] == null
         ? null
         : _numbers(json['heightBand'], 2, 'marker heightBand');
-    return PreparedMarker(
+    if (rawBand != null && rawBand[0] >= rawBand[1]) {
+      throw const FormatException('Invalid marker height band.');
+    }
+    return PreparedMarker.fromSharedFacts(
       id: _string(json, 'id'),
       category: category,
       filterKey: json['filterKey'] is String
@@ -664,7 +768,7 @@ class PreparedMarker {
       position: _gamePoint(_object(json['position'], 'position')),
       floorId: json['floorId'] == null ? null : _string(json, 'floorId'),
       details: details,
-      source: _immutableObject(_object(json['source'], 'source')),
+      source: source,
       outline: List.unmodifiable(
         (json['outline'] == null ? const [] : _list(json['outline'], 'outline'))
             .map((raw) => _gamePoint(_object(raw, 'outline point'))),
@@ -672,6 +776,7 @@ class PreparedMarker {
       heightBand: rawBand == null ? null : HeightBand(rawBand[0], rawBand[1]),
     );
   }
+
   final String id;
   final String category;
   final String filterKey;

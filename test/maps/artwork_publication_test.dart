@@ -8,6 +8,9 @@ import 'package:test/test.dart';
 
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
+
+import 'package:blackgrid/maps/live_map_normalizer.dart' show canonicalJson;
+
 import '../support/map_preparation_fixtures.dart';
 
 String _sha256(List<int> bytes) => sha256.convert(bytes).toString();
@@ -179,29 +182,13 @@ Future<void> _copyDirectory(Directory source, Directory destination) async {
   }
 }
 
-Future<void> _changeBaselineAfterStaging(
-  _PublicationHarness harness, {
-  bool changeOwnership = false,
-}) async {
+Future<void> _changeBaselineAfterStaging(_PublicationHarness harness) async {
   final previous = Directory(
     '${harness.packs.path}/versions/${harness.baselineId}',
   );
   final manifest = await readManifest(previous);
   (manifest['toolchain'] as Map<String, dynamic>)['xml'] =
       'changed-after-staging';
-  if (changeOwnership) {
-    final maps = (manifest['maps'] as List).cast<Map<String, dynamic>>();
-    final marker = maps
-        .expand((map) => (map['markers'] as List).cast<Map<String, dynamic>>())
-        .firstWhere((marker) => marker['source']['floorAssignment'] != null);
-    final assignment = marker['source']['floorAssignment'] as Map;
-    final oldFloorId = assignment['floorId'] as String;
-    final newFloorId = oldFloorId == 'Second_Floor'
-        ? 'Third_Floor'
-        : 'Second_Floor';
-    assignment['floorId'] = newFloorId;
-    marker['floorId'] = newFloorId;
-  }
   await saveManifest(previous, manifest, refreshOutputs: true);
   final nextId = _sha256(
     await packFile(previous, 'manifest.json').readAsBytes(),
@@ -592,43 +579,6 @@ void main() {
       );
       expect(noChangeInstruction, contains('toolchain'));
       expect(noChangeInstruction, contains('no owner check is needed'));
-    }, tags: ['qualification']);
-
-    test('changedCurrentBaselineOwnershipRejectsBeforeWrites', () async {
-      final root = Directory('${temporary.path}/baseline-ownership')
-        ..createSync(recursive: true);
-      final harness = await _privateHarness(admitted, root);
-      await _changeBaselineAfterStaging(harness, changeOwnership: true);
-
-      await expectLater(
-        publishStagedCandidate(
-          harness.candidate,
-          harness.packs,
-          harness.pubspec,
-          assetRoot: 'assets/maps',
-          reviewedContext: admitted.context,
-        ),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'current baseline ownership',
-            contains('changed reviewed marker ownership'),
-          ),
-        ),
-      );
-
-      expect(
-        await File('${harness.packs.path}/active.json').readAsString(),
-        harness.pointerBefore,
-      );
-      expect(await harness.pubspec.readAsString(), harness.pubspecBefore);
-      expect(await File('${harness.pubspec.path}.tmp').exists(), isFalse);
-      expect(await harness.candidate.exists(), isTrue);
-      expect(
-        await verifyCommittedGeneration(harness.packs)
-            .then((active) => active.id),
-        harness.baselineId,
-      );
     }, tags: ['qualification']);
 
     test('invalidCandidateOrBaselineDoesNotWrite', () async {

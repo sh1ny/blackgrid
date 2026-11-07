@@ -1,12 +1,25 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
+import 'package:blackgrid/data/raid_panel_ocr.dart';
+import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/domain/raid_panel_text_parser.dart';
+import 'package:blackgrid/maps/live_map_budget.dart';
+import 'package:blackgrid/maps/live_map_inventory.dart';
+import 'package:blackgrid/maps/live_map_normalizer.dart';
+import 'package:blackgrid/maps/live_map_snapshot.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
+import 'package:blackgrid/maps/native_map_scene.dart';
+import 'package:blackgrid/maps/prepared_map_loader.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +27,8 @@ import 'package:http/testing.dart';
 
 import '../data/tracker_client_test.dart' show tokenWire;
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/prepared_pack_manifest.dart'
+    show minimalPreparedMap, preparedPackBytes, preparedPackManifest;
 
 /// A recording HTTP client for catalog and tracker routes.
 ///
@@ -283,12 +298,14 @@ class HoldableCredentials implements CredentialStore {
 
 /// A real [AppServices] over the recording rig.
 class RefreshRig {
-  RefreshRig() {
+  RefreshRig({RaidPanelOcr? panelOcr, MapController? mapController}) {
     services = AppServices(
       database: database,
       credentials: credentials,
       client: net.client,
       clock: () => fixtureNow,
+      panelOcr: panelOcr,
+      mapController: mapController,
     );
   }
 
@@ -337,6 +354,88 @@ class CatalogLog {
   ];
 
   void _record() => entries.add((_catalog.status, _catalog.error));
+}
+
+class _FixtureRaidPanelOcr extends RaidPanelOcr {
+  @override
+  Future<RaidPanelEvidence> recognize(Uint8List imageBytes) async =>
+      RaidPanelEvidence(
+        state: RaidPanelState.recognized,
+        extractNames: ['Fixture exit'],
+      );
+}
+
+MapController _fixtureMapController() {
+  final woods = minimalPreparedMap('woods')
+    ..['markers'] = [
+      {
+        'id': 'woods-exit',
+        'name': 'Fixture exit',
+        'category': 'extracts',
+        'filterKey': 'PmcExtracts',
+        'position': {'x': 1, 'z': 2},
+        'details': <String, Object?>{},
+        'source': {'mapId': 'woods'},
+        'outline': <Object?>[],
+      },
+    ];
+  final loader = PreparedMapPackLoader(
+    loadBytes: preparedPackBytes(preparedPackManifest(maps: [woods])),
+  );
+  return MapController(
+    loader: loader,
+    resources: NativeMapResourceOwner(loader),
+  );
+}
+
+LiveMapSnapshot _snapshotWithExit(AppServices services) {
+  final pack = services.maps.pack!;
+  final mapId = services.maps.selectedMapId!;
+  final markers = <String, List<PreparedMarker>>{
+    for (final map in pack.maps) map.id: map.markers,
+    mapId: [
+      ...pack.byId[mapId]!.markers.where(
+        (marker) =>
+            marker.category != 'extracts' && marker.category != 'transits',
+      ),
+      PreparedMarker(
+        id: 'refreshed-exit',
+        category: 'extracts',
+        filterKey: 'PmcExtracts',
+        name: 'Refreshed exit',
+        position: GamePoint(1, 2),
+        details: const {
+          'aliases': ['Fixture exit'],
+        },
+        source: const {},
+        outline: const [],
+      ),
+    ],
+  };
+  final budget = LiveMapBudget();
+  return LiveMapSnapshot(
+    mode: GameMode.pvp,
+    checkedAt: fixtureNow,
+    normalizedPayload: LiveMapInventory.fromMarkers(
+      maps: markers,
+      budget: budget,
+    ).encode(budget: budget),
+    sources: [
+      for (final dataset in LiveMapSourceDataset.values)
+        LiveMapSourceBody(
+          dataset: dataset,
+          bytes: Uint8List.fromList(utf8.encode('{}')),
+          budget: budget,
+        ),
+    ],
+    formatVersion: liveMapSnapshotFormatVersion,
+    normalizerVersion: liveMapNormalizerVersion,
+    compatibility: LiveMapCompatibility.fromPreparedPack(
+      pack,
+      pack.liveMapBindings,
+    ),
+    budget: budget,
+  );
 }
 
 void main() {
@@ -560,6 +659,106 @@ void main() {
       expect(services.catalog.snapshot?.mode, GameMode.pvp);
       expect(services.catalog.status, CatalogStatus.current);
     });
+  });
+
+  test(
+    'map publication refreshes saved-panel matching from active markers',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-app-services-map-exits-',
+      );
+      final screenshots = await Directory(
+        '${root.path}${Platform.pathSeparator}screenshots',
+      ).create();
+      addTearDown(() => root.delete(recursive: true));
+      await rig.dispose();
+      final panelOcr = _FixtureRaidPanelOcr();
+      rig = RefreshRig(
+        panelOcr: panelOcr,
+        mapController: _fixtureMapController(),
+      );
+      services = rig.services;
+      net = rig.net;
+      database = rig.database;
+      await services.settings.save(
+        services.settings.settings.copyWith(
+          mode: GameMode.pvp,
+          selectedMap: 'woods',
+          screenshotDirectory: screenshots.path,
+        ),
+      );
+      await services.initialize();
+      expect(services.maps.pack, isNotNull);
+      expect(services.maps.selectedMapId, 'woods');
+
+      await File(
+        '${screenshots.path}${Platform.pathSeparator}'
+        '2026-11-06[12-00]_1, 0, 2_0, 0, 0, 1_0.png',
+      ).writeAsBytes(
+        base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pZ8AAAAASUVORK5CYII=',
+        ),
+        flush: true,
+      );
+      await services.mapSession.readLatest();
+      expect(
+        services.mapSession.state.raidEvidence?.state,
+        RaidPanelState.recognized,
+      );
+      expect(services.mapSession.state.raidHighlightIds, {'woods-exit'});
+
+      final snapshot = _snapshotWithExit(services);
+      services.maps.prepareMarkerInventory(snapshot, budget: snapshot.budget)();
+
+      expect(
+        services.maps.activeMarkers.map((marker) => marker.id),
+        contains('refreshed-exit'),
+      );
+      expect(
+        services.mapSession.state.raidEvidence?.state,
+        RaidPanelState.recognized,
+      );
+      expect(services.mapSession.state.raidHighlightIds, {'refreshed-exit'});
+    },
+  );
+
+  test('map refresh does not block service startup', () async {
+    final mapRequestStarted = Completer<void>();
+    final releaseMapResponses = Completer<void>();
+    final client = MockClient((request) async {
+      final path = request.url.pathSegments.last;
+      if (request.url.host == 'json.tarkov.dev' &&
+          const {
+            'maps',
+            'maps_en',
+            'tasks',
+            'tasks_en',
+            'traders',
+            'traders_en',
+          }.contains(path)) {
+        if (!mapRequestStarted.isCompleted) mapRequestStarted.complete();
+        await releaseMapResponses.future;
+      }
+      return http.Response('', 503);
+    });
+    final services = AppServices(
+      database: BlackgridDatabase(NativeDatabase.memory()),
+      credentials: HoldableCredentials(),
+      client: client,
+    );
+    addTearDown(() async {
+      if (!releaseMapResponses.isCompleted) releaseMapResponses.complete();
+      await services.dispose();
+    });
+    await services.settings.save(
+      services.settings.settings.copyWith(mode: GameMode.pvp),
+    );
+
+    await services.initialize();
+    await mapRequestStarted.future;
+
+    releaseMapResponses.complete();
+    await services.dispose();
   });
 
   group('progress', () {

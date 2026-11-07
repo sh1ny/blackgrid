@@ -40,7 +40,7 @@ void main() {
     );
     final db = BlackgridDatabase(schema.newConnection());
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 4);
+    await verifier.migrateAndValidate(db, db.schemaVersion);
     expect(
       await db
           .customSelect(
@@ -92,7 +92,7 @@ void main() {
         );
         final db = BlackgridDatabase(schema.newConnection());
         addTearDown(db.close);
-        await verifier.migrateAndValidate(db, 4);
+        await verifier.migrateAndValidate(db, db.schemaVersion);
         expect(
           await db
               .customSelect(
@@ -163,7 +163,7 @@ void main() {
       final db = BlackgridDatabase(schema.newConnection());
       addTearDown(db.close);
       addTearDown(schema.close);
-      await verifier.migrateAndValidate(db, 4);
+      await verifier.migrateAndValidate(db, db.schemaVersion);
       expect((await db.readSettings()).settings.selectedMap, 'woods');
       expect((await db.readPins()).pins.single.id, 'pin-1');
       expect((await db.readActivity()).rows.single.revision, 7);
@@ -220,7 +220,7 @@ void main() {
           'inner remoteCause',
           isA<NewerDatabaseException>()
               .having((e) => e.onDisk, 'onDisk', 99)
-              .having((e) => e.supported, 'supported', 4),
+              .having((e) => e.supported, 'supported', db.schemaVersion),
         ),
       ),
     );

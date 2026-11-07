@@ -4,7 +4,8 @@ import 'package:blackgrid/domain/map_marker_query.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:test/test.dart';
 
-import '../../tool/maps/quest_markers.dart';
+import 'package:blackgrid/maps/live_map_normalizer.dart'
+    show prepareQuestMarkers;
 
 const _map = '56f40101d2720b2a4d8b45d6';
 const _otherMap = '5714dbc024597771384a510d';
@@ -164,13 +165,14 @@ void main() {
   );
 
   test(
-    'item-bearing objective zones retain and validate their item dependency',
+    'item-bearing objective zones retain available item facts and identity',
     () {
       inputs.visitObjective['questItem'] = _item;
       inputs.visitObjective['type'] = 'plantQuestItem';
       final marker = inputs.prepare().first;
       expect(marker['category'], 'questObjectives');
       expect(marker['name'], 'Inspect the vehicle');
+      expect((marker['position'] as Map), {'x': 1.0, 'z': -2.0, 'height': 3.0});
       expect(
         ((marker['details'] as Map)['questItem'] as Map)['name'],
         'Bronze pocket watch on a chain',
@@ -179,8 +181,16 @@ void main() {
         ((marker['source'] as Map)['originalIdentity'] as Map)['questItemId'],
         _item,
       );
-      inputs.visitObjective['questItem'] = 'foreign';
-      expect(inputs.prepare, throwsFormatException);
+      inputs.items.remove(_item);
+      final unavailable = inputs.prepare().first;
+      expect(
+        ((unavailable['source'] as Map)['originalIdentity']
+            as Map)['questItemId'],
+        _item,
+      );
+      expect((unavailable['details'] as Map).containsKey('item'), isFalse);
+      expect((unavailable['details'] as Map).containsKey('questItem'), isFalse);
+      expect(unavailable['position'], {'x': 1.0, 'z': -2.0, 'height': 3.0});
     },
   );
 
@@ -216,26 +226,84 @@ void main() {
     },
   );
 
-  for (final missing in ['task', 'objective', 'trader', 'item']) {
-    test('missing $missing translation explicitly rejects labels', () {
-      switch (missing) {
-        case 'task':
-          inputs.translations.remove('$_task name');
-        case 'objective':
-          inputs.translations.remove('visit-objective');
-        case 'trader':
-          inputs.traderTranslations.remove('$_trader Nickname');
-        case 'item':
-          inputs.itemTranslations.remove('$_item Name');
-      }
-      expect(inputs.prepare, throwsFormatException);
-    });
-  }
+  test('missing optional labels retain renderable titles and source facts', () {
+    inputs.translations.remove('visit-objective');
+    inputs.translations.remove('$_task name');
+    inputs.traderTranslations.remove('$_trader Nickname');
+    inputs.itemTranslations.remove('$_item Name');
+    final markers = inputs.prepare();
+    expect(markers.first['category'], 'questObjectives');
+    expect(markers.first['name'], 'questObjectives');
+    expect(markers[1]['name'], 'questItems');
+    final decoded = [
+      for (final marker in [markers.first, markers[1]])
+        PreparedMarker.fromJson(
+          jsonDecode(jsonEncode(marker)) as Map<String, dynamic>,
+        ),
+    ];
+    expect(decoded.map((marker) => marker.name), [
+      'questObjectives',
+      'questItems',
+    ]);
+    expect(decoded.map((marker) => marker.category), [
+      'questObjectives',
+      'questItems',
+    ]);
+    expect(
+      decoded.map(
+        (marker) => [
+          marker.position.x,
+          marker.position.z,
+          marker.position.height,
+        ],
+      ),
+      [
+        [1.0, -2.0, 3.0],
+        [102.2964, -5.9064, 2.9634],
+      ],
+    );
+    final zoneDetails = decoded.first.details as Map;
+    expect((zoneDetails['quest'] as Map).containsKey('name'), isFalse);
+    expect((zoneDetails['quest'] as Map)['trader'], {'id': _trader});
+    final itemDetails = decoded.last.details as Map;
+    expect((itemDetails['quest'] as Map).containsKey('name'), isFalse);
+    expect((itemDetails['quest'] as Map)['trader'], {'id': _trader});
+    expect(itemDetails.containsKey('questItem'), isFalse);
+    expect(itemDetails['item'], inputs.items[_item]);
+    expect(
+      (decoded.last.source['originalIdentity'] as Map)['questItemId'],
+      _item,
+    );
+  });
+
   for (final missing in ['trader', 'item']) {
-    test('foreign $missing dependency is rejected', () {
-      if (missing == 'trader') inputs.tasks[_task]['trader'] = 'foreign';
-      if (missing == 'item') inputs.itemObjective['questItem'] = 'foreign';
-      expect(inputs.prepare, throwsFormatException);
+    test('missing optional $missing dependency omits unavailable facts', () {
+      if (missing == 'trader') inputs.traders.remove(_trader);
+      if (missing == 'item') inputs.items.remove(_item);
+      final markers = inputs.prepare();
+      final details = markers[1]['details'] as Map;
+      if (missing == 'trader') {
+        expect((details['quest'] as Map).containsKey('trader'), isFalse);
+      } else {
+        expect(((details['quest'] as Map)['trader'] as Map)['id'], _trader);
+      }
+      if (missing == 'item') {
+        expect(details.containsKey('item'), isFalse);
+        expect(details.containsKey('questItem'), isFalse);
+        expect((markers[1]['source'] as Map)['originalIdentity'], {
+          'taskId': _task,
+          'objectiveId': 'find-objective',
+          'objectiveIndex': 1,
+          'questItemId': _item,
+          'locationIndex': 0,
+          'positionIndex': 0,
+        });
+        expect(markers[1]['position'], {
+          'x': 102.2964,
+          'z': -5.9064,
+          'height': 2.9634,
+        });
+      }
     });
     test('mismatched $missing identity is rejected', () {
       if (missing == 'trader') inputs.traders[_trader]['id'] = 'foreign';

@@ -594,8 +594,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                     : null;
                                 final presentation = presentMarker(
                                   marker,
-                                  mapMarkers:
-                                      map?.markers ?? const <PreparedMarker>[],
+                                  mapMarkers: maps.activeMarkers,
                                   activeMode: mode,
                                   catalogSnapshot: matchingSnapshot,
                                 );

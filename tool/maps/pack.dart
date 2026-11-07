@@ -12,21 +12,15 @@ import 'package:vector_graphics_compiler/vector_graphics_compiler.dart'
 import 'package:yaml/yaml.dart';
 
 import 'calibration.dart';
-import 'quest_markers.dart';
+
+import 'package:blackgrid/maps/live_map_normalizer.dart'
+    show
+        canonicalJson,
+        normalizeLiveMapData,
+        LiveMapSourceBodies,
+        LiveMapBinding;
+
 import 'svg.dart';
-
-String canonicalJson(Object? value) {
-  Object? sorted(Object? v) {
-    if (v is Map) {
-      final keys = v.keys.cast<String>().toList()..sort();
-      return {for (final key in keys) key: sorted(v[key])};
-    }
-    if (v is List) return v.map(sorted).toList();
-    return v;
-  }
-
-  return '${const JsonEncoder.withIndent('  ').convert(sorted(value))}\n';
-}
 
 File packFile(Directory root, String relative) {
   if (relative.isEmpty ||
@@ -925,20 +919,6 @@ Future<Map<String, dynamic>> _readFrozenSourceObject(
   return _decodeRequiredJsonObject(text, path);
 }
 
-Map<String, dynamic> _requiredSourceDictionary(
-  Map<String, dynamic> source,
-  String path,
-  String key,
-) {
-  final value = source[key];
-  if (value is! Map<String, dynamic>) {
-    throw FormatException(
-      'Malformed required source dictionary $path: "$key" must be an object',
-    );
-  }
-  return value;
-}
-
 /// Rebuilds a candidate pack offline from the [frozen] inputs and [context].
 ///
 /// Raw generations use reviewed configuration context; existing workflows use
@@ -972,20 +952,9 @@ Future<Map<String, dynamic>> rebuildCandidate(
     frozen,
     'markers/maps.json',
   );
-  final markerData = _requiredSourceDictionary(
-    markerSnapshot,
-    'markers/maps.json',
-    'data',
-  );
-  _requiredSourceDictionary(markerData, 'markers/maps.json', 'maps');
   final markerTranslations = await _readFrozenSourceObject(
     frozen,
     'markers/maps_en.json',
-  );
-  final translations = _requiredSourceDictionary(
-    markerTranslations,
-    'markers/maps_en.json',
-    'data',
   );
   final questSources = <String, Map<String, dynamic>>{};
   for (final path in const [
@@ -999,6 +968,25 @@ Future<Map<String, dynamic>> rebuildCandidate(
   _requireMapInventory(
     (calibration['maps'] as List).cast<Map>(),
     supportedMapSources.keys.toSet(),
+  );
+  final normalizedMarkers = normalizeLiveMapData(
+    sources: LiveMapSourceBodies(
+      maps: markerSnapshot,
+      mapTranslations: markerTranslations,
+      tasks: questSources['quests/tasks.json']!,
+      taskTranslations: questSources['quests/tasks_en.json']!,
+      traders: questSources['quests/traders.json']!,
+      traderTranslations: questSources['quests/traders_en.json']!,
+    ),
+    mode: 'regular',
+    bindings: [
+      for (final raw in calibration['maps'] as List)
+        LiveMapBinding(
+          sourceKey: (raw as Map)['sourceKey'] as String,
+          mapId: (raw)['id'] as String,
+          calibration: Map<String, Object?>.from(raw),
+        ),
+    ],
   );
   final maps = <Map<String, Object?>>[];
   final emptyTileWitnesses = <String>{};
@@ -1143,10 +1131,7 @@ Future<Map<String, dynamic>> rebuildCandidate(
       local['rasterDependencies'] = dependencies;
     }
     local['floors'] = floors;
-    local['markers'] = [
-      ...prepareMarkers(markerSnapshot, translations, local),
-      ..._prepareFrozenQuests(questSources, markerSnapshot, local),
-    ];
+    local['markers'] = normalizedMarkers[mapId]!;
     local['attribution'] = {
       'author': upstream['author'],
       'authorLink': upstream['authorLink'],
@@ -1219,65 +1204,6 @@ void _requireMapInventory(List<Map> maps, Set<String> expected) {
       'missing ${expected.difference(ids)}, unexpected ${ids.difference(expected)}',
     );
   }
-}
-
-List<Map<String, Object?>> _prepareFrozenQuests(
-  Map<String, Map<String, dynamic>> sources,
-  Map<String, dynamic> markerSnapshot,
-  Map<String, Object?> local,
-) {
-  final markerData = _requiredSourceDictionary(
-    markerSnapshot,
-    'markers/maps.json',
-    'data',
-  );
-  final maps = _requiredSourceDictionary(
-    markerData,
-    'markers/maps.json',
-    'maps',
-  );
-  final source = maps.values.cast<Map>().singleWhere(
-    (map) => map['normalizedName'] == local['sourceKey'],
-  );
-  final taskPath = 'quests/tasks.json';
-  final taskData = _requiredSourceDictionary(
-    sources[taskPath]!,
-    taskPath,
-    'data',
-  );
-  final tasks = _requiredSourceDictionary(taskData, taskPath, 'tasks');
-  final questItems = _requiredSourceDictionary(
-    taskData,
-    taskPath,
-    'questItems',
-  );
-  final taskTranslationsPath = 'quests/tasks_en.json';
-  final taskTranslations = _requiredSourceDictionary(
-    sources[taskTranslationsPath]!,
-    taskTranslationsPath,
-    'data',
-  );
-  final traderPath = 'quests/traders.json';
-  final traders = _requiredSourceDictionary(
-    sources[traderPath]!,
-    traderPath,
-    'data',
-  );
-  final traderTranslationsPath = 'quests/traders_en.json';
-  final traderTranslations = _requiredSourceDictionary(
-    sources[traderTranslationsPath]!,
-    traderTranslationsPath,
-    'data',
-  );
-  return prepareQuestMarkers(
-    mapId: source['id'] as String,
-    tasks: tasks,
-    questItems: questItems,
-    translations: taskTranslations,
-    questItemTranslations: taskTranslations,
-    traders: traders,
-    traderTranslations: traderTranslations,
-  );
 }
 
 Future<List<Map<String, Object?>>> _prepareFloorTiles(
@@ -1698,21 +1624,10 @@ Future<Map<String, dynamic>> validateCandidate(
     candidate,
     'evidence/markers/maps.json',
   );
-  final sourceMarkerData = _requiredSourceDictionary(
-    sourceMarkers,
-    'markers/maps.json',
-    'data',
-  );
-  _requiredSourceDictionary(sourceMarkerData, 'markers/maps.json', 'maps');
   final decodedTiles = <String, PngInspection>{};
   final markerTranslations = await _readJson(
     candidate,
     'evidence/markers/maps_en.json',
-  );
-  final translations = _requiredSourceDictionary(
-    markerTranslations,
-    'markers/maps_en.json',
-    'data',
   );
   final questSources = <String, Map<String, dynamic>>{
     for (final path in const [
@@ -1723,6 +1638,25 @@ Future<Map<String, dynamic>> validateCandidate(
     ])
       path: await _readJson(candidate, 'evidence/$path'),
   };
+  final normalizedMarkers = normalizeLiveMapData(
+    sources: LiveMapSourceBodies(
+      maps: sourceMarkers,
+      mapTranslations: markerTranslations,
+      tasks: questSources['quests/tasks.json']!,
+      taskTranslations: questSources['quests/tasks_en.json']!,
+      traders: questSources['quests/traders.json']!,
+      traderTranslations: questSources['quests/traders_en.json']!,
+    ),
+    mode: 'regular',
+    bindings: [
+      for (final raw in calibratedMaps)
+        LiveMapBinding(
+          sourceKey: raw['sourceKey'] as String,
+          mapId: raw['id'] as String,
+          calibration: Map<String, Object?>.from(raw),
+        ),
+    ],
+  );
   for (final map in maps) {
     final expected = calibrationsBySource[map['sourceKey']];
     if (expected == null ||
@@ -1737,10 +1671,7 @@ Future<Map<String, dynamic>> validateCandidate(
       );
     }
     if (canonicalJson(map['markers']) !=
-        canonicalJson([
-          ...prepareMarkers(sourceMarkers, translations, expected),
-          ..._prepareFrozenQuests(questSources, sourceMarkers, expected),
-        ])) {
+        canonicalJson(normalizedMarkers[map['id']]!)) {
       throw FormatException(
         'Markers differ from independently frozen source: '
         'markers/maps.json: ${map['sourceKey']}',
@@ -1906,9 +1837,6 @@ Future<Map<String, dynamic>> validateCandidate(
       );
     }
     final markers = map['markers'] as List;
-    if (markers.isEmpty) {
-      throw FormatException('Missing source markers for ${map['id']}');
-    }
     final ids = <String>{};
     for (final marker in markers) {
       if (!ids.add(marker['id'] as String)) {
@@ -2019,290 +1947,6 @@ Future<void> _validateRasterGrid(
     if (!empty) visible = true;
   }
   if (!visible) throw const FormatException('Raster floor has no artwork');
-}
-
-/// Projects marker records for one calibrated source map.
-///
-/// Ordinary optional marker categories retain their existing fallback policy.
-/// Boss records are required source facts: their dictionaries, arrays,
-/// identities, coordinates and boss-wide probabilities must be well-formed.
-List<Map<String, Object?>> prepareMarkers(
-  Map<String, dynamic> snapshot,
-  Map<String, dynamic> translations,
-  Map<String, Object?> calibration,
-) {
-  final sourceKey = calibration['sourceKey'] as String;
-  FormatException sourceError(String path, String fact, String reason) =>
-      FormatException('markers/maps.json: $sourceKey/$path: $fact $reason');
-
-  final rawData = snapshot['data'];
-  if (rawData is! Map<String, dynamic>) {
-    throw sourceError('data', 'data', 'must be a dictionary');
-  }
-  final data = rawData;
-  final rawMaps = data['maps'];
-  if (rawMaps is! Map) {
-    throw sourceError('maps', 'maps', 'must be a dictionary');
-  }
-  Map<String, dynamic>? matchingMap;
-  var matchingMaps = 0;
-  for (final rawMap in rawMaps.values) {
-    if (rawMap is Map && rawMap['normalizedName'] == sourceKey) {
-      if (rawMap is! Map<String, dynamic>) {
-        throw sourceError('maps', 'normalizedName', 'map record is malformed');
-      }
-      matchingMap = rawMap;
-      matchingMaps++;
-    }
-  }
-  if (matchingMaps != 1) {
-    throw sourceError(
-      'maps',
-      'normalizedName',
-      'expected exactly one supported map identity, found $matchingMaps',
-    );
-  }
-  final source = matchingMap!;
-  final floorAssignments =
-      calibration['markerFloorAssignments'] as Map<String, Object?>? ??
-      const <String, Object?>{};
-  final result = <Map<String, Object?>>[];
-  final identityCounts = <String, int>{};
-  void add(
-    String category,
-    Map<String, dynamic> entry,
-    String sourcePath, {
-    String? label,
-  }) {
-    final p = entry['position'];
-    if (p is! Map || p['x'] is! num || p['z'] is! num) {
-      throw FormatException(
-        'Missing real marker coordinates $sourceKey/$sourcePath',
-      );
-    }
-    final name =
-        label ??
-        entry['name'] ??
-        entry['zoneName'] ??
-        entry['hazardType'] ??
-        // Transits carry only a translation key such as FAC_TRANSIT_12_DESC;
-        // its "Transit to Woods" label is what saved exfil panels show.
-        entry['description'] ??
-        category;
-    final identity =
-        '$category:${entry['id'] ?? _hash(utf8.encode('$sourceKey/${canonicalJson(entry)}')).substring(0, 20)}';
-    final occurrence = identityCounts.update(
-      identity,
-      (count) => count + 1,
-      ifAbsent: () => 0,
-    );
-    final markerId = '$identity:$occurrence';
-    final floorAssignment = floorAssignments[markerId] as Map<String, Object?>?;
-    final reviewedVolume = floorAssignment?['sourceVolume'];
-    if (reviewedVolume != null &&
-        canonicalJson(reviewedVolume) !=
-            canonicalJson({
-              'position': p,
-              'heightBand': [entry['bottom'], entry['top']],
-              'outline': entry['outline'],
-            })) {
-      throw FormatException(
-        'Reviewed marker ownership volume changed: $sourceKey/$markerId',
-      );
-    }
-    result.add({
-      'id': markerId,
-      'category': category,
-      'name': translations[name] ?? name,
-      'position': {'x': p['x'], 'z': p['z'], 'height': p['y']},
-      if (floorAssignment != null) 'floorId': floorAssignment['floorId'],
-      'source': {
-        'url': markerUrl,
-        'mapId': source['id'],
-        'path': sourcePath,
-        'floorAssignment': ?floorAssignment,
-      },
-      'details': entry,
-      if (entry['outline'] is List)
-        'outline': [
-          for (final point in entry['outline'] as List)
-            {'x': point['x'], 'z': point['z'], 'height': point['y']},
-        ],
-      if (entry['bottom'] is num && entry['top'] is num)
-        'heightBand': [entry['bottom'], entry['top']],
-    });
-  }
-
-  for (final category in [
-    'extracts',
-    'transits',
-    'spawns',
-    'locks',
-    'hazards',
-    'lootContainers',
-    'lootLoose',
-    'switches',
-    'stationaryWeapons',
-    'btrStops',
-  ]) {
-    final entries = source[category] as List? ?? [];
-    for (var i = 0; i < entries.length; i++) {
-      final entry = entries[i] as Map<String, dynamic>;
-      String? label;
-      if (category == 'lootContainers') {
-        label =
-            (data['lootContainers'] as Map)[entry['lootContainer']]?['name']
-                as String?;
-      }
-      if (category == 'stationaryWeapons') {
-        label =
-            (data['stationaryWeapons']
-                    as Map)[entry['stationaryWeapon']]?['name']
-                as String?;
-      }
-      add(
-        category,
-        category == 'btrStops'
-            ? {
-                ...entry,
-                'position': {'x': entry['x'], 'y': entry['y'], 'z': entry['z']},
-              }
-            : entry,
-        '$category/$i',
-        label: label,
-      );
-    }
-  }
-  final rawBosses = source['bosses'];
-  if (rawBosses is! List) {
-    throw sourceError('bosses', 'bosses', 'must be an array');
-  }
-  final rawMobs = data['mobs'];
-  for (var b = 0; b < rawBosses.length; b++) {
-    final bossPath = 'bosses/$b';
-    final rawBoss = rawBosses[b];
-    if (rawBoss is! Map) {
-      throw sourceError(bossPath, 'boss', 'must be a dictionary');
-    }
-    final boss = rawBoss;
-    final rawMob = boss['mob'];
-    if (rawMob is! String || rawMob.trim().isEmpty) {
-      throw sourceError(
-        '$bossPath/mob',
-        'mob',
-        'must be a nonempty identifier',
-      );
-    }
-    if (rawMobs is! Map) {
-      throw sourceError('$bossPath/mob', 'mobs', 'must be a dictionary');
-    }
-    final rawMobRecord = rawMobs[rawMob];
-    if (rawMobRecord is! Map) {
-      throw sourceError(
-        '$bossPath/mob',
-        'mob',
-        'dictionary entry "$rawMob" is missing or malformed',
-      );
-    }
-    final mobRecord = rawMobRecord;
-    final label = mobRecord['name'];
-    if (label is! String || label.trim().isEmpty) {
-      throw sourceError(
-        '$bossPath/mob',
-        'name',
-        'resolved mob name for "$rawMob" must be nonempty',
-      );
-    }
-    final rawChance = boss['spawnChance'];
-    if (rawChance is! num ||
-        !rawChance.isFinite ||
-        rawChance < 0 ||
-        rawChance > 1) {
-      throw sourceError(
-        '$bossPath/spawnChance',
-        'spawnChance',
-        'must be a finite probability in [0, 1]',
-      );
-    }
-    final rawLocations = boss['spawnLocations'];
-    if (rawLocations is! List) {
-      throw sourceError(
-        '$bossPath/spawnLocations',
-        'spawnLocations',
-        'must be an array',
-      );
-    }
-    for (var l = 0; l < rawLocations.length; l++) {
-      final locationPath = '$bossPath/spawnLocations/$l';
-      final rawLocation = rawLocations[l];
-      if (rawLocation is! Map) {
-        throw sourceError(
-          locationPath,
-          'spawnLocations',
-          'entry must be a dictionary',
-        );
-      }
-      final location = rawLocation;
-      final locationName = location['name'];
-      if (locationName is! String || locationName.trim().isEmpty) {
-        throw sourceError(
-          '$locationPath/name',
-          'name',
-          'must be a nonempty location identifier',
-        );
-      }
-      final rawPositions = location['positions'];
-      if (rawPositions is! List) {
-        throw sourceError(
-          '$locationPath/positions',
-          'positions',
-          'must be an array',
-        );
-      }
-      for (var p = 0; p < rawPositions.length; p++) {
-        final positionPath = '$locationPath/positions/$p';
-        final rawPosition = rawPositions[p];
-        if (rawPosition is! Map) {
-          throw sourceError(
-            positionPath,
-            'positions',
-            'entry must be a dictionary',
-          );
-        }
-        final position = rawPosition;
-        for (final axis in ['x', 'z']) {
-          final coordinate = position[axis];
-          if (coordinate is! num || !coordinate.isFinite) {
-            throw sourceError(
-              '$positionPath/$axis',
-              axis,
-              'must be a finite number',
-            );
-          }
-        }
-        final height = position['y'];
-        if (height != null && (height is! num || !height.isFinite)) {
-          throw sourceError(
-            '$positionPath/y',
-            'y',
-            'must be null or a finite number',
-          );
-        }
-        add(
-          'bosses',
-          {
-            'position': position,
-            'mob': rawMob,
-            'spawnChance': rawChance,
-            'location': locationName,
-          },
-          positionPath,
-          label: label,
-        );
-      }
-    }
-  }
-  return result;
 }
 
 /// Returns the generation id that `active.json` under [packs] names.
@@ -2803,107 +2447,10 @@ void validateMetadataSourceIndex(
   }
 }
 
-/// Rejects changes to reviewed marker ownership in a candidate manifest.
-void validateArtworkOwnershipPreservation(
-  Map<String, dynamic> baseline,
-  Map<String, dynamic> candidate,
-) {
-  List<Map<String, dynamic>> maps(Map<String, dynamic> manifest) {
-    final raw = manifest['maps'];
-    if (raw is! List) {
-      throw const FormatException('Artwork candidate manifest has no maps');
-    }
-    return raw.cast<Map<String, dynamic>>();
-  }
-
-  Map<String, Map<String, dynamic>> byMap(
-    List<Map<String, dynamic>> records,
-    String label,
-  ) {
-    final result = <String, Map<String, dynamic>>{};
-    for (final map in records) {
-      final id = map['id'];
-      if (id is! String || result.containsKey(id)) {
-        throw FormatException('Artwork $label has invalid map identity: $id');
-      }
-      result[id] = map;
-    }
-    return result;
-  }
-
-  Map<String, Map<String, dynamic>> markers(
-    Map<String, dynamic> map,
-    String mapId,
-    String label,
-  ) {
-    final raw = map['markers'];
-    if (raw is! List) {
-      throw FormatException('Artwork $label map $mapId has no markers');
-    }
-    final result = <String, Map<String, dynamic>>{};
-    for (final marker in raw.cast<Map<String, dynamic>>()) {
-      final id = marker['id'];
-      if (id is! String || result.containsKey(id)) {
-        throw FormatException(
-          'Artwork $label has invalid marker identity on $mapId: $id',
-        );
-      }
-      result[id] = marker;
-    }
-    return result;
-  }
-
-  Map? assignment(Map<String, dynamic> marker) {
-    final source = marker['source'];
-    if (source is! Map) return null;
-    final value = source['floorAssignment'];
-    return value is Map ? value : null;
-  }
-
-  Map<String, Object?> volume(Map<String, dynamic> marker) => {
-    'position': marker['position'],
-    'heightBand': marker['heightBand'],
-    'outline': marker['outline'],
-  };
-
-  final beforeMaps = byMap(maps(baseline), 'baseline');
-  final afterMaps = byMap(maps(candidate), 'candidate');
-  for (final mapEntry in beforeMaps.entries) {
-    final mapId = mapEntry.key;
-    final afterMap = afterMaps[mapId];
-    if (afterMap == null) {
-      throw FormatException('Artwork candidate removed map $mapId');
-    }
-    final oldMarkers = markers(mapEntry.value, mapId, 'baseline');
-    final newMarkers = markers(afterMap, mapId, 'candidate');
-    for (final entry in oldMarkers.entries) {
-      final oldAssignment = assignment(entry.value);
-      if (oldAssignment == null) continue;
-      final path = '$mapId/${entry.key}';
-      final next = newMarkers[entry.key];
-      if (next == null) {
-        throw FormatException(
-          'Artwork candidate removed reviewed marker: $path',
-        );
-      }
-      final newAssignment = assignment(next);
-      if (newAssignment == null ||
-          canonicalJson(newAssignment) != canonicalJson(oldAssignment) ||
-          canonicalJson(volume(next)) != canonicalJson(volume(entry.value)) ||
-          next['floorId'] != entry.value['floorId'] ||
-          next['floorId'] != oldAssignment['floorId']) {
-        throw FormatException(
-          'Artwork candidate changed reviewed marker ownership: $path',
-        );
-      }
-    }
-  }
-}
-
 /// Rejects artifact changes outside the refreshed metadata evidence.
 ///
-/// Map records may change, but non-marker map data, all non-metadata output
-/// hashes, manifest settings and reviewed floor assignments must stay fixed.
+/// Map records may change, but non-marker map data and all non-metadata output
+/// hashes and manifest settings must stay fixed.
 void validateMetadataPreservation(
   Map<String, dynamic> baseline,
   Map<String, dynamic> candidate,
@@ -2936,70 +2483,11 @@ void validateMetadataPreservation(
     throw const FormatException('Metadata refresh changed the map inventory');
   }
 
-  Map<String, Map<String, dynamic>> markersById(
-    Map<String, dynamic> map,
-    String mapId,
-  ) {
-    final raw = map['markers'];
-    if (raw is! List) {
-      throw FormatException('Metadata refresh map $mapId has no markers');
-    }
-    final result = <String, Map<String, dynamic>>{};
-    for (final marker in raw.cast<Map<String, dynamic>>()) {
-      final id = marker['id'];
-      if (id is! String || result.containsKey(id)) {
-        throw FormatException(
-          'Metadata refresh has invalid marker identity on $mapId: $id',
-        );
-      }
-      result[id] = marker;
-    }
-    return result;
-  }
-
-  Map? assignmentOf(Map<String, dynamic> marker) {
-    final source = marker['source'];
-    if (source is! Map) return null;
-    final assignment = source['floorAssignment'];
-    return assignment is Map ? assignment : null;
-  }
-
-  Map<String, Object?> ownershipVolume(Map<String, dynamic> marker) => {
-    'position': marker['position'],
-    'heightBand': marker['heightBand'],
-    'outline': marker['outline'],
-  };
-
   for (final id in beforeMaps.keys) {
     final before = beforeMaps[id]!;
     final after = afterMaps[id]!;
     if (!_sameMapExcept(before, after, const {'markers'})) {
       throw FormatException('Metadata refresh changed preserved map data: $id');
-    }
-
-    final previousMarkers = markersById(before, id);
-    final nextMarkers = markersById(after, id);
-    for (final entry in previousMarkers.entries) {
-      final previousAssignment = assignmentOf(entry.value);
-      if (previousAssignment == null) continue;
-      final markerId = entry.key;
-      final next = nextMarkers[markerId];
-      if (next == null) {
-        throw FormatException(
-          'Metadata refresh removed reviewed marker: $id/$markerId',
-        );
-      }
-      final nextAssignment = assignmentOf(next);
-      if (nextAssignment == null ||
-          canonicalJson(nextAssignment) != canonicalJson(previousAssignment) ||
-          canonicalJson(ownershipVolume(next)) !=
-              canonicalJson(ownershipVolume(entry.value)) ||
-          next['floorId'] != entry.value['floorId'] ||
-          next['floorId'] != previousAssignment['floorId']) {
-        throw FormatException(
-          'Metadata refresh changed reviewed marker ownership: $id/$markerId',
-        );
-      }
     }
   }
 
@@ -3295,7 +2783,6 @@ Future<MapPackRefresh> publishStagedCandidate(
     manifest,
     reviewedContext,
   );
-  validateArtworkOwnershipPreservation(baseline.manifest, manifest);
   final report = packChangeReport(baseline.manifest, manifest);
   final void Function(String) say = log ?? stdout.writeln;
   _reportDetails(report).forEach(say);
@@ -4099,12 +3586,6 @@ stageArtworkRefresh(
       context: context,
       toolchain: toolchain,
     );
-    try {
-      validateArtworkOwnershipPreservation(active.manifest, manifest);
-    } on FormatException {
-      await packFile(stage, 'manifest.json').delete();
-      rethrow;
-    }
     return (
       candidate: stage,
       manifest: manifest,

@@ -6,6 +6,8 @@ import 'package:test/test.dart';
 
 import '../../tool/maps/pack.dart';
 
+import 'package:blackgrid/maps/live_map_normalizer.dart' show canonicalJson;
+
 String _hash(List<int> bytes) => sha256.convert(bytes).toString();
 
 /// A tiny committed generation: one evidence source, one visible tile, one
@@ -702,84 +704,54 @@ void main() {
       },
     );
 
-    test('metadata preservation retains reviewed assignments without source volume', () {
-      final baselineMarker = Map<String, dynamic>.from(
-        ((_preservedManifest()['maps'] as List).single['markers'] as List)
-            .single,
-      );
-      baselineMarker['source'] = {
-        'floorAssignment': {'floorId': 'Ground', 'sourceVolume': null},
-      };
-      final candidateMarker = Map<String, dynamic>.from(baselineMarker)
-        ..['name'] = 'Updated metadata';
-      final baseline = _preservedManifest(markers: [baselineMarker]);
-      final candidate = _preservedManifest(markers: [candidateMarker]);
-
-      expect(
-        () => validateMetadataPreservation(baseline, candidate),
-        returnsNormally,
-      );
-    });
-
-    test('metadata preservation rejects removed changed and lost reviewed ownership', () {
-      final baseline = _preservedManifest();
-      final removed = _preservedManifest(markers: const []);
-      final changedVolume = _preservedManifest(
-        markers: [
-          {
-            ...((baseline['maps'] as List).single['markers'] as List).single
-                as Map<String, dynamic>,
-            'source': {
-              'floorAssignment': {
-                'floorId': 'Ground',
-                'sourceVolume': {
-                  'position': {'x': 9, 'y': 3, 'z': 2},
-                  'heightBand': [2, 4],
-                  'outline': [
-                    {'x': 0, 'y': 3, 'z': 1},
-                    {'x': 2, 'y': 3, 'z': 1},
-                    {'x': 2, 'y': 3, 'z': 3},
-                  ],
-                },
-              },
-            },
-          },
-        ],
-      );
-      final unchangedAssignment = Map<String, dynamic>.from(
-        ((baseline['maps'] as List).single['markers'] as List).single,
-      )..['position'] = {'x': 4, 'z': 2, 'height': 3};
-      final changedActualVolume = _preservedManifest(
-        markers: [unchangedAssignment],
-      );
-
-      final lostFloor = _preservedManifest(
-        markers: [
-          {
-            ...((baseline['maps'] as List).single['markers'] as List).single
-                as Map<String, dynamic>,
-            'floorId': null,
-            'source': {'floorAssignment': null},
-          },
-        ],
-      );
-
-      for (final (name, candidate) in [
-        ('removed marker', removed),
-        ('changed assigned volume', changedVolume),
-        (
-          'changed actual volume with unchanged assignment',
-          changedActualVolume,
-        ),
-        ('lost floor assignment', lostFloor),
-      ]) {
-        expect(
-          () => validateMetadataPreservation(baseline, candidate),
-          throwsFormatException,
-          reason: name,
+    test(
+      'renewal accepts upstream content evolution and omits stale overrides',
+      () {
+        final baselineMarker = Map<String, dynamic>.from(
+          ((_preservedManifest()['maps'] as List).single['markers'] as List)
+              .single,
         );
-      }
-    });
+        final baseline = _preservedManifest(markers: [baselineMarker]);
+
+        final changedMarker = Map<String, dynamic>.from(baselineMarker)
+          ..['id'] = 'switch:changed:0'
+          ..['name'] = 'Updated source name'
+          ..['position'] = {'x': 4, 'z': 2, 'height': 5}
+          ..remove('floorId')
+          ..['source'] = {'floorAssignment': null};
+        final evolved = _preservedManifest(
+          markers: [
+            changedMarker,
+            {
+              'id': 'switch:new:0',
+              'category': 'switch',
+              'name': 'New source marker',
+              'position': {'x': 7, 'z': 8, 'height': 9},
+              'source': {'floorAssignment': null},
+            },
+          ],
+        );
+        final removed = _preservedManifest(markers: const []);
+
+        expect(
+          () => validateMetadataPreservation(baseline, evolved),
+          returnsNormally,
+        );
+        expect(
+          () => validateMetadataPreservation(baseline, removed),
+          returnsNormally,
+        );
+        final report = packChangeReport(baseline, evolved);
+        expect(report.paths, isEmpty);
+        expect(
+          report.valueKeys,
+          contains('m markers'),
+          reason:
+              'metadata evolution reports the affected map without '
+              'claiming an artwork change',
+        );
+      },
+    );
   });
 
   group('verifyCommittedGeneration', () {

@@ -8,6 +8,7 @@ import 'package:blackgrid/data/game_paths.dart';
 import 'package:blackgrid/data/screenshot_directory_watcher.dart';
 import 'package:blackgrid/data/session_log_reader.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/map_session.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
@@ -297,6 +298,104 @@ void main() {
     expect(session.state.raidHighlightIds, {'shoreline-exit'});
   });
 
+  test('marker context replacement refreshes exit matching and preserves player state', () async {
+    await session.initialize();
+    final map = _map('shoreline');
+    session.updateMapContext(map, 1);
+    await screenshot(1);
+    await session.readLatest();
+    final sample = session.state.playerSample!;
+    expect(session.state.raidHighlightIds, {'shoreline-exit'});
+
+    final refreshed = PreparedMarker(
+      id: 'refreshed-exit',
+      category: 'extracts',
+      filterKey: 'SharedExtracts',
+      name: 'Refreshed exit',
+      position: GamePoint(1, 2),
+      details: const {
+        'aliases': ['Fixture exit'],
+      },
+      source: const {},
+      outline: const [],
+    );
+    session.updateMapContext(map, 2, activeMarkers: [refreshed]);
+
+    expect(session.state.playerSample, same(sample));
+    expect(session.state.raidHighlightIds, {'refreshed-exit'});
+    expect(session.state.raidEvidence?.state, RaidPanelState.recognized);
+  });
+  test('same-ID exit rename clears stale highlight and rematches saved OCR after restoration', () async {
+    await session.initialize();
+    final map = _map('shoreline');
+    session.updateMapContext(map, 1);
+    await screenshot(1);
+    await session.readLatest();
+    final sample = session.state.playerSample!;
+    expect(session.state.raidEvidence?.state, RaidPanelState.recognized);
+    expect(session.state.raidHighlightIds, {'shoreline-exit'});
+
+    session.updateMapContext(
+      map,
+      2,
+      activeMarkers: [_exitMarker('shoreline-exit', 'Renamed exit')],
+    );
+
+    expect(session.state.playerSample, same(sample));
+    expect(session.state.raidEvidence?.state, RaidPanelState.unreadable);
+    expect(session.state.raidEvidence?.extractNames, ['Fixture exit']);
+    expect(session.state.raidHighlightIds, isEmpty);
+
+    session.updateMapContext(
+      map,
+      3,
+      activeMarkers: [_exitMarker('restored-exit', 'Fixture exit')],
+    );
+
+    expect(session.state.playerSample, same(sample));
+    expect(session.state.raidEvidence?.state, RaidPanelState.recognized);
+    expect(session.state.raidEvidence?.extractNames, ['Fixture exit']);
+    expect(session.state.raidHighlightIds, {'restored-exit'});
+  });
+
+  test(
+    'ambiguous saved OCR rematches when the current exits become unambiguous',
+    () async {
+      await session.initialize();
+      final map = _map('shoreline');
+      session.updateMapContext(map, 1);
+      await screenshot(1);
+      await session.readLatest();
+      final sample = session.state.playerSample!;
+      expect(session.state.raidEvidence?.state, RaidPanelState.recognized);
+
+      session.updateMapContext(
+        map,
+        2,
+        activeMarkers: [
+          _exitMarker('fixture-a', 'Fixture exit A'),
+          _exitMarker('fixture-b', 'Fixture exit B'),
+        ],
+      );
+
+      expect(session.state.playerSample, same(sample));
+      expect(session.state.raidEvidence?.state, RaidPanelState.ambiguous);
+      expect(session.state.raidEvidence?.extractNames, ['Fixture exit']);
+      expect(session.state.raidHighlightIds, isEmpty);
+
+      session.updateMapContext(
+        map,
+        3,
+        activeMarkers: [_exitMarker('fixture-a', 'Fixture exit A')],
+      );
+
+      expect(session.state.playerSample, same(sample));
+      expect(session.state.raidEvidence?.state, RaidPanelState.recognized);
+      expect(session.state.raidEvidence?.extractNames, ['Fixture exit']);
+      expect(session.state.raidHighlightIds, {'fixture-a'});
+    },
+  );
+
   test('one active plus replaceable pending jobs fence older OCR and await shutdown drain', () async {
     await session.close();
     logs = SessionLogReader(pollInterval: const Duration(days: 1));
@@ -413,6 +512,7 @@ void main() {
       await screenshot(1);
       final read = session.readLatest();
       await started.future;
+      final sampleBeforeContextChange = session.state.playerSample!;
       switch (change) {
         case 'map':
           await settings.setMap('woods');
@@ -431,7 +531,11 @@ void main() {
         ),
       );
       await read;
-      expect(session.state.playerSample, isNull);
+      if (change == 'content') {
+        expect(session.state.playerSample, same(sampleBeforeContextChange));
+      } else {
+        expect(session.state.playerSample, isNull);
+      }
       expect(session.state.raidEvidence, isNull);
       expect(session.state.raidHighlightIds, isEmpty);
       expect(session.state.readingLatest, isFalse);
@@ -559,6 +663,17 @@ Future<void> _until(
     session.removeListener(changed);
   }
 }
+
+PreparedMarker _exitMarker(String id, String name) => PreparedMarker(
+  id: id,
+  category: 'extracts',
+  filterKey: 'SharedExtracts',
+  name: name,
+  position: GamePoint(1, 2),
+  details: const {},
+  source: const {},
+  outline: const [],
+);
 
 PreparedMap _map(String id) => PreparedMap.fromJson({
   'id': id,

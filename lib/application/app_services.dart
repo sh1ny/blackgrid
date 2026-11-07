@@ -11,6 +11,8 @@ import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
 import '../data/game_paths.dart';
 import '../data/item_icon_client.dart';
+import '../data/live_map_cache.dart';
+import '../data/live_map_refresh.dart';
 import '../data/raid_panel_ocr.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
@@ -23,6 +25,7 @@ import '../maps/native_map_scene.dart';
 import '../maps/prepared_map_loader.dart';
 import 'catalog_controller.dart';
 import 'history_controller.dart';
+import 'live_map_data_controller.dart';
 import 'item_icon_cache.dart';
 import 'local_stats_controller.dart';
 import 'map_controller.dart';
@@ -44,6 +47,7 @@ class AppServices {
     required http.Client client,
     DateTime Function()? clock,
     MapController? mapController,
+    LiveMapDataController? mapDataController,
     RaidPanelOcr? panelOcr,
     GamePathDiscovery? pathDiscovery,
     Directory? scanLogDirectory,
@@ -109,6 +113,21 @@ class AppServices {
       store: database,
       clock: clock ?? DateTime.now,
     );
+    final mapStore = LiveMapCacheStore(database: database);
+    final mapAcquirer = LiveMapRefreshAcquirer(
+      client: client,
+      store: mapStore,
+      clock: clock,
+    );
+    mapData =
+        mapDataController ??
+        LiveMapDataController(
+          store: mapStore,
+          acquirer: mapAcquirer,
+          clock: clock ?? DateTime.now,
+          preparePublication: (snapshot, budget) =>
+              maps.prepareMarkerInventory(snapshot, budget: budget),
+        );
     mapSession = MapSessionController(
       settings: settings,
       logReader: logReader,
@@ -165,6 +184,7 @@ class AppServices {
   final MapMarkerIcons markerIcons;
   late final SettingsController settings;
   late final MapController maps;
+  late final LiveMapDataController mapData;
   late final MapSessionController mapSession;
 
   /// Folds the session logs into the raid phase; the reader is owned by
@@ -302,7 +322,11 @@ class AppServices {
     final generation = maps.contentGeneration;
     if (generation == _mapContentGeneration) return;
     _mapContentGeneration = generation;
-    mapSession.updateMapContext(maps.preparedMap, generation);
+    mapSession.updateMapContext(
+      maps.preparedMap,
+      generation,
+      activeMarkers: maps.activeMarkers,
+    );
   }
 
   void _syncMapSession() {
@@ -325,6 +349,7 @@ class AppServices {
     final mode = mapSession.effectiveMode;
     var epochChanged = false;
     if (mode != _appliedMode) {
+      unawaited(_selectLiveMapMode(mode));
       _appliedMode = mode;
       ++_modeTransition;
       epochChanged = true;
@@ -381,6 +406,24 @@ class AppServices {
     return refresh();
   });
 
+  Future<void> _selectLiveMapMode([GameMode? selected]) async {
+    final mode = selected ?? mapSession.effectiveMode;
+    final pack = maps.pack;
+    Object? failure;
+    if (maps.unavailable) {
+      failure = StateError('The active prepared map is unavailable.');
+    }
+    await mapData.selectMode(
+      mode: mode,
+      pack: failure == null ? pack : null,
+      bindings: pack?.liveMapBindings ?? const [],
+      packFailure: failure,
+    );
+  }
+
+  /// Performs the separate map-data refresh action.
+  Future<void> refreshMapData() => mapData.refresh();
+
   Future<bool> setMode(GameMode mode) async {
     if (!await settings.setMode(mode) || _disposed) return false;
     _syncMapSession();
@@ -400,6 +443,8 @@ class AppServices {
     settings.removeListener(_syncMapSettings);
     maps.removeListener(_syncMapContext);
     mapSession.removeListener(_syncMapSession);
+    mapData.dispose();
+    await mapData.close();
     scanFeed.dispose();
     try {
       try {

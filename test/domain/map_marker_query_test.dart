@@ -2,6 +2,143 @@ import 'package:blackgrid/domain/map_marker_query.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('owner budgets shared searchable facts without copying their text', () {
+    var reserved = 0;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) => reserved += bytes,
+      releaseMaterialized: (bytes) => reserved -= bytes,
+    );
+    final shared = 'shared-${'x' * 4096}-task';
+    final metadata = [
+      for (var index = 0; index < 24; index++)
+        MapMarkerMetadata(
+          name: 'Marker $index',
+          type: 'QuestItems',
+          category: 'questItems',
+          details: {'task': shared},
+          source: const {},
+          owner: owner,
+        ),
+    ];
+
+    expect(owner.retainedMaterializedBytes, reserved);
+    expect(owner.retainedMaterializedBytes, lessThan(shared.length * 24));
+    expect(metadata.every((item) => item.matchesSearch(['x' * 128])), isTrue);
+    expect(owner.retainedMaterializedBytes, lessThan(shared.length * 24));
+    final afterMatching = owner.retainedMaterializedBytes;
+    expect(metadata.every((item) => item.matchesSearch(['x' * 128])), isTrue);
+    expect(owner.retainedMaterializedBytes, afterMatching);
+  });
+
+  test('search scratch is admitted before a large scalar is searched', () {
+    var reserved = 0;
+    const budget = 52000;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) {
+        if (reserved + bytes > budget) {
+          throw StateError('materialized budget exceeded');
+        }
+        reserved += bytes;
+      },
+      releaseMaterialized: (bytes) => reserved -= bytes,
+    );
+
+    final metadata = MapMarkerMetadata(
+      name: 'Marker',
+      type: 'QuestItems',
+      category: 'questItems',
+      details: {'task': 'y' * 4096},
+      source: const {},
+      owner: owner,
+    );
+    final retainedBeforeSearch = owner.retainedMaterializedBytes;
+    expect(retainedBeforeSearch, greaterThanOrEqualTo(128 + 4096 * 12));
+    expect(metadata.matchesSearch(['absent']), isFalse);
+    expect(
+      owner.retainedMaterializedBytes - retainedBeforeSearch,
+      lessThan(1024),
+    );
+    expect(metadata.matchesSearch(['marker']), isTrue);
+  });
+
+  test('an identical uppercase query reuses its admitted plan', () {
+    var reserved = 0;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) {
+        if (reserved + bytes > 1280) throw StateError('query limit exceeded');
+        reserved += bytes;
+      },
+      releaseMaterialized: (bytes) => reserved -= bytes,
+    );
+    final metadata = MapMarkerMetadata(
+      name: 'Marker',
+      type: 'Switches',
+      category: 'switches',
+      details: const {},
+      source: const {},
+      owner: owner,
+    );
+    expect(metadata.matchesSearch(['MARKER']), isTrue);
+    final afterFirst = reserved;
+    expect(metadata.matchesSearch(['MARKER']), isTrue);
+    expect(reserved, afterFirst);
+  });
+
+  test(
+    'variable quest metadata is admitted before constructing collections',
+    () {
+      var reserved = 0;
+      final owner = MapMarkerMetadataOwner(
+        reserveMaterialized: (bytes) {
+          if (reserved + bytes > 2048) {
+            throw StateError('metadata limit exceeded');
+          }
+          reserved += bytes;
+        },
+        releaseMaterialized: (bytes) => reserved -= bytes,
+      );
+      final baseline = reserved;
+      expect(
+        () => MapMarkerMetadata(
+          name: 'Objective',
+          type: 'QuestObjectives',
+          category: 'questObjectives',
+          details: {
+            'quests': [
+              for (var index = 0; index < 8; index++)
+                {'name': 'A quest with a distinct name $index'},
+            ],
+          },
+          source: const {},
+          owner: owner,
+        ),
+        throwsStateError,
+      );
+      expect(reserved, baseline);
+      expect(owner.retainedMaterializedBytes, baseline);
+    },
+  );
+
+  test('search phrases cross scalar leaves while geometry stays excluded', () {
+    final metadata = MapMarkerMetadata(
+      name: 'Door',
+      type: 'PmcExtracts',
+      category: 'extracts',
+      details: {
+        'first': 'North',
+        'nested': ['Tunnel'],
+        'position': {'name': 'hidden-position'},
+        'outline': ['hidden-outline'],
+        'size': {'name': 'hidden-size'},
+      },
+      source: const {'name': '  North Gate  '},
+    );
+
+    expect(metadata.matchesSearch(['north tunnel']), isTrue);
+    expect(metadata.matchesSearch(['north gate']), isTrue);
+    expect(metadata.matchesSearch(['hidden']), isFalse);
+  });
+
   test('comma substring OR is case-insensitive and ignores empty terms', () {
     final metadata = MapMarkerMetadata(
       name: 'Service exit',
