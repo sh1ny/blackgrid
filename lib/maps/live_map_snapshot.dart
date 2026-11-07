@@ -7,6 +7,7 @@ import 'live_map_budget.dart';
 
 import '../domain/map_coordinates.dart';
 import '../domain/catalog.dart';
+import 'live_map_inventory.dart';
 import 'live_map_normalizer.dart';
 import 'prepared_map.dart';
 
@@ -43,13 +44,12 @@ class LiveMapSourceBody {
 
   LiveMapSourceBody._sharingBytes({
     required this.dataset,
-    required Uint8List bytes,
+    required this._bytes,
     required this.etag,
     required this.lastModified,
     required LiveMapBudget? budget,
-    required _LiveMapSourceDigest digest,
-  }) : _bytes = bytes,
-       _digest = digest {
+    required this._digest,
+  }) {
     (budget ?? LiveMapBudget()).reserveMaterialized(_metadataCharge);
   }
 
@@ -94,7 +94,7 @@ class LiveMapSourceBody {
 }
 
 /// The current serialized live-map snapshot format.
-const int liveMapSnapshotFormatVersion = 1;
+const int liveMapSnapshotFormatVersion = liveMapInventoryFormatVersion;
 
 /// Describes the mapping and projection inputs that make cached markers usable.
 class LiveMapCompatibility {
@@ -251,8 +251,93 @@ class LiveMapSnapshot {
   /// The resource budget shared across materialization and storage.
   final LiveMapBudget budget;
 
+  LiveMapInventoryValidation? _inventoryValidation;
+
+  /// The opaque validation proof for these immutable bytes, when available.
+  LiveMapInventoryValidation? get inventoryValidation => _inventoryValidation;
+
+  /// Reuses a completed proof only for identical payload and compatibility.
+  ///
+  /// Source validators and check times may change without changing marker
+  /// facts. This avoids decoding an unchanged inventory a second time.
+  bool reuseInventoryValidation(LiveMapInventoryValidation? proof) {
+    if (proof == null ||
+        proof._sha256 != normalizedSha256 ||
+        proof._compatibility != compatibility.fingerprint ||
+        proof._formatVersion != formatVersion ||
+        proof._normalizerVersion != normalizerVersion) {
+      return false;
+    }
+    _inventoryValidation = proof;
+    return true;
+  }
+
+  /// Decodes the private immutable payload and validates its complete map set.
+  ///
+  /// A successful decode certifies this snapshot's payload for later storage
+  /// validation without retaining a second decoded inventory.
+  LiveMapInventory decodeInventory({required LiveMapBudget budget}) {
+    final before = budget.materializedBytes;
+    try {
+      final inventory = LiveMapInventory.decode(
+        normalizedPayload,
+        budget: budget,
+      );
+      final maps = inventory.maps;
+      if (maps.length != compatibility.preparedMapIds.length ||
+          !compatibility.preparedMapIds.every(maps.containsKey)) {
+        throw const FormatException(
+          'Live-map inventory has an incomplete map set.',
+        );
+      }
+      _inventoryValidation ??= LiveMapInventoryValidation._(
+        normalizedSha256,
+        compatibility.fingerprint,
+        formatVersion,
+        normalizerVersion,
+      );
+      return inventory;
+    } catch (_) {
+      budget.releaseMaterialized(budget.materializedBytes - before);
+      rethrow;
+    }
+  }
+
+  /// Validates the immutable payload once without retaining decoded facts.
+  ///
+  /// The certificate applies only to this snapshot's privately copied bytes
+  /// and immutable compatibility identity. Digests remain independently checked
+  /// by storage on every write.
+  void validateInventory({required LiveMapBudget budget}) {
+    if (_inventoryValidation != null) return;
+    final before = budget.materializedBytes;
+    try {
+      decodeInventory(budget: budget);
+    } finally {
+      budget.releaseMaterialized(budget.materializedBytes - before);
+    }
+  }
+
   /// The SHA-256 digest of [normalizedPayload].
   late final String normalizedSha256 = _sha256Of(normalizedPayload);
+}
+
+/// Proves that one immutable payload and compatibility identity were decoded.
+///
+/// Only a successful [LiveMapSnapshot.decodeInventory] can create this proof.
+/// It retains no source bodies, payload bytes or decoded facts.
+final class LiveMapInventoryValidation {
+  const LiveMapInventoryValidation._(
+    this._sha256,
+    this._compatibility,
+    this._formatVersion,
+    this._normalizerVersion,
+  );
+
+  final String _sha256;
+  final String _compatibility;
+  final int _formatVersion;
+  final int _normalizerVersion;
 }
 
 /// Persists complete mode snapshots independently from other user records.
@@ -267,8 +352,10 @@ abstract interface class LiveMapStore {
     void Function(Object failure)? onRejected,
   });
 
-  /// Replaces one mode's complete snapshot atomically.
-  Future<void> commit(LiveMapSnapshot snapshot);
+  /// Replaces one mode's complete snapshot atomically using [budget].
+  ///
+  /// When [budget] is omitted, the store creates a fresh resource budget.
+  Future<void> commit(LiveMapSnapshot snapshot, {LiveMapBudget? budget});
 }
 
 const int _metadataCharge = 64;
@@ -307,6 +394,6 @@ Object? _compatibilityCalibration(Map<String, Object?> calibration) {
         else
           throw FormatException('Invalid live-map calibration floor.'),
     ],
-    if (assignments != null) 'markerFloorAssignments': assignments,
+    'markerFloorAssignments': ?assignments,
   };
 }

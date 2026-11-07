@@ -1,3 +1,94 @@
+/// Accounts for derived metadata retained by one live-map generation.
+class MapMarkerMetadataOwner {
+  /// Creates an owner backed by materialized-byte admission callbacks.
+  MapMarkerMetadataOwner({
+    required this._reserveMaterialized,
+    required this._releaseMaterialized,
+  }) {
+    _reserve(128);
+    _foldedScalars = {};
+  }
+
+  final void Function(int) _reserveMaterialized;
+  final void Function(int) _releaseMaterialized;
+  int _retainedMaterializedBytes = 0;
+  _SearchPlan? _currentPlan;
+  late final Map<String, String> _foldedScalars;
+
+  String _fold(String scalar) {
+    final cached = _foldedScalars[scalar];
+    if (cached != null) return cached;
+    final bytes = 96 + scalar.length * 4;
+    _reserve(bytes);
+    try {
+      final folded = scalar.toLowerCase();
+      _foldedScalars[scalar] = folded;
+      return folded;
+    } catch (_) {
+      _release(bytes);
+      rethrow;
+    }
+  }
+
+  /// The derived bytes currently retained by this owner.
+  int get retainedMaterializedBytes => _retainedMaterializedBytes;
+
+  void _reserve(int bytes) {
+    if (bytes <= 0) return;
+    _reserveMaterialized(bytes);
+    _retainedMaterializedBytes += bytes;
+  }
+
+  void _release(int bytes) {
+    if (bytes <= 0) return;
+    _releaseMaterialized(bytes);
+    _retainedMaterializedBytes -= bytes;
+  }
+
+  T _withScratch<T>(int bytes, T Function() action) {
+    _reserve(bytes);
+    try {
+      return action();
+    } finally {
+      _release(bytes);
+    }
+  }
+
+  _SearchPlan _planFor(Iterable<String> terms) {
+    final current = _currentPlan;
+    if (current != null && current.matchesTerms(terms)) return current;
+
+    var count = 0;
+    var totalLength = 0;
+    var hasEmpty = false;
+    for (final term in terms) {
+      count++;
+      totalLength += term.length;
+      if (term.isEmpty) hasEmpty = true;
+    }
+    final cost = hasEmpty || count == 0
+        ? 128
+        : 128 + count * 96 + totalLength * 12;
+    _reserve(cost);
+    try {
+      final needles = <_SearchNeedle>[];
+      if (!hasEmpty) {
+        for (final term in terms) {
+          final needle = term.toLowerCase();
+          needles.add(_SearchNeedle(term, needle, _prefixTable(needle)));
+        }
+      }
+      final plan = _SearchPlan(needles, cost);
+      _currentPlan = plan;
+      if (current != null) _release(current.retainedBytes);
+      return plan;
+    } catch (_) {
+      _release(cost);
+      rethrow;
+    }
+  }
+}
+
 /// Metadata consumed by Map search, quest eligibility and marker details.
 ///
 /// It retains source identities rather than inferring relationships from names
@@ -9,57 +100,66 @@ class MapMarkerMetadata {
     required this.category,
     required Map<String, dynamic> details,
     required Map<String, dynamic> source,
-  }) : fields = Map.unmodifiable({
-         for (final entry in details.entries)
-           if (!const {
-             'position',
-             'outline',
-             'size',
-             'bottom',
-             'top',
-           }.contains(entry.key))
-             entry.key: entry.value,
-       }) {
-    sourceId = _text(details['id']);
-    final quests = <Map<String, dynamic>>[];
-    for (final key in ['quest', 'task', 'quests', 'tasks']) {
-      final value = details[key];
-      if (value is Map<String, dynamic>) quests.add(value);
-      if (value is List) quests.addAll(value.whereType<Map<String, dynamic>>());
+    MapMarkerMetadataOwner? owner,
+  }) : _owner =
+           owner ??
+           MapMarkerMetadataOwner(
+             reserveMaterialized: (_) {},
+             releaseMaterialized: (_) {},
+           ),
+       _source = source {
+    const excluded = {'position', 'outline', 'size', 'bottom', 'top'};
+    final retainedCost = _metadataCost(details, source, excluded);
+    final constructionScratch = 192 + category.length * 4;
+    _owner._reserve(retainedCost + constructionScratch);
+    try {
+      fields = Map.unmodifiable({
+        for (final entry in details.entries)
+          if (!excluded.contains(entry.key)) entry.key: entry.value,
+      });
+      sourceId = _text(details['id']);
+      final quests = <Map<String, dynamic>>[];
+      for (final key in ['quest', 'task', 'quests', 'tasks']) {
+        final value = details[key];
+        if (value is Map<String, dynamic>) quests.add(value);
+        if (value is List) {
+          quests.addAll(value.whereType<Map<String, dynamic>>());
+        }
+      }
+      questNames = List.unmodifiable([
+        for (final quest in quests)
+          if (_text(quest['name']) case final String name) name,
+        if (_text(details['questName']) case final String name) name,
+        if (_text(details['taskName']) case final String name) name,
+      ]);
+      traders = List.unmodifiable([
+        for (final quest in quests) ..._names(quest['trader']),
+        ..._names(details['trader']),
+      ]);
+      questLinks = List.unmodifiable([
+        for (final quest in quests)
+          if (_text(quest['wikiLink'] ?? quest['link']) case final String link)
+            link,
+        if (_text(details['wikiLink']) case final String link) link,
+      ]);
+      linkedSwitchIds = Set.unmodifiable(_ids(details['switches']));
+      activatedIds = Set.unmodifiable(_ids(details['activates']));
+      isQuest =
+          type == 'QuestItems' ||
+          type == 'QuestObjectives' ||
+          category.toLowerCase().contains('quest');
+    } catch (_) {
+      _owner._release(retainedCost + constructionScratch);
+      rethrow;
     }
-    questNames = List.unmodifiable([
-      for (final quest in quests)
-        if (_text(quest['name']) case final String name) name,
-      if (_text(details['questName']) case final String name) name,
-      if (_text(details['taskName']) case final String name) name,
-    ]);
-    traders = List.unmodifiable([
-      for (final quest in quests) ..._names(quest['trader']),
-      ..._names(details['trader']),
-    ]);
-    questLinks = List.unmodifiable([
-      for (final quest in quests)
-        if (_text(quest['wikiLink'] ?? quest['link']) case final String link)
-          link,
-      if (_text(details['wikiLink']) case final String link) link,
-    ]);
-    linkedSwitchIds = Set.unmodifiable(_ids(details['switches']));
-    activatedIds = Set.unmodifiable(_ids(details['activates']));
-    isQuest =
-        type == 'QuestItems' ||
-        type == 'QuestObjectives' ||
-        category.toLowerCase().contains('quest');
-    final terms = <String>[name, type, category];
-    _searchValues(fields, terms);
-    // Provenance has source identity but not invented human-facing metadata.
-    if (_text(source['name']) case final String name) terms.add(name);
-    searchText = terms.join(' ').toLowerCase();
+    _owner._release(constructionScratch);
   }
 
+  final MapMarkerMetadataOwner _owner;
   final String name;
   final String type;
   final String category;
-  final Map<String, dynamic> fields;
+  late final Map<String, dynamic> fields;
   late final String? sourceId;
   late final List<String> questNames;
   late final List<String> traders;
@@ -67,11 +167,17 @@ class MapMarkerMetadata {
   late final Set<String> linkedSwitchIds;
   late final Set<String> activatedIds;
   late final bool isQuest;
-  late final String searchText;
 
-  bool matchesSearch(List<String> terms) =>
-      terms.isEmpty || terms.any(searchText.contains);
+  /// Tests comma-separated search terms against shared source facts.
+  bool matchesSearch(Iterable<String> terms) =>
+      _owner._planFor(terms).matches(this, _owner);
 
+  // Search only needs source.name; retain its reference, not another map copy.
+  Object? get _sourceName => _source['name'];
+
+  final Map<String, dynamic> _source;
+
+  /// Whether this marker matches the selected quest and trader.
   bool matchesQuest({required String name, required String trader}) {
     if (!isQuest) return true;
     final query = name.trim().toLowerCase();
@@ -84,6 +190,97 @@ class MapMarkerMetadata {
   }
 }
 
+class _SearchNeedle {
+  const _SearchNeedle(this.original, this.text, this.prefix);
+
+  final String original;
+  final String text;
+  final List<int> prefix;
+}
+
+class _SearchPlan {
+  const _SearchPlan(this.needles, this.retainedBytes);
+
+  final List<_SearchNeedle> needles;
+  final int retainedBytes;
+
+  bool matchesTerms(Iterable<String> terms) {
+    var index = 0;
+    for (final term in terms) {
+      if (index >= needles.length ||
+          (needles[index].original != term && needles[index].text != term)) {
+        return false;
+      }
+      index++;
+    }
+    return index == needles.length;
+  }
+
+  bool matches(MapMarkerMetadata metadata, MapMarkerMetadataOwner owner) {
+    if (needles.isEmpty) return true;
+    return owner._withScratch(needles.length * 8 + 32, () {
+      final positions = List<int>.filled(needles.length, 0);
+      var found = 0;
+      var hasToken = false;
+
+      bool accept(Object value) {
+        if (found > 0) return true;
+        final scalar = value is String
+            ? value
+            : owner._withScratch(160, value.toString);
+        if (hasToken) {
+          for (var index = 0; index < needles.length; index++) {
+            final needle = needles[index].text;
+            positions[index] = _advance(
+              needle,
+              needles[index].prefix,
+              positions[index],
+              32,
+            );
+            if (positions[index] == needle.length) {
+              found++;
+              positions[index] = needles[index].prefix[needle.length - 1];
+            }
+          }
+        }
+        if (found > 0) return true;
+        hasToken = true;
+        {
+          final folded = owner._fold(scalar);
+          for (var unit = 0; unit < folded.length && found == 0; unit++) {
+            final code = folded.codeUnitAt(unit);
+            for (var index = 0; index < needles.length; index++) {
+              final needle = needles[index].text;
+              positions[index] = _advance(
+                needle,
+                needles[index].prefix,
+                positions[index],
+                code,
+              );
+              if (positions[index] == needle.length) {
+                found++;
+                positions[index] = needles[index].prefix[needle.length - 1];
+              }
+            }
+          }
+        }
+        return found > 0;
+      }
+
+      if (accept(metadata.name) ||
+          accept(metadata.type) ||
+          accept(metadata.category) ||
+          _visitSearchValues(metadata.fields, accept)) {
+        return true;
+      }
+      if (_text(metadata._sourceName) case final String provenance) {
+        return accept(provenance);
+      }
+      return false;
+    });
+  }
+}
+
 /// Commas are OR separators; empty terms do not accidentally match everything.
 List<String> mapSearchTerms(String value) => List.unmodifiable(
   value
@@ -91,6 +288,95 @@ List<String> mapSearchTerms(String value) => List.unmodifiable(
       .map((term) => term.trim().toLowerCase())
       .where((term) => term.isNotEmpty),
 );
+
+int _advance(String needle, List<int> prefix, int position, int code) {
+  while (position > 0 && needle.codeUnitAt(position) != code) {
+    position = prefix[position - 1];
+  }
+  if (needle.codeUnitAt(position) == code) position++;
+  return position;
+}
+
+List<int> _prefixTable(String value) {
+  final result = List<int>.filled(value.length, 0);
+  for (var i = 1, length = 0; i < value.length; i++) {
+    while (length > 0 && value.codeUnitAt(i) != value.codeUnitAt(length)) {
+      length = result[length - 1];
+    }
+    if (value.codeUnitAt(i) == value.codeUnitAt(length)) length++;
+    result[i] = length;
+  }
+  return result;
+}
+
+int _metadataCost(
+  Map<String, dynamic> details,
+  Map<String, dynamic> source,
+  Set<String> excluded,
+) {
+  var entries = 0;
+  for (final key in details.keys) {
+    if (!excluded.contains(key)) entries++;
+  }
+  // Facts stay shared. Admit the variable derived collections and any trimmed
+  // strings before building them; list copies include construction overlap.
+  var bytes = 512 + entries * 64 + source.length * 16;
+
+  int textBytes(Object? value) => value is String ? 64 + value.length * 4 : 0;
+  int namesBytes(Object? value) {
+    if (value is String) return 64 + value.length * 4;
+    if (value is Map) return textBytes(value['name']);
+    if (value is List) {
+      var total = 64 + value.length * 32;
+      for (final item in value) {
+        total += namesBytes(item);
+      }
+      return total;
+    }
+    return 0;
+  }
+
+  int idsBytes(Object? value) {
+    if (value is String) return 96 + value.length * 4;
+    if (value is Map) return textBytes(value['id']) + 64;
+    if (value is List) {
+      var total = 64 + value.length * 48;
+      for (final item in value) {
+        total += idsBytes(item);
+      }
+      return total;
+    }
+    return 0;
+  }
+
+  void countQuest(Map<String, dynamic> quest) {
+    bytes +=
+        128 +
+        textBytes(quest['name']) +
+        textBytes(quest['wikiLink'] ?? quest['link']) +
+        namesBytes(quest['trader']);
+  }
+
+  for (final key in const ['quest', 'task', 'quests', 'tasks']) {
+    final value = details[key];
+    if (value is Map<String, dynamic>) countQuest(value);
+    if (value is List) {
+      bytes += 64 + value.length * 32;
+      for (final item in value) {
+        if (item is Map<String, dynamic>) countQuest(item);
+      }
+    }
+  }
+  return bytes +
+      textBytes(details['id']) +
+      textBytes(details['questName']) +
+      textBytes(details['taskName']) +
+      textBytes(details['wikiLink']) +
+      textBytes(source['name']) +
+      namesBytes(details['trader']) +
+      idsBytes(details['switches']) +
+      idsBytes(details['activates']);
+}
 
 String? _text(Object? value) =>
     value is String && value.trim().isNotEmpty ? value.trim() : null;
@@ -119,18 +405,20 @@ Iterable<String> _ids(Object? value) sync* {
   }
 }
 
-void _searchValues(Object? value, List<String> result) {
+bool _visitSearchValues(Object? value, bool Function(Object) accept) {
   if (value is String || value is num || value is bool) {
-    result.add(value.toString());
+    return accept(value!);
   } else if (value is Map) {
     for (final entry in value.entries) {
-      if (!const {'position', 'outline', 'size'}.contains(entry.key)) {
-        _searchValues(entry.value, result);
+      if (!const {'position', 'outline', 'size'}.contains(entry.key) &&
+          _visitSearchValues(entry.value, accept)) {
+        return true;
       }
     }
   } else if (value is List) {
     for (final item in value) {
-      _searchValues(item, result);
+      if (_visitSearchValues(item, accept)) return true;
     }
   }
+  return false;
 }

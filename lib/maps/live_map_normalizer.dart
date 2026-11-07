@@ -60,11 +60,38 @@ class LiveMapBinding {
   final Map<String, Object?> calibration;
 }
 
-/// Reserves recursively materialized marker data before it is emitted.
+/// Reserves conservative materialized storage before runtime copies are made.
 ///
-/// The callback can reject a candidate before marker details are copied.
-/// [bytes] is a conservative accounting estimate, not serialized JSON size.
+/// The callback can reject an output before marker details, converted
+/// positions, or repeated source records are copied. Reservations are
+/// per-occurrence and include output-container overhead; [bytes] is not a JSON
+/// serialization size.
 typedef LiveMapMaterializationReservation = void Function(int bytes);
+
+class _MaterializationScope {
+  _MaterializationScope(this.reserve, this.release);
+
+  final LiveMapMaterializationReservation? reserve;
+  final LiveMapMaterializationReservation? release;
+  int _bytes = 0;
+
+  void add(int bytes) {
+    if (reserve == null) return;
+    reserve!(bytes);
+    if (release != null) _bytes += bytes;
+  }
+
+  void addLazy(int Function() estimate) {
+    if (reserve == null) return;
+    add(estimate());
+  }
+
+  void releaseTemporary() {
+    final bytes = _bytes;
+    _bytes = 0;
+    if (bytes > 0) release?.call(bytes);
+  }
+}
 
 const _mapCategories = [
   'extracts',
@@ -96,6 +123,8 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
   required Iterable<LiveMapBinding> bindings,
   required String mode,
   LiveMapMaterializationReservation? reserveMaterialization,
+  LiveMapMaterializationReservation? releaseMaterialization,
+  void Function(String mapId, Map<String, Object?> marker)? onMarker,
 }) {
   final route = _modeRoute(mode);
   final mapsUrl = 'https://json.tarkov.dev/$route/maps';
@@ -139,6 +168,16 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
   }
   final output = <String, List<Map<String, Object?>>>{};
   for (final binding in bySource.values) {
+    var bindingBytes = 0;
+    if (reserveMaterialization != null) {
+      bindingBytes =
+          _materializedSize({
+            'mapId': binding.mapId,
+            'calibration': binding.calibration,
+          }) +
+          128;
+      reserveMaterialization(bindingBytes);
+    }
     final calibration = <String, Object?>{
       ...binding.calibration,
       'sourceKey': binding.sourceKey,
@@ -149,13 +188,20 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
       translations: mapTranslations,
       calibration: calibration,
       reserveMaterialization: reserveMaterialization,
+      releaseMaterialization: onMarker == null ? null : releaseMaterialization,
       sourceUrl: mapsUrl,
+      onMarker: onMarker == null
+          ? null
+          : (marker) => onMarker(binding.mapId, marker),
     );
     final hasSourceMap = maps.values.any(
       (raw) => raw is Map && raw['normalizedName'] == binding.sourceKey,
     );
     if (!hasSourceMap) {
       output[binding.mapId] = List.unmodifiable(mapMarkers);
+      if (onMarker != null && bindingBytes > 0) {
+        releaseMaterialization?.call(bindingBytes);
+      }
       continue;
     }
     String questMapId = binding.mapId;
@@ -176,8 +222,15 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
       questItemTranslations: taskTranslations,
       mode: mode,
       reserveMaterialization: reserveMaterialization,
+      releaseMaterialization: onMarker == null ? null : releaseMaterialization,
+      onMarker: onMarker == null
+          ? null
+          : (marker) => onMarker(binding.mapId, marker),
     );
     output[binding.mapId] = List.unmodifiable([...mapMarkers, ...questMarkers]);
+    if (onMarker != null && bindingBytes > 0) {
+      releaseMaterialization?.call(bindingBytes);
+    }
   }
   return Map.unmodifiable(output);
 }
@@ -208,6 +261,7 @@ List<Map<String, Object?>> prepareMarkers(
     translations: translations,
     calibration: calibration,
     reserveMaterialization: reserveMaterialization,
+    releaseMaterialization: null,
     sourceUrl: mapsUrl,
   );
 }
@@ -218,7 +272,9 @@ List<Map<String, Object?>> _prepareMapMarkers({
   required Map<String, dynamic> translations,
   required Map<String, Object?> calibration,
   required LiveMapMaterializationReservation? reserveMaterialization,
+  required LiveMapMaterializationReservation? releaseMaterialization,
   required String sourceUrl,
+  void Function(Map<String, Object?> marker)? onMarker,
 }) {
   final sourceKey = calibration['sourceKey'] as String;
   FormatException sourceError(String path, String fact, String reason) =>
@@ -259,6 +315,11 @@ List<Map<String, Object?>> _prepareMapMarkers({
   };
   final result = <Map<String, Object?>>[];
   final identityCounts = <String, int>{};
+  var identityBytes = 0;
+  final temporary = _MaterializationScope(
+    reserveMaterialization,
+    releaseMaterialization,
+  );
   void add(
     String category,
     Map<String, dynamic> entry,
@@ -289,6 +350,14 @@ List<Map<String, Object?>> _prepareMapMarkers({
     if (name is! String || name.isEmpty) {
       throw sourceError(sourcePath, 'name', 'must be a string');
     }
+    if (entry['id'] == null && reserveMaterialization != null) {
+      temporary.addLazy(() => _materializedSize(entry) + 96);
+      temporary.addLazy(
+        () => _fallbackIdentityMaterializationSize(sourceKey, entry),
+      );
+    }
+    reserveMaterialization?.call(160);
+    if (reserveMaterialization != null) identityBytes += 160;
     final identity =
         '$category:${entry['id'] ?? _fallbackIdentity(sourceKey, entry)}';
     final occurrence = identityCounts.update(
@@ -312,28 +381,32 @@ List<Map<String, Object?>> _prepareMapMarkers({
             sourceError(sourcePath, 'outline', 'must be an array'),
           );
 
-    reserveMaterialization?.call(
-      _materializedSize({
-        'id': markerId,
-        'category': category,
-        'name': translatedName,
-        'position': {
-          'x': position['x'],
-          'z': position['z'],
-          'height': position['y'],
-        },
-        'source': {
-          'url': sourceUrl,
-          'mapId': selectedSource['id'],
-          'path': sourcePath,
-          'floorAssignment': floorAssignment,
-        },
-        'details': entry,
-        'outline': outline,
-        'heightBand': [entry['bottom'], entry['top']],
-      }),
+    temporary.addLazy(
+      () =>
+          _materializedSize({
+            'id': markerId,
+            'category': category,
+            'name': translatedName,
+            'position': {
+              'x': position['x'],
+              'z': position['z'],
+              'height': position['y'],
+            },
+            if (floorAssignment != null) 'floorId': floorAssignment['floorId'],
+            'source': {
+              'url': sourceUrl,
+              'mapId': selectedSource['id'],
+              'path': sourcePath,
+              'floorAssignment': floorAssignment,
+            },
+            'details': onMarker == null ? entry : const <String, Object?>{},
+            'outline': ?outline,
+            if (entry['bottom'] is num && entry['top'] is num)
+              'heightBand': [entry['bottom'], entry['top']],
+          }) +
+          96,
     );
-    result.add({
+    final marker = <String, Object?>{
       'id': markerId,
       'category': category,
       'name': translatedName,
@@ -357,7 +430,16 @@ List<Map<String, Object?>> _prepareMapMarkers({
         ],
       if (entry['bottom'] is num && entry['top'] is num)
         'heightBand': [entry['bottom'], entry['top']],
-    });
+    };
+    if (onMarker == null) {
+      result.add(marker);
+    } else {
+      try {
+        onMarker(marker);
+      } finally {
+        temporary.releaseTemporary();
+      }
+    }
   }
 
   for (final category in _mapCategories) {
@@ -391,6 +473,16 @@ List<Map<String, Object?>> _prepareMapMarkers({
           raw['stationaryWeapon'],
           '$category/$i',
           sourceError,
+        );
+      }
+      if (category == 'btrStops') {
+        temporary.addLazy(
+          () =>
+              _materializedSize(raw) +
+              _materializedSize({
+                'position': {'x': raw['x'], 'y': raw['y'], 'z': raw['z']},
+              }) +
+              128,
         );
       }
       final entry = category == 'btrStops'
@@ -470,12 +562,13 @@ List<Map<String, Object?>> _prepareMapMarkers({
       final positions = location['positions'] as List;
       for (var p = 0; p < positions.length; p++) {
         final point = positions[p];
-        if (point is! Map)
+        if (point is! Map) {
           throw sourceError(
             '$path/positions/$p',
             'position',
             'must be a dictionary',
           );
+        }
         for (final axis in ['x', 'z']) {
           if (point[axis] is! num || !(point[axis] as num).isFinite) {
             throw sourceError(
@@ -493,6 +586,16 @@ List<Map<String, Object?>> _prepareMapMarkers({
             'must be null or a finite number',
           );
         }
+        temporary.addLazy(
+          () =>
+              _materializedSize({
+                'position': point,
+                'mob': mobId,
+                'spawnChance': chance,
+                'location': location['name'],
+              }) +
+              128,
+        );
         add(
           'bosses',
           {
@@ -507,6 +610,8 @@ List<Map<String, Object?>> _prepareMapMarkers({
       }
     }
   }
+  temporary.releaseTemporary();
+  if (identityBytes > 0) releaseMaterialization?.call(identityBytes);
   return result;
 }
 
@@ -525,10 +630,28 @@ List<Map<String, Object?>> prepareQuestMarkers({
   required Map<String, dynamic> questItemTranslations,
   String mode = 'regular',
   LiveMapMaterializationReservation? reserveMaterialization,
+  LiveMapMaterializationReservation? releaseMaterialization,
+  void Function(Map<String, Object?> marker)? onMarker,
 }) {
   _requiredString(mapId, 'mapId');
   final sourceUrl = 'https://json.tarkov.dev/${_modeRoute(mode)}/tasks';
   final markers = <Map<String, Object?>>[];
+  final temporary = _MaterializationScope(
+    reserveMaterialization,
+    onMarker == null ? null : releaseMaterialization,
+  );
+  void emit(Map<String, Object?> marker) {
+    if (onMarker == null) {
+      markers.add(marker);
+    } else {
+      try {
+        onMarker(marker);
+      } finally {
+        temporary.releaseTemporary();
+      }
+    }
+  }
+
   for (final taskEntry in tasks.entries) {
     final task = _requiredObject(
       taskEntry.value,
@@ -596,6 +719,7 @@ List<Map<String, Object?>> prepareQuestMarkers({
           );
           final objectiveId = _requiredString(objective['id'], '$path/id');
           final zoneId = _requiredString(zone['id'], '$zonePath/id');
+          temporary.addLazy(() => _materializedSize(zone['position']) + 128);
           final position = _questPosition(
             zone['position'],
             '$zonePath/position',
@@ -610,6 +734,7 @@ List<Map<String, Object?>> prepareQuestMarkers({
             'quest item',
             '$path/questItem',
           );
+          temporary.add(192);
           final itemName = _translatedOptional(
             item?['name'],
             questItemTranslations,
@@ -620,34 +745,57 @@ List<Map<String, Object?>> prepareQuestMarkers({
             'taskId': taskId,
             'objectiveId': objectiveId,
             'objectiveIndex': o,
-            if (itemId != null) 'questItemId': itemId,
+            'questItemId': ?itemId,
             'zoneId': zoneId,
             'zoneIndex': z,
           };
           final id =
               'questObjectives:${[mapId, taskId, objectiveId, '$o', zoneId, '$z'].map(Uri.encodeComponent).join(':')}';
-          reserveMaterialization?.call(
-            _materializedSize({
-              'task': task,
-              'objective': objective,
-              'zone': zone,
-              'trader': trader,
-              'item': item,
-              'questItemName': itemName,
-              'quest': {
-                'id': taskId,
-                'name': questName,
-                'trader': traderFact,
-                'wikiLink': wikiLink,
-              },
-              'position': position,
-              'outline': zone['outline'],
-              'heightBand': zone['bottom'] == null && zone['top'] == null
-                  ? null
-                  : [zone['bottom'], zone['top']],
-            }),
+          temporary.addLazy(
+            () =>
+                _materializedSize({
+                  'id': id,
+                  'category': 'questObjectives',
+                  'filterKey': 'QuestObjectives',
+                  'name': description ?? 'questObjectives',
+                  'position': position,
+                  'source': {
+                    'url': sourceUrl,
+                    'mapId': mapId,
+                    'path': zonePath,
+                    'originalIdentity': identity,
+                  },
+                  'details': onMarker == null
+                      ? {
+                          'id': objectiveId,
+                          'quest': {
+                            'id': taskId,
+                            'name': ?questName,
+                            'trader': ?traderFact,
+                            'wikiLink': wikiLink,
+                          },
+                          'objective': objective,
+                          'description': ?description,
+                          'sourceTask': task,
+                          'sourceTrader': trader,
+                          'location': zone,
+                          'item': ?item,
+                          if (item != null && itemName != null)
+                            'questItem': item,
+                          if (item != null && itemName != null)
+                            'questItemName': itemName,
+                        }
+                      : const <String, Object?>{},
+                  if (zone['outline'] != null) 'outline': zone['outline'],
+                  if (zone['bottom'] != null || zone['top'] != null)
+                    'heightBand': [zone['bottom'], zone['top']],
+                }) +
+                128,
           );
-          markers.add({
+          if (item != null && itemName != null) {
+            temporary.add(_shallowFactMapCopyBytes(item));
+          }
+          emit({
             'id': id,
             'category': 'questObjectives',
             'filterKey': 'QuestObjectives',
@@ -663,16 +811,16 @@ List<Map<String, Object?>> prepareQuestMarkers({
               'id': objectiveId,
               'quest': {
                 'id': taskId,
-                if (questName != null) 'name': questName,
-                if (traderFact != null) 'trader': traderFact,
+                'name': ?questName,
+                'trader': ?traderFact,
                 'wikiLink': wikiLink,
               },
               'objective': objective,
-              if (description != null) 'description': description,
+              'description': ?description,
               'sourceTask': task,
               'sourceTrader': trader,
               'location': zone,
-              if (item != null) 'item': item,
+              'item': ?item,
               if (item != null && itemName != null)
                 'questItem': {...item, 'name': itemName},
             },
@@ -689,8 +837,9 @@ List<Map<String, Object?>> prepareQuestMarkers({
         for (var l = 0; l < entries.length; l++) {
           final locationPath = '$path/possibleLocations/$l';
           final location = _requiredObject(entries[l], locationPath);
-          if (_requiredString(location['map'], '$locationPath/map') != mapId)
+          if (_requiredString(location['map'], '$locationPath/map') != mapId) {
             continue;
+          }
           final taskNameKey = _requiredString(
             task['name'],
             'tasks/$taskId/name',
@@ -713,7 +862,9 @@ List<Map<String, Object?>> prepareQuestMarkers({
                 );
           for (var p = 0; p < positions.length; p++) {
             final sourcePath = '$locationPath/positions/$p';
+            temporary.addLazy(() => _materializedSize(positions[p]) + 128);
             final position = _questPosition(positions[p], sourcePath);
+            temporary.add(224);
             final itemName = _translatedOptional(
               item?['name'],
               questItemTranslations,
@@ -767,30 +918,55 @@ List<Map<String, Object?>> prepareQuestMarkers({
               '$l',
               '$p',
             ];
-            reserveMaterialization?.call(
-              _materializedSize({
-                'task': task,
-                'objective': objective,
-                'location': location,
-                'trader': trader,
-                'item': item,
-                'questItem': item,
-                'questItemName': itemName,
-                'quest': {
-                  'id': taskId,
-                  'name': questName,
-                  'trader': trader,
-                  'wikiLink': wikiLink,
-                },
-                'position': position,
-                'outline': location['outline'],
-                'heightBand':
-                    location['bottom'] == null && location['top'] == null
-                    ? null
-                    : [location['bottom'], location['top']],
-              }),
+            temporary.addLazy(
+              () =>
+                  _materializedSize({
+                    'id':
+                        'questItems:${idParts.map(Uri.encodeComponent).join(':')}',
+                    'category': 'questItems',
+                    'filterKey': 'QuestItems',
+                    'name': itemName ?? 'questItems',
+                    'position': position,
+                    'source': {
+                      'url': sourceUrl,
+                      'mapId': mapId,
+                      'path': sourcePath,
+                      'originalIdentity': identity,
+                    },
+                    'details': onMarker == null
+                        ? {
+                            'id': objectiveId,
+                            'quest': {
+                              'id': taskId,
+                              'name': questName,
+                              'trader': trader == null
+                                  ? null
+                                  : {'id': traderId, 'name': traderName},
+                              'wikiLink': wikiLink,
+                            },
+                            'objective': objective,
+                            'description': ?description,
+                            'sourceTask': task,
+                            'sourceTrader': trader,
+                            'location': location,
+                            'item': ?item,
+                            if (item != null && itemName != null)
+                              'questItem': item,
+                            'questItemName': ?itemName,
+                            'traderName': ?traderName,
+                          }
+                        : const <String, Object?>{},
+                    if (location['outline'] != null)
+                      'outline': location['outline'],
+                    if (location['bottom'] != null || location['top'] != null)
+                      'heightBand': [location['bottom'], location['top']],
+                  }) +
+                  128,
             );
-            markers.add({
+            if (item != null && itemName != null) {
+              temporary.add(_shallowFactMapCopyBytes(item));
+            }
+            emit({
               'id': 'questItems:${idParts.map(Uri.encodeComponent).join(':')}',
               'category': 'questItems',
               'filterKey': 'QuestItems',
@@ -806,20 +982,17 @@ List<Map<String, Object?>> prepareQuestMarkers({
                 'id': objectiveId,
                 'quest': {
                   'id': taskId,
-                  if (questName != null) 'name': questName,
+                  'name': ?questName,
                   if (trader != null)
-                    'trader': {
-                      'id': traderId,
-                      if (traderName != null) 'name': traderName,
-                    },
+                    'trader': {'id': traderId, 'name': ?traderName},
                   'wikiLink': wikiLink,
                 },
                 'objective': objective,
-                if (description != null) 'description': description,
+                'description': ?description,
                 'sourceTask': task,
                 'sourceTrader': trader,
                 'location': location,
-                if (item != null) 'item': item,
+                'item': ?item,
                 if (item != null && itemName != null)
                   'questItem': {...item, 'name': itemName},
               },
@@ -837,6 +1010,7 @@ List<Map<String, Object?>> prepareQuestMarkers({
       }
     }
   }
+  temporary.releaseTemporary();
   return markers;
 }
 
@@ -860,12 +1034,63 @@ Map<String, dynamic> _requiredDictionary(
   return value;
 }
 
+int _fallbackIdentityMaterializationSize(
+  String sourceKey,
+  Map<String, dynamic> entry,
+) {
+  var serializedBytes = 0;
+  const JsonEncoder.withIndent('  ').startChunkedConversion(
+      StringConversionSink.fromStringSink(
+        _Utf8CountingStringSink((bytes) => serializedBytes += bytes),
+      ),
+    )
+    ..add(entry)
+    ..close();
+
+  // Sorting creates a second tree and key lists; hashing overlaps the complete
+  // canonical string with its UTF-8 input, including the hashed source wrapper.
+  return _materializedSize(entry) * 2 +
+      serializedBytes * 3 +
+      utf8.encode(sourceKey).length +
+      256;
+}
+
 String _fallbackIdentity(String sourceKey, Map<String, dynamic> entry) {
   final canonical = _canonicalJson(entry);
   return sha256
       .convert(utf8.encode('$sourceKey/$canonical'))
       .toString()
       .substring(0, 20);
+}
+
+class _Utf8CountingStringSink implements StringSink {
+  _Utf8CountingStringSink(this.onBytes);
+
+  final void Function(int bytes) onBytes;
+
+  @override
+  void write(Object? object) => _add(object.toString());
+
+  @override
+  void writeAll(Iterable<dynamic> objects, [String separator = '']) {
+    var first = true;
+    for (final object in objects) {
+      if (!first) _add(separator);
+      _add(object.toString());
+      first = false;
+    }
+  }
+
+  @override
+  void writeCharCode(int charCode) => _add(String.fromCharCode(charCode));
+
+  @override
+  void writeln([Object? object = '']) {
+    if (object != '') write(object);
+    _add('\\n');
+  }
+
+  void _add(String value) => onBytes(utf8.encode(value).length);
 }
 
 String _canonicalJson(Object? value) => canonicalJson(value);
@@ -1105,18 +1330,23 @@ List<double>? _heightBand(Map<String, dynamic> location, String path) {
   return [lower, upper];
 }
 
+int _shallowFactMapCopyBytes(Map<String, dynamic> value) =>
+    128 + value.length * 32;
+
 int _materializedSize(Object? value) {
   var total = 0;
   void charge(Object? current) {
     if (current == null || current is bool || current is num) {
-      total += 16;
+      total += 32;
     } else if (current is String) {
-      total += 24 + current.length * 2;
+      total += 32 + current.length * 2;
     } else if (current is List) {
-      total += 24 + current.length * 16;
-      for (final entry in current) charge(entry);
+      total += 48 + current.length * 24;
+      for (final entry in current) {
+        charge(entry);
+      }
     } else if (current is Map) {
-      total += 48 + current.length * 32;
+      total += 96 + current.length * 48;
       for (final entry in current.entries) {
         charge(entry.key);
         charge(entry.value);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:ui' show Size;
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,9 @@ import '../domain/map_geometry.dart';
 import '../domain/map_marker_query.dart';
 import '../domain/map_zone_style.dart';
 import '../domain/settings.dart';
+import '../maps/live_map_budget.dart';
+import '../maps/live_map_inventory.dart';
+import '../maps/live_map_snapshot.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map.dart';
 import '../maps/prepared_map_loader.dart';
@@ -36,6 +40,12 @@ class MapController extends ChangeNotifier {
   final Map<String, MapViewTransform> _views = {};
   final Map<String, MapFloorSelection> _floors = {};
   final Map<String, List<_MarkerScenePosition>> _markerPositions = {};
+  final Map<String, List<PreparedMarker>> _activeMarkerInventories = {};
+  LiveMapInventory? _activeInventory;
+  LiveMapInventoryValidation? _activeInventoryValidation;
+  MapMarkerMetadataOwner? _metadataOwner;
+  LiveMapBudget? _activeInventoryBudget;
+  int _activeProjectionCapacityBytes = 0;
   List<_MarkerProjection>? _projectedMarkers;
   List<ProjectedMapMarker>? _visibleMarkerCache;
   double? _visibleMarkerMargin;
@@ -62,6 +72,16 @@ class MapController extends ChangeNotifier {
   String? _error;
 
   List<PreparedMap> get maps => _pack?.maps ?? const [];
+
+  /// The already-loaded prepared pack, or `null` before inventory loading.
+  PreparedMapPack? get pack => _pack;
+
+  /// The selected map's active marker inventory, including published metadata.
+  List<PreparedMarker> get activeMarkers =>
+      _activeMarkerInventories[_selectedMapId] ??
+      _preparedMap?.markers ??
+      const [];
+
   String? get selectedMapId => _selectedMapId;
 
   /// Changes only when selected map or prepared content authority changes.
@@ -75,7 +95,12 @@ class MapController extends ChangeNotifier {
   bool get automaticFloorFollowing =>
       automaticFloorSupported && (_automaticFloors[_selectedMapId] ?? true);
   Set<String> get applicableCategories => {
-    ...?_preparedMap?.categories,
+    ...?(_preparedMap == null
+        ? null
+        : _activeMarkerInventories[_preparedMap!.id]
+                  ?.map((marker) => marker.filterKey)
+                  .toSet() ??
+              _preparedMap!.categories),
     'CustomPins',
   };
   PreparedMap? get preparedMap => _preparedMap;
@@ -98,6 +123,13 @@ class MapController extends ChangeNotifier {
     final inventoryGeneration = ++_inventoryGeneration;
     ++_contentGeneration;
     _markerPositions.clear();
+    _activeMarkerInventories.clear();
+    _activeInventory = null;
+    _activeInventoryValidation = null;
+    _metadataOwner = null;
+    _activeInventoryBudget?.releaseMaterialized(_activeProjectionCapacityBytes);
+    _activeInventoryBudget = null;
+    _activeProjectionCapacityBytes = 0;
     _floors.clear();
     _views.clear();
     _clearEvidence();
@@ -173,14 +205,19 @@ class MapController extends ChangeNotifier {
                 padding: _fitPadding,
               )
             : MapViewTransform());
+    final markers = _activeMarkerInventories.putIfAbsent(
+      map.id,
+      () => map.markers,
+    );
     _markerPositions.putIfAbsent(
       map.id,
       () => List.unmodifiable(
-        map.markers.map(
+        markers.map(
           (marker) => _MarkerScenePosition(
             marker,
             map.gameToScene(marker.position),
             List.unmodifiable(marker.outline.map(map.gameToScene)),
+            _metadataOwner,
           ),
         ),
       ),
@@ -216,12 +253,351 @@ class MapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Prepares a complete marker snapshot without replacing prepared artwork.
+  ///
+  /// Returns an activation closure after validation, conversion and resource
+  /// reservation succeed. Calling the closure adopts the prepared inventory
+  /// and returns whether structural marker content changed.
+  bool Function() prepareMarkerInventory(
+    LiveMapSnapshot? snapshot, {
+    required LiveMapBudget budget,
+  }) {
+    final pack = _pack;
+    if (pack == null) {
+      throw StateError('Prepared map inventory is not loaded.');
+    }
+    final inventoryGeneration = _inventoryGeneration;
+    final budgetStart = budget.materializedBytes;
+    final inventoryIndexReservation = 128 + pack.maps.length * 64;
+    budget.reserveMaterialized(inventoryIndexReservation);
+    final oldInventories = <String, List<PreparedMarker>>{
+      for (final map in pack.maps)
+        map.id: _activeMarkerInventories[map.id] ?? map.markers,
+    };
+    var retainReservation = false;
+    try {
+      final previousInventory = _activeInventory;
+      if (previousInventory != null) {
+        previousInventory.reserveRetained(budget);
+        _reserveMarkerGraphs(budget, pack.maps.expand((map) => map.markers));
+      } else {
+        _reserveMarkerGraphs(
+          budget,
+          oldInventories.values.expand((markers) => markers),
+        );
+      }
+      if (_metadataOwner case final oldOwner?) {
+        budget.reserveMaterialized(oldOwner.retainedMaterializedBytes);
+      }
+      if (_activeProjectionCapacityBytes > 0) {
+        budget.reserveMaterialized(_activeProjectionCapacityBytes);
+      }
+      final nextInventory = snapshot == null
+          ? LiveMapInventory.fromMarkers(
+              maps: {for (final map in pack.maps) map.id: map.markers},
+              budget: budget,
+            )
+          : previousInventory != null &&
+                snapshot.reuseInventoryValidation(_activeInventoryValidation)
+          ? previousInventory
+          : snapshot.decodeInventory(budget: budget);
+      final next = nextInventory.maps;
+      if (snapshot != null) {
+        if (snapshot.compatibility.preparedMapIds.length != pack.byId.length ||
+            !snapshot.compatibility.preparedMapIds.containsAll(
+              pack.byId.keys,
+            )) {
+          throw const FormatException(
+            'Live marker snapshot is incompatible with the prepared map inventory.',
+          );
+        }
+        if (next.length != pack.maps.length ||
+            !pack.byId.keys.every(next.containsKey)) {
+          throw const FormatException(
+            'Live marker inventory must cover every prepared map.',
+          );
+        }
+        for (final map in pack.maps) {
+          if (!_hasUniqueMarkerIds(next[map.id]!, budget)) {
+            throw FormatException('Map data repeats a marker on ${map.id}.');
+          }
+        }
+      }
+      const comparisonBaseReservation = 128;
+      budget.reserveMaterialized(comparisonBaseReservation);
+      final factsComparison = _LogicalFactsComparison(budget);
+      late final bool changed;
+      try {
+        changed = !pack.maps.every(
+          (map) => _sameMarkers(
+            oldInventories[map.id]!,
+            next[map.id]!,
+            budget,
+            factsComparison,
+          ),
+        );
+      } finally {
+        budget.releaseMaterialized(
+          comparisonBaseReservation + factsComparison.reservedBytes,
+        );
+      }
+      if (identical(nextInventory, previousInventory)) {
+        final reservation = budget.materializedBytes - budgetStart;
+        var released = false;
+        retainReservation = true;
+        return () {
+          if (!released) {
+            released = true;
+            budget.releaseMaterialized(reservation);
+          }
+          return false;
+        };
+      }
+      final generationBudget = LiveMapBudget(
+        maxMaterializedBytes: budget.maxMaterializedBytes,
+        maxSerializedBytes: budget.maxSerializedBytes,
+      );
+      _reserveMarkerGraphs(
+        generationBudget,
+        pack.maps.expand((map) => map.markers),
+      );
+      generationBudget.reserveMaterialized(
+        nextInventory.retainedMaterializedBytes,
+      );
+      var generationActivated = false;
+      final metadataOwner = MapMarkerMetadataOwner(
+        reserveMaterialized: (bytes) {
+          if (!generationActivated) {
+            budget.reserveMaterialized(bytes);
+          }
+          try {
+            generationBudget.reserveMaterialized(bytes);
+          } on Object {
+            if (!generationActivated) {
+              budget.releaseMaterialized(bytes);
+            }
+            rethrow;
+          }
+        },
+        releaseMaterialized: (bytes) {
+          generationBudget.releaseMaterialized(bytes);
+          if (!generationActivated) {
+            budget.releaseMaterialized(bytes);
+          }
+        },
+      );
+      final projectionCapacity = _markerProjectionCapacity(pack, next);
+      budget.reserveMaterialized(projectionCapacity);
+      generationBudget.reserveMaterialized(projectionCapacity);
+      final positions = <String, List<_MarkerScenePosition>>{
+        for (final map in pack.maps)
+          map.id: List.unmodifiable([
+            for (final marker in next[map.id]!)
+              _MarkerScenePosition(
+                marker,
+                map.gameToScene(marker.position),
+                List.unmodifiable(marker.outline.map(map.gameToScene)),
+                metadataOwner,
+              ),
+          ]),
+      };
+      for (final mapPositions in positions.values) {
+        for (final position in mapPositions) {
+          position.metadata.matchesSearch(_searchTerms);
+        }
+      }
+      final reservation = budget.materializedBytes - budgetStart;
+      var activated = false;
+      var retainedProjectionCapacity = false;
+      retainReservation = true;
+      return () {
+        if (activated) return false;
+        activated = true;
+        try {
+          if (_disposed ||
+              inventoryGeneration != _inventoryGeneration ||
+              !identical(_pack, pack)) {
+            return false;
+          }
+          final adopt = !identical(_activeInventory, nextInventory);
+          if (!adopt) return false;
+          final previousBudget = _activeInventoryBudget;
+          if (previousBudget != null) {
+            previousBudget.releaseMaterialized(_activeProjectionCapacityBytes);
+          }
+          _activeInventory = nextInventory;
+          _activeInventoryValidation = snapshot?.inventoryValidation;
+          _metadataOwner = metadataOwner;
+          _activeInventoryBudget = budget;
+          _activeProjectionCapacityBytes = projectionCapacity;
+          generationActivated = true;
+          retainedProjectionCapacity = true;
+          _activeMarkerInventories
+            ..clear()
+            ..addAll(next);
+          _markerPositions
+            ..clear()
+            ..addAll(positions);
+          if (changed) {
+            _selectedMarkerId = null;
+            ++_contentGeneration;
+          }
+          _invalidateMarkers();
+          notifyListeners();
+          return changed;
+        } finally {
+          budget.releaseMaterialized(
+            retainedProjectionCapacity
+                ? reservation - projectionCapacity
+                : reservation,
+          );
+        }
+      };
+    } finally {
+      if (!retainReservation) {
+        budget.releaseMaterialized(budget.materializedBytes - budgetStart);
+      }
+    }
+  }
+
   MapMarkerMetadata metadataFor(PreparedMarker marker) {
     for (final position
         in _markerPositions[_selectedMapId] ?? const <_MarkerScenePosition>[]) {
       if (identical(position.marker, marker)) return position.metadata;
     }
     throw ArgumentError('Marker is not in the current prepared map.');
+  }
+
+  bool _sameMarkers(
+    List<PreparedMarker> left,
+    List<PreparedMarker> right,
+    LiveMapBudget budget,
+    _LogicalFactsComparison compared,
+  ) {
+    if (left.length != right.length) return false;
+    final lookupReservation = 128 + right.length * 64;
+    budget.reserveMaterialized(lookupReservation);
+    try {
+      final byId = <String, PreparedMarker>{
+        for (final marker in right) marker.id: marker,
+      };
+      if (byId.length != right.length) return false;
+      for (final a in left) {
+        final b = byId[a.id];
+        if (b == null ||
+            a.category != b.category ||
+            a.filterKey != b.filterKey ||
+            a.name != b.name ||
+            !_samePoint(a.position, b.position) ||
+            a.floorId != b.floorId ||
+            a.heightBand?.min != b.heightBand?.min ||
+            a.heightBand?.max != b.heightBand?.max ||
+            !compared.same(a.details, b.details) ||
+            !compared.same(a.source, b.source) ||
+            a.outline.length != b.outline.length) {
+          return false;
+        }
+        for (var point = 0; point < a.outline.length; point++) {
+          if (!_samePoint(a.outline[point], b.outline[point])) return false;
+        }
+      }
+      return true;
+    } finally {
+      budget.releaseMaterialized(lookupReservation);
+    }
+  }
+
+  bool _hasUniqueMarkerIds(List<PreparedMarker> markers, LiveMapBudget budget) {
+    final reservation = 128 + markers.length * 64;
+    budget.reserveMaterialized(reservation);
+    try {
+      final ids = <String>{};
+      for (final marker in markers) {
+        if (!ids.add(marker.id)) return false;
+      }
+      return true;
+    } finally {
+      budget.releaseMaterialized(reservation);
+    }
+  }
+
+  bool _samePoint(GamePoint left, GamePoint right) =>
+      left.x == right.x && left.z == right.z && left.height == right.height;
+
+  int _markerProjectionCapacity(
+    PreparedMapPack pack,
+    Map<String, List<PreparedMarker>> inventories,
+  ) {
+    var markers = 0;
+    var outlinePoints = 0;
+    for (final map in pack.maps) {
+      for (final marker in inventories[map.id]!) {
+        markers++;
+        outlinePoints += marker.outline.length;
+      }
+    }
+    // Scene positions, their duplicated unmodifiable reference lists, the
+    // marker projection/cache entries, and viewport-outline copies.
+    return 128 * pack.maps.length +
+        192 * markers +
+        64 * outlinePoints +
+        256 * markers +
+        64 * outlinePoints;
+  }
+
+  void _reserveMarkerGraphs(
+    LiveMapBudget budget,
+    Iterable<PreparedMarker> markers,
+  ) {
+    const seenBaseReservation = 128;
+    const seenEntryReservation = 64;
+    budget.reserveMaterialized(seenBaseReservation);
+    var seenReservation = seenBaseReservation;
+    final seen = HashSet<Object>.identity();
+    try {
+      void reserveValue(Object? value) {
+        if (value is Map || value is List) {
+          final node = value as Object;
+          if (seen.contains(node)) return;
+          budget.reserveMaterialized(seenEntryReservation);
+          seenReservation += seenEntryReservation;
+          seen.add(node);
+        }
+        if (value == null || value is bool || value is num) {
+          budget.reserveMaterialized(32);
+        } else if (value is String) {
+          budget.reserveMaterialized(32 + value.length * 2);
+        } else if (value is List) {
+          budget.reserveMaterialized(48 + value.length * 24);
+          for (final item in value) {
+            reserveValue(item);
+          }
+        } else if (value is Map) {
+          budget.reserveMaterialized(96 + value.length * 48);
+          for (final entry in value.entries) {
+            reserveValue(entry.key);
+            reserveValue(entry.value);
+          }
+        }
+      }
+
+      for (final marker in markers) {
+        budget.reserveMaterialized(
+          256 +
+              2 *
+                  (marker.id.length +
+                      marker.category.length +
+                      marker.filterKey.length +
+                      marker.name.length +
+                      (marker.floorId?.length ?? 0)) +
+              marker.outline.length * 64,
+        );
+        reserveValue(marker.details);
+        reserveValue(marker.source);
+      }
+    } finally {
+      budget.releaseMaterialized(seenReservation);
+    }
   }
 
   /// Selection never changes the view; only explicitly source-linked switches
@@ -753,6 +1129,48 @@ class ProjectedMapMarker {
   final List<ViewportPoint> outline;
 }
 
+class _LogicalFactsComparison {
+  _LogicalFactsComparison(this.budget);
+
+  final LiveMapBudget budget;
+  final Map<Object, Object> _rightToLeft = HashMap<Object, Object>.identity();
+  int reservedBytes = 0;
+
+  bool same(Object? left, Object? right) {
+    if (identical(left, right)) return true;
+    if (left is Map && right is Map) {
+      if (_alreadyCompared(left, right)) return true;
+      if (left.length != right.length) return false;
+      for (final entry in left.entries) {
+        if (!right.containsKey(entry.key) ||
+            !same(entry.value, right[entry.key])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (left is List && right is List) {
+      if (_alreadyCompared(left, right)) return true;
+      if (left.length != right.length) return false;
+      for (var index = 0; index < left.length; index++) {
+        if (!same(left[index], right[index])) return false;
+      }
+      return true;
+    }
+    return left == right;
+  }
+
+  bool _alreadyCompared(Object left, Object right) {
+    final previous = _rightToLeft[right];
+    if (previous != null) return identical(previous, left);
+    const entryReservation = 128;
+    budget.reserveMaterialized(entryReservation);
+    reservedBytes += entryReservation;
+    _rightToLeft[right] = left;
+    return false;
+  }
+}
+
 class _MarkerProjection {
   const _MarkerProjection(
     this.marker,
@@ -769,13 +1187,18 @@ class _MarkerProjection {
 }
 
 class _MarkerScenePosition {
-  _MarkerScenePosition(this.marker, this.point, this.outline)
-    : metadata = MapMarkerMetadata(
+  _MarkerScenePosition(
+    this.marker,
+    this.point,
+    this.outline,
+    MapMarkerMetadataOwner? owner,
+  ) : metadata = MapMarkerMetadata(
         name: marker.name,
         type: marker.filterKey,
         category: marker.category,
         details: marker.details,
         source: marker.source,
+        owner: owner,
       );
   final MapMarkerMetadata metadata;
   final PreparedMarker marker;

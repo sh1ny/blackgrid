@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -6,11 +7,14 @@ import 'package:blackgrid/data/live_map_cache.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/maps/live_map_budget.dart';
+import 'package:blackgrid/maps/live_map_inventory.dart';
 import 'package:blackgrid/maps/live_map_normalizer.dart';
 import 'package:blackgrid/maps/live_map_snapshot.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart'
+    show QueryExecutor, QueryInterceptor, TransactionExecutor;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:test/test.dart';
 
@@ -38,6 +42,161 @@ void main() {
     });
 
     tearDown(() => database.delete());
+
+    test('read remains one generation across a concurrent commit', () async {
+      final prior = _snapshot(
+        mode: GameMode.pve,
+        compatibility: compatibility,
+        checkedAt: DateTime.utc(2020),
+        contentTag: 'before',
+      );
+      final replacement = _snapshot(
+        mode: GameMode.pve,
+        compatibility: compatibility,
+        checkedAt: DateTime.utc(2026),
+        contentTag: 'after',
+      );
+      await cache.commit(prior);
+      final barrier = _SnapshotReadBarrier();
+      final actual = await database.db.runWithInterceptor(
+        interceptor: barrier,
+        () async {
+          final reading = cache.read(
+            GameMode.pve,
+            compatibility: compatibility,
+          );
+          await barrier.headerRead.future;
+          final writing = cache.commit(replacement);
+          try {
+            await barrier.writerQueued.future;
+          } finally {
+            barrier.resume.complete();
+          }
+          final result = await reading;
+          await writing;
+          return result;
+        },
+      );
+      expect(actual, isNotNull);
+      expect(actual!.checkedAt, prior.checkedAt);
+      expect(actual.normalizedPayload, orderedEquals(prior.normalizedPayload));
+      for (final source in prior.sources) {
+        final observed = actual.sources.singleWhere(
+          (value) => value.dataset == source.dataset,
+        );
+        expect(observed.bytes, orderedEquals(source.bytes));
+        expect(observed.etag, source.etag);
+        expect(observed.lastModified, source.lastModified);
+      }
+      final current = await cache.read(
+        GameMode.pve,
+        compatibility: compatibility,
+      );
+      expect(current!.checkedAt, replacement.checkedAt);
+      expect(
+        {for (final source in current.sources) source.dataset: source.sha256},
+        {
+          for (final source in replacement.sources)
+            source.dataset: source.sha256,
+        },
+      );
+    });
+
+    test(
+      'storage preparation respects the caller budget before writing',
+      () async {
+        final mapId = pack.maps.first.id;
+        final compatibility = LiveMapCompatibility.fromPreparedPack(
+          PreparedMapPack(
+            version: pack.version,
+            assetRoot: pack.assetRoot,
+            maps: [pack.maps.first],
+          ),
+          bindings.where((binding) => binding.mapId == mapId),
+        );
+        final prior = _snapshot(
+          mode: GameMode.pve,
+          compatibility: compatibility,
+          checkedAt: DateTime.utc(2020),
+          contentTag: 'before',
+        );
+        await cache.commit(prior);
+        final compactReplacement = _snapshot(
+          mode: GameMode.pve,
+          compatibility: compatibility,
+          checkedAt: DateTime.utc(2026),
+          contentTag: 'after-storage-budget',
+        );
+        final paddedSourceBody = Uint8List.fromList(
+          utf8.encode(jsonEncode({'body': List.filled(16 * 1024, 'x').join()})),
+        );
+        final replacement = LiveMapSnapshot(
+          mode: compactReplacement.mode,
+          checkedAt: compactReplacement.checkedAt,
+          normalizedPayload: compactReplacement.normalizedPayload,
+          sources: [
+            for (final source in compactReplacement.sources)
+              if (source.dataset == LiveMapSourceDataset.maps)
+                LiveMapSourceBody(
+                  dataset: source.dataset,
+                  bytes: paddedSourceBody,
+                  etag: source.etag,
+                  lastModified: source.lastModified,
+                )
+              else
+                source,
+          ],
+          formatVersion: compactReplacement.formatVersion,
+          normalizerVersion: compactReplacement.normalizerVersion,
+          compatibility: compactReplacement.compatibility,
+        );
+        expect(
+          replacement.normalizedPayload,
+          isNot(orderedEquals(prior.normalizedPayload)),
+        );
+        final storageCharge =
+            replacement.normalizedPayload.length +
+            replacement.sources.fold<int>(
+              0,
+              (total, source) => total + source.bytes.length,
+            ) +
+            256 * (replacement.sources.length + 1);
+        final maxMaterializedBytes = storageCharge - 1;
+        final decodeBudget = LiveMapBudget(
+          maxMaterializedBytes: maxMaterializedBytes,
+        );
+        final decoded = replacement.decodeInventory(budget: decodeBudget);
+        expect(decoded.maps.keys.toSet(), compatibility.preparedMapIds);
+        expect(
+          decoded.maps.values.single.single.details['content'],
+          'after-storage-budget',
+        );
+        await expectLater(
+          cache.commit(
+            replacement,
+            budget: LiveMapBudget(maxMaterializedBytes: maxMaterializedBytes),
+          ),
+          throwsA(isA<LiveMapResourceLimitException>()),
+        );
+        final actual = await cache.read(
+          GameMode.pve,
+          compatibility: compatibility,
+        );
+        expect(actual!.checkedAt, prior.checkedAt);
+        expect(
+          actual.normalizedPayload,
+          orderedEquals(prior.normalizedPayload),
+        );
+        for (final source in prior.sources) {
+          final retained = actual.sources.singleWhere(
+            (candidate) => candidate.dataset == source.dataset,
+          );
+          expect(retained.bytes, orderedEquals(source.bytes));
+          expect(retained.etag, source.etag);
+          expect(retained.lastModified, source.lastModified);
+        }
+      },
+    );
 
     test('validator replacement reuses immutable source bytes', () {
       final budget = LiveMapBudget();
@@ -144,6 +303,143 @@ void main() {
           pve.sources.first.bytes,
           isNot(equals(seasonal.sources.first.bytes)),
         );
+      },
+    );
+
+    test(
+      'obsolete inventory format does not alter source validators',
+      () async {
+        final snapshot = _snapshot(
+          mode: GameMode.pve,
+          compatibility: compatibility,
+          checkedAt: DateTime.utc(2020, 1, 2),
+          contentTag: 'obsolete',
+        );
+        await cache.commit(snapshot);
+        await database.writeRawRow(
+          'UPDATE live_map_snapshots SET format_version = 1 WHERE mode = ?',
+          [GameMode.pve.index],
+        );
+
+        expect(
+          await cache.read(GameMode.pve, compatibility: compatibility),
+          isNull,
+        );
+
+        await database.writeRawRow(
+          'UPDATE live_map_snapshots SET format_version = ? WHERE mode = ?',
+          [liveMapSnapshotFormatVersion, GameMode.pve.index],
+        );
+        final restored = await cache.read(
+          GameMode.pve,
+          compatibility: compatibility,
+        );
+        expect(restored, isNotNull);
+        for (final source in snapshot.sources) {
+          final retained = restored!.sources.singleWhere(
+            (item) => item.dataset == source.dataset,
+          );
+          expect(retained.bytes, orderedEquals(source.bytes));
+          expect(retained.etag, source.etag);
+          expect(retained.lastModified, source.lastModified);
+        }
+        final malformedWire = Uint8List.fromList(
+          utf8.encode('{"version":2,"facts":[]}'),
+        );
+        await database.writeRawRow(
+          'UPDATE live_map_snapshots SET normalized_payload = ?, '
+          'normalized_sha256 = ? WHERE mode = ?',
+          [malformedWire, _digest(malformedWire), GameMode.pve.index],
+        );
+        expect(
+          await cache.read(GameMode.pve, compatibility: compatibility),
+          isNull,
+        );
+        await database.writeRawRow(
+          'UPDATE live_map_snapshots SET normalized_payload = ?, '
+          'normalized_sha256 = ? WHERE mode = ?',
+          [
+            snapshot.normalizedPayload,
+            _digest(snapshot.normalizedPayload),
+            GameMode.pve.index,
+          ],
+        );
+        final repaired = await cache.read(
+          GameMode.pve,
+          compatibility: compatibility,
+        );
+        expect(repaired, isNotNull);
+        for (final source in snapshot.sources) {
+          final retained = repaired!.sources.singleWhere(
+            (item) => item.dataset == source.dataset,
+          );
+          expect(retained.bytes, orderedEquals(source.bytes));
+          expect(retained.etag, source.etag);
+          expect(retained.lastModified, source.lastModified);
+        }
+      },
+    );
+
+    test(
+      'malformed compact reference cannot replace durable facts or validators',
+      () async {
+        final prior = _snapshot(
+          mode: GameMode.pve,
+          compatibility: compatibility,
+          checkedAt: DateTime.utc(2020),
+          contentTag: 'retained-reference-authority',
+        );
+        await cache.commit(prior);
+        prior.decodeInventory(budget: LiveMapBudget());
+        expect(prior.inventoryValidation, isNotNull);
+        final replacement = _snapshot(
+          mode: GameMode.pve,
+          compatibility: compatibility,
+          checkedAt: DateTime.utc(2026),
+          contentTag: 'rejected-reference-authority',
+        );
+        final wire = jsonDecode(
+          utf8.decode(replacement.normalizedPayload),
+        ) as Map<String, dynamic>;
+        final maps = wire['maps'] as Map<String, dynamic>;
+        final row = (maps.values.first as List).single as Map<String, dynamic>;
+        row['detailsRef'] = (wire['facts'] as List).length;
+        final malformed = LiveMapSnapshot(
+          mode: replacement.mode,
+          checkedAt: replacement.checkedAt,
+          normalizedPayload: Uint8List.fromList(utf8.encode(jsonEncode(wire))),
+          sources: replacement.sources,
+          formatVersion: replacement.formatVersion,
+          normalizerVersion: replacement.normalizerVersion,
+          compatibility: replacement.compatibility,
+        );
+        expect(
+          malformed.reuseInventoryValidation(prior.inventoryValidation),
+          isFalse,
+        );
+
+        await expectLater(
+          cache.commit(malformed),
+          throwsA(isA<ArgumentError>()),
+        );
+        final retained = await cache.read(
+          GameMode.pve,
+          compatibility: compatibility,
+        );
+        expect(retained, isNotNull);
+        expect(retained!.checkedAt, prior.checkedAt);
+        expect(
+          retained.normalizedPayload,
+          orderedEquals(prior.normalizedPayload),
+        );
+        for (final source in prior.sources) {
+          final actual = retained.sources.singleWhere(
+            (item) => item.dataset == source.dataset,
+          );
+          expect(actual.bytes, orderedEquals(source.bytes));
+          expect(actual.etag, source.etag);
+          expect(actual.lastModified, source.lastModified);
+        }
       },
     );
 
@@ -640,6 +936,36 @@ void main() {
   });
 }
 
+class _SnapshotReadBarrier extends QueryInterceptor {
+  final headerRead = Completer<void>();
+  final writerQueued = Completer<void>();
+  final resume = Completer<void>();
+  bool _held = false;
+
+  @override
+  TransactionExecutor beginTransaction(QueryExecutor parent) {
+    if (_held && !writerQueued.isCompleted) writerQueued.complete();
+    return super.beginTransaction(parent);
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    final rows = await executor.runSelect(statement, args);
+    if (!_held &&
+        statement.contains('FROM live_map_snapshots') &&
+        statement.contains('AS payload_length')) {
+      _held = true;
+      headerRead.complete();
+      await resume.future;
+    }
+    return rows;
+  }
+}
+
 Future<PreparedMapPack> _preparedPack({
   required String version,
   required String artworkRevision,
@@ -705,11 +1031,27 @@ LiveMapSnapshot _snapshot({
   required LiveMapCompatibility compatibility,
   required DateTime checkedAt,
   required String contentTag,
+  bool includeMarkers = true,
 }) {
-  final normalized = <String, Object?>{
-    for (final mapId in compatibility.preparedMapIds) mapId: <Object?>[],
-  };
-  final payload = Uint8List.fromList(utf8.encode(canonicalJson(normalized)));
+  final budget = LiveMapBudget();
+  final payload = LiveMapInventory.fromMarkers(
+    maps: {
+      for (final mapId in compatibility.preparedMapIds)
+        mapId: [
+          if (includeMarkers)
+            PreparedMarker.fromJson({
+              'id': 'marker-$contentTag',
+              'category': 'switches',
+              'filterKey': 'Switches',
+              'name': 'Marker $contentTag',
+              'position': {'x': 1, 'z': 2},
+              'details': {'content': contentTag},
+              'source': {'mapId': mapId},
+            }),
+        ],
+    },
+    budget: budget,
+  ).encode(budget: budget);
   final sources = [
     for (final dataset in LiveMapSourceDataset.values)
       LiveMapSourceBody(

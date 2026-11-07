@@ -243,6 +243,7 @@ Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets whe
 | Source | Endpoint | Fresh for | On failure |
 |---|---|---|---|
 | Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}` plus optional `*_en` translations | 24 h from download; source times are shown as evidence only | Last good snapshot kept, status `stale` or `failed` |
+| Map markers | `json.tarkov.dev/{regular\|pve\|pvp-season}/{maps,maps_en,tasks,tasks_en,traders,traders_en}` | Compatible last-good snapshots have no age expiry | Selected mode's last-good snapshot, otherwise labelled regular bundled fallback |
 | Flea quote | Inside the catalog | 1 h | Decision falls to Check |
 | Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
 
@@ -254,7 +255,7 @@ Every request is a GET with a 30 s deadline and no redirects. The catalog refres
 
 | Path | Holds |
 |---|---|
-| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, import ledger |
+| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, import ledger and mode-specific map snapshots |
 | `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi` | Tracker token, current-user DPAPI ciphertext; not portable to another Windows user |
 
 History stores item ID, mode, source, UTC time and revision only. No telemetry, account or backend exists.
@@ -297,7 +298,7 @@ Evidence without a confirmed raid or map is shown as assumed. Missing or unreada
 <details>
 <summary><b>Map pack preparation</b></summary>
 
-Runtime only loads the active pack. These commands are maintenance tools ([`prepare.dart`](tool/maps/prepare.dart)); see `--help` for details.
+Runtime artwork and calibration come only from the active pack; marker facts can refresh independently. These commands are maintenance tools ([`prepare.dart`](tool/maps/prepare.dart)); see `--help` for details.
 
 | Command | Does |
 |---|---|
@@ -368,7 +369,11 @@ mise exec -- dart run drift_dev schema generate drift_schemas test/data/generate
 
 Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger, version 3 the item-icon cache, and version 4 local raid/sale statistics. Version 5 adds `live_map_snapshots` and `live_map_sources` without replacing those user records.
 
-`LiveMapCacheStore` keeps one complete snapshot per known game mode. A transaction replaces the normalized payload and all six exact source bodies and validators together. Reads verify their digests, complete map/source identities, normalized structure, and format/normalizer/mapping/projection/floor compatibility. Compatible data does not expire with age; artwork paths and compiler versions are not authority gates. Missing data returns no snapshot; rejected data also reports a per-read diagnostic and never supplies validators. Shared materialization and serialized-size guards apply before payload decoding or private byte copies.
+`LiveMapCacheStore` keeps one complete snapshot per known game mode. A transaction replaces the normalized payload and all six exact source bodies and validators together. Reads use one transaction so concurrent replacement cannot mix generations, and verify digests, complete map/source identities, normalized structure, and format/normalizer/mapping/projection/floor compatibility. Compatible data does not expire with age; artwork paths and compiler versions are not authority gates. Missing data returns no snapshot; rejected data also reports a per-read diagnostic and never supplies validators. Shared materialization and serialized-size guards apply before payload decoding or private byte copies.
+
+`LiveMapRefreshAcquirer` fetches six JSON sources from the selected `regular`, `pve` or `pvp-season` route: `maps`, `maps_en`, `tasks`, `tasks_en`, `traders` and `traders_en`. It prefers ETag, then Last-Modified, otherwise an unconditional GET. A 200 replaces the body and both validator fields; a 304 reuses only the exact compatible cached body and merges returned validators. A failure never commits partial bodies or validators.
+
+Requests have fixed 30-second/16-MiB decoded-body limits; the complete intent has 120 seconds and 64 MiB across all six bodies, including cached 304 bodies. Redirects and automatic retries are forbidden. Normalization runs on a disposable isolate with pre-handoff accounting and transferable output. Runtime markers reference shared immutable source and derived facts through normalization, compact serialization, cache loading and publication; complete local details and quest/objective/item identities remain available without detail requests. Search shares folded scalar text within each marker generation instead of flattening complete facts for every marker. Compact payloads emit child-first fact references and decode one bounded fact or marker row at a time, rather than building a second complete JSON tree. A successful decode certifies the snapshot's privately owned immutable payload and map closure; identical payload/compatibility/version checks can reuse that proof, while storage independently verifies every payload and source digest on each write. Unchanged refreshes reuse the active immutable inventory and retain selection without rebuilding derived projections. Recursive materialization remains conservatively limited to 256 MiB, and normalized UTF-8 JSON to 64 MiB; admission covers decoding, reference validation, retained facts, encoding, storage, derived search/projection state and overlapping generations before allocation. Temporary stream-buffer, decoded-text and wire-workspace charges are released when no longer retained. These are resource limits, not historical marker-content gates; frozen offline map output is unchanged. Cancellation closes owned streams and workers, while an already-started storage transaction drains before the operation finishes.
 </details>
 
 <details>

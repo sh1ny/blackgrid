@@ -48,10 +48,10 @@ Map<String, dynamic> _mapSource({
             category: <dynamic>[],
           'bosses': <dynamic>[],
         },
-      if (customs != null) 'customs': customs,
-      if (interchange != null) 'interchange': interchange,
-      if (icebreaker != null) 'icebreaker': icebreaker,
-      if (extra != null) 'new-upstream-map': extra,
+      'customs': ?customs,
+      'interchange': ?interchange,
+      'icebreaker': ?icebreaker,
+      'new-upstream-map': ?extra,
     },
     'mobs': <String, dynamic>{
       'boss-alpha': {'name': 'Alpha'},
@@ -260,6 +260,31 @@ _normalizeForMap({
 }
 
 void main() {
+  test('idless escape-heavy marker reserves fallback identity peak', () {
+    final marker = <String, dynamic>{
+      'name': 'Large detail',
+      'position': {'x': 1, 'y': 2, 'z': 3},
+      'detail': List.filled(1024, '\u0000').join(),
+    };
+    var reserved = 0;
+    const budget = 12 * 1024;
+
+    expect(
+      () => prepareMarkers(
+        _mapSource(customs: _mapRecord('customs', switches: [marker])),
+        {},
+        calibrationFor('customs'),
+        reserveMaterialization: (bytes) {
+          reserved += bytes;
+          if (reserved > budget) {
+            throw StateError('materialization budget exceeded');
+          }
+        },
+      ),
+      throwsA(isA<StateError>()),
+    );
+  });
+
   test('six sources normalize a complete mode snapshot', () {
     final maps = _mapSource(
       customs: _mapRecord(

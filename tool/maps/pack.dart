@@ -919,20 +919,6 @@ Future<Map<String, dynamic>> _readFrozenSourceObject(
   return _decodeRequiredJsonObject(text, path);
 }
 
-Map<String, dynamic> _requiredSourceDictionary(
-  Map<String, dynamic> source,
-  String path,
-  String key,
-) {
-  final value = source[key];
-  if (value is! Map<String, dynamic>) {
-    throw FormatException(
-      'Malformed required source dictionary $path: "$key" must be an object',
-    );
-  }
-  return value;
-}
-
 /// Rebuilds a candidate pack offline from the [frozen] inputs and [context].
 ///
 /// Raw generations use reviewed configuration context; existing workflows use
@@ -997,8 +983,8 @@ Future<Map<String, dynamic>> rebuildCandidate(
       for (final raw in calibration['maps'] as List)
         LiveMapBinding(
           sourceKey: (raw as Map)['sourceKey'] as String,
-          mapId: (raw as Map)['id'] as String,
-          calibration: Map<String, Object?>.from(raw as Map),
+          mapId: (raw)['id'] as String,
+          calibration: Map<String, Object?>.from(raw),
         ),
     ],
   );

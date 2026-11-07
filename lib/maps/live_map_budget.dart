@@ -93,16 +93,25 @@ class LiveMapBudget {
         'Serialized live-map data exceeds its configured limit.',
       );
     }
-    reserveMaterialized(32 + _encodedUtf16Length(bytes) * 2);
-    _reserveJsonTree(bytes, reserveMaterialized);
-    return jsonDecode(utf8.decode(bytes));
+    final textCharge = 32 + _encodedUtf16Length(bytes) * 2;
+    reserveMaterialized(textCharge);
+    try {
+      _reserveJsonTree(bytes, reserveMaterialized);
+      return jsonDecode(utf8.decode(bytes));
+    } finally {
+      releaseMaterialized(textCharge);
+    }
   }
 
   /// Encodes JSON with the SDK encoder and bounds each output-buffer chunk.
   Uint8List encodeJson(Object? value) {
     final sink = _BudgetedJsonSink(this);
     try {
-      final encoder = JsonUtf8Encoder(null, null, _BudgetedJsonSink._chunkLimit);
+      final encoder = JsonUtf8Encoder(
+        null,
+        null,
+        _BudgetedJsonSink._chunkLimit,
+      );
       final converter = encoder.startChunkedConversion(sink);
       converter.add(value);
       converter.close();

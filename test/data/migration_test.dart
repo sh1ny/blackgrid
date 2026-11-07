@@ -220,7 +220,7 @@ void main() {
           'inner remoteCause',
           isA<NewerDatabaseException>()
               .having((e) => e.onDisk, 'onDisk', 99)
-              .having((e) => e.supported, 'supported', 4),
+              .having((e) => e.supported, 'supported', db.schemaVersion),
         ),
       ),
     );
