@@ -10,22 +10,22 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 | map-place-labels → Place labels show for the floors they belong to | Overlay adds its labels | test/maps/map_controller_test.dart | `place labels: overlay label shows only while its overlay is selected` | green |
 | map-place-labels → Place labels show for the floors they belong to | Label of a hidden exclusive floor | test/maps/map_controller_test.dart | `place labels: exclusive floor hides labels of other floors` | green |
 | map-place-labels → Place labels show for the floors they belong to | Map without labels | test/maps/map_controller_test.dart | `place labels: map with an empty label list yields none` | green |
-| map-place-labels → Place labels keep a fixed screen size | Zooming keeps the size | test/ui/map_place_labels_test.dart | `place label font size does not change with zoom` | red |
+| map-place-labels → Place labels keep a fixed screen size | Zooming keeps the size | test/ui/map_place_labels_test.dart | `place label font size does not change with zoom` | green |
 | map-place-labels → Place labels keep a fixed screen size | Relative sizes | test/domain/map_place_labels_test.dart | `font size follows relative size 65, 80, 100` | green |
 | map-place-labels → Place labels keep a fixed screen size | Out-of-range size is clamped | test/domain/map_place_labels_test.dart | `font size is clamped to 10..16` | green |
-| map-place-labels → Place labels are centred, rotated and haloed | Rotated label | test/ui/map_place_labels_test.dart | `rotated label is drawn rotated about its anchor` | red |
-| map-place-labels → Place labels are centred, rotated and haloed | Unrotated label | test/ui/map_place_labels_test.dart | `unrotated label is centred on its anchor` | red |
+| map-place-labels → Place labels are centred, rotated and haloed | Rotated label | test/ui/map_place_labels_test.dart | `rotated label is drawn rotated about its anchor` | green |
+| map-place-labels → Place labels are centred, rotated and haloed | Unrotated label | test/ui/map_place_labels_test.dart | `unrotated label is centred on its anchor` | green |
 | map-place-labels → Place labels are centred, rotated and haloed | Colour rule rejects a bad label colour | test/domain/map_zone_style_test.dart | `place label colour differs from faction colours and meets 3:1 blended at 85%` | green |
-| map-place-labels → Place labels sit behind every marker drawing | Badge over a label | test/ui/map_place_labels_test.dart | `place labels are drawn before outlines, names and badges` | red |
-| map-place-labels → Place labels sit behind every marker drawing | Search does not dim labels | test/ui/map_place_labels_test.dart | `search leaves place label opacity unchanged` | red |
+| map-place-labels → Place labels sit behind every marker drawing | Badge over a label | test/ui/map_place_labels_test.dart | `place labels are drawn before outlines, names and badges` | green |
+| map-place-labels → Place labels sit behind every marker drawing | Search does not dim labels | test/ui/map_place_labels_test.dart | `search leaves place label opacity unchanged` | green |
 | map-place-labels → Overlapping place labels thin out | Zoomed out | test/domain/map_place_labels_test.dart | `larger overlapping label wins` | green |
 | map-place-labels → Overlapping place labels thin out | Zooming in restores the name | test/domain/map_place_labels_test.dart | `separated labels are both placed` | green |
 | map-place-labels → Overlapping place labels thin out | Equal sizes | test/domain/map_place_labels_test.dart | `equal sizes: earlier pack index wins` | green |
 | map-place-labels → Overlapping place labels thin out | Selected floor wins | test/domain/map_place_labels_test.dart | `selected overlay label wins over a base label of equal size` | green |
 | map-place-labels → Overlapping place labels thin out | Off-screen label takes no room | test/domain/map_place_labels_test.dart | `label outside the viewport takes no room` | green |
-| map-place-labels → Place labels are not interactive | Click on a label | test/ui/map_place_labels_test.dart | `click on a place label selects nothing` | red |
-| map-place-labels → Place labels are not interactive | Click on a label over a badge | test/ui/map_place_labels_test.dart | `click on a badge under a place label selects the marker` | red |
-| map-place-labels → Place labels are not interactive | Accessibility targets | test/ui/map_place_labels_test.dart | `place labels add no semantics targets` | red |
+| map-place-labels → Place labels are not interactive | Click on a label | test/ui/map_place_labels_test.dart | `click on a place label selects nothing` | green |
+| map-place-labels → Place labels are not interactive | Click on a label over a badge | test/ui/map_place_labels_test.dart | `click on a badge under a place label selects the marker` | green |
+| map-place-labels → Place labels are not interactive | Accessibility targets | test/ui/map_place_labels_test.dart | `place labels add no semantics targets` | green |
 | prepared-map-packs → A pack carries each map's place labels | Map with labels | test/maps/place_label_preparation_test.dart | `frozen metadata yields 303 labels on 10 maps in source order` | green |
 | prepared-map-packs → A pack carries each map's place labels | Map without labels | test/maps/place_label_preparation_test.dart | `maps without source labels get an empty list` | green |
 | prepared-map-packs → A pack carries each map's place labels | Missing optional fields | test/maps/place_label_preparation_test.dart | `missing rotation and size default to 0 and 80` | green |
@@ -91,8 +91,8 @@ One group, so the suite is green at its commit: the committed pack and the code 
 
 ## 7. Painter
 
-- [ ] 7.1 Write failing tests in `test/ui/map_place_labels_test.dart` with `test/support/map_widget_harness.dart`: fixed font size under zoom, rotation and centring, draw order before outlines/names/badges, opacity unchanged by search, click-through and no semantics targets. Verify they fail.
-- [ ] 7.2 In `_MapPainter.paint` (`lib/ui/map_workspace.dart:709`), after the scene and before outlines: measure each visible label with one fill-style `TextPainter`, call `placeLabels`, then for placed labels draw the halo pass and the fill pass rotated about the anchor (`canvas.rotate(degrees × π / 180)`), at 85% opacity, disposing painters as `_name` does. No hit testing or semantics for labels. Verify the group's tests and `test/ui/map_zone_labels_test.dart` pass; flip rows green.
+- [x] 7.1 Write failing tests in `test/ui/map_place_labels_test.dart` with `test/support/map_widget_harness.dart`: fixed font size under zoom, rotation and centring, draw order before outlines/names/badges, opacity unchanged by search, click-through and no semantics targets. Verify they fail.
+- [x] 7.2 In `_MapPainter.paint` (`lib/ui/map_workspace.dart:709`), after the scene and before outlines: measure each visible label with one fill-style `TextPainter`, call `placeLabels`, then for placed labels draw the halo pass and the fill pass rotated about the anchor (`canvas.rotate(degrees × π / 180)`), at 85% opacity, disposing painters as `_name` does. No hit testing or semantics for labels. Verify the group's tests and `test/ui/map_zone_labels_test.dart` pass; flip rows green.
 
 ## 8. Rights note
 
