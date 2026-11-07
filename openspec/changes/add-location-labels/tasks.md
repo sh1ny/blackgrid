@@ -55,8 +55,8 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 
 ## 1. ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0036-place-labels-are-pack-owned.md` (MADR short: Status accepted, Date, "Partly supersedes: ADR-0033, preparation version 3 statements (D2, D8) only", Context, Decision, Consequences) from design.md D1–D4 and S5. Leave `docs/adr/0033-*.md` unchanged. Verify: the file exists and `git diff --stat docs/adr/0033-*` is empty.
-- [ ] 1.2 Update `openspec/architecture.md`: add the ADR-0036 index row; mark ADR-0033's row "preparation version 3 only" as partly superseded by 0036 (version 4); update the "Prepared map pack" bullet (preparation version 4, per-map `labels`, re-derived at validation), and the Map tooling and `MapController` component rows (band table, `visiblePlaceLabels`). Verify by reading the diff: every "preparation version 3" statement in force now says 4 or cites ADR-0036.
+- [x] 1.1 Write `docs/adr/0036-place-labels-are-pack-owned.md` (MADR short: Status accepted, Date, "Partly supersedes: ADR-0033, preparation version 3 statements (D2, D8) only", Context, Decision, Consequences) from design.md D1–D4 and S5. Leave `docs/adr/0033-*.md` unchanged. Verify: the file exists and `git diff --stat docs/adr/0033-*` is empty.
+- [x] 1.2 Update `openspec/architecture.md`: add the ADR-0036 index row; mark ADR-0033's row "preparation version 3 only" as partly superseded by 0036 (version 4); update the "Prepared map pack" bullet (preparation version 4, per-map `labels`, re-derived at validation), and the Map tooling and `MapController` component rows (band table, `visiblePlaceLabels`). Verify by reading the diff: every "preparation version 3" statement in force now says 4 or cites ADR-0036.
 
 ## 2. CI: full-rebuild qualification test timeouts (design D8)
 
