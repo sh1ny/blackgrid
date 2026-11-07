@@ -965,6 +965,165 @@ void main() {
   });
 
   group('incremental expanded marker budgets', () {
+    test('fragmented responses cannot bypass materialized admission', () async {
+      final prior = _snapshot();
+      final store = _Store(prior);
+      final payload = Uint8List.fromList([
+        ...List<int>.filled(96, 32),
+        ..._jsonBytes(_body(LiveMapSourceDataset.maps)),
+      ]);
+      final client = _Client([
+        http.StreamedResponse(
+          Stream<List<int>>.fromIterable([
+            for (final byte in payload) Uint8List.fromList([byte]),
+          ]),
+          200,
+        ),
+        for (final dataset in _datasets.skip(1))
+          _response(200, body: _body(dataset)),
+      ]);
+      var normalized = false;
+
+      await expectLater(
+        LiveMapRefreshAcquirer(
+          client: client,
+          store: store,
+          clock: () => _now,
+          limits: const LiveMapRefreshLimits(maxMaterializedBytes: 8192),
+          normalize:
+              ({
+                required sources,
+                required bindings,
+                required mode,
+                required budget,
+                required intent,
+              }) async {
+                normalized = true;
+                return LiveMapInventory.fromMarkers(
+                  maps: const {},
+                  budget: budget,
+                ).encode(budget: budget);
+              },
+        ).refresh(
+          mode: GameMode.pve,
+          intent: _intent(),
+          pack: _pack,
+          bindings: const [],
+        ),
+        throwsA(isA<LiveMapResourceLimitException>()),
+      );
+      expect(normalized, isFalse);
+      expect(store.commits, 0);
+      expect(store.value, same(prior));
+    });
+
+    test('response views account for their complete backing buffers', () async {
+      final prior = _snapshot();
+      final store = _Store(prior);
+      final payload = _jsonBytes(_body(LiveMapSourceDataset.maps));
+      final backing = Uint8List(64 * 1024)
+        ..setRange(0, payload.length, payload);
+      final client = _Client([
+        http.StreamedResponse(
+          Stream<List<int>>.value(
+            Uint8List.sublistView(backing, 0, payload.length),
+          ),
+          200,
+        ),
+        for (final dataset in _datasets.skip(1))
+          _response(200, body: _body(dataset)),
+      ]);
+      var normalized = false;
+
+      await expectLater(
+        LiveMapRefreshAcquirer(
+          client: client,
+          store: store,
+          clock: () => _now,
+          limits: const LiveMapRefreshLimits(maxMaterializedBytes: 8192),
+          normalize:
+              ({
+                required sources,
+                required bindings,
+                required mode,
+                required budget,
+                required intent,
+              }) async {
+                normalized = true;
+                return LiveMapInventory.fromMarkers(
+                  maps: const {},
+                  budget: budget,
+                ).encode(budget: budget);
+              },
+        ).refresh(
+          mode: GameMode.pve,
+          intent: _intent(),
+          pack: _pack,
+          bindings: const [],
+        ),
+        throwsA(isA<LiveMapResourceLimitException>()),
+      );
+      expect(normalized, isFalse);
+      expect(store.commits, 0);
+      expect(store.value, same(prior));
+    });
+
+    test('preserves mixed fragment bytes while ignoring empty views', () async {
+      final store = _Store(null);
+      final payload = _jsonBytes(_body(LiveMapSourceDataset.maps));
+      final emptyBacking = Uint8List(64 * 1024);
+      final client = _Client([
+        http.StreamedResponse(
+          Stream<List<int>>.fromIterable([
+            for (var i = 0; i < 100; i++)
+              Uint8List.sublistView(emptyBacking, 0, 0),
+            Uint8List.fromList(payload.sublist(0, 5)),
+            List<int>.of(payload.sublist(5)),
+            <int>[],
+          ]),
+          200,
+        ),
+        for (final dataset in _datasets.skip(1))
+          _response(200, body: _body(dataset)),
+      ]);
+      var normalized = false;
+
+      final result =
+          await LiveMapRefreshAcquirer(
+            client: client,
+            store: store,
+            clock: () => _now,
+            limits: const LiveMapRefreshLimits(maxMaterializedBytes: 16 * 1024),
+            normalize:
+                ({
+                  required sources,
+                  required bindings,
+                  required mode,
+                  required budget,
+                  required intent,
+                }) async {
+                  normalized = true;
+                  expect(
+                    sources[LiveMapSourceDataset.maps],
+                    orderedEquals(payload),
+                  );
+                  return LiveMapInventory.fromMarkers(
+                    maps: const {},
+                    budget: budget,
+                  ).encode(budget: budget);
+                },
+          ).refresh(
+            mode: GameMode.pve,
+            intent: _intent(),
+            pack: _pack,
+            bindings: const [],
+          );
+
+      expect(normalized, isTrue);
+      expect(result.sources.first.bytes, orderedEquals(payload));
+      expect(store.commits, 1);
+    });
+
     test('releases streamed acquisition buffers before later sources and normalization', () async {
       final store = _Store(null);
       final client = _Client([

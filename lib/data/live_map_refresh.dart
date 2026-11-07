@@ -366,61 +366,87 @@ class LiveMapRefreshAcquirer {
           await cancelResponseStream();
           throw LiveMapRefreshException('${dataset.name}: HTTP $status.');
         }
-        final bytes = BytesBuilder(copy: false);
-        var sourceLength = 0;
+        var retainedFragmentBytes = 0;
         try {
-          while (await Future.any<bool>([
-            moveNextResponseChunk(),
-            requestAbort.future.then((_) {
-              if (requestTimedOut) {
+          // Cover the builder itself, including its initially empty list.
+          const builderCharge = 256;
+          budget.reserveMaterialized(builderCharge);
+          retainedFragmentBytes += builderCharge;
+          final bytes = BytesBuilder(copy: false);
+          var sourceLength = 0;
+          try {
+            while (await Future.any<bool>([
+              moveNextResponseChunk(),
+              requestAbort.future.then((_) {
+                if (requestTimedOut) {
+                  throw const LiveMapResourceLimitException(
+                    'Live-map request exceeded its deadline.',
+                  );
+                }
+                throw const LiveMapRefreshCancelledException();
+              }),
+            ])) {
+              checkFence();
+              final chunk = responseStream.current;
+              if (sourceLength + chunk.length > _limits.maxRequestBytes ||
+                  totalBytes + sourceLength + chunk.length >
+                      _limits.maxTotalBytes) {
                 throw const LiveMapResourceLimitException(
-                  'Live-map request exceeded its deadline.',
+                  'Live-map response bodies exceed the byte limit.',
                 );
               }
-              throw const LiveMapRefreshCancelledException();
-            }),
-          ])) {
-            checkFence();
-            final chunk = responseStream.current;
-            if (sourceLength + chunk.length > _limits.maxRequestBytes ||
-                totalBytes + sourceLength + chunk.length >
-                    _limits.maxTotalBytes) {
+              if (chunk.isEmpty) continue;
+              // Account for view and buffer headers and amortized builder-list
+              // reference capacity, in addition to the retained backing bytes.
+              const fragmentOverhead = 256;
+              final fragmentCharge =
+                  fragmentOverhead +
+                  (chunk is Uint8List
+                      ? chunk.buffer.lengthInBytes
+                      : chunk.length);
+              budget.reserveMaterialized(fragmentCharge);
+              retainedFragmentBytes += fragmentCharge;
+              // Generic lists may retain unknown backing capacity. Copy them
+              // only after admission; typed fragments remain zero-copy.
+              bytes.add(chunk is Uint8List ? chunk : Uint8List.fromList(chunk));
+              sourceLength += chunk.length;
+            }
+          } catch (_) {
+            requestTimer.cancel();
+            await cancelResponseStream();
+            if (requestTimedOut) {
               throw const LiveMapResourceLimitException(
-                'Live-map response bodies exceed the byte limit.',
+                'Live-map request exceeded its deadline.',
               );
             }
-            budget.reserveMaterialized(chunk.length);
-            bytes.add(chunk);
-            sourceLength += chunk.length;
+            checkFence();
+            rethrow;
+          } finally {
+            requestTimer.cancel();
+            await cancelResponseStream();
           }
-        } catch (_) {
-          requestTimer.cancel();
-          await cancelResponseStream();
-          if (requestTimedOut) {
-            throw const LiveMapResourceLimitException(
-              'Live-map request exceeded its deadline.',
-            );
-          }
-          checkFence();
-          rethrow;
+          budget.reserveMaterialized(sourceLength);
+          retainedFragmentBytes += sourceLength;
+          totalBytes += sourceLength;
+          accumulated.add(
+            LiveMapSourceBody(
+              dataset: dataset,
+              bytes: bytes.takeBytes(),
+              etag: response.headers['etag'],
+              lastModified: response.headers['last-modified'],
+              budget: budget,
+            ),
+          );
         } finally {
           requestTimer.cancel();
-          await cancelResponseStream();
+          try {
+            await cancelResponseStream();
+          } finally {
+            // The body's private copy has its own reservation. All builder,
+            // fragment and takeBytes reservations are temporary.
+            budget.releaseMaterialized(retainedFragmentBytes);
+          }
         }
-        budget.reserveMaterialized(sourceLength);
-        totalBytes += sourceLength;
-        accumulated.add(
-          LiveMapSourceBody(
-            dataset: dataset,
-            bytes: bytes.takeBytes(),
-            etag: response.headers['etag'],
-            lastModified: response.headers['last-modified'],
-            budget: budget,
-          ),
-        );
-        // Only the body's private bytes survive. The stream fragments and
-        // takeBytes() buffer are no longer retained.
-        budget.releaseMaterialized(sourceLength * 2);
       }
       checkFence();
       final rawSources = <LiveMapSourceDataset, Uint8List>{

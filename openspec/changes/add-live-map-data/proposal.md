@@ -66,3 +66,4 @@ Map markers can receive upstream corrections without rebuilding the artwork or i
 - Non-empty marker searches reuse exact shared-fact query summaries while preserving complete phrase matching.
 - Map-data availability reflects prepared-pack load failures, and malformed exit aliases are rejected before activation.
 - Shared long scalar text is folded once per generation under admission accounting, including boundary searches.
+- Response acquisition accounts for retained fragments and their complete backing buffers, not only payload bytes.
