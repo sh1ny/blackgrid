@@ -277,34 +277,67 @@ class MapSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateMapContext(PreparedMap? map, int contentGeneration) {
+  /// Updates map metadata while preserving unrelated session and player state.
+  ///
+  /// [activeMarkers] supplies the coherent marker inventory for the content
+  /// generation; omitting it retains the prepared map's bundled inventory.
+  void updateMapContext(
+    PreparedMap? map,
+    int contentGeneration, {
+    Iterable<PreparedMarker>? activeMarkers,
+  }) {
     if (_closed ||
         (identical(_map, map) && _contentGeneration == contentGeneration)) {
       return;
     }
-    if (!identical(_map, map)) {
-      _matcher = map == null
-          ? null
-          : RaidExfilMatcher([
-              for (final marker in map.markers)
-                if (marker.category == 'extracts' ||
-                    marker.category == 'transits')
-                  RaidExitIdentity(
-                    id: marker.id,
-                    name: marker.name,
-                    transit: marker.category == 'transits',
-                    aliases:
-                        (marker.details['aliases'] as List?)
-                            ?.whereType<String>()
-                            .toList() ??
-                        const [],
-                  ),
-            ]);
-    }
+    final mapChanged = !identical(_map, map);
+    if (mapChanged) _invalidate();
+    final markers = activeMarkers ?? map?.markers ?? const <PreparedMarker>[];
+    _matcher = map == null
+        ? null
+        : RaidExfilMatcher([
+            for (final marker in markers)
+              if (marker.category == 'extracts' ||
+                  marker.category == 'transits')
+                RaidExitIdentity(
+                  id: marker.id,
+                  name: marker.name,
+                  transit: marker.category == 'transits',
+                  aliases:
+                      (marker.details['aliases'] as List?)
+                          ?.whereType<String>()
+                          .toList() ??
+                      const [],
+                ),
+          ]);
     _map = map;
     _contentGeneration = contentGeneration;
-    _invalidate();
+    if (!mapChanged) _refreshEvidenceForMap();
+    ++_context;
+    ++_order;
+    _readingLatest = false;
+    _pending?.complete();
+    _pending = null;
     notifyListeners();
+  }
+
+  void _refreshEvidenceForMap() {
+    final evidence = _evidence;
+    final map = _map;
+    if (evidence == null || map == null || map.id != effectiveMapId) return;
+    final result = _matcher!.match(evidence);
+    _evidence = RaidPanelEvidence(
+      state: result.state,
+      extractNames: evidence.extractNames,
+      transitNames: evidence.transitNames,
+      message: result.message ?? evidence.message,
+      panel: evidence.panel,
+      rawText: evidence.rawText,
+    );
+    if (result.state == RaidPanelState.recognized ||
+        result.state == RaidPanelState.empty) {
+      _highlights = Set.unmodifiable(result.ids);
+    }
   }
 
   Future<void> readLatest() async {

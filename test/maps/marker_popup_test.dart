@@ -1,8 +1,14 @@
 import 'dart:convert';
 
+import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/maps/live_map_budget.dart';
+import 'package:blackgrid/maps/live_map_inventory.dart';
+import 'package:blackgrid/maps/live_map_normalizer.dart';
+import 'package:blackgrid/maps/live_map_snapshot.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +19,85 @@ import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/map_widget_harness.dart';
+
+Map<String, Object?> _popupMarkerJson({
+  required String id,
+  required String category,
+  required String filterKey,
+  required String name,
+  required String floorId,
+  required double x,
+  required double z,
+  Map<String, Object?> details = const {},
+  Map<String, Object?> source = const {'mapId': 'shoreline'},
+}) => {
+  'id': id,
+  'category': category,
+  'filterKey': filterKey,
+  'name': name,
+  'floorId': floorId,
+  'position': {'x': x, 'z': z},
+  'details': details,
+  'source': source,
+  'outline': const [],
+};
+
+Map<String, Object?> _popupMarkerJsonFromPrepared(PreparedMarker marker) => {
+  'id': marker.id,
+  'category': marker.category,
+  'filterKey': marker.filterKey,
+  'name': marker.name,
+  'floorId': marker.floorId,
+  'position': {'x': marker.position.x, 'z': marker.position.z},
+  'details': marker.details,
+  'source': marker.source,
+  'outline': [
+    for (final point in marker.outline) {'x': point.x, 'z': point.z},
+  ],
+  if (marker.heightBand case final band?) 'heightBand': [band.min, band.max],
+};
+
+LiveMapSnapshot _popupSnapshot(
+  MapController controller,
+  Map<String, List<Map<String, Object?>>> inventory,
+) {
+  final pack = controller.pack!;
+  final completeInventory = {
+    for (final map in pack.maps)
+      map.id:
+          inventory[map.id] ??
+          map.markers.map(_popupMarkerJsonFromPrepared).toList(),
+  };
+  final markerMaps = <String, List<PreparedMarker>>{
+    for (final entry in completeInventory.entries)
+      entry.key: [
+        for (final marker in entry.value)
+          PreparedMarker.fromJson(Map<String, dynamic>.from(marker)),
+      ],
+  };
+  final budget = LiveMapBudget();
+  return LiveMapSnapshot(
+    mode: GameMode.pvp,
+    checkedAt: DateTime.utc(2026),
+    normalizedPayload: LiveMapInventory.fromMarkers(
+      maps: markerMaps,
+      budget: budget,
+    ).encode(budget: budget),
+    sources: [
+      for (final dataset in LiveMapSourceDataset.values)
+        LiveMapSourceBody(
+          dataset: dataset,
+          bytes: Uint8List.fromList(utf8.encode('{}')),
+        ),
+    ],
+    formatVersion: liveMapSnapshotFormatVersion,
+    normalizerVersion: liveMapNormalizerVersion,
+    compatibility: LiveMapCompatibility.fromPreparedPack(
+      pack,
+      pack.liveMapBindings,
+    ),
+  );
+}
 
 Finder get _viewport => find.byKey(const Key('native-map-viewport'));
 Finder get _markerBrowser => find.ancestor(
@@ -207,6 +292,220 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Visible map markers and pins'), findsNothing);
     expect(h.services.maps.selectedMarkerProjection, isNull);
+  });
+
+  testWidgets(
+    'metadata generation swap updates all consumers without resetting view',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        final h = await pumpMapFixture(tester);
+        await tester.runAsync(
+          () => h.services.settings.savePin(
+            CustomPin(
+              id: 'publication-pin',
+              mapId: 'shoreline',
+              x: .25,
+              y: .25,
+              frame: 'legacy-normalized',
+              frameRevision: 0,
+              label: 'Publication pin',
+              updatedAt: DateTime.utc(2026),
+            ),
+          ),
+        );
+        await tester.runAsync(
+          () => h.services.settings.setMarker('PmcExtracts', false),
+        );
+        await settleMapFixture(tester, h);
+        await _select(tester, h, ScenePoint(64, 192));
+        final map = h.services.maps;
+        final originalMapId = map.selectedMapId;
+        final originalTransform = map.transform;
+        final originalFloor = map.floorSelection;
+        final originalScene = map.scene;
+        final originalPins = List.of(h.services.settings.pins);
+        final originalFilters = Map.of(map.categoryVisibility);
+        final generation = map.contentGeneration;
+        final replacement = [
+          _popupMarkerJson(
+            id: 'new-switch',
+            category: 'switches',
+            filterKey: 'Switches',
+            name: 'New switch',
+            floorId: 'ground',
+            x: 96,
+            z: 96,
+            details: {'id': 'new-switch'},
+          ),
+          _popupMarkerJson(
+            id: 'new-exit',
+            category: 'extracts',
+            filterKey: 'SharedExtracts',
+            name: 'New exit',
+            floorId: 'ground',
+            x: 160,
+            z: 160,
+            details: {
+              'faction': 'PMC',
+              'switches': ['new-switch'],
+            },
+            source: {'mapId': 'shoreline'},
+          ),
+        ];
+
+        expect(
+          map.prepareMarkerInventory(
+            _popupSnapshot(map, {'shoreline': replacement, 'thelab': const []}),
+            budget: LiveMapBudget(),
+          )(),
+          isTrue,
+        );
+        await settleMapFixture(tester, h);
+        expect(map.selectedMapId, originalMapId);
+        expect(map.transform.scale, originalTransform.scale);
+        expect(map.transform.translationX, originalTransform.translationX);
+        expect(map.transform.translationY, originalTransform.translationY);
+        expect(map.floorSelection, same(originalFloor));
+        expect(map.scene, same(originalScene));
+        expect(h.services.settings.pins, originalPins);
+        expect(map.categoryVisibility, originalFilters);
+        expect(map.contentGeneration, generation + 1);
+        expect(map.selectedMarkerProjection, isNull);
+        expect(find.byTooltip('Close marker details'), findsNothing);
+
+        final visibleIds = map.visibleMarkers().map(
+          (marker) => marker.marker.id,
+        );
+        expect(visibleIds, ['new-switch', 'new-exit']);
+        expect(map.applicableCategories, contains('Switches'));
+        expect(map.applicableCategories, contains('SharedExtracts'));
+        expect(map.applicableCategories, isNot(contains('Hazards')));
+        final hitPoint = map
+            .visibleMarkers()
+            .singleWhere((marker) => marker.marker.id == 'new-exit')
+            .viewportPoint;
+        expect(map.hitTestMarker(hitPoint)?.marker.id, 'new-exit');
+
+        await _openMarkerBrowser(tester);
+        await _ensureBrowserEntryVisible(tester, 'New exit');
+        expect(find.widgetWithText(ListTile, 'Ground exit'), findsNothing);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+
+        final painter = tester
+            .widget<CustomPaint>(
+              find
+                  .descendant(of: _viewport, matching: find.byType(CustomPaint))
+                  .first,
+            )
+            .painter!;
+        final accessibleNames = painter
+            .semanticsBuilder!(tester.getSize(_viewport))
+            .map((target) => target.properties.label ?? '')
+            .toList();
+        expect(accessibleNames.join(' '), contains('New exit'));
+        expect(accessibleNames.join(' '), contains('New switch'));
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets('unchanged marker snapshot retains selection', (tester) async {
+    final h = await pumpMapFixture(tester);
+    await _select(tester, h, ScenePoint(128, 128));
+    final map = h.services.maps;
+    final selectedId = map.selectedMarkerProjection?.marker.id;
+    final generation = map.contentGeneration;
+    // Refresh-status publication is owned by the separate map-data
+    // controller slice; this map test covers structural no-op adoption.
+    final sameContent = [
+      for (final marker in map.preparedMap!.markers)
+        _popupMarkerJsonFromPrepared(marker),
+    ];
+
+    expect(
+      map.prepareMarkerInventory(
+        _popupSnapshot(map, {'shoreline': sameContent}),
+        budget: LiveMapBudget(),
+      )(),
+      isFalse,
+    );
+    await settleMapFixture(tester, h);
+    expect(map.contentGeneration, generation);
+    expect(map.selectedMarkerProjection?.marker.id, selectedId);
+    expect(find.byTooltip('Close marker details'), findsOneWidget);
+  });
+
+  testWidgets('refreshed marker selection shows new facts without a request', (
+    tester,
+  ) async {
+    var requests = 0;
+    final client = MockClient((request) async {
+      requests++;
+      return http.Response('{}', 404);
+    });
+    final h = await pumpMapFixture(tester, client: client);
+    final startupRequests = requests;
+    final map = h.services.maps;
+    expect(
+      map.prepareMarkerInventory(
+        _popupSnapshot(map, {
+          'shoreline': [
+            _popupMarkerJson(
+              id: 'refreshed-exit',
+              category: 'extracts',
+              filterKey: 'PmcExtracts',
+              name: 'Refreshed exit',
+              floorId: 'ground',
+              x: 128,
+              z: 128,
+              details: {
+                'faction': 'PMC',
+                'switches': ['refreshed-switch'],
+              },
+              source: {'mapId': 'shoreline'},
+            ),
+            _popupMarkerJson(
+              id: 'refreshed-switch',
+              category: 'switches',
+              filterKey: 'Switches',
+              name: 'Refreshed switch',
+              floorId: 'ground',
+              x: 160,
+              z: 160,
+              details: {'id': 'refreshed-switch'},
+              source: {'mapId': 'shoreline'},
+            ),
+          ],
+          'thelab': const [],
+        }),
+        budget: LiveMapBudget(),
+      )(),
+      isTrue,
+    );
+    await settleMapFixture(tester, h);
+    expect(requests, startupRequests);
+    await _select(tester, h, ScenePoint(128, 128));
+    expect(requests, startupRequests);
+    final popup = find.byKey(const ValueKey('marker-popup'));
+    expect(
+      find.descendant(of: popup, matching: find.text('Refreshed exit')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: popup,
+        matching: find.text('Switch: Refreshed switch'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Ground exit'), findsNothing);
+    final afterSelection = requests;
+    await tester.pump();
+    await tester.pump();
+    expect(requests, afterSelection);
   });
 
   testWidgets('close clears selection bubble and linked highlights', (

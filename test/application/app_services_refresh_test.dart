@@ -562,6 +562,45 @@ void main() {
     });
   });
 
+  test('map refresh does not block service startup', () async {
+    final mapRequestStarted = Completer<void>();
+    final releaseMapResponses = Completer<void>();
+    final client = MockClient((request) async {
+      final path = request.url.pathSegments.last;
+      if (request.url.host == 'json.tarkov.dev' &&
+          const {
+            'maps',
+            'maps_en',
+            'tasks',
+            'tasks_en',
+            'traders',
+            'traders_en',
+          }.contains(path)) {
+        if (!mapRequestStarted.isCompleted) mapRequestStarted.complete();
+        await releaseMapResponses.future;
+      }
+      return http.Response('', 503);
+    });
+    final services = AppServices(
+      database: BlackgridDatabase(NativeDatabase.memory()),
+      credentials: HoldableCredentials(),
+      client: client,
+    );
+    addTearDown(() async {
+      if (!releaseMapResponses.isCompleted) releaseMapResponses.complete();
+      await services.dispose();
+    });
+    await services.settings.save(
+      services.settings.settings.copyWith(mode: GameMode.pvp),
+    );
+
+    await services.initialize();
+    await mapRequestStarted.future;
+
+    releaseMapResponses.complete();
+    await services.dispose();
+  });
+
   group('progress', () {
     const pvpToken = 'PVP_synthetic-fixture-only';
     const pveToken = 'PVE_synthetic-fixture-only';
