@@ -26,19 +26,19 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 | map-place-labels → Place labels are not interactive | Click on a label | test/ui/map_place_labels_test.dart | `click on a place label selects nothing` | red |
 | map-place-labels → Place labels are not interactive | Click on a label over a badge | test/ui/map_place_labels_test.dart | `click on a badge under a place label selects the marker` | red |
 | map-place-labels → Place labels are not interactive | Accessibility targets | test/ui/map_place_labels_test.dart | `place labels add no semantics targets` | red |
-| prepared-map-packs → A pack carries each map's place labels | Map with labels | test/maps/place_label_preparation_test.dart | `frozen metadata yields 303 labels on 10 maps in source order` | red |
-| prepared-map-packs → A pack carries each map's place labels | Map without labels | test/maps/place_label_preparation_test.dart | `maps without source labels get an empty list` | red |
-| prepared-map-packs → A pack carries each map's place labels | Missing optional fields | test/maps/place_label_preparation_test.dart | `missing rotation and size default to 0 and 80` | red |
-| prepared-map-packs → A pack carries each map's place labels | Numeric text field | test/maps/place_label_preparation_test.dart | `numeric string rotation is converted` | red |
-| prepared-map-packs → A label's floors come from its height band | Upper-floor label | test/maps/place_label_preparation_test.dart | `Interchange IDEA belongs to First_Floor only` | red |
-| prepared-map-packs → A label's floors come from its height band | Label spanning floors | test/maps/place_label_preparation_test.dart | `Factory Office Building belongs to base and both upper floors` | red |
-| prepared-map-packs → A label's floors come from its height band | Unbanded label | test/maps/place_label_preparation_test.dart | `unbanded Customs label belongs to the base floor` | red |
-| prepared-map-packs → A label's floors come from its height band | Label outside every floor | test/maps/place_label_preparation_test.dart | `label overlapping no floor band fails naming map and text` | red |
-| prepared-map-packs → A label's floors come from its height band | Band edge | test/maps/place_label_preparation_test.dart | `floor band includes its bottom and excludes its top` | red |
-| prepared-map-packs → A label's floors come from its height band | Banded label without floor bands | test/maps/place_label_preparation_test.dart | `banded label on a map without table bands fails` | red |
-| prepared-map-packs → A label's floors come from its height band | Table drifts from the metadata | test/maps/place_label_preparation_test.dart | `band table matches frozen metadata heights and floor pairing` | red |
-| prepared-map-packs → Malformed labels fail the build | Bad position | test/maps/place_label_preparation_test.dart | `malformed position fails naming map and index` | red |
-| prepared-map-packs → Malformed labels fail the build | Empty text | test/maps/place_label_preparation_test.dart | `blank text fails naming map and index` | red |
+| prepared-map-packs → A pack carries each map's place labels | Map with labels | test/maps/place_label_preparation_test.dart | `frozen metadata yields 303 labels on 10 maps in source order` | green |
+| prepared-map-packs → A pack carries each map's place labels | Map without labels | test/maps/place_label_preparation_test.dart | `maps without source labels get an empty list` | green |
+| prepared-map-packs → A pack carries each map's place labels | Missing optional fields | test/maps/place_label_preparation_test.dart | `missing rotation and size default to 0 and 80` | green |
+| prepared-map-packs → A pack carries each map's place labels | Numeric text field | test/maps/place_label_preparation_test.dart | `numeric string rotation is converted` | green |
+| prepared-map-packs → A label's floors come from its height band | Upper-floor label | test/maps/place_label_preparation_test.dart | `Interchange IDEA belongs to First_Floor only` | green |
+| prepared-map-packs → A label's floors come from its height band | Label spanning floors | test/maps/place_label_preparation_test.dart | `Factory Office Building belongs to base and both upper floors` | green |
+| prepared-map-packs → A label's floors come from its height band | Unbanded label | test/maps/place_label_preparation_test.dart | `unbanded Customs label belongs to the base floor` | green |
+| prepared-map-packs → A label's floors come from its height band | Label outside every floor | test/maps/place_label_preparation_test.dart | `label overlapping no floor band fails naming map and text` | green |
+| prepared-map-packs → A label's floors come from its height band | Band edge | test/maps/place_label_preparation_test.dart | `floor band includes its bottom and excludes its top` | green |
+| prepared-map-packs → A label's floors come from its height band | Banded label without floor bands | test/maps/place_label_preparation_test.dart | `banded label on a map without table bands fails` | green |
+| prepared-map-packs → A label's floors come from its height band | Table drifts from the metadata | test/maps/place_label_preparation_test.dart | `band table matches frozen metadata heights and floor pairing` | green |
+| prepared-map-packs → Malformed labels fail the build | Bad position | test/maps/place_label_preparation_test.dart | `malformed position fails naming map and index` | green |
+| prepared-map-packs → Malformed labels fail the build | Empty text | test/maps/place_label_preparation_test.dart | `blank text fails naming map and index` | green |
 | prepared-map-packs → The app loads only packs that carry labels | Current pack | test/maps/active_pack_loader_test.dart | `the real loader loads the committed active pack` (extended: label counts) | red |
 | prepared-map-packs → The app loads only packs that carry labels | Map without a labels key | test/maps/prepared_map_labels_test.dart | `map without labels key fails in loader and validator` | red |
 | prepared-map-packs → The app loads only packs that carry labels | Label names an unknown floor | test/maps/prepared_map_labels_test.dart | `label with an unknown floor fails naming map and floor` | red |
@@ -65,8 +65,8 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 
 ## 3. Builder label module (not wired yet)
 
-- [ ] 3.1 Write the failing tests in `test/maps/place_label_preparation_test.dart` for the rows "Map with labels" through "Empty text" (reading the active pack's `evidence/metadata/maps.json`; synthetic small inputs for the failure rows). Verify they fail because `tool/maps/place_labels.dart` does not exist.
-- [ ] 3.2 Implement `tool/maps/place_labels.dart`: the band table from design.md D1, each entry naming its metadata source (`heightRange`, Interchange `_heightRange`, or layer name + extent index); `extractPlaceLabels` (validate, apply defaults, convert numeric strings, keep source order, map `the-lab` → `thelab`); `assignLabelFloors` (`bottom < max && top >= min`, unbanded → base, empty → `FormatException` naming map and text); a `checkBandTable` that resolves every entry against the metadata and asserts the band and the floor pairing (the layer's `svgLayer`/`tilePath` identity `reconcileFloors` uses). Doc comments on public members. Verify: `flutter test test/maps/place_label_preparation_test.dart` passes; flip those rows green.
+- [x] 3.1 Write the failing tests in `test/maps/place_label_preparation_test.dart` for the rows "Map with labels" through "Empty text" (reading the active pack's `evidence/metadata/maps.json`; synthetic small inputs for the failure rows). Verify they fail because `tool/maps/place_labels.dart` does not exist.
+- [x] 3.2 Implement `tool/maps/place_labels.dart`: the band table from design.md D1, each entry naming its metadata source (`heightRange`, Interchange `_heightRange`, or layer name + extent index); `extractPlaceLabels` (validate, apply defaults, convert numeric strings, keep source order, map `the-lab` → `thelab`); `assignLabelFloors` (`bottom < max && top >= min`, unbanded → base, empty → `FormatException` naming map and text); a `checkBandTable` that resolves every entry against the metadata and asserts the band and the floor pairing (the layer's `svgLayer`/`tilePath` identity `reconcileFloors` uses). Doc comments on public members. Verify: `flutter test test/maps/place_label_preparation_test.dart` passes; flip those rows green.
 
 ## 4. Placement and style rules (domain)
 
