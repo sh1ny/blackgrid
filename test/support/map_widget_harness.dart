@@ -36,6 +36,7 @@ class MapWidgetHarness {
     RaidPanelOcr? panelOcr,
     MapMarkerIcons? markerIcons,
     List<Map<String, Object?>> extraMarkers = const [],
+    List<Map<String, Object?>> extraLabels = const [],
     bool artwork = true,
     http.Client? client,
   }) async {
@@ -63,6 +64,7 @@ class MapWidgetHarness {
             sourceCategory: sourceCategory,
             hazardOutline: hazardOutline,
             extraMarkers: extraMarkers,
+            extraLabels: extraLabels,
           ),
       ],
     );
@@ -128,6 +130,7 @@ Map<String, Object?> _map(
   String? sourceCategory,
   List<Map<String, int>>? hazardOutline,
   List<Map<String, Object?>> extraMarkers = const [],
+  List<Map<String, Object?>> extraLabels = const [],
 }) => {
   'id': id,
   'name': id == 'thelab' ? 'Fixture Labs' : 'Fixture Shoreline',
@@ -189,6 +192,7 @@ Map<String, Object?> _map(
     },
     ...extraMarkers,
   ],
+  'labels': extraLabels,
   'attribution': {'author': 'Deterministic test fixture'},
 };
 
