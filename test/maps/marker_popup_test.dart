@@ -4,10 +4,6 @@ import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/settings.dart';
-import 'package:blackgrid/maps/live_map_budget.dart';
-import 'package:blackgrid/maps/live_map_inventory.dart';
-import 'package:blackgrid/maps/live_map_normalizer.dart';
-import 'package:blackgrid/maps/live_map_snapshot.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
 import 'package:flutter/gestures.dart';
@@ -42,62 +38,19 @@ Map<String, Object?> _popupMarkerJson({
   'outline': const [],
 };
 
-Map<String, Object?> _popupMarkerJsonFromPrepared(PreparedMarker marker) => {
-  'id': marker.id,
-  'category': marker.category,
-  'filterKey': marker.filterKey,
-  'name': marker.name,
-  'floorId': marker.floorId,
-  'position': {'x': marker.position.x, 'z': marker.position.z},
-  'details': marker.details,
-  'source': marker.source,
-  'outline': [
-    for (final point in marker.outline) {'x': point.x, 'z': point.z},
-  ],
-  if (marker.heightBand case final band?) 'heightBand': [band.min, band.max],
-};
-
-LiveMapSnapshot _popupSnapshot(
+Map<String, List<PreparedMarker>> _popupMarkers(
   MapController controller,
   Map<String, List<Map<String, Object?>>> inventory,
-) {
-  final pack = controller.pack!;
-  final completeInventory = {
-    for (final map in pack.maps)
-      map.id:
-          inventory[map.id] ??
-          map.markers.map(_popupMarkerJsonFromPrepared).toList(),
-  };
-  final markerMaps = <String, List<PreparedMarker>>{
-    for (final entry in completeInventory.entries)
-      entry.key: [
-        for (final marker in entry.value)
+) => {
+  for (final map in controller.pack!.maps)
+    map.id: switch (inventory[map.id]) {
+      final markers? => [
+        for (final marker in markers)
           PreparedMarker.fromJson(Map<String, dynamic>.from(marker)),
       ],
-  };
-  final budget = LiveMapBudget();
-  return LiveMapSnapshot(
-    mode: GameMode.pvp,
-    checkedAt: DateTime.utc(2026),
-    normalizedPayload: LiveMapInventory.fromMarkers(
-      maps: markerMaps,
-      budget: budget,
-    ).encode(budget: budget),
-    sources: [
-      for (final dataset in LiveMapSourceDataset.values)
-        LiveMapSourceBody(
-          dataset: dataset,
-          bytes: Uint8List.fromList(utf8.encode('{}')),
-        ),
-    ],
-    formatVersion: liveMapSnapshotFormatVersion,
-    normalizerVersion: liveMapNormalizerVersion,
-    compatibility: LiveMapCompatibility.fromPreparedPack(
-      pack,
-      pack.liveMapBindings,
-    ),
-  );
-}
+      null => map.markers,
+    },
+};
 
 Finder get _viewport => find.byKey(const Key('native-map-viewport'));
 Finder get _markerBrowser => find.ancestor(
@@ -354,12 +307,9 @@ void main() {
           ),
         ];
 
-        expect(
-          map.prepareMarkerInventory(
-            _popupSnapshot(map, {'shoreline': replacement, 'thelab': const []}),
-            budget: LiveMapBudget(),
-          )(),
-          isTrue,
+        map.publishMarkers(
+          _popupMarkers(map, {'shoreline': replacement, 'thelab': const []}),
+          changed: true,
         );
         await settleMapFixture(tester, h);
         expect(map.selectedMapId, originalMapId);
@@ -420,18 +370,7 @@ void main() {
     final generation = map.contentGeneration;
     // Refresh-status publication is owned by the separate map-data
     // controller slice; this map test covers structural no-op adoption.
-    final sameContent = [
-      for (final marker in map.preparedMap!.markers)
-        _popupMarkerJsonFromPrepared(marker),
-    ];
-
-    expect(
-      map.prepareMarkerInventory(
-        _popupSnapshot(map, {'shoreline': sameContent}),
-        budget: LiveMapBudget(),
-      )(),
-      isFalse,
-    );
+    map.publishMarkers(_popupMarkers(map, const {}), changed: false);
     await settleMapFixture(tester, h);
     expect(map.contentGeneration, generation);
     expect(map.selectedMarkerProjection?.marker.id, selectedId);
@@ -449,41 +388,38 @@ void main() {
     final h = await pumpMapFixture(tester, client: client);
     final startupRequests = requests;
     final map = h.services.maps;
-    expect(
-      map.prepareMarkerInventory(
-        _popupSnapshot(map, {
-          'shoreline': [
-            _popupMarkerJson(
-              id: 'refreshed-exit',
-              category: 'extracts',
-              filterKey: 'PmcExtracts',
-              name: 'Refreshed exit',
-              floorId: 'ground',
-              x: 128,
-              z: 128,
-              details: {
-                'faction': 'PMC',
-                'switches': ['refreshed-switch'],
-              },
-              source: {'mapId': 'shoreline'},
-            ),
-            _popupMarkerJson(
-              id: 'refreshed-switch',
-              category: 'switches',
-              filterKey: 'Switches',
-              name: 'Refreshed switch',
-              floorId: 'ground',
-              x: 160,
-              z: 160,
-              details: {'id': 'refreshed-switch'},
-              source: {'mapId': 'shoreline'},
-            ),
-          ],
-          'thelab': const [],
-        }),
-        budget: LiveMapBudget(),
-      )(),
-      isTrue,
+    map.publishMarkers(
+      _popupMarkers(map, {
+        'shoreline': [
+          _popupMarkerJson(
+            id: 'refreshed-exit',
+            category: 'extracts',
+            filterKey: 'PmcExtracts',
+            name: 'Refreshed exit',
+            floorId: 'ground',
+            x: 128,
+            z: 128,
+            details: {
+              'faction': 'PMC',
+              'switches': ['refreshed-switch'],
+            },
+            source: {'mapId': 'shoreline'},
+          ),
+          _popupMarkerJson(
+            id: 'refreshed-switch',
+            category: 'switches',
+            filterKey: 'Switches',
+            name: 'Refreshed switch',
+            floorId: 'ground',
+            x: 160,
+            z: 160,
+            details: {'id': 'refreshed-switch'},
+            source: {'mapId': 'shoreline'},
+          ),
+        ],
+        'thelab': const [],
+      }),
+      changed: true,
     );
     await settleMapFixture(tester, h);
     expect(requests, startupRequests);

@@ -122,16 +122,11 @@ class StatsMeta extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// One complete normalized live-map snapshot for a game mode.
+/// When a game mode's live-map sources were last confirmed.
 @DataClassName('LiveMapSnapshotRecord')
 class LiveMapSnapshots extends Table {
   IntColumn get mode => integer()();
   IntColumn get checkedAt => integer()();
-  IntColumn get formatVersion => integer()();
-  IntColumn get normalizerVersion => integer()();
-  TextColumn get compatibilityFingerprint => text()();
-  BlobColumn get normalizedPayload => blob()();
-  TextColumn get normalizedSha256 => text()();
   @override
   Set<Column> get primaryKey => {mode};
 }
@@ -141,7 +136,6 @@ class LiveMapSources extends Table {
   IntColumn get mode => integer().references(LiveMapSnapshots, #mode)();
   TextColumn get dataset => text()();
   BlobColumn get body => blob()();
-  TextColumn get bodySha256 => text()();
   TextColumn get etag => text().nullable()();
   TextColumn get lastModified => text().nullable()();
   @override
@@ -204,13 +198,13 @@ class BlackgridDatabase extends _$BlackgridDatabase
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 5 || from >= to) {
+      if (from < 1 || to != 6 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
@@ -223,7 +217,12 @@ class BlackgridDatabase extends _$BlackgridDatabase
           await m.createIndex(raidStatRecordsModeStart);
           await m.createIndex(fleaSaleRecordsMode);
         }
-        if (from < 5) {
+        // Version 5 stored a normalized payload that version 6 derives from
+        // the sources instead. The tables only ever held a re-downloadable
+        // cache, so they are recreated rather than migrated.
+        if (from < 6) {
+          await customStatement('DROP TABLE IF EXISTS live_map_sources');
+          await customStatement('DROP TABLE IF EXISTS live_map_snapshots');
           await m.createTable(liveMapSnapshots);
           await m.createTable(liveMapSources);
         }

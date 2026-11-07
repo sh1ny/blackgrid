@@ -692,73 +692,28 @@ class PreparedMarker {
     this.heightBand,
   });
 
-  /// Creates a marker whose nested facts are already owned and immutable.
-  factory PreparedMarker.fromSharedFacts({
-    required String id,
-    required String category,
-    required String filterKey,
-    required String name,
-    required GamePoint position,
-    required Map<String, dynamic> details,
-    required Map<String, dynamic> source,
-    required List<GamePoint> outline,
-    String? floorId,
-    HeightBand? heightBand,
-  }) => PreparedMarker._shared(
-    id: id,
-    category: category,
-    filterKey: filterKey,
-    name: name,
-    position: position,
-    details: details,
-    source: source,
-    outline: outline,
-    floorId: floorId,
-    heightBand: heightBand,
-  );
-
-  PreparedMarker._shared({
-    required this.id,
-    required this.category,
-    required this.filterKey,
-    required this.name,
-    required this.position,
-    required this.details,
-    required this.source,
-    required this.outline,
-    this.floorId,
-    this.heightBand,
-  });
-  factory PreparedMarker.fromJson(Map<String, dynamic> json) {
-    final category = _string(json, 'category');
-    final details = _immutableObject(_object(json['details'], 'details'));
-    final source = _immutableObject(_object(json['source'], 'source'));
-    return _parseMarker(json, category, details, source);
-  }
-
-  /// Parses marker headers while retaining already-frozen fact maps.
-  factory PreparedMarker.fromJsonWithSharedFacts(
+  /// Parses one marker.
+  ///
+  /// Pass the same [shared] identity map for every marker of one inventory so
+  /// a fact object referenced by many markers is frozen once and shared,
+  /// rather than copied per marker.
+  factory PreparedMarker.fromJson(
     Map<String, dynamic> json, {
-    required Map<String, dynamic> details,
-    required Map<String, dynamic> source,
+    Map<Object, Object>? shared,
   }) {
     final category = _string(json, 'category');
-    return _parseMarker(json, category, details, source);
-  }
-
-  static PreparedMarker _parseMarker(
-    Map<String, dynamic> json,
-    String category,
-    Map<String, dynamic> details,
-    Map<String, dynamic> source,
-  ) {
+    final details = _immutableObject(
+      _object(json['details'], 'details'),
+      shared,
+    );
+    final source = _immutableObject(_object(json['source'], 'source'), shared);
     final rawBand = json['heightBand'] == null
         ? null
         : _numbers(json['heightBand'], 2, 'marker heightBand');
     if (rawBand != null && rawBand[0] >= rawBand[1]) {
       throw const FormatException('Invalid marker height band.');
     }
-    return PreparedMarker.fromSharedFacts(
+    return PreparedMarker(
       id: _string(json, 'id'),
       category: category,
       filterKey: json['filterKey'] is String
@@ -877,12 +832,27 @@ GamePoint _gamePoint(Map<String, dynamic> json) => GamePoint(
   _number(json, 'z'),
   height: json['height'] == null ? null : _number(json, 'height'),
 );
-Map<String, dynamic> _immutableObject(Map<String, dynamic> value) =>
-    Map.unmodifiable(
-      value.map((key, item) => MapEntry(key, _immutableValue(item))),
+Map<String, dynamic> _immutableObject(
+  Map<String, dynamic> value, [
+  Map<Object, Object>? shared,
+]) {
+  if (shared?[value] case final Map<String, dynamic> frozen) return frozen;
+  final frozen = Map<String, dynamic>.unmodifiable(
+    value.map((key, item) => MapEntry(key, _immutableValue(item, shared))),
+  );
+  shared?[value] = frozen;
+  return frozen;
+}
+
+Object? _immutableValue(Object? value, [Map<Object, Object>? shared]) {
+  if (value is Map<String, dynamic>) return _immutableObject(value, shared);
+  if (value is List) {
+    if (shared?[value] case final List<Object?> frozen) return frozen;
+    final frozen = List<Object?>.unmodifiable(
+      value.map((item) => _immutableValue(item, shared)),
     );
-Object? _immutableValue(Object? value) {
-  if (value is Map<String, dynamic>) return _immutableObject(value);
-  if (value is List) return List.unmodifiable(value.map(_immutableValue));
+    shared?[value] = frozen;
+    return frozen;
+  }
   return value;
 }

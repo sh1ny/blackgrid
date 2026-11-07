@@ -9,10 +9,6 @@ import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/live_map_refresh.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
-import 'package:blackgrid/maps/live_map_budget.dart';
-import 'package:blackgrid/maps/live_map_inventory.dart';
-import 'package:blackgrid/maps/live_map_normalizer.dart'
-    show liveMapNormalizerVersion;
 import 'package:blackgrid/maps/live_map_snapshot.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
@@ -43,13 +39,7 @@ void main() {
         failed = rig.whenState(
           (state) => !state.refreshing && state.failure != null,
         );
-        unawaited(
-          rig.controller.selectMode(
-            mode: GameMode.pve,
-            pack: _pack,
-            bindings: const [],
-          ),
-        );
+        unawaited(rig.controller.selectMode(mode: GameMode.pve, pack: _pack));
         await client.firstMapRequest.future;
         return rig;
       }))!;
@@ -117,13 +107,7 @@ void main() {
       final failed = rig.whenState(
         (state) => !state.refreshing && state.failure != null,
       );
-      unawaited(
-        rig.controller.selectMode(
-          mode: GameMode.pve,
-          pack: _pack,
-          bindings: const [],
-        ),
-      );
+      unawaited(rig.controller.selectMode(mode: GameMode.pve, pack: _pack));
       await failed.future;
       return rig;
     }))!;
@@ -210,16 +194,11 @@ class _SettingsRig {
   }) async {
     final database = BlackgridDatabase(NativeDatabase.memory());
     final snapshots = store ?? _SettingsStore();
-    final acquirer = LiveMapRefreshAcquirer(
-      client: client,
-      store: snapshots,
-      clock: () => _now,
-    );
     final controller = LiveMapDataController(
       store: snapshots,
-      acquirer: acquirer,
-      clock: () => _now,
-      preparePublication: (snapshot, budget) => () {},
+      fetcher: LiveMapFetcher(client: client, clock: () => _now),
+      publish: (_, {required changed}) {},
+      buildMarkers: (_, _) async => const {},
     );
     final credentials = _SettingsCredentials();
     final loader = PreparedMapPackLoader(
@@ -289,21 +268,11 @@ class _SettingsStore implements LiveMapStore {
   final LiveMapSnapshot? _snapshot;
 
   @override
-  Future<LiveMapSnapshot?> read(
-    GameMode mode, {
-    required LiveMapCompatibility compatibility,
-    void Function(Object failure)? onRejected,
-  }) async =>
-      _snapshot?.mode == mode &&
-          _snapshot?.compatibility.fingerprint == compatibility.fingerprint
-      ? _snapshot
-      : null;
+  Future<LiveMapSnapshot?> read(GameMode mode) async =>
+      _snapshot?.mode == mode ? _snapshot : null;
 
   @override
-  Future<void> commit(
-    LiveMapSnapshot snapshot, {
-    LiveMapBudget? budget,
-  }) async {}
+  Future<void> commit(LiveMapSnapshot snapshot) async {}
 }
 
 class _ControlledMapClient extends http.BaseClient {
@@ -336,7 +305,7 @@ class _ControlledMapClient extends http.BaseClient {
         : path.last;
     final isMapRequest =
         request.url.host == 'json.tarkov.dev' &&
-        (dataset == 'maps' || dataset == 'tasks' || dataset == 'traders');
+        LiveMapSourceDataset.values.any((source) => source.path == dataset);
     if (isMapRequest) {
       mapRequests++;
       if (!firstMapRequest.isCompleted) firstMapRequest.complete();
@@ -369,26 +338,14 @@ class _ControlledMapClient extends http.BaseClient {
   void close() {}
 }
 
-LiveMapSnapshot _cachedSnapshot() {
-  final budget = LiveMapBudget();
-  final payload = LiveMapInventory.fromMarkers(
-    maps: {for (final map in _pack.maps) map.id: map.markers},
-    budget: budget,
-  ).encode(budget: budget);
-  final sources = [
+LiveMapSnapshot _cachedSnapshot() => LiveMapSnapshot(
+  mode: GameMode.pve,
+  checkedAt: _checkedAt,
+  sources: [
     for (final dataset in LiveMapSourceDataset.values)
       LiveMapSourceBody(
         dataset: dataset,
         bytes: Uint8List.fromList(utf8.encode('{}')),
       ),
-  ];
-  return LiveMapSnapshot(
-    mode: GameMode.pve,
-    checkedAt: _checkedAt,
-    normalizedPayload: payload,
-    sources: sources,
-    formatVersion: liveMapSnapshotFormatVersion,
-    normalizerVersion: liveMapNormalizerVersion,
-    compatibility: LiveMapCompatibility.fromPreparedPack(_pack, const []),
-  );
-}
+  ],
+);

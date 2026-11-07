@@ -265,178 +265,31 @@ _normalizeForMap({
 }
 
 void main() {
-  test('non-streaming normalization releases binding scratch', () {
+  test('bound maps normalize through the six-source entry point', () {
     final binding = LiveMapBinding(
       sourceKey: 'customs',
       mapId: 'customs',
       calibration: calibrationFor('customs'),
     );
-    LiveMapSourceBodies sources(Map<String, dynamic> maps) =>
-        LiveMapSourceBodies(
-          maps: maps,
-          mapTranslations: {'data': <String, dynamic>{}},
-          tasks: _taskSource(includeTask: false, includeQuestItem: false),
-          taskTranslations: _taskTranslations(),
-          traders: _traderSource(),
-          traderTranslations: _traderTranslations(),
-        );
-
-    const existing = 73;
-    var reserved = existing;
-    var sawReservation = false;
-    void reserve(int bytes) {
-      reserved += bytes;
-      if (bytes > 0) sawReservation = true;
-    }
-
-    void release(int bytes) {
-      reserved -= bytes;
-    }
-
-    final empty = sources(_mapSource(customs: _mapRecord('customs')));
-    final result = normalizeLiveMapData(
-      sources: empty,
+    Map<String, List<Map<String, Object?>>> normalize(
+      Map<String, dynamic> customs,
+    ) => normalizeLiveMapData(
+      sources: LiveMapSourceBodies(
+        maps: _mapSource(customs: customs),
+        mapTranslations: {'data': <String, dynamic>{}},
+        tasks: _taskSource(includeTask: false, includeQuestItem: false),
+        taskTranslations: _taskTranslations(),
+        traders: _traderSource(),
+        traderTranslations: _traderTranslations(),
+      ),
       bindings: [binding],
       mode: 'regular',
-      reserveMaterialization: reserve,
-      releaseMaterialization: release,
     );
-    expect(result, {'customs': isEmpty});
-    expect(sawReservation, isTrue);
-    expect(reserved, existing);
 
-    reserved = existing;
-    sawReservation = false;
-    final invalid = sources(_mapSource(customs: _mapRecord('customs', id: '')));
+    expect(normalize(_mapRecord('customs')), {'customs': isEmpty});
     expect(
-      () => normalizeLiveMapData(
-        sources: invalid,
-        bindings: [binding],
-        mode: 'regular',
-        reserveMaterialization: reserve,
-        releaseMaterialization: release,
-      ),
+      () => normalize(_mapRecord('customs', id: '')),
       throwsA(isA<FormatException>()),
-    );
-    expect(sawReservation, isTrue);
-    expect(reserved, existing);
-  });
-
-  test('streaming callback failure releases normalization scratch', () {
-    final maps = _mapSource(
-      customs: _mapRecord(
-        'customs',
-        switches: [
-          {
-            'id': 'one',
-            'name': 'One',
-            'position': {'x': 1, 'z': 2},
-          },
-          {
-            'id': 'two',
-            'name': 'Two',
-            'position': {'x': 3, 'z': 4},
-          },
-        ],
-      ),
-    );
-    final failure = StateError('marker delivery failed');
-    var reserved = 73;
-    var emitted = 0;
-
-    expect(
-      () => normalizeLiveMapData(
-        sources: LiveMapSourceBodies(
-          maps: maps,
-          mapTranslations: {'data': <String, dynamic>{}},
-          tasks: _taskSource(includeTask: false),
-          taskTranslations: _taskTranslations(),
-          traders: _traderSource(),
-          traderTranslations: _traderTranslations(),
-        ),
-        bindings: [
-          LiveMapBinding(
-            sourceKey: 'customs',
-            mapId: 'customs',
-            calibration: calibrationFor('customs'),
-          ),
-        ],
-        mode: 'regular',
-        reserveMaterialization: (bytes) => reserved += bytes,
-        releaseMaterialization: (bytes) => reserved -= bytes,
-        onMarker: (_, _) {
-          if (++emitted == 2) throw failure;
-        },
-      ),
-      throwsA(same(failure)),
-    );
-    expect(emitted, 2);
-    expect(reserved, 73);
-  });
-
-  test('streaming quest validation failure releases temporary reservation', () {
-    final data =
-        _taskSource(
-              objectives: [
-                {
-                  'id': 'objective-1',
-                  'description': 'OBJECTIVE_DESCRIPTION',
-                  'zones': [
-                    {
-                      'id': 'zone-1',
-                      'map': 'source-customs',
-                      'position': {'x': 'bad', 'y': 5, 'z': 6},
-                    },
-                  ],
-                },
-              ],
-            )['data']
-            as Map<String, dynamic>;
-    var reserved = 73;
-    var emitted = 0;
-    expect(
-      () => prepareQuestMarkers(
-        mapId: 'source-customs',
-        tasks: data['tasks'] as Map<String, dynamic>,
-        questItems: data['questItems'] as Map<String, dynamic>,
-        translations: _taskTranslations()['data'] as Map<String, dynamic>,
-        questItemTranslations:
-            _taskTranslations()['data'] as Map<String, dynamic>,
-        traders: _traderSource()['data'] as Map<String, dynamic>,
-        traderTranslations:
-            _traderTranslations()['data'] as Map<String, dynamic>,
-        reserveMaterialization: (bytes) => reserved += bytes,
-        releaseMaterialization: (bytes) => reserved -= bytes,
-        onMarker: (_) => emitted++,
-      ),
-      throwsA(isA<FormatException>()),
-    );
-    expect(emitted, 0);
-    expect(reserved, 73);
-  });
-
-  test('idless escape-heavy marker reserves fallback identity peak', () {
-    final marker = <String, dynamic>{
-      'name': 'Large detail',
-      'position': {'x': 1, 'y': 2, 'z': 3},
-      'detail': List.filled(1024, '\u0000').join(),
-    };
-    var reserved = 0;
-    const budget = 12 * 1024;
-
-    expect(
-      () => prepareMarkers(
-        _mapSource(customs: _mapRecord('customs', switches: [marker])),
-        {},
-        calibrationFor('customs'),
-        reserveMaterialization: (bytes) {
-          reserved += bytes;
-          if (reserved > budget) {
-            throw StateError('materialization budget exceeded');
-          }
-        },
-      ),
-      throwsA(isA<StateError>()),
     );
   });
 

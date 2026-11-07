@@ -33,7 +33,7 @@ The system SHALL accept valid additions, removals, empty collections and changes
 - **THEN** the candidate is accepted without a historical referential-completeness gate, unavailable names or optional facts are omitted or reported unavailable under existing presentation rules, and no facts are invented
 
 ### Requirement: Conditional acquisition and atomic persistence
-Each mode SHALL retain a validated last-good snapshot with the six exact source bodies and per-source validators. Refresh SHALL prefer ETag, then Last-Modified, otherwise an unconditional request. A 304 SHALL reuse only the exact usable cached body for that source; without it, refresh SHALL fail without retry. Bodies, validators and normalized inventory SHALL become durable and active together only after complete validation and successful storage.
+Each mode SHALL retain a validated last-good snapshot with the six exact source bodies and per-source validators. Refresh SHALL prefer ETag, then Last-Modified, otherwise an unconditional request. A 304 SHALL reuse only the exact usable cached body for that source; without it, refresh SHALL fail without retry. Bodies and validators SHALL become durable together, and their markers active, only after the complete candidate normalizes and is stored.
 
 #### Scenario: Mixed revalidation
 - **WHEN** some sources return 304 with usable cached bodies and others return new valid bodies
@@ -54,61 +54,42 @@ Acquisition SHALL reject redirects and bound each request to 30 seconds and 16 M
 - **WHEN** a source exceeds a byte or time limit or redirects
 - **THEN** acquisition fails, preserves the last-good snapshot and reports the failure without an automatic retry
 
-### Requirement: Compact runtime facts remain complete and local
-Runtime snapshots SHALL normalize directly into shared immutable facts and lightweight marker references, retaining that representation through serialization, cache loading and publication. They SHALL preserve complete logical facts, optional absence and business identities, with local reads and no network detail requests. The shared parser and frozen offline bytes SHALL remain unchanged. Quest tracking is outside this change.
+### Requirement: Runtime facts remain complete and local
+Runtime markers SHALL be derived from the six source bodies by the shared normalizer, with complete logical facts, optional absence and business identities, and local reads without network detail requests. Markers that share a task, objective or location SHALL share its frozen facts rather than copy them. The shared parser and frozen offline bytes SHALL remain unchanged. Quest tracking is outside this change.
 
 #### Scenario: Shared facts remain local and complete
 - **WHEN** many markers refer to the same task, objective or location with nested facts
-- **THEN** the compact snapshot retains complete source and derived facts once with per-marker references, preserving optional-field absence, logical marker/source identities and quest/objective/item relationships; pool references do not replace business identities, and popup, search, filters and identity reads resolve the same logical values locally without per-marker recursive copies or network requests
-
-#### Scenario: Shared searchable facts remain compact
-- **WHEN** many marker positions reference one task containing a large searchable nested fact
-- **THEN** real publication and local search retain a shared or non-expanding search representation within the injected materialization budget, preserving searchable fields, geometry exclusions, case-insensitive substring/phrase and comma-separated OR behavior without a flattened full-fact string per marker
-
-#### Scenario: Malformed compact reference is rejected
-- **WHEN** a compact payload contains a missing, out-of-range, cyclic or malformed fact reference
-- **THEN** it is rejected before persistence or publication without changing existing durable or active authority
+- **THEN** each marker exposes the complete source and derived facts, preserving optional-field absence, logical marker/source identities and quest/objective/item relationships, and popup, search, filters and identity reads resolve them locally without network requests
 
 #### Scenario: Complete frozen runtime qualification
-- **WHEN** the active pack's complete carried six-source closure is acquired and revalidated through the runtime pipeline
-- **THEN** it publishes and reloads complete marker facts within the unchanged default budgets, while the offline pack still reproduces byte-identically
-
-### Requirement: Expanded marker data is resource bounded
-Runtime data SHALL stay within 256 MiB materialized and 64 MiB serialized. Reserve conservative charges before allocation across decoding/handoff, construction, encoding, cache/storage and publication, including derived state, transient buffers and overlapping generations. Charge shared owned facts plus references once, copies in full. Search SHALL remain non-expanding with unchanged semantics, retire with its inventory and retain no past-query cache.
-
-#### Scenario: Expanded candidate fits
-- **WHEN** a complete valid candidate's incremental normalization and serialization remain within both budgets
-- **THEN** it can proceed to atomic persistence and publication
-
-#### Scenario: Nested marker expansion exceeds a budget
-- **WHEN** genuinely oversized distinct facts, reference/marker collections, derived search/projection/metadata state, transient buffers or any expanded intermediate would make a structurally valid candidate exceed either runtime-data budget
-- **THEN** normalization stops before the oversized allocation, copy or serialization and before persistence/publication, reports a resource failure, and preserves the prior durable and active snapshot or bundled fallback
+- **WHEN** the active pack's complete carried six-source closure is normalized through the runtime pipeline
+- **THEN** it yields the bundled marker inventory, while the offline pack still reproduces byte-identically
 
 ### Requirement: Last-good data and honest fallback
-For the selected mode, the system SHALL use its compatible validated last-good snapshot regardless of age, including after a failed refresh. Without one, it SHALL use the active bundled pack's regular-mode marker inventory and identify it as a regular-mode bundled fallback, not as selected-mode live data. Cached metadata SHALL NOT hide a failure to load the active bundled artwork pack.
+For the selected mode, the system SHALL use its validated last-good snapshot regardless of age, including after a failed refresh. Without one, it SHALL use the active bundled pack's regular-mode marker inventory and identify it as a regular-mode bundled fallback, not as selected-mode live data. Cached metadata SHALL NOT hide a failure to load the active bundled artwork pack.
 
 #### Scenario: Old cache and failure
-- **WHEN** a compatible mode snapshot was checked long ago and a new refresh fails
+- **WHEN** a mode snapshot was checked long ago and a new refresh fails
 - **THEN** that snapshot remains available with its source, last check and current failure visible, without age-based expiry
 
 #### Scenario: Cache unavailable
-- **WHEN** no valid compatible snapshot exists for PvE
+- **WHEN** no usable snapshot exists for PvE
 - **THEN** the app displays the bundled regular-mode markers as a labelled fallback while preserving the selected PvE mode
 
 #### Scenario: Broken bundle
 - **WHEN** the active prepared pack cannot load even though cached metadata exists
 - **THEN** the map reports the pack load failure instead of masking it with cached metadata
 
-### Requirement: Cache compatibility is checked
-Cache compatibility SHALL cover stored format, normalizer and relevant map calibration and mapping; corrupt or incompatible data SHALL NOT be used.
+### Requirement: Cached data is re-derived on load
+The cache SHALL store only the six source bodies, their validators and the check time per mode. Markers SHALL be re-derived from those bodies by the current normalizer and active pack whenever the cache is loaded, so a cache never carries a stale normalized form. An incomplete or unparsable cache SHALL NOT be used.
 
-#### Scenario: Compatible cache
-- **WHEN** a complete intact cache matches the current format, normalizer and relevant map calibration and mapping
+#### Scenario: Usable cache
+- **WHEN** a complete cache for the selected mode normalizes successfully against the active pack
 - **THEN** it is available as the selected mode's last-good snapshot regardless of age
 
-#### Scenario: Incompatible cache
-- **WHEN** stored metadata is corrupt or incompatible with the current normalizer or relevant map calibration
-- **THEN** that cache is not used and the labelled bundled fallback is displayed
+#### Scenario: Unusable cache
+- **WHEN** the stored sources are incomplete or fail normalization
+- **THEN** that cache is not displayed, the labelled bundled fallback stays, the failure is reported and a refresh still runs
 
 ### Requirement: Refresh scheduling and status are separate
 The system SHALL start refresh in the background at startup and when the effective mode changes, without blocking startup or navigation, and SHALL provide a separate Settings action to refresh map data. Settings SHALL expose the selected mode, actual source, last check and refresh failure independently of item-data status. No polling, automatic retry or new refresh toggle SHALL be introduced.
@@ -126,7 +107,7 @@ Same-mode concurrent triggers SHALL join one operation. An obsolete mode result 
 
 #### Scenario: Mode changes during refresh
 - **WHEN** the selected mode changes while a previous mode's refresh is in flight
-- **THEN** only the new mode's compatible cache or labelled fallback is displayed and a late prior-mode completion cannot replace it
+- **THEN** only the new mode's usable cache or labelled fallback is displayed and a late prior-mode completion cannot replace it
 
 #### Scenario: Manual refresh joins startup
 - **WHEN** the player requests map refresh while that mode's automatic refresh is in flight

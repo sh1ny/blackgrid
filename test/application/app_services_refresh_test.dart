@@ -14,10 +14,6 @@ import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/data/raid_panel_ocr.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
-import 'package:blackgrid/maps/live_map_budget.dart';
-import 'package:blackgrid/maps/live_map_inventory.dart';
-import 'package:blackgrid/maps/live_map_normalizer.dart';
-import 'package:blackgrid/maps/live_map_snapshot.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
@@ -389,10 +385,10 @@ MapController _fixtureMapController() {
   );
 }
 
-LiveMapSnapshot _snapshotWithExit(AppServices services) {
+Map<String, List<PreparedMarker>> _markersWithExit(AppServices services) {
   final pack = services.maps.pack!;
   final mapId = services.maps.selectedMapId!;
-  final markers = <String, List<PreparedMarker>>{
+  return <String, List<PreparedMarker>>{
     for (final map in pack.maps) map.id: map.markers,
     mapId: [
       ...pack.byId[mapId]!.markers.where(
@@ -413,30 +409,6 @@ LiveMapSnapshot _snapshotWithExit(AppServices services) {
       ),
     ],
   };
-  final budget = LiveMapBudget();
-  return LiveMapSnapshot(
-    mode: GameMode.pvp,
-    checkedAt: fixtureNow,
-    normalizedPayload: LiveMapInventory.fromMarkers(
-      maps: markers,
-      budget: budget,
-    ).encode(budget: budget),
-    sources: [
-      for (final dataset in LiveMapSourceDataset.values)
-        LiveMapSourceBody(
-          dataset: dataset,
-          bytes: Uint8List.fromList(utf8.encode('{}')),
-          budget: budget,
-        ),
-    ],
-    formatVersion: liveMapSnapshotFormatVersion,
-    normalizerVersion: liveMapNormalizerVersion,
-    compatibility: LiveMapCompatibility.fromPreparedPack(
-      pack,
-      pack.liveMapBindings,
-    ),
-    budget: budget,
-  );
 }
 
 void main() {
@@ -744,8 +716,7 @@ void main() {
       );
       expect(services.mapSession.state.raidHighlightIds, {'woods-exit'});
 
-      final snapshot = _snapshotWithExit(services);
-      services.maps.prepareMarkerInventory(snapshot, budget: snapshot.budget)();
+      services.maps.publishMarkers(_markersWithExit(services), changed: true);
 
       expect(
         services.maps.activeMarkers.map((marker) => marker.id),

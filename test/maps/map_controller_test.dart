@@ -8,13 +8,8 @@ import 'package:vector_graphics_compiler/vector_graphics_compiler.dart'
     as compiler;
 
 import 'package:blackgrid/application/map_controller.dart';
-import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/settings.dart';
-import 'package:blackgrid/maps/live_map_budget.dart';
-import 'package:blackgrid/maps/live_map_inventory.dart';
-import 'package:blackgrid/maps/live_map_normalizer.dart';
-import 'package:blackgrid/maps/live_map_snapshot.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
@@ -549,7 +544,7 @@ void main() {
       final beforeScene = controller.scene;
       final beforeArtworkLoads = artworkLoads;
       final generation = controller.contentGeneration;
-      final snapshot = _snapshot(controller, {
+      final markers = _published(controller, {
         'interchange': [
           _snapshotMarker(
             id: 'new',
@@ -564,14 +559,7 @@ void main() {
         'icebreaker': const [],
       });
 
-      final originalInventory = controller.activeMarkers;
-      final activate = controller.prepareMarkerInventory(
-        snapshot,
-        budget: LiveMapBudget(),
-      );
-      expect(controller.activeMarkers, same(originalInventory));
-      expect(controller.contentGeneration, generation);
-      expect(activate(), isTrue);
+      controller.publishMarkers(markers, changed: true);
       expect(controller.contentGeneration, generation + 1);
       expect(controller.selectedMarkerProjection, isNull);
       expect(controller.visibleMarkers().map((marker) => marker.marker.id), [
@@ -589,321 +577,59 @@ void main() {
       expect(controller.hitTestMarker(newPoint)?.marker.id, 'new');
 
       controller.setSelectedMarker('new');
-      expect(
-        controller.prepareMarkerInventory(
-          _snapshot(controller, {
-            'interchange': [
-              _snapshotMarker(
-                id: 'new',
-                category: 'switches',
-                filterKey: 'new-filter',
-                name: 'New switch',
-                x: 12,
-                z: 20,
-                details: {'id': 'new'},
-              ),
-            ],
-            'icebreaker': const [],
-          }),
-          budget: LiveMapBudget(),
-        )(),
-        isFalse,
-      );
+      controller.publishMarkers(markers, changed: false);
       expect(controller.selectedMarkerProjection?.marker.id, 'new');
       expect(controller.contentGeneration, generation + 1);
       expect(artworkLoads, beforeArtworkLoads);
+
+      controller.publishMarkers(null, changed: true);
+      expect(controller.contentGeneration, generation + 2);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(controller.visibleMarkers().map((marker) => marker.marker.id), [
+        'old',
+      ]);
+      expect(controller.transform.scale, beforeTransform.scale);
+      expect(controller.floorSelection, same(beforeFloor));
     },
   );
 
-  test(
-    'inventory initialization invalidates a prepared marker activation',
-    () async {
-      final controller = _controller(
-        markers: [_marker('prepared', 'extracts', 8, 24)],
-      );
-      addTearDown(controller.dispose);
-      controller.updateViewport(const Size(320, 320));
-      await controller.initialize(selectedMapId: 'interchange');
-      final preparedPack = controller.pack!;
-      final staleSnapshot = _snapshot(controller, {
-        'interchange': [
-          _snapshotMarker(
-            id: 'stale',
-            category: 'switches',
-            filterKey: 'Switches',
-            name: 'Stale switch',
-            x: 12,
-            z: 20,
-            details: {'fact': 'must not be installed'},
-          ),
-        ],
-        'icebreaker': const [],
-      });
-      final activate = controller.prepareMarkerInventory(
-        staleSnapshot,
-        budget: LiveMapBudget(),
-      );
-      final generationBeforeInitialize = controller.contentGeneration;
-
-      final initialization = controller.initialize(
-        selectedMapId: 'interchange',
-      );
-      expect(controller.pack, same(preparedPack));
-      expect(controller.contentGeneration, generationBeforeInitialize + 1);
-      expect(activate(), isFalse);
-      await initialization;
-
-      expect(controller.pack, same(preparedPack));
-      expect(controller.activeMarkers.map((marker) => marker.id), ['prepared']);
-      expect(controller.contentGeneration, generationBeforeInitialize + 1);
-    },
-  );
-
-  test(
-    'refreshed identical inventory keeps selection but charges retained memory',
-    () async {
-      final controller = _controller(
-        markers: [_marker('prepared', 'extracts', 8, 24)],
-      );
-      addTearDown(controller.dispose);
-      controller.updateViewport(const Size(320, 320));
-      await controller.initialize(selectedMapId: 'interchange');
-      final snapshot = _snapshot(controller, {
-        'interchange': [
-          {
-            ..._snapshotMarker(
-              id: 'selected',
-              category: 'extracts',
-              filterKey: 'Extracts',
-              name: 'Selected exit',
-              x: 12,
-              z: 20,
-              details: {
-                'retainedFact': {'value': List.filled(32, 'retained').join()},
-              },
-            ),
-            'outline': _square(10, 14),
-          },
-        ],
-        'icebreaker': const [],
-      });
-      expect(
-        controller.prepareMarkerInventory(snapshot, budget: LiveMapBudget())(),
-        isTrue,
-      );
-      controller.setSelectedMarker('selected');
-      final selectedProjection = controller.selectedMarkerProjection!;
-      final selectedInventory = controller.activeMarkers.single;
-      final contentGeneration = controller.contentGeneration;
-      final refreshedSnapshot = LiveMapSnapshot(
-        mode: snapshot.mode,
-        checkedAt: snapshot.checkedAt.add(const Duration(minutes: 1)),
-        normalizedPayload: Uint8List.fromList(snapshot.normalizedPayload),
-        sources: snapshot.sources,
-        formatVersion: snapshot.formatVersion,
-        normalizerVersion: snapshot.normalizerVersion,
-        compatibility: snapshot.compatibility,
-      );
-
-      expect(
-        refreshedSnapshot.normalizedPayload,
-        orderedEquals(snapshot.normalizedPayload),
-      );
-      expect(
-        refreshedSnapshot.compatibility.fingerprint,
-        snapshot.compatibility.fingerprint,
-      );
-      expect(
-        controller.prepareMarkerInventory(
-          refreshedSnapshot,
-          budget: LiveMapBudget(),
-        )(),
-        isFalse,
-      );
-      expect(controller.activeMarkers.single, same(selectedInventory));
-      expect(controller.selectedMarkerProjection, same(selectedProjection));
-      expect(controller.contentGeneration, contentGeneration);
-
-      final baselineBudget = _PeakTrackingLiveMapBudget();
-      controller.prepareMarkerInventory(
-        refreshedSnapshot,
-        budget: baselineBudget,
-      )();
-      final baselinePeak = baselineBudget.peakMaterializedBytes;
-      controller.setSearch(
-        List.generate(256, (index) => 'retained-query-$index').join(' '),
-      );
-      controller.visibleMarkers();
-      final selectedAfterQuery = controller.selectedMarkerProjection;
-      expect(selectedAfterQuery, isNotNull);
-
-      expect(
-        () => controller.prepareMarkerInventory(
-          refreshedSnapshot,
-          budget: LiveMapBudget(maxMaterializedBytes: baselinePeak),
+  test('search matches unknown detail facts of published markers', () async {
+    final controller = _controller(
+      markers: [_marker('retained', 'extracts', 8, 24)],
+    );
+    addTearDown(controller.dispose);
+    controller.updateViewport(const Size(320, 320));
+    await controller.initialize(selectedMapId: 'interchange');
+    final candidate = _published(controller, {
+      'interchange': [
+        _snapshotMarker(
+          id: 'searchable',
+          category: 'switches',
+          filterKey: 'Switches',
+          name: 'Searchable switch',
+          x: 12,
+          z: 20,
+          details: {'unknownSearchFact': 'Beacon of Truth'},
         ),
-        throwsA(isA<LiveMapResourceLimitException>()),
-      );
-      expect(controller.activeMarkers.single, same(selectedInventory));
-      expect(controller.selectedMarkerProjection, same(selectedAfterQuery));
-      expect(controller.contentGeneration, contentGeneration);
-    },
-  );
+      ],
+      'icebreaker': const [],
+    });
+    controller.publishMarkers(candidate, changed: true);
 
-  test(
-    'malformed compact wire preserves the active marker authority',
-    () async {
-      final controller = _controller(
-        markers: [_marker('retained', 'extracts', 8, 24)],
-      );
-      addTearDown(controller.dispose);
-      controller.updateViewport(const Size(320, 320));
-      await controller.initialize(selectedMapId: 'interchange');
-      controller.setSelectedMarker('retained');
-      final retained = controller.activeMarkers.single;
-      final generation = controller.contentGeneration;
-      final valid = _snapshot(controller, {
-        'interchange': [
-          _snapshotMarker(
-            id: 'invalid-reference-candidate',
-            category: 'switches',
-            filterKey: 'Switches',
-            name: 'Invalid reference candidate',
-            x: 12,
-            z: 20,
-          ),
-        ],
-        'icebreaker': const [],
-      });
-      final wire = jsonDecode(
-        utf8.decode(valid.normalizedPayload),
-      ) as Map<String, dynamic>;
-      final maps = wire['maps'] as Map<String, dynamic>;
-      final row = (maps['interchange'] as List).single as Map<String, dynamic>;
-      row['detailsRef'] = (wire['facts'] as List).length;
-      final malformed = LiveMapSnapshot(
-        mode: valid.mode,
-        checkedAt: valid.checkedAt,
-        normalizedPayload: Uint8List.fromList(utf8.encode(jsonEncode(wire))),
-        sources: valid.sources,
-        formatVersion: valid.formatVersion,
-        normalizerVersion: valid.normalizerVersion,
-        compatibility: valid.compatibility,
-      );
-
-      expect(
-        () => controller.prepareMarkerInventory(
-          malformed,
-          budget: LiveMapBudget(),
-        ),
-        throwsFormatException,
-      );
-      expect(controller.activeMarkers.single, same(retained));
-      expect(controller.visibleMarkers().single.marker, same(retained));
-      expect(controller.selectedMarkerProjection?.marker.id, 'retained');
-      expect(controller.contentGeneration, generation);
-    },
-  );
-
-  test(
-    'search after activation does not consume a retired refresh budget',
-    () async {
-      final controller = _controller(
-        markers: [_marker('retained', 'extracts', 8, 24)],
-      );
-      addTearDown(controller.dispose);
-      controller.updateViewport(const Size(320, 320));
-      await controller.initialize(selectedMapId: 'interchange');
-      final candidate = _snapshot(controller, {
-        'interchange': [
-          _snapshotMarker(
-            id: 'searchable',
-            category: 'switches',
-            filterKey: 'Switches',
-            name: 'Searchable switch',
-            x: 12,
-            z: 20,
-            details: {'unknownSearchFact': 'Beacon of Truth'},
-          ),
-        ],
-        'icebreaker': const [],
-      });
-      final refreshBudget = LiveMapBudget();
-      controller.prepareMarkerInventory(candidate, budget: refreshBudget)();
-      refreshBudget.reserveMaterialized(
-        refreshBudget.maxMaterializedBytes - refreshBudget.materializedBytes,
-      );
-
-      controller.setSearch('beacon of truth');
-      expect(
-        controller
-            .visibleMarkers()
-            .where((marker) => !marker.dimmed)
-            .map((marker) => marker.marker.id),
-        ['searchable'],
-      );
-      controller.setSearch('absent phrase');
-      expect(
-        controller.visibleMarkers().where((marker) => !marker.dimmed),
-        isEmpty,
-      );
-    },
-  );
-
-  test('empty-search publication admits searchable facts or avoids later fact storage', () async {
-    await _expectSearchFactsAdmittedOrBounded('');
+    controller.setSearch('beacon of truth');
+    expect(
+      controller
+          .visibleMarkers()
+          .where((marker) => !marker.dimmed)
+          .map((marker) => marker.marker.id),
+      ['searchable'],
+    );
+    controller.setSearch('absent phrase');
+    expect(
+      controller.visibleMarkers().where((marker) => !marker.dimmed),
+      isEmpty,
+    );
   });
-
-  test('name-matching publication admits searchable facts or avoids later fact storage', () async {
-    await _expectSearchFactsAdmittedOrBounded('Search-heavy switch');
-  });
-
-  test(
-    'oversized nested marker inventory rejects before replacing active markers',
-    () async {
-      final controller = _controller(
-        markers: [_marker('retained', 'extracts', 8, 24)],
-      );
-      addTearDown(controller.dispose);
-      controller.updateViewport(const Size(320, 320));
-      await controller.initialize(selectedMapId: 'interchange');
-      final retained = controller.activeMarkers.single;
-      final generation = controller.contentGeneration;
-      final oversized = _snapshot(controller, {
-        'interchange': [
-          _snapshotMarker(
-            id: 'expanded',
-            category: 'extracts',
-            filterKey: 'SharedExtracts',
-            name: 'Expanded exit',
-            x: 12,
-            z: 20,
-            details: {
-              'nested': [
-                for (var index = 0; index < 80; index++)
-                  {
-                    'labels': ['shared nested content $index'],
-                    'facts': {'enabled': true, 'count': index},
-                  },
-              ],
-            },
-          ),
-        ],
-        'icebreaker': const [],
-      });
-
-      expect(
-        () => controller.prepareMarkerInventory(
-          oversized,
-          budget: LiveMapBudget(maxMaterializedBytes: 1024),
-        ),
-        throwsA(isA<LiveMapResourceLimitException>()),
-      );
-      expect(controller.activeMarkers.single, same(retained));
-      expect(controller.visibleMarkers().single.marker, same(retained));
-      expect(controller.contentGeneration, generation);
-    },
-  );
 
   test(
     'player center preserves scale and world heading uses existing geometry',
@@ -1602,134 +1328,19 @@ void main() {
   });
 }
 
-Future<void> _expectSearchFactsAdmittedOrBounded(
-  String preparationQuery,
-) async {
-  final controller = _controller(
-    markers: [_marker('retained', 'extracts', 8, 24)],
-  );
-  addTearDown(controller.dispose);
-  controller.updateViewport(const Size(320, 320));
-  await controller.initialize(selectedMapId: 'interchange');
-  controller.setSelectedMarker('retained');
-  final retained = controller.activeMarkers.single;
-  final retainedSelection = controller.selectedMarkerProjection;
-  final generation = controller.contentGeneration;
-  controller.setSearch(preparationQuery);
-
-  final distinctLeaves = [
-    for (var index = 0; index < 512; index++)
-      'MiXeD-search-fact-$index-${'q' * 4096}',
-  ];
-  final candidate = _snapshot(controller, {
-    'interchange': [
-      _snapshotMarker(
-        id: 'search-heavy',
-        category: 'switches',
-        filterKey: 'Switches',
-        name: 'Search-heavy switch',
-        x: 12,
-        z: 20,
-        details: {'unknownSearchFacts': distinctLeaves},
-      ),
-    ],
-    'icebreaker': const [],
-  });
-
-  final baselineBudget = _PeakTrackingLiveMapBudget();
-  controller.prepareMarkerInventory(candidate, budget: baselineBudget);
-  expect(baselineBudget.peakMaterializedBytes, greaterThan(0));
-
-  bool Function() activate;
-  try {
-    activate = controller.prepareMarkerInventory(
-      candidate,
-      budget: LiveMapBudget(
-        maxMaterializedBytes: baselineBudget.peakMaterializedBytes + 4096,
-      ),
-    );
-  } on LiveMapResourceLimitException {
-    expect(controller.activeMarkers.single, same(retained));
-    expect(controller.selectedMarkerProjection, same(retainedSelection));
-    expect(controller.contentGeneration, generation);
-    return;
-  }
-
-  expect(activate(), isTrue);
-  controller.setSearch('absent-query-not-in-any-searchable-fact');
-  expect(
-    controller.visibleMarkers().singleWhere((marker) {
-      return marker.marker.id == 'search-heavy';
-    }).dimmed,
-    isTrue,
-  );
-}
-
-LiveMapSnapshot _snapshot(
+Map<String, List<PreparedMarker>> _published(
   MapController controller,
   Map<String, List<Map<String, Object?>>> inventory,
-) {
-  final completeInventory = <String, List<Map<String, Object?>>>{
-    for (final map in controller.maps)
-      map.id:
-          inventory[map.id] ??
-          [
-            for (final marker in map.markers)
-              {
-                'id': marker.id,
-                'category': marker.category,
-                'filterKey': marker.filterKey,
-                'name': marker.name,
-                'position': {
-                  'x': marker.position.x,
-                  'z': marker.position.z,
-                  'height': marker.position.height,
-                },
-                'floorId': marker.floorId,
-                'heightBand': marker.heightBand == null
-                    ? null
-                    : [marker.heightBand!.min, marker.heightBand!.max],
-                'details': marker.details,
-                'source': marker.source,
-                'outline': [
-                  for (final point in marker.outline)
-                    {'x': point.x, 'z': point.z, 'height': point.height},
-                ],
-              },
-          ],
-  };
-  final pack = PreparedMapPack(
-    version: 'test',
-    assetRoot: 'assets/maps',
-    maps: controller.maps,
-  );
-  final markerMaps = <String, List<PreparedMarker>>{
-    for (final entry in completeInventory.entries)
-      entry.key: [
-        for (final marker in entry.value)
+) => {
+  for (final map in controller.maps)
+    map.id: switch (inventory[map.id]) {
+      final markers? => [
+        for (final marker in markers)
           PreparedMarker.fromJson(Map<String, dynamic>.from(marker)),
       ],
-  };
-  final budget = LiveMapBudget();
-  return LiveMapSnapshot(
-    mode: GameMode.pvp,
-    checkedAt: DateTime.utc(2026),
-    normalizedPayload: LiveMapInventory.fromMarkers(
-      maps: markerMaps,
-      budget: budget,
-    ).encode(budget: budget),
-    sources: [
-      for (final dataset in LiveMapSourceDataset.values)
-        LiveMapSourceBody(
-          dataset: dataset,
-          bytes: Uint8List.fromList(utf8.encode('{}')),
-        ),
-    ],
-    formatVersion: liveMapSnapshotFormatVersion,
-    normalizerVersion: liveMapNormalizerVersion,
-    compatibility: LiveMapCompatibility.fromPreparedPack(pack, const []),
-  );
-}
+      null => map.markers,
+    },
+};
 
 Map<String, Object?> _snapshotMarker({
   required String id,
@@ -1904,18 +1515,6 @@ Map<String, dynamic> _marker(
   'outline': outline,
   'source': {'url': 'fixture'},
 };
-
-class _PeakTrackingLiveMapBudget extends LiveMapBudget {
-  int peakMaterializedBytes = 0;
-
-  @override
-  void reserveMaterialized(int bytes) {
-    super.reserveMaterialized(bytes);
-    if (materializedBytes > peakMaterializedBytes) {
-      peakMaterializedBytes = materializedBytes;
-    }
-  }
-}
 
 ByteData _picture() => ByteData.sublistView(
   compiler.encodeSvg(

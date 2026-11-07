@@ -113,20 +113,12 @@ class AppServices {
       store: database,
       clock: clock ?? DateTime.now,
     );
-    final mapStore = LiveMapCacheStore(database: database);
-    final mapAcquirer = LiveMapRefreshAcquirer(
-      client: client,
-      store: mapStore,
-      clock: clock,
-    );
     mapData =
         mapDataController ??
         LiveMapDataController(
-          store: mapStore,
-          acquirer: mapAcquirer,
-          clock: clock ?? DateTime.now,
-          preparePublication: (snapshot, budget) =>
-              maps.prepareMarkerInventory(snapshot, budget: budget),
+          store: LiveMapCacheStore(database: database),
+          fetcher: LiveMapFetcher(client: client, clock: clock),
+          publish: maps.publishMarkers,
         );
     mapSession = MapSessionController(
       settings: settings,
@@ -414,12 +406,7 @@ class AppServices {
         (maps.unavailable
             ? StateError('The active prepared map is unavailable.')
             : null);
-    await mapData.selectMode(
-      mode: mode,
-      pack: failure == null ? pack : null,
-      bindings: pack?.liveMapBindings ?? const [],
-      packFailure: failure,
-    );
+    await mapData.selectMode(mode: mode, pack: pack, packFailure: failure);
   }
 
   /// Performs the separate map-data refresh action.
@@ -444,8 +431,8 @@ class AppServices {
     settings.removeListener(_syncMapSettings);
     maps.removeListener(_syncMapContext);
     mapSession.removeListener(_syncMapSession);
-    mapData.dispose();
     await mapData.close();
+    mapData.dispose();
     scanFeed.dispose();
     try {
       try {

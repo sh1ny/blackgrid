@@ -1,292 +1,83 @@
-import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
 import '../domain/catalog.dart';
-import '../maps/live_map_budget.dart';
-import '../maps/live_map_inventory.dart';
-import '../maps/live_map_normalizer.dart';
 import '../maps/live_map_snapshot.dart';
 import 'database.dart';
 
-const int _maxSourceBodyBytes = 16 * 1024 * 1024;
-const int _maxAggregateSourceBytes = 64 * 1024 * 1024;
-const int _maxNormalizedPayloadBytes = 64 * 1024 * 1024;
-
-/// Stores complete, independently replaceable live-map snapshots by mode.
+/// Stores one last-good live-map snapshot per game mode in SQLite.
 class LiveMapCacheStore implements LiveMapStore {
-  /// Creates a cache backed by [_database].
-  LiveMapCacheStore({required this._database});
+  /// Creates a store over the application database.
+  LiveMapCacheStore({required this.database});
 
-  final BlackgridDatabase _database;
+  /// The application database.
+  final BlackgridDatabase database;
 
   @override
-  Future<LiveMapSnapshot?> read(
-    GameMode mode, {
-    required LiveMapCompatibility compatibility,
-    void Function(Object failure)? onRejected,
-  }) async {
-    LiveMapSnapshot? reject(String message) {
-      onRejected?.call(FormatException(message));
-      return null;
-    }
-
-    if (!_supportedMode(mode)) return null;
-    try {
-      return await _database.transaction(() async {
-        final rows = await _database
-            .customSelect(
-              'SELECT mode, checked_at, format_version, normalizer_version, '
-              'compatibility_fingerprint, normalized_sha256, '
-              'length(normalized_payload) AS payload_length '
-              'FROM live_map_snapshots WHERE mode = ?',
-              variables: [Variable<int>(mode.index)],
-            )
-            .get();
-        if (rows.isEmpty) return null;
-        if (rows.length != 1) {
-          return reject('Duplicate live-map snapshot rows.');
-        }
-        final row = rows.single.data;
-        final payloadLength = row['payload_length'];
-        if (payloadLength is! int ||
-            payloadLength < 0 ||
-            payloadLength > _maxNormalizedPayloadBytes ||
-            row['compatibility_fingerprint'] != compatibility.fingerprint ||
-            row['format_version'] != liveMapSnapshotFormatVersion ||
-            row['normalizer_version'] != liveMapNormalizerVersion) {
-          return reject('Live-map snapshot is incompatible or oversized.');
-        }
-
-        final budget = LiveMapBudget();
-        budget.reserveMaterialized(payloadLength);
-        final payloadRows = await _database
-            .customSelect(
-              'SELECT normalized_payload FROM live_map_snapshots WHERE mode = ?',
-              variables: [Variable<int>(mode.index)],
-            )
-            .get();
-        if (payloadRows.length != 1) {
-          return reject('Live-map normalized payload is missing.');
-        }
-        final payload = payloadRows.single.read<Uint8List>(
-          'normalized_payload',
+  Future<LiveMapSnapshot?> read(GameMode mode) async {
+    if (mode == GameMode.unknown) return null;
+    return database.transaction(() async {
+      final record = await (database.select(
+        database.liveMapSnapshots,
+      )..where((row) => row.mode.equals(mode.index))).getSingleOrNull();
+      if (record == null) return null;
+      final rows = await (database.select(
+        database.liveMapSources,
+      )..where((row) => row.mode.equals(mode.index))).get();
+      final sources = <LiveMapSourceBody>[];
+      for (final row in rows) {
+        final dataset = LiveMapSourceDataset.values
+            .where((value) => value.name == row.dataset)
+            .firstOrNull;
+        if (dataset == null) return null;
+        sources.add(
+          LiveMapSourceBody(
+            dataset: dataset,
+            bytes: row.body,
+            etag: row.etag,
+            lastModified: row.lastModified,
+          ),
         );
-        if (payload.length != payloadLength ||
-            _digest(payload) != row['normalized_sha256']) {
-          return reject('Live-map normalized payload integrity check failed.');
-        }
+      }
+      if (sources.length != LiveMapSourceDataset.values.length) return null;
+      return LiveMapSnapshot(
+        mode: mode,
+        checkedAt: DateTime.fromMicrosecondsSinceEpoch(
+          record.checkedAt,
+          isUtc: true,
+        ),
+        sources: sources,
+      );
+    });
+  }
 
-        final sourceRows = await _database
-            .customSelect(
-              'SELECT dataset, body_sha256, etag, last_modified, length(body) '
-              'AS body_length FROM live_map_sources WHERE mode = ? ORDER BY dataset',
-              variables: [Variable<int>(mode.index)],
-            )
-            .get();
-        if (sourceRows.length != LiveMapSourceDataset.values.length) {
-          return reject('Live-map source inventory is incomplete.');
-        }
-        final seen = <LiveMapSourceDataset>{};
-        var aggregateBytes = 0;
-        for (final sourceRow in sourceRows) {
-          final data = sourceRow.data;
-          final dataset = _dataset(data['dataset']);
-          final length = data['body_length'];
-          if (dataset == null ||
-              !seen.add(dataset) ||
-              length is! int ||
-              length < 0 ||
-              length > _maxSourceBodyBytes) {
-            return reject('Live-map source inventory is invalid or oversized.');
-          }
-          aggregateBytes += length;
-          if (aggregateBytes > _maxAggregateSourceBytes) {
-            return reject('Live-map source inventory exceeds aggregate limit.');
-          }
-        }
-        if (seen.length != LiveMapSourceDataset.values.length) {
-          return reject('Live-map source inventory is incomplete.');
-        }
-        budget.reserveMaterialized(aggregateBytes);
-        final sources = <LiveMapSourceBody>[];
-        for (final metadata in sourceRows) {
-          final data = metadata.data;
-          final bodyRows = await _database
-              .customSelect(
-                'SELECT body FROM live_map_sources WHERE mode = ? AND dataset = ?',
-                variables: [
-                  Variable<int>(mode.index),
-                  Variable<String>(data['dataset']! as String),
-                ],
-              )
-              .get();
-          if (bodyRows.length != 1) {
-            return reject('Live-map source body is missing.');
-          }
-          final bytes = bodyRows.single.read<Uint8List>('body');
-          final length = data['body_length']! as int;
-          if (bytes.length != length || _digest(bytes) != data['body_sha256']) {
-            return reject('Live-map source body integrity check failed.');
-          }
-          sources.add(
-            LiveMapSourceBody(
-              dataset: _dataset(data['dataset'])!,
-              bytes: bytes,
-              etag: data['etag'] as String?,
-              lastModified: data['last_modified'] as String?,
-              budget: budget,
+  @override
+  Future<void> commit(LiveMapSnapshot snapshot) {
+    final mode = snapshot.mode.index;
+    return database.transaction(() async {
+      await (database.delete(
+        database.liveMapSources,
+      )..where((row) => row.mode.equals(mode))).go();
+      await database
+          .into(database.liveMapSnapshots)
+          .insertOnConflictUpdate(
+            LiveMapSnapshotsCompanion.insert(
+              mode: Value(mode),
+              checkedAt: snapshot.checkedAt.toUtc().microsecondsSinceEpoch,
             ),
           );
-        }
-
-        if (!_hasValidInventory(
-          payload,
-          compatibility.preparedMapIds,
-          budget,
-        )) {
-          return reject('Normalized live-map inventory is invalid.');
-        }
-        final checkedAtMicros = row['checked_at'];
-        if (checkedAtMicros is! int) {
-          return reject('Live-map check time is invalid.');
-        }
-        return LiveMapSnapshot(
-          mode: mode,
-          checkedAt: DateTime.fromMicrosecondsSinceEpoch(
-            checkedAtMicros,
-            isUtc: true,
-          ),
-          normalizedPayload: payload,
-          sources: sources,
-          formatVersion: row['format_version']! as int,
-          normalizerVersion: row['normalizer_version']! as int,
-          compatibility: compatibility,
-          budget: budget,
-        );
-      });
-    } on LiveMapResourceLimitException catch (failure) {
-      onRejected?.call(failure);
-      return null;
-    }
-  }
-
-  @override
-  Future<void> commit(LiveMapSnapshot snapshot, {LiveMapBudget? budget}) async {
-    if (!_supportedMode(snapshot.mode)) {
-      throw ArgumentError.value(snapshot.mode, 'snapshot.mode');
-    }
-    final reservation = budget ?? LiveMapBudget();
-    final bodyBytes = snapshot.sources.fold<int>(
-      snapshot.normalizedPayload.length,
-      (total, source) => total + source.bytes.length,
-    );
-    if (budget == null) reservation.reserveMaterialized(bodyBytes);
-    _validateCandidate(snapshot, reservation);
-    // Parameter binding can retain native copies until the transaction ends.
-    final storageCharge = bodyBytes + 256 * (snapshot.sources.length + 1);
-    reservation.reserveMaterialized(storageCharge);
-    final mode = snapshot.mode.index;
-    try {
-      await _database.transaction(() async {
-        await _database
-            .into(_database.liveMapSnapshots)
-            .insertOnConflictUpdate(
-              LiveMapSnapshotsCompanion.insert(
-                mode: Value(mode),
-                checkedAt: snapshot.checkedAt.toUtc().microsecondsSinceEpoch,
-                formatVersion: snapshot.formatVersion,
-                normalizerVersion: snapshot.normalizerVersion,
-                compatibilityFingerprint: snapshot.compatibility.fingerprint,
-                normalizedPayload: snapshot.normalizedPayload,
-                normalizedSha256: snapshot.normalizedSha256,
+      for (final source in snapshot.sources.values) {
+        await database
+            .into(database.liveMapSources)
+            .insert(
+              LiveMapSourcesCompanion.insert(
+                mode: mode,
+                dataset: source.dataset.name,
+                body: source.bytes,
+                etag: Value(source.etag),
+                lastModified: Value(source.lastModified),
               ),
             );
-        await (_database.delete(
-          _database.liveMapSources,
-        )..where((row) => row.mode.equals(mode))).go();
-        for (final source in snapshot.sources) {
-          await _database
-              .into(_database.liveMapSources)
-              .insert(
-                LiveMapSourcesCompanion.insert(
-                  mode: mode,
-                  dataset: source.dataset.name,
-                  body: source.bytes,
-                  bodySha256: source.sha256,
-                  etag: Value(source.etag),
-                  lastModified: Value(source.lastModified),
-                ),
-              );
-        }
-      });
-    } finally {
-      reservation.releaseMaterialized(storageCharge);
-    }
-  }
-
-  void _validateCandidate(LiveMapSnapshot snapshot, LiveMapBudget budget) {
-    if (snapshot.formatVersion != liveMapSnapshotFormatVersion ||
-        snapshot.normalizerVersion != liveMapNormalizerVersion) {
-      throw ArgumentError('Unsupported live-map snapshot version.');
-    }
-    if (snapshot.sources.length != LiveMapSourceDataset.values.length ||
-        snapshot.sources.map((source) => source.dataset).toSet().length !=
-            LiveMapSourceDataset.values.length) {
-      throw ArgumentError('A live-map snapshot requires six unique sources.');
-    }
-    var sourceBytes = 0;
-    for (final source in snapshot.sources) {
-      if (source.bytes.length > _maxSourceBodyBytes) {
-        throw ArgumentError('A live-map source exceeds the body size limit.');
       }
-      sourceBytes += source.bytes.length;
-    }
-    if (sourceBytes > _maxAggregateSourceBytes ||
-        snapshot.normalizedPayload.length > _maxNormalizedPayloadBytes) {
-      throw ArgumentError('A live-map snapshot exceeds its size limit.');
-    }
-    if (_digest(snapshot.normalizedPayload) != snapshot.normalizedSha256) {
-      throw ArgumentError('Invalid normalized live-map inventory.');
-    }
-    try {
-      snapshot.validateInventory(budget: budget);
-    } on FormatException {
-      throw ArgumentError('Invalid normalized live-map inventory.');
-    }
-    for (final source in snapshot.sources) {
-      if (_digest(source.bytes) != source.sha256) {
-        throw ArgumentError('Invalid live-map source digest.');
-      }
-    }
+    });
   }
 }
-
-bool _supportedMode(GameMode mode) =>
-    mode == GameMode.pvp || mode == GameMode.pve || mode == GameMode.seasonal;
-
-LiveMapSourceDataset? _dataset(Object? name) {
-  for (final dataset in LiveMapSourceDataset.values) {
-    if (dataset.name == name) return dataset;
-  }
-  return null;
-}
-
-bool _hasValidInventory(
-  Uint8List payload,
-  Set<String> preparedMapIds,
-  LiveMapBudget budget,
-) {
-  final before = budget.materializedBytes;
-  try {
-    final inventory = LiveMapInventory.decode(payload, budget: budget);
-    final maps = inventory.maps;
-    return maps.length == preparedMapIds.length &&
-        preparedMapIds.every(maps.containsKey);
-  } on FormatException {
-    return false;
-  } finally {
-    budget.releaseMaterialized(budget.materializedBytes - before);
-  }
-}
-
-String _digest(List<int> bytes) => sha256.convert(bytes).toString();

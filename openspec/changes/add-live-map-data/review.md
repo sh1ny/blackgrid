@@ -49,3 +49,7 @@ CHANGES_APPLIED: yes
 - **M2:** Round 4's acceptance remains valid for the reviewed wording clarification. Both Required Changes remain applied at the planning gate; no waiver or substantive reversal was introduced.
 - **Prior M1:** Its accepted incremental-budget contract remains in force. Compact S7/D5 supersedes the former expanded-runtime choice, not complete facts/source identities, the 256 MiB/64 MiB limits, or byte-identical frozen offline output.
 - **Implementation boundary:** This review does not establish that compact implementation or regressions are complete, that any test passes, or that the previously reported full-source runtime resource failure is fixed.
+
+## Post-review revision (2026-11-07)
+
+The user directed a simplification after the materialization budget rejected the complete baseline dataset on repeat refreshes. S7 and D5 were revised: the compact fact pool, the runtime codec and the 256 MiB/64 MiB budgets were removed, the cache stores only the six source bodies and validators and is re-derived on load, and M2's budgeted shared-search requirement no longer applies (search keeps its existing per-marker representation). This revision edits the proposal, spec and design, so it voids the verdict above. It has not been re-reviewed.

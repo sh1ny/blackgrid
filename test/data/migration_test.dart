@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
@@ -180,6 +181,30 @@ void main() {
         );
       }
     }
+  });
+  test('5 to 6 recreates the map-data cache and keeps user records', () async {
+    final verifier = SchemaVerifier(GeneratedHelper());
+    final schema = await verifier.schemaAt(5);
+    addTearDown(schema.close);
+    final raw = schema.rawDatabase;
+    raw.execute('INSERT INTO preferences(id,payload) VALUES (?,?)', [
+      1,
+      jsonEncode(
+        AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson(),
+      ),
+    ]);
+    raw.execute(
+      'INSERT INTO live_map_snapshots(mode,checked_at,format_version,'
+      'normalizer_version,compatibility_fingerprint,normalized_payload,'
+      'normalized_sha256) VALUES (?,?,?,?,?,?,?)',
+      [1, 1, 2, 1, 'old', Uint8List(0), 'old'],
+    );
+    final db = BlackgridDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, db.schemaVersion);
+    expect((await db.readSettings()).settings.selectedMap, 'woods');
+    expect(await db.select(db.liveMapSnapshots).get(), isEmpty);
+    expect(await db.select(db.liveMapSources).get(), isEmpty);
   });
   test('newer schema reaches the second query as NewerDatabaseException without byte mutation', () async {
     final dir = await Directory.systemTemp.createTemp('blackgrid-newer-');
