@@ -136,3 +136,4 @@ The user reported "Map data refresh failed: LiveMapResourceLimitException: Mater
 - [x] 8.2 Replace the cache with schema v6: six source bodies, validators and check time per mode, re-derived on load. The 5→6 step drops the pre-release v5 tables and keeps user records.
 - [x] 8.3 Replace the fetcher, cache store and controller with smaller versions behind hand-written fakes; rewrite their tests and adapt the dependent suites.
 - [x] 8.4 Revise the runtime-map-data spec, design, proposal, ADR-0035 and the architecture index to match.
+- User check (2026-11-07, performed by the user on a Release build of `ca53815`): map data refreshes at launch and on repeated Settings refreshes without failure. Passed.

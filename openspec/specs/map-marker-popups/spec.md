@@ -98,10 +98,10 @@ The bubble SHALL expose named, keyboard-operable controls and SHALL consume its 
 - **THEN** the marker selection clears and keyboard focus remains usable on the map
 
 ### Requirement: Summaries reflect prepared marker facts
-The bubble SHALL use player-facing category and marker names and show available category-specific facts without inventing data. Quest markers show their quest and objective or item text; extracts show linked switch names and required or payment item counts; locks show lock type and key name; containers show their name; bosses show their name and available boss-wide spawn chance.
+The bubble SHALL use player-facing category and marker names from the active validated marker generation, whether downloaded, cached or bundled, and show available category-specific facts without inventing data or initiating a map-data request. Quest markers show their quest and objective or item text; extracts show linked switch names and required or payment item counts; locks show lock type and key name; containers show their name; bosses show their name and available boss-wide spawn chance.
 
 #### Scenario: Quest and container
-- **WHEN** a selected quest objective contains a translated quest name and objective description, or a container has a prepared display name
+- **WHEN** a selected quest objective contains a translated quest name and objective description, or a container has an available display name
 - **THEN** the bubble shows those available names and description in plain language
 
 #### Scenario: Linked extract and lock
@@ -113,8 +113,12 @@ The bubble SHALL use player-facing category and marker names and show available 
 - **THEN** the bubble uses the player-facing category label instead of the raw fallback name, omits unavailable optional facts and does not invent a switch or chance
 
 #### Scenario: Boss chance scope
-- **WHEN** the prepared boss-wide spawn chance is 0.35
+- **WHEN** the active boss-wide spawn chance is 0.35
 - **THEN** the bubble presents 35% as the boss spawn chance and does not claim it is the chance for that location
+
+#### Scenario: Refreshed marker facts
+- **WHEN** a validated replacement changes a marker's facts and the player selects a marker from that generation
+- **THEN** the bubble shows the new available facts without initiating a map-data request
 
 ### Requirement: Item names use only the matching loaded catalog
 The bubble SHALL resolve item and key names from the already loaded catalog for the active mode, including its last-good snapshot, and SHALL update when that catalog changes. Opening or updating a bubble SHALL NOT initiate a catalog request. Unresolved names SHALL say they are unavailable without displaying raw IDs.
