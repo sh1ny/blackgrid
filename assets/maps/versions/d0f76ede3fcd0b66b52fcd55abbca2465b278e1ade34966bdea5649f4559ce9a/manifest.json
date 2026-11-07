@@ -171,6 +171,345 @@
       },
       "id": "factory",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor",
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 21,
+            "z": 39
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Office Building"
+        },
+        {
+          "floorIds": [
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 15.5,
+            "z": 39
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Main Office"
+        },
+        {
+          "floorIds": [
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 24.5,
+            "z": 39
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Breach Room"
+        },
+        {
+          "floorIds": [
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 30.5,
+            "z": 39
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Locked Office"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor",
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 35,
+            "z": 39
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "North Stairs"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor",
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 9,
+            "z": 39
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "South Stairs"
+        },
+        {
+          "floorIds": [
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 34,
+            "z": 26
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Sky Bridge"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor",
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 29.5,
+            "z": 17
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Connector"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 29,
+            "z": 41
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Locker Rooms"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 15,
+            "z": 41
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Sinks"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 20,
+            "z": 42
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Hole"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -3,
+            "z": 37
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Platform"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -21,
+            "z": 27
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Servers"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": -18,
+            "z": -29
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Med Tent"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": 4.5,
+            "z": 10.5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Silos"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor",
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 30,
+            "z": -8.5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Heli Crash"
+        },
+        {
+          "floorIds": [
+            "Basement"
+          ],
+          "position": {
+            "x": -1,
+            "z": 16
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Pit"
+        },
+        {
+          "floorIds": [
+            "Basement"
+          ],
+          "position": {
+            "x": -2,
+            "z": -24.5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Underground Stash"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": -20.5,
+            "z": 23
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Scav Bunker"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": -18,
+            "z": 50
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Blue Containers"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": -45.5,
+            "z": 61
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Wood Room"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": 68.25,
+            "z": -20
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Glass Hall"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 56,
+            "z": 5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Boilers"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor",
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 41,
+            "z": -11
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Pumping Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": 44,
+            "z": -36
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "East Halls"
+        },
+        {
+          "floorIds": [
+            "Ground_Floor"
+          ],
+          "position": {
+            "x": 66,
+            "z": -42
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Forklifts"
+        },
+        {
+          "floorIds": [
+            "Third_Floor"
+          ],
+          "position": {
+            "x": 18,
+            "z": 4
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Rafters"
+        }
+      ],
       "layerOrder": [
         "Basement",
         "Ground_Floor",
@@ -66294,6 +66633,296 @@
       },
       "id": "customs",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -215,
+            "z": -119
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Big Red"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 200,
+            "z": 150
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Dorms"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 404,
+            "z": 31
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "New Gas"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 331,
+            "z": -173
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Old Gas"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 201,
+            "z": -127
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Fortress"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 83,
+            "z": -153
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Crackhouse"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 567,
+            "z": -67
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Streamer House"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -69,
+            "z": 9
+          },
+          "rotation": 6,
+          "size": 90,
+          "text": "Main Bridge"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 110,
+            "z": 85
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Sniper Hill"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -288,
+            "z": -134
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Storage"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -211,
+            "z": -219
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Trailer Park"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -66,
+            "z": 46
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Junk Bridge"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 106,
+            "z": -90
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Repair Shop"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 491,
+            "z": 63
+          },
+          "rotation": 5,
+          "size": 80,
+          "text": "Sniper Ridge"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 75,
+            "z": -9
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Old Construction"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 200,
+            "z": -13
+          },
+          "rotation": -9,
+          "size": 80,
+          "text": "Skeleton"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 390,
+            "z": -94
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Warehouse 3"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 472,
+            "z": -67
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Depot"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 555,
+            "z": -118
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Warehouse 7"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 572,
+            "z": 0
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Military Checkpoint"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 238,
+            "z": 53
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Bus Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 333,
+            "z": -67
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Warehouse 4"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 497,
+            "z": 110
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Powerline Tower"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 46,
+            "z": -59
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Warehouse 17"
+        }
+      ],
       "layerOrder": [
         "Ground_Level",
         "Underground_Level",
@@ -249962,6 +250591,200 @@
       },
       "id": "woods",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 10,
+            "z": -3
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Sawmill"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -485,
+            "z": -390
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Scav Town"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -517,
+            "z": -210
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Old Sawmill"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -80,
+            "z": -680
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Cultist Village"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 290,
+            "z": -475
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "USEC Camp"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -188,
+            "z": 235
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Military Camp"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -5,
+            "z": -515
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Ponds"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -252,
+            "z": -37
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Crash Site"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 239,
+            "z": -65
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Checkpoint"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 244,
+            "z": 125
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Shack"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -16,
+            "z": -122
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Lumber"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -3,
+            "z": -74
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Cabins"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -234,
+            "z": 357
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Bus Stop"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -327,
+            "z": 19
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Jaeger's Camp"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 85,
+            "z": -147
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Sniper Rock"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 200,
+            "z": -606
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Convoy"
+        }
+      ],
       "layerOrder": [
         "Ground_Level"
       ],
@@ -334530,6 +335353,257 @@
       },
       "id": "shoreline",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -258.2,
+            "z": -71.2
+          },
+          "rotation": 0,
+          "size": 100,
+          "text": "Resort"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -215.8,
+            "z": 178.4
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Power Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -189.3,
+            "z": 420
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Gas Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -496,
+            "z": 257
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Weather Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -708.9,
+            "z": 93.91
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Radio Tower"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 326,
+            "z": -118.5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Swamp"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 418.4,
+            "z": 118
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Village"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 288,
+            "z": 144
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Cabins"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 128,
+            "z": 93
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Cottages"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -355,
+            "z": 188
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Tank Bridge"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -338.6,
+            "z": 525
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Pier"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 216,
+            "z": 424
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Scav Island"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -96,
+            "z": -6
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Bus Stop"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 52,
+            "z": 134
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Construction"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -153,
+            "z": -290
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Bunker"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -625,
+            "z": 484
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Crane"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -622,
+            "z": -202
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Scav Farm"
+        },
+        {
+          "floorIds": [
+            "Ground_Level",
+            "Second_Floor",
+            "Third_Floor",
+            "Underground_Level"
+          ],
+          "position": {
+            "x": -171,
+            "z": -83
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "West Wing"
+        },
+        {
+          "floorIds": [
+            "Ground_Level",
+            "Second_Floor",
+            "Third_Floor",
+            "Underground_Level"
+          ],
+          "position": {
+            "x": -329,
+            "z": -83
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "East Wing"
+        },
+        {
+          "floorIds": [
+            "Ground_Level",
+            "Second_Floor",
+            "Third_Floor",
+            "Underground_Level"
+          ],
+          "position": {
+            "x": -252,
+            "z": -146
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Admin"
+        }
+      ],
       "layerOrder": [
         "Ground_Level",
         "Underground_Level",
@@ -458435,6 +459509,932 @@
       },
       "id": "interchange",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -186.4,
+            "z": -318.7
+          },
+          "rotation": 0,
+          "size": 100,
+          "text": "Power Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 155,
+            "z": -253
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Go Kart"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 158,
+            "z": -78.5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Four Camp"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 68.2,
+            "z": 312.9
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Cargo Containers"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -260.2,
+            "z": 123.8
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Wall Break"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -175.5,
+            "z": 145.1
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Ramps"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 202.3,
+            "z": 219.4
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Oli Tower"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 46.5,
+            "z": -358.5
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Idea Tower"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 263.2,
+            "z": -11.1
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Scav Camp"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 373.5,
+            "z": -391.2
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Highway Construction"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 33,
+            "z": -222
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Garage A"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 47,
+            "z": -112
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Garage B"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 0,
+            "z": 47
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Garage C"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 20,
+            "z": 138
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Garage D"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -34,
+            "z": -235
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "IDEA"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -115,
+            "z": -45
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Goshan"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -28,
+            "z": 140
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "OLI"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 87,
+            "z": -165
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Nortex"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 60,
+            "z": -152
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "TRend"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 69.5,
+            "z": -134
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Mode7"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 19,
+            "z": -129
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "TTS"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -38,
+            "z": -129
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Book Store"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 91,
+            "z": -119
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Dino Clothes"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 18,
+            "z": -103
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "EMERCOM"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -28,
+            "z": -103
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Kostin"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -65,
+            "z": -103
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Bizarro"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 92,
+            "z": -87
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Spiel"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -18,
+            "z": -87
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Voyage"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 57,
+            "z": -66
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Viking"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 13,
+            "z": -66
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Mantis"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -18,
+            "z": -72
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "German"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 57,
+            "z": -32
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "The National"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 13,
+            "z": -32
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Brutal"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -18,
+            "z": -25
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Kiba"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -34,
+            "z": -20
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Pretty Lights"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 92,
+            "z": -18
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Telespot"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 62,
+            "z": -12
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Revis"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 19,
+            "z": -6
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "ADIK"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -28,
+            "z": 0.5
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Generic"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 92,
+            "z": 15
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Top Brand"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 61,
+            "z": 15
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Sports"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 70,
+            "z": 32
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Yushka"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 19.5,
+            "z": 26
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Rasmussen"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": -37,
+            "z": 26
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Avokado"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 91,
+            "z": 55
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Boots 4 Life"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 61,
+            "z": 50
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Texho"
+        },
+        {
+          "floorIds": [
+            "First_Floor"
+          ],
+          "position": {
+            "x": 6,
+            "z": 49
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Dom"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 38,
+            "z": -170
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Father & Sons"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 69,
+            "z": -150
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Tarkovstar"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 26,
+            "z": -149
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Eastland"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 71,
+            "z": -130
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Arena"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 54,
+            "z": -128
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "ТАРЗДРАВ"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 20,
+            "z": -128
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "МЕБЕЛЬ МК"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 69,
+            "z": -116
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Intourist"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -27,
+            "z": -103
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Burger Spot"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 70,
+            "z": -94
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "FCK"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 70,
+            "z": -87
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "McDaniels"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 64,
+            "z": -69
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Tarducks"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 43,
+            "z": -69
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Coffee Joy"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 15,
+            "z": -74
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Jacob & Jacob"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -34,
+            "z": -79
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "ПУШКИН"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 64,
+            "z": -34
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Sushi Huyushi"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -17,
+            "z": -32
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Underway"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 67,
+            "z": -23.5
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Burger House"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -34,
+            "z": -24
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Philly Cute"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 67,
+            "z": -16
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Shiccos"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 17,
+            "z": 0
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "МУЗЕЙ ИСТОРИИ"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 92,
+            "z": 17
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Papillon"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 58,
+            "z": 13
+          },
+          "rotation": 0,
+          "size": 60,
+          "text": "ЗАКРЫТО НА РЕМОНТ"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 70,
+            "z": 27
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "НА-СВЯЗИ"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 54,
+            "z": 24
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "СКОРО ОТКРЫТИЕ"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 19,
+            "z": 26
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Figaro"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 71,
+            "z": 47
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "АПТЕКА"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 53,
+            "z": 47
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "SARA"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 26,
+            "z": 46
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Urban Clothes"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 91,
+            "z": 54
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "TECHLIGHT"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 39,
+            "z": 67
+          },
+          "rotation": 0,
+          "size": 65,
+          "text": "Fashion Store"
+        }
+      ],
       "layerOrder": [
         "Ground_Level",
         "Structure-1",
@@ -536469,6 +538469,381 @@
       },
       "id": "thelab",
       "kind": "raster",
+      "labels": [
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -230,
+            "z": -400
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Parking"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -246,
+            "z": -379
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Vestibules #1"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -216,
+            "z": -379
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Vestibules #2"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -172,
+            "z": -342
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Main Working Area"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -148,
+            "z": -398
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Negotiation Room"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -130,
+            "z": -398
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Infirmary Lvl 1"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -130,
+            "z": -356
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Test Room"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -125,
+            "z": -308
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Server Room"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -116,
+            "z": -266
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Warehouse Tunnels"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -163,
+            "z": -269
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Warehouse"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -170,
+            "z": -248
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Warehouse Gate"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -207,
+            "z": -305
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Lecture Hall"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -221,
+            "z": -343
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Recreation Area"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -236,
+            "z": -302
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Gym"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -241,
+            "z": -280
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Men's Locker Room"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -232,
+            "z": -280
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Women's Locker Room"
+        },
+        {
+          "floorIds": [
+            "First_Level",
+            "Technical_Level"
+          ],
+          "position": {
+            "x": -259,
+            "z": -366
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Boiler Room"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -260,
+            "z": -319
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Security Barracks"
+        },
+        {
+          "floorIds": [
+            "First_Level"
+          ],
+          "position": {
+            "x": -260,
+            "z": -342
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Reception"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -260,
+            "z": -364
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Administrative Office"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -254,
+            "z": -320
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Security Office"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -244,
+            "z": -378
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Security #1"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -215,
+            "z": -379
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Security #2"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -229,
+            "z": -343
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Conference Room"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -219,
+            "z": -302
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Cafeteria"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -189,
+            "z": -401
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Offices #1"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -149,
+            "z": -401
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Offices #2"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -130,
+            "z": -401
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Infirmary Lvl 2"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -130,
+            "z": -361
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Sterile Laboratory"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -169,
+            "z": -288
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Control Room"
+        },
+        {
+          "floorIds": [
+            "Second_Level"
+          ],
+          "position": {
+            "x": -250,
+            "z": -281
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Corridor To Building #2"
+        }
+      ],
       "markers": [
         {
           "category": "extracts",
@@ -586246,6 +588621,332 @@
       },
       "id": "reserve",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 28,
+            "z": -102
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "K Buildings"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -25,
+            "z": 180
+          },
+          "rotation": -15,
+          "size": 80,
+          "text": "White Queen"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -104,
+            "z": 93
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "White Pawn"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -140,
+            "z": -14.5
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "Black Bishop"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -67,
+            "z": -30
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "White Bishop"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -49.5,
+            "z": 15.5
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "White King"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 14.5,
+            "z": -10.8
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Black Knight"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 82.2,
+            "z": -30.2
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "White Knight"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 149,
+            "z": -124
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "White Rook"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 161,
+            "z": -149
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "Train Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -165,
+            "z": 57
+          },
+          "rotation": -75,
+          "size": 80,
+          "text": "Black Pawn"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 167,
+            "z": -222
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Barracks"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -220,
+            "z": -13
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "E1 Bunkers"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 173,
+            "z": -3
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "E2 Bunkers"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 80,
+            "z": -167
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "д - Warehouse Bunkers"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 96,
+            "z": 30
+          },
+          "rotation": -75,
+          "size": 80,
+          "text": "Garage"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 55.5,
+            "z": 60.6
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Mechanic"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 29.7,
+            "z": 29.5
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "Gas Station"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -31,
+            "z": -150
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "Shipping Yard"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -1,
+            "z": -71
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "K1"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 66,
+            "z": -90
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "K2"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -5.5,
+            "z": -94
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "K3"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 60,
+            "z": -112
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "K4"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -10.5,
+            "z": -115
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "K5"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 54,
+            "z": -132
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "K6"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -8.5,
+            "z": 175
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Dome"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -120,
+            "z": 37
+          },
+          "rotation": 14,
+          "size": 80,
+          "text": "Tarmac"
+        }
+      ],
       "layerOrder": [
         "Ground_Level",
         "Bunkers"
@@ -677965,6 +680666,272 @@
       },
       "id": "lighthouse",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -30,
+            "z": -882
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Train Yard"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -120,
+            "z": -841
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Drug Lab"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -65,
+            "z": -600
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Water Treatment"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 40,
+            "z": -618
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Plant 1"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -97,
+            "z": -737
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Plant 2"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -189,
+            "z": -665
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Plant 3"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -182,
+            "z": -552
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Pipes"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 18,
+            "z": -453
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Gunner Nest"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -177,
+            "z": -356
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Island"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -278,
+            "z": -323
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Cabins"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -162,
+            "z": -225
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Cottages"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -55,
+            "z": -288
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Convenience"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -75,
+            "z": -284
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Red Brick"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -151,
+            "z": -243
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Hillside"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 125,
+            "z": -153
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Boathouses"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 62,
+            "z": -60
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Dead Tree"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 0,
+            "z": -188
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Construction"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -107,
+            "z": -53
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Pikes Peak Resort"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -133,
+            "z": 100
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Grand Chalet"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -70,
+            "z": 129
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Tennis Court"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 382,
+            "z": 496
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Lightkeeper Island"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -125,
+            "z": 296
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Crash Site"
+        }
+      ],
       "layerOrder": [
         "Ground_Level"
       ],
@@ -774827,6 +777794,560 @@
       },
       "id": "streetsoftarkov",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 9,
+            "z": 308
+          },
+          "rotation": -90,
+          "size": 80,
+          "text": "Primorsky Ave."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 9,
+            "z": 104
+          },
+          "rotation": -90,
+          "size": 80,
+          "text": "Primorsky Ave."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 9,
+            "z": -80
+          },
+          "rotation": -90,
+          "size": 80,
+          "text": "Primorsky Ave."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 125,
+            "z": 10
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Kilmov St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -104,
+            "z": 28
+          },
+          "rotation": 10,
+          "size": 80,
+          "text": "Kilmov St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -125,
+            "z": 210
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Nikitskaya St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -112,
+            "z": 361
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Verhnyaya St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -200,
+            "z": 290
+          },
+          "rotation": -64,
+          "size": 80,
+          "text": "Malevecha St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 111,
+            "z": 251
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Chekannaya St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -101,
+            "z": 441
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Nizhnyaya St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 174,
+            "z": 430
+          },
+          "rotation": -30,
+          "size": 80,
+          "text": "Razvedchikov St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 140,
+            "z": 150
+          },
+          "rotation": -68,
+          "size": 80,
+          "text": "Zmejskij Alley"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 232,
+            "z": 100
+          },
+          "rotation": -90,
+          "size": 80,
+          "text": "Kamchatskaya St."
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -128,
+            "z": -35
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Kilmov Shopping Mall"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -45,
+            "z": -52
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Beluga"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 99,
+            "z": -71
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Cardinal Apartments"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 230,
+            "z": 295
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Construction"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 66,
+            "z": 305
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Lexos"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 140,
+            "z": 300
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Sparja Grocery"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -175,
+            "z": 400
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Cinema"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -218,
+            "z": 135
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Shestyorochka"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -35,
+            "z": 64
+          },
+          "rotation": 0,
+          "size": 90,
+          "text": "Pinewood Hotel"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 65,
+            "z": 398
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Teppakot / Koener"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 140,
+            "z": 362
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Concordia"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 89,
+            "z": -20
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Cardinal Bank"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 239,
+            "z": -60
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "LERM Expo"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -64,
+            "z": 166
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Sparja Express"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -30,
+            "z": 138
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Burger Spot"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 42,
+            "z": 97
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Post Office"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 42,
+            "z": 160
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Pharmacy 1"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -173,
+            "z": 226
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Office"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -197,
+            "z": 340
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Corner Restaurant"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -43,
+            "z": 335
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Pharmacy 2"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 90,
+            "z": -277
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Pharmacy 3"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 67,
+            "z": 230
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Tarbank"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 211,
+            "z": 129
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "School"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 222,
+            "z": 173
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Vet Clinic"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -212,
+            "z": 300
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Hive"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -223,
+            "z": 279
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Family Market"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -200,
+            "z": 248
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Marked Hotel"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -175,
+            "z": 297
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "South Hotel"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -119,
+            "z": 287
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Abandon Factory"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -80,
+            "z": 235
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Diner"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -13,
+            "z": 244
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Primorskij 49"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 39,
+            "z": 230
+          },
+          "rotation": -45,
+          "size": 60,
+          "text": "Prestigio Cafe"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -70,
+            "z": 343
+          },
+          "rotation": 0,
+          "size": 60,
+          "text": "Bilbo Coffee"
+        }
+      ],
       "layerOrder": [
         "Ground_Level",
         "Underground_Level",
@@ -943917,6 +947438,165 @@
       },
       "id": "groundzero",
       "kind": "vector",
+      "labels": [
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": -50,
+            "z": 0
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "TerraGroup"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 150,
+            "z": 1
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Skyside"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 141,
+            "z": 142
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Fusion"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 14,
+            "z": 201
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Empire"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 115,
+            "z": 285
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Capital Insight"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 2,
+            "z": 324
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Nakatani"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 80,
+            "z": -118
+          },
+          "rotation": 0,
+          "size": 80,
+          "text": "Elemental Global"
+        },
+        {
+          "floorIds": [
+            "Ground_Level",
+            "Second_Floor"
+          ],
+          "position": {
+            "x": 115,
+            "z": 104
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Oasis"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 115,
+            "z": 30
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "ASAP Winery"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 43,
+            "z": 150
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "Tarbank"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 58,
+            "z": 234
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "GAGRIN Hotel"
+        },
+        {
+          "floorIds": [
+            "Ground_Level"
+          ],
+          "position": {
+            "x": 97,
+            "z": 223
+          },
+          "rotation": 0,
+          "size": 70,
+          "text": "M Showroom"
+        },
+        {
+          "floorIds": [
+            "Second_Floor"
+          ],
+          "position": {
+            "x": -13,
+            "z": 48
+          },
+          "rotation": 0,
+          "size": 60,
+          "text": "Science Office"
+        }
+      ],
       "layerOrder": [
         "Ground_Level",
         "Underground_Level",
@@ -1001273,6 +1004953,7 @@
       },
       "id": "terminal",
       "kind": "vector",
+      "labels": [],
       "layerOrder": [
         "Ground_Level",
         "First_Floor"
@@ -1039326,6 +1043007,7 @@
       },
       "id": "icebreaker",
       "kind": "raster",
+      "labels": [],
       "markerFloorAssignments": {
         "extracts:9bf65c4c24d0153f1542a90ddabadb37198ab9ff:0": {
           "basis": "helicopter-extraction-at-physical-helipad-centre",
@@ -1051566,6 +1055248,7 @@
       },
       "id": "labyrinth",
       "kind": "raster",
+      "labels": [],
       "markers": [
         {
           "category": "extracts",
@@ -1079937,7 +1083620,7 @@
       "sha256": "b356ded5e763e81edc1710d58c2fc7943f6ad6f48cd261c83dd0a192f45f0b9a"
     }
   ],
-  "preparationVersion": 3,
+  "preparationVersion": 4,
   "schemaVersion": 1,
   "sourceGeneration": "041dd8afa34d9749a61840726b7ae3c9d5db3fc60bc8750b245acb12d03b8171",
   "sourceLock": {

@@ -202,7 +202,7 @@ void main() {
         (manifest['maps'] as List).map((map) => map['id']),
         expectedMapIds,
       );
-      expect(manifest['preparationVersion'], 3);
+      expect(manifest['preparationVersion'], 4);
       for (final map in manifest['maps'] as List) {
         final floors = map['floors'] as List;
         expect(floors.map((floor) => floor['id']), expectedFloorIds[map['id']]);
@@ -380,7 +380,7 @@ void main() {
     expect(labs['artworkFrame']['tileStride'], 175);
     expect(labs['displayCrop'], {'left': 0, 'top': 0, 'right': 1, 'bottom': 1});
     expect(labs['markers'][0]['position']['height'], isNull);
-    expect(a['preparationVersion'], 3);
+    expect(a['preparationVersion'], 4);
     final emptyTile = (labs['floors'][0]['artwork']['tiles'] as List)
         .singleWhere((tile) => tile['x'] == 0 && tile['y'] == 1);
     final witness = 'evidence/tile-alpha/${emptyTile['sourceSha256']}.png';
@@ -931,7 +931,7 @@ void main() {
   test('failed new generation preserves asset discovery for an older frozen floor calibration', () async {
     final older = await candidate('older');
     final olderManifest = await readManifest(older);
-    expect(olderManifest['preparationVersion'], 3);
+    expect(olderManifest['preparationVersion'], 4);
     expect(olderManifest['maps'] as List, hasLength(13));
 
     // Represent an earlier full generation whose frozen calibration has no
@@ -997,7 +997,7 @@ void main() {
     expect(originalDirectories, contains('versions/$version/'));
     final publishedOlder = Directory('${packs.path}/versions/$version');
     final validatedOlder = await validateCandidate(publishedOlder);
-    expect(validatedOlder['preparationVersion'], 3);
+    expect(validatedOlder['preparationVersion'], 4);
     expect(validatedOlder['maps'] as List, hasLength(13));
     expect(
       calibrationFor('icebreaker').containsKey('markerFloorAssignments'),
@@ -1007,7 +1007,7 @@ void main() {
 
     final newer = await candidate('newer');
     final newerManifest = await readManifest(newer);
-    expect(newerManifest['preparationVersion'], 3);
+    expect(newerManifest['preparationVersion'], 4);
     expect(newerManifest['maps'] as List, hasLength(13));
     final newerIce = (newerManifest['maps'] as List)
         .cast<Map<String, dynamic>>()

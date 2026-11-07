@@ -1,0 +1,34 @@
+# mise run maps:rebuild report (2026-11-07, run locally at idle priority)
+
+[maps:rebuild] $ dart run tool/maps/prepare.dart refresh --packs assets/maps --…
+factory: manifest values changed
+customs: manifest values changed
+woods: manifest values changed
+shoreline: manifest values changed
+interchange: manifest values changed
+thelab: manifest values changed
+reserve: manifest values changed
+lighthouse: manifest values changed
+streetsoftarkov: manifest values changed
+groundzero: manifest values changed
+terminal: manifest values changed
+icebreaker: manifest values changed
+labyrinth: manifest values changed
+pack: manifest values changed
+Changed manifest values:
+  factory labels
+  customs labels
+  woods labels
+  shoreline labels
+  interchange labels
+  thelab labels
+  reserve labels
+  lighthouse labels
+  streetsoftarkov labels
+  groundzero labels
+  terminal labels
+  icebreaker labels
+  labyrinth labels
+  preparationVersion
+Artwork changed: the owner must check the maps listed above in the app before merge.
+Map pack d0f76ede3fcd0b66b52fcd55abbca2465b278e1ade34966bdea5649f4559ce9a is now active.

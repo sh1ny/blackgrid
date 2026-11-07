@@ -161,5 +161,6 @@ Map<String, dynamic> _mapJson() => {
     ),
   ],
   'markers': <Object>[],
+  'labels': <Object>[],
   'attribution': <String, Object>{},
 };

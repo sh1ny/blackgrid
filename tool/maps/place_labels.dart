@@ -277,6 +277,27 @@ List<PlaceLabel> assignLabelFloors(
   return assigned;
 }
 
+/// The manifest `labels` of one map: extraction, floor assignment and the
+/// manifest form, in one call.
+///
+/// The builder writes this and `validateCandidate` derives it again from the
+/// candidate's own metadata, so both sides run the same code. [baseFloorId] is
+/// the map's base floor.
+List<Map<String, Object?>> manifestLabels(
+  Map<String, dynamic> interactive, {
+  required String mapId,
+  required String baseFloorId,
+  Map<String, List<LabelFloorBand>> table = placeLabelBandTable,
+}) => [
+  for (final label in assignLabelFloors(
+    extractPlaceLabels(interactive, mapId: mapId),
+    mapId: mapId,
+    baseFloorId: baseFloorId,
+    table: table,
+  ))
+    label.toJson(),
+];
+
 /// Checks the band table against the interactive metadata.
 ///
 /// [metadata] is the decoded `metadata/maps.json`. [maps] are the prepared

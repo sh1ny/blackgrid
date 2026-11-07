@@ -1052,6 +1052,7 @@ Map<String, dynamic> _vectorMap() => {
     },
   ],
   'markers': [],
+  'labels': <Object>[],
   'attribution': {'author': 'Independent fixture'},
 };
 Map<String, dynamic> _rasterMap() => {
@@ -1107,6 +1108,7 @@ Map<String, dynamic> _rasterMap() => {
     },
   ],
   'markers': [],
+  'labels': <Object>[],
   'attribution': {'author': 'Independent fixture'},
 };
 Map<String, dynamic> _calibratedRasterMap(String sourceKey) {
@@ -1126,6 +1128,7 @@ Map<String, dynamic> _calibratedRasterMap(String sourceKey) {
       },
   ];
   raw['markers'] = <Object>[];
+  raw['labels'] = <Object>[];
   raw['attribution'] = {'author': 'Synthetic calibration-parity fixture'};
   return raw;
 }

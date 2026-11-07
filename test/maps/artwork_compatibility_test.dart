@@ -201,7 +201,7 @@ void main() {
   test('metadataPreservationRejectsDrift', () {
     final baseline = <String, dynamic>{
       'schemaVersion': 1,
-      'preparationVersion': 3,
+      'preparationVersion': 4,
       'sourceGeneration': 'baseline-generation',
       'sourceLock': {'reviewed': 'baseline'},
       'supportedMapIds': ['map'],
@@ -211,6 +211,7 @@ void main() {
         {
           'id': 'map',
           'floorIds': ['ground'],
+          'labels': <Object>[],
           'markers': [
             {
               'id': 'marker',
