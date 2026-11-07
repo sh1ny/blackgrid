@@ -89,7 +89,8 @@ class LiveMapDataController extends ChangeNotifier {
   final LiveMapFetcher _fetcher;
   final LiveMarkerPublisher _publish;
   final LiveMarkerBuilder _buildMarkers;
-  final Map<GameMode, Future<void>> _refreshes = {};
+  final Map<GameMode, ({PreparedMapPack pack, Future<void> work})> _refreshes =
+      {};
   final Completer<void> _closed = Completer<void>();
   final Set<Future<void>> _work = {};
 
@@ -134,7 +135,7 @@ class LiveMapDataController extends ChangeNotifier {
             : LiveMapDataSource.unavailable,
         checkedAt: null,
         failure: packFailure,
-        refreshing: _refreshes.containsKey(mode),
+        refreshing: pack != null && identical(_refreshes[mode]?.pack, pack),
       ),
     );
     if (!usable) return;
@@ -165,7 +166,8 @@ class LiveMapDataController extends ChangeNotifier {
     if (selection == _selection) unawaited(refresh());
   });
 
-  /// Refreshes the selected mode, joining a refresh already in flight.
+  /// Refreshes the selected mode, joining a refresh already in flight for the
+  /// same mode and pack.
   Future<void> refresh() {
     final mode = _state.mode;
     final pack = _pack;
@@ -176,9 +178,9 @@ class LiveMapDataController extends ChangeNotifier {
       return Future.value();
     }
     final running = _refreshes[mode];
-    if (running != null) return running;
+    if (running != null && identical(running.pack, pack)) return running.work;
     final work = _track(() => _refresh(mode, pack));
-    _refreshes[mode] = work;
+    _refreshes[mode] = (pack: pack, work: work);
     _setState(_state._copyWith(refreshing: true));
     return work;
   }
@@ -209,7 +211,7 @@ class LiveMapDataController extends ChangeNotifier {
     } catch (failure) {
       if (selected()) _setState(_state._copyWith(failure: failure));
     } finally {
-      _refreshes.remove(mode);
+      if (identical(_refreshes[mode]?.pack, pack)) _refreshes.remove(mode);
       if (selected()) _setState(_state._copyWith(refreshing: false));
     }
   }

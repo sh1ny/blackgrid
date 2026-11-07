@@ -130,6 +130,25 @@ void main() {
     expect(published.last.$1, 'fresh');
   });
 
+  test('a reloaded pack starts its own refresh instead of joining', () async {
+    await controller.selectMode(mode: GameMode.pve, pack: _pack);
+    await fetcher.call();
+    final reloaded = PreparedMapPack(
+      version: 'reloaded',
+      assetRoot: 'test',
+      maps: _pack.maps,
+    );
+
+    await controller.selectMode(mode: GameMode.pve, pack: reloaded);
+    await fetcher.complete(_snapshot(GameMode.pve, 'stale'));
+    await fetcher.complete(_snapshot(GameMode.pve, 'fresh'), 1);
+    await controller.refresh();
+
+    expect(fetcher.calls, hasLength(2));
+    expect(published.last, ('fresh', true));
+    expect(controller.state.refreshing, isFalse);
+  });
+
   test('a late result for a previous mode is stored but not shown', () async {
     await controller.selectMode(mode: GameMode.pve, pack: _pack);
     final pveRefresh = controller.refresh();
