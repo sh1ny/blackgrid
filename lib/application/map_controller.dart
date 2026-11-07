@@ -39,6 +39,8 @@ class MapController extends ChangeNotifier {
   final Map<String, List<PreparedMarker>> _activeMarkerInventories = {};
   List<_MarkerProjection>? _projectedMarkers;
   List<ProjectedMapMarker>? _visibleMarkerCache;
+  // Invalidated by map, floor, viewport and transform changes only.
+  List<ProjectedPlaceLabel>? _projectedLabels;
   double? _visibleMarkerMargin;
   Map<String, bool> _categoryVisibility = const {};
   String? _selectedMapId;
@@ -126,6 +128,7 @@ class MapController extends ChangeNotifier {
     _selectedMapId = selectedMapId;
     _categoryVisibility = Map.unmodifiable(categoryVisibility);
     _invalidateMarkers();
+    _invalidateLabels();
     _clearScene();
     _preparedMap = null;
     _floorSelection = null;
@@ -170,6 +173,7 @@ class MapController extends ChangeNotifier {
     _clearEvidence();
     _selectedMapId = id;
     _invalidateMarkers();
+    _invalidateLabels();
     _clearScene();
     _preparedMap = null;
     _floorSelection = null;
@@ -184,6 +188,7 @@ class MapController extends ChangeNotifier {
 
   void _bindSelectedMap() {
     _invalidateMarkers();
+    _invalidateLabels();
     final map = _pack?.byId[_selectedMapId];
     _preparedMap = map;
     if (map == null) {
@@ -417,6 +422,7 @@ class MapController extends ChangeNotifier {
     }
     _viewport = size;
     _invalidateMarkers();
+    _invalidateLabels();
     final map = _preparedMap;
     if (map != null && _hasViewport && !_views.containsKey(map.id)) {
       _transform = MapViewTransform.fit(
@@ -457,6 +463,7 @@ class MapController extends ChangeNotifier {
   void _setTransform(MapViewTransform value, {bool retainView = true}) {
     _transform = value;
     _invalidateMarkers();
+    _invalidateLabels();
     if (retainView) _views[_preparedMap!.id] = value;
     unawaited(_requestScene());
   }
@@ -497,6 +504,7 @@ class MapController extends ChangeNotifier {
     _floorSelection = value;
     _clearSelectionIfIneligible();
     _invalidateMarkers();
+    _invalidateLabels();
     _floors[value.policy.mapId] = value;
     // A hidden floor must disappear immediately from art and marker hits.
     _clearScene();
@@ -610,6 +618,37 @@ class MapController extends ChangeNotifier {
     }
     return null;
   }
+
+  /// The selected map's place labels on a visible floor, in pack order.
+  ///
+  /// A label is returned when any floor it belongs to is visible under the
+  /// current floor selection, so a base label stays visible under a selected
+  /// overlay and an exclusive overlay hides the base floor's labels. Anchors are
+  /// in viewport units and are not culled; placement culls and de-overlaps them.
+  ///
+  /// The result is cached under its own invalidation (map, floor selection,
+  /// viewport and view transform), so marker, search, quest, selection and raid
+  /// updates return the identical list.
+  List<ProjectedPlaceLabel> visiblePlaceLabels() {
+    final map = _preparedMap;
+    final floors = _floorSelection;
+    if (_disposed || map == null || floors == null || !_hasViewport) {
+      return const [];
+    }
+    return _projectedLabels ??= List.unmodifiable([
+      for (final label in map.placeLabels)
+        if (label.floorIds.any(floors.isLayerVisible))
+          if (_trySceneToViewport(map.gameToScene(label.position))
+              case final point?)
+            ProjectedPlaceLabel(label: label, viewportPoint: point),
+    ]);
+  }
+
+  /// The selected overlay floor ids, the third argument of `placeLabels`.
+  Set<String> get selectedOverlayFloorIds =>
+      _floorSelection?.selectedOverlayIds ?? const {};
+
+  void _invalidateLabels() => _projectedLabels = null;
 
   void _invalidateMarkers() {
     _projectedMarkers = null;
@@ -832,6 +871,18 @@ class ProjectedMapMarker {
   final ScenePoint scenePoint;
   final ViewportPoint viewportPoint;
   final List<ViewportPoint> outline;
+}
+
+/// A place label with its anchor projected into viewport units.
+class ProjectedPlaceLabel {
+  /// Creates a projection of [label] anchored at [viewportPoint].
+  const ProjectedPlaceLabel({required this.label, required this.viewportPoint});
+
+  /// The pack label, carrying its text, size, rotation and floor ids.
+  final PreparedPlaceLabel label;
+
+  /// The label's anchor in viewport pixels.
+  final ViewportPoint viewportPoint;
 }
 
 class _MarkerProjection {
