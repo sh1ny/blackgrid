@@ -665,7 +665,7 @@ void main() {
         manifest: activeManifest,
         pubspecText: pubspec,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     test(
       'staging and frozen reproduction omit stale marker overrides',
@@ -758,6 +758,7 @@ void main() {
         );
       },
       tags: ['qualification'],
+      timeout: fullRebuildTimeout,
     );
 
     test('changedArtworkStages', () async {
@@ -793,7 +794,7 @@ void main() {
         manifest: activeManifest,
         pubspecText: pubspec,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     group('unchangedAndEvidenceOnlyStage', () {
       late _StageHarness sharedHarness;
@@ -845,7 +846,7 @@ void main() {
           manifest: activeManifest,
           pubspecText: pubspec,
         );
-      }, tags: ['qualification']);
+      }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
       test('unchangedStage', () async {
         final harness = await _stageHarness();
@@ -873,7 +874,7 @@ void main() {
         expect(await harness.pubspec.readAsBytes(), promotedPubspec);
         expect(promoted.id, promotedId);
         expect((await verifyCommittedGeneration(harness.packs)).id, promotedId);
-      }, tags: ['qualification']);
+      }, tags: ['qualification'], timeout: fullRebuildTimeout);
     });
 
     test('retainsSixAndSelectsReviewedCalibration', () async {
@@ -937,7 +938,7 @@ void main() {
         ),
         isFalse,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     test('staging accepts missing and unsupported metadata maps independently of artwork', () async {
       final initial = await _stageHarness();
@@ -977,7 +978,7 @@ void main() {
         manifest: activeManifest,
         pubspecText: pubspec,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     test('supportedAndNewIdentities', () async {
       final harness = await _stageHarness();
@@ -1025,7 +1026,7 @@ void main() {
         ),
         isFalse,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     test('distinctInvalidTileIsRejectedAfterValidTiles', () async {
       final harness = await _stageHarness();
@@ -1048,7 +1049,7 @@ void main() {
         manifest: manifest,
         pubspecText: pubspec,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     test('failuresDoNotPublish', () async {
       final harness = await _stageHarness();
@@ -1113,7 +1114,7 @@ void main() {
         manifest: buildManifest,
         pubspecText: buildPubspec,
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
 
     test('reviewedSourceAdmitted', () async {
       final missingHarness = await _stageHarness();
@@ -1257,7 +1258,7 @@ void main() {
           ),
         ),
       );
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
     test('artworkReproducesWithoutRawStage', () async {
       final harness = await _stageHarness(isolatedRaw: true);
       final staged = await _runStage(harness);
@@ -1283,6 +1284,6 @@ void main() {
       expect(report.changed, isFalse);
       expect(report.paths, isEmpty);
       expect(report.valueKeys, isEmpty);
-    }, tags: ['qualification']);
+    }, tags: ['qualification'], timeout: fullRebuildTimeout);
   });
 }

@@ -4,12 +4,23 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:image/image.dart' as image;
+import 'package:test/test.dart' show Timeout;
 
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
 
 import 'package:blackgrid/maps/live_map_normalizer.dart'
     show canonicalJson, prepareMarkers;
+
+/// The timeout for a `qualification` test that runs a full artwork staging or
+/// [rebuildCandidate].
+///
+/// A full rebuild of every map took about 2 minutes on GitHub runners, so these
+/// tests timed out at the 2-minute `qualification` tag default in CI runs
+/// 42395244727, 42410087351 and 42410085044. Pass this as the `timeout`
+/// of each such test or group, and of the first test of a suite whose
+/// `setUpAll` builds the fixtures, because that time counts against it.
+const fullRebuildTimeout = Timeout(Duration(minutes: 10));
 
 /// A fixed toolchain record for fixture builds, never read from the lock.
 const fixtureToolchain = <String, String>{

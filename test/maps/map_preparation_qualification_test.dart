@@ -441,7 +441,7 @@ void main() {
           .getAttribute('href', namespace: 'http://www.w3.org/1999/xlink'),
       '#base',
     );
-  });
+  }, timeout: fullRebuildTimeout);
 
   test('full-map source fixture retains boss occurrences and explicit empty coverage', () async {
     final manifest = await readManifest(fixtures.first);
@@ -1180,6 +1180,7 @@ void main() {
       await compileCandidate(private, toolchain: fixtureToolchain);
       await validateCandidate(private);
     },
+    timeout: fullRebuildTimeout,
   );
 
   group('toolchain, determinism and vector format', () {
@@ -1230,7 +1231,7 @@ void main() {
       expect(compiled['toolchain']['vector_graphics_compiler'], '1.3.4');
       expect(compiled['vectorCodecFormat'], 1);
       expect(compiled['vectorsCompiled'], isTrue);
-    });
+    }, timeout: fullRebuildTimeout);
 
     test('unstable encoder leaves the candidate without a manifest', () async {
       final private = Directory('${temporary.path}/unstable');
@@ -1252,7 +1253,7 @@ void main() {
         ),
       );
       expect(File('${private.path}/manifest.json').existsSync(), isFalse);
-    });
+    }, timeout: fullRebuildTimeout);
 
     test(
       'substituted vec with matching output hash fails naming the path',
@@ -1353,6 +1354,7 @@ void main() {
           ),
         );
       },
+      timeout: fullRebuildTimeout,
     );
 
     test('validator refuses preparation version 2', () async {
@@ -1415,7 +1417,7 @@ void main() {
     return (floorId, victim);
   }
 
-  group('committed pack check', () {
+  group('committed pack check', timeout: fullRebuildTimeout, () {
     Future<List<String>> leftovers(Directory checkTemp) async => [
       await for (final entity in checkTemp.list()) entity.path,
     ];
@@ -1474,7 +1476,7 @@ void main() {
     });
   });
 
-  group('refresh', () {
+  group('refresh', timeout: fullRebuildTimeout, () {
     const begin =
         '    # BEGIN generated map pack assets (mise run maps:rebuild)';
     const end = '    # END generated map pack assets';
