@@ -424,6 +424,7 @@ class LiveMapDataController extends ChangeNotifier {
     if (!intent.done!.isCompleted) intent.done!.complete();
     final next = _pending;
     if (!_closing && next != null) {
+      _pending = null;
       _start(next);
     } else if (!_closing && _state.refreshing) {
       _setState(

@@ -48,6 +48,7 @@ class MapSessionController extends ChangeNotifier {
   bool _assumedAssociation = false;
   String? _savedPath;
   DateTime? _savedModifiedAt;
+  RaidPanelEvidence? _rawEvidence;
   RaidPanelEvidence? _evidence;
   Set<String> _highlights = const {};
   PreparedMap? _map;
@@ -160,6 +161,7 @@ class MapSessionController extends ChangeNotifier {
     _assumedAssociation = false;
     _savedPath = null;
     _savedModifiedAt = null;
+    _rawEvidence = null;
     _evidence = null;
     _highlights = const {};
     _pending?.complete();
@@ -322,7 +324,7 @@ class MapSessionController extends ChangeNotifier {
   }
 
   void _refreshEvidenceForMap() {
-    final evidence = _evidence;
+    final evidence = _rawEvidence;
     final map = _map;
     if (evidence == null || map == null || map.id != effectiveMapId) return;
     final result = _matcher!.match(evidence);
@@ -334,10 +336,7 @@ class MapSessionController extends ChangeNotifier {
       panel: evidence.panel,
       rawText: evidence.rawText,
     );
-    if (result.state == RaidPanelState.recognized ||
-        result.state == RaidPanelState.empty) {
-      _highlights = Set.unmodifiable(result.ids);
-    }
+    _highlights = Set.unmodifiable(result.ids);
   }
 
   Future<void> readLatest() async {
@@ -461,6 +460,7 @@ class MapSessionController extends ChangeNotifier {
     }
     if (!_current(request)) return;
     final map = _map;
+    _rawEvidence = evidence;
     _evidence = evidence;
     if (map != null && map.id == effectiveMapId) {
       final result = _matcher!.match(evidence);

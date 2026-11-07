@@ -234,12 +234,19 @@ GameMode _modeFor(http.BaseRequest request) =>
     };
 
 class _RequestPlan {
-  _RequestPlan(this.mode, this.dataset, this.controller, this.listened);
+  _RequestPlan(
+    this.mode,
+    this.dataset,
+    this.controller,
+    this.listened,
+    this.held,
+  );
 
   final GameMode mode;
   final LiveMapSourceDataset dataset;
   final StreamController<List<int>> controller;
   final Completer<void> listened;
+  final bool held;
   bool cancelled = false;
 }
 
@@ -249,6 +256,7 @@ class _ControlledClient extends http.BaseClient {
     this.holdMode,
     this.heldModes = const {},
     this.cancelGate,
+    this.cancelGates = const {},
     this.sourceBodies,
     this.failMode,
     this.failDataset,
@@ -257,6 +265,7 @@ class _ControlledClient extends http.BaseClient {
   final GameMode? holdMode;
   final Set<GameMode> heldModes;
   final Completer<void>? cancelGate;
+  final Map<GameMode, Completer<void>> cancelGates;
   final Map<String, Object?>? sourceBodies;
   final GameMode? failMode;
   final LiveMapSourceDataset? failDataset;
@@ -275,7 +284,7 @@ class _ControlledClient extends http.BaseClient {
   }
 
   Future<void> cancelledCount(int count) {
-    if (plans.where((plan) => plan.cancelled).length >= count) {
+    if (plans.where((plan) => plan.held && plan.cancelled).length >= count) {
       return Future.value();
     }
     final signal = Completer<void>();
@@ -308,6 +317,10 @@ class _ControlledClient extends http.BaseClient {
     final mode = _modeFor(request);
     final dataset = _datasetFor(request);
     final status = mode == failMode && dataset == failDataset ? 503 : 200;
+    final held =
+        status == 200 &&
+        (mode == holdMode || heldModes.contains(mode)) &&
+        !_releasedModes.contains(mode);
     final listened = Completer<void>();
     late final _RequestPlan plan;
     final controller = StreamController<List<int>>(
@@ -315,21 +328,20 @@ class _ControlledClient extends http.BaseClient {
       onCancel: () async {
         plan.cancelled = true;
         _cancelWaiters.removeWhere((waiter) {
-          if (plans.where((value) => value.cancelled).length < waiter.count) {
+          if (plans.where((value) => value.held && value.cancelled).length <
+              waiter.count) {
             return false;
           }
           waiter.signal.complete();
           return true;
         });
-        await cancelGate?.future;
+        if (held) await (cancelGates[mode] ?? cancelGate)?.future;
       },
     );
-    plan = _RequestPlan(mode, dataset, controller, listened);
+    plan = _RequestPlan(mode, dataset, controller, listened, held);
     plans.add(plan);
     final response = http.StreamedResponse(controller.stream, status);
-    if ((mode != holdMode && !heldModes.contains(mode)) ||
-        _releasedModes.contains(mode) ||
-        status != 200) {
+    if (!held) {
       final body = sourceBodies?[dataset.name] ?? _emptySource(dataset);
       controller
         ..add(_jsonBytes(body))
@@ -920,6 +932,142 @@ void main() {
         );
       },
     );
+
+    test(
+      'replacing promoted pending refresh waits for its active cleanup',
+      () async {
+        final pvpCancelGate = Completer<void>();
+        final pveCancelGate = Completer<void>();
+        final client = _ControlledClient(
+          holdMode: GameMode.pvp,
+          heldModes: {GameMode.pve},
+          cancelGates: {
+            GameMode.pvp: pvpCancelGate,
+            GameMode.pve: pveCancelGate,
+          },
+        );
+        final rig = _Rig(client: client, store: _Store());
+        addTearDown(() async {
+          if (!pvpCancelGate.isCompleted) pvpCancelGate.complete();
+          if (!pveCancelGate.isCompleted) pveCancelGate.complete();
+          await rig.close();
+        });
+
+        await rig.select(GameMode.pvp);
+        await client.requestsStarted(1);
+        await rig.select(GameMode.pve);
+        final promotedJoin = rig.controller.refresh();
+        await client.cancelledCount(1);
+        expect(
+          client.requests.map(_modeFor),
+          everyElement(isNot(GameMode.pve)),
+        );
+        pvpCancelGate.complete();
+        await client.requestsStarted(2);
+
+        await rig.select(GameMode.seasonal);
+        await client.cancelledCount(2);
+        var promotedJoinCompleted = false;
+        unawaited(promotedJoin.then((_) => promotedJoinCompleted = true));
+        await Future<void>.value();
+
+        expect(promotedJoinCompleted, isFalse);
+        expect(
+          client.requests.map(_modeFor),
+          everyElement(isNot(GameMode.seasonal)),
+        );
+
+        pveCancelGate.complete();
+        await promotedJoin;
+        await client.requestsStarted(3);
+        expect(client.requests.map(_modeFor), contains(GameMode.seasonal));
+      },
+    );
+
+    test('promoted refresh deadline waits for active cleanup before joining completes', () async {
+      final timers = _ManualTimers();
+      final pvpCancelGate = Completer<void>();
+      final pveCancelGate = Completer<void>();
+      final client = _ControlledClient(
+        holdMode: GameMode.pvp,
+        heldModes: {GameMode.pve},
+        cancelGates: {GameMode.pvp: pvpCancelGate, GameMode.pve: pveCancelGate},
+      );
+      final rig = _Rig(
+        client: client,
+        store: _Store(),
+        limits: const LiveMapRefreshLimits(
+          overallTimeout: Duration(seconds: 5),
+        ),
+        createTimer: timers.create,
+      );
+      addTearDown(() async {
+        if (!pvpCancelGate.isCompleted) pvpCancelGate.complete();
+        if (!pveCancelGate.isCompleted) pveCancelGate.complete();
+        await rig.close();
+      });
+
+      await rig.select(GameMode.pvp);
+      await client.requestsStarted(1);
+      await rig.select(GameMode.pve);
+      final promotedJoin = rig.controller.refresh();
+      await client.cancelledCount(1);
+      pvpCancelGate.complete();
+      await client.requestsStarted(2);
+
+      rig.clock.value = _now.add(const Duration(seconds: 5));
+      timers.timers[1].fire();
+      var promotedJoinCompleted = false;
+      unawaited(promotedJoin.then((_) => promotedJoinCompleted = true));
+      await Future<void>.value();
+
+      expect(promotedJoinCompleted, isFalse);
+      expect(client.requests, hasLength(2));
+
+      pveCancelGate.complete();
+      await promotedJoin;
+      expect(
+        rig.controller.state.failure,
+        isA<LiveMapResourceLimitException>(),
+      );
+    });
+
+    test('close waits for a promoted refresh held in atomic commit', () async {
+      final client = _ControlledClient(holdMode: GameMode.pve);
+      final store = _Store()
+        ..commitGate = Completer<void>()
+        ..commitStarted = Completer<void>();
+      final rig = _Rig(client: client, store: store);
+      addTearDown(() async {
+        if (!store.commitGate!.isCompleted) store.commitGate!.complete();
+        await rig.close();
+      });
+
+      await rig.select(GameMode.pvp);
+      await store.commitStarted!.future;
+      await rig.select(GameMode.pve);
+      store.commitGate!.complete();
+      await client.requestsStarted(7);
+
+      store
+        ..commitGate = Completer<void>()
+        ..commitStarted = Completer<void>();
+      client.answerMode(GameMode.pve);
+      await store.commitStarted!.future;
+
+      final closing = rig.controller.close();
+      var closeCompleted = false;
+      unawaited(closing.then((_) => closeCompleted = true));
+      await Future<void>.value();
+
+      expect(closeCompleted, isFalse);
+      expect(store.commits, hasLength(1));
+
+      store.commitGate!.complete();
+      await closing;
+      expect(store.commits, hasLength(2));
+      expect(client.requests, hasLength(12));
+    });
 
     test(
       'expired pending refresh reports deadline while held commit drains',
