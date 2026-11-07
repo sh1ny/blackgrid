@@ -6,10 +6,10 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| map-place-labels → Place labels show for the floors they belong to | Ground label stays under an overlay | test/maps/map_controller_test.dart | `place labels: base label stays visible under a selected overlay` | red |
-| map-place-labels → Place labels show for the floors they belong to | Overlay adds its labels | test/maps/map_controller_test.dart | `place labels: overlay label shows only while its overlay is selected` | red |
-| map-place-labels → Place labels show for the floors they belong to | Label of a hidden exclusive floor | test/maps/map_controller_test.dart | `place labels: exclusive floor hides labels of other floors` | red |
-| map-place-labels → Place labels show for the floors they belong to | Map without labels | test/maps/map_controller_test.dart | `place labels: map with an empty label list yields none` | red |
+| map-place-labels → Place labels show for the floors they belong to | Ground label stays under an overlay | test/maps/map_controller_test.dart | `place labels: base label stays visible under a selected overlay` | green |
+| map-place-labels → Place labels show for the floors they belong to | Overlay adds its labels | test/maps/map_controller_test.dart | `place labels: overlay label shows only while its overlay is selected` | green |
+| map-place-labels → Place labels show for the floors they belong to | Label of a hidden exclusive floor | test/maps/map_controller_test.dart | `place labels: exclusive floor hides labels of other floors` | green |
+| map-place-labels → Place labels show for the floors they belong to | Map without labels | test/maps/map_controller_test.dart | `place labels: map with an empty label list yields none` | green |
 | map-place-labels → Place labels keep a fixed screen size | Zooming keeps the size | test/ui/map_place_labels_test.dart | `place label font size does not change with zoom` | red |
 | map-place-labels → Place labels keep a fixed screen size | Relative sizes | test/domain/map_place_labels_test.dart | `font size follows relative size 65, 80, 100` | green |
 | map-place-labels → Place labels keep a fixed screen size | Out-of-range size is clamped | test/domain/map_place_labels_test.dart | `font size is clamped to 10..16` | green |
@@ -86,8 +86,8 @@ One group, so the suite is green at its commit: the committed pack and the code 
 
 ## 6. Controller: visible place labels
 
-- [ ] 6.1 Write the failing floor-visibility tests in `test/maps/map_controller_test.dart` (rows "Ground label stays under an overlay" through "Map without labels", using a small synthetic pack). Add a test that `publishMarkers` does not rebuild the label projection. Verify they fail.
-- [ ] 6.2 Implement `MapController.visiblePlaceLabels()`: labels of the selected map whose `floorIds` include a visible layer, projected with `map.gameToScene` and the view transform, with each label's membership in a selected overlay. Cache them under their own invalidation (map, floor selection, viewport, transform), not `_invalidateMarkers`, so marker publication, search and selection do not clear them. Verify the tests pass; flip rows green.
+- [x] 6.1 Write the failing floor-visibility tests in `test/maps/map_controller_test.dart` (rows "Ground label stays under an overlay" through "Map without labels", using a small synthetic pack). Add a test that `publishMarkers` does not rebuild the label projection. Verify they fail.
+- [x] 6.2 Implement `MapController.visiblePlaceLabels()`: labels of the selected map whose `floorIds` include a visible layer, projected with `map.gameToScene` and the view transform, with each label's membership in a selected overlay. Cache them under their own invalidation (map, floor selection, viewport, transform), not `_invalidateMarkers`, so marker publication, search and selection do not clear them. Verify the tests pass; flip rows green.
 
 ## 7. Painter
 
