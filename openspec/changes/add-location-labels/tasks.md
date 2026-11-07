@@ -101,8 +101,8 @@ One group, so the suite is green at its commit: the committed pack and the code 
 
 ## 9. Integration checks
 
-- [ ] 9.1 Run `mise run analyze`, `mise run test`, `mise run maps:check` and `dart format --output=none --set-exit-if-changed lib test tool`; all pass. Confirm every Test map row is green.
-- [ ] 9.2 Update the proposal's `## Release Notes` if anything shipped differs from it; verify with `mise run release-notes -- --check openspec/changes/add-location-labels/proposal.md`.
+- [x] 9.1 Run `mise run analyze`, `mise run test`, `mise run maps:check` and `dart format --output=none --set-exit-if-changed lib test tool`; all pass. Confirm every Test map row is green.
+- [x] 9.2 Update the proposal's `## Release Notes` if anything shipped differs from it; verify with `mise run release-notes -- --check openspec/changes/add-location-labels/proposal.md`.
 
 ## Workflow follow-up
 
