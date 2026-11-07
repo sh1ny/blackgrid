@@ -1,4 +1,5 @@
 import '../application/catalog_controller.dart';
+import '../application/live_map_data_controller.dart';
 import '../application/progress_controller.dart';
 import '../application/scan_coordinator.dart';
 import '../domain/inspection_context.dart';
@@ -19,6 +20,14 @@ String catalogStatusLabel(CatalogStatus status) => switch (status) {
   CatalogStatus.current => 'up to date',
   CatalogStatus.stale => 'out of date',
   CatalogStatus.failed => 'download failed',
+};
+
+/// Names the authority that supplied the displayed map data.
+String liveMapDataSourceLabel(LiveMapDataSource source) => switch (source) {
+  LiveMapDataSource.bundled => 'bundled',
+  LiveMapDataSource.cached => 'cached',
+  LiveMapDataSource.refreshed => 'refreshed',
+  LiveMapDataSource.unavailable => 'unavailable',
 };
 
 /// Reads as "Progress: <label>".
