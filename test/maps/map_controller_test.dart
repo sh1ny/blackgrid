@@ -11,6 +11,7 @@ import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
 
 import '../support/prepared_pack_manifest.dart';
@@ -250,6 +251,97 @@ void main() {
       );
     },
   );
+  test(
+    'overflowing viewport markers retain inventory and recover after zoom',
+    () async {
+      const extreme = 1e306;
+      final controller = _controller(
+        markers: [
+          _marker(
+            'overflow-anchor',
+            'hazards',
+            extreme,
+            16,
+            outline: _square(15, 17),
+          ),
+          _marker(
+            'overflow-outline',
+            'switches',
+            16,
+            16,
+            outline: [
+              {'x': 15, 'z': 15, 'height': null},
+              {'x': extreme, 'z': 15, 'height': null},
+              {'x': 17, 'z': 17, 'height': null},
+            ],
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      controller.setSelectedMarker('overflow-anchor');
+      controller.setPlayerSample(GamePoint(extreme, 16));
+
+      final inventory = controller.activeMarkers;
+      final generation = controller.contentGeneration;
+      final selectedBefore = controller.selectedMarkerProjection!;
+      final playerBefore = controller.playerViewportPoint!;
+      expect(selectedBefore.viewportPoint.x.isFinite, isTrue);
+      expect(playerBefore.x.isFinite, isTrue);
+      expect(selectedBefore.outline, hasLength(4));
+      expect(controller.visibleMarkers().map((marker) => marker.marker.id), [
+        'overflow-anchor',
+        'overflow-outline',
+      ]);
+
+      controller.zoomAt(ViewportPoint(160, 160), 100);
+      expect(
+        (selectedBefore.scenePoint.x * controller.transform.scale).isInfinite,
+        isTrue,
+      );
+      expect(controller.activeMarkers, same(inventory));
+      expect(controller.contentGeneration, generation);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(controller.playerViewportPoint, isNull);
+      final visible = controller.visibleMarkers();
+      expect(visible.map((marker) => marker.marker.id), ['overflow-outline']);
+      final safe = visible.single;
+      expect(safe.viewportPoint.x, closeTo(160, 1e-9));
+      expect(safe.viewportPoint.y, closeTo(160, 1e-9));
+      expect(safe.outline, isEmpty);
+      expect(
+        controller.hitTestMarker(safe.viewportPoint)?.marker.id,
+        'overflow-outline',
+      );
+      expect(
+        controller.hitTestMarker(ViewportPoint(100, 100), radius: 1),
+        isNull,
+      );
+
+      controller.fit();
+      expect(controller.activeMarkers, same(inventory));
+      expect(controller.contentGeneration, generation);
+      final recovered = controller.selectedMarkerProjection!;
+      expect(recovered.marker, same(selectedBefore.marker));
+      expect(recovered.viewportPoint.x, selectedBefore.viewportPoint.x);
+      expect(recovered.outline, hasLength(4));
+      expect(controller.playerViewportPoint!.x, playerBefore.x);
+      final restored = controller.visibleMarkers();
+      expect(restored.map((marker) => marker.marker.id), [
+        'overflow-anchor',
+        'overflow-outline',
+      ]);
+      expect(restored.last.outline, hasLength(3));
+      expect(
+        restored.last.outline.every(
+          (point) => point.x.isFinite && point.y.isFinite,
+        ),
+        isTrue,
+      );
+    },
+  );
+
   test('selected marker projection survives an offscreen anchor and follows view transforms', () async {
     final controller = _controller(
       markers: [
@@ -426,6 +518,117 @@ void main() {
     expect(controller.selectedMarkerProjection, isNotNull);
     await controller.initialize(selectedMapId: 'interchange');
     expect(controller.selectedMarkerProjection, isNull);
+  });
+
+  test(
+    'marker inventory replacement is structural, coherent, and view preserving',
+    () async {
+      var artworkLoads = 0;
+      final controller = _controller(
+        artwork: (path) async {
+          artworkLoads++;
+          return _picture();
+        },
+        markers: [_marker('old', 'extracts', 8, 24, name: 'Old exit')],
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      controller.zoomAt(ViewportPoint(100, 100), 1.5);
+      controller.panBy(13, -7);
+      controller.toggleFloor('Upper');
+      controller.setCategoryVisibility({'old-filter': false});
+      controller.setSelectedMarker('old');
+      final beforeTransform = controller.transform;
+      final beforeFloor = controller.floorSelection;
+      final beforeScene = controller.scene;
+      final beforeArtworkLoads = artworkLoads;
+      final generation = controller.contentGeneration;
+      final markers = _published(controller, {
+        'interchange': [
+          _snapshotMarker(
+            id: 'new',
+            category: 'switches',
+            filterKey: 'new-filter',
+            name: 'New switch',
+            x: 12,
+            z: 20,
+            details: {'id': 'new'},
+          ),
+        ],
+        'icebreaker': const [],
+      });
+
+      controller.publishMarkers(markers, changed: true);
+      expect(controller.contentGeneration, generation + 1);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(controller.visibleMarkers().map((marker) => marker.marker.id), [
+        'new',
+      ]);
+      expect(controller.applicableCategories, contains('new-filter'));
+      expect(controller.applicableCategories, isNot(contains('old-filter')));
+      expect(controller.transform.scale, beforeTransform.scale);
+      expect(controller.transform.translationX, beforeTransform.translationX);
+      expect(controller.transform.translationY, beforeTransform.translationY);
+      expect(controller.floorSelection, same(beforeFloor));
+      expect(controller.scene, same(beforeScene));
+      expect(artworkLoads, beforeArtworkLoads);
+      final newPoint = controller.visibleMarkers().single.viewportPoint;
+      expect(controller.hitTestMarker(newPoint)?.marker.id, 'new');
+
+      controller.setSelectedMarker('new');
+      controller.publishMarkers(markers, changed: false);
+      expect(controller.selectedMarkerProjection?.marker.id, 'new');
+      expect(controller.contentGeneration, generation + 1);
+      expect(artworkLoads, beforeArtworkLoads);
+
+      controller.publishMarkers(null, changed: true);
+      expect(controller.contentGeneration, generation + 2);
+      expect(controller.selectedMarkerProjection, isNull);
+      expect(controller.visibleMarkers().map((marker) => marker.marker.id), [
+        'old',
+      ]);
+      expect(controller.transform.scale, beforeTransform.scale);
+      expect(controller.floorSelection, same(beforeFloor));
+    },
+  );
+
+  test('search matches unknown detail facts of published markers', () async {
+    final controller = _controller(
+      markers: [_marker('retained', 'extracts', 8, 24)],
+    );
+    addTearDown(controller.dispose);
+    controller.updateViewport(const Size(320, 320));
+    await controller.initialize(selectedMapId: 'interchange');
+    final candidate = _published(controller, {
+      'interchange': [
+        _snapshotMarker(
+          id: 'searchable',
+          category: 'switches',
+          filterKey: 'Switches',
+          name: 'Searchable switch',
+          x: 12,
+          z: 20,
+          details: {'unknownSearchFact': 'Beacon of Truth'},
+        ),
+      ],
+      'icebreaker': const [],
+    });
+    controller.publishMarkers(candidate, changed: true);
+
+    controller.setSearch('beacon of truth');
+    expect(
+      controller
+          .visibleMarkers()
+          .where((marker) => !marker.dimmed)
+          .map((marker) => marker.marker.id),
+      ['searchable'],
+    );
+    controller.setSearch('absent phrase');
+    expect(
+      controller.visibleMarkers().where((marker) => !marker.dimmed),
+      isEmpty,
+    );
   });
 
   test(
@@ -726,6 +929,7 @@ void main() {
       expect(controller.preparedMap!.id, 'icebreaker');
       expect(controller.scene, isNull);
       expect(controller.error, isNotNull);
+      expect(controller.packLoadFailure, isNull);
     },
   );
 
@@ -749,6 +953,7 @@ void main() {
       await controller.selectPersistedMap('retired-map');
       expect(controller.selectedMapId, 'retired-map');
       expect(controller.unavailable, isTrue);
+      expect(controller.packLoadFailure, isNull);
       expect(controller.preparedMap, isNull);
       expect(controller.scene, isNull);
       expect(controller.visibleMarkers(), isEmpty);
@@ -977,6 +1182,30 @@ void main() {
     expect(controller.preparedMap, isNull);
   });
 
+  test('pack load failure survives selection and clears on success', () async {
+    final failure = StateError('synthetic pack failure');
+    final loader = _RetryPackLoader(
+      preparedPackBytes(preparedPackManifest()),
+      failure,
+    );
+    final controller = MapController(
+      loader: loader,
+      resources: NativeMapResourceOwner(loader),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.packLoadFailure, same(failure));
+    expect(controller.error, contains('synthetic pack failure'));
+    await controller.selectPersistedMap('woods');
+    expect(controller.packLoadFailure, same(failure));
+
+    loader.fail = false;
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.pack, isNotNull);
+    expect(controller.packLoadFailure, isNull);
+  });
+
   test('broken active pack surfaces as the map load error', () async {
     final controller = _controllerFor((path) async {
       if (path.endsWith('active.json')) {
@@ -1099,12 +1328,59 @@ void main() {
   });
 }
 
+Map<String, List<PreparedMarker>> _published(
+  MapController controller,
+  Map<String, List<Map<String, Object?>>> inventory,
+) => {
+  for (final map in controller.maps)
+    map.id: switch (inventory[map.id]) {
+      final markers? => [
+        for (final marker in markers)
+          PreparedMarker.fromJson(Map<String, dynamic>.from(marker)),
+      ],
+      null => map.markers,
+    },
+};
+
+Map<String, Object?> _snapshotMarker({
+  required String id,
+  required String category,
+  required String filterKey,
+  required String name,
+  required double x,
+  required double z,
+  Map<String, Object?> details = const {},
+}) => {
+  'id': id,
+  'category': category,
+  'filterKey': filterKey,
+  'name': name,
+  'position': {'x': x, 'z': z},
+  'details': details,
+  'source': {'mapId': 'interchange'},
+  'outline': const [],
+};
+
 List<Map<String, dynamic>> _square(double from, double to) => [
   {'x': from, 'z': from, 'height': null},
   {'x': to, 'z': from, 'height': null},
   {'x': to, 'z': to, 'height': null},
   {'x': from, 'z': to, 'height': null},
 ];
+
+class _RetryPackLoader extends PreparedMapPackLoader {
+  _RetryPackLoader(Future<ByteData> Function(String) loadBytes, this.failure)
+    : super(loadBytes: loadBytes);
+
+  final Object failure;
+  bool fail = true;
+
+  @override
+  Future<PreparedMapPack> load() {
+    if (fail) return Future.error(failure);
+    return super.load();
+  }
+}
 
 MapController _controllerFor(Future<ByteData> Function(String) loadBytes) {
   final loader = PreparedMapPackLoader(loadBytes: loadBytes);

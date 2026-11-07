@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
+import '../application/live_map_data_controller.dart';
 import '../application/app_version.dart' as app_version;
 import '../domain/catalog.dart';
 import '../domain/raid_timers.dart';
 import '../domain/settings.dart';
 import 'labels.dart';
+import 'live_map_status.dart';
 import 'theme.dart';
 
 Future<void> showSettings(BuildContext context, AppServices services) =>
@@ -166,6 +168,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       widget.services.settings,
       widget.services.catalog,
       widget.services.progress,
+      widget.services.mapData,
     ]),
     builder: (context, _) {
       final services = widget.services;
@@ -218,6 +221,27 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 Text(
                   'Item data: ${catalogStatusLabel(services.catalog.status)}',
                   style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Map data',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                LiveMapStatus(
+                  mode: services.mapData.state.mode,
+                  dataMode: services.mapData.state.dataMode,
+                  source: services.mapData.state.source,
+                  checkedAt: services.mapData.state.checkedAt,
+                  failure: services.mapData.state.failure,
+                  refreshing: services.mapData.state.refreshing,
+                  onRefresh:
+                      services.mapData.state.refreshing ||
+                          services.mapData.state.mode == GameMode.unknown ||
+                          services.mapData.state.source ==
+                              LiveMapDataSource.unavailable
+                      ? null
+                      : services.mapData.refresh,
                 ),
                 const Divider(height: 28),
                 Text(

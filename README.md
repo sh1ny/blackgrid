@@ -243,6 +243,7 @@ Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets whe
 | Source | Endpoint | Fresh for | On failure |
 |---|---|---|---|
 | Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}` plus optional `*_en` translations | 24 h from download; source times are shown as evidence only | Last good snapshot kept, status `stale` or `failed` |
+| Map markers | `json.tarkov.dev/{regular\|pve\|pvp-season}/{maps,maps_en,tasks,tasks_en,traders,traders_en}` | Compatible last-good snapshots have no age expiry | Selected mode's last-good snapshot, otherwise labelled regular bundled fallback |
 | Flea quote | Inside the catalog | 1 h | Decision falls to Check |
 | Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
 
@@ -254,7 +255,7 @@ Every request is a GET with a 30 s deadline and no redirects. The catalog refres
 
 | Path | Holds |
 |---|---|
-| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, import ledger |
+| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, import ledger and mode-specific map snapshots |
 | `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi` | Tracker token, current-user DPAPI ciphertext; not portable to another Windows user |
 
 History stores item ID, mode, source, UTC time and revision only. No telemetry, account or backend exists.
@@ -297,7 +298,7 @@ Evidence without a confirmed raid or map is shown as assumed. Missing or unreada
 <details>
 <summary><b>Map pack preparation</b></summary>
 
-Runtime only loads the active pack. These commands are maintenance tools ([`prepare.dart`](tool/maps/prepare.dart)); see `--help` for details.
+Runtime artwork and calibration come only from the active pack; marker facts can refresh independently. These commands are maintenance tools ([`prepare.dart`](tool/maps/prepare.dart)); see `--help` for details.
 
 | Command | Does |
 |---|---|
@@ -318,11 +319,13 @@ Staging output must be outside the active pack tree. Both the candidate stage an
 
 The operator must serialize every writer to a pack root, including `refresh`, `artwork-publish` and bare `promote`. Baseline rechecking detects sequential changes before publication, not concurrent writers; it is not a lock. On interruption, follow the command's report of pointer, pubspec, pruning and candidate-cleanup state before retrying. Bare `promote` remains pointer-only: it does not rewrite `pubspec.yaml`, prune old generations or provide the full publication transaction. An owner check remains required before merge for any change beyond the toolchain record, including metadata, manifest and evidence-only changes. A genuine no-change or toolchain-only result requires no owner check; command success is not proof of human review or a new review gate.
 
-Without `--reviewed-calibration-update`, the reviewed configuration must match the active generation's frozen calibration; a mismatch names its path and stops before acquisition. The opt-in flag selects and freezes the current reviewed calibration, which must still reconcile against current metadata and pass the normal geometry, frame, floor, dependency and marker-ownership checks. Staging needs a path that does not exist. The active pack and pubspec are never written; temporary acquired inputs are removed after the build. If candidate construction fails after it begins, keep the named stage for diagnosis and use a different fresh stage path on the next attempt. Review the reported maps, floors, files and manifest values; the command does not publish or qualify owner approval.
+Without `--reviewed-calibration-update`, the reviewed configuration must match the active generation's frozen calibration; a mismatch names its path and stops before acquisition. The opt-in flag selects and freezes the current reviewed calibration, which must still reconcile against current artwork metadata and pass the normal geometry, frame, floor and dependency checks. Historical marker overrides apply only when their reviewed identity and placement assumptions still match; stale overrides do not block valid metadata evolution. Staging needs a path that does not exist. The active pack and pubspec are never written; temporary acquired inputs are removed after the build. If candidate construction fails after it begins, keep the named stage for diagnosis and use a different fresh stage path on the next attempt. Review the reported maps, floors, files and manifest values; the command does not publish or qualify owner approval.
 
 A dependency bump that leaves `maps:check` passing needs no new pack. When it fails, the report lists the maps and floors whose files or manifest values changed. The ordinary `refresh` command rebuilds the exact frozen inputs carried by the verified active generation, using that generation's frozen calibration, manifest `sourceLock` and exact `NOTICE.txt` bytes; neither it nor `mise run maps:rebuild` fetches current REST metadata. Raw `rebuild` and `normalize` instead receive an explicit context from reviewed configuration.
 
-An explicit metadata renewal is a separate staged operation, not a new CLI mode. It verifies the active generation and acquires only the six regular-mode map, task, trader and English JSON responses into a fresh stage. `FrozenInputs.withMetadata` derives a view from the generation-backed build-read closure, substitutes those six byte-hashed files, and leaves every other carried or missing source unchanged; it does not materialize unused indexed tile entries or fetch artwork. The view goes to the existing `refreshActive(metadataInputs: ...)` owner. That branch rebuilds and semantically validates the full candidate, rejects any change to prepared artwork, calibration or reviewed marker ownership, and uses the same map report, asset-block replacement, promotion, pruning and recovery path. The report still requires the owner to check changed maps before merge. A failure after rebuilding begins keeps and names the candidate; follow the reported recovery state rather than deleting it or retrying blindly.
+An explicit metadata renewal is a separate staged operation, not a new CLI mode. It verifies the active generation and acquires only the six regular-mode map, task, trader and English JSON responses into a fresh stage. `FrozenInputs.withMetadata` derives a view from the generation-backed build-read closure, substitutes those six byte-hashed files, and leaves every other carried or missing source unchanged; it does not materialize unused indexed tile entries or fetch artwork. The view goes to the existing `refreshActive(metadataInputs: ...)` owner. That branch rebuilds and validates the full candidate against its own frozen sources, rejects changes to prepared artwork, calibration and other nonmetadata properties, and uses the same map report, asset-block replacement, promotion, pruning and recovery path. It does not require new marker content to equal historical facts or assignments. The report still requires the owner to check changed maps before merge. A failure after rebuilding begins keeps and names the candidate; follow the reported recovery state rather than deleting it or retrying blindly.
+
+Marker and quest normalization is shared with runtime through `lib/maps/live_map_normalizer.dart`. Required JSON roots and malformed consumed records fail with their source identified; empty collections and missing optional references or translations are valid. A supported artwork map absent from REST marker metadata has an empty marker inventory, while unsupported REST maps do not become selectable. Reviewed Interchange volume/outline and Icebreaker identity/position/height/key assumptions are conditional: changed or removed markers neither block renewal nor get restored by an override. Independent artwork identity admission, source hashes, frozen reproduction and nonmetadata preservation remain enforced; REST marker-map evolution does not relax the separate artwork inventory in `metadata/maps.json`.
 
 `<use>` references to symbols the publisher deleted (Customs `path493`, Streets stairs) are dropped, as a browser does. Any other missing symbol fails preparation.
 </details>
@@ -364,7 +367,13 @@ mise exec -- dart run drift_dev schema dump lib/data/database.dart drift_schemas
 mise exec -- dart run drift_dev schema generate drift_schemas test/data/generated
 ```
 
-Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger.
+Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger, version 3 the item-icon cache, and version 4 local raid/sale statistics. Version 6 adds the `live_map_snapshots` and `live_map_sources` map-data cache (version 5 was a pre-release shape of the same cache, which version 6 drops and recreates), without touching those user records.
+
+`LiveMapCacheStore` keeps the last good map data per game mode: the six exact json.tarkov.dev response bodies, their ETag/Last-Modified validators and the time of the last check, replaced together in one transaction. Markers are derived from these bodies with the current normalizer and prepared pack each time they are used, so stored data never goes stale against a new app version; bodies that no longer normalize are ignored and the bundled markers are shown instead. Stored data does not expire with age.
+
+`LiveMapFetcher` downloads six JSON sources from the selected `regular`, `pve` or `pvp-season` route: `maps`, `maps_en`, `tasks`, `tasks_en`, `traders` and `traders_en`. It prefers ETag, then Last-Modified, otherwise an unconditional GET. A 200 replaces the body and both validator fields; a 304 reuses the cached body and keeps or updates its validators. A failure never commits partial bodies or validators.
+
+Requests have fixed 30-second/16-MiB decoded-body limits; one refresh has 120 seconds and 64 MiB across all six bodies, including cached 304 bodies. Redirects and automatic retries are forbidden, and closing the app aborts the request in flight. `LiveMapDataController` normalizes the bodies and parses markers in one background isolate; markers that refer to the same task, objective or location share its frozen facts, so complete local details and quest/objective/item identities stay available without detail requests. Each mode has at most one refresh; a refresh that finishes after the mode changed is stored for its mode but not shown. Saved-panel exit matching uses the same active marker generation as the visible map. Frozen offline map output is unchanged.
 </details>
 
 <details>

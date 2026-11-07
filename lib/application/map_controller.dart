@@ -36,6 +36,7 @@ class MapController extends ChangeNotifier {
   final Map<String, MapViewTransform> _views = {};
   final Map<String, MapFloorSelection> _floors = {};
   final Map<String, List<_MarkerScenePosition>> _markerPositions = {};
+  final Map<String, List<PreparedMarker>> _activeMarkerInventories = {};
   List<_MarkerProjection>? _projectedMarkers;
   List<ProjectedMapMarker>? _visibleMarkerCache;
   double? _visibleMarkerMargin;
@@ -60,8 +61,22 @@ class MapController extends ChangeNotifier {
   bool _loading = false;
   bool _inventoryLoading = false;
   String? _error;
+  Object? _packLoadFailure;
 
   List<PreparedMap> get maps => _pack?.maps ?? const [];
+
+  /// The already-loaded prepared pack, or `null` before inventory loading.
+  PreparedMapPack? get pack => _pack;
+
+  /// The most recent prepared-pack load failure, cleared by a successful load.
+  Object? get packLoadFailure => _packLoadFailure;
+
+  /// The selected map's active marker inventory, including published metadata.
+  List<PreparedMarker> get activeMarkers =>
+      _activeMarkerInventories[_selectedMapId] ??
+      _preparedMap?.markers ??
+      const [];
+
   String? get selectedMapId => _selectedMapId;
 
   /// Changes only when selected map or prepared content authority changes.
@@ -75,7 +90,12 @@ class MapController extends ChangeNotifier {
   bool get automaticFloorFollowing =>
       automaticFloorSupported && (_automaticFloors[_selectedMapId] ?? true);
   Set<String> get applicableCategories => {
-    ...?_preparedMap?.categories,
+    ...?(_preparedMap == null
+        ? null
+        : _activeMarkerInventories[_preparedMap!.id]
+                  ?.map((marker) => marker.filterKey)
+                  .toSet() ??
+              _preparedMap!.categories),
     'CustomPins',
   };
   PreparedMap? get preparedMap => _preparedMap;
@@ -98,6 +118,7 @@ class MapController extends ChangeNotifier {
     final inventoryGeneration = ++_inventoryGeneration;
     ++_contentGeneration;
     _markerPositions.clear();
+    _activeMarkerInventories.clear();
     _floors.clear();
     _views.clear();
     _clearEvidence();
@@ -113,8 +134,17 @@ class MapController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final pack = await loader.load();
+      late final PreparedMapPack pack;
+      try {
+        pack = await loader.load();
+      } catch (error) {
+        if (!_disposed && inventoryGeneration == _inventoryGeneration) {
+          _packLoadFailure = error;
+        }
+        rethrow;
+      }
       if (_disposed || inventoryGeneration != _inventoryGeneration) return;
+      _packLoadFailure = null;
       _pack = pack;
       _inventoryLoading = false;
       _bindSelectedMap();
@@ -173,10 +203,18 @@ class MapController extends ChangeNotifier {
                 padding: _fitPadding,
               )
             : MapViewTransform());
+    _bindMarkers(map);
+  }
+
+  void _bindMarkers(PreparedMap map) {
+    final markers = _activeMarkerInventories.putIfAbsent(
+      map.id,
+      () => map.markers,
+    );
     _markerPositions.putIfAbsent(
       map.id,
       () => List.unmodifiable(
-        map.markers.map(
+        markers.map(
           (marker) => _MarkerScenePosition(
             marker,
             map.gameToScene(marker.position),
@@ -212,6 +250,34 @@ class MapController extends ChangeNotifier {
     _questName = nextName;
     _questTrader = nextTrader;
     _clearSelectionIfIneligible();
+    _invalidateMarkers();
+    notifyListeners();
+  }
+
+  /// Replaces the marker inventory of every prepared map, keeping artwork,
+  /// views, floors, filters and pins.
+  ///
+  /// [markers] maps prepared map ids to their markers; a map it omits has no
+  /// markers. `null` restores the bundled markers. When [changed] is true the
+  /// marker selection is cleared and the content generation advances.
+  void publishMarkers(
+    Map<String, List<PreparedMarker>>? markers, {
+    required bool changed,
+  }) {
+    final pack = _pack;
+    if (_disposed || pack == null) return;
+    _activeMarkerInventories.clear();
+    if (markers != null) {
+      for (final map in pack.maps) {
+        _activeMarkerInventories[map.id] = markers[map.id] ?? const [];
+      }
+    }
+    _markerPositions.clear();
+    if (changed) {
+      _selectedMarkerId = null;
+      ++_contentGeneration;
+    }
+    if (_preparedMap case final map?) _bindMarkers(map);
     _invalidateMarkers();
     notifyListeners();
   }
@@ -298,11 +364,18 @@ class MapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  ViewportPoint? _trySceneToViewport(ScenePoint point) {
+    final x = point.x * _transform.scale + _transform.translationX;
+    final y = point.y * _transform.scale + _transform.translationY;
+    if (!x.isFinite || !y.isFinite) return null;
+    return ViewportPoint(x, y);
+  }
+
   ViewportPoint? get playerViewportPoint {
     final map = _preparedMap;
     final player = _playerPosition;
     if (map == null || player == null) return null;
-    return _transform.sceneToViewport(map.gameToScene(player));
+    return _trySceneToViewport(map.gameToScene(player));
   }
 
   /// A projected direction, not an arbitrary glyph-angle convention.
@@ -564,10 +637,18 @@ class MapController extends ChangeNotifier {
       if (!_markerEligible(position, floors)) {
         continue;
       }
-      final point = _transform.sceneToViewport(position.point);
-      final outline = List<ViewportPoint>.unmodifiable(
-        position.outline.map(_transform.sceneToViewport),
-      );
+      final point = _trySceneToViewport(position.point);
+      if (point == null) continue;
+      final vertices = <ViewportPoint>[];
+      for (final sceneVertex in position.outline) {
+        final vertex = _trySceneToViewport(sceneVertex);
+        if (vertex == null) {
+          vertices.clear();
+          break;
+        }
+        vertices.add(vertex);
+      }
+      final outline = List<ViewportPoint>.unmodifiable(vertices);
       var left = point.x;
       var right = point.x;
       var top = point.y;

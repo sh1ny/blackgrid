@@ -3404,6 +3404,584 @@ class StatsMetaCompanion extends UpdateCompanion<StatsMetaData> {
   }
 }
 
+class $LiveMapSnapshotsTable extends LiveMapSnapshots
+    with TableInfo<$LiveMapSnapshotsTable, LiveMapSnapshotRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LiveMapSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<int> mode = GeneratedColumn<int>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _checkedAtMeta = const VerificationMeta(
+    'checkedAt',
+  );
+  @override
+  late final GeneratedColumn<int> checkedAt = GeneratedColumn<int>(
+    'checked_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [mode, checkedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'live_map_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LiveMapSnapshotRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    }
+    if (data.containsKey('checked_at')) {
+      context.handle(
+        _checkedAtMeta,
+        checkedAt.isAcceptableOrUnknown(data['checked_at']!, _checkedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_checkedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {mode};
+  @override
+  LiveMapSnapshotRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LiveMapSnapshotRecord(
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mode'],
+      )!,
+      checkedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}checked_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LiveMapSnapshotsTable createAlias(String alias) {
+    return $LiveMapSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class LiveMapSnapshotRecord extends DataClass
+    implements Insertable<LiveMapSnapshotRecord> {
+  final int mode;
+  final int checkedAt;
+  const LiveMapSnapshotRecord({required this.mode, required this.checkedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['mode'] = Variable<int>(mode);
+    map['checked_at'] = Variable<int>(checkedAt);
+    return map;
+  }
+
+  LiveMapSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return LiveMapSnapshotsCompanion(
+      mode: Value(mode),
+      checkedAt: Value(checkedAt),
+    );
+  }
+
+  factory LiveMapSnapshotRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LiveMapSnapshotRecord(
+      mode: serializer.fromJson<int>(json['mode']),
+      checkedAt: serializer.fromJson<int>(json['checkedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mode': serializer.toJson<int>(mode),
+      'checkedAt': serializer.toJson<int>(checkedAt),
+    };
+  }
+
+  LiveMapSnapshotRecord copyWith({int? mode, int? checkedAt}) =>
+      LiveMapSnapshotRecord(
+        mode: mode ?? this.mode,
+        checkedAt: checkedAt ?? this.checkedAt,
+      );
+  LiveMapSnapshotRecord copyWithCompanion(LiveMapSnapshotsCompanion data) {
+    return LiveMapSnapshotRecord(
+      mode: data.mode.present ? data.mode.value : this.mode,
+      checkedAt: data.checkedAt.present ? data.checkedAt.value : this.checkedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiveMapSnapshotRecord(')
+          ..write('mode: $mode, ')
+          ..write('checkedAt: $checkedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(mode, checkedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LiveMapSnapshotRecord &&
+          other.mode == this.mode &&
+          other.checkedAt == this.checkedAt);
+}
+
+class LiveMapSnapshotsCompanion extends UpdateCompanion<LiveMapSnapshotRecord> {
+  final Value<int> mode;
+  final Value<int> checkedAt;
+  const LiveMapSnapshotsCompanion({
+    this.mode = const Value.absent(),
+    this.checkedAt = const Value.absent(),
+  });
+  LiveMapSnapshotsCompanion.insert({
+    this.mode = const Value.absent(),
+    required int checkedAt,
+  }) : checkedAt = Value(checkedAt);
+  static Insertable<LiveMapSnapshotRecord> custom({
+    Expression<int>? mode,
+    Expression<int>? checkedAt,
+  }) {
+    return RawValuesInsertable({
+      if (mode != null) 'mode': mode,
+      if (checkedAt != null) 'checked_at': checkedAt,
+    });
+  }
+
+  LiveMapSnapshotsCompanion copyWith({
+    Value<int>? mode,
+    Value<int>? checkedAt,
+  }) {
+    return LiveMapSnapshotsCompanion(
+      mode: mode ?? this.mode,
+      checkedAt: checkedAt ?? this.checkedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mode.present) {
+      map['mode'] = Variable<int>(mode.value);
+    }
+    if (checkedAt.present) {
+      map['checked_at'] = Variable<int>(checkedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiveMapSnapshotsCompanion(')
+          ..write('mode: $mode, ')
+          ..write('checkedAt: $checkedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LiveMapSourcesTable extends LiveMapSources
+    with TableInfo<$LiveMapSourcesTable, LiveMapSource> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LiveMapSourcesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<int> mode = GeneratedColumn<int>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES live_map_snapshots (mode)',
+    ),
+  );
+  static const VerificationMeta _datasetMeta = const VerificationMeta(
+    'dataset',
+  );
+  @override
+  late final GeneratedColumn<String> dataset = GeneratedColumn<String>(
+    'dataset',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<Uint8List> body = GeneratedColumn<Uint8List>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _etagMeta = const VerificationMeta('etag');
+  @override
+  late final GeneratedColumn<String> etag = GeneratedColumn<String>(
+    'etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<String> lastModified = GeneratedColumn<String>(
+    'last_modified',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    mode,
+    dataset,
+    body,
+    etag,
+    lastModified,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'live_map_sources';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LiveMapSource> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('dataset')) {
+      context.handle(
+        _datasetMeta,
+        dataset.isAcceptableOrUnknown(data['dataset']!, _datasetMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_datasetMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('etag')) {
+      context.handle(
+        _etagMeta,
+        etag.isAcceptableOrUnknown(data['etag']!, _etagMeta),
+      );
+    }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {mode, dataset};
+  @override
+  LiveMapSource map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LiveMapSource(
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mode'],
+      )!,
+      dataset: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dataset'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}body'],
+      )!,
+      etag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etag'],
+      ),
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_modified'],
+      ),
+    );
+  }
+
+  @override
+  $LiveMapSourcesTable createAlias(String alias) {
+    return $LiveMapSourcesTable(attachedDatabase, alias);
+  }
+}
+
+class LiveMapSource extends DataClass implements Insertable<LiveMapSource> {
+  final int mode;
+  final String dataset;
+  final Uint8List body;
+  final String? etag;
+  final String? lastModified;
+  const LiveMapSource({
+    required this.mode,
+    required this.dataset,
+    required this.body,
+    this.etag,
+    this.lastModified,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['mode'] = Variable<int>(mode);
+    map['dataset'] = Variable<String>(dataset);
+    map['body'] = Variable<Uint8List>(body);
+    if (!nullToAbsent || etag != null) {
+      map['etag'] = Variable<String>(etag);
+    }
+    if (!nullToAbsent || lastModified != null) {
+      map['last_modified'] = Variable<String>(lastModified);
+    }
+    return map;
+  }
+
+  LiveMapSourcesCompanion toCompanion(bool nullToAbsent) {
+    return LiveMapSourcesCompanion(
+      mode: Value(mode),
+      dataset: Value(dataset),
+      body: Value(body),
+      etag: etag == null && nullToAbsent ? const Value.absent() : Value(etag),
+      lastModified: lastModified == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastModified),
+    );
+  }
+
+  factory LiveMapSource.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LiveMapSource(
+      mode: serializer.fromJson<int>(json['mode']),
+      dataset: serializer.fromJson<String>(json['dataset']),
+      body: serializer.fromJson<Uint8List>(json['body']),
+      etag: serializer.fromJson<String?>(json['etag']),
+      lastModified: serializer.fromJson<String?>(json['lastModified']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mode': serializer.toJson<int>(mode),
+      'dataset': serializer.toJson<String>(dataset),
+      'body': serializer.toJson<Uint8List>(body),
+      'etag': serializer.toJson<String?>(etag),
+      'lastModified': serializer.toJson<String?>(lastModified),
+    };
+  }
+
+  LiveMapSource copyWith({
+    int? mode,
+    String? dataset,
+    Uint8List? body,
+    Value<String?> etag = const Value.absent(),
+    Value<String?> lastModified = const Value.absent(),
+  }) => LiveMapSource(
+    mode: mode ?? this.mode,
+    dataset: dataset ?? this.dataset,
+    body: body ?? this.body,
+    etag: etag.present ? etag.value : this.etag,
+    lastModified: lastModified.present ? lastModified.value : this.lastModified,
+  );
+  LiveMapSource copyWithCompanion(LiveMapSourcesCompanion data) {
+    return LiveMapSource(
+      mode: data.mode.present ? data.mode.value : this.mode,
+      dataset: data.dataset.present ? data.dataset.value : this.dataset,
+      body: data.body.present ? data.body.value : this.body,
+      etag: data.etag.present ? data.etag.value : this.etag,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiveMapSource(')
+          ..write('mode: $mode, ')
+          ..write('dataset: $dataset, ')
+          ..write('body: $body, ')
+          ..write('etag: $etag, ')
+          ..write('lastModified: $lastModified')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    mode,
+    dataset,
+    $driftBlobEquality.hash(body),
+    etag,
+    lastModified,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LiveMapSource &&
+          other.mode == this.mode &&
+          other.dataset == this.dataset &&
+          $driftBlobEquality.equals(other.body, this.body) &&
+          other.etag == this.etag &&
+          other.lastModified == this.lastModified);
+}
+
+class LiveMapSourcesCompanion extends UpdateCompanion<LiveMapSource> {
+  final Value<int> mode;
+  final Value<String> dataset;
+  final Value<Uint8List> body;
+  final Value<String?> etag;
+  final Value<String?> lastModified;
+  final Value<int> rowid;
+  const LiveMapSourcesCompanion({
+    this.mode = const Value.absent(),
+    this.dataset = const Value.absent(),
+    this.body = const Value.absent(),
+    this.etag = const Value.absent(),
+    this.lastModified = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LiveMapSourcesCompanion.insert({
+    required int mode,
+    required String dataset,
+    required Uint8List body,
+    this.etag = const Value.absent(),
+    this.lastModified = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : mode = Value(mode),
+       dataset = Value(dataset),
+       body = Value(body);
+  static Insertable<LiveMapSource> custom({
+    Expression<int>? mode,
+    Expression<String>? dataset,
+    Expression<Uint8List>? body,
+    Expression<String>? etag,
+    Expression<String>? lastModified,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (mode != null) 'mode': mode,
+      if (dataset != null) 'dataset': dataset,
+      if (body != null) 'body': body,
+      if (etag != null) 'etag': etag,
+      if (lastModified != null) 'last_modified': lastModified,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LiveMapSourcesCompanion copyWith({
+    Value<int>? mode,
+    Value<String>? dataset,
+    Value<Uint8List>? body,
+    Value<String?>? etag,
+    Value<String?>? lastModified,
+    Value<int>? rowid,
+  }) {
+    return LiveMapSourcesCompanion(
+      mode: mode ?? this.mode,
+      dataset: dataset ?? this.dataset,
+      body: body ?? this.body,
+      etag: etag ?? this.etag,
+      lastModified: lastModified ?? this.lastModified,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mode.present) {
+      map['mode'] = Variable<int>(mode.value);
+    }
+    if (dataset.present) {
+      map['dataset'] = Variable<String>(dataset.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<Uint8List>(body.value);
+    }
+    if (etag.present) {
+      map['etag'] = Variable<String>(etag.value);
+    }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<String>(lastModified.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LiveMapSourcesCompanion(')
+          ..write('mode: $mode, ')
+          ..write('dataset: $dataset, ')
+          ..write('body: $body, ')
+          ..write('etag: $etag, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$BlackgridDatabase extends GeneratedDatabase {
   _$BlackgridDatabase(QueryExecutor e) : super(e);
   $BlackgridDatabaseManager get managers => $BlackgridDatabaseManager(this);
@@ -3425,6 +4003,10 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     this,
   );
   late final $StatsMetaTable statsMeta = $StatsMetaTable(this);
+  late final $LiveMapSnapshotsTable liveMapSnapshots = $LiveMapSnapshotsTable(
+    this,
+  );
+  late final $LiveMapSourcesTable liveMapSources = $LiveMapSourcesTable(this);
   late final Index raidStatRecordsModeStart = Index(
     'raid_stat_records_mode_start',
     'CREATE INDEX raid_stat_records_mode_start ON raid_stat_records (mode, start_ms)',
@@ -3448,6 +4030,8 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     raidStatRecords,
     fleaSaleRecords,
     statsMeta,
+    liveMapSnapshots,
+    liveMapSources,
     raidStatRecordsModeStart,
     fleaSaleRecordsMode,
   ];
@@ -5714,6 +6298,583 @@ typedef $$StatsMetaTableProcessedTableManager =
       StatsMetaData,
       PrefetchHooks Function()
     >;
+typedef $$LiveMapSnapshotsTableCreateCompanionBuilder =
+    LiveMapSnapshotsCompanion Function({
+      Value<int> mode,
+      required int checkedAt,
+    });
+typedef $$LiveMapSnapshotsTableUpdateCompanionBuilder =
+    LiveMapSnapshotsCompanion Function({Value<int> mode, Value<int> checkedAt});
+
+final class $$LiveMapSnapshotsTableReferences
+    extends
+        BaseReferences<
+          _$BlackgridDatabase,
+          $LiveMapSnapshotsTable,
+          LiveMapSnapshotRecord
+        > {
+  $$LiveMapSnapshotsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$LiveMapSourcesTable, List<LiveMapSource>>
+  _liveMapSourcesRefsTable(_$BlackgridDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.liveMapSources,
+        aliasName: 'live_map_snapshots__mode__live_map_sources__mode',
+      );
+
+  $$LiveMapSourcesTableProcessedTableManager get liveMapSourcesRefs {
+    final manager = $$LiveMapSourcesTableTableManager(
+      $_db,
+      $_db.liveMapSources,
+    ).filter((f) => f.mode.mode.sqlEquals($_itemColumn<int>('mode')!));
+
+    final cache = $_typedResult.readTableOrNull(_liveMapSourcesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$LiveMapSnapshotsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $LiveMapSnapshotsTable> {
+  $$LiveMapSnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get checkedAt => $composableBuilder(
+    column: $table.checkedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> liveMapSourcesRefs(
+    Expression<bool> Function($$LiveMapSourcesTableFilterComposer f) f,
+  ) {
+    final $$LiveMapSourcesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.liveMapSources,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LiveMapSourcesTableFilterComposer(
+            $db: $db,
+            $table: $db.liveMapSources,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LiveMapSnapshotsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $LiveMapSnapshotsTable> {
+  $$LiveMapSnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get checkedAt => $composableBuilder(
+    column: $table.checkedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LiveMapSnapshotsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $LiveMapSnapshotsTable> {
+  $$LiveMapSnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<int> get checkedAt =>
+      $composableBuilder(column: $table.checkedAt, builder: (column) => column);
+
+  Expression<T> liveMapSourcesRefs<T extends Object>(
+    Expression<T> Function($$LiveMapSourcesTableAnnotationComposer a) f,
+  ) {
+    final $$LiveMapSourcesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.liveMapSources,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LiveMapSourcesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.liveMapSources,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LiveMapSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $LiveMapSnapshotsTable,
+          LiveMapSnapshotRecord,
+          $$LiveMapSnapshotsTableFilterComposer,
+          $$LiveMapSnapshotsTableOrderingComposer,
+          $$LiveMapSnapshotsTableAnnotationComposer,
+          $$LiveMapSnapshotsTableCreateCompanionBuilder,
+          $$LiveMapSnapshotsTableUpdateCompanionBuilder,
+          (LiveMapSnapshotRecord, $$LiveMapSnapshotsTableReferences),
+          LiveMapSnapshotRecord,
+          PrefetchHooks Function({bool liveMapSourcesRefs})
+        > {
+  $$LiveMapSnapshotsTableTableManager(
+    _$BlackgridDatabase db,
+    $LiveMapSnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LiveMapSnapshotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LiveMapSnapshotsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LiveMapSnapshotsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> mode = const Value.absent(),
+            Value<int> checkedAt = const Value.absent(),
+          }) => LiveMapSnapshotsCompanion(mode: mode, checkedAt: checkedAt),
+          createCompanionCallback:
+              ({
+                Value<int> mode = const Value.absent(),
+                required int checkedAt,
+              }) => LiveMapSnapshotsCompanion.insert(
+                mode: mode,
+                checkedAt: checkedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LiveMapSnapshotsTable, LiveMapSnapshotRecord>(
+                    table,
+                  ),
+                  $$LiveMapSnapshotsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({liveMapSourcesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (liveMapSourcesRefs) db.liveMapSources,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (liveMapSourcesRefs)
+                    await $_getPrefetchedDataByColumns<
+                      LiveMapSnapshotRecord,
+                      $LiveMapSnapshotsTable,
+                      LiveMapSource,
+                      $LiveMapSourcesTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$LiveMapSnapshotsTableReferences
+                          ._liveMapSourcesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$LiveMapSnapshotsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).liveMapSourcesRefs,
+                      currentColumn: 'mode',
+                      referencedColumn: 'mode',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LiveMapSnapshotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $LiveMapSnapshotsTable,
+      LiveMapSnapshotRecord,
+      $$LiveMapSnapshotsTableFilterComposer,
+      $$LiveMapSnapshotsTableOrderingComposer,
+      $$LiveMapSnapshotsTableAnnotationComposer,
+      $$LiveMapSnapshotsTableCreateCompanionBuilder,
+      $$LiveMapSnapshotsTableUpdateCompanionBuilder,
+      (LiveMapSnapshotRecord, $$LiveMapSnapshotsTableReferences),
+      LiveMapSnapshotRecord,
+      PrefetchHooks Function({bool liveMapSourcesRefs})
+    >;
+typedef $$LiveMapSourcesTableCreateCompanionBuilder =
+    LiveMapSourcesCompanion Function({
+      required int mode,
+      required String dataset,
+      required Uint8List body,
+      Value<String?> etag,
+      Value<String?> lastModified,
+      Value<int> rowid,
+    });
+typedef $$LiveMapSourcesTableUpdateCompanionBuilder =
+    LiveMapSourcesCompanion Function({
+      Value<int> mode,
+      Value<String> dataset,
+      Value<Uint8List> body,
+      Value<String?> etag,
+      Value<String?> lastModified,
+      Value<int> rowid,
+    });
+
+final class $$LiveMapSourcesTableReferences
+    extends
+        BaseReferences<
+          _$BlackgridDatabase,
+          $LiveMapSourcesTable,
+          LiveMapSource
+        > {
+  $$LiveMapSourcesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $LiveMapSnapshotsTable _modeTable(_$BlackgridDatabase db) => db
+      .liveMapSnapshots
+      .createAlias('live_map_sources__mode__live_map_snapshots__mode');
+
+  $$LiveMapSnapshotsTableProcessedTableManager get mode {
+    final $_column = $_itemColumn<int>('mode')!;
+
+    final manager = $$LiveMapSnapshotsTableTableManager(
+      $_db,
+      $_db.liveMapSnapshots,
+    ).filter((f) => f.mode.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_modeTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LiveMapSourcesTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $LiveMapSourcesTable> {
+  $$LiveMapSourcesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get dataset => $composableBuilder(
+    column: $table.dataset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get etag => $composableBuilder(
+    column: $table.etag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LiveMapSnapshotsTableFilterComposer get mode {
+    final $$LiveMapSnapshotsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.liveMapSnapshots,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LiveMapSnapshotsTableFilterComposer(
+            $db: $db,
+            $table: $db.liveMapSnapshots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LiveMapSourcesTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $LiveMapSourcesTable> {
+  $$LiveMapSourcesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get dataset => $composableBuilder(
+    column: $table.dataset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get etag => $composableBuilder(
+    column: $table.etag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LiveMapSnapshotsTableOrderingComposer get mode {
+    final $$LiveMapSnapshotsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.liveMapSnapshots,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LiveMapSnapshotsTableOrderingComposer(
+            $db: $db,
+            $table: $db.liveMapSnapshots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LiveMapSourcesTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $LiveMapSourcesTable> {
+  $$LiveMapSourcesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get dataset =>
+      $composableBuilder(column: $table.dataset, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get etag =>
+      $composableBuilder(column: $table.etag, builder: (column) => column);
+
+  GeneratedColumn<String> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
+
+  $$LiveMapSnapshotsTableAnnotationComposer get mode {
+    final $$LiveMapSnapshotsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.liveMapSnapshots,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LiveMapSnapshotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.liveMapSnapshots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LiveMapSourcesTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $LiveMapSourcesTable,
+          LiveMapSource,
+          $$LiveMapSourcesTableFilterComposer,
+          $$LiveMapSourcesTableOrderingComposer,
+          $$LiveMapSourcesTableAnnotationComposer,
+          $$LiveMapSourcesTableCreateCompanionBuilder,
+          $$LiveMapSourcesTableUpdateCompanionBuilder,
+          (LiveMapSource, $$LiveMapSourcesTableReferences),
+          LiveMapSource,
+          PrefetchHooks Function({bool mode})
+        > {
+  $$LiveMapSourcesTableTableManager(
+    _$BlackgridDatabase db,
+    $LiveMapSourcesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LiveMapSourcesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LiveMapSourcesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LiveMapSourcesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> mode = const Value.absent(),
+                Value<String> dataset = const Value.absent(),
+                Value<Uint8List> body = const Value.absent(),
+                Value<String?> etag = const Value.absent(),
+                Value<String?> lastModified = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LiveMapSourcesCompanion(
+                mode: mode,
+                dataset: dataset,
+                body: body,
+                etag: etag,
+                lastModified: lastModified,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int mode,
+                required String dataset,
+                required Uint8List body,
+                Value<String?> etag = const Value.absent(),
+                Value<String?> lastModified = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LiveMapSourcesCompanion.insert(
+                mode: mode,
+                dataset: dataset,
+                body: body,
+                etag: etag,
+                lastModified: lastModified,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LiveMapSourcesTable, LiveMapSource>(table),
+                  $$LiveMapSourcesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({mode = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (mode) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.mode,
+                        referencedTable: $$LiveMapSourcesTableReferences
+                            ._modeTable(db),
+                        referencedColumn: $$LiveMapSourcesTableReferences
+                            ._modeTable(db)
+                            .mode,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LiveMapSourcesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $LiveMapSourcesTable,
+      LiveMapSource,
+      $$LiveMapSourcesTableFilterComposer,
+      $$LiveMapSourcesTableOrderingComposer,
+      $$LiveMapSourcesTableAnnotationComposer,
+      $$LiveMapSourcesTableCreateCompanionBuilder,
+      $$LiveMapSourcesTableUpdateCompanionBuilder,
+      (LiveMapSource, $$LiveMapSourcesTableReferences),
+      LiveMapSource,
+      PrefetchHooks Function({bool mode})
+    >;
 
 class $BlackgridDatabaseManager {
   final _$BlackgridDatabase _db;
@@ -5738,4 +6899,8 @@ class $BlackgridDatabaseManager {
       $$FleaSaleRecordsTableTableManager(_db, _db.fleaSaleRecords);
   $$StatsMetaTableTableManager get statsMeta =>
       $$StatsMetaTableTableManager(_db, _db.statsMeta);
+  $$LiveMapSnapshotsTableTableManager get liveMapSnapshots =>
+      $$LiveMapSnapshotsTableTableManager(_db, _db.liveMapSnapshots);
+  $$LiveMapSourcesTableTableManager get liveMapSources =>
+      $$LiveMapSourcesTableTableManager(_db, _db.liveMapSources);
 }

@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 
 import 'pack.dart';
 
+import 'package:blackgrid/maps/live_map_normalizer.dart' show canonicalJson;
+
 const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart acquire --raw <fresh-directory>
   dart run tool/maps/prepare.dart rebuild --raw <frozen-directory> --candidate <fresh-directory>

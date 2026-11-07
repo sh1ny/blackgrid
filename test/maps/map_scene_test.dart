@@ -16,7 +16,9 @@ import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
 
 import '../../tool/maps/calibration.dart';
-import '../../tool/maps/pack.dart';
+
+import 'package:blackgrid/maps/live_map_normalizer.dart' show prepareMarkers;
+
 import '../support/map_preparation_fixtures.dart'
     show preparedMapMetadataFixture;
 import '../support/prepared_pack_manifest.dart';
