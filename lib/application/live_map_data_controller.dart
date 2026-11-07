@@ -230,10 +230,10 @@ class LiveMapDataController extends ChangeNotifier {
         _state.source == LiveMapDataSource.unavailable) {
       return Future<void>.value();
     }
-    final join = _joins[mode];
+    final join = _joinFor(mode);
     if (join != null) return join;
     _enqueue(mode: mode, pack: pack, bindings: _selectedBindings);
-    return _joins[mode] ?? Future<void>.value();
+    return _joinFor(mode) ?? Future<void>.value();
   }
 
   void _enqueue({
@@ -241,8 +241,7 @@ class LiveMapDataController extends ChangeNotifier {
     required PreparedMapPack pack,
     required List<LiveMapBinding> bindings,
   }) {
-    final current = _joins[mode];
-    if (current != null) return;
+    if (_joinFor(mode) != null) return;
     final intent = _Intent(
       mode,
       pack,
@@ -270,6 +269,20 @@ class LiveMapDataController extends ChangeNotifier {
       _pending = intent;
       _publishRefreshing();
     }
+  }
+
+  Future<void>? _joinFor(GameMode mode) {
+    final join = _joins[mode];
+    if (join == null) return null;
+    final intent = identical(_active?.done?.future, join)
+        ? _active
+        : identical(_pending?.done?.future, join)
+        ? _pending
+        : null;
+    if (intent == null || intent.cancelled || intent.selection != _selection) {
+      return null;
+    }
+    return join;
   }
 
   void _start(_Intent intent) {

@@ -837,6 +837,58 @@ void main() {
       },
     );
 
+    test('reselected mode refreshes after cancelled cleanup drains and manual calls join it', () async {
+      final cancelGate = Completer<void>();
+      final client = _ControlledClient(
+        holdMode: GameMode.pvp,
+        cancelGate: cancelGate,
+      );
+      final store = _Store();
+      final rig = _Rig(client: client, store: store);
+      addTearDown(() async {
+        if (!cancelGate.isCompleted) cancelGate.complete();
+        await rig.close();
+      });
+
+      await rig.select(GameMode.pvp);
+      await client.requestsStarted(1);
+      final cancelledJoin = rig.controller.refresh();
+      await rig.select(GameMode.pve);
+      await client.cancelledCount(1);
+      await rig.select(GameMode.pvp);
+
+      expect(rig.publications.whereType<LiveMapSnapshot>(), isEmpty);
+      cancelGate.complete();
+      await cancelledJoin;
+      expect(rig.controller.state.refreshing, isTrue);
+      await client.requestsStarted(2);
+
+      final manualRefresh = rig.controller.refresh();
+      expect(client.requests, hasLength(2));
+      expect(rig.publications.whereType<LiveMapSnapshot>(), isEmpty);
+
+      client.answerMode(GameMode.pvp);
+      await manualRefresh;
+      await _waitForState(
+        rig.controller,
+        (state) =>
+            state.mode == GameMode.pvp &&
+            state.source == LiveMapDataSource.refreshed &&
+            !state.refreshing,
+      );
+
+      expect(client.requests, hasLength(7));
+      expect(store.commits, hasLength(1));
+      expect(
+        rig.publications.whereType<LiveMapSnapshot>().map(
+          (snapshot) => snapshot.mode,
+        ),
+        [GameMode.pvp],
+      );
+      expect(rig.controller.state.mode, GameMode.pvp);
+      expect(rig.controller.state.source, LiveMapDataSource.refreshed);
+    });
+
     test(
       'begun atomic commit drains without publishing after a mode fence',
       () async {

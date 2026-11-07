@@ -759,57 +759,13 @@ void main() {
     },
   );
 
-  test(
-    'derived searchable-state overflow preserves active marker authority',
-    () async {
-      final controller = _controller(
-        markers: [_marker('retained', 'extracts', 8, 24)],
-      );
-      addTearDown(controller.dispose);
-      controller.updateViewport(const Size(320, 320));
-      await controller.initialize(selectedMapId: 'interchange');
-      final retained = controller.activeMarkers.single;
-      final generation = controller.contentGeneration;
-      final distinctLeaves = [
-        for (var index = 0; index < 64; index++)
-          'MiXeD-search-fact-$index-${'q' * 256}',
-      ];
-      final compact = _snapshot(controller, {
-        'interchange': [
-          _snapshotMarker(
-            id: 'search-heavy',
-            category: 'switches',
-            filterKey: 'Switches',
-            name: 'Search-heavy switch',
-            x: 12,
-            z: 20,
-            details: {'unknownSearchFacts': distinctLeaves},
-          ),
-        ],
-        'icebreaker': const [],
-      });
+  test('empty-search publication admits searchable facts or avoids later fact storage', () async {
+    await _expectSearchFactsAdmittedOrBounded('');
+  });
 
-      final noSearchBudget = _PeakTrackingLiveMapBudget();
-      controller.prepareMarkerInventory(compact, budget: noSearchBudget);
-      expect(noSearchBudget.peakMaterializedBytes, greaterThan(0));
-
-      controller.setSearch('absent-query-not-in-any-leaf');
-      controller.setSelectedMarker('retained');
-      final constrainedBudget = LiveMapBudget(
-        maxMaterializedBytes: noSearchBudget.peakMaterializedBytes,
-      );
-      expect(
-        () => controller.prepareMarkerInventory(
-          compact,
-          budget: constrainedBudget,
-        ),
-        throwsA(isA<LiveMapResourceLimitException>()),
-      );
-      expect(controller.activeMarkers.single, same(retained));
-      expect(controller.selectedMarkerProjection?.marker.id, 'retained');
-      expect(controller.contentGeneration, generation);
-    },
-  );
+  test('name-matching publication admits searchable facts or avoids later fact storage', () async {
+    await _expectSearchFactsAdmittedOrBounded('Search-heavy switch');
+  });
 
   test(
     'oversized nested marker inventory rejects before replacing active markers',
@@ -1527,6 +1483,69 @@ void main() {
       );
     });
   });
+}
+
+Future<void> _expectSearchFactsAdmittedOrBounded(
+  String preparationQuery,
+) async {
+  final controller = _controller(
+    markers: [_marker('retained', 'extracts', 8, 24)],
+  );
+  addTearDown(controller.dispose);
+  controller.updateViewport(const Size(320, 320));
+  await controller.initialize(selectedMapId: 'interchange');
+  controller.setSelectedMarker('retained');
+  final retained = controller.activeMarkers.single;
+  final retainedSelection = controller.selectedMarkerProjection;
+  final generation = controller.contentGeneration;
+  controller.setSearch(preparationQuery);
+
+  final distinctLeaves = [
+    for (var index = 0; index < 512; index++)
+      'MiXeD-search-fact-$index-${'q' * 4096}',
+  ];
+  final candidate = _snapshot(controller, {
+    'interchange': [
+      _snapshotMarker(
+        id: 'search-heavy',
+        category: 'switches',
+        filterKey: 'Switches',
+        name: 'Search-heavy switch',
+        x: 12,
+        z: 20,
+        details: {'unknownSearchFacts': distinctLeaves},
+      ),
+    ],
+    'icebreaker': const [],
+  });
+
+  final baselineBudget = _PeakTrackingLiveMapBudget();
+  controller.prepareMarkerInventory(candidate, budget: baselineBudget);
+  expect(baselineBudget.peakMaterializedBytes, greaterThan(0));
+
+  bool Function() activate;
+  try {
+    activate = controller.prepareMarkerInventory(
+      candidate,
+      budget: LiveMapBudget(
+        maxMaterializedBytes: baselineBudget.peakMaterializedBytes + 4096,
+      ),
+    );
+  } on LiveMapResourceLimitException {
+    expect(controller.activeMarkers.single, same(retained));
+    expect(controller.selectedMarkerProjection, same(retainedSelection));
+    expect(controller.contentGeneration, generation);
+    return;
+  }
+
+  expect(activate(), isTrue);
+  controller.setSearch('absent-query-not-in-any-searchable-fact');
+  expect(
+    controller.visibleMarkers().singleWhere((marker) {
+      return marker.marker.id == 'search-heavy';
+    }).dimmed,
+    isTrue,
+  );
 }
 
 LiveMapSnapshot _snapshot(

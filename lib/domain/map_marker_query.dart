@@ -1,4 +1,5 @@
-/// Accounts for derived metadata retained by one live-map generation.
+/// Accounts for derived metadata and search workspace for one live-map
+/// generation.
 class MapMarkerMetadataOwner {
   /// Creates an owner backed by materialized-byte admission callbacks.
   MapMarkerMetadataOwner({
@@ -6,31 +7,32 @@ class MapMarkerMetadataOwner {
     required this._releaseMaterialized,
   }) {
     _reserve(128);
-    _foldedScalars = {};
   }
 
   final void Function(int) _reserveMaterialized;
   final void Function(int) _releaseMaterialized;
   int _retainedMaterializedBytes = 0;
+  int _searchScratchCapacity = 0;
   _SearchPlan? _currentPlan;
-  late final Map<String, String> _foldedScalars;
 
-  String _fold(String scalar) {
-    final cached = _foldedScalars[scalar];
-    if (cached != null) return cached;
-    final bytes = 96 + scalar.length * 4;
-    _reserve(bytes);
-    try {
-      final folded = scalar.toLowerCase();
-      _foldedScalars[scalar] = folded;
-      return folded;
-    } catch (_) {
-      _release(bytes);
-      rethrow;
-    }
+  // Fold one scalar at a time instead of retaining copies of the inventory.
+  String _fold(String scalar) => scalar.toLowerCase();
+
+  int _admitSearchScratch(int bytes) {
+    if (bytes <= _searchScratchCapacity) return 0;
+    final additionalBytes = bytes - _searchScratchCapacity;
+    _reserve(additionalBytes);
+    _searchScratchCapacity = bytes;
+    return additionalBytes;
   }
 
-  /// The derived bytes currently retained by this owner.
+  void _releaseSearchScratch(int bytes) {
+    if (bytes <= 0) return;
+    _release(bytes);
+    _searchScratchCapacity -= bytes;
+  }
+
+  /// The derived metadata and search workspace bytes accounted to this owner.
   int get retainedMaterializedBytes => _retainedMaterializedBytes;
 
   void _reserve(int bytes) {
@@ -111,7 +113,15 @@ class MapMarkerMetadata {
     const excluded = {'position', 'outline', 'size', 'bottom', 'top'};
     final retainedCost = _metadataCost(details, source, excluded);
     final constructionScratch = 192 + category.length * 4;
-    _owner._reserve(retainedCost + constructionScratch);
+    final scratchAdmission = _owner._admitSearchScratch(
+      _searchScratchBytes(name, type, category, details, source),
+    );
+    try {
+      _owner._reserve(retainedCost + constructionScratch);
+    } catch (_) {
+      _owner._releaseSearchScratch(scratchAdmission);
+      rethrow;
+    }
     try {
       fields = Map.unmodifiable({
         for (final entry in details.entries)
@@ -150,6 +160,7 @@ class MapMarkerMetadata {
           category.toLowerCase().contains('quest');
     } catch (_) {
       _owner._release(retainedCost + constructionScratch);
+      _owner._releaseSearchScratch(scratchAdmission);
       rethrow;
     }
     _owner._release(constructionScratch);
@@ -225,9 +236,7 @@ class _SearchPlan {
 
       bool accept(Object value) {
         if (found > 0) return true;
-        final scalar = value is String
-            ? value
-            : owner._withScratch(160, value.toString);
+        final scalar = value is String ? value : value.toString();
         if (hasToken) {
           for (var index = 0; index < needles.length; index++) {
             final needle = needles[index].text;
@@ -403,6 +412,56 @@ Iterable<String> _ids(Object? value) sync* {
       yield* _ids(item);
     }
   }
+}
+
+// Reserve one conservative lowercase workspace, not a copy per inventory fact.
+const _searchScratchBaseBytes = 128;
+const _searchScratchBytesPerCodeUnit = 12;
+// Numeric and boolean stringification plus lowercasing fit within this bound.
+const _numericSearchScratchBytes = 1024;
+
+int _searchScratchBytes(
+  String name,
+  String type,
+  String category,
+  Map<String, dynamic> details,
+  Map<String, dynamic> source,
+) {
+  var maximum =
+      _searchScratchBaseBytes + name.length * _searchScratchBytesPerCodeUnit;
+  void includeString(String value) {
+    final bytes =
+        _searchScratchBaseBytes + value.length * _searchScratchBytesPerCodeUnit;
+    if (bytes > maximum) maximum = bytes;
+  }
+
+  includeString(type);
+  includeString(category);
+  final sourceName = source['name'];
+  if (sourceName is String) includeString(sourceName);
+
+  void visit(Object? value) {
+    if (value is String) {
+      includeString(value);
+    } else if (value is num || value is bool) {
+      if (maximum < _numericSearchScratchBytes) {
+        maximum = _numericSearchScratchBytes;
+      }
+    } else if (value is Map) {
+      for (final entry in value.entries) {
+        if (!const {'position', 'outline', 'size'}.contains(entry.key)) {
+          visit(entry.value);
+        }
+      }
+    } else if (value is List) {
+      for (final item in value) {
+        visit(item);
+      }
+    }
+  }
+
+  visit(details);
+  return maximum;
 }
 
 bool _visitSearchValues(Object? value, bool Function(Object) accept) {

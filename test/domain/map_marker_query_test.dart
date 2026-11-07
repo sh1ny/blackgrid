@@ -30,9 +30,9 @@ void main() {
     expect(owner.retainedMaterializedBytes, afterMatching);
   });
 
-  test('owner rejects distinct derived search text within its budget', () {
+  test('search scratch is admitted before a large scalar is searched', () {
     var reserved = 0;
-    const budget = 2048;
+    const budget = 52000;
     final owner = MapMarkerMetadataOwner(
       reserveMaterialized: (bytes) {
         if (reserved + bytes > budget) {
@@ -51,8 +51,13 @@ void main() {
       source: const {},
       owner: owner,
     );
-    expect(() => metadata.matchesSearch(['absent']), throwsStateError);
-    expect(owner.retainedMaterializedBytes, lessThanOrEqualTo(budget));
+    final retainedBeforeSearch = owner.retainedMaterializedBytes;
+    expect(retainedBeforeSearch, greaterThanOrEqualTo(128 + 4096 * 12));
+    expect(metadata.matchesSearch(['absent']), isFalse);
+    expect(
+      owner.retainedMaterializedBytes - retainedBeforeSearch,
+      lessThan(1024),
+    );
     expect(metadata.matchesSearch(['marker']), isTrue);
   });
 

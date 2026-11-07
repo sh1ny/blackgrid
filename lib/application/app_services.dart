@@ -322,7 +322,11 @@ class AppServices {
     final generation = maps.contentGeneration;
     if (generation == _mapContentGeneration) return;
     _mapContentGeneration = generation;
-    mapSession.updateMapContext(maps.preparedMap, generation);
+    mapSession.updateMapContext(
+      maps.preparedMap,
+      generation,
+      activeMarkers: maps.activeMarkers,
+    );
   }
 
   void _syncMapSession() {
