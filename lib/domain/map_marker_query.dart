@@ -4,15 +4,20 @@ import 'dart:typed_data';
 /// generation.
 class MapMarkerMetadataOwner {
   /// Creates an owner backed by materialized-byte admission callbacks.
+  ///
+  /// [foldScalar] optionally supplies the whole-string lowercase operation.
   MapMarkerMetadataOwner({
     required this._reserveMaterialized,
     required this._releaseMaterialized,
-  }) {
+    String Function(String)? foldScalar,
+  }) : _foldScalar = foldScalar ?? _lowercase {
     _reserve(128);
   }
 
   final void Function(int) _reserveMaterialized;
   final void Function(int) _releaseMaterialized;
+  final String Function(String) _foldScalar;
+  Map<String, _FoldedScalar>? _foldedScalars;
   int _retainedMaterializedBytes = 0;
   int _searchScratchCapacity = 0;
   _SearchPlan? _currentPlan;
@@ -133,8 +138,148 @@ class MapMarkerMetadataOwner {
     }
   }
 
-  // Fold one scalar at a time instead of retaining copies of the inventory.
-  String _fold(String scalar) => scalar.toLowerCase();
+  static String _lowercase(String scalar) => scalar.toLowerCase();
+
+  String _fold(String scalar) =>
+      _foldedScalars?[scalar]?.folded ?? _foldScalar(scalar);
+
+  _FoldedScalar _scalarRecord(String scalar, int transaction) {
+    var records = _foldedScalars;
+    if (records == null) {
+      _reserve(128);
+      try {
+        records = Map<String, _FoldedScalar>.identity();
+        _foldedScalars = records;
+      } catch (_) {
+        _release(128);
+        rethrow;
+      }
+    }
+    final existing = records[scalar];
+    if (existing != null) return existing;
+    _reserve(128);
+    try {
+      final record = _FoldedScalar(transaction);
+      records[scalar] = record;
+      return record;
+    } catch (_) {
+      _release(128);
+      rethrow;
+    }
+  }
+
+  void _admitScalar(String scalar, int transaction, {bool shared = false}) {
+    if (scalar.length < 128) return;
+    final record = _scalarRecord(scalar, transaction);
+    if (!record.seen) {
+      record.seen = true;
+      record.seenTransaction = transaction;
+      if (!shared) return;
+    } else if (record.folded != null) {
+      return;
+    }
+    // The full-fold workspace was admitted before this traversal. Retained
+    // text is charged independently while that workspace is still reserved.
+    final folded = _foldScalar(scalar);
+    final cost = identical(folded, scalar) ? 0 : 64 + folded.length * 2;
+    _reserve(cost);
+    record.folded = folded;
+    record.foldedCost = cost;
+    record.foldedTransaction = transaction;
+  }
+
+  String? _admitSourceName(Object? value, int transaction) {
+    if (value is! String) return null;
+    String trimmed;
+    if (value.length < 128) {
+      trimmed = value.trim();
+    } else {
+      final record = _scalarRecord(value, transaction);
+      if (record.trimmed == null) {
+        final result = value.trim();
+        final cost = identical(result, value) ? 0 : 64 + result.length * 2;
+        _reserve(cost);
+        record.trimmed = result;
+        record.trimmedCost = cost;
+        record.trimmedTransaction = transaction;
+      }
+      trimmed = record.trimmed!;
+    }
+    if (trimmed.isEmpty) return null;
+    _admitScalar(trimmed, transaction);
+    return trimmed;
+  }
+
+  void _admitSearchValue(
+    Object? value,
+    int transaction, {
+    bool shared = false,
+  }) {
+    if (value is String) {
+      _admitScalar(value, transaction, shared: shared);
+      return;
+    }
+    if (value is! Map && value is! List) return;
+    final measurement = _searchScratchMeasurements![value]!;
+    if (!measurement.scalarVisited) {
+      measurement.scalarVisited = true;
+      measurement.visitedTransaction = transaction;
+    } else {
+      shared = true;
+    }
+    if (shared) {
+      if (measurement.scalarShared) return;
+      measurement.scalarShared = true;
+      measurement.sharedTransaction = transaction;
+    }
+    for (final child in measurement.children) {
+      _admitSearchValue(child, transaction, shared: shared);
+    }
+  }
+
+  void _rollbackScalars(int transaction) {
+    for (final measurement
+        in _searchScratchMeasurements?.values ??
+            const <_ScratchMeasurement>[]) {
+      if (measurement.visitedTransaction == transaction) {
+        measurement.scalarVisited = false;
+        measurement.visitedTransaction = 0;
+      }
+      if (measurement.sharedTransaction == transaction) {
+        measurement.scalarShared = false;
+        measurement.sharedTransaction = 0;
+      }
+    }
+    final records = _foldedScalars;
+    if (records == null) return;
+    var released = 0;
+    records.removeWhere((_, record) {
+      if (record.foldedTransaction == transaction) {
+        released += record.foldedCost;
+        record.folded = null;
+        record.foldedCost = 0;
+        record.foldedTransaction = 0;
+      }
+      if (record.trimmedTransaction == transaction) {
+        released += record.trimmedCost;
+        record.trimmed = null;
+        record.trimmedCost = 0;
+        record.trimmedTransaction = 0;
+      }
+      if (record.seenTransaction == transaction) {
+        record.seen = false;
+        record.seenTransaction = 0;
+      }
+      if (record.transaction != transaction) return false;
+      released += 128;
+      return true;
+    });
+    if (records.isEmpty) {
+      _foldedScalars = null;
+      released += 128;
+    }
+    _release(released);
+  }
 
   int _admitSearchScratch(int bytes) {
     if (bytes <= _searchScratchCapacity) return 0;
@@ -227,8 +372,7 @@ class MapMarkerMetadata {
            MapMarkerMetadataOwner(
              reserveMaterialized: (_) {},
              releaseMaterialized: (_) {},
-           ),
-       _source = source {
+           ) {
     const excluded = {'position', 'outline', 'size', 'bottom', 'top'};
     final retainedCost = _metadataCost(details, source, excluded);
     final constructionScratch = 192 + category.length * 4;
@@ -249,6 +393,15 @@ class MapMarkerMetadata {
       );
       _owner._reserve(retainedCost + constructionScratch);
       metadataReserved = true;
+      _owner._admitSearchValue(name, transaction);
+      _owner._admitSearchValue(type, transaction);
+      _owner._admitSearchValue(category, transaction);
+      for (final entry in details.entries) {
+        if (!excluded.contains(entry.key)) {
+          _owner._admitSearchValue(entry.value, transaction);
+        }
+      }
+      _sourceName = _owner._admitSourceName(source['name'], transaction);
       fields = Map.unmodifiable({
         for (final entry in details.entries)
           if (!excluded.contains(entry.key)) entry.key: entry.value,
@@ -287,6 +440,7 @@ class MapMarkerMetadata {
     } catch (_) {
       if (metadataReserved) _owner._release(retainedCost + constructionScratch);
       _owner._releaseSearchScratch(scratchAdmission);
+      _owner._rollbackScalars(transaction);
       _owner._rollbackScratchMeasurements(transaction);
       rethrow;
     }
@@ -310,10 +464,8 @@ class MapMarkerMetadata {
   bool matchesSearch(Iterable<String> terms) =>
       _owner._planFor(terms).matches(this, _owner);
 
-  // Search only needs source.name; retain its reference, not another map copy.
-  Object? get _sourceName => _source['name'];
-
-  final Map<String, dynamic> _source;
+  // Capture trimmed provenance once so shared identities remain stable.
+  late final String? _sourceName;
 
   /// Whether this marker matches the selected quest and trader.
   bool matchesQuest({required String name, required String trader}) {
@@ -418,7 +570,7 @@ class _SearchPlan {
     for (final value in metadata.fields.values) {
       if (append(value)) return true;
     }
-    if (_text(metadata._sourceName) case final String provenance) {
+    if (metadata._sourceName case final String provenance) {
       if (append(provenance)) return true;
     }
     return false;
@@ -671,6 +823,20 @@ Iterable<String> _ids(Object? value) sync* {
   }
 }
 
+class _FoldedScalar {
+  _FoldedScalar(this.transaction);
+
+  final int transaction;
+  bool seen = false;
+  int seenTransaction = 0;
+  String? folded;
+  int foldedCost = 0;
+  int foldedTransaction = 0;
+  String? trimmed;
+  int trimmedCost = 0;
+  int trimmedTransaction = 0;
+}
+
 class _ScratchMeasurement extends _SharedSearchSummary {
   _ScratchMeasurement(this.bytes, this.transaction, this.cost, this.children);
 
@@ -678,6 +844,10 @@ class _ScratchMeasurement extends _SharedSearchSummary {
   final int transaction;
   final int cost;
   final List<Object?> children;
+  bool scalarVisited = false;
+  bool scalarShared = false;
+  int visitedTransaction = 0;
+  int sharedTransaction = 0;
 
   @override
   bool get hasToken => children.isNotEmpty;

@@ -64,3 +64,5 @@ Map markers can receive upstream corrections without rebuilding the artwork or i
 - Normalization releases temporary budget reservations when marker delivery fails.
 - Refresh progress stays visible during startup cache reads; extreme offscreen geometry no longer interrupts rendering, and shared facts stay bounded during publication.
 - Non-empty marker searches reuse exact shared-fact query summaries while preserving complete phrase matching.
+- Map-data availability reflects prepared-pack load failures, and malformed exit aliases are rejected before activation.
+- Shared long scalar text is folded once per generation under admission accounting, including boundary searches.

@@ -495,6 +495,74 @@ void main() {
     });
   });
 
+  test('malformed exit aliases fail before publication', () {
+    for (final category in ['extracts', 'transits']) {
+      for (final aliases in [
+        'not-a-list',
+        <Object?>['valid', 7],
+      ]) {
+        final record = _mapRecord('customs')
+          ..[category] = [
+            {
+              'id': 'exit-1',
+              'name': 'Exit',
+              'position': {'x': 1, 'z': 2},
+              'aliases': aliases,
+            },
+          ];
+        expect(
+          () => prepareMarkers(
+            _mapSource(customs: record),
+            {},
+            calibrationFor('customs'),
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'source path',
+              contains('markers/maps.json: customs/$category/0'),
+            ),
+          ),
+        );
+      }
+      final missingRecord = _mapRecord('customs')
+        ..[category] = [
+          {
+            'id': 'exit-without-aliases',
+            'name': 'Exit',
+            'position': {'x': 1, 'z': 2},
+          },
+        ];
+      final missing = prepareMarkers(
+        _mapSource(customs: missingRecord),
+        {},
+        calibrationFor('customs'),
+      ).single;
+      expect((missing['details']! as Map).containsKey('aliases'), isFalse);
+      for (final aliases in [
+        null,
+        <String>[],
+        <String>['Gate', 'Exit'],
+      ]) {
+        final record = _mapRecord('customs')
+          ..[category] = [
+            {
+              'id': 'exit-1',
+              'name': 'Exit',
+              'position': {'x': 1, 'z': 2},
+              'aliases': aliases,
+            },
+          ];
+        final marker = prepareMarkers(
+          _mapSource(customs: record),
+          {},
+          calibrationFor('customs'),
+        ).single;
+        expect((marker['details']! as Map)['aliases'], aliases);
+      }
+    }
+  });
+
   test('malformed consumed records fail with their source', () {
     final malformedBoss = _mapSource(
       customs: _mapRecord('customs', bosses: [_boss(x: double.infinity)]),

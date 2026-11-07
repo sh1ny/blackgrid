@@ -409,10 +409,11 @@ class AppServices {
   Future<void> _selectLiveMapMode([GameMode? selected]) async {
     final mode = selected ?? mapSession.effectiveMode;
     final pack = maps.pack;
-    Object? failure;
-    if (maps.unavailable) {
-      failure = StateError('The active prepared map is unavailable.');
-    }
+    final failure =
+        maps.packLoadFailure ??
+        (maps.unavailable
+            ? StateError('The active prepared map is unavailable.')
+            : null);
     await mapData.selectMode(
       mode: mode,
       pack: failure == null ? pack : null,

@@ -70,11 +70,15 @@ class MapController extends ChangeNotifier {
   bool _loading = false;
   bool _inventoryLoading = false;
   String? _error;
+  Object? _packLoadFailure;
 
   List<PreparedMap> get maps => _pack?.maps ?? const [];
 
   /// The already-loaded prepared pack, or `null` before inventory loading.
   PreparedMapPack? get pack => _pack;
+
+  /// The most recent prepared-pack load failure, cleared by a successful load.
+  Object? get packLoadFailure => _packLoadFailure;
 
   /// The selected map's active marker inventory, including published metadata.
   List<PreparedMarker> get activeMarkers =>
@@ -145,8 +149,17 @@ class MapController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final pack = await loader.load();
+      late final PreparedMapPack pack;
+      try {
+        pack = await loader.load();
+      } catch (error) {
+        if (!_disposed && inventoryGeneration == _inventoryGeneration) {
+          _packLoadFailure = error;
+        }
+        rethrow;
+      }
       if (_disposed || inventoryGeneration != _inventoryGeneration) return;
+      _packLoadFailure = null;
       _pack = pack;
       _inventoryLoading = false;
       _bindSelectedMap();

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:blackgrid/maps/live_map_budget.dart';
 import 'package:blackgrid/maps/live_map_inventory.dart';
 import 'package:blackgrid/maps/live_map_normalizer.dart';
+import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:test/test.dart';
 
 import '../../tool/maps/calibration.dart' show calibrationFor;
@@ -476,6 +477,101 @@ void main() {
       }
       expect(value, ['deep-end']);
     });
+
+    test(
+      'exit aliases are validated on compact decode and borrowed markers',
+      () {
+        final sources = _sources();
+        final data = sources.maps['data']! as Map<String, dynamic>;
+        final maps = data['maps']! as Map<String, dynamic>;
+        final customs = maps['customs']! as Map<String, dynamic>;
+        for (final category in ['extracts', 'transits']) {
+          customs[category] = [
+            {
+              'id': '$category-1',
+              'name': 'Exit',
+              'position': {'x': 1, 'z': 2},
+              'aliases': ['Gate', 'Other gate'],
+            },
+          ];
+        }
+        final inventory = LiveMapInventory.fromSources(
+          sources: sources,
+          bindings: [
+            LiveMapBinding(
+              sourceKey: 'customs',
+              mapId: 'customs',
+              calibration: calibrationFor('customs'),
+            ),
+          ],
+          mode: 'pve',
+          budget: LiveMapBudget(),
+        );
+        final valid = _decodedWire(inventory);
+        final restored = LiveMapInventory.decode(
+          _wireBytes(valid),
+          budget: LiveMapBudget(),
+        );
+        for (final category in ['extracts', 'transits']) {
+          final marker = restored.maps['customs']!.firstWhere(
+            (marker) => marker.category == category,
+          );
+          expect(marker.details['aliases'], ['Gate', 'Other gate']);
+          for (final malformed in [
+            'bad',
+            <Object?>['Gate', 7],
+          ]) {
+            final wire = jsonDecode(jsonEncode(valid)) as Map<String, dynamic>;
+            final facts = wire['facts']! as List<dynamic>;
+            final rows =
+                (wire['maps']! as Map<String, dynamic>)['customs']! as List;
+            final row = rows.cast<Map<String, dynamic>>().firstWhere(
+              (row) => row['category'] == category,
+            );
+            final details =
+                facts[row['detailsRef'] as int] as Map<String, dynamic>;
+            final entries = details['entries']! as Map<String, dynamic>;
+            if (malformed is List) {
+              final aliasRef = entries['aliases']! as List;
+              final aliasFact =
+                  facts[aliasRef[1] as int] as Map<String, dynamic>;
+              aliasFact['items'] = malformed;
+            } else {
+              entries['aliases'] = malformed;
+            }
+            expect(
+              () => LiveMapInventory.decode(
+                _wireBytes(wire),
+                budget: LiveMapBudget(),
+              ),
+              throwsFormatException,
+            );
+
+            final borrowedMarker = PreparedMarker.fromSharedFacts(
+              id: marker.id,
+              category: marker.category,
+              filterKey: marker.filterKey,
+              name: marker.name,
+              position: marker.position,
+              details: {...marker.details, 'aliases': malformed},
+              source: marker.source,
+              outline: marker.outline,
+              floorId: marker.floorId,
+              heightBand: marker.heightBand,
+            );
+            expect(
+              () => LiveMapInventory.fromMarkers(
+                maps: {
+                  'customs': [borrowedMarker],
+                },
+                budget: LiveMapBudget(),
+              ),
+              throwsFormatException,
+            );
+          }
+        }
+      },
+    );
 
     test('malformed compact fact references and tags are rejected', () {
       final encoded = _decodedWire(_inventory());

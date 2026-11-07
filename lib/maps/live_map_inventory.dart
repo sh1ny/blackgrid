@@ -66,39 +66,54 @@ class LiveMapInventory {
     budget.reserveMaterialized(64);
     final frozen = <String, List<PreparedMarker>>{};
     var retainedReferences = 0;
-    for (final entry in maps.entries) {
-      budget.reserveMaterialized(
-        _stringBytes(entry.key) + 64 + entry.value.length * 24,
-      );
-      budget.reserveMaterialized(entry.value.length * 32);
-      final identities = <String>{};
-      final rows = <PreparedMarker>[];
-      for (final marker in entry.value) {
-        if (!identities.add(marker.id)) {
-          throw const FormatException('Duplicate marker identity.');
-        }
-        final headerBytes = _preparedHeaderBytes(marker);
-        budget.reserveMaterialized(headerBytes);
-        retainedReferences += headerBytes;
-        rows.add(
-          PreparedMarker.fromSharedFacts(
-            id: marker.id,
-            category: marker.category,
-            filterKey: marker.filterKey,
-            name: marker.name,
-            position: marker.position,
-            details: marker.details,
-            source: marker.source,
-            outline: marker.outline,
-            floorId: marker.floorId,
-            heightBand: marker.heightBand,
-          ),
+    final validatedAliases = HashSet<Object>.identity();
+    try {
+      for (final entry in maps.entries) {
+        budget.reserveMaterialized(
+          _stringBytes(entry.key) + 64 + entry.value.length * 24,
         );
+        budget.reserveMaterialized(entry.value.length * 32);
+        final identities = <String>{};
+        final rows = <PreparedMarker>[];
+        for (final marker in entry.value) {
+          if (!identities.add(marker.id)) {
+            throw const FormatException('Duplicate marker identity.');
+          }
+          if (marker.category == 'extracts' || marker.category == 'transits') {
+            final aliases = marker.details['aliases'];
+            if (aliases is! List || !validatedAliases.contains(aliases)) {
+              validateLiveExitAliases(aliases);
+              if (aliases is List) {
+                budget.reserveMaterialized(32);
+                validatedAliases.add(aliases);
+              }
+            }
+          }
+          final headerBytes = _preparedHeaderBytes(marker);
+          budget.reserveMaterialized(headerBytes);
+          retainedReferences += headerBytes;
+          rows.add(
+            PreparedMarker.fromSharedFacts(
+              id: marker.id,
+              category: marker.category,
+              filterKey: marker.filterKey,
+              name: marker.name,
+              position: marker.position,
+              details: marker.details,
+              source: marker.source,
+              outline: marker.outline,
+              floorId: marker.floorId,
+              heightBand: marker.heightBand,
+            ),
+          );
+        }
+        budget.releaseMaterialized(entry.value.length * 32);
+        frozen[entry.key] = rows;
       }
-      budget.releaseMaterialized(entry.value.length * 32);
-      frozen[entry.key] = rows;
+      return _owned(frozen, 0, retainedReferences);
+    } finally {
+      budget.releaseMaterialized(validatedAliases.length * 32);
     }
-    return _owned(frozen, 0, retainedReferences);
   }
 
   /// Decodes and validates a compact inventory payload without retaining a
@@ -119,6 +134,7 @@ class LiveMapInventory {
     var success = false;
     final facts = <Object?>[];
     final maps = <String, List<PreparedMarker>>{};
+    final validatedAliases = HashSet<Object>.identity();
     try {
       final root = scanner.readRoot();
       if (root.version != liveMapInventoryFormatVersion) {
@@ -191,6 +207,17 @@ class LiveMapInventory {
                   'Invalid compact marker fact references.',
                 );
               }
+              if (raw['category'] == 'extracts' ||
+                  raw['category'] == 'transits') {
+                final aliases = details['aliases'];
+                if (aliases is! List || !validatedAliases.contains(aliases)) {
+                  validateLiveExitAliases(aliases);
+                  if (aliases is List) {
+                    budget.reserveMaterialized(32);
+                    validatedAliases.add(aliases);
+                  }
+                }
+              }
               final headerBytes = _wireHeaderBytes(raw);
               budget.reserveMaterialized(headerBytes);
               retainedBytes += headerBytes;
@@ -231,6 +258,7 @@ class LiveMapInventory {
               (total, entry) => total + 64 + entry.value.length * 24,
             ),
       );
+      budget.releaseMaterialized(validatedAliases.length * 32);
       success = true;
       return result;
     } finally {

@@ -1302,6 +1302,100 @@ void main() {
 
   group('expanded candidate authority through the real publisher', () {
     test(
+      'malformed exit aliases preserve committed and active authority',
+      () async {
+        for (final category in ['extracts', 'transits']) {
+          for (final aliases in [
+            'bad',
+            <Object?>['Gate', 7],
+          ]) {
+            final manifest = preparedPackManifest(
+              maps: [minimalPreparedMap('customs')],
+            );
+            final loader = PreparedMapPackLoader(
+              loadBytes: preparedPackBytes(
+                manifest,
+                other: (_) async => ByteData.sublistView(_picture()),
+              ),
+            );
+            final maps = MapController(
+              loader: loader,
+              resources: NativeMapResourceOwner(loader),
+            );
+            maps.updateViewport(const Size(320, 320));
+            await maps.initialize(selectedMapId: 'customs');
+            final pack = maps.pack!;
+            final bindings = _bindingsForPack(pack);
+            final old = _snapshot(
+              mode: GameMode.pve,
+              pack: pack,
+              bindings: bindings,
+              markerId: 'last-good-authority',
+            );
+            final input = _expandedSources(1);
+            final mapBody = input['maps']! as Map<String, Object?>;
+            final data = mapBody['data']! as Map<String, Object?>;
+            final records = data['maps']! as Map<String, Object?>;
+            final customs = records['customs']! as Map<String, Object?>;
+            customs[category] = [
+              {
+                'id': 'bad-exit',
+                'name': 'Exit',
+                'position': {'x': 1, 'z': 2},
+                'aliases': aliases,
+              },
+            ];
+            final client = _ControlledClient(sourceBodies: input);
+            final store = _Store()..snapshots[GameMode.pve] = old;
+            final publications = <LiveMapSnapshot?>[];
+            final acquirer = LiveMapRefreshAcquirer(
+              client: client,
+              store: store,
+              clock: () => _now,
+            );
+            final controller = LiveMapDataController(
+              store: store,
+              acquirer: acquirer,
+              clock: () => _now,
+              preparePublication: (snapshot, budget) {
+                final activate = maps.prepareMarkerInventory(
+                  snapshot,
+                  budget: budget,
+                );
+                return () {
+                  publications.add(snapshot);
+                  activate();
+                };
+              },
+            );
+            addTearDown(() async {
+              await controller.close();
+              maps.dispose();
+            });
+
+            await controller.selectMode(
+              mode: GameMode.pve,
+              pack: pack,
+              bindings: bindings,
+            );
+            await _waitForState(
+              controller,
+              (state) => !state.refreshing && state.failure != null,
+            );
+
+            expect(store.snapshots[GameMode.pve], same(old));
+            expect(store.commits, isEmpty);
+            expect(controller.state.source, LiveMapDataSource.cached);
+            expect(publications.whereType<LiveMapSnapshot>().single, same(old));
+            expect(maps.activeMarkers.map((marker) => marker.id), [
+              'last-good-authority',
+            ]);
+          }
+        }
+      },
+    );
+
+    test(
       'publication materialization overflow rejects before durable commit',
       () async {
         await _exerciseExpandedCandidate(

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
+import 'package:blackgrid/application/live_map_data_controller.dart';
 import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/data/database.dart';
@@ -659,6 +660,42 @@ void main() {
       expect(services.catalog.snapshot?.mode, GameMode.pvp);
       expect(services.catalog.status, CatalogStatus.current);
     });
+  });
+
+  test('prepared pack load failures make map data unavailable', () async {
+    await rig.dispose();
+    final failure = StateError('synthetic pack failure');
+    final loader = PreparedMapPackLoader(loadBytes: (_) async => throw failure);
+    rig = RefreshRig(
+      mapController: MapController(
+        loader: loader,
+        resources: NativeMapResourceOwner(loader),
+      ),
+    );
+    services = rig.services;
+    net = rig.net;
+    await rig.launch(GameMode.pvp, trackerEnabled: false);
+    await services.automaticRefreshes;
+    expect(services.maps.pack, isNull);
+    expect(services.maps.packLoadFailure, same(failure));
+    expect(services.mapData.state.source, LiveMapDataSource.unavailable);
+    expect(services.mapData.state.failure, same(failure));
+    expect(services.mapData.state.refreshing, isFalse);
+    expect(
+      net.requests.where(
+        (request) =>
+            request.url.host == 'json.tarkov.dev' &&
+            const {'maps', 'maps_en'}.contains(request.url.pathSegments.last),
+      ),
+      isEmpty,
+    );
+
+    net.clear();
+    await services.refreshMapData();
+    expect(services.mapData.state.source, LiveMapDataSource.unavailable);
+    expect(services.mapData.state.failure, same(failure));
+    expect(services.mapData.state.refreshing, isFalse);
+    expect(net.requests, isEmpty);
   });
 
   test(

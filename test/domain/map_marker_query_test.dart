@@ -32,6 +32,117 @@ void main() {
     expect(owner.retainedMaterializedBytes, afterMatching);
   });
 
+  test('shared long scalars fold once across marker boundaries', () {
+    final counts = Map<String, int>.identity();
+    var reserved = 0;
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) => reserved += bytes,
+      releaseMaterialized: (bytes) => reserved -= bytes,
+      foldScalar: (text) {
+        counts[text] = (counts[text] ?? 0) + 1;
+        return text.toLowerCase();
+      },
+    );
+    final first = 'FIRST${'A' * 300}';
+    final middle = 'MIDİΣ${'B' * 300}';
+    final last = 'LAST${'C' * 300}';
+    final direct = 'DIRECT${'D' * 300}';
+    final label = 'LABEL${'E' * 300}';
+    final rawSource = '  ORIGIN${'F' * 300}  ';
+    final trimmedSource = rawSource.trim();
+    final shared = [first, middle, last];
+    final markers = [
+      for (var i = 0; i < 20; i++)
+        MapMarkerMetadata(
+          name: label,
+          type: direct,
+          category: label,
+          details: {'nested': shared, 'alias': direct},
+          source: {'name': rawSource},
+          owner: owner,
+        ),
+    ];
+    for (final scalar in [first, middle, last, direct, label]) {
+      expect(counts[scalar], 1);
+    }
+    expect(
+      counts.entries.where((entry) => entry.key == trimmedSource).single.value,
+      1,
+    );
+    for (final query in [
+      'not-present',
+      'other-absent',
+      '${first.toLowerCase().substring(first.length - 4)} '
+          '${middle.toLowerCase().substring(0, 5)}',
+      middle.toLowerCase().substring(0, 6),
+      '${direct.toLowerCase().substring(direct.length - 4)} '
+          '${trimmedSource.toLowerCase().substring(0, 6)}',
+      'not-present',
+    ]) {
+      final expected = query != 'not-present' && query != 'other-absent';
+      expect(
+        markers.every((marker) => marker.matchesSearch([query]) == expected),
+        isTrue,
+      );
+    }
+    for (final scalar in [first, middle, last, direct, label]) {
+      expect(counts[scalar], 1);
+    }
+    expect(
+      counts.entries.where((entry) => entry.key == trimmedSource).single.value,
+      1,
+    );
+    expect(owner.retainedMaterializedBytes, reserved);
+  });
+
+  test('failed shared scalar admission rolls back only its new state', () {
+    var reserved = 0;
+    var ceiling = 1 << 30;
+    var foldsUntilRejection = 0;
+    final counts = Map<String, int>.identity();
+    final owner = MapMarkerMetadataOwner(
+      reserveMaterialized: (bytes) {
+        if (reserved + bytes > ceiling) throw StateError('budget exceeded');
+        reserved += bytes;
+      },
+      releaseMaterialized: (bytes) => reserved -= bytes,
+      foldScalar: (text) {
+        counts[text] = (counts[text] ?? 0) + 1;
+        if (foldsUntilRejection > 0 && --foldsUntilRejection == 0) {
+          ceiling = reserved;
+        }
+        return text.toLowerCase();
+      },
+    );
+    final existing = 'EXISTING${'X' * 200}';
+    final leaf = 'LEAF${'Y' * 200}';
+    final otherLeaf = 'OTHER${'Z' * 200}';
+    MapMarkerMetadata marker(Map<String, dynamic> details) => MapMarkerMetadata(
+      name: 'marker',
+      type: 'kind',
+      category: 'category',
+      details: details,
+      source: const {},
+      owner: owner,
+    );
+    marker({'value': existing});
+    final retained = marker({'value': existing});
+    final shared = [leaf, otherLeaf];
+    marker({'value': shared});
+    final baseline = reserved;
+    foldsUntilRejection = 2;
+    expect(() => marker({'value': shared}), throwsStateError);
+    expect(reserved, baseline);
+    expect(owner.retainedMaterializedBytes, baseline);
+    ceiling = 1 << 30;
+    final admitted = marker({'value': shared});
+    expect(admitted.matchesSearch(['leaf']), isTrue);
+    expect(retained.matchesSearch(['existing']), isTrue);
+    expect(counts[existing], 1);
+    expect(counts[leaf], 2);
+    expect(counts[otherLeaf], 2);
+  });
+
   test('shared fact scratch measurement visits each container once', () {
     final leaf = 'deep-${'z' * 4096}-needle';
     final nested = _CountingMap({'value': leaf, 'number': 271828});
@@ -60,9 +171,14 @@ void main() {
     final listVisits = shared.visits;
     expect(mapVisits, greaterThan(0));
     expect(listVisits, greaterThan(0));
-    final others = [for (var i = 1; i < 24; i++) makeMarker(i)];
-    expect(nested.visits, mapVisits);
-    expect(shared.visits, listVisits);
+    final second = makeMarker(1);
+    final sharedMapVisits = nested.visits;
+    final sharedListVisits = shared.visits;
+    expect(sharedMapVisits, greaterThanOrEqualTo(mapVisits));
+    expect(sharedListVisits, greaterThanOrEqualTo(listVisits));
+    final others = [second, for (var i = 2; i < 24; i++) makeMarker(i)];
+    expect(nested.visits, sharedMapVisits);
+    expect(shared.visits, sharedListVisits);
     expect(owner.retainedMaterializedBytes, reserved);
     expect(reserved, greaterThanOrEqualTo(128 + leaf.length * 12));
 

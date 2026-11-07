@@ -93,6 +93,14 @@ class _MaterializationScope {
   }
 }
 
+/// Validates the optional aliases consumed by exit and transit matching.
+void validateLiveExitAliases(Object? aliases, {String path = 'aliases'}) {
+  if (aliases != null &&
+      (aliases is! List || aliases.any((value) => value is! String))) {
+    throw FormatException('$path: aliases must be an array of strings');
+  }
+}
+
 const _mapCategories = [
   'extracts',
   'transits',
@@ -463,6 +471,12 @@ List<Map<String, Object?>> _prepareMapMarkers({
             '$category/$i',
             category,
             'entry must be a dictionary',
+          );
+        }
+        if (category == 'extracts' || category == 'transits') {
+          validateLiveExitAliases(
+            raw['aliases'],
+            path: 'markers/maps.json: $sourceKey/$category/$i',
           );
         }
         String? label;

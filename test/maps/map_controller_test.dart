@@ -1203,6 +1203,7 @@ void main() {
       expect(controller.preparedMap!.id, 'icebreaker');
       expect(controller.scene, isNull);
       expect(controller.error, isNotNull);
+      expect(controller.packLoadFailure, isNull);
     },
   );
 
@@ -1226,6 +1227,7 @@ void main() {
       await controller.selectPersistedMap('retired-map');
       expect(controller.selectedMapId, 'retired-map');
       expect(controller.unavailable, isTrue);
+      expect(controller.packLoadFailure, isNull);
       expect(controller.preparedMap, isNull);
       expect(controller.scene, isNull);
       expect(controller.visibleMarkers(), isEmpty);
@@ -1452,6 +1454,30 @@ void main() {
       contains(unsupportedVectorFormatMessage(2, preparedVectorCodecFormat)),
     );
     expect(controller.preparedMap, isNull);
+  });
+
+  test('pack load failure survives selection and clears on success', () async {
+    final failure = StateError('synthetic pack failure');
+    final loader = _RetryPackLoader(
+      preparedPackBytes(preparedPackManifest()),
+      failure,
+    );
+    final controller = MapController(
+      loader: loader,
+      resources: NativeMapResourceOwner(loader),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.packLoadFailure, same(failure));
+    expect(controller.error, contains('synthetic pack failure'));
+    await controller.selectPersistedMap('woods');
+    expect(controller.packLoadFailure, same(failure));
+
+    loader.fail = false;
+    await controller.initialize(selectedMapId: 'interchange');
+    expect(controller.pack, isNotNull);
+    expect(controller.packLoadFailure, isNull);
   });
 
   test('broken active pack surfaces as the map load error', () async {
@@ -1730,6 +1756,20 @@ List<Map<String, dynamic>> _square(double from, double to) => [
   {'x': to, 'z': to, 'height': null},
   {'x': from, 'z': to, 'height': null},
 ];
+
+class _RetryPackLoader extends PreparedMapPackLoader {
+  _RetryPackLoader(Future<ByteData> Function(String) loadBytes, this.failure)
+    : super(loadBytes: loadBytes);
+
+  final Object failure;
+  bool fail = true;
+
+  @override
+  Future<PreparedMapPack> load() {
+    if (fail) return Future.error(failure);
+    return super.load();
+  }
+}
 
 MapController _controllerFor(Future<ByteData> Function(String) loadBytes) {
   final loader = PreparedMapPackLoader(loadBytes: loadBytes);
