@@ -3,7 +3,12 @@ import 'package:test/test.dart';
 import '../../tool/maps/calibration.dart';
 
 import 'package:blackgrid/maps/live_map_normalizer.dart'
-    show prepareMarkers, prepareQuestMarkers;
+    show
+        LiveMapBinding,
+        LiveMapSourceBodies,
+        normalizeLiveMapData,
+        prepareMarkers,
+        prepareQuestMarkers;
 
 const _sourceKeys = [
   'factory',
@@ -260,6 +265,99 @@ _normalizeForMap({
 }
 
 void main() {
+  test('streaming callback failure releases normalization scratch', () {
+    final maps = _mapSource(
+      customs: _mapRecord(
+        'customs',
+        switches: [
+          {
+            'id': 'one',
+            'name': 'One',
+            'position': {'x': 1, 'z': 2},
+          },
+          {
+            'id': 'two',
+            'name': 'Two',
+            'position': {'x': 3, 'z': 4},
+          },
+        ],
+      ),
+    );
+    final failure = StateError('marker delivery failed');
+    var reserved = 73;
+    var emitted = 0;
+
+    expect(
+      () => normalizeLiveMapData(
+        sources: LiveMapSourceBodies(
+          maps: maps,
+          mapTranslations: {'data': <String, dynamic>{}},
+          tasks: _taskSource(includeTask: false),
+          taskTranslations: _taskTranslations(),
+          traders: _traderSource(),
+          traderTranslations: _traderTranslations(),
+        ),
+        bindings: [
+          LiveMapBinding(
+            sourceKey: 'customs',
+            mapId: 'customs',
+            calibration: calibrationFor('customs'),
+          ),
+        ],
+        mode: 'regular',
+        reserveMaterialization: (bytes) => reserved += bytes,
+        releaseMaterialization: (bytes) => reserved -= bytes,
+        onMarker: (_, _) {
+          if (++emitted == 2) throw failure;
+        },
+      ),
+      throwsA(same(failure)),
+    );
+    expect(emitted, 2);
+    expect(reserved, 73);
+  });
+
+  test('streaming quest validation failure releases temporary reservation', () {
+    final data =
+        _taskSource(
+              objectives: [
+                {
+                  'id': 'objective-1',
+                  'description': 'OBJECTIVE_DESCRIPTION',
+                  'zones': [
+                    {
+                      'id': 'zone-1',
+                      'map': 'source-customs',
+                      'position': {'x': 'bad', 'y': 5, 'z': 6},
+                    },
+                  ],
+                },
+              ],
+            )['data']
+            as Map<String, dynamic>;
+    var reserved = 73;
+    var emitted = 0;
+    expect(
+      () => prepareQuestMarkers(
+        mapId: 'source-customs',
+        tasks: data['tasks'] as Map<String, dynamic>,
+        questItems: data['questItems'] as Map<String, dynamic>,
+        translations: _taskTranslations()['data'] as Map<String, dynamic>,
+        questItemTranslations:
+            _taskTranslations()['data'] as Map<String, dynamic>,
+        traders: _traderSource()['data'] as Map<String, dynamic>,
+        traderTranslations:
+            _traderTranslations()['data'] as Map<String, dynamic>,
+        reserveMaterialization: (bytes) => reserved += bytes,
+        releaseMaterialization: (bytes) => reserved -= bytes,
+        onMarker: (_) => emitted++,
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(emitted, 0);
+    expect(reserved, 73);
+  });
+
   test('idless escape-heavy marker reserves fallback identity peak', () {
     final marker = <String, dynamic>{
       'name': 'Large detail',

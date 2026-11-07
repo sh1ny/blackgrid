@@ -178,58 +178,65 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
           128;
       reserveMaterialization(bindingBytes);
     }
-    final calibration = <String, Object?>{
-      ...binding.calibration,
-      'sourceKey': binding.sourceKey,
-    };
-    final mapMarkers = _prepareMapMarkers(
-      sourceData: mapsData,
-      sourceMaps: maps,
-      translations: mapTranslations,
-      calibration: calibration,
-      reserveMaterialization: reserveMaterialization,
-      releaseMaterialization: onMarker == null ? null : releaseMaterialization,
-      sourceUrl: mapsUrl,
-      onMarker: onMarker == null
-          ? null
-          : (marker) => onMarker(binding.mapId, marker),
-    );
-    final hasSourceMap = maps.values.any(
-      (raw) => raw is Map && raw['normalizedName'] == binding.sourceKey,
-    );
-    if (!hasSourceMap) {
-      output[binding.mapId] = List.unmodifiable(mapMarkers);
+    try {
+      final calibration = <String, Object?>{
+        ...binding.calibration,
+        'sourceKey': binding.sourceKey,
+      };
+      final mapMarkers = _prepareMapMarkers(
+        sourceData: mapsData,
+        sourceMaps: maps,
+        translations: mapTranslations,
+        calibration: calibration,
+        reserveMaterialization: reserveMaterialization,
+        releaseMaterialization: onMarker == null
+            ? null
+            : releaseMaterialization,
+        sourceUrl: mapsUrl,
+        onMarker: onMarker == null
+            ? null
+            : (marker) => onMarker(binding.mapId, marker),
+      );
+      final hasSourceMap = maps.values.any(
+        (raw) => raw is Map && raw['normalizedName'] == binding.sourceKey,
+      );
+      if (!hasSourceMap) {
+        output[binding.mapId] = List.unmodifiable(mapMarkers);
+        continue;
+      }
+      String questMapId = binding.mapId;
+      for (final raw in maps.values) {
+        if (raw is Map && raw['normalizedName'] == binding.sourceKey) {
+          final sourceId = raw['id'];
+          if (sourceId is String && sourceId.isNotEmpty) questMapId = sourceId;
+          break;
+        }
+      }
+      final questMarkers = prepareQuestMarkers(
+        mapId: questMapId,
+        tasks: tasks,
+        translations: taskTranslations,
+        traders: traders,
+        traderTranslations: traderTranslations,
+        questItems: questItems,
+        questItemTranslations: taskTranslations,
+        mode: mode,
+        reserveMaterialization: reserveMaterialization,
+        releaseMaterialization: onMarker == null
+            ? null
+            : releaseMaterialization,
+        onMarker: onMarker == null
+            ? null
+            : (marker) => onMarker(binding.mapId, marker),
+      );
+      output[binding.mapId] = List.unmodifiable([
+        ...mapMarkers,
+        ...questMarkers,
+      ]);
+    } finally {
       if (onMarker != null && bindingBytes > 0) {
         releaseMaterialization?.call(bindingBytes);
       }
-      continue;
-    }
-    String questMapId = binding.mapId;
-    for (final raw in maps.values) {
-      if (raw is Map && raw['normalizedName'] == binding.sourceKey) {
-        final sourceId = raw['id'];
-        if (sourceId is String && sourceId.isNotEmpty) questMapId = sourceId;
-        break;
-      }
-    }
-    final questMarkers = prepareQuestMarkers(
-      mapId: questMapId,
-      tasks: tasks,
-      translations: taskTranslations,
-      traders: traders,
-      traderTranslations: traderTranslations,
-      questItems: questItems,
-      questItemTranslations: taskTranslations,
-      mode: mode,
-      reserveMaterialization: reserveMaterialization,
-      releaseMaterialization: onMarker == null ? null : releaseMaterialization,
-      onMarker: onMarker == null
-          ? null
-          : (marker) => onMarker(binding.mapId, marker),
-    );
-    output[binding.mapId] = List.unmodifiable([...mapMarkers, ...questMarkers]);
-    if (onMarker != null && bindingBytes > 0) {
-      releaseMaterialization?.call(bindingBytes);
     }
   }
   return Map.unmodifiable(output);
@@ -442,176 +449,179 @@ List<Map<String, Object?>> _prepareMapMarkers({
     }
   }
 
-  for (final category in _mapCategories) {
-    final rawEntries = selectedSource[category];
-    if (rawEntries == null) continue;
-    if (rawEntries is! List) {
-      throw sourceError(category, category, 'must be an array');
-    }
-    for (var i = 0; i < rawEntries.length; i++) {
-      final raw = rawEntries[i];
-      if (raw is! Map<String, dynamic>) {
-        throw sourceError(
-          '$category/$i',
-          category,
-          'entry must be a dictionary',
-        );
+  try {
+    for (final category in _mapCategories) {
+      final rawEntries = selectedSource[category];
+      if (rawEntries == null) continue;
+      if (rawEntries is! List) {
+        throw sourceError(category, category, 'must be an array');
       }
-      String? label;
-      if (category == 'lootContainers') {
-        label = _optionalLabel(
-          sourceData,
-          'lootContainers',
-          raw['lootContainer'],
-          '$category/$i',
-          sourceError,
-        );
-      } else if (category == 'stationaryWeapons') {
-        label = _optionalLabel(
-          sourceData,
-          'stationaryWeapons',
-          raw['stationaryWeapon'],
-          '$category/$i',
-          sourceError,
-        );
-      }
-      if (category == 'btrStops') {
-        temporary.addLazy(
-          () =>
-              _materializedSize(raw) +
-              _materializedSize({
-                'position': {'x': raw['x'], 'y': raw['y'], 'z': raw['z']},
-              }) +
-              128,
-        );
-      }
-      final entry = category == 'btrStops'
-          ? {
-              ...raw,
-              'position': {'x': raw['x'], 'y': raw['y'], 'z': raw['z']},
-            }
-          : raw;
-      add(category, entry, '$category/$i', label: label);
-    }
-  }
-
-  final rawBosses = selectedSource['bosses'];
-  if (rawBosses == null) {
-    throw sourceError('bosses', 'bosses', 'must be an array');
-  }
-  if (rawBosses is! List) {
-    throw sourceError('bosses', 'bosses', 'must be an array');
-  }
-  final rawMobs = sourceData['mobs'];
-  for (var b = 0; b < rawBosses.length; b++) {
-    final bossPath = 'bosses/$b';
-    final rawBoss = rawBosses[b];
-    if (rawBoss is! Map) {
-      throw sourceError(bossPath, 'boss', 'must be a dictionary');
-    }
-    final mobId = rawBoss['mob'];
-    if (mobId is! String || mobId.trim().isEmpty) {
-      throw sourceError(
-        '$bossPath/mob',
-        'mob',
-        'must be a nonempty identifier',
-      );
-    }
-    if (rawMobs is! Map) {
-      throw sourceError('$bossPath/mob', 'mobs', 'must be a dictionary');
-    }
-    final mob = rawMobs[mobId];
-    if (mob is! Map ||
-        mob['name'] is! String ||
-        (mob['name'] as String).trim().isEmpty) {
-      throw sourceError(
-        '$bossPath/mob',
-        'name',
-        'resolved mob record $mobId is missing or malformed',
-      );
-    }
-    final chance = rawBoss['spawnChance'];
-    if (chance is! num || !chance.isFinite || chance < 0 || chance > 1) {
-      throw sourceError(
-        '$bossPath/spawnChance',
-        'spawnChance',
-        'must be a finite probability in [0, 1]',
-      );
-    }
-    final locations = rawBoss['spawnLocations'];
-    if (locations is! List) {
-      throw sourceError(
-        '$bossPath/spawnLocations',
-        'spawnLocations',
-        'must be an array',
-      );
-    }
-    for (var l = 0; l < locations.length; l++) {
-      final path = '$bossPath/spawnLocations/$l';
-      final location = locations[l];
-      if (location is! Map ||
-          location['name'] is! String ||
-          (location['name'] as String).trim().isEmpty ||
-          location['positions'] is! List) {
-        throw sourceError(
-          path,
-          'spawnLocations',
-          'entry must have a name and positions array',
-        );
-      }
-      final positions = location['positions'] as List;
-      for (var p = 0; p < positions.length; p++) {
-        final point = positions[p];
-        if (point is! Map) {
+      for (var i = 0; i < rawEntries.length; i++) {
+        final raw = rawEntries[i];
+        if (raw is! Map<String, dynamic>) {
           throw sourceError(
-            '$path/positions/$p',
-            'position',
-            'must be a dictionary',
+            '$category/$i',
+            category,
+            'entry must be a dictionary',
           );
         }
-        for (final axis in ['x', 'z']) {
-          if (point[axis] is! num || !(point[axis] as num).isFinite) {
+        String? label;
+        if (category == 'lootContainers') {
+          label = _optionalLabel(
+            sourceData,
+            'lootContainers',
+            raw['lootContainer'],
+            '$category/$i',
+            sourceError,
+          );
+        } else if (category == 'stationaryWeapons') {
+          label = _optionalLabel(
+            sourceData,
+            'stationaryWeapons',
+            raw['stationaryWeapon'],
+            '$category/$i',
+            sourceError,
+          );
+        }
+        if (category == 'btrStops') {
+          temporary.addLazy(
+            () =>
+                _materializedSize(raw) +
+                _materializedSize({
+                  'position': {'x': raw['x'], 'y': raw['y'], 'z': raw['z']},
+                }) +
+                128,
+          );
+        }
+        final entry = category == 'btrStops'
+            ? {
+                ...raw,
+                'position': {'x': raw['x'], 'y': raw['y'], 'z': raw['z']},
+              }
+            : raw;
+        add(category, entry, '$category/$i', label: label);
+      }
+    }
+
+    final rawBosses = selectedSource['bosses'];
+    if (rawBosses == null) {
+      throw sourceError('bosses', 'bosses', 'must be an array');
+    }
+    if (rawBosses is! List) {
+      throw sourceError('bosses', 'bosses', 'must be an array');
+    }
+    final rawMobs = sourceData['mobs'];
+    for (var b = 0; b < rawBosses.length; b++) {
+      final bossPath = 'bosses/$b';
+      final rawBoss = rawBosses[b];
+      if (rawBoss is! Map) {
+        throw sourceError(bossPath, 'boss', 'must be a dictionary');
+      }
+      final mobId = rawBoss['mob'];
+      if (mobId is! String || mobId.trim().isEmpty) {
+        throw sourceError(
+          '$bossPath/mob',
+          'mob',
+          'must be a nonempty identifier',
+        );
+      }
+      if (rawMobs is! Map) {
+        throw sourceError('$bossPath/mob', 'mobs', 'must be a dictionary');
+      }
+      final mob = rawMobs[mobId];
+      if (mob is! Map ||
+          mob['name'] is! String ||
+          (mob['name'] as String).trim().isEmpty) {
+        throw sourceError(
+          '$bossPath/mob',
+          'name',
+          'resolved mob record $mobId is missing or malformed',
+        );
+      }
+      final chance = rawBoss['spawnChance'];
+      if (chance is! num || !chance.isFinite || chance < 0 || chance > 1) {
+        throw sourceError(
+          '$bossPath/spawnChance',
+          'spawnChance',
+          'must be a finite probability in [0, 1]',
+        );
+      }
+      final locations = rawBoss['spawnLocations'];
+      if (locations is! List) {
+        throw sourceError(
+          '$bossPath/spawnLocations',
+          'spawnLocations',
+          'must be an array',
+        );
+      }
+      for (var l = 0; l < locations.length; l++) {
+        final path = '$bossPath/spawnLocations/$l';
+        final location = locations[l];
+        if (location is! Map ||
+            location['name'] is! String ||
+            (location['name'] as String).trim().isEmpty ||
+            location['positions'] is! List) {
+          throw sourceError(
+            path,
+            'spawnLocations',
+            'entry must have a name and positions array',
+          );
+        }
+        final positions = location['positions'] as List;
+        for (var p = 0; p < positions.length; p++) {
+          final point = positions[p];
+          if (point is! Map) {
             throw sourceError(
-              '$path/positions/$p/$axis',
-              axis,
-              'must be a finite number',
+              '$path/positions/$p',
+              'position',
+              'must be a dictionary',
             );
           }
-        }
-        final height = point['y'];
-        if (height != null && (height is! num || !height.isFinite)) {
-          throw sourceError(
-            '$path/positions/$p/y',
-            'y',
-            'must be null or a finite number',
+          for (final axis in ['x', 'z']) {
+            if (point[axis] is! num || !(point[axis] as num).isFinite) {
+              throw sourceError(
+                '$path/positions/$p/$axis',
+                axis,
+                'must be a finite number',
+              );
+            }
+          }
+          final height = point['y'];
+          if (height != null && (height is! num || !height.isFinite)) {
+            throw sourceError(
+              '$path/positions/$p/y',
+              'y',
+              'must be null or a finite number',
+            );
+          }
+          temporary.addLazy(
+            () =>
+                _materializedSize({
+                  'position': point,
+                  'mob': mobId,
+                  'spawnChance': chance,
+                  'location': location['name'],
+                }) +
+                128,
+          );
+          add(
+            'bosses',
+            {
+              'position': point,
+              'mob': mobId,
+              'spawnChance': chance,
+              'location': location['name'],
+            },
+            '$path/positions/$p',
+            label: mob['name'] as String,
           );
         }
-        temporary.addLazy(
-          () =>
-              _materializedSize({
-                'position': point,
-                'mob': mobId,
-                'spawnChance': chance,
-                'location': location['name'],
-              }) +
-              128,
-        );
-        add(
-          'bosses',
-          {
-            'position': point,
-            'mob': mobId,
-            'spawnChance': chance,
-            'location': location['name'],
-          },
-          '$path/positions/$p',
-          label: mob['name'] as String,
-        );
       }
     }
+  } finally {
+    temporary.releaseTemporary();
+    if (identityBytes > 0) releaseMaterialization?.call(identityBytes);
   }
-  temporary.releaseTemporary();
-  if (identityBytes > 0) releaseMaterialization?.call(identityBytes);
   return result;
 }
 
@@ -652,224 +662,37 @@ List<Map<String, Object?>> prepareQuestMarkers({
     }
   }
 
-  for (final taskEntry in tasks.entries) {
-    final task = _requiredObject(
-      taskEntry.value,
-      'quests/tasks.json: tasks/${taskEntry.key}',
-    );
-    final taskId = _requiredString(task['id'], 'tasks/${taskEntry.key}/id');
-    if (taskId != taskEntry.key) {
-      throw FormatException(
-        'quests/tasks.json: task identity mismatch ${taskEntry.key}/$taskId',
+  try {
+    for (final taskEntry in tasks.entries) {
+      final task = _requiredObject(
+        taskEntry.value,
+        'quests/tasks.json: tasks/${taskEntry.key}',
       );
-    }
-    final objectives = _requiredList(
-      task['objectives'],
-      'tasks/$taskId/objectives',
-    );
-    for (var o = 0; o < objectives.length; o++) {
-      final path = 'tasks/$taskId/objectives/$o';
-      final objective = _requiredObject(objectives[o], path);
-      final zones = objective['zones'];
-      if (zones != null) {
-        final entries = _requiredList(zones, '$path/zones');
-        for (var z = 0; z < entries.length; z++) {
-          final zonePath = '$path/zones/$z';
-          final zone = _requiredObject(entries[z], zonePath);
-          if (_requiredString(zone['map'], '$zonePath/map') != mapId) continue;
-          final taskNameKey = _requiredString(
-            task['name'],
-            'tasks/$taskId/name',
-          );
-          final description = _translatedOptional(
-            objective['description'],
-            translations,
-            'quests/tasks_en.json',
-            '$path/description',
-          );
-          final traderId = task['trader'];
-          final trader = _optionalReferencedObject(
-            traders,
-            traderId,
-            'trader',
-            'tasks/$taskId/trader',
-          );
-          final traderFact = trader == null
-              ? null
-              : {
-                  'id': traderId,
-                  if (_translatedOptional(
-                        trader['name'],
-                        traderTranslations,
-                        'quests/traders_en.json',
-                        'traders/${trader['id']}/name',
-                      )
-                      case final String name)
-                    'name': name,
-                };
-          final questName = _translatedOptional(
-            taskNameKey,
-            translations,
-            'quests/tasks_en.json',
-            'tasks/$taskId/name',
-          );
-          final wikiLink = _requiredString(
-            task['wikiLink'],
-            'tasks/$taskId/wikiLink',
-          );
-          final objectiveId = _requiredString(objective['id'], '$path/id');
-          final zoneId = _requiredString(zone['id'], '$zonePath/id');
-          temporary.addLazy(() => _materializedSize(zone['position']) + 128);
-          final position = _questPosition(
-            zone['position'],
-            '$zonePath/position',
-          );
-          final itemId = _optionalIdentity(
-            objective['questItem'],
-            '$path/questItem',
-          );
-          final item = _optionalReferencedObject(
-            questItems,
-            itemId,
-            'quest item',
-            '$path/questItem',
-          );
-          temporary.add(192);
-          final itemName = _translatedOptional(
-            item?['name'],
-            questItemTranslations,
-            'quests/tasks_en.json',
-            '$path/questItem/name',
-          );
-          final identity = {
-            'taskId': taskId,
-            'objectiveId': objectiveId,
-            'objectiveIndex': o,
-            'questItemId': ?itemId,
-            'zoneId': zoneId,
-            'zoneIndex': z,
-          };
-          final id =
-              'questObjectives:${[mapId, taskId, objectiveId, '$o', zoneId, '$z'].map(Uri.encodeComponent).join(':')}';
-          temporary.addLazy(
-            () =>
-                _materializedSize({
-                  'id': id,
-                  'category': 'questObjectives',
-                  'filterKey': 'QuestObjectives',
-                  'name': description ?? 'questObjectives',
-                  'position': position,
-                  'source': {
-                    'url': sourceUrl,
-                    'mapId': mapId,
-                    'path': zonePath,
-                    'originalIdentity': identity,
-                  },
-                  'details': onMarker == null
-                      ? {
-                          'id': objectiveId,
-                          'quest': {
-                            'id': taskId,
-                            'name': ?questName,
-                            'trader': ?traderFact,
-                            'wikiLink': wikiLink,
-                          },
-                          'objective': objective,
-                          'description': ?description,
-                          'sourceTask': task,
-                          'sourceTrader': trader,
-                          'location': zone,
-                          'item': ?item,
-                          if (item != null && itemName != null)
-                            'questItem': item,
-                          if (item != null && itemName != null)
-                            'questItemName': itemName,
-                        }
-                      : const <String, Object?>{},
-                  if (zone['outline'] != null) 'outline': zone['outline'],
-                  if (zone['bottom'] != null || zone['top'] != null)
-                    'heightBand': [zone['bottom'], zone['top']],
-                }) +
-                128,
-          );
-          if (item != null && itemName != null) {
-            temporary.add(_shallowFactMapCopyBytes(item));
-          }
-          emit({
-            'id': id,
-            'category': 'questObjectives',
-            'filterKey': 'QuestObjectives',
-            'name': description ?? 'questObjectives',
-            'position': position,
-            'source': {
-              'url': sourceUrl,
-              'mapId': mapId,
-              'path': zonePath,
-              'originalIdentity': identity,
-            },
-            'details': {
-              'id': objectiveId,
-              'quest': {
-                'id': taskId,
-                'name': ?questName,
-                'trader': ?traderFact,
-                'wikiLink': wikiLink,
-              },
-              'objective': objective,
-              'description': ?description,
-              'sourceTask': task,
-              'sourceTrader': trader,
-              'location': zone,
-              'item': ?item,
-              if (item != null && itemName != null)
-                'questItem': {...item, 'name': itemName},
-            },
-            if (zone['outline'] != null)
-              'outline': _questOutline(zone['outline'], '$zonePath/outline'),
-            if (_heightBand(zone, zonePath) case final List<double> band)
-              'heightBand': band,
-          });
-        }
+      final taskId = _requiredString(task['id'], 'tasks/${taskEntry.key}/id');
+      if (taskId != taskEntry.key) {
+        throw FormatException(
+          'quests/tasks.json: task identity mismatch ${taskEntry.key}/$taskId',
+        );
       }
-      final locations = objective['possibleLocations'];
-      if (locations != null) {
-        final entries = _requiredList(locations, '$path/possibleLocations');
-        for (var l = 0; l < entries.length; l++) {
-          final locationPath = '$path/possibleLocations/$l';
-          final location = _requiredObject(entries[l], locationPath);
-          if (_requiredString(location['map'], '$locationPath/map') != mapId) {
-            continue;
-          }
-          final taskNameKey = _requiredString(
-            task['name'],
-            'tasks/$taskId/name',
-          );
-          final positions = _requiredList(
-            location['positions'],
-            '$locationPath/positions',
-          );
-          final itemId = _optionalIdentity(
-            objective['questItem'],
-            '$path/questItem',
-          );
-          final item = positions.isEmpty
-              ? null
-              : _optionalReferencedObject(
-                  questItems,
-                  itemId,
-                  'quest item',
-                  '$path/questItem',
-                );
-          for (var p = 0; p < positions.length; p++) {
-            final sourcePath = '$locationPath/positions/$p';
-            temporary.addLazy(() => _materializedSize(positions[p]) + 128);
-            final position = _questPosition(positions[p], sourcePath);
-            temporary.add(224);
-            final itemName = _translatedOptional(
-              item?['name'],
-              questItemTranslations,
-              'quests/tasks_en.json',
-              '$path/questItem/name',
+      final objectives = _requiredList(
+        task['objectives'],
+        'tasks/$taskId/objectives',
+      );
+      for (var o = 0; o < objectives.length; o++) {
+        final path = 'tasks/$taskId/objectives/$o';
+        final objective = _requiredObject(objectives[o], path);
+        final zones = objective['zones'];
+        if (zones != null) {
+          final entries = _requiredList(zones, '$path/zones');
+          for (var z = 0; z < entries.length; z++) {
+            final zonePath = '$path/zones/$z';
+            final zone = _requiredObject(entries[z], zonePath);
+            if (_requiredString(zone['map'], '$zonePath/map') != mapId) {
+              continue;
+            }
+            final taskNameKey = _requiredString(
+              task['name'],
+              'tasks/$taskId/name',
             );
             final description = _translatedOptional(
               objective['description'],
@@ -884,12 +707,19 @@ List<Map<String, Object?>> prepareQuestMarkers({
               'trader',
               'tasks/$taskId/trader',
             );
-            final traderName = _translatedOptional(
-              trader?['name'],
-              traderTranslations,
-              'quests/traders_en.json',
-              'traders/${trader?['id']}/name',
-            );
+            final traderFact = trader == null
+                ? null
+                : {
+                    'id': traderId,
+                    if (_translatedOptional(
+                          trader['name'],
+                          traderTranslations,
+                          'quests/traders_en.json',
+                          'traders/${trader['id']}/name',
+                        )
+                        case final String name)
+                      'name': name,
+                  };
             final questName = _translatedOptional(
               taskNameKey,
               translations,
@@ -901,36 +731,51 @@ List<Map<String, Object?>> prepareQuestMarkers({
               'tasks/$taskId/wikiLink',
             );
             final objectiveId = _requiredString(objective['id'], '$path/id');
+            final zoneId = _requiredString(zone['id'], '$zonePath/id');
+            temporary.addLazy(() => _materializedSize(zone['position']) + 128);
+            final position = _questPosition(
+              zone['position'],
+              '$zonePath/position',
+            );
+            final itemId = _optionalIdentity(
+              objective['questItem'],
+              '$path/questItem',
+            );
+            final item = _optionalReferencedObject(
+              questItems,
+              itemId,
+              'quest item',
+              '$path/questItem',
+            );
+            temporary.add(192);
+            final itemName = _translatedOptional(
+              item?['name'],
+              questItemTranslations,
+              'quests/tasks_en.json',
+              '$path/questItem/name',
+            );
             final identity = {
               'taskId': taskId,
-              'objectiveId': objective['id'],
+              'objectiveId': objectiveId,
               'objectiveIndex': o,
-              'questItemId': itemId,
-              'locationIndex': l,
-              'positionIndex': p,
+              'questItemId': ?itemId,
+              'zoneId': zoneId,
+              'zoneIndex': z,
             };
-            final idParts = [
-              mapId,
-              taskId,
-              objectiveId,
-              '$o',
-              itemId ?? '',
-              '$l',
-              '$p',
-            ];
+            final id =
+                'questObjectives:${[mapId, taskId, objectiveId, '$o', zoneId, '$z'].map(Uri.encodeComponent).join(':')}';
             temporary.addLazy(
               () =>
                   _materializedSize({
-                    'id':
-                        'questItems:${idParts.map(Uri.encodeComponent).join(':')}',
-                    'category': 'questItems',
-                    'filterKey': 'QuestItems',
-                    'name': itemName ?? 'questItems',
+                    'id': id,
+                    'category': 'questObjectives',
+                    'filterKey': 'QuestObjectives',
+                    'name': description ?? 'questObjectives',
                     'position': position,
                     'source': {
                       'url': sourceUrl,
                       'mapId': mapId,
-                      'path': sourcePath,
+                      'path': zonePath,
                       'originalIdentity': identity,
                     },
                     'details': onMarker == null
@@ -938,28 +783,25 @@ List<Map<String, Object?>> prepareQuestMarkers({
                             'id': objectiveId,
                             'quest': {
                               'id': taskId,
-                              'name': questName,
-                              'trader': trader == null
-                                  ? null
-                                  : {'id': traderId, 'name': traderName},
+                              'name': ?questName,
+                              'trader': ?traderFact,
                               'wikiLink': wikiLink,
                             },
                             'objective': objective,
                             'description': ?description,
                             'sourceTask': task,
                             'sourceTrader': trader,
-                            'location': location,
+                            'location': zone,
                             'item': ?item,
                             if (item != null && itemName != null)
                               'questItem': item,
-                            'questItemName': ?itemName,
-                            'traderName': ?traderName,
+                            if (item != null && itemName != null)
+                              'questItemName': itemName,
                           }
                         : const <String, Object?>{},
-                    if (location['outline'] != null)
-                      'outline': location['outline'],
-                    if (location['bottom'] != null || location['top'] != null)
-                      'heightBand': [location['bottom'], location['top']],
+                    if (zone['outline'] != null) 'outline': zone['outline'],
+                    if (zone['bottom'] != null || zone['top'] != null)
+                      'heightBand': [zone['bottom'], zone['top']],
                   }) +
                   128,
             );
@@ -967,15 +809,15 @@ List<Map<String, Object?>> prepareQuestMarkers({
               temporary.add(_shallowFactMapCopyBytes(item));
             }
             emit({
-              'id': 'questItems:${idParts.map(Uri.encodeComponent).join(':')}',
-              'category': 'questItems',
-              'filterKey': 'QuestItems',
-              'name': itemName ?? 'questItems',
+              'id': id,
+              'category': 'questObjectives',
+              'filterKey': 'QuestObjectives',
+              'name': description ?? 'questObjectives',
               'position': position,
               'source': {
                 'url': sourceUrl,
                 'mapId': mapId,
-                'path': sourcePath,
+                'path': zonePath,
                 'originalIdentity': identity,
               },
               'details': {
@@ -983,34 +825,209 @@ List<Map<String, Object?>> prepareQuestMarkers({
                 'quest': {
                   'id': taskId,
                   'name': ?questName,
-                  if (trader != null)
-                    'trader': {'id': traderId, 'name': ?traderName},
+                  'trader': ?traderFact,
                   'wikiLink': wikiLink,
                 },
                 'objective': objective,
                 'description': ?description,
                 'sourceTask': task,
                 'sourceTrader': trader,
-                'location': location,
+                'location': zone,
                 'item': ?item,
                 if (item != null && itemName != null)
                   'questItem': {...item, 'name': itemName},
               },
-              if (location['outline'] != null)
-                'outline': _questOutline(
-                  location['outline'],
-                  '$locationPath/outline',
-                ),
-              if (_heightBand(location, locationPath)
-                  case final List<double> band)
+              if (zone['outline'] != null)
+                'outline': _questOutline(zone['outline'], '$zonePath/outline'),
+              if (_heightBand(zone, zonePath) case final List<double> band)
                 'heightBand': band,
             });
           }
         }
+        final locations = objective['possibleLocations'];
+        if (locations != null) {
+          final entries = _requiredList(locations, '$path/possibleLocations');
+          for (var l = 0; l < entries.length; l++) {
+            final locationPath = '$path/possibleLocations/$l';
+            final location = _requiredObject(entries[l], locationPath);
+            if (_requiredString(location['map'], '$locationPath/map') !=
+                mapId) {
+              continue;
+            }
+            final taskNameKey = _requiredString(
+              task['name'],
+              'tasks/$taskId/name',
+            );
+            final positions = _requiredList(
+              location['positions'],
+              '$locationPath/positions',
+            );
+            final itemId = _optionalIdentity(
+              objective['questItem'],
+              '$path/questItem',
+            );
+            final item = positions.isEmpty
+                ? null
+                : _optionalReferencedObject(
+                    questItems,
+                    itemId,
+                    'quest item',
+                    '$path/questItem',
+                  );
+            for (var p = 0; p < positions.length; p++) {
+              final sourcePath = '$locationPath/positions/$p';
+              temporary.addLazy(() => _materializedSize(positions[p]) + 128);
+              final position = _questPosition(positions[p], sourcePath);
+              temporary.add(224);
+              final itemName = _translatedOptional(
+                item?['name'],
+                questItemTranslations,
+                'quests/tasks_en.json',
+                '$path/questItem/name',
+              );
+              final description = _translatedOptional(
+                objective['description'],
+                translations,
+                'quests/tasks_en.json',
+                '$path/description',
+              );
+              final traderId = task['trader'];
+              final trader = _optionalReferencedObject(
+                traders,
+                traderId,
+                'trader',
+                'tasks/$taskId/trader',
+              );
+              final traderName = _translatedOptional(
+                trader?['name'],
+                traderTranslations,
+                'quests/traders_en.json',
+                'traders/${trader?['id']}/name',
+              );
+              final questName = _translatedOptional(
+                taskNameKey,
+                translations,
+                'quests/tasks_en.json',
+                'tasks/$taskId/name',
+              );
+              final wikiLink = _requiredString(
+                task['wikiLink'],
+                'tasks/$taskId/wikiLink',
+              );
+              final objectiveId = _requiredString(objective['id'], '$path/id');
+              final identity = {
+                'taskId': taskId,
+                'objectiveId': objective['id'],
+                'objectiveIndex': o,
+                'questItemId': itemId,
+                'locationIndex': l,
+                'positionIndex': p,
+              };
+              final idParts = [
+                mapId,
+                taskId,
+                objectiveId,
+                '$o',
+                itemId ?? '',
+                '$l',
+                '$p',
+              ];
+              temporary.addLazy(
+                () =>
+                    _materializedSize({
+                      'id':
+                          'questItems:${idParts.map(Uri.encodeComponent).join(':')}',
+                      'category': 'questItems',
+                      'filterKey': 'QuestItems',
+                      'name': itemName ?? 'questItems',
+                      'position': position,
+                      'source': {
+                        'url': sourceUrl,
+                        'mapId': mapId,
+                        'path': sourcePath,
+                        'originalIdentity': identity,
+                      },
+                      'details': onMarker == null
+                          ? {
+                              'id': objectiveId,
+                              'quest': {
+                                'id': taskId,
+                                'name': questName,
+                                'trader': trader == null
+                                    ? null
+                                    : {'id': traderId, 'name': traderName},
+                                'wikiLink': wikiLink,
+                              },
+                              'objective': objective,
+                              'description': ?description,
+                              'sourceTask': task,
+                              'sourceTrader': trader,
+                              'location': location,
+                              'item': ?item,
+                              if (item != null && itemName != null)
+                                'questItem': item,
+                              'questItemName': ?itemName,
+                              'traderName': ?traderName,
+                            }
+                          : const <String, Object?>{},
+                      if (location['outline'] != null)
+                        'outline': location['outline'],
+                      if (location['bottom'] != null || location['top'] != null)
+                        'heightBand': [location['bottom'], location['top']],
+                    }) +
+                    128,
+              );
+              if (item != null && itemName != null) {
+                temporary.add(_shallowFactMapCopyBytes(item));
+              }
+              emit({
+                'id':
+                    'questItems:${idParts.map(Uri.encodeComponent).join(':')}',
+                'category': 'questItems',
+                'filterKey': 'QuestItems',
+                'name': itemName ?? 'questItems',
+                'position': position,
+                'source': {
+                  'url': sourceUrl,
+                  'mapId': mapId,
+                  'path': sourcePath,
+                  'originalIdentity': identity,
+                },
+                'details': {
+                  'id': objectiveId,
+                  'quest': {
+                    'id': taskId,
+                    'name': ?questName,
+                    if (trader != null)
+                      'trader': {'id': traderId, 'name': ?traderName},
+                    'wikiLink': wikiLink,
+                  },
+                  'objective': objective,
+                  'description': ?description,
+                  'sourceTask': task,
+                  'sourceTrader': trader,
+                  'location': location,
+                  'item': ?item,
+                  if (item != null && itemName != null)
+                    'questItem': {...item, 'name': itemName},
+                },
+                if (location['outline'] != null)
+                  'outline': _questOutline(
+                    location['outline'],
+                    '$locationPath/outline',
+                  ),
+                if (_heightBand(location, locationPath)
+                    case final List<double> band)
+                  'heightBand': band,
+              });
+            }
+          }
+        }
       }
     }
+  } finally {
+    temporary.releaseTemporary();
   }
-  temporary.releaseTemporary();
   return markers;
 }
 
