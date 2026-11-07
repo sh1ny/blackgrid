@@ -44,8 +44,8 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 | prepared-map-packs → The app loads only packs that carry labels | Label names an unknown floor | test/maps/prepared_map_labels_test.dart | `label with an unknown floor fails naming map and floor` | red |
 | prepared-map-packs → Validation re-derives labels from the candidate's own metadata | Labels match their evidence | test/maps/map_preparation_test.dart | `validateCandidate accepts labels derived from own metadata` | red |
 | prepared-map-packs → Validation re-derives labels from the candidate's own metadata | Labels differ from their evidence | test/maps/map_preparation_test.dart | `validateCandidate rejects labels that differ from own metadata` | red |
-| prepared-map-packs → The third-party notices credit the place labels | Credit present | test/maps/place_label_notice_test.dart | `third-party notices credit the place labels` | red |
-| prepared-map-packs → The third-party notices credit the place labels | Licence text missing from the pack | test/maps/place_label_notice_test.dart | `missing tarkov-dev licence in the pack fails naming the path` | red |
+| prepared-map-packs → The third-party notices credit the place labels | Credit present | test/maps/place_label_notice_test.dart | `third-party notices credit the place labels` | green |
+| prepared-map-packs → The third-party notices credit the place labels | Licence text missing from the pack | test/maps/place_label_notice_test.dart | `missing tarkov-dev licence in the pack fails naming the path` | green |
 | prepared-map-packs → Only the active generation is ever used (MODIFIED) | Active generation loads | test/maps/active_pack_loader_test.dart | `the real loader loads the committed active pack` (now v4) | red |
 | prepared-map-packs → Only the active generation is ever used (MODIFIED) | Active generation is broken | test/maps/map_controller_test.dart | `broken active pack surfaces as the map load error` | green |
 | prepared-map-packs → Only the active generation is ever used (MODIFIED) | Older preparation version | test/maps/prepared_map_labels_test.dart | `preparation version 3 is refused by loader and validator` | red |
@@ -96,8 +96,8 @@ One group, so the suite is green at its commit: the committed pack and the code 
 
 ## 8. Rights note
 
-- [ ] 8.1 Write the failing tests in `test/maps/place_label_notice_test.dart` (entry present; licence file present in the active pack). Verify they fail.
-- [ ] 8.2 Add the place-labels entry to `THIRD_PARTY_NOTICES.md` beside the "Metadata and markers — Tarkov.dev" line, as design.md D3 lists. Leave the pack `NOTICE.txt` unchanged. Verify the tests pass; flip rows green.
+- [x] 8.1 Write the failing tests in `test/maps/place_label_notice_test.dart` (entry present; licence file present in the active pack). Verify they fail.
+- [x] 8.2 Add the place-labels entry to `THIRD_PARTY_NOTICES.md` beside the "Metadata and markers — Tarkov.dev" line, as design.md D3 lists. Leave the pack `NOTICE.txt` unchanged. Verify the tests pass; flip rows green.
 
 ## 9. Integration checks
 
