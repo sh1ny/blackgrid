@@ -43,6 +43,15 @@ int labelColourFor(LabelFaction faction) => switch (faction) {
   LabelFaction.transit => 0xFFD29BF2,
 };
 
+/// The opaque ARGB colour of place labels, a muted off-white (`#C8D0CB`).
+///
+/// It differs from every [labelColourFor] colour and, blended at
+/// [placeLabelOpacity] over the map background, keeps 3:1 contrast.
+const int placeLabelColour = 0xFFC8D0CB;
+
+/// The opacity place labels are drawn with.
+const double placeLabelOpacity = 0.85;
+
 /// Whether the outline of a marker in category [filterKey] is drawn.
 ///
 /// Extract and transit outlines show only while their marker is [hovered] or

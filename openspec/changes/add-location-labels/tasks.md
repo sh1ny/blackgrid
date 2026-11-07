@@ -11,18 +11,18 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 | map-place-labels → Place labels show for the floors they belong to | Label of a hidden exclusive floor | test/maps/map_controller_test.dart | `place labels: exclusive floor hides labels of other floors` | red |
 | map-place-labels → Place labels show for the floors they belong to | Map without labels | test/maps/map_controller_test.dart | `place labels: map with an empty label list yields none` | red |
 | map-place-labels → Place labels keep a fixed screen size | Zooming keeps the size | test/ui/map_place_labels_test.dart | `place label font size does not change with zoom` | red |
-| map-place-labels → Place labels keep a fixed screen size | Relative sizes | test/domain/map_place_labels_test.dart | `font size follows relative size 65, 80, 100` | red |
-| map-place-labels → Place labels keep a fixed screen size | Out-of-range size is clamped | test/domain/map_place_labels_test.dart | `font size is clamped to 10..16` | red |
+| map-place-labels → Place labels keep a fixed screen size | Relative sizes | test/domain/map_place_labels_test.dart | `font size follows relative size 65, 80, 100` | green |
+| map-place-labels → Place labels keep a fixed screen size | Out-of-range size is clamped | test/domain/map_place_labels_test.dart | `font size is clamped to 10..16` | green |
 | map-place-labels → Place labels are centred, rotated and haloed | Rotated label | test/ui/map_place_labels_test.dart | `rotated label is drawn rotated about its anchor` | red |
 | map-place-labels → Place labels are centred, rotated and haloed | Unrotated label | test/ui/map_place_labels_test.dart | `unrotated label is centred on its anchor` | red |
-| map-place-labels → Place labels are centred, rotated and haloed | Colour rule rejects a bad label colour | test/domain/map_zone_style_test.dart | `place label colour differs from faction colours and meets 3:1 blended at 85%` | red |
+| map-place-labels → Place labels are centred, rotated and haloed | Colour rule rejects a bad label colour | test/domain/map_zone_style_test.dart | `place label colour differs from faction colours and meets 3:1 blended at 85%` | green |
 | map-place-labels → Place labels sit behind every marker drawing | Badge over a label | test/ui/map_place_labels_test.dart | `place labels are drawn before outlines, names and badges` | red |
 | map-place-labels → Place labels sit behind every marker drawing | Search does not dim labels | test/ui/map_place_labels_test.dart | `search leaves place label opacity unchanged` | red |
-| map-place-labels → Overlapping place labels thin out | Zoomed out | test/domain/map_place_labels_test.dart | `larger overlapping label wins` | red |
-| map-place-labels → Overlapping place labels thin out | Zooming in restores the name | test/domain/map_place_labels_test.dart | `separated labels are both placed` | red |
-| map-place-labels → Overlapping place labels thin out | Equal sizes | test/domain/map_place_labels_test.dart | `equal sizes: earlier pack index wins` | red |
-| map-place-labels → Overlapping place labels thin out | Selected floor wins | test/domain/map_place_labels_test.dart | `selected overlay label wins over a base label of equal size` | red |
-| map-place-labels → Overlapping place labels thin out | Off-screen label takes no room | test/domain/map_place_labels_test.dart | `label outside the viewport takes no room` | red |
+| map-place-labels → Overlapping place labels thin out | Zoomed out | test/domain/map_place_labels_test.dart | `larger overlapping label wins` | green |
+| map-place-labels → Overlapping place labels thin out | Zooming in restores the name | test/domain/map_place_labels_test.dart | `separated labels are both placed` | green |
+| map-place-labels → Overlapping place labels thin out | Equal sizes | test/domain/map_place_labels_test.dart | `equal sizes: earlier pack index wins` | green |
+| map-place-labels → Overlapping place labels thin out | Selected floor wins | test/domain/map_place_labels_test.dart | `selected overlay label wins over a base label of equal size` | green |
+| map-place-labels → Overlapping place labels thin out | Off-screen label takes no room | test/domain/map_place_labels_test.dart | `label outside the viewport takes no room` | green |
 | map-place-labels → Place labels are not interactive | Click on a label | test/ui/map_place_labels_test.dart | `click on a place label selects nothing` | red |
 | map-place-labels → Place labels are not interactive | Click on a label over a badge | test/ui/map_place_labels_test.dart | `click on a badge under a place label selects the marker` | red |
 | map-place-labels → Place labels are not interactive | Accessibility targets | test/ui/map_place_labels_test.dart | `place labels add no semantics targets` | red |
@@ -70,8 +70,8 @@ Dart work follows AGENTS.md "Dart and Flutter code". Skills per group: `dart-use
 
 ## 4. Placement and style rules (domain)
 
-- [ ] 4.1 Write failing tests in `test/domain/map_place_labels_test.dart` (font size and placement rows) and the palette row in `test/domain/map_zone_style_test.dart`. Verify they fail for the missing API.
-- [ ] 4.2 Implement `lib/domain/map_place_labels.dart`: `placeLabelFontSize(size)` (13 × size / 80, clamped 10–16), the label colour `#C8D0CB` at 85% (in `map_zone_style.dart` next to the faction colours), and `placeLabels(candidates, viewport, selectedOverlayFloorIds)`: selected-overlay labels first, then size descending, then pack index; viewport cull on rotated bounds; skip on overlap of axis-aligned rotated bounds grown by 2 px. Verify the group's tests pass; flip rows green.
+- [x] 4.1 Write failing tests in `test/domain/map_place_labels_test.dart` (font size and placement rows) and the palette row in `test/domain/map_zone_style_test.dart`. Verify they fail for the missing API.
+- [x] 4.2 Implement `lib/domain/map_place_labels.dart`: `placeLabelFontSize(size)` (13 × size / 80, clamped 10–16), the label colour `#C8D0CB` at 85% (in `map_zone_style.dart` next to the faction colours), and `placeLabels(candidates, viewport, selectedOverlayFloorIds)`: selected-overlay labels first, then size descending, then pack index; viewport cull on rotated bounds; skip on overlap of axis-aligned rotated bounds grown by 2 px. Verify the group's tests pass; flip rows green.
 
 ## 5. Pack format v4: builder, validator, loader and the rebuilt pack
 
