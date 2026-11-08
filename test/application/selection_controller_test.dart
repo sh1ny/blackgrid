@@ -10,7 +10,6 @@ import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';

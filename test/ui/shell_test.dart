@@ -58,6 +58,23 @@ class _HeldCatalogDatabase extends BlackgridDatabase {
 }
 
 void main() {
+  testWidgets('one shared FIR selector stays visible in both workspaces', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final area in ['nav-map', 'nav-scanner']) {
+      await tester.tap(find.byKey(Key(area)));
+      await tester.pumpAndSettle();
+      expect(find.byType(FirControls), findsOneWidget);
+    }
+  });
+
   for (final room in [Brightness.dark, Brightness.light]) {
     testWidgets('inspector at scale two in $room', (tester) async {
       tester.platformDispatcher.platformBrightnessTestValue = room;

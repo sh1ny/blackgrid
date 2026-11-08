@@ -50,6 +50,36 @@ void main() {
     return h;
   }
 
+  testWidgets('history rows fit the inspector at text scale two', (
+    tester,
+  ) async {
+    final h = await showHistory(
+      tester,
+      verdict: Recommendation.keep,
+      observedAt: DateTime(2020),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: blackgridTheme(Brightness.dark),
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 352,
+                height: 400,
+                child: HistoryPanel(services: h.services),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.byTooltip('Recorded verdict: Keep'), findsOneWidget);
+    expect(find.byType(ListTile), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('workspace-shell: History selection', (tester) async {
     final h = await showHistory(tester);
     await tester.runAsync(() async {

@@ -28,6 +28,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
+    await showInspectorPanel(tester, 'Picked item');
 
     final text = _cardText(tester);
     expect(text, contains('Found in raid: unknown'));

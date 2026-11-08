@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
-import 'answer_strip.dart';
 import 'labels.dart';
 import 'ember/theme_access.dart';
 
@@ -93,8 +92,6 @@ class ManualControls extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           const Divider(height: 24),
-          FirControls(services: services),
-          const SizedBox(height: 12),
           Text(
             services.selection.query.isEmpty
                 ? 'Type an item name.'

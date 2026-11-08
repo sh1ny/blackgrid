@@ -294,6 +294,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                               ? ItemDecisionCard(
                                                   services: widget.services,
                                                   compact: true,
+                                                  showCorrectionOffer: false,
                                                 )
                                               : const SizedBox.shrink(),
                                         ),

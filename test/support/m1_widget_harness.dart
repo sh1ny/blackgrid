@@ -2,6 +2,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/ui/app.dart';
+import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,6 +39,32 @@ Future<M1Harness> pumpM1(
   await tester.pumpWidget(BlackgridApp(services: h.services));
   await tester.pumpAndSettle();
   return h;
+}
+
+/// Opens the shared inspector and brings its named panel into view.
+Future<void> showInspectorPanel(WidgetTester tester, String title) async {
+  if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+  }
+  final inspector = find.byKey(const Key('shell-inspector'));
+  final scrollable = find
+      .descendant(of: inspector, matching: find.byType(Scrollable))
+      .first;
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final targetOffset = switch (title) {
+    'Data sources' => 850.0,
+    'Recent item activity' => position.maxScrollExtent,
+    _ => 0.0,
+  };
+  position.jumpTo(targetOffset.clamp(0, position.maxScrollExtent));
+  await tester.pumpAndSettle();
+  final panel = find.byWidgetPredicate(
+    (w) => w is GridPanel && w.title == title,
+  );
+  expect(panel, findsOneWidget);
+  await tester.ensureVisible(panel);
+  await tester.pumpAndSettle();
 }
 
 Future<void> tapM1Async(

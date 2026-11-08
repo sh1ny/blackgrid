@@ -22,11 +22,13 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.byKey(const Key('answer-strip')), findsOneWidget);
+      expect(find.text('Find an item'), findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(h.requests, isEmpty);
       expect(tester.takeException(), isNull);

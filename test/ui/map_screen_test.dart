@@ -144,7 +144,19 @@ void main() {
     await tester.pump();
     expect(h.services.scans.latest, isNotNull);
     expect(find.text('Active map'), findsOneWidget);
-    expect(find.text('Accepted scan'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('answer-strip')),
+        matching: find.text('Accepted scan'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is GridPanel && w.title == 'Accepted scan',
+      ),
+      findsNothing,
+    );
     expect(find.text('Latest accepted scan'), findsNothing);
   });
   testWidgets(

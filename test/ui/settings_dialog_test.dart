@@ -459,7 +459,10 @@ void main() {
       expect(h.services.catalog.mode, GameMode.pve);
       await tapM1Async(
         tester,
-        find.text('Refresh item data'),
+        find.descendant(
+          of: find.byType(SettingsDialog),
+          matching: find.text('Refresh item data'),
+        ),
         () =>
             h.services.catalog.snapshot?.mode == GameMode.pve &&
             !h.services.catalog.loading,

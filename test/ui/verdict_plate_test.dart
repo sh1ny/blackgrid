@@ -237,7 +237,7 @@ void main() {
     }
   });
 
-  testWidgets('long reason wraps in the compact Map rail card at 960 px', (
+  testWidgets('long reason wraps in the compact inspector card at 960 px', (
     tester,
   ) async {
     const token = 'PVP_synthetic-fixture-only';
@@ -278,6 +278,21 @@ void main() {
       );
     });
     h.services.selection.setFir(FirState.yes);
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topRight,
+            child: SizedBox(
+              width: 352,
+              height: 600,
+              child: ItemDecisionCard(services: h.services, compact: true),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final card = find.byType(ItemDecisionCard);

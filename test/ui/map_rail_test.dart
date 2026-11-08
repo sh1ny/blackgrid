@@ -47,7 +47,6 @@ Future<double> _railOffset(WidgetTester tester, Finder section) async {
 Future<void> _expectRailOrder(WidgetTester tester) async {
   final offsets = <String, double>{
     'Active map': await _railOffset(tester, _panel('Active map')),
-    'decision card': await _railOffset(tester, _decisionCard),
     'Marker preferences': await _railOffset(
       tester,
       _panel('Marker preferences'),
@@ -58,6 +57,7 @@ Future<void> _expectRailOrder(WidgetTester tester) async {
     ),
     'Map saved-file inputs': await _railOffset(tester, mapInputsHeader),
   };
+  expect(_decisionCard, findsNothing);
   final names = offsets.keys.toList();
   final values = offsets.values.toList();
   for (var i = 1; i < values.length; i++) {
@@ -187,7 +187,7 @@ Future<void> _readLatest(
 }
 
 void main() {
-  testWidgets('wide rail orders Active map, card, markers, search, inputs', (
+  testWidgets('wide rail orders Active map, markers, search, inputs', (
     tester,
   ) async {
     await pumpMapFixture(tester);
@@ -215,8 +215,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final active = tester.getRect(_panel('Active map'));
-    final card = tester.getRect(_panel('Accepted scan'));
-    expect(card.top, greaterThanOrEqualTo(active.bottom));
+    expect(_panel('Accepted scan'), findsNothing);
     for (final element
         in find.byWidgetPredicate((w) => w is GridPanel).evaluate()) {
       final panel = element.widget as GridPanel;

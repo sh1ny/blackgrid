@@ -91,12 +91,17 @@ void main() {
     await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    expect(find.text('Live scan'), findsOneWidget);
     expect(find.text('Manual inspection'), findsOneWidget);
     expect(find.text('Recent scans'), findsOneWidget);
     for (final old in ['LIVE SCAN', 'MANUAL INSPECTION', 'RECENT SCANS']) {
       expect(find.text(old), findsNothing);
     }
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Live scan'), findsOneWidget);
+    expect(find.text('LIVE SCAN'), findsNothing);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('nav-map')));
     await tester.pumpAndSettle();

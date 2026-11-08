@@ -29,6 +29,7 @@ void main() {
           });
           await tester.tap(find.byKey(const Key('nav-scanner')));
           await tester.pumpAndSettle();
+          await showInspectorPanel(tester, 'Data sources');
           final panel = find.byWidgetPredicate(
             (w) => w is GridPanel && w.title == 'Data sources',
           );
@@ -79,6 +80,7 @@ void main() {
       });
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
+      await showInspectorPanel(tester, 'Recent item activity');
       await tapM1Async(
         tester,
         find.widgetWithText(ListTile, 'item-a'),
@@ -88,8 +90,14 @@ void main() {
       );
       expect(h.services.selection.inspectionMode, GameMode.pve);
       expect(h.services.catalog.mode, GameMode.pvp);
+      await showInspectorPanel(tester, 'History inspection');
       expect(find.textContaining('Saved from PvE'), findsOneWidget);
-      await tester.tap(find.byTooltip('Close history inspection'));
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('answer-strip')),
+          matching: find.byTooltip('Close history inspection'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(h.services.selection.item!.id, 'item-b');
       expect(h.services.catalog.mode, GameMode.pvp);
@@ -112,6 +120,7 @@ void main() {
       });
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
+      await showInspectorPanel(tester, 'Recent item activity');
       final panel = find.byWidgetPredicate(
         (w) => w is GridPanel && w.title == 'Recent item activity',
       );

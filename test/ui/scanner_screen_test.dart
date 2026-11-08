@@ -54,12 +54,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
-        ),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('answer-strip')), findsOneWidget);
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
       expect(
@@ -109,9 +104,7 @@ void main() {
     );
     expect(
       find.descendant(
-        of: find.byWidgetPredicate(
-          (widget) => widget is GridPanel && widget.title == 'Picked item',
-        ),
+        of: find.byKey(const Key('answer-strip')),
         matching: find.textContaining('not recorded'),
       ),
       findsOneWidget,
@@ -135,6 +128,7 @@ void main() {
       find.widgetWithText(ListTile, 'Synthetic component'),
       () => h.services.history.rows.length == 1,
     );
+    await showInspectorPanel(tester, 'Picked item');
     GridPanel titled(String title) => tester.widget<GridPanel>(
       find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
     );
@@ -181,6 +175,7 @@ void main() {
       ('item-a', ActivitySource.manual),
       ('item-b', ActivitySource.scan),
     });
+    await showInspectorPanel(tester, 'Recent item activity');
     final history = find.byWidgetPredicate(
       (w) => w is GridPanel && w.title == 'Recent item activity',
     );
@@ -188,7 +183,7 @@ void main() {
       find.descendant(
         of: history,
         matching: find.textContaining(
-          ' • ${activitySourceLabel(ActivitySource.scan)}\n',
+          ' • ${activitySourceLabel(ActivitySource.scan)}',
         ),
       ),
       findsOneWidget,
@@ -197,7 +192,7 @@ void main() {
       find.descendant(
         of: history,
         matching: find.textContaining(
-          ' • ${activitySourceLabel(ActivitySource.manual)}\n',
+          ' • ${activitySourceLabel(ActivitySource.manual)}',
         ),
       ),
       findsOneWidget,

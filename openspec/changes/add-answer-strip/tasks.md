@@ -71,9 +71,9 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 
 ## 4. Integration verification
 
-- [ ] 4.1 Run `dart format` on changed Dart files, then `mise run analyze` and `mise run test`; verify no new findings or failing offline tests. Confirm every scenario maps to exactly one test-map row and each row has passing evidence before changing its state. Do not run qualification or launch the app as part of these commands.
-- [ ] 4.2 Verify the complete shell across both rooms and the size/text-scale matrix with offline widget fixtures; run relevant Impeccable checks where supported for Dart and record actual support/results without claiming a web-only detector checked Flutter. Confirm preserved map controls, icon fallbacks, dialog entry points, section focus, timer settings and no UI colour literals outside theme roles. Keep live-game visual judgment unverified for milestone close.
-- [ ] 4.3 Check release notes with `mise run release-notes -- --check openspec/changes/add-answer-strip/proposal.md`, run `openspec validate add-answer-strip --strict` and `git diff --check`; verify all pass and update proposal release notes to match shipped behaviour. No version bump: releases are disabled for this workflow.
+- [x] 4.1 Run `dart format` on changed Dart files, then `mise run analyze` and `mise run test`; verify no new findings or failing offline tests. Confirm every scenario maps to exactly one test-map row and each row has passing evidence before changing its state. Do not run qualification or launch the app as part of these commands.
+- [x] 4.2 Verify the complete shell across both rooms and the size/text-scale matrix with offline widget fixtures; run relevant Impeccable checks where supported for Dart and record actual support/results without claiming a web-only detector checked Flutter. Confirm preserved map controls, icon fallbacks, dialog entry points, section focus, timer settings and no UI colour literals outside theme roles. Keep live-game visual judgment unverified for milestone close.
+- [x] 4.3 Check release notes with `mise run release-notes -- --check openspec/changes/add-answer-strip/proposal.md`, run `openspec validate add-answer-strip --strict` and `git diff --check`; verify all pass and update proposal release notes to match shipped behaviour. No version bump: releases are disabled for this workflow.
 
 ## Workflow follow-up
 

@@ -7,6 +7,7 @@ import '../domain/verdict_reason.dart';
 import 'ember/theme_access.dart';
 import 'freshness_tag.dart';
 import 'item_icon.dart';
+import 'item_decision_card.dart' show CorrectionOfferBlock;
 import 'verdict_plate.dart';
 
 /// The shared current inspection shown before either workspace.
@@ -28,6 +29,7 @@ class AnswerStrip extends StatelessWidget {
       final item = selection.item;
       final decision = selection.decision;
       final latest = services.scans.latest;
+      final offer = selection.correctionOffer;
       return Container(
         key: const Key('answer-strip'),
         constraints: const BoxConstraints(minHeight: 76),
@@ -36,106 +38,149 @@ class AnswerStrip extends StatelessWidget {
           color: context.ember.panel,
           border: Border(bottom: BorderSide(color: context.ember.hairline)),
         ),
-        child: item == null || decision == null
-            ? Align(
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      selection.loadingHistory
-                          ? 'Opening saved item data…'
-                          : selection.selectedId == null
-                          ? 'Find an item'
-                          : 'Item data unavailable',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            item == null || decision == null
+                ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          selection.loadingHistory
+                              ? 'Opening saved item data…'
+                              : selection.selectedId == null
+                              ? offer == null
+                                    ? selection.scanRetired
+                                          ? 'Last scan was in an earlier mode or session; scan again'
+                                          : 'Find an item'
+                                    : 'Scan needs review'
+                              : 'Item data unavailable',
+                        ),
+                        if (selection.selectedId == null &&
+                            !selection.loadingHistory &&
+                            offer == null)
+                          const Text('Search with Ctrl K'),
+                        if (selection.isHistory)
+                          IconButton(
+                            tooltip: 'Close history inspection',
+                            onPressed: selection.closeHistory,
+                            icon: const Icon(Icons.close),
+                          ),
+                        if (latest != null &&
+                            selection.scan?.reportId != latest.reportId)
+                          TextButton(
+                            onPressed: () {
+                              final current = services.scans.latest;
+                              if (current != null) selection.showScan(current);
+                            },
+                            child: const Text('Back to latest scan'),
+                          ),
+                      ],
                     ),
-                    if (selection.selectedId == null &&
-                        !selection.loadingHistory)
-                      const Text('Search with Ctrl K'),
-                    if (selection.isHistory)
-                      IconButton(
-                        tooltip: 'Close history inspection',
-                        onPressed: selection.closeHistory,
-                        icon: const Icon(Icons.close),
-                      ),
-                    if (latest != null &&
-                        selection.scan?.reportId != latest.reportId)
-                      TextButton(
-                        onPressed: () {
-                          final current = services.scans.latest;
-                          if (current != null) selection.showScan(current);
-                        },
-                        child: const Text('Back to latest scan'),
-                      ),
-                  ],
-                ),
-              )
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  final controls = Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      AnswerVerdict(
-                        decision: decision,
-                        maxWidth: constraints.maxWidth - 60,
-                      ),
-                      FirControls(services: services),
-                      FreshnessTag(
-                        quoteAt: item.quoteAt,
-                        now: selection.clock(),
-                        fleaEligible: decision.fleaEligible,
-                      ),
-                      if (selection.isHistory)
-                        IconButton(
-                          tooltip: 'Close history inspection',
-                          onPressed: selection.closeHistory,
-                          icon: const Icon(Icons.close),
-                        ),
-                      if (latest != null &&
-                          selection.scan?.reportId != latest.reportId)
-                        TextButton(
-                          onPressed: () {
-                            final current = services.scans.latest;
-                            if (current != null) selection.showScan(current);
-                          },
-                          child: const Text('Back to latest scan'),
-                        ),
-                    ],
-                  );
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ItemIcon(
-                        cache: services.itemIcons,
-                        itemId: item.id,
-                        iconLink: item.iconLink,
-                        size: 48,
-                        color: context.ember.accentText,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              style: Theme.of(context).textTheme.titleMedium,
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final controls = Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          AnswerVerdict(
+                            decision: decision,
+                            maxWidth: constraints.maxWidth - 60,
+                          ),
+                          FirControls(services: services),
+                          FreshnessTag(
+                            quoteAt: item.quoteAt,
+                            now: selection.clock(),
+                            fleaEligible: decision.fleaEligible,
+                          ),
+                          if (selection.isHistory)
+                            IconButton(
+                              tooltip: 'Close history inspection',
+                              onPressed: selection.closeHistory,
+                              icon: const Icon(Icons.close),
                             ),
-                            if (selection.isHistory)
-                              const Text(
-                                'Current advice for history inspection',
-                              ),
-                            controls,
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                          if (latest != null &&
+                              selection.scan?.reportId != latest.reportId)
+                            TextButton(
+                              onPressed: () {
+                                final current = services.scans.latest;
+                                if (current != null) {
+                                  selection.showScan(current);
+                                }
+                              },
+                              child: const Text('Back to latest scan'),
+                            ),
+                        ],
+                      );
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ItemIcon(
+                            cache: services.itemIcons,
+                            itemId: item.id,
+                            iconLink: item.iconLink,
+                            size: 48,
+                            color: context.ember.accentText,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
+                                if (!selection.isHistory &&
+                                    selection.scan != null)
+                                  const Text('Accepted scan')
+                                else if (!selection.isHistory &&
+                                    selection.correction != null)
+                                  const Text('Corrected scan'),
+                                if (selection.isHistory)
+                                  const Text(
+                                    'Current advice for history inspection',
+                                  ),
+                                controls,
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+            if (selection.error != null)
+              Text(
+                selection.error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
+            if (offer != null) ...[
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: (MediaQuery.sizeOf(context).height * .18).clamp(
+                    64,
+                    130,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: CorrectionOfferBlock(
+                    selection: selection,
+                    offer: offer,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       );
     },
   );
