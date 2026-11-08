@@ -130,3 +130,24 @@ the first Scanner history panel leave the lazy cache when scrolled to the bottom
 The helper now navigates to each area's actual history position and expands a
 section only when needed. Its original failing scanner regression passes, and
 the final complete run above includes the corrected helper.
+
+## Pre-ship fix round 3 (owner approved)
+
+The owner approved another round for the desktop-mouse search blocker. The
+earlier test named mouse selection actually used the default touch pointer;
+its passing result did not establish desktop mouse behavior. A permanent
+regression now uses PointerDeviceKind.mouse with a widget frame between down
+and up. It failed because the popup disappeared on down. Wrapping the anchored
+results in TextFieldTapRegion keeps them within the field's focus interaction.
+The regression passes and checks one history record for the intended item.
+An outside-mouse-click test still dismisses without selection or history.
+
+The history assertion drives native database completions and widget microtasks
+together in a bounded loop. Waiting on a notification without pumping the widget
+zone stranded the test; those intermediate fixture failures did not imply a
+product database failure. No timed sleeps or app/game launches were used.
+
+Final coordinator checks for round 3: pinned analysis reports no issues and the
+complete fast offline suite passes all 2,832 tests. Formatting and whitespace
+checks pass. The owner approval applies to this third fix round; repository
+review-limit settings remain unchanged.

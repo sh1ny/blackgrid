@@ -149,51 +149,57 @@ class _TopItemSearchState extends State<TopItemSearch> {
             showWhenUnlinked: false,
             targetAnchor: Alignment.bottomLeft,
             followerAnchor: Alignment.topLeft,
-            child: SizedBox(
-              key: const Key('top-search-results'),
-              width: constraints.maxWidth,
-              child: Material(
-                color: context.ember.raised,
-                elevation: 4,
-                borderRadius: BorderRadius.circular(8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 280),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (count == 0)
-                        const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text('No matching items'),
-                        )
-                      else
-                        Flexible(
-                          child: ListView.builder(
-                            controller: _scroll,
-                            itemExtent:
-                                56 *
-                                MediaQuery.textScalerOf(context)
-                                    .scale(1)
-                                    .clamp(1.0, double.infinity),
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: count,
-                            itemBuilder: (context, index) => ListTile(
-                              dense: true,
-                              selected: index == _active,
-                              selectedColor: context.ember.accentText,
-                              selectedTileColor: context.ember.accentSoft,
-                              title: Text(results[index].name),
-                              onTap: () => _select(results[index]),
+            // Results belong to this editing interaction even though the
+            // overlay paints them outside the field's render subtree.
+            child: TextFieldTapRegion(
+              child: SizedBox(
+                key: const Key('top-search-results'),
+                width: constraints.maxWidth,
+                child: Material(
+                  color: context.ember.raised,
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (count == 0)
+                          const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Text('No matching items'),
+                          )
+                        else
+                          Flexible(
+                            child: ListView.builder(
+                              controller: _scroll,
+                              itemExtent:
+                                  56 *
+                                  MediaQuery.textScalerOf(context)
+                                      .scale(1)
+                                      .clamp(1.0, double.infinity),
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: count,
+                              itemBuilder: (context, index) => ListTile(
+                                dense: true,
+                                selected: index == _active,
+                                selectedColor: context.ember.accentText,
+                                selectedTileColor: context.ember.accentSoft,
+                                title: Text(results[index].name),
+                                onTap: () => _select(results[index]),
+                              ),
                             ),
                           ),
-                        ),
-                      if (results.length > _optionLimit)
-                        const Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Text('Showing 50 items. Refine your search.'),
-                        ),
-                    ],
+                        if (results.length > _optionLimit)
+                          const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Text(
+                              'Showing 50 items. Refine your search.',
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

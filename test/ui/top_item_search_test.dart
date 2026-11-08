@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/top_item_search.dart';
@@ -6,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_harness.dart';
-import '../support/m1_widget_harness.dart' show tapM1Async;
 
 Future<M1Harness> _showSearch(
   WidgetTester tester, {
@@ -102,14 +103,45 @@ void main() {
     final expected = h.services.selection.results.last.id;
     final popup = find.byKey(const Key('top-search-results'));
     final options = find.descendant(of: popup, matching: find.byType(ListTile));
-    await tapM1Async(
-      tester,
-      options.last,
-      () => h.services.history.rows.length == 1,
-    );
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    final point = tester.getCenter(options.last);
+    await tester.runAsync(() async {
+      await mouse.addPointer(location: point);
+      await mouse.down(point);
+    });
+    // A real desktop click can span frames. The popup must survive the down
+    // event so its result still receives the later up event.
+    await tester.pump();
+    expect(popup, findsOneWidget);
+    expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+    await tester.runAsync(() => mouse.up());
+    // Advance the native database work and the widget zone together. Each
+    // read is an I/O completion signal, rather than an arbitrary time delay.
+    for (var step = 0; h.services.history.rows.isEmpty && step < 20; step++) {
+      await tester.runAsync(h.db.readActivity);
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
     expect(h.services.selection.selectedId, expected);
+    expect(h.services.history.rows, hasLength(1));
     expect(h.services.history.rows.single.itemId, expected);
     expect(find.byKey(const Key('top-search-results')), findsNothing);
+  });
+
+  testWidgets('mouse outside search dismisses without selecting or recording', (
+    tester,
+  ) async {
+    final h = await _showSearch(tester);
+    final field = find.byType(TextField);
+    await tester.enterText(field, 'component');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('top-search-results')), findsOneWidget);
+    await tester.tapAt(const Offset(20, 400), kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('top-search-results')), findsNothing);
+    expect(tester.widget<TextField>(field).focusNode!.hasFocus, isFalse);
+    expect(h.services.selection.selectedId, isNull);
+    expect((await tester.runAsync(h.db.readActivity))!.rows, isEmpty);
   });
 
   for (final room in Brightness.values) {
