@@ -476,11 +476,7 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             ),
                     ),
-                    MarkerPreferencesGrid(
-                      services: services,
-                      keys: categories,
-                      scale: scale,
-                    ),
+                    MarkerRows(services: services, keyPrefix: 'rail-marker'),
                   ],
                 ),
               ),

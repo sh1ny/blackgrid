@@ -519,7 +519,13 @@ void main() {
     await _openMarkerBrowser(tester);
     await _chooseBrowserEntry(tester, 'Popup pin');
     await settleMapFixture(tester, h);
-    expect(find.textContaining('Popup pin'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('map-pin-bar')),
+        matching: find.textContaining('Popup pin'),
+      ),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('map-pin-edit')), findsOneWidget);
     expect(h.services.maps.selectedMarkerProjection, isNull);
     await tester.tap(find.byKey(const Key('map-pin-edit')));

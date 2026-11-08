@@ -241,6 +241,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // Requirements live in the Scanner inspector; Map holds the working lists.
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Requirements & uses');
     final panel = find.byType(RequirementPanel);
     final scroll = find
@@ -266,9 +269,9 @@ void main() {
     await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Requirements & uses');
     expect(expanded(), isTrue);
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Requirements & uses');
     expect(expanded(), isTrue);
@@ -410,6 +413,8 @@ void main() {
 
   testWidgets('closed inspector unmounts evidence panels', (tester) async {
     await pumpM1(tester);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
       await tester.tap(find.byKey(const Key('inspector-toggle')));
       await tester.pumpAndSettle();
@@ -419,6 +424,9 @@ void main() {
         .descendant(of: inspector, matching: find.byType(Scrollable))
         .first;
     tester.state<ScrollableState>(scroll).position.jumpTo(800);
+    await tester.pumpAndSettle();
+    // Sources start collapsed on Scanner; expanding builds the panel.
+    await tester.tap(find.text('Sources'));
     await tester.pumpAndSettle();
     expect(find.byType(SourcePanel), findsOneWidget);
     await tester.tap(find.byKey(const Key('inspector-toggle')));
@@ -589,6 +597,46 @@ void main() {
     }
   }
 
+  testWidgets('workspace-shell: Map inspector holds working lists', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester, size: const Size(1660, 870));
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
+    final inspector = find.byKey(const Key('shell-inspector'));
+    double top(String title) => tester
+        .getTopLeft(find.descendant(of: inspector, matching: find.text(title)))
+        .dy;
+    expect(top('This raid'), lessThan(top('Markers')));
+    expect(top('Markers'), lessThan(top('Pins')));
+    for (final type in [
+      RequirementPanel,
+      SourcePanel,
+      HistoryPanel,
+      ItemDecisionCard,
+    ]) {
+      expect(
+        find.descendant(of: inspector, matching: find.byType(type)),
+        findsNothing,
+        reason: '$type',
+      );
+    }
+    for (final title in ['Requirements', 'Sources', 'Inspection details']) {
+      expect(
+        find.descendant(of: inspector, matching: find.text(title)),
+        findsNothing,
+      );
+    }
+  });
+
   testWidgets('workspace-shell: Resize with open details', (tester) async {
     final h = await pumpMapFixture(tester, size: const Size(1660, 870));
     final map = tester.element(find.byKey(const PageStorageKey('map')));
@@ -602,20 +650,13 @@ void main() {
       await tester.tap(find.byKey(const Key('inspector-toggle')));
       await tester.pumpAndSettle();
     }
-    final inspector = find.byKey(const Key('shell-inspector'));
-    final inspectorScroll = find
-        .descendant(of: inspector, matching: find.byType(Scrollable))
-        .first;
-    tester.state<ScrollableState>(inspectorScroll).position.jumpTo(800);
+    // The Map inspector's working state is the marker search it carries.
+    final search = find.byKey(const ValueKey('marker-section-search'));
+    await tester.ensureVisible(search);
     await tester.pumpAndSettle();
-    final source = find.byType(SourcePanel);
-    await tester.ensureVisible(source);
+    await tester.enterText(search, 'exit');
     await tester.pumpAndSettle();
-    final details = find.descendant(of: source, matching: find.text('Details'));
-    await tester.ensureVisible(details);
-    await tester.tap(details);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    expect(h.services.maps.search, 'exit');
     tester.view.physicalSize = const Size(960, 720);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('inspector-scrim')), findsOneWidget);
@@ -624,7 +665,8 @@ void main() {
     expect(h.services.maps.transform.scale, pan.scale);
     expect(h.services.maps.transform.translationX, pan.translationX);
     expect(h.services.maps.transform.translationY, pan.translationY);
-    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    expect(h.services.maps.search, 'exit');
+    expect(search, findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('shell-inspector')), findsNothing);

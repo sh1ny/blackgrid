@@ -189,6 +189,9 @@ void main() {
       () => h.services.selection.selectCorrection(7, 'bravo'),
     );
     await tester.pumpAndSettle();
+    // Item details live on Scanner; the Map inspector holds the working lists.
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Corrected scan');
     final panel = _panel(tester);
     expect(panel.title, 'Corrected scan');
@@ -202,6 +205,9 @@ void main() {
     expect(find.byKey(const Key('correction-offer')), findsNothing);
     expect(h.services.selection.correctionOffer, isNull);
     expect(_answerText('Alpha shown'), findsOneWidget);
+    // Item details live on Scanner; the Map inspector holds the working lists.
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Picked item');
     expect(_panel(tester).title, 'Picked item');
   });

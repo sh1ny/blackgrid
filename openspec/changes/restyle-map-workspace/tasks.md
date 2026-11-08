@@ -27,18 +27,18 @@
 | map-controls → Map actions stay on the map | Actions are reachable | `test/ui/map_workspace_controls_test.dart` | map-controls: Actions are reachable | green |
 | map-controls → Map actions stay on the map | No position or no artwork | `test/ui/map_workspace_controls_test.dart` | map-controls: No position or no artwork | green |
 | map-controls → Map actions stay on the map | Keyboard on an on-map control | `test/ui/map_workspace_controls_test.dart` | map-controls: Keyboard on an on-map control | green |
-| map-controls → This raid lists the matched extracts | Matched extracts | `test/ui/map_inspector_test.dart` | map-controls: Matched extracts | red |
-| map-controls → This raid lists the matched extracts | No reading | `test/ui/map_inspector_test.dart` | map-controls: No reading | red |
-| map-controls → This raid lists the matched extracts | Matched extract is hidden | `test/ui/map_inspector_test.dart` | map-controls: Matched extract is hidden | red |
-| map-controls → This raid lists the matched extracts | Matched extract outside the view | `test/ui/map_inspector_test.dart` | map-controls: Matched extract outside the view | red |
-| map-controls → This raid lists the matched extracts | Choosing an off-view row | `test/ui/map_inspector_test.dart` | map-controls: Choosing an off-view row | red |
-| map-controls → This raid lists the matched extracts | Choosing an in-view row | `test/ui/map_inspector_test.dart` | map-controls: Choosing an in-view row | red |
-| map-controls → This raid lists the matched extracts | Selected pin gives way | `test/ui/map_inspector_test.dart` | map-controls: Selected pin gives way | red |
-| map-controls → This raid lists the matched extracts | Age advances | `test/ui/map_inspector_test.dart` | map-controls: Age advances | red |
-| map-controls → This raid lists the matched extracts | Later non-panel screenshot | `test/ui/map_inspector_test.dart` | map-controls: Later non-panel screenshot | red |
-| map-controls → Pins section manages this map's pins | Pins listed | `test/ui/map_inspector_test.dart` | map-controls: Pins listed | red |
-| map-controls → Pins section manages this map's pins | No pins | `test/ui/map_inspector_test.dart` | map-controls: No pins | red |
-| map-controls → Pins section manages this map's pins | Removal while saving | `test/ui/map_inspector_test.dart` | map-controls: Removal while saving | red |
+| map-controls → This raid lists the matched extracts | Matched extracts | `test/ui/map_inspector_test.dart` | map-controls: Matched extracts | green |
+| map-controls → This raid lists the matched extracts | No reading | `test/ui/map_inspector_test.dart` | map-controls: No reading | green |
+| map-controls → This raid lists the matched extracts | Matched extract is hidden | `test/ui/map_inspector_test.dart` | map-controls: Matched extract is hidden | green |
+| map-controls → This raid lists the matched extracts | Matched extract outside the view | `test/ui/map_inspector_test.dart` | map-controls: Matched extract outside the view | green |
+| map-controls → This raid lists the matched extracts | Choosing an off-view row | `test/ui/map_inspector_test.dart` | map-controls: Choosing an off-view row | green |
+| map-controls → This raid lists the matched extracts | Choosing an in-view row | `test/ui/map_inspector_test.dart` | map-controls: Choosing an in-view row | green |
+| map-controls → This raid lists the matched extracts | Selected pin gives way | `test/ui/map_inspector_test.dart` | map-controls: Selected pin gives way | green |
+| map-controls → This raid lists the matched extracts | Age advances | `test/ui/map_inspector_test.dart` | map-controls: Age advances | green |
+| map-controls → This raid lists the matched extracts | Later non-panel screenshot | `test/ui/map_inspector_test.dart` | map-controls: Later non-panel screenshot | green |
+| map-controls → Pins section manages this map's pins | Pins listed | `test/ui/map_inspector_test.dart` | map-controls: Pins listed | green |
+| map-controls → Pins section manages this map's pins | No pins | `test/ui/map_inspector_test.dart` | map-controls: No pins | green |
+| map-controls → Pins section manages this map's pins | Removal while saving | `test/ui/map_inspector_test.dart` | map-controls: Removal while saving | green |
 | map-controls → A selected pin has an action bar on the map | Pin selected | `test/ui/map_workspace_controls_test.dart` | map-controls: Pin selected | green |
 | map-controls → A selected pin has an action bar on the map | Pin closed | `test/ui/map_workspace_controls_test.dart` | map-controls: Pin closed | green |
 | map-controls → A selected pin has an action bar on the map | Actions while saving | `test/ui/map_workspace_controls_test.dart` | map-controls: Actions while saving | green |
@@ -84,23 +84,23 @@
 | map-zone-labels → Zone outlines use their category colour | Categories draw their own outline colours | `test/ui/map_zone_labels_test.dart` | map-zone-labels: Categories draw their own outline colours | green |
 | map-zone-labels → Zone outlines use their category colour | Icons not loaded yet | `test/ui/map_zone_labels_test.dart` | map-zone-labels: Icons not loaded yet | green |
 | map-zone-labels → Zone outlines use their category colour | Selected outline is Ember | `test/ui/map_zone_labels_test.dart` | map-zone-labels: Selected outline is Ember | green |
-| marker-preferences → Each applicable category is one marker row | Rows for the current map | `test/ui/marker_preferences_test.dart` | marker-preferences: Rows for the current map | red |
-| marker-preferences → Each applicable category is one marker row | Unsaveable category gets no row | `test/ui/marker_preferences_test.dart` | marker-preferences: Unsaveable category gets no row | red |
-| marker-preferences → Each applicable category is one marker row | Map with no markers | `test/ui/marker_preferences_test.dart` | marker-preferences: Map with no markers | red |
-| marker-preferences → Rows follow a fixed grouped order | Grouped order | `test/ui/marker_preferences_test.dart` | marker-preferences: Grouped order | red |
-| marker-preferences → Rows follow a fixed grouped order | Map order does not matter | `test/ui/marker_preferences_test.dart` | marker-preferences: Map order does not matter | red |
-| marker-preferences → Clicking a row shows or hides its category | Hide one category | `test/ui/marker_preferences_test.dart` | marker-preferences: Hide one category | red |
-| marker-preferences → Clicking a row shows or hides its category | Click while saving | `test/ui/marker_preferences_test.dart` | marker-preferences: Click while saving | red |
-| marker-preferences → Row state does not rely on colour alone | Shown and hidden rows differ | `test/ui/marker_preferences_test.dart` | marker-preferences: Shown and hidden rows differ | red |
-| marker-preferences → Row state does not rely on colour alone | Semantics reflect the state | `test/ui/marker_preferences_test.dart` | marker-preferences: Semantics reflect the state | red |
-| marker-preferences → Rows draw the map's badge and its fallback | Icon row matches the map | `test/ui/marker_preferences_test.dart` | marker-preferences: Icon row matches the map | red |
-| marker-preferences → Rows draw the map's badge and its fallback | Icons still loading | `test/ui/marker_preferences_test.dart` | marker-preferences: Icons still loading | red |
-| marker-preferences → Bulk, search and quest controls keep working | Hide all then Show all | `test/ui/marker_preferences_test.dart` | marker-preferences: Hide all then Show all | red |
-| marker-preferences → Bulk, search and quest controls keep working | Show all keeps other maps' choices | `test/ui/marker_preferences_test.dart` | marker-preferences: Show all keeps other maps' choices | red |
-| marker-preferences → Bulk, search and quest controls keep working | Bulk action with an unsaveable category | `test/ui/marker_preferences_test.dart` | marker-preferences: Bulk action with an unsaveable category | red |
-| marker-preferences → Bulk, search and quest controls keep working | Search dims without hiding | `test/ui/marker_preferences_test.dart` | marker-preferences: Search dims without hiding | red |
-| marker-preferences → Bulk, search and quest controls keep working | Quest filter keeps tiles | `test/ui/marker_preferences_test.dart` | marker-preferences: Quest filter keeps tiles | red |
-| marker-preferences → Bulk, search and quest controls keep working | Active trader absent from the map | `test/ui/marker_preferences_test.dart` | marker-preferences: Active trader absent from the map | red |
+| marker-preferences → Each applicable category is one marker row | Rows for the current map | `test/ui/marker_preferences_test.dart` | marker-preferences: Rows for the current map | green |
+| marker-preferences → Each applicable category is one marker row | Unsaveable category gets no row | `test/ui/marker_preferences_test.dart` | marker-preferences: Unsaveable category gets no row | green |
+| marker-preferences → Each applicable category is one marker row | Map with no markers | `test/ui/marker_preferences_test.dart` | marker-preferences: Map with no markers | green |
+| marker-preferences → Rows follow a fixed grouped order | Grouped order | `test/ui/marker_preferences_test.dart` | marker-preferences: Grouped order | green |
+| marker-preferences → Rows follow a fixed grouped order | Map order does not matter | `test/ui/marker_preferences_test.dart` | marker-preferences: Map order does not matter | green |
+| marker-preferences → Clicking a row shows or hides its category | Hide one category | `test/ui/marker_preferences_test.dart` | marker-preferences: Hide one category | green |
+| marker-preferences → Clicking a row shows or hides its category | Click while saving | `test/ui/marker_preferences_test.dart` | marker-preferences: Click while saving | green |
+| marker-preferences → Row state does not rely on colour alone | Shown and hidden rows differ | `test/ui/marker_preferences_test.dart` | marker-preferences: Shown and hidden rows differ | green |
+| marker-preferences → Row state does not rely on colour alone | Semantics reflect the state | `test/ui/marker_preferences_test.dart` | marker-preferences: Semantics reflect the state | green |
+| marker-preferences → Rows draw the map's badge and its fallback | Icon row matches the map | `test/ui/marker_preferences_test.dart` | marker-preferences: Icon row matches the map | green |
+| marker-preferences → Rows draw the map's badge and its fallback | Icons still loading | `test/ui/marker_preferences_test.dart` | marker-preferences: Icons still loading | green |
+| marker-preferences → Bulk, search and quest controls keep working | Hide all then Show all | `test/ui/marker_preferences_test.dart` | marker-preferences: Hide all then Show all | green |
+| marker-preferences → Bulk, search and quest controls keep working | Show all keeps other maps' choices | `test/ui/marker_preferences_test.dart` | marker-preferences: Show all keeps other maps' choices | green |
+| marker-preferences → Bulk, search and quest controls keep working | Bulk action with an unsaveable category | `test/ui/marker_preferences_test.dart` | marker-preferences: Bulk action with an unsaveable category | green |
+| marker-preferences → Bulk, search and quest controls keep working | Search dims without hiding | `test/ui/marker_preferences_test.dart` | marker-preferences: Search dims without hiding | green |
+| marker-preferences → Bulk, search and quest controls keep working | Quest filter keeps tiles | `test/ui/marker_preferences_test.dart` | marker-preferences: Quest filter keeps tiles | green |
+| marker-preferences → Bulk, search and quest controls keep working | Active trader absent from the map | `test/ui/marker_preferences_test.dart` | marker-preferences: Active trader absent from the map | green |
 | scanner-evidence → Scanner workspace omits configuration rail | Scanner functions remain reachable without the old rail | `test/ui/scanner_screen_test.dart` | scanner-evidence: Scanner functions remain reachable without the old rail | green |
 | verdict-presentation → One plate per verdict | Each verdict has its style | `test/ui/verdict_plate_test.dart` | each verdict has its plate style in both rooms | green |
 | verdict-presentation → One plate per verdict | Verdicts differ without colour | `test/ui/verdict_plate_test.dart` | Keep, Flea and Price unavailable differ by fill and border | green |
@@ -121,7 +121,7 @@
 | workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | green |
 | workspace-shell → Inspector preserves the workspace | Scanner history leads the inspector | `test/ui/shell_test.dart` | workspace-shell: Scanner history leads the inspector | green |
 | workspace-shell → Inspector preserves the workspace | Initial inspector state follows window width | `test/ui/shell_test.dart` | workspace-shell: Initial inspector state follows window width | green |
-| workspace-shell → Inspector preserves the workspace | Map inspector holds working lists | `test/ui/shell_test.dart` | workspace-shell: Map inspector holds working lists | red |
+| workspace-shell → Inspector preserves the workspace | Map inspector holds working lists | `test/ui/shell_test.dart` | workspace-shell: Map inspector holds working lists | green |
 
 Tests are offline only. No task launches or inspects a game, and no task sets `BLACKGRID_NO_GAMES_RUNNING`. The milestone's look and geometry checks that only the owner can judge are decided at milestone close, as the proposal states, so they are not tasks here.
 
@@ -156,9 +156,9 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 6. Map inspector
 
-- [ ] 6.1 Write failing widget tests in `test/ui/map_inspector_test.dart` for the `This raid lists the matched extracts` and `Pins section manages this map's pins` rows, using an injected clock for `Age advances`, and for `workspace-shell: Map inspector holds working lists` in `test/ui/shell_test.dart`. Verify they fail because `MapInspector` does not exist.
-- [ ] 6.2 Rewrite `test/ui/marker_preferences_test.dart` to the row behaviour, with the `marker-preferences` rows. Verify they fail against the tile grid.
-- [ ] 6.3 Implement `lib/ui/map_inspector.dart` with This raid (age refresh only while mounted with a match time), Markers as rows with filters, and Pins. Derive counts and trader chips once per `contentGeneration`. Rewrite `lib/ui/marker_preferences.dart` as rows and mount the inspector from the shell's Map branch (`lib/ui/shell.dart`). Verify the tests above pass and flip their rows green, then re-run the green `workspace-shell` rows.
+- [x] 6.1 Write failing widget tests in `test/ui/map_inspector_test.dart` for the `This raid lists the matched extracts` and `Pins section manages this map's pins` rows, using an injected clock for `Age advances`, and for `workspace-shell: Map inspector holds working lists` in `test/ui/shell_test.dart`. Verify they fail because `MapInspector` does not exist.
+- [x] 6.2 Rewrite `test/ui/marker_preferences_test.dart` to the row behaviour, with the `marker-preferences` rows. Verify they fail against the tile grid.
+- [x] 6.3 Implement `lib/ui/map_inspector.dart` with This raid (age refresh only while mounted with a match time), Markers as rows with filters, and Pins. Derive counts and trader chips once per `contentGeneration`. Rewrite `lib/ui/marker_preferences.dart` as rows and mount the inspector from the shell's Map branch (`lib/ui/shell.dart`). Verify the tests above pass and flip their rows green, then re-run the green `workspace-shell` rows.
 
 ## 7. Diagnostics and the rail's removal
 

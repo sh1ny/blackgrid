@@ -111,6 +111,9 @@ void main() {
       const Size(1660, 870),
       BlackgridShell(services: h.services),
     );
+    // History lives in the Scanner inspector, not the Map one.
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('inspector-toggle')));
     await tester.pumpAndSettle();
     await tester.runAsync(() async {

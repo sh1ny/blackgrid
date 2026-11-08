@@ -81,8 +81,12 @@ void main() {
       expect(selection.isHistory, isTrue);
       await tester.tap(find.byKey(Key(screen)));
       await tester.pumpAndSettle();
-      await showInspectorPanel(tester, 'History inspection');
-      expect(_card('History inspection'), findsOneWidget);
+      // Only Scanner's inspector carries the item cards.
+      final onScanner = screen == 'nav-scanner';
+      if (onScanner) {
+        await showInspectorPanel(tester, 'History inspection');
+        expect(_card('History inspection'), findsOneWidget);
+      }
       expect(_backInStrip, findsOneWidget);
 
       await tester.tap(_backInStrip);
@@ -91,8 +95,10 @@ void main() {
       expect(selection.isHistory, isFalse);
       expect(selection.selectedId, 'item-b');
       expect(selection.scan?.acceptedAt, acceptedAt);
-      expect(_card('Accepted scan'), findsOneWidget);
-      expect(_card('History inspection'), findsNothing);
+      if (onScanner) {
+        expect(_card('Accepted scan'), findsOneWidget);
+        expect(_card('History inspection'), findsNothing);
+      }
       expect(_backInStrip, findsNothing);
       expect(h.services.scans.latest?.itemId, 'item-b');
     }
@@ -104,6 +110,8 @@ void main() {
     final ports = ScanFakePorts();
     final h = await pumpM1(tester, scanPorts: ports);
     await _acceptB(tester, h, ports);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Accepted scan');
 
     expect(h.services.selection.scan?.itemId, 'item-b');
@@ -147,6 +155,9 @@ void main() {
     expect(_card('Active map'), findsOneWidget);
 
     await _acceptB(tester, h, ports);
+    expect(_card('Accepted scan'), findsNothing);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
     await showInspectorPanel(tester, 'Accepted scan');
 
     expect(_card('Accepted scan'), findsOneWidget);

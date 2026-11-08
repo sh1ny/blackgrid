@@ -5,6 +5,8 @@ import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/map_session.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/labels.dart';
+import 'package:blackgrid/ui/map_screen.dart';
+import 'package:blackgrid/ui/marker_preferences.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
@@ -16,25 +18,45 @@ import 'support/scan_ui_support.dart';
 
 Finder get _savedPins => find.textContaining('saved pins');
 
-Finder _tile(String key) => find.byKey(ValueKey('marker-tile-$key'));
+Finder _tile(String key) => find.byKey(ValueKey('rail-marker-row-$key'));
 
-Finder get _search => find.byKey(const ValueKey('marker-search'));
+/// [finder] limited to the Map rail; the inspector lists some of the same
+/// actions, so a bare finder would match twice.
+Finder _inRail(Finder finder) => find.descendant(
+  of: find.byKey(const PageStorageKey('map-rail-scroll')),
+  matching: finder,
+);
+
+/// [finder] limited to the Map screen, so the inspector's copy is ignored.
+Finder _inScreen(Finder finder) =>
+    find.descendant(of: find.byType(MapScreen), matching: finder);
 
 /// The scroll position of the Marker preferences list.
+///
+/// It is found from the panel title, because the list unbuilds the search
+/// field once it scrolls past it.
 ScrollPosition _preferencesList(WidgetTester tester) => tester
     .state<ScrollableState>(
-      find.ancestor(of: _search, matching: find.byType(Scrollable)).first,
+      find
+          .descendant(
+            of: find.ancestor(
+              of: find.text('Marker preferences'),
+              matching: find.byType(GridPanel),
+            ),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     )
     .position;
 
 /// Builds the tile for [key] by scrolling the preferences list, and brings it
 /// into view.
 Future<Finder> _revealTile(WidgetTester tester, String key) async {
-  await scrollMapRailTo(tester, _search);
-  await tester.ensureVisible(find.text('Marker preferences'));
+  await scrollMapRailTo(tester, find.text('Marker preferences'));
   await tester.pumpAndSettle();
   final tile = _tile(key);
   final list = _preferencesList(tester);
+  if (tile.evaluate().isEmpty) list.jumpTo(0);
   while (tile.evaluate().isEmpty && list.pixels < list.maxScrollExtent) {
     list.jumpTo((list.pixels + 160).clamp(0, list.maxScrollExtent).toDouble());
     await tester.pump();
@@ -49,14 +71,15 @@ Future<Finder> _revealTile(WidgetTester tester, String key) async {
 bool _tileShown(String key) {
   expect(_tile(key), findsOneWidget);
   return find
-      .descendant(of: _tile(key), matching: find.byIcon(Icons.check))
+      .descendant(of: _tile(key), matching: find.byType(MarkerToggleSwitch))
       .evaluate()
-      .isNotEmpty;
+      .map((element) => (element.widget as MarkerToggleSwitch).on)
+      .single;
 }
 
 /// Every marker tile key the panel currently builds.
 Set<String> _tileKeys(WidgetTester tester) {
-  const prefix = 'marker-tile-';
+  const prefix = 'rail-marker-row-';
   return {
     for (final element
         in find
@@ -89,8 +112,9 @@ Future<void> _tapPanelButton(
   String label,
   bool Function() completed,
 ) async {
-  final button = find.widgetWithText(TextButton, label);
-  await scrollMapRailTo(tester, _search);
+  // The inspector lists the same actions, so look in the rail only.
+  final button = _inRail(find.widgetWithText(TextButton, label));
+  await scrollMapRailTo(tester, find.text('Marker preferences'));
   await Scrollable.ensureVisible(tester.element(button), alignment: .5);
   await tester.pumpAndSettle();
   expect(button.hitTestable(), findsOneWidget);
@@ -317,7 +341,7 @@ void main() {
       expect(_tileKeys(tester), containsAll(['PmcExtracts', 'Hazards']));
       _preferencesList(tester).jumpTo(0);
       await tester.pumpAndSettle();
-      final hide = find.widgetWithText(TextButton, 'Hide all');
+      final hide = _inRail(find.widgetWithText(TextButton, 'Hide all'));
       await Scrollable.ensureVisible(tester.element(hide), alignment: .5);
       await tester.pumpAndSettle();
       expect(hide.hitTestable(), findsOneWidget);
@@ -346,7 +370,7 @@ void main() {
         () => h.services.maps.visibleMarkers().length == 1,
       );
       expect(h.services.maps.visibleMarkers().single.marker.id, 'ground-exit');
-      final show = find.widgetWithText(TextButton, 'Show all');
+      final show = _inRail(find.widgetWithText(TextButton, 'Show all'));
       await Scrollable.ensureVisible(tester.element(show), alignment: .5);
       await tester.pumpAndSettle();
       expect(show.hitTestable(), findsOneWidget);
@@ -573,7 +597,7 @@ void main() {
           await tester.runAsync(() => h.services.settings.setMap(map));
           await settleMapFixture(tester, h);
         }
-        await tester.tap(find.text('Add pin'));
+        await tester.tap(_inScreen(find.text('Add pin')));
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextField, 'Pin label'),
@@ -609,7 +633,7 @@ void main() {
           await tester.runAsync(() => h.services.settings.setMap(map));
           await settleMapFixture(tester, h);
         }
-        await tester.tap(find.text('Add pin'));
+        await tester.tap(_inScreen(find.text('Add pin')));
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextField, 'Pin label'),
@@ -691,12 +715,22 @@ void main() {
         expect(edited.frame, original.frame);
         expect(edited.frameRevision, original.frameRevision);
         expect(find.widgetWithText(ListTile, edited.label), findsOneWidget);
-        await tester.tap(find.byTooltip('Remove pin ${edited.label}'));
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, edited.label),
+            matching: find.byTooltip('Remove pin ${edited.label}'),
+          ),
+        );
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
         await tester.pumpAndSettle();
         expect(h.services.settings.pins.single.id, original.id);
-        await tester.tap(find.byTooltip('Remove pin ${edited.label}'));
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, edited.label),
+            matching: find.byTooltip('Remove pin ${edited.label}'),
+          ),
+        );
         await tester.pumpAndSettle();
         await tapM1Async(
           tester,

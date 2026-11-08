@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/application/settings_controller.dart';
-import 'package:blackgrid/domain/marker_categories.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/maps/map_marker_icons.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/marker_preferences.dart';
@@ -20,7 +20,7 @@ const _exitGreen = Color(0xFF48D28B);
 const _dangerRed = Color(0xFFFF5252);
 const _utility = Color(0xFFB7A6F0);
 
-/// The centre of a tile's 24 x 24 badge canvas.
+/// The centre of a row's 24 x 24 badge canvas.
 const _centre = Offset(12, 12);
 
 const _tinySvg =
@@ -105,21 +105,64 @@ class _Fixture {
   SettingsController get settings => h.services.settings;
 }
 
-/// Pumps the grid for [keys] on a real [SettingsController].
+/// A prepared-pack marker on the ground floor.
+Map<String, Object?> _marker(
+  String id,
+  String filterKey, {
+  String category = 'misc',
+  Map<String, Object?> details = const {},
+}) => {
+  'id': id,
+  'name': id,
+  'floorId': 'ground',
+  'category': category,
+  'filterKey': filterKey,
+  'position': {'x': 64, 'z': 64},
+  'details': {'description': '$id offline fixture details', ...details},
+  'source': {'fixture': true},
+};
+
+/// A quest marker whose quest comes from [trader].
+Map<String, Object?> _quest(String id, String trader) => _marker(
+  id,
+  'QuestItems',
+  category: 'quests',
+  details: {
+    'quest': {'name': 'Quest of $trader', 'trader': trader},
+  },
+);
+
+CustomPin _pin(String label) => CustomPin(
+  id: 'pin-$label',
+  mapId: 'shoreline',
+  x: .8,
+  y: .8,
+  frame: 'legacy-normalized',
+  frameRevision: 0,
+  label: label,
+  updatedAt: DateTime.utc(2026),
+);
+
+/// Pumps the Markers section on a real [SettingsController].
 ///
-/// [hidden] keys are saved as hidden first. [hold] keeps the manifest gated
-/// until `assets.manifestGate` completes; the gate is created inside
-/// `runAsync` because a completer from the fake-async zone never completes
-/// from inside it. Without [hold] the icons are fully loaded.
+/// The fixture map carries two `PmcExtracts` and one hazard; [extra] markers,
+/// a [sourceCategory] for the hazard and [pins] change that. [hidden] keys are
+/// saved as hidden first. [hold] keeps the manifest gated until
+/// `assets.manifestGate` completes; the gate is created inside `runAsync`
+/// because a completer from the fake-async zone never completes from inside
+/// it. Without [hold] the icons are fully loaded. [packFails] leaves the map
+/// without a prepared pack.
 Future<_Fixture> _pump(
   WidgetTester tester, {
-  required List<String> keys,
+  List<Map<String, Object?>> extra = const [],
+  String? sourceCategory,
   Set<String> hidden = const {},
   Set<String> missing = const {},
+  List<CustomPin> pins = const [],
   bool hold = false,
-  double scale = 1,
+  bool packFails = false,
 }) async {
-  tester.view.physicalSize = const Size(900, 700);
+  tester.view.physicalSize = const Size(900, 1400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -127,9 +170,17 @@ Future<_Fixture> _pump(
     final source = _Assets(missing: missing);
     if (hold) source.manifestGate = Completer<void>();
     final icons = MapMarkerIcons(load: source.load);
-    final h = await MapWidgetHarness.create(markerIcons: icons);
+    final h = await MapWidgetHarness.create(
+      markerIcons: icons,
+      extraMarkers: extra,
+      sourceCategory: sourceCategory,
+      packFails: packFails,
+    );
     for (final key in hidden) {
       await h.services.settings.setMarker(key, false);
+    }
+    for (final pin in pins) {
+      await h.services.settings.savePin(pin);
     }
     if (!hold) await icons.open();
     return _Fixture(h, icons, source);
@@ -138,13 +189,8 @@ Future<_Fixture> _pump(
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: Align(
-          alignment: Alignment.topLeft,
-          child: MarkerPreferencesGrid(
-            services: fixture.h.services,
-            keys: keys,
-            scale: scale,
-          ),
+        body: SingleChildScrollView(
+          child: MarkerPreferences(services: fixture.h.services),
         ),
       ),
     ),
@@ -152,17 +198,33 @@ Future<_Fixture> _pump(
   return fixture;
 }
 
-Finder _tile(String key) => find.byKey(ValueKey('marker-tile-$key'));
+Finder _row(String key) => find.byKey(ValueKey('marker-row-$key'));
+Finder _switch(String key) => find.byKey(ValueKey('marker-switch-$key'));
 
-Finder get _anyTile => find.byWidgetPredicate(
+Finder get _anyRow => find.byWidgetPredicate(
   (widget) => switch (widget.key) {
-    ValueKey<String>(:final value) => value.startsWith('marker-tile-'),
+    ValueKey<String>(:final value) => value.startsWith('marker-row-'),
     _ => false,
   },
 );
 
+/// The keys of every row built, in screen order.
+List<String> _rowKeys(WidgetTester tester) {
+  const prefix = 'marker-row-';
+  final rows = [
+    for (final element in _anyRow.evaluate())
+      (
+        (element.widget.key! as ValueKey<String>).value.substring(
+          prefix.length,
+        ),
+        tester.getTopLeft(find.byWidget(element.widget)).dy,
+      ),
+  ]..sort((a, b) => a.$2.compareTo(b.$2));
+  return [for (final (key, _) in rows) key];
+}
+
 Finder _badge(String key) => find.descendant(
-  of: _tile(key),
+  of: _row(key),
   matching: find.byWidgetPredicate(
     (widget) => widget is CustomPaint && widget.painter != null,
   ),
@@ -172,23 +234,14 @@ RenderObject _canvas(WidgetTester tester, String key) =>
     tester.renderObject(_badge(key));
 
 Finder _label(String key, String text) =>
-    find.descendant(of: _tile(key), matching: find.text(text));
+    find.descendant(of: _row(key), matching: find.text(text));
 
-/// Expects the badge and [label] of [key]'s tile to share the tile's
-/// horizontal centre.
-void _expectCentred(WidgetTester tester, String key, String label) {
-  final centre = tester.getCenter(_tile(key)).dx;
-  expect(
-    tester.getCenter(_badge(key)).dx,
-    moreOrLessEquals(centre, epsilon: 0.5),
-    reason: 'badge of $key',
-  );
-  expect(
-    tester.getCenter(_label(key, label)).dx,
-    moreOrLessEquals(centre, epsilon: 0.5),
-    reason: 'label of $key',
-  );
-}
+bool _switchOn(WidgetTester tester, String key) =>
+    tester.widget<MarkerToggleSwitch>(_switch(key)).on;
+
+/// The `y` of the group heading [title].
+double _heading(WidgetTester tester, String title) =>
+    tester.getTopLeft(find.byKey(ValueKey('marker-group-$title'))).dy;
 
 /// Completes when [settings] is not saving; the save a tap starts has already
 /// set `busy` by the time the tap returns.
@@ -205,11 +258,14 @@ Future<void> _idle(SettingsController settings) {
   return done.future;
 }
 
-Future<void> _click(WidgetTester tester, _Fixture f, String key) async {
-  await tester.tap(_tile(key));
+Future<void> _tap(WidgetTester tester, _Fixture f, Finder target) async {
+  await tester.tap(target);
   await tester.runAsync(() => _idle(f.settings));
   await tester.pump();
 }
+
+Future<void> _click(WidgetTester tester, _Fixture f, String key) =>
+    _tap(tester, f, _row(key));
 
 bool _shown(_Fixture f, String key) =>
     f.settings.settings.markerFilters[key] ?? true;
@@ -278,27 +334,31 @@ PaintPattern _dot(Color colour) => paints
   );
 
 void main() {
-  testWidgets('shows one labelled tile per saveable map key plus Saved pins', (
-    tester,
-  ) async {
+  testWidgets('marker-preferences: Rows for the current map', (tester) async {
     await _pump(
       tester,
-      keys: markerPreferenceKeys([
-        'PmcExtracts',
-        'Hazards',
-        'lootLoose',
-        'CustomPins',
-      ]),
+      extra: [
+        _marker('pmc-3', 'PmcExtracts', category: 'extracts'),
+        _marker('loot-1', 'lootLoose'),
+        _marker('loot-2', 'lootLoose'),
+      ],
+      pins: [_pin('Camp')],
     );
 
-    expect(_anyTile, findsNWidgets(4));
-    for (final label in [
-      'PMC extracts',
+    expect(_rowKeys(tester), [
+      'PmcExtracts',
       'Hazards',
-      'Loose loot',
-      'Saved pins',
+      'lootLoose',
+      'CustomPins',
+    ]);
+    for (final (key, label, count) in [
+      ('PmcExtracts', 'PMC extracts', '3'),
+      ('Hazards', 'Hazards', '1'),
+      ('lootLoose', 'Loose loot', '2'),
+      ('CustomPins', 'Saved pins', '1'),
     ]) {
-      expect(find.text(label), findsOneWidget);
+      expect(_label(key, label), findsOneWidget);
+      expect(_label(key, count), findsOneWidget, reason: 'count of $key');
     }
     for (final raw in ['PmcExtracts', 'lootLoose', 'CustomPins']) {
       expect(find.text(raw), findsNothing);
@@ -306,149 +366,127 @@ void main() {
     }
   });
 
-  testWidgets('every tile has the same size whatever its label', (
+  testWidgets('marker-preferences: Unsaveable category gets no row', (
     tester,
   ) async {
-    await _pump(
+    final f = await _pump(
       tester,
-      keys: markerPreferenceKeys([
-        'BtrStops',
-        'stationaryWeapons',
-        'locks',
-        'CustomPins',
-      ]),
+      sourceCategory: 'PmcExtracts',
+      extra: [_marker('zip', 'Ziplines')],
     );
 
-    final btr = tester.getSize(_tile('BtrStops'));
-    expect(tester.getSize(_tile('stationaryWeapons')), btr);
-    expect(tester.getSize(_tile('locks')), btr);
-    expect(tester.getSize(_tile('CustomPins')), btr);
-    expect(btr, const Size(88, 76));
-    expect(find.text('Stationary weapons'), findsOneWidget);
+    expect(_rowKeys(tester), ['PmcExtracts', 'CustomPins']);
+    expect(find.textContaining('Ziplines'), findsNothing);
+    expect(
+      f.h.services.maps.activeMarkers.any((m) => m.filterKey == 'Ziplines'),
+      isTrue,
+    );
+    expect(f.h.services.maps.categoryVisibility['Ziplines'], isNot(false));
   });
 
-  testWidgets("tile badge and label are centred whatever the label's length", (
-    tester,
-  ) async {
-    await _pump(tester, keys: ['locks', 'stationaryWeapons']);
+  testWidgets('marker-preferences: Map with no markers', (tester) async {
+    await _pump(tester, packFails: true);
 
-    _expectCentred(tester, 'locks', 'Locks');
-    _expectCentred(tester, 'stationaryWeapons', 'Stationary weapons');
-  });
-
-  testWidgets('tile badge and label stay centred at a larger scale', (
-    tester,
-  ) async {
-    await _pump(tester, keys: ['locks'], scale: 1.5);
-
-    expect(tester.getSize(_tile('locks')), const Size(132, 114));
-    _expectCentred(tester, 'locks', 'Locks');
-  });
-
-  testWidgets('map without markers shows only the Saved pins tile', (
-    tester,
-  ) async {
-    await _pump(tester, keys: markerPreferenceKeys(['CustomPins']));
-
-    expect(_anyTile, findsOneWidget);
-    expect(_tile('CustomPins'), findsOneWidget);
+    expect(_rowKeys(tester), ['CustomPins']);
     expect(find.text('Saved pins'), findsOneWidget);
   });
 
-  testWidgets('clicking a shown tile hides its category', (tester) async {
-    final f = await _pump(tester, keys: ['PmcExtracts', 'Hazards', 'locks']);
-    expect(_shown(f, 'PmcExtracts'), isTrue);
+  testWidgets('marker-preferences: Grouped order', (tester) async {
+    await _pump(
+      tester,
+      sourceCategory: 'locks',
+      extra: [
+        _marker('loot', 'lootLoose'),
+        _marker('quest', 'QuestItems', category: 'quests'),
+        _marker('boss', 'BossSpawns'),
+      ],
+    );
+
+    expect(_rowKeys(tester), [
+      'PmcExtracts',
+      'QuestItems',
+      'BossSpawns',
+      'lootLoose',
+      'locks',
+      'CustomPins',
+    ]);
+    final headings = [
+      'Extracts',
+      'Quests',
+      'Bosses',
+      'Loot',
+      'Utility',
+      'Yours',
+    ];
+    final tops = [for (final title in headings) _heading(tester, title)];
+    expect(tops, [...tops]..sort());
+    for (final absent in ['Danger', 'Spawns']) {
+      expect(find.text(absent), findsNothing);
+    }
+    expect(_label('BossSpawns', 'Bosses'), findsOneWidget);
+  });
+
+  testWidgets('marker-preferences: Map order does not matter', (tester) async {
+    final f = await _pump(tester, sourceCategory: 'locks');
+    final first = _rowKeys(tester);
+    expect(first, ['PmcExtracts', 'locks', 'CustomPins']);
+
+    final maps = f.h.services.maps;
+    f.h.services.maps.publishMarkers({
+      for (final map in maps.maps) map.id: map.markers.reversed.toList(),
+    }, changed: true);
+    await tester.pump();
+
+    expect(maps.activeMarkers.first.filterKey, 'locks');
+    expect(_rowKeys(tester), first);
+  });
+
+  testWidgets('marker-preferences: Hide one category', (tester) async {
+    final f = await _pump(tester);
 
     await _click(tester, f, 'PmcExtracts');
 
     expect(f.settings.settings.markerFilters['PmcExtracts'], isFalse);
+    expect(f.h.services.maps.categoryVisibility['PmcExtracts'], isFalse);
     expect(_shown(f, 'Hazards'), isTrue);
-    expect(_shown(f, 'locks'), isTrue);
-    expect(
-      find.descendant(
-        of: _tile('PmcExtracts'),
-        matching: find.byIcon(Icons.check),
-      ),
-      findsNothing,
-      reason: 'the tile shows the hidden state',
-    );
-    expect(
-      find.descendant(of: _tile('Hazards'), matching: find.byIcon(Icons.check)),
-      findsOneWidget,
-    );
+    expect(f.h.services.maps.categoryVisibility['Hazards'], isNot(false));
+    expect(_switchOn(tester, 'PmcExtracts'), isFalse);
+    expect(_switchOn(tester, 'Hazards'), isTrue);
   });
 
-  testWidgets('clicking a hidden tile shows its category', (tester) async {
-    final f = await _pump(
-      tester,
-      keys: ['PmcExtracts', 'Hazards'],
-      hidden: {'PmcExtracts'},
-    );
-    expect(_shown(f, 'PmcExtracts'), isFalse);
-
-    await _click(tester, f, 'PmcExtracts');
-
-    expect(f.settings.settings.markerFilters['PmcExtracts'], isTrue);
-    expect(
-      find.descendant(
-        of: _tile('PmcExtracts'),
-        matching: find.byIcon(Icons.check),
-      ),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('tiles ignore clicks while settings are saving', (tester) async {
-    final f = await _pump(tester, keys: ['PmcExtracts', 'Hazards']);
-    InkWell ink(String key) => tester.widget<InkWell>(
-      find.descendant(of: _tile(key), matching: find.byType(InkWell)),
-    );
-    expect(ink('Hazards').onTap, isNotNull);
-
+  testWidgets('marker-preferences: Click while saving', (tester) async {
+    final f = await _pump(tester);
     f.settings.busy = true;
     // ignore: invalid_use_of_protected_member
     f.settings.notifyListeners();
     await tester.pump();
     final before = f.settings.settings.markerFilters;
 
-    expect(ink('Hazards').onTap, isNull);
-    await tester.tap(_tile('Hazards'));
+    await tester.tap(_row('Hazards'));
     await tester.pump();
+
     expect(f.settings.settings.markerFilters, before);
     expect(_shown(f, 'Hazards'), isTrue);
-
+    expect(_switchOn(tester, 'Hazards'), isTrue);
     f.settings.busy = false;
-    // ignore: invalid_use_of_protected_member
-    f.settings.notifyListeners();
-    await tester.pump();
-    expect(ink('Hazards').onTap, isNotNull);
   });
 
-  testWidgets('shown tile has a check mark and hidden tile is dimmed', (
+  testWidgets('marker-preferences: Shown and hidden rows differ', (
     tester,
   ) async {
     final f = await _pump(
       tester,
-      keys: ['ScavExtracts', 'Hazards'],
+      extra: [_marker('scav', 'ScavExtracts', category: 'extracts')],
       hidden: {'Hazards'},
     );
-    Finder check(String key) =>
-        find.descendant(of: _tile(key), matching: find.byIcon(Icons.check));
-    Color? labelColour(String label) => tester
-        .widget<Text>(
-          find.descendant(
-            of: find.byType(MarkerPreferencesGrid),
-            matching: find.text(label),
-          ),
-        )
-        .style
-        ?.color;
+    Color? labelColour(String key, String label) =>
+        tester.widget<Text>(_label(key, label)).style?.color;
 
-    expect(check('ScavExtracts'), findsOneWidget);
-    expect(check('Hazards'), findsNothing);
-    final ember = tester.element(find.byType(MarkerPreferencesGrid)).ember;
-    expect(labelColour('Scav extracts'), ember.ink);
-    expect(labelColour('Hazards'), ember.inkSecondary);
+    expect(_switchOn(tester, 'ScavExtracts'), isTrue);
+    expect(_switchOn(tester, 'Hazards'), isFalse);
+    final ember = tester.element(_row('Hazards')).ember;
+    expect(labelColour('ScavExtracts', 'Scav extracts'), ember.ink);
+    expect(labelColour('Hazards', 'Hazards'), isNot(ember.ink));
 
     expect(_canvas(tester, 'ScavExtracts'), _discAndRing(ring: _exitGreen));
     expect(
@@ -467,17 +505,16 @@ void main() {
     );
   });
 
-  testWidgets('tile semantics are a toggle with label and state', (
+  testWidgets('marker-preferences: Semantics reflect the state', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    final f = await _pump(tester, keys: ['Hazards'], hidden: {'Hazards'});
+    final f = await _pump(tester, hidden: {'Hazards'});
 
     expect(
-      tester.getSemantics(_tile('Hazards')),
+      tester.getSemantics(_row('Hazards')),
       matchesSemantics(
         label: 'Hazards',
-        isButton: true,
         hasToggledState: true,
         isToggled: false,
         hasEnabledState: true,
@@ -489,10 +526,9 @@ void main() {
     await _click(tester, f, 'Hazards');
 
     expect(
-      tester.getSemantics(_tile('Hazards')),
+      tester.getSemantics(_row('Hazards')),
       matchesSemantics(
         label: 'Hazards',
-        isButton: true,
         hasToggledState: true,
         isToggled: true,
         hasEnabledState: true,
@@ -503,10 +539,8 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('loaded tile draws the category glyph in its role colour', (
-    tester,
-  ) async {
-    final f = await _pump(tester, keys: ['PmcExtracts']);
+  testWidgets('marker-preferences: Icon row matches the map', (tester) async {
+    final f = await _pump(tester);
 
     final pattern = _discAndRing(ring: _exitGreen)
       ..something(
@@ -520,10 +554,8 @@ void main() {
     expect(_canvas(tester, 'PmcExtracts'), isNot(_dot(_exitGreen)));
   });
 
-  testWidgets('tiles draw fallback badges and toggle while icons load', (
-    tester,
-  ) async {
-    final f = await _pump(tester, keys: ['PmcExtracts', 'Hazards'], hold: true);
+  testWidgets('marker-preferences: Icons still loading', (tester) async {
+    final f = await _pump(tester, hold: true);
     expect(_canvas(tester, 'PmcExtracts'), _dot(_exitGreen));
     expect(_canvas(tester, 'Hazards'), _dot(_dangerRed));
     expect(
@@ -542,7 +574,7 @@ void main() {
     expect(
       _canvas(tester, 'Hazards').debugNeedsPaint,
       isTrue,
-      reason: 'the loader notification marks the tile for repaint',
+      reason: 'the loader notification marks the row for repaint',
     );
     await tester.pump();
 
@@ -559,14 +591,10 @@ void main() {
     expect(_canvas(tester, 'Hazards'), isNot(_dot(_dangerRed)));
   });
 
-  testWidgets('a failed icon draws the fallback badge only on its tile', (
+  testWidgets('a failed icon draws the fallback badge only on its row', (
     tester,
   ) async {
-    final f = await _pump(
-      tester,
-      keys: ['PmcExtracts', 'locks'],
-      missing: {'locks'},
-    );
+    final f = await _pump(tester, sourceCategory: 'locks', missing: {'locks'});
     expect(f.icons.failures, isNotEmpty);
 
     expect(_canvas(tester, 'locks'), _discAndRing(ring: _utility));
@@ -586,5 +614,133 @@ void main() {
       ),
     );
     expect(_canvas(tester, 'PmcExtracts'), isNot(_dot(_exitGreen)));
+  });
+
+  testWidgets('marker-preferences: Hide all then Show all', (tester) async {
+    final f = await _pump(tester, pins: [_pin('Camp')]);
+    final keys = _rowKeys(tester);
+    expect(find.text('Save marker filters'), findsNothing);
+
+    await _tap(tester, f, find.widgetWithText(TextButton, 'Hide all'));
+
+    for (final key in keys) {
+      expect(_switchOn(tester, key), isFalse, reason: key);
+      expect(f.settings.settings.markerFilters[key], isFalse, reason: key);
+      expect(f.h.services.maps.categoryVisibility[key], isFalse, reason: key);
+    }
+
+    await _tap(tester, f, find.widgetWithText(TextButton, 'Show all'));
+
+    for (final key in keys) {
+      expect(_switchOn(tester, key), isTrue, reason: key);
+      expect(_shown(f, key), isTrue, reason: key);
+      expect(f.h.services.maps.categoryVisibility[key], isNot(false));
+    }
+  });
+
+  testWidgets("marker-preferences: Show all keeps other maps' choices", (
+    tester,
+  ) async {
+    final f = await _pump(tester, hidden: {'ScavSpawns'});
+    expect(_rowKeys(tester), isNot(contains('ScavSpawns')));
+
+    await _tap(tester, f, find.widgetWithText(TextButton, 'Show all'));
+
+    expect(f.settings.settings.markerFilters['ScavSpawns'], isFalse);
+  });
+
+  testWidgets('marker-preferences: Bulk action with an unsaveable category', (
+    tester,
+  ) async {
+    final f = await _pump(tester, extra: [_marker('zip', 'Ziplines')]);
+
+    await _tap(tester, f, find.widgetWithText(TextButton, 'Hide all'));
+
+    expect(f.settings.settings.markerFilters, isNot(contains('Ziplines')));
+    expect(f.h.services.maps.categoryVisibility['Ziplines'], isNot(false));
+    await tester.runAsync(f.settings.load);
+    expect(f.settings.settings.markerFilters, isNot(contains('Ziplines')));
+    expect(f.settings.error, isNull);
+  });
+
+  testWidgets('marker-preferences: Search dims without hiding', (tester) async {
+    final f = await _pump(tester, hidden: {'Hazards'});
+
+    await tester.enterText(
+      find.byKey(const ValueKey('marker-section-search')),
+      'tunnel',
+    );
+    await tester.pump();
+
+    expect(f.h.services.maps.search, 'tunnel');
+    expect(_switchOn(tester, 'PmcExtracts'), isTrue);
+    expect(_switchOn(tester, 'Hazards'), isFalse);
+    expect(_shown(f, 'PmcExtracts'), isTrue);
+  });
+
+  testWidgets('marker-preferences: Quest filter keeps tiles', (tester) async {
+    final f = await _pump(
+      tester,
+      extra: [_quest('q-prapor', 'Prapor'), _quest('q-skier', 'Skier')],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('trader-chip-Prapor')));
+    await tester.pump();
+
+    expect(f.h.services.maps.questTrader, 'Prapor');
+    expect(_switchOn(tester, 'QuestItems'), isTrue);
+    expect(_shown(f, 'QuestItems'), isTrue);
+  });
+
+  testWidgets('marker-preferences: Active trader absent from the map', (
+    tester,
+  ) async {
+    final f = await _pump(tester, extra: [_quest('q-prapor', 'Prapor')]);
+    ChoiceChip chip(String name) =>
+        tester.widget(find.byKey(ValueKey('trader-chip-$name')));
+    expect(find.byKey(const ValueKey('trader-chip-all')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('trader-chip-Prapor')));
+    await tester.pump();
+    expect(chip('Prapor').selected, isTrue);
+
+    // The player switches to a map whose quests have no Prapor.
+    final maps = f.h.services.maps;
+    maps.publishMarkers({
+      for (final map in maps.maps)
+        map.id: [
+          for (final marker in map.markers)
+            if (marker.filterKey != 'QuestItems') marker,
+        ],
+    }, changed: true);
+    await tester.pump();
+
+    expect(maps.questTrader, 'Prapor');
+    expect(chip('Prapor').selected, isTrue);
+    expect(chip('all').selected, isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('trader-chip-all')));
+    await tester.pump();
+
+    expect(maps.questTrader, isEmpty);
+    expect(find.byKey(const ValueKey('trader-chip-Prapor')), findsNothing);
+    expect(chip('all').selected, isTrue);
+  });
+
+  testWidgets('marker facts are derived once per content generation', (
+    tester,
+  ) async {
+    final f = await _pump(tester, extra: [_quest('q-prapor', 'Prapor')]);
+    final maps = f.h.services.maps;
+    final first = MarkerFacts.of(maps);
+    expect(first.traders, ['Prapor']);
+
+    maps.panBy(10, 5);
+    maps.setSearch('exit');
+    expect(identical(MarkerFacts.of(maps), first), isTrue);
+
+    maps.publishMarkers({
+      for (final map in maps.maps) map.id: map.markers,
+    }, changed: true);
+    expect(identical(MarkerFacts.of(maps), first), isFalse);
   });
 }
