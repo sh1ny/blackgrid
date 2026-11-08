@@ -8,6 +8,7 @@ import '../domain/catalog.dart';
 import '../domain/roubles.dart';
 import '../domain/title_matching.dart' show normaliseTitle;
 import '../domain/verdict_reason.dart';
+import 'freshness_tag.dart';
 import 'item_icon.dart';
 import 'labels.dart';
 import 'panels.dart';
@@ -172,28 +173,43 @@ class ItemDecisionCard extends StatelessWidget {
                               key: const Key('verdict-reason'),
                             ),
                             const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
+                            Column(
+                              key: const Key('price-row'),
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _value(
-                                  context,
-                                  'Flea price',
-                                  rub(decision.fleaGross),
-                                  'Per slot: ${rub(decision.fleaPerSlot)}',
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    _value(
+                                      context,
+                                      'Flea price',
+                                      rub(decision.fleaGross),
+                                      'Per slot: ${rub(decision.fleaPerSlot)}',
+                                    ),
+                                    _value(
+                                      context,
+                                      decision.traderName ??
+                                          'Trader unavailable',
+                                      rub(decision.traderGross),
+                                      'Per slot: ${rub(decision.traderPerSlot)}',
+                                    ),
+                                    _value(
+                                      context,
+                                      'Still needed',
+                                      'Found in raid: ${decision.firNeed ?? 'Unknown'}',
+                                      'Not found in raid: ${decision.nonFirNeed ?? 'Unknown'}',
+                                    ),
+                                  ],
                                 ),
-                                _value(
-                                  context,
-                                  decision.traderName ?? 'Trader unavailable',
-                                  rub(decision.traderGross),
-                                  'Per slot: ${rub(decision.traderPerSlot)}',
-                                ),
-                                _value(
-                                  context,
-                                  'Still needed',
-                                  'Found in raid: ${decision.firNeed ?? 'Unknown'}',
-                                  'Not found in raid: ${decision.nonFirNeed ?? 'Unknown'}',
-                                ),
+                                if (decision.fleaEligible != false) ...[
+                                  const SizedBox(height: 8),
+                                  FreshnessTag(
+                                    quoteAt: item.quoteAt,
+                                    now: selection.clock(),
+                                    fleaEligible: decision.fleaEligible,
+                                  ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 12),

@@ -41,11 +41,11 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 | verdict-presentation → One-line verdict reason | Flea with no trader offer | test/domain/verdict_reason_test.dart | Flea with no trader offer | green |
 | verdict-presentation → One-line verdict reason | Price unavailable | test/domain/verdict_reason_test.dart | Price unavailable wording | green |
 | verdict-presentation → One-line verdict reason | A long reason at the narrowest card | test/ui/verdict_plate_test.dart | long reason wraps in the compact Map rail card at 960 px | green |
-| verdict-presentation → Price freshness tag | Current prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | price within an hour is fresh / fresh tag reads Prices and time | domain green, ui red |
-| verdict-presentation → Price freshness tag | Stale prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | stale age in hours then days / stale tag uses warning style | domain green, ui red |
+| verdict-presentation → Price freshness tag | Current prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | price within an hour is fresh / fresh tag reads Prices and time | green |
+| verdict-presentation → Price freshness tag | Stale prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | stale age in hours then days / stale tag uses warning style | green |
 | verdict-presentation → Price freshness tag | Unknown or future price time | test/domain/price_freshness_test.dart | missing or future price time is unknown | green |
-| verdict-presentation → Price freshness tag | The tag turns stale while shown | test/ui/freshness_tag_test.dart | tag turns stale on the age notify with a fake clock | red |
-| verdict-presentation → Price freshness tag | No tag when the Flea price cannot matter | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | hidden when not Flea-sellable / no tag on the price row | domain green, ui red |
+| verdict-presentation → Price freshness tag | The tag turns stale while shown | test/ui/freshness_tag_test.dart | tag turns stale on the age notify with a fake clock | green |
+| verdict-presentation → Price freshness tag | No tag when the Flea price cannot matter | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | hidden when not Flea-sellable / no tag on the price row | green |
 
 ## 1. Kit, fonts and ADR
 
@@ -83,8 +83,8 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 
 ## 6. Freshness tag
 
-- [ ] 6.1 Write the failing `test/ui/freshness_tag_test.dart` (fresh, stale, the tag turning stale on `SelectionController`'s age notify with an injected fake clock, and no tag for an item that cannot be sold on the Flea).
-- [ ] 6.2 Add the `FreshnessTag` widget and put it on the decision card's price row, reading `now` from `SelectionController.clock`; verify 6.1 passes and flip the UI halves of the freshness rows green.
+- [x] 6.1 Write the failing `test/ui/freshness_tag_test.dart` (fresh, stale, the tag turning stale on `SelectionController`'s age notify with an injected fake clock, and no tag for an item that cannot be sold on the Flea).
+- [x] 6.2 Add the `FreshnessTag` widget and put it on the decision card's price row, reading `now` from `SelectionController.clock`; verify 6.1 passes and flip the UI halves of the freshness rows green.
 
 ## 7. Integration checks
 
