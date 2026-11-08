@@ -88,8 +88,8 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `mise run analyze` and `mise run test` on the finished branch, and `dart format --set-exit-if-changed lib test`; all must pass. Check that `mise run release-notes -- --check openspec/changes/adopt-ember-theme/proposal.md` exits 0 and that the Release Notes still describe what shipped.
-- [ ] 7.2 Check that every Test map row is green, and that `openspec validate adopt-ember-theme --strict` passes.
+- [x] 7.1 Run `mise run analyze` and `mise run test` on the finished branch, and `dart format --set-exit-if-changed lib test`; all must pass. Check that `mise run release-notes -- --check openspec/changes/adopt-ember-theme/proposal.md` exits 0 and that the Release Notes still describe what shipped.
+- [x] 7.2 Check that every Test map row is green, and that `openspec validate adopt-ember-theme --strict` passes.
 
 The user-verified M8.5 criterion (the verdict reads at a glance and the map and dialogs look right, on a second monitor and alt-tabbed) is judged at the milestone close after `add-answer-strip`, `restyle-map-workspace` and `restyle-dialogs`, as the proposal says, so this change has no `[user]` task.
 
