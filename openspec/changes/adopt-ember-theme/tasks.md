@@ -19,8 +19,8 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 | interface-theme → Theme switch in Settings | Switching rooms | test/ui/settings_dialog_theme_test.dart | selecting Light switches the room in the next frame | red |
 | interface-theme → Theme switch in Settings | Selecting the current option | test/ui/settings_dialog_theme_test.dart | selecting the current option saves nothing | red |
 | interface-theme → Bundled fonts with notices | Interface text uses the bundled family | test/ui/ember_theme_test.dart | body text uses Geist and title roles use Literata | red |
-| interface-theme → Bundled fonts with notices | Every font file has a notice entry | test/ui/font_notice_test.dart | every declared font file has a matching notice and OFL text | red |
-| interface-theme → Bundled fonts with notices | A font file changes without its notice | test/ui/font_notice_test.dart | a hash mismatch names the font file | red |
+| interface-theme → Bundled fonts with notices | Every font file has a notice entry | test/ui/font_notice_test.dart | every declared font file has a matching notice and OFL text | green |
+| interface-theme → Bundled fonts with notices | A font file changes without its notice | test/ui/font_notice_test.dart | a hash mismatch names the font file | green |
 | interface-theme → Ember surfaces and labels | A docked panel has no shadow | test/ui/ember_surfaces_test.dart | docked panels use panel colour, hairline and no elevation in both rooms | red |
 | interface-theme → Ember surfaces and labels | Section labels are sentence case | test/ui/ember_surfaces_test.dart | section labels are sentence case | red |
 | interface-theme → Ember surfaces and labels | The brand lockup keeps its capitals | test/ui/ember_surfaces_test.dart | brand lockup keeps its capitals | red |
@@ -49,10 +49,10 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 
 ## 1. Kit, fonts and ADR
 
-- [ ] 1.1 Write ADR-0037 "Interface colours come from the Ember theme" in `docs/adr/0037-interface-colours-come-from-the-ember-theme.md` (MADR-short, `Status: accepted`, today's date) with the content of design D11, and add its row to the in-force index in `openspec/architecture.md`; verify the file exists and the index lists it.
-- [ ] 1.2 Drop the `import 'dart:ui' show FontFeature;` line from what `brand/tools/build.mjs` emits (owner-approved, design D2), run `node brand/tools/build.mjs`, and check that `git diff brand/` shows only the removed import (token values unchanged).
-- [ ] 1.3 Download `Geist[wght].ttf` and `Literata[opsz,wght].ttf` from one pinned google/fonts commit (`ofl/geist`, `ofl/literata`) into `assets/fonts/`, add `assets/fonts/** -text` to `.gitattributes`, and declare the `Geist` and `Literata` families in `pubspec.yaml`'s `fonts:` block; check `OFL.txt` at that commit against `brand/fonts/OFL-geist.txt` and `OFL-literata.txt`. Verify `flutter pub get` through mise succeeds.
-- [ ] 1.4 Write the failing `test/ui/font_notice_test.dart` (rows "Every font file has a notice entry", "A font file changes without its notice", with the hash-mismatch case built from a temporary copy), then add the "Bundled fonts" section to `THIRD_PARTY_NOTICES.md` (file, family, commit, source URL, SHA-256, measured size, the full OFL 1.1 text per family) so it passes; flip both rows green.
+- [x] 1.1 Write ADR-0037 "Interface colours come from the Ember theme" in `docs/adr/0037-interface-colours-come-from-the-ember-theme.md` (MADR-short, `Status: accepted`, today's date) with the content of design D11, and add its row to the in-force index in `openspec/architecture.md`; verify the file exists and the index lists it.
+- [x] 1.2 Drop the `import 'dart:ui' show FontFeature;` line from what `brand/tools/build.mjs` emits (owner-approved, design D2), run `node brand/tools/build.mjs`, and check that `git diff brand/` shows only the removed import (token values unchanged).
+- [x] 1.3 Download `Geist[wght].ttf` and `Literata[opsz,wght].ttf` from one pinned google/fonts commit (`ofl/geist`, `ofl/literata`) into `assets/fonts/`, add `assets/fonts/** -text` to `.gitattributes`, and declare the `Geist` and `Literata` families in `pubspec.yaml`'s `fonts:` block; check `OFL.txt` at that commit against `brand/fonts/OFL-geist.txt` and `OFL-literata.txt`. Verify `flutter pub get` through mise succeeds.
+- [x] 1.4 Write the failing `test/ui/font_notice_test.dart` (rows "Every font file has a notice entry", "A font file changes without its notice", with the hash-mismatch case built from a temporary copy), then add the "Bundled fonts" section to `THIRD_PARTY_NOTICES.md` (file, family, commit, source URL, SHA-256, measured size, the full OFL 1.1 text per family) so it passes; flip both rows green.
 
 ## 2. Theme setting
 

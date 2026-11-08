@@ -35,6 +35,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist[wght].ttf
+    - family: Literata
+      fonts:
+        - asset: assets/fonts/Literata[opsz,wght].ttf
   assets:
     - assets/map_markers/manifest.json
     - assets/map_markers/compiled/
