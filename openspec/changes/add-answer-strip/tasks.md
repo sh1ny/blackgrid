@@ -46,6 +46,13 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 | workspace-shell → History rows show item pictures | Legacy history verdict | `test/ui/history_panel_test.dart` | workspace-shell: Legacy history verdict | green |
 | workspace-shell → Status actions lead to their controls | Settings targets | `test/ui/shell_test.dart` | workspace-shell: Settings targets | green |
 | workspace-shell → Status actions lead to their controls | Failed live scan save | `test/ui/shell_test.dart` | workspace-shell: Failed live scan save | green |
+| workspace-shell → Answer precedes the workspace | Price and stable normal height | `test/ui/shell_test.dart` | workspace-shell: Price and stable normal height | red |
+| workspace-shell → Top bar keeps navigation and timers reachable | Anchored search results and explicit selection | `test/ui/shell_test.dart` | workspace-shell: Anchored search results and explicit selection | red |
+| workspace-shell → Top bar keeps navigation and timers reachable | Wide tools alignment | `test/ui/shell_test.dart` | workspace-shell: Wide tools alignment | red |
+| workspace-shell → Inspector preserves the workspace | Scanner history leads the inspector | `test/ui/shell_test.dart` | workspace-shell: Scanner history leads the inspector | red |
+| workspace-shell → Inspector preserves the workspace | Initial inspector state follows window width | `test/ui/shell_test.dart` | workspace-shell: Initial inspector state follows window width | red |
+| workspace-shell → Status actions lead to their controls | Status bar presentation and binding | `test/ui/shell_test.dart` | workspace-shell: Status bar presentation and binding | red |
+| scanner-evidence → Scanner workspace omits configuration rail | Scanner functions remain reachable without the old rail | `test/ui/scanner_screen_test.dart` | scanner-evidence: Scanner functions remain reachable without the old rail | red |
 
 ## 1. Recorded activity verdict and migration
 
@@ -74,6 +81,12 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 - [x] 4.1 Run `dart format` on changed Dart files, then `mise run analyze` and `mise run test`; verify no new findings or failing offline tests. Confirm every scenario maps to exactly one test-map row and each row has passing evidence before changing its state. Do not run qualification or launch the app as part of these commands.
 - [x] 4.2 Verify the complete shell across both rooms and the size/text-scale matrix with offline widget fixtures; run relevant Impeccable checks where supported for Dart and record actual support/results without claiming a web-only detector checked Flutter. Confirm preserved map controls, icon fallbacks, dialog entry points, section focus, timer settings and no UI colour literals outside theme roles. Keep live-game visual judgment unverified for milestone close.
 - [x] 4.3 Check release notes with `mise run release-notes -- --check openspec/changes/add-answer-strip/proposal.md`, run `openspec validate add-answer-strip --strict` and `git diff --check`; verify all pass and update proposal release notes to match shipped behaviour. No version bump: releases are disabled for this workflow.
+
+## 5. Owner build-review corrections
+
+- [ ] 5.1 Add and red-confirm the seven new mapped scenarios before implementation. Cover typing without Enter/click (no selection or history), anchored search with keyboard selection/Escape and a synthetic >50-match case proving the 50-option cap/refine hint, absent Scanner configuration rail with retained status/Settings functions, history visible first, initial inspector open above 1080px/closed at or below 1080px with later user choice preserved, wide flexible search/right tools and timer separators, 28px left-aligned status with active-key dot semantics, and prices/freshness plus stable normal 76px strip. Exercise both Ember rooms, narrow/overlay widths and text scale 2; retain prior controller, map and accessibility checks.
+- [ ] 5.2 Implement the six owner-directed corrections and wide-window initially open inspector through existing controllers and theme roles, preserving Map rail scope and later user toggle state. Verify 5.1 tests pass, old behavior assertions are retained at the new entry points, lazy history/icon bounds and mounted workspaces remain intact, and no typing-only history write occurs. Document new widget ownership and update the release notes to final behavior; flip each mapped row only after its test passes.
+- [ ] 5.3 Format changed Dart files, run pinned analysis and the complete fast offline suite, strict OpenSpec validation, release-note and diff checks. Reconcile all 47 scenario mappings and record final evidence plus the boundary of Claude's reported build review and agent offline checks. Re-run fresh pre-ship review before resuming watch; no app/game launch or qualification run.
 
 ## Workflow follow-up
 

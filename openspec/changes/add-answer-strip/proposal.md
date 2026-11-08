@@ -13,6 +13,7 @@ M8.5's Ember interface puts the keep/sell answer first. Today Scanner places con
 - Put detailed inspection, requirements, sources and history in the inspector; show pictures in history rows and remove raw item IDs below item names.
 - Persist the displayed verdict with each newly recorded activity; older records show an unknown indicator, never a recomputed historical verdict.
 - Preserve map controls and filters until `restyle-map-workspace` gives them their final placement and styling.
+- Apply the owner's six build-review corrections: anchored top-search results, no legacy Scanner configuration panel, history first in Scanner's inspector, flexible/right-aligned top-bar tools, the X4/X11 status bar, and visible price/freshness with a stable normal answer-strip height.
 
 ## Capabilities
 

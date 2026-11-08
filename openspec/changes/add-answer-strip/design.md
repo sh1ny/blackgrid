@@ -123,6 +123,7 @@ flowchart LR
 | Map pan, zoom, filters and saved-input expansion | Existing Map controllers / MapScreen | Existing lifetimes | Unchanged; no remount on inspector toggle | Existing owners |
 | Timer values and scan intent | Existing timer controller / ScanCoordinator | Existing lifetimes | Existing projections and start/stop logic | Existing controllers |
 | Settings scroll target | SettingsDialog | One dialog opening | Target applied once after layout, then user scrolls | Dialog widget state |
+| Anchored search visibility and keyboard-active result | Shared search widget | One focused search session | Query/results changes reconcile the active item; dismissal, selection or focus/context exit closes the popup | Widget state; selected item remains owned by SelectionController |
 
 ## Failure & Visibility (FULL)
 
@@ -140,6 +141,7 @@ flowchart LR
 | Queue / buffer / cache / transfer | Bound | At bound | Timeout | At 10x / 100x |
 |---|---|---|---|---|
 | Inspector and Settings overlays | One of each, reuse existing modal action semantics | Do not accumulate routes from repeated activation | None | Fixed shell state |
+| Anchored item-search popup | One popup; at most 50 options from the existing catalog search, with a height-bounded lazy scrolling viewport | Show a refine-search hint when more than 50 matches exist; keyboard navigation stays within displayed options; no per-row network requests | None | CatalogSnapshot.search still has its existing catalog-sized result cost; the popup displays only the first 50 and records nothing until explicit selection |
 | History verdict | One small optional value per existing item/mode row | Existing history uniqueness, no new append log | DB operation inherits existing policy | Linear existing row load; no per-row decision projection |
 | History widgets/icons | Lazy ListView with existing zero cache extent and ItemIcon leases | Only visible rows request images | ADR-0022 | Cache/network bounds unchanged |
 | Row collection | Existing history has no numeric cap, uniqueness only (ADR-0003) | Do not add a second collection or query per row | Existing query | Existing linear cost remains; optional enum adds constant space per row |
@@ -184,3 +186,16 @@ flowchart LR
 ## Open Questions
 
 None that change scope, approach or acceptance criteria. Visual owner judgment remains at milestone close after the remaining M8.5 changes.
+
+## Owner build-review corrections (2026-11-08)
+
+The owner directed six corrections on this branch through the supplied build-review handoff. These implement the existing X10/X11 direction, with explicit interaction and geometry acceptance below. The owner subsequently chose an initially open inspector above 1080px and initially closed inspector at or below 1080px. Initialize this once per shell session; later resizing preserves the user's current open/closed state.
+
+- The shared search owns an anchored results list with at most 50 options, a height-bounded lazy viewport, keyboard navigation, explicit selection and Escape dismissal. More matches show a refine-search hint. Typing changes only the query/results; it never selects or writes history. Selection reuses SelectionController; existing catalog search remains catalog-sized and is not claimed to be bounded by the popup limit.
+- Scanner removes the legacy manual/configuration rail. Search remains in the top bar; mode, refresh, Tracker and live-scan functions remain in the status bar or Settings. The Map rail retains its interim controls.
+- Scanner's inspector leads with recent item activity. Supporting details use their content or explicit expansion, rather than stacking mostly empty fixed-height panels. Preserve lazy history/icon bounds and workspace/expansion lifetimes.
+- Wide top-bar search flexes between navigation and a right-aligned tools group. Timers use hairline separators; compact and text-scaled layouts preserve reachability without horizontal page scrolling.
+- The status bar is 28px at normal scale, left aligned, without the stray touch icon. Live scan uses a 6px semantic dot and words, including the active scan key when ready, or click-only wording when no key is active; unavailable state shows its reason. Existing toggle/save rules remain authoritative.
+- The answer strip includes available price and adjacent freshness for every verdict, including Check / May Need; missing values are labelled honestly. Empty and ordinary single-line selected content share the normal 76px height. Full reasons and accessibility text scaling may grow the strip; no truncation is introduced to preserve height.
+
+These corrections add no capture mechanism, persistence owner or new application state framework. The shared results popup is bounded and closes on selection, dismissal or loss of its active search context. The build review reported by Claude is owner-supplied evidence, not an agent-performed runtime check in this session; all implementation verification remains offline.

@@ -6,7 +6,7 @@ Makes the current item and keep/sell answer immediately visible on Map and Scann
 ## ADDED Requirements
 
 ### Requirement: Answer precedes the workspace
-Map and Scanner SHALL show the current item picture and name, verdict plate, full reason, price freshness and per-item Found in raid directly below the top bar, before workspace or configuration content. The strip SHALL use DESIGN.md X10 in both rooms and grow to fit wrapped content. Raw item IDs SHALL NOT appear below item names.
+Map and Scanner SHALL show the current item picture and name, verdict plate, full reason, available price with its freshness and per-item Found in raid directly below the top bar, before workspace or configuration content. The strip SHALL use DESIGN.md X10 in both rooms and grow to fit wrapped content or text scaling. Missing prices SHALL be labelled honestly. Empty and ordinary single-line selected content SHALL retain the same normal 76px height. Raw item IDs SHALL NOT appear below item names.
 
 #### Scenario: Answer first in both areas
 - **WHEN** each area is shown at 1660 by 870 and 960 by 720 logical pixels
@@ -15,6 +15,10 @@ Map and Scanner SHALL show the current item picture and name, verdict plate, ful
 #### Scenario: Missing item and long reason
 - **WHEN** no item is selected, or an item's reason is too long for one line
 - **THEN** the strip shows an explicit empty state without a verdict, or wraps the complete reason without overflow respectively
+
+#### Scenario: Price and stable normal height
+- **WHEN** an ordinary single-line item is selected, including a Check / May Need item with available prices
+- **THEN** price and freshness are visible in the strip, and its normal height stays 76px as in the empty state; missing prices are explicit and long reasons or enlarged text can grow without truncation
 
 ### Requirement: Selection semantics survive the new layout
 The strip and inspector SHALL reflect the same current inspection. Existing manual selection, scan correction, history inspection, close-history and return-to-latest-scan actions SHALL remain available. Found in raid SHALL retain existing per-item reset, history and authority rules.
@@ -38,8 +42,16 @@ The top bar SHALL contain the brand, Map/Scanner switch, item search with Ctrl K
 - **WHEN** the window is 960px wide and timer settings hide one timer
 - **THEN** the remaining timers and all actions remain reachable without horizontal page scrolling, hidden timers are absent, and icon actions retain names and tooltips
 
+#### Scenario: Anchored search results and explicit selection
+- **WHEN** the user types in top search, navigates results by keyboard and dismisses or confirms a result
+- **THEN** a height-bounded lazy list of at most 50 options appears at the field in both areas, more matches show a refine-search hint, typing or dismissal creates no selection or history, arrows change the active displayed result, Escape dismisses results and confirmation selects and records only the chosen item
+
+#### Scenario: Wide tools alignment
+- **WHEN** the wide top bar is shown with enabled timers
+- **THEN** search flexes into available space, timers and tools align at the right edge and timer entries have hairline separators; compact and enlarged-text layouts retain reachable actions without horizontal overflow
+
 ### Requirement: Inspector preserves the workspace
-Detailed inspection, requirements, sources and item history SHALL be reachable in an inspector. At widths at most 1080px it SHALL float with a scrim; closing or resizing it SHALL keep the underlying workspace mounted and return focus to its opener. Panel motion SHALL follow DESIGN.md and reduced-motion settings.
+The inspector SHALL provide details, requirements, sources and history. It SHALL start open above 1080px and closed otherwise, initialized once per shell session; later resizing SHALL preserve the user's open/closed state. At widths at most 1080px it SHALL float with a scrim. Closing or resizing SHALL retain the mounted workspace and return focus to the opener. Panel motion SHALL follow DESIGN.md and reduced-motion settings.
 
 #### Scenario: Docked details
 - **WHEN** the inspector is opened in a wide window
@@ -48,6 +60,14 @@ Detailed inspection, requirements, sources and item history SHALL be reachable i
 #### Scenario: Resize with open details
 - **WHEN** an open inspector crosses the 1080px threshold and is then closed with Escape
 - **THEN** it becomes an overlay, preserves selection and detail expansion state, and returns focus to the opener without resetting the map viewport
+
+#### Scenario: Scanner history leads the inspector
+- **WHEN** Scanner's inspector opens with recent items
+- **THEN** recent activity is the first working list and is visible without scrolling past empty detail panels; supporting details fit content or expand explicitly, and history retains lazy image leases
+
+#### Scenario: Initial inspector state follows window width
+- **WHEN** a new shell opens above 1080px or at or below 1080px
+- **THEN** its inspector starts open or closed respectively, and a subsequent user toggle followed by resizing preserves the user's current state
 
 ### Requirement: History rows show item pictures
 The inspector SHALL use DESIGN.md X14 history rows with picture, name, recorded-verdict indicator and age. Pictures SHALL follow existing icon fallback rules. Dots SHALL use saved verdicts, never current advice. Missing verdicts SHALL show a distinct unknown indicator labelled "Verdict not recorded". Opening a row SHALL preserve existing history-inspection semantics and label its current advice separately from the recorded verdict.
@@ -75,3 +95,7 @@ The status bar SHALL let the user switch game mode, open Item data or Tracker Se
 #### Scenario: Failed live scan save
 - **WHEN** live scan is toggled through the status bar and saving fails
 - **THEN** existing switch-on rollback and switch-off stopping rules apply and the error is visible; the status never falsely claims listening
+
+#### Scenario: Status bar presentation and binding
+- **WHEN** the status bar is shown at normal scale and live scan changes binding or state
+- **THEN** its height is 28px, items start at the left, no touch icon precedes game mode, and live scan shows a 6px state dot with truthful words and the active key or click-only guidance; unavailable state includes its reason and the existing status actions remain usable
