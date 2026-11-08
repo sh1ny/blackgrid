@@ -12,6 +12,9 @@ import '../support/m1_harness.dart';
 Future<M1Harness> _showSearch(
   WidgetTester tester, {
   bool many = false,
+  bool longNames = false,
+  int matchCount = 55,
+  double width = 500,
   Brightness room = Brightness.dark,
   double scale = 1,
 }) async {
@@ -23,12 +26,16 @@ Future<M1Harness> _showSearch(
               final template = Map<String, dynamic>.from(
                 items['item-a'] as Map,
               );
-              for (var i = 0; i < 55; i++) {
+              for (var i = 0; i < matchCount; i++) {
                 final suffix = i.toString().padLeft(2, '0');
+                final nameKey = 'option-$suffix Name';
+                wire['items_en']['data'][nameKey] = longNames
+                    ? 'Option $suffix ${List.filled(40, 'component').join(' ')}'
+                    : 'Option $suffix';
                 items['option-$suffix'] = {
                   ...template,
                   'id': 'option-$suffix',
-                  'name': 'Option $suffix',
+                  'name': nameKey,
                   'normalizedName': 'option-$suffix',
                 };
               }
@@ -58,7 +65,7 @@ Future<M1Harness> _showSearch(
         body: Align(
           alignment: Alignment.topCenter,
           child: SizedBox(
-            width: 500,
+            width: width,
             child: TopItemSearch(
               services: h.services,
               controller: query,
@@ -74,6 +81,62 @@ Future<M1Harness> _showSearch(
 }
 
 void main() {
+  testWidgets('held arrow keys navigate anchored results', (tester) async {
+    await _showSearch(tester, many: true);
+    final field = find.byType(TextField);
+    await tester.enterText(field, 'Option');
+    await tester.pumpAndSettle();
+    final controller = tester.widget<TextField>(field).controller!;
+    controller.selection = const TextSelection.collapsed(offset: 2);
+    final caret = controller.selection;
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    final active = tester.widget<ListTile>(
+      find.byWidgetPredicate((widget) => widget is ListTile && widget.selected),
+    );
+    expect((active.title! as Text).data, 'Option 02');
+    expect(controller.selection, caret);
+  });
+
+  for (final width in [150.0, 500.0]) {
+    testWidgets('long result names fit scaled rows width=$width', (
+      tester,
+    ) async {
+      await _showSearch(
+        tester,
+        many: true,
+        longNames: true,
+        matchCount: 3,
+        width: width,
+        scale: 2,
+      );
+      await tester.enterText(find.byType(TextField), 'Option');
+      await tester.pumpAndSettle();
+      final row = find.byType(ListTile).first;
+      final title = find.descendant(of: row, matching: find.byType(Text)).first;
+      final rowRect = tester.getRect(row);
+      final titleRect = tester.getRect(title);
+      expect(titleRect.top, greaterThanOrEqualTo(rowRect.top));
+      expect(titleRect.bottom, lessThanOrEqualTo(rowRect.bottom));
+      final text = tester.widget<Text>(title).data!;
+      expect(find.byTooltip(text), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('narrow scaled result cap keeps options reachable', (
+    tester,
+  ) async {
+    await _showSearch(tester, many: true, width: 150, scale: 2);
+    await tester.enterText(find.byType(TextField), 'Option');
+    await tester.pumpAndSettle();
+    expect(find.text('50 shown\nRefine'), findsOneWidget);
+    expect(find.byType(ListTile).hitTestable(), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('typing and Escape do not select or record an item', (
     tester,
   ) async {

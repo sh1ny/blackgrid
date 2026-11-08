@@ -42,6 +42,10 @@ class _TopItemSearchState extends State<TopItemSearch> {
   GameMode? _catalogMode;
   int _active = 0;
 
+  double _optionHeight(BuildContext context) =>
+      56 *
+      MediaQuery.textScalerOf(context).scale(1).clamp(1.0, double.infinity);
+
   @override
   void initState() {
     super.initState();
@@ -95,7 +99,8 @@ class _TopItemSearchState extends State<TopItemSearch> {
   }
 
   KeyEventResult _key(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || !_portal.isShowing) {
+    if ((event is! KeyDownEvent && event is! KeyRepeatEvent) ||
+        !_portal.isShowing) {
       return KeyEventResult.ignored;
     }
     final results = widget.services.selection.results;
@@ -112,11 +117,7 @@ class _TopItemSearchState extends State<TopItemSearch> {
         _active = (_active + delta).clamp(0, count - 1);
       });
       if (_scroll.hasClients) {
-        final height =
-            56 *
-            MediaQuery.textScalerOf(context)
-                .scale(1)
-                .clamp(1.0, double.infinity);
+        final height = _optionHeight(context);
         final top = _active * height;
         final position = _scroll.position;
         final offset = top < position.pixels
@@ -173,29 +174,39 @@ class _TopItemSearchState extends State<TopItemSearch> {
                           Flexible(
                             child: ListView.builder(
                               controller: _scroll,
-                              itemExtent:
-                                  56 *
-                                  MediaQuery.textScalerOf(context)
-                                      .scale(1)
-                                      .clamp(1.0, double.infinity),
+                              itemExtent: _optionHeight(context),
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
                               itemCount: count,
-                              itemBuilder: (context, index) => ListTile(
-                                dense: true,
-                                selected: index == _active,
-                                selectedColor: context.ember.accentText,
-                                selectedTileColor: context.ember.accentSoft,
-                                title: Text(results[index].name),
-                                onTap: () => _select(results[index]),
+                              itemBuilder: (context, index) => Tooltip(
+                                message: results[index].name,
+                                child: ListTile(
+                                  dense: true,
+                                  minTileHeight: _optionHeight(context),
+                                  minVerticalPadding: 4,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                  selected: index == _active,
+                                  selectedColor: context.ember.accentText,
+                                  selectedTileColor: context.ember.accentSoft,
+                                  title: Text(
+                                    results[index].name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () => _select(results[index]),
+                                ),
                               ),
                             ),
                           ),
                         if (results.length > _optionLimit)
-                          const Padding(
-                            padding: EdgeInsets.all(8),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
                             child: Text(
-                              'Showing 50 items. Refine your search.',
+                              constraints.maxWidth < 250
+                                  ? '50 shown\nRefine'
+                                  : 'Showing 50 items. Refine your search.',
                             ),
                           ),
                       ],
