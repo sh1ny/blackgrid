@@ -17,7 +17,7 @@ import 'manual_controls.dart';
 import 'map_workspace.dart';
 import 'marker_preferences.dart';
 import 'pin_editor.dart';
-import 'theme.dart';
+import 'panels.dart';
 
 class _MapInputStatus extends StatefulWidget {
   const _MapInputStatus({super.key, required this.services});
@@ -324,7 +324,7 @@ class _MapScreenState extends State<MapScreen> {
             .where((p) => p.mapId == map)
             .toList();
         final workspace = GridPanel(
-          title: mapLabel(map).toUpperCase(),
+          title: mapLabel(map),
           icon: Icons.map_outlined,
           trailing: OutlinedButton.icon(
             onPressed: services.settings.busy

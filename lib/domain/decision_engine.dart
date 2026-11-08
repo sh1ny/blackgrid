@@ -1,6 +1,7 @@
 import 'catalog.dart';
 import 'decision.dart';
 import 'inspection_context.dart';
+import 'price_freshness.dart';
 import 'progress.dart';
 
 class DecisionEngine {
@@ -23,12 +24,18 @@ class DecisionEngine {
         !context.progressStale &&
         progress.authoritativeAt(context.now);
     final warnings = <String>[];
+    final open = <OpenInput>[];
     if (!catalogKnown) {
       warnings.add('Item data missing or out of date');
+      open.add(OpenInput.itemData);
     }
-    if (!progressKnown) warnings.add('Tracker progress missing or out of date');
+    if (!progressKnown) {
+      warnings.add('Tracker progress missing or out of date');
+      open.add(OpenInput.trackerProgress);
+    }
     if (context.fir == FirState.unknown) {
       warnings.add('Found in raid unknown for this item');
+      open.add(OpenInput.foundInRaid);
     }
     final requirements =
         catalog?.requirementIndex[item.id] ?? const <ItemRequirement>[];
@@ -89,20 +96,28 @@ class DecisionEngine {
       progressKnown ? progress : null,
       context.fir,
     );
+    final unresolved = reasons.any((r) => r.state == NeedState.unresolved);
+    if (unresolved) open.add(OpenInput.unresolvedNeed);
     if (eligible == null) {
       warnings.add(
         'Not known whether this item can be sold on the flea market',
       );
+      open.add(OpenInput.fleaEligibility);
     }
     final quote = item.quoteAt;
+    final quoteInFuture = quote != null && quote.isAfter(context.now);
     final marketKnown =
         quote != null &&
-        !quote.isAfter(context.now) &&
-        context.now.difference(quote) <= const Duration(hours: 1);
+        !quoteInFuture &&
+        context.now.difference(quote) <= priceFreshnessLimit;
     if (!marketKnown && eligible != false) {
       warnings.add('Flea price time unknown or more than an hour old');
+      open.add(
+        quote == null || quoteInFuture
+            ? OpenInput.priceTimeUnknown
+            : OpenInput.priceTimeStale,
+      );
     }
-    final unresolved = reasons.any((r) => r.state == NeedState.unresolved);
     final Recommendation recommendation;
     if (reasons.any((r) => r.state == NeedState.actionable)) {
       recommendation = Recommendation.keep;
@@ -139,6 +154,7 @@ class DecisionEngine {
       nonFirNeed: total(false),
       unknownFirNeed: total(null),
       fleaEligible: eligible,
+      openInputs: open,
     );
   }
 

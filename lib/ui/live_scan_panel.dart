@@ -6,7 +6,6 @@ import '../application/scan_coordinator.dart';
 import '../domain/settings.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
-import 'theme.dart';
 
 /// The live scan switch with the pipeline status, the scan hotkey with its
 /// state, rebind control and rebind error, any stop warning, the last save
@@ -51,14 +50,10 @@ class LiveScanPanel extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'LIVE SCAN',
-                    style: TextStyle(
-                      color: GridColors.gold,
-                      fontSize: 12,
-                      letterSpacing: 1,
-                    ),
+                    'Live scan',
+                    style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ),
                 Switch(

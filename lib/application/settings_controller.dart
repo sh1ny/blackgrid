@@ -174,6 +174,10 @@ class SettingsController extends ChangeNotifier
     ),
   );
 
+  /// Saves the chosen theme through [save].
+  Future<bool> setThemeChoice(ThemeChoice choice) =>
+      save(_settings.copyWith(themeMode: choice));
+
   Future<bool> setMode(GameMode mode) => save(_settings.copyWith(mode: mode));
   Future<bool> setMap(String map) =>
       save(_settings.copyWith(selectedMap: map, followGameLogs: false));

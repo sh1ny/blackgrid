@@ -39,6 +39,7 @@ class MapWidgetHarness {
     List<Map<String, Object?>> extraLabels = const [],
     bool artwork = true,
     http.Client? client,
+    MemoryCredentials? credentials,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -87,7 +88,7 @@ class MapWidgetHarness {
         : Directory.systemTemp.createTempSync('blackgrid-map-scan-');
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
-      credentials: MemoryCredentials(),
+      credentials: credentials ?? MemoryCredentials(),
       clock: () => fixtureNow,
       mapController: MapController(
         loader: loader,
@@ -243,6 +244,7 @@ Future<MapWidgetHarness> pumpMapFixture(
   List<Map<String, Object?>> extraMarkers = const [],
   bool artwork = true,
   http.Client? client,
+  MemoryCredentials? credentials,
   bool autoDispose = true,
 }) async {
   tester.view.physicalSize = size;
@@ -260,6 +262,7 @@ Future<MapWidgetHarness> pumpMapFixture(
       extraMarkers: extraMarkers,
       artwork: artwork,
       client: client,
+      credentials: credentials,
     ),
   ))!;
   if (autoDispose) addTearDown(harness.dispose);

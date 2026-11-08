@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/settings.dart';
-import 'theme.dart';
+import 'labels.dart';
+import 'ember/theme_access.dart';
 
 Future<void> showPinEditor(
   BuildContext context,
@@ -114,9 +115,9 @@ class _PinEditorState extends State<PinEditor> {
               'Map: ${mapLabel(widget.pin?.mapId ?? widget.coordinates?.mapId ?? widget.services.settings.settings.selectedMap)}',
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Positions run from 0 to 1 across the whole map. Points outside the map are allowed.',
-              style: TextStyle(color: GridColors.muted),
+              style: TextStyle(color: context.ember.inkSecondary),
             ),
             const SizedBox(height: 16),
             TextField(

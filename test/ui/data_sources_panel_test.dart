@@ -3,7 +3,7 @@ import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/labels.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -51,7 +51,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
-        theme: blackgridTheme(),
+        theme: blackgridTheme(Brightness.dark),
         home: Scaffold(body: _Host(h)),
       ),
     );

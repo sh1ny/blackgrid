@@ -14,11 +14,14 @@ import '../domain/map_zone_style.dart';
 import '../domain/marker_categories.dart';
 import '../domain/settings.dart';
 import '../maps/map_marker_icons.dart';
+import '../maps/map_palette.dart';
 import '../maps/marker_presentation.dart';
 import '../maps/prepared_map.dart';
 import 'marker_popup.dart';
 import 'pin_editor.dart';
-import 'theme.dart';
+import 'labels.dart';
+import 'ember/ember_tokens.dart';
+import 'ember/theme_access.dart';
 
 /// How the player's position reaches the map, as the map help explains it.
 const _positionHelp =
@@ -469,8 +472,8 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                 });
                 return DecoratedBox(
                   decoration: BoxDecoration(
-                    color: GridColors.inset,
-                    border: Border.all(color: GridColors.quietBorder),
+                    color: context.blackgrid.mapGround,
+                    border: Border.all(color: context.ember.hairline),
                   ),
                   child: ClipRect(
                     child: Focus(
@@ -568,8 +571,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                           child: Text(
                                             maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
                                             textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: GridColors.muted,
+                                            // The map ground stays dark in
+                                            // both rooms (DESIGN.md X6), so
+                                            // text on it takes dark-room ink.
+                                            style: TextStyle(
+                                              color:
+                                                  EmberColors.dark.inkSecondary,
                                             ),
                                           ),
                                         ),
@@ -666,7 +673,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
             map == null
                 ? 'No artwork loaded · saved files only; no live tracking'
                 : 'Select a marker for its summary · Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
-            style: const TextStyle(color: GridColors.muted, fontSize: 12),
+            style: TextStyle(color: context.ember.inkSecondary, fontSize: 12),
           ),
         ],
       );
@@ -750,7 +757,7 @@ class _MapPainter extends CustomPainter {
       final direction = maps.playerSceneDirection;
       canvas.save();
       canvas.translate(point.dx, point.dy);
-      _fill.color = Colors.white;
+      _fill.color = mapPlayerMarkerFill;
       canvas.drawCircle(Offset.zero, 6, _fill);
       if (direction != null) {
         canvas.rotate(math.atan2(direction.y, direction.x));
@@ -848,7 +855,7 @@ class _MapPainter extends CustomPainter {
   TextStyle _placeFill(double fontSize) => TextStyle(
     fontSize: fontSize,
     fontWeight: FontWeight.w600,
-    color: const Color(placeLabelColour).withValues(alpha: placeLabelOpacity),
+    color: mapPlaceLabelColour.withValues(alpha: placeLabelOpacity),
   );
 
   TextStyle _placeHalo(double fontSize) => TextStyle(
@@ -909,7 +916,7 @@ class _MapPainter extends CustomPainter {
           ..color = halo,
       ),
       base.copyWith(
-        color: Color(labelColourFor(faction)).withValues(alpha: opacity),
+        color: mapExtractLabelColour(faction).withValues(alpha: opacity),
       ),
     ];
     final start =

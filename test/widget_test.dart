@@ -1,5 +1,5 @@
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

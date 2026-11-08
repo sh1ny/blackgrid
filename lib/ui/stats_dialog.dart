@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../application/local_stats_controller.dart';
 import '../domain/local_stats.dart';
+import '../domain/roubles.dart';
 import 'labels.dart';
-import 'theme.dart';
+import 'ember/theme_access.dart';
 
 /// Opens the Stats dialog for [controller] and, once it closes, drops the
 /// clear failure message so it does not outlive the dialog.
@@ -65,7 +66,7 @@ class StatsDialog extends StatelessWidget {
 
   List<Widget> _body(BuildContext context) {
     final muted = Theme.of(context).textTheme.bodySmall
-        ?.copyWith(color: GridColors.muted);
+        ?.copyWith(color: context.ember.inkSecondary);
     final totals = controller.totals;
     return [
       Text("Counted from the game's logs.", style: muted),
@@ -81,7 +82,7 @@ class StatsDialog extends StatelessWidget {
       else if (totals.isEmpty)
         const Text('No raids or flea sales counted yet.')
       else
-        ..._totals(totals),
+        ..._totals(context, totals),
       for (final message in [
         controller.readError,
         controller.writeError,
@@ -98,7 +99,7 @@ class StatsDialog extends StatelessWidget {
     ];
   }
 
-  List<Widget> _totals(LocalStatsTotals totals) => [
+  List<Widget> _totals(BuildContext context, LocalStatsTotals totals) => [
     Text('Raids counted: ${totals.raidTotal}'),
     for (final MapEntry(:key, :value) in totals.raidsByMap.entries)
       Padding(
@@ -120,7 +121,7 @@ class StatsDialog extends StatelessWidget {
         totals.salesNotInRoubles == 1
             ? '1 sale not paid in roubles'
             : '${totals.salesNotInRoubles} sales not paid in roubles',
-        style: const TextStyle(color: GridColors.muted),
+        style: TextStyle(color: context.ember.inkSecondary),
       ),
   ];
 

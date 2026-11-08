@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:blackgrid/ui/import_dialog.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
 
 import '../fixtures/m1/legacy/legacy_fixture.dart';
 import '../support/m1_harness.dart';
@@ -198,7 +198,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         MaterialApp(
-          theme: blackgridTheme(),
+          theme: blackgridTheme(Brightness.dark),
           home: Scaffold(
             body: ImportDialog(
               services: h.services,

@@ -9,7 +9,7 @@ import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/labels.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter_test/flutter_test.dart';

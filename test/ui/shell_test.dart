@@ -9,7 +9,8 @@ import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/ember/ember_tokens.dart';
+import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -74,7 +75,9 @@ void main() {
     expect(
       Theme.of(tester.element(find.byKey(const Key('nav-map'))))
           .scaffoldBackgroundColor,
-      GridColors.background,
+      Theme.of(tester.element(find.byKey(const Key('nav-map'))))
+          .extension<EmberColors>()!
+          .canvas,
     );
   });
   testWidgets('scan evidence survives Map and back', (tester) async {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/raid_timers_controller.dart';
 import '../domain/raid_timers.dart';
-import 'theme.dart';
+import 'ember/theme_access.dart';
 
 /// The slim strip under the shell header that shows the raid timers.
 ///
@@ -24,9 +24,9 @@ class RaidTimerStrip extends StatelessWidget {
       return Container(
         key: const Key('raid-timer-strip'),
         height: 28 * MediaQuery.textScalerOf(context).scale(1),
-        decoration: const BoxDecoration(
-          color: GridColors.inset,
-          border: Border(bottom: BorderSide(color: GridColors.border)),
+        decoration: BoxDecoration(
+          color: context.ember.canvas,
+          border: Border(bottom: BorderSide(color: context.ember.hairline)),
         ),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,

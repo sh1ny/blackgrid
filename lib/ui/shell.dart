@@ -11,7 +11,7 @@ import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
 import 'settings_dialog.dart';
 import 'stats_dialog.dart';
-import 'theme.dart';
+import 'ember/theme_access.dart';
 
 class BlackgridShell extends StatefulWidget {
   const BlackgridShell({super.key, required this.services});
@@ -57,9 +57,11 @@ class _BlackgridShellState extends State<BlackgridShell> {
             children: [
               Container(
                 height: 66 * MediaQuery.textScalerOf(context).scale(1),
-                decoration: const BoxDecoration(
-                  color: GridColors.inset,
-                  border: Border(bottom: BorderSide(color: GridColors.border)),
+                decoration: BoxDecoration(
+                  color: context.ember.canvas,
+                  border: Border(
+                    bottom: BorderSide(color: context.ember.hairline),
+                  ),
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) => SingleChildScrollView(
@@ -78,7 +80,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                           SizedBox(
                             width:
                                 260 * MediaQuery.textScalerOf(context).scale(1),
-                            child: const Column(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -93,7 +95,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                 Text(
                                   'TRACK. PLAN. SURVIVE.',
                                   style: TextStyle(
-                                    color: GridColors.muted,
+                                    color: context.ember.inkSecondary,
                                     fontSize: 10,
                                     letterSpacing: 1.7,
                                   ),
@@ -183,9 +185,11 @@ class _BlackgridShellState extends State<BlackgridShell> {
               ),
               Container(
                 height: 34 * MediaQuery.textScalerOf(context).scale(1),
-                decoration: const BoxDecoration(
-                  color: GridColors.inset,
-                  border: Border(top: BorderSide(color: GridColors.border)),
+                decoration: BoxDecoration(
+                  color: context.ember.canvas,
+                  border: Border(
+                    top: BorderSide(color: context.ember.hairline),
+                  ),
                 ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -198,10 +202,10 @@ class _BlackgridShellState extends State<BlackgridShell> {
                       ]),
                       builder: (context, _) => Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.touch_app_outlined,
                             size: 14,
-                            color: GridColors.gold,
+                            color: context.ember.accentText,
                           ),
                           const SizedBox(width: 8),
                           const SizedBox(width: 2),
@@ -242,14 +246,26 @@ class _BlackgridShellState extends State<BlackgridShell> {
   /// The footer line for the live scan [state]; only `ready` is gold.
   Widget _liveScanFooter(LiveScanState state) {
     final (text, color) = switch (state) {
-      LiveScanState.off => ('Live scan off • no capture', GridColors.muted),
-      LiveScanState.starting => ('Live scan starting', GridColors.muted),
+      LiveScanState.off => (
+        'Live scan off • no capture',
+        context.ember.inkSecondary,
+      ),
+      LiveScanState.starting => (
+        'Live scan starting',
+        context.ember.inkSecondary,
+      ),
       LiveScanState.ready => (
         'Live scan on • captures on click',
-        GridColors.gold,
+        context.ember.accentText,
       ),
-      LiveScanState.stopping => ('Live scan stopping', GridColors.muted),
-      LiveScanState.unavailable => ('Live scan unavailable', GridColors.muted),
+      LiveScanState.stopping => (
+        'Live scan stopping',
+        context.ember.inkSecondary,
+      ),
+      LiveScanState.unavailable => (
+        'Live scan unavailable',
+        context.ember.inkSecondary,
+      ),
     };
     return Text(text, style: TextStyle(color: color, fontSize: 11));
   }
@@ -264,11 +280,13 @@ class _BlackgridShellState extends State<BlackgridShell> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: selected == index
-              ? const Color(0xff191c10)
+              ? context.ember.accentSoft
               : Colors.transparent,
           border: Border(
             bottom: BorderSide(
-              color: selected == index ? GridColors.gold : Colors.transparent,
+              color: selected == index
+                  ? context.ember.accentText
+                  : Colors.transparent,
               width: 2,
             ),
           ),
@@ -278,13 +296,17 @@ class _BlackgridShellState extends State<BlackgridShell> {
             Icon(
               icon,
               size: 20,
-              color: selected == index ? GridColors.gold : GridColors.text,
+              color: selected == index
+                  ? context.ember.accentText
+                  : context.ember.ink,
             ),
             const SizedBox(width: 10),
             Text(
               label,
               style: TextStyle(
-                color: selected == index ? GridColors.gold : GridColors.text,
+                color: selected == index
+                    ? context.ember.accentText
+                    : context.ember.ink,
               ),
             ),
           ],
