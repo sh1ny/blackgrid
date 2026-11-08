@@ -68,8 +68,8 @@
 | map-marker-popups → Summaries reflect prepared marker facts | Linked extract and lock | `test/maps/marker_presentation_test.dart` | linked extract item count switch and lock key facts | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Missing or misleading fields | `test/maps/marker_presentation_test.dart` | missing malformed and misleading facts are not invented | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Boss chance scope | `test/maps/marker_presentation_test.dart` | boss wide chance is a percentage not a location chance | green |
-| map-marker-popups → Summaries reflect prepared marker facts | Fractional boss chance | `test/maps/marker_presentation_test.dart` | map-marker-popups: Fractional boss chance | red |
-| map-marker-popups → Summaries reflect prepared marker facts | Chance near the ends | `test/maps/marker_presentation_test.dart` | map-marker-popups: Chance near the ends | red |
+| map-marker-popups → Summaries reflect prepared marker facts | Fractional boss chance | `test/maps/marker_presentation_test.dart` | map-marker-popups: Fractional boss chance | green |
+| map-marker-popups → Summaries reflect prepared marker facts | Chance near the ends | `test/maps/marker_presentation_test.dart` | map-marker-popups: Chance near the ends | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Refreshed marker facts | `test/maps/marker_popup_test.dart` | refreshed marker selection shows new facts without a request | green |
 | map-rail → Map saved-file inputs starts collapsed | Collapsed on first show | `test/ui/map_diagnostics_test.dart` | map-rail: Collapsed on first show | red |
 | map-rail → Map saved-file inputs starts collapsed | Expanding shows the inputs | `test/ui/map_diagnostics_test.dart` | map-rail: Expanding shows the inputs | red |
@@ -139,7 +139,7 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 3. Spawn chance
 
-- [ ] 3.1 Write failing tests for `Fractional boss chance` and `Chance near the ends` (whole percent; 1-99% for values in the open interval). Implement in `lib/maps/marker_presentation.dart`. Verify `test/maps/marker_presentation_test.dart` passes, flip those rows green, and re-run the green `map-marker-popups` rows.
+- [x] 3.1 Write failing tests for `Fractional boss chance` and `Chance near the ends` (whole percent; 1-99% for values in the open interval). Implement in `lib/maps/marker_presentation.dart`. Verify `test/maps/marker_presentation_test.dart` passes, flip those rows green, and re-run the green `map-marker-popups` rows.
 
 ## 4. Controller and watcher support
 

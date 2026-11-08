@@ -328,6 +328,30 @@ void main() {
       expect(nonfinite, isNot(contains('%')));
     });
 
+    test('map-marker-popups: Fractional boss chance', () {
+      final text = presentMarker(_bossWithChance(0.125)).text;
+
+      expect(text, contains('Spawn chance: 13%'));
+      expect(text, isNot(contains('12.5')));
+    });
+
+    test('map-marker-popups: Chance near the ends', () {
+      const expected = <(num, String)>[
+        (0.004, '1%'),
+        (0.997, '99%'),
+        (0, '0%'),
+        (1, '100%'),
+      ];
+
+      for (final (chance, shown) in expected) {
+        expect(
+          presentMarker(_bossWithChance(chance)).text,
+          contains('Spawn chance: $shown'),
+          reason: 'chance $chance',
+        );
+      }
+    });
+
     test(
       'absent mismatched missing and failed catalog names are unavailable',
       () {
@@ -389,6 +413,14 @@ void main() {
     );
   });
 }
+
+PreparedMarker _bossWithChance(num chance) => _marker(
+  id: 'boss-id',
+  category: 'bosses',
+  filterKey: 'BossSpawns',
+  name: 'The Boss',
+  details: {'spawnChance': chance},
+);
 
 PreparedMarker _marker({
   required String id,

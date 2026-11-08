@@ -23,6 +23,15 @@ class MarkerPresentation {
   String get text => [title, categoryLabel, ...facts].join('\n');
 }
 
+/// Rounds [chance], in the range 0 to 1, to a whole percentage.
+///
+/// A chance strictly between 0 and 1 stays between 1 and 99, so it never reads
+/// as impossible or certain.
+int _wholePercent(num chance) {
+  final percent = (chance * 100).round();
+  return chance > 0 && chance < 1 ? percent.clamp(1, 99) : percent;
+}
+
 /// Derives a summary using only prepared facts and a matching loaded catalog.
 ///
 /// [mapMarkers] supplies the current map inventory for source-linked switches.
@@ -91,11 +100,7 @@ MarkerPresentation presentMarker(
       chance.isFinite &&
       chance >= 0 &&
       chance <= 1) {
-    final percentage = chance * 100;
-    final formatted = percentage == percentage.roundToDouble()
-        ? percentage.toInt().toString()
-        : percentage.toString();
-    facts.add('Spawn chance: $formatted%');
+    facts.add('Spawn chance: ${_wholePercent(chance)}%');
   }
 
   for (final name in _linkedSwitchNames(marker, mapMarkers)) {
