@@ -12,6 +12,7 @@ import 'package:vector_graphics_compiler/vector_graphics_compiler.dart'
 import 'package:yaml/yaml.dart';
 
 import 'calibration.dart';
+import 'place_labels.dart';
 
 import 'package:blackgrid/maps/live_map_normalizer.dart'
     show
@@ -1159,6 +1160,17 @@ Future<Map<String, dynamic>> rebuildCandidate(
     };
     maps.add(local);
   }
+  // The reviewed band table must still match the frozen metadata before any
+  // label gets a floor from it.
+  checkBandTable(metadata, maps);
+  for (final map in maps) {
+    final mapId = map['id'] as String;
+    map['labels'] = manifestLabels(
+      interactiveMetadata(metadata, map['sourceKey'] as String),
+      mapId: mapId,
+      baseFloorId: _baseFloorId(mapId, map['floors']),
+    );
+  }
   for (final entry in frozen.index['sources'] as List) {
     final path = entry['path'] as String;
     // Bundle terms, metadata and source vector, but not the raster source cache.
@@ -1174,7 +1186,7 @@ Future<Map<String, dynamic>> rebuildCandidate(
   await _write(candidate, 'NOTICE.txt', context.noticeBytes);
   final manifest = <String, dynamic>{
     'schemaVersion': 1,
-    'preparationVersion': 3,
+    'preparationVersion': preparedPackVersion,
     'supportedMapIds': supportedMapSources.keys.toList(),
     'sourceGeneration': _hash(utf8.encode(canonicalJson(frozen.index))),
     'sourceLock': context.sourceLock,
@@ -1192,6 +1204,55 @@ Future<Map<String, dynamic>> rebuildCandidate(
   );
   await validateCandidate(candidate, requireCompiled: compileVectors);
   return manifest;
+}
+
+/// The only preparation version the builder writes and the validator accepts.
+///
+/// Version 4 adds the required per-map `labels` list.
+const preparedPackVersion = 4;
+
+String _baseFloorId(String mapId, Object? floors) {
+  final bases = [
+    for (final floor in (floors as List).cast<Map>())
+      if (floor['base'] == true) floor['id'] as String,
+  ];
+  if (bases.length != 1) {
+    throw FormatException('$mapId: expected exactly one base floor');
+  }
+  return bases.single;
+}
+
+/// Requires every map's `labels` to equal the labels derived again from
+/// [sourceMetadata], the candidate's own `evidence/metadata/maps.json`.
+///
+/// This is the label step of [validateCandidate]. [maps] are the manifest's map
+/// entries with `id`, `sourceKey`, `floors` and `labels`. Derivation uses the
+/// builder's functions and band table, so a candidate cannot carry labels its
+/// own evidence does not give.
+///
+/// Throws a [FormatException] naming the map when `labels` is missing, is not a
+/// list, or differs from the derived list.
+void validateCandidateLabels(
+  List<dynamic> sourceMetadata,
+  List<Map<String, dynamic>> maps,
+) {
+  for (final map in maps) {
+    final mapId = map['id'] as String;
+    if (map['labels'] is! List) {
+      throw FormatException('$mapId: labels is missing or not a list');
+    }
+    final derived = manifestLabels(
+      interactiveMetadata(sourceMetadata, map['sourceKey'] as String),
+      mapId: mapId,
+      baseFloorId: _baseFloorId(mapId, map['floors']),
+    );
+    if (canonicalJson(map['labels']) != canonicalJson(derived)) {
+      throw FormatException(
+        '$mapId: labels differ from those derived from the frozen '
+        'metadata (evidence/metadata/maps.json)',
+      );
+    }
+  }
 }
 
 void _requireMapInventory(List<Map> maps, Set<String> expected) {
@@ -1529,6 +1590,18 @@ Future<Map<String, dynamic>> validateCandidate(
       manifest['outputs'] is! List) {
     throw const FormatException('Invalid candidate manifest');
   }
+  // Cheap structural gates first: the version and the labels key of every map.
+  final version = manifest['preparationVersion'];
+  if (version != preparedPackVersion) {
+    throw FormatException('Unsupported preparation version $version');
+  }
+  for (final map in manifest['maps'] as List) {
+    if (map is! Map || map['labels'] is! List) {
+      throw FormatException(
+        '${map is Map ? map['id'] : map}: labels is missing or not a list',
+      );
+    }
+  }
   if (requireCompiled && manifest['vectorsCompiled'] != true) {
     throw const FormatException(
       'Uncompiled vector candidate cannot be promoted',
@@ -1549,11 +1622,8 @@ Future<Map<String, dynamic>> validateCandidate(
   required('evidence/markers/maps_en.json');
   required('evidence/terms/svg-maps-README.md');
   required('evidence/terms/svg-maps-LICENSE.md');
+  required('evidence/terms/tarkov-dev-software-LICENSE.txt');
   final maps = (manifest['maps'] as List).cast<Map<String, dynamic>>();
-  final version = manifest['preparationVersion'];
-  if (version != 3) {
-    throw FormatException('Unsupported preparation version $version');
-  }
   _requireMapInventory(maps, supportedMapSources.keys.toSet());
   if (maps.any((map) => map['sourceKey'] != supportedMapSources[map['id']])) {
     throw const FormatException('Candidate source identity contract changed');
@@ -1620,6 +1690,7 @@ Future<Map<String, dynamic>> validateCandidate(
   final sourceMetadata = jsonDecode(
     await packFile(candidate, 'evidence/metadata/maps.json').readAsString(),
   ) as List;
+  validateCandidateLabels(sourceMetadata, maps);
   final sourceMarkers = await _readJson(
     candidate,
     'evidence/markers/maps.json',
@@ -2450,7 +2521,9 @@ void validateMetadataSourceIndex(
 /// Rejects artifact changes outside the refreshed metadata evidence.
 ///
 /// Map records may change, but non-marker map data and all non-metadata output
-/// hashes and manifest settings must stay fixed.
+/// hashes and manifest settings must stay fixed. Every map key except
+/// `markers` is compared, so a changed, added or removed `labels` entry fails
+/// naming the map.
 void validateMetadataPreservation(
   Map<String, dynamic> baseline,
   Map<String, dynamic> candidate,

@@ -723,5 +723,6 @@ PreparedMap _map(String id) => PreparedMap.fromJson({
       'source': <String, dynamic>{},
     },
   ],
+  'labels': <Object>[],
   'attribution': {'author': 'Synthetic saved-evidence behavior fixture'},
 }, assetRoot: 'fixture/');

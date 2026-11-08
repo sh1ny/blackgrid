@@ -6,7 +6,7 @@ import 'package:blackgrid/maps/prepared_map_loader.dart';
 
 import '../../tool/maps/calibration.dart' show supportedMapSources;
 
-/// Builds a complete preparation-version-3 manifest for loader tests.
+/// Builds a complete preparation-version-4 manifest for loader tests.
 ///
 /// [maps] are the maps a test cares about. Every other supported map id is
 /// padded with [minimalPreparedMap], so the supported-map closure holds. The
@@ -34,7 +34,7 @@ Map<String, dynamic> preparedPackManifest({
   }
   return {
     'schemaVersion': 1,
-    'preparationVersion': 3,
+    'preparationVersion': 4,
     'vectorsCompiled': true,
     'vectorCodecFormat': preparedVectorCodecFormat,
     'supportedMapIds': [...supportedMapSources.keys],
@@ -88,6 +88,7 @@ Map<String, dynamic> minimalPreparedMap(String id) => {
     },
   ],
   'markers': [],
+  'labels': [],
   'attribution': {'author': 'Padding fixture'},
 };
 

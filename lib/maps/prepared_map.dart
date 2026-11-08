@@ -47,6 +47,7 @@ class PreparedMap {
     required this.components,
     required this.tiles,
     required this.markers,
+    required this.placeLabels,
     required this.attribution,
     required this.rasterDependencies,
     required this.sourceKey,
@@ -338,6 +339,19 @@ class PreparedMap {
         policy.reset().isLayerVisible(marker.floorId!);
       }
     }
+    final floorIds = {for (final floor in rawFloors) floor['id'] as String};
+    if (!json.containsKey('labels')) {
+      throw FormatException('$id: the map has no labels key.');
+    }
+    final placeLabels = [
+      for (final (index, raw) in _list(json['labels'], 'labels').indexed)
+        PreparedPlaceLabel.fromJson(
+          raw,
+          mapId: id,
+          index: index,
+          floorIds: floorIds,
+        ),
+    ];
     final rasterDependencies =
         (json['rasterDependencies'] == null
                 ? const []
@@ -388,6 +402,7 @@ class PreparedMap {
       components: List.unmodifiable(ordered),
       tiles: List.unmodifiable(tiles),
       markers: List.unmodifiable(markers),
+      placeLabels: List.unmodifiable(placeLabels),
       tileLayout: layout,
       rasterDependencies: List.unmodifiable(rasterDependencies),
       attribution: _immutableObject(
@@ -411,6 +426,9 @@ class PreparedMap {
   final List<PreparedRasterTile> tiles;
   final MapTileLayout? tileLayout;
   final List<PreparedMarker> markers;
+
+  /// The map's place labels in pack order, empty when it has none.
+  final List<PreparedPlaceLabel> placeLabels;
   final Map<String, dynamic> attribution;
 
   /// The exact upstream map identity when the manifest carries one.
@@ -678,6 +696,82 @@ class PreparedRasterDependency {
 }
 
 /// An independently acquired data marker, distinct from a persisted user pin.
+/// One place name from a prepared pack, at a raw game position.
+///
+/// The position is the game X and Z, never scene coordinates. The app projects
+/// it with the map's geometry, like a marker position. A label shows on every
+/// floor in [floorIds].
+class PreparedPlaceLabel {
+  PreparedPlaceLabel._({
+    required this.text,
+    required this.position,
+    required this.rotation,
+    required this.size,
+    required this.floorIds,
+  });
+
+  /// Parses and validates one manifest label of the map [mapId].
+  ///
+  /// Throws a [FormatException] naming [mapId] and [index] for blank text, a
+  /// position, rotation or size that is not finite, a size that is not
+  /// positive, no floors, or a floor that is not in [floorIds].
+  factory PreparedPlaceLabel.fromJson(
+    Object? json, {
+    required String mapId,
+    required int index,
+    required Set<String> floorIds,
+  }) {
+    Never fail(String problem) =>
+        throw FormatException('$mapId: label $index $problem.');
+    if (json is! Map<String, dynamic>) fail('is not an object');
+    final text = json['text'];
+    if (text is! String || text.trim().isEmpty) fail('has blank text');
+    final position = json['position'];
+    if (position is! Map<String, dynamic>) fail('has no position');
+    final x = position['x'], z = position['z'];
+    if (x is! num || z is! num || !x.isFinite || !z.isFinite) {
+      fail('has a position that is not finite');
+    }
+    final rotation = json['rotation'];
+    if (rotation is! num || !rotation.isFinite) {
+      fail('has a rotation that is not finite');
+    }
+    final size = json['size'];
+    if (size is! num || !size.isFinite || size <= 0) {
+      fail('has a size that is not a positive finite number');
+    }
+    final floors = json['floorIds'];
+    if (floors is! List || floors.isEmpty) fail('has no floors');
+    for (final floor in floors) {
+      if (floor is! String || !floorIds.contains(floor)) {
+        fail('names the floor $floor, which the map does not have');
+      }
+    }
+    return PreparedPlaceLabel._(
+      text: text,
+      position: GamePoint(x.toDouble(), z.toDouble()),
+      rotation: rotation.toDouble(),
+      size: size.toDouble(),
+      floorIds: List.unmodifiable(floors.cast<String>()),
+    );
+  }
+
+  /// The source text, unchanged.
+  final String text;
+
+  /// The game position (X and Z).
+  final GamePoint position;
+
+  /// The rotation in degrees.
+  final double rotation;
+
+  /// The relative size.
+  final double size;
+
+  /// The floors the label belongs to, never empty.
+  final List<String> floorIds;
+}
+
 class PreparedMarker {
   PreparedMarker({
     required this.id,

@@ -201,7 +201,7 @@ Map<String, dynamic> _preservedManifest({
       ];
   return {
     'schemaVersion': 1,
-    'preparationVersion': 3,
+    'preparationVersion': 4,
     'supportedMapIds': ['m'],
     'sourceLock': {
       'primaryHashes': {'artwork': 'same'},
@@ -213,6 +213,7 @@ Map<String, dynamic> _preservedManifest({
       {
         'id': 'm',
         'markers': markerList,
+        'labels': <Object>[],
         'geometry': {
           'affine': [1, 0, 0, 1, 0, 0],
         },
@@ -584,6 +585,22 @@ void main() {
           ),
         ),
         (
+          'place labels',
+          _preservedManifest(
+            mapValues: {
+              'labels': [
+                {
+                  'text': 'Gate',
+                  'position': {'x': 1, 'z': 2},
+                  'rotation': 0,
+                  'size': 80,
+                  'floorIds': ['Ground'],
+                },
+              ],
+            },
+          ),
+        ),
+        (
           'floor metadata',
           _preservedManifest(
             mapValues: {
@@ -643,7 +660,7 @@ void main() {
         ),
         (
           'preparation version',
-          _preservedManifest(packValues: {'preparationVersion': 4}),
+          _preservedManifest(packValues: {'preparationVersion': 3}),
         ),
         (
           'supported inventory',

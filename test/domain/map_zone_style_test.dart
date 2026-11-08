@@ -80,6 +80,43 @@ void main() {
       expect(failures, isEmpty);
     });
   });
+
+  group('placeLabelColour', () {
+    test('place label colour differs from faction colours and meets 3:1 '
+        'blended at 85%', () {
+      final failures = <String>[];
+      final hex = _hex(placeLabelColour);
+      for (final faction in LabelFaction.values) {
+        if ((labelColourFor(faction) & 0xFFFFFF) ==
+            (placeLabelColour & 0xFFFFFF)) {
+          failures.add(
+            'place label colour $hex equals the ${faction.name} name colour',
+          );
+        }
+      }
+      final blended = _blend(placeLabelColour, placeLabelOpacity);
+      final contrast = _contrast(blended, _background);
+      if (contrast < 3) {
+        failures.add(
+          'place label colour $hex blended at 85%: contrast '
+          '${contrast.toStringAsFixed(2)} is below 3:1 against #090F0D',
+        );
+      }
+      expect(placeLabelOpacity, 0.85);
+      expect(failures, isEmpty);
+    });
+  });
+}
+
+/// Blends [argb] at [opacity] over the map background.
+int _blend(int argb, double opacity) {
+  int channel(int shift) {
+    final fg = (argb >> shift) & 0xFF;
+    final bg = (_background >> shift) & 0xFF;
+    return (fg * opacity + bg * (1 - opacity)).round();
+  }
+
+  return 0xFF000000 | channel(16) << 16 | channel(8) << 8 | channel(0);
 }
 
 String _hex(int argb) =>

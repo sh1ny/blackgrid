@@ -19,9 +19,13 @@ const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart artwork-refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml> --stage <fresh-directory> [--reviewed-calibration-update]
   dart run tool/maps/prepare.dart artwork-publish --candidate <staged-directory> --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
 
-Preparation v3 requires the complete canonical inventory:
+Preparation v4 requires the complete canonical inventory:
 factory, customs, woods, shoreline, interchange, thelab, reserve, lighthouse,
-streetsoftarkov, groundzero, terminal, icebreaker and labyrinth.
+streetsoftarkov, groundzero, terminal, icebreaker and labyrinth. Every map
+carries a `labels` list (empty when its metadata has none): the place names of
+the frozen interactive metadata with their floors, assigned from a reviewed
+height-band table. Validation derives them again from the candidate's own
+evidence/metadata/maps.json and requires them to match.
 Artwork, metadata, marker/task/trader dictionaries, translations and published
 terms are acquired into a fresh hash-locked raw generation. Source IDs are not
 selector aliases: Labs uses the-lab, Streets streets-of-tarkov, Ground Zero
@@ -65,12 +69,12 @@ vector is compiled twice and a build fails when the two outputs differ.
 validate/promote bind canonical vector component paths and actual compiled
 payloads to dependency-closed source SVGs: validation recompiles every vector
 from its evidence and requires identical bytes, and every payload header must
-match the manifest's vectorCodecFormat. Only preparation version 3 with a
-vectorCodecFormat validates. Preparation v3
+match the manifest's vectorCodecFormat. Only preparation version 4 with a
+vectorCodecFormat validates. Preparation v4
 preserves v2's content-addressed original PNG witnesses for transparent tiles;
 empty records are decoded and hash-bound just like visible tiles, not inferred
 from byte size or trusted from the manifest. Crops must remain wholly inside
-the unchanged original artwork frame. New rebuilds require v3's complete
+the unchanged original artwork frame. New rebuilds require v4's complete
 inventory; old raw partial inputs do not silently become complete candidates.
 promote atomically replaces only active.json. refresh keeps only the active
 generation. No command mutates an active version.

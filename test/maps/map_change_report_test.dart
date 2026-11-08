@@ -39,13 +39,14 @@ Map<String, dynamic> _manifest(
   final paths = hashes.keys.toList()..sort();
   return {
     'schemaVersion': 1,
-    'preparationVersion': 3,
+    'preparationVersion': 4,
     'toolchain': toolchain,
     ...extra,
     'maps': [
       {
         'id': 'woods',
         'kind': 'vector',
+        'labels': <Object>[],
         'displayCrop': {'left': 0, 'top': 0, 'right': 10, 'bottom': 10},
         'layerOrder': ['Ground_Level'],
         'floors': [
@@ -84,6 +85,7 @@ Map<String, dynamic> _manifest(
       {
         'id': 'thelab',
         'kind': 'raster',
+        'labels': <Object>[],
         'displayCrop':
             displayCrop ?? {'left': 0, 'top': 0, 'right': 8, 'bottom': 8},
         'floors': [

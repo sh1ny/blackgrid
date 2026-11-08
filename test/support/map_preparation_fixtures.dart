@@ -4,12 +4,24 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:image/image.dart' as image;
+import 'package:test/test.dart' show Timeout;
 
 import '../../tool/maps/calibration.dart';
 import '../../tool/maps/pack.dart';
+import '../../tool/maps/place_labels.dart';
 
 import 'package:blackgrid/maps/live_map_normalizer.dart'
     show canonicalJson, prepareMarkers;
+
+/// The timeout for a `qualification` test that runs a full artwork staging or
+/// [rebuildCandidate].
+///
+/// A full rebuild of every map took about 2 minutes on GitHub runners, so these
+/// tests timed out at the 2-minute `qualification` tag default in CI runs
+/// 42395244727, 42410087351 and 42410085044. Pass this as the `timeout`
+/// of each such test or group, and of the first test of a suite whose
+/// `setUpAll` builds the fixtures, because that time counts against it.
+const fullRebuildTimeout = Timeout(Duration(minutes: 10));
 
 /// A fixed toolchain record for fixture builds, never read from the lock.
 const fixtureToolchain = <String, String>{
@@ -159,6 +171,17 @@ class MapPreparationFixtures {
       for (final dependency in map['rasterDependencies'] as List? ?? []) {
         keepTiles(dependency['artwork'] as Map);
       }
+      // The reduced floors can change the base floor, so the labels follow
+      // validation: derived again from the reduced candidate's own metadata.
+      map['labels'] = manifestLabels(
+        interactiveMetadata(metadata, local['sourceKey'] as String),
+        mapId: map['id'] as String,
+        baseFloorId:
+            (map['floors'] as List).cast<Map>().singleWhere(
+                  (floor) => floor['base'] == true,
+                )['id']
+                as String,
+      );
     }
     (index['sources'] as List).removeWhere(
       (entry) =>
@@ -299,6 +322,7 @@ Map<String, dynamic> preparedMapMetadataFixture(String sourceKey) {
     };
   }
   raw['markers'] = <Object>[];
+  raw['labels'] = <Object>[];
   raw['attribution'] = {'author': 'Synthetic structural fixture'};
   return raw;
 }
@@ -334,6 +358,37 @@ Map<String, Object?> _fixtureBoss({
     },
   ],
 };
+
+/// Gives a synthetic interactive entry the heights the place label band table
+/// is reviewed against, so [rebuildCandidate] can check the table.
+///
+/// The entry's top node is the first floor and layer `i` is floor `i + 1`, as
+/// the synthetic metadata above is laid out. Floors the table leaves out get
+/// no height.
+void _giveFloorBandHeights(
+  Map<String, Object?> interactive,
+  String mapId,
+  List<Map<String, Object?>> floors,
+) {
+  for (final band in placeLabelBandTable[mapId] ?? const <LabelFloorBand>[]) {
+    final index = floors.indexWhere((floor) => floor['id'] == band.floorId);
+    final height = [band.min, band.max];
+    switch (band.source) {
+      case MapHeightRange():
+        interactive['heightRange'] = height;
+      case InterchangeHeightRange():
+        interactive['_heightRange'] = height;
+      case LayerExtent(:final name, :final extentIndex):
+        final layer = (interactive['layers'] as List)[index - 1] as Map;
+        layer['name'] = name;
+        final extents = (layer['extents'] ??= <Object>[]) as List;
+        while (extents.length <= extentIndex) {
+          extents.add(<String, Object?>{});
+        }
+        extents[extentIndex] = {'height': height};
+    }
+  }
+}
 
 Future<Directory> materializeFullRaw(Directory raw) async {
   await raw.create();
@@ -373,10 +428,10 @@ Future<Directory> materializeFullRaw(Directory raw) async {
       for (final dependency in local['rasterDependencies'] as List? ?? [])
         dependency['id'] as String: dependency['sourceTileUrl'] as String,
     };
-    metadata.add({
+    final entry = <String, Object?>{
       'normalizedName': local['sourceKey'],
       'maps': [
-        {
+        <String, Object?>{
           'key': local['sourceKey'],
           'projection': 'interactive',
           'author': 'Synthetic fixture author',
@@ -395,7 +450,7 @@ Future<Directory> materializeFullRaw(Directory raw) async {
             'tilePath': floors.first['sourceTileUrl'],
           'layers': [
             for (final floor in floors.skip(1))
-              {
+              <String, Object?>{
                 if (local['kind'] == 'vector' &&
                     floor['sourceTileUrl'] == null) ...{
                   'svgLayer': floor['id'],
@@ -407,7 +462,13 @@ Future<Directory> materializeFullRaw(Directory raw) async {
           ],
         },
       ],
-    });
+    };
+    _giveFloorBandHeights(
+      (entry['maps'] as List).single as Map<String, Object?>,
+      local['id'] as String,
+      floors,
+    );
+    metadata.add(entry);
     mapData[local['id'] as String] = {
       'id': local['id'],
       'normalizedName': local['sourceKey'],
@@ -584,6 +645,12 @@ Future<Directory> materializeFullRaw(Directory raw) async {
   );
   await put(
     'terms/svg-maps-LICENSE.md',
+    utf8.encode('Independently authored test terms'),
+  );
+  // The pack carries the place label source's licence text; validation
+  // requires it.
+  await put(
+    'terms/tarkov-dev-software-LICENSE.txt',
     utf8.encode('Independently authored test terms'),
   );
   sources.sort((a, b) => (a['path'] as String).compareTo(b['path'] as String));

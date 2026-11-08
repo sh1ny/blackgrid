@@ -15,6 +15,7 @@ import 'package:blackgrid/maps/live_map_normalizer.dart'
 
 import '../../tool/maps/svg.dart';
 import '../../tool/maps/calibration.dart';
+import '../../tool/maps/place_labels.dart';
 import '../support/map_preparation_fixtures.dart' show png;
 
 Map<String, dynamic> _fixtureBoss({
@@ -1165,5 +1166,105 @@ void main() {
     );
     await expectLater(promoteCandidate(bad, packs), throwsFormatException);
     expect(jsonDecode(await active.readAsString()), {'version': 'A'});
+  });
+
+  group('candidate labels', () {
+    // The active pack's frozen metadata stands in for a candidate's own
+    // evidence/metadata/maps.json. Only its manifest identity and floors are
+    // used, so the tests do not depend on the labels the pack carries.
+    late List<dynamic> metadata;
+    late List<Map<String, dynamic>> maps;
+
+    setUpAll(() {
+      final pointer = jsonDecode(
+        File('assets/maps/active.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      final manifestFile = File('assets/maps/${pointer['manifest']}');
+      final manifest =
+          jsonDecode(manifestFile.readAsStringSync()) as Map<String, dynamic>;
+      metadata = jsonDecode(
+        File('${manifestFile.parent.path}/evidence/metadata/maps.json')
+            .readAsStringSync(),
+      ) as List;
+      maps = [
+        for (final map in (manifest['maps'] as List).cast<Map>())
+          {
+            'id': map['id'],
+            'sourceKey': map['sourceKey'],
+            'floors': [
+              for (final floor in (map['floors'] as List).cast<Map>())
+                {'id': floor['id'], 'base': floor['base']},
+            ],
+          },
+      ];
+      for (final map in maps) {
+        final floors = map['floors'] as List;
+        map['labels'] = manifestLabels(
+          interactiveMetadata(metadata, map['sourceKey'] as String),
+          mapId: map['id'] as String,
+          baseFloorId:
+              floors.singleWhere((f) => f['base'] == true)['id'] as String,
+        );
+      }
+    });
+
+    List<Map<String, dynamic>> copy() =>
+        (jsonDecode(jsonEncode(maps)) as List).cast<Map<String, dynamic>>();
+
+    Map<String, dynamic> byId(List<Map<String, dynamic>> all, String id) =>
+        all.singleWhere((map) => map['id'] == id);
+
+    test('validateCandidate accepts labels derived from own metadata', () {
+      expect(() => validateCandidateLabels(metadata, copy()), returnsNormally);
+      // Fixed points of the derivation, independent of the helper above.
+      final interchange = byId(copy(), 'interchange')['labels'] as List;
+      expect(interchange, hasLength(77));
+      expect(interchange.singleWhere((l) => l['text'] == 'IDEA')['floorIds'], [
+        'First_Floor',
+      ]);
+      expect(byId(copy(), 'terminal')['labels'], isEmpty);
+      expect(
+        copy().fold<int>(0, (sum, map) => sum + (map['labels'] as List).length),
+        303,
+      );
+    });
+
+    test('validateCandidate rejects labels that differ from own metadata', () {
+      void rejects(
+        String name,
+        void Function(List<Map<String, dynamic>>) edit,
+      ) {
+        final candidate = copy();
+        edit(candidate);
+        expect(
+          () => validateCandidateLabels(metadata, candidate),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('customs'),
+            ),
+          ),
+          reason: name,
+        );
+      }
+
+      List<dynamic> labels(List<Map<String, dynamic>> all) =>
+          byId(all, 'customs')['labels'] as List;
+      rejects('changed text', (all) => labels(all)[0]['text'] = 'Elsewhere');
+      rejects('changed floor', (all) => labels(all)[0]['floorIds'] = ['Nope']);
+      rejects('changed position', (all) {
+        (labels(all)[0]['position'] as Map)['x'] = 1e6;
+      });
+      rejects('changed rotation', (all) => labels(all)[0]['rotation'] = 45);
+      rejects('dropped label', (all) => labels(all).removeLast());
+      rejects('extra label', (all) => labels(all).add(labels(all).first));
+      rejects(
+        'reordered',
+        (all) => labels(all).insert(0, labels(all).removeLast()),
+      );
+      rejects('emptied', (all) => labels(all).clear());
+      rejects('missing key', (all) => byId(all, 'customs').remove('labels'));
+    });
   });
 }

@@ -1223,6 +1223,90 @@ void main() {
     expect(controller.preparedMap, isNull);
   });
 
+  group('place labels', () {
+    final labels = [
+      _label('Hall', 8, 8, ['Base']),
+      _label('Roof', 24, 8, ['Upper']),
+    ];
+
+    Future<MapController> open({String map = 'interchange'}) async {
+      final controller = _controller(labels: labels);
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: map);
+      await _settled(controller);
+      return controller;
+    }
+
+    List<String> texts(MapController c) => [
+      for (final l in c.visiblePlaceLabels()) l.label.text,
+    ];
+
+    test(
+      'place labels: base label stays visible under a selected overlay',
+      () async {
+        final controller = await open();
+        controller.toggleFloor('Upper');
+        expect(texts(controller), ['Hall', 'Roof']);
+        expect(controller.selectedOverlayFloorIds, {'Upper'});
+      },
+    );
+
+    test(
+      'place labels: overlay label shows only while its overlay is selected',
+      () async {
+        final controller = await open();
+        expect(texts(controller), ['Hall']);
+        controller.toggleFloor('Upper');
+        expect(texts(controller), contains('Roof'));
+        controller.toggleFloor('Upper');
+        expect(texts(controller), ['Hall']);
+      },
+    );
+
+    test(
+      'place labels: exclusive floor hides labels of other floors',
+      () async {
+        final controller = await open(map: 'icebreaker');
+        expect(texts(controller), ['Hall']);
+        controller.toggleFloor('Upper');
+        expect(texts(controller), ['Roof']);
+      },
+    );
+
+    test('place labels: map with an empty label list yields none', () async {
+      final controller = _controller();
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'interchange');
+      await _settled(controller);
+      expect(controller.visiblePlaceLabels(), isEmpty);
+    });
+
+    test('place labels: project to screen coordinates of the view', () async {
+      final controller = await open();
+      final label = controller.visiblePlaceLabels().single;
+      final expected = controller.transform.sceneToViewport(
+        controller.preparedMap!.gameToScene(label.label.position),
+      );
+      expect(label.viewportPoint.x, closeTo(expected.x, 1e-9));
+      expect(label.viewportPoint.y, closeTo(expected.y, 1e-9));
+    });
+
+    test('place labels: marker updates keep the label projection', () async {
+      final controller = await open();
+      final before = controller.visiblePlaceLabels();
+      controller.publishMarkers(null, changed: false);
+      controller.setSearch('x');
+      controller.setQuestFilters(name: 'q');
+      controller.setSelectedMarker(null);
+      controller.setRaidHighlights({'a'});
+      expect(identical(controller.visiblePlaceLabels(), before), isTrue);
+      controller.panBy(5, 0);
+      expect(identical(controller.visiblePlaceLabels(), before), isFalse);
+    });
+  });
+
   group('outline hits follow outline visibility', () {
     late MapController controller;
     late ViewportPoint insideExtract;
@@ -1393,14 +1477,20 @@ MapController _controllerFor(Future<ByteData> Function(String) loadBytes) {
 MapController _controller({
   Future<ByteData> Function(String)? artwork,
   List<Map<String, dynamic>>? markers,
+  List<Map<String, dynamic>> labels = const [],
   int rotation = 0,
 }) {
   final loader = PreparedMapPackLoader(
     loadBytes: preparedPackBytes(
       preparedPackManifest(
         maps: [
-          _map('interchange', markers: markers, rotation: rotation),
-          _map('icebreaker', exclusive: true),
+          _map(
+            'interchange',
+            markers: markers,
+            labels: labels,
+            rotation: rotation,
+          ),
+          _map('icebreaker', exclusive: true, labels: labels),
         ],
       ),
       other: (path) async => artwork == null ? _picture() : artwork(path),
@@ -1416,6 +1506,7 @@ Map<String, dynamic> _map(
   String id, {
   bool exclusive = false,
   List<Map<String, dynamic>>? markers,
+  List<Map<String, dynamic>> labels = const [],
   int rotation = 0,
 }) => {
   'id': id,
@@ -1494,6 +1585,7 @@ Map<String, dynamic> _map(
           'source': {'url': 'fixture'},
         },
       ],
+  'labels': labels,
   'attribution': {'author': 'Independent fixture'},
 };
 Map<String, dynamic> _marker(
@@ -1514,6 +1606,19 @@ Map<String, dynamic> _marker(
   'details': {...details, if (outline.isNotEmpty) 'outline': outline},
   'outline': outline,
   'source': {'url': 'fixture'},
+};
+
+Map<String, dynamic> _label(
+  String text,
+  double x,
+  double z,
+  List<String> floorIds,
+) => {
+  'text': text,
+  'position': {'x': x, 'z': z},
+  'rotation': 0,
+  'size': 80,
+  'floorIds': floorIds,
 };
 
 ByteData _picture() => ByteData.sublistView(

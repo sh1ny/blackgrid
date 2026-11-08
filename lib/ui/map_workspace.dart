@@ -9,6 +9,7 @@ import '../application/app_services.dart';
 import '../application/map_controller.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_marker_query.dart';
+import '../domain/map_place_labels.dart';
 import '../domain/map_zone_style.dart';
 import '../domain/marker_categories.dart';
 import '../domain/settings.dart';
@@ -716,6 +717,7 @@ class _MapPainter extends CustomPainter {
       size.width + 44,
       size.height + 44,
     );
+    _placeLabels(canvas, size);
     final visible = maps.visibleMarkers();
     for (final projected in visible) {
       if (_outlineShown(projected.marker)) _outline(canvas, projected);
@@ -781,6 +783,83 @@ class _MapPainter extends CustomPainter {
       }
     }
   }
+
+  /// Draws the place names under every marker drawing.
+  ///
+  /// Labels keep a fixed screen size at any zoom. Each placed label is centred
+  /// on its anchor and rotated clockwise about it. Search and selection never
+  /// change them, and they take no hit testing or semantics.
+  void _placeLabels(Canvas canvas, Size size) {
+    final projected = maps.visiblePlaceLabels();
+    if (projected.isEmpty) return;
+    final fills = <TextPainter>[];
+    final candidates = <PlaceLabelCandidate>[];
+    for (final (index, item) in projected.indexed) {
+      final text = _placeText(item.label, _placeFill);
+      fills.add(text);
+      candidates.add(
+        PlaceLabelCandidate(
+          x: item.viewportPoint.x,
+          y: item.viewportPoint.y,
+          width: text.width,
+          height: text.height,
+          rotationDegrees: item.label.rotation,
+          size: item.label.size,
+          packIndex: index,
+          floorIds: item.label.floorIds.toSet(),
+        ),
+      );
+    }
+    final placed = placeLabels(
+      candidates,
+      PlaceLabelViewport(width: size.width, height: size.height),
+      maps.selectedOverlayFloorIds,
+    );
+    // The halo is laid out for placed labels only; the fill is the measurement.
+    for (final halo in [true, false]) {
+      for (final index in placed) {
+        final item = projected[index];
+        final text = halo ? _placeText(item.label, _placeHalo) : fills[index];
+        canvas.save();
+        canvas.translate(item.viewportPoint.x, item.viewportPoint.y);
+        canvas.rotate(item.label.rotation * math.pi / 180);
+        text.paint(canvas, Offset(-text.width / 2, -text.height / 2));
+        canvas.restore();
+        if (halo) text.dispose();
+      }
+    }
+    for (final text in fills) {
+      text.dispose();
+    }
+  }
+
+  TextPainter _placeText(
+    PreparedPlaceLabel label,
+    TextStyle Function(double) style,
+  ) => TextPainter(
+    text: TextSpan(
+      text: label.text,
+      style: style(placeLabelFontSize(label.size)),
+    ),
+    textDirection: TextDirection.ltr,
+    maxLines: 1,
+  )..layout();
+
+  TextStyle _placeFill(double fontSize) => TextStyle(
+    fontSize: fontSize,
+    fontWeight: FontWeight.w600,
+    color: const Color(placeLabelColour).withValues(alpha: placeLabelOpacity),
+  );
+
+  TextStyle _placeHalo(double fontSize) => TextStyle(
+    fontSize: fontSize,
+    fontWeight: FontWeight.w600,
+    foreground: Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _labelHaloWidth
+      ..strokeJoin = StrokeJoin.round
+      ..color = markerIcons.background.withValues(alpha: placeLabelOpacity),
+  );
 
   bool _outlineShown(PreparedMarker marker) => outlineDrawn(
     marker.filterKey,

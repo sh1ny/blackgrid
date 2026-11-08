@@ -632,40 +632,45 @@ void main() {
       _fixtureRoot = null;
       _fixturesFuture = null;
     });
-    test('calibrationAndOwnershipMismatchRejected', () async {
-      final harness = await _stageHarness();
-      final pointer = await harness.activePointer();
-      final activeManifest = await harness.baselineManifest();
-      final pubspec = await harness.pubspec.readAsString();
-      final calibration = jsonDecode(
-        canonicalJson(harness.context.calibration),
-      ) as Map<String, dynamic>;
-      final interchange = (calibration['maps'] as List)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((map) => map['sourceKey'] == 'interchange');
-      final affine = interchange['geometry']['affine'] as List;
-      affine[0] = (affine[0] as num) + 1;
-      final changedContext = MapBuildContext.reviewed(
-        calibration: calibration,
-        sourceLock: harness.context.sourceLock,
-        noticeBytes: harness.context.noticeBytes,
-      );
-      await expectLater(
-        _runStage(harness, context: changedContext),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'message',
-            allOf(contains('interchange'), contains('geometry.affine')),
+    test(
+      'calibrationAndOwnershipMismatchRejected',
+      () async {
+        final harness = await _stageHarness();
+        final pointer = await harness.activePointer();
+        final activeManifest = await harness.baselineManifest();
+        final pubspec = await harness.pubspec.readAsString();
+        final calibration = jsonDecode(
+          canonicalJson(harness.context.calibration),
+        ) as Map<String, dynamic>;
+        final interchange = (calibration['maps'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere((map) => map['sourceKey'] == 'interchange');
+        final affine = interchange['geometry']['affine'] as List;
+        affine[0] = (affine[0] as num) + 1;
+        final changedContext = MapBuildContext.reviewed(
+          calibration: calibration,
+          sourceLock: harness.context.sourceLock,
+          noticeBytes: harness.context.noticeBytes,
+        );
+        await expectLater(
+          _runStage(harness, context: changedContext),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains('interchange'), contains('geometry.affine')),
+            ),
           ),
-        ),
-      );
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: activeManifest,
-        pubspecText: pubspec,
-      );
-    }, tags: ['qualification']);
+        );
+        await harness.expectUnchanged(
+          pointer: pointer,
+          manifest: activeManifest,
+          pubspecText: pubspec,
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
 
     test(
       'staging and frozen reproduction omit stale marker overrides',
@@ -758,42 +763,48 @@ void main() {
         );
       },
       tags: ['qualification'],
+      timeout: fullRebuildTimeout,
     );
 
-    test('changedArtworkStages', () async {
-      final harness = await _stageHarness();
-      final pointer = await harness.activePointer();
-      final activeManifest = await harness.baselineManifest();
-      final pubspec = await harness.pubspec.readAsString();
-      final sourcePath =
-          harness.transport.routes[harness.transport.changedTile]!;
-      final parts = sourcePath.split('/');
-      final artworkPath =
-          'artwork/${parts[1]}/${parts[2]}/${parts[3]}/${parts[4]}';
+    test(
+      'changedArtworkStages',
+      () async {
+        final harness = await _stageHarness();
+        final pointer = await harness.activePointer();
+        final activeManifest = await harness.baselineManifest();
+        final pubspec = await harness.pubspec.readAsString();
+        final sourcePath =
+            harness.transport.routes[harness.transport.changedTile]!;
+        final parts = sourcePath.split('/');
+        final artworkPath =
+            'artwork/${parts[1]}/${parts[2]}/${parts[3]}/${parts[4]}';
 
-      final staged = await _runStage(
-        harness,
-        stage: Directory('${harness.stage.path}${Platform.pathSeparator}'),
-      );
+        final staged = await _runStage(
+          harness,
+          stage: Directory('${harness.stage.path}${Platform.pathSeparator}'),
+        );
 
-      expect(staged.diagnostics, isEmpty);
-      expect(staged.report.changed, isTrue);
-      expect(staged.report.paths, contains(artworkPath));
-      expect(
-        staged.report.valueKeys,
-        contains('${parts[1]} ${parts[2]} values'),
-      );
-      expect(await packFile(staged.candidate, artworkPath).exists(), isTrue);
-      expect(
-        (staged.manifest['maps'] as List).map((map) => map['id']).toList(),
-        supportedMapSources.keys.toList(),
-      );
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: activeManifest,
-        pubspecText: pubspec,
-      );
-    }, tags: ['qualification']);
+        expect(staged.diagnostics, isEmpty);
+        expect(staged.report.changed, isTrue);
+        expect(staged.report.paths, contains(artworkPath));
+        expect(
+          staged.report.valueKeys,
+          contains('${parts[1]} ${parts[2]} values'),
+        );
+        expect(await packFile(staged.candidate, artworkPath).exists(), isTrue);
+        expect(
+          (staged.manifest['maps'] as List).map((map) => map['id']).toList(),
+          supportedMapSources.keys.toList(),
+        );
+        await harness.expectUnchanged(
+          pointer: pointer,
+          manifest: activeManifest,
+          pubspecText: pubspec,
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
 
     group('unchangedAndEvidenceOnlyStage', () {
       late _StageHarness sharedHarness;
@@ -824,465 +835,523 @@ void main() {
         staged = await _runStage(sharedHarness);
       });
 
-      test('evidenceOnlyStage', () async {
-        expect(staged.report.changed, isTrue);
-        expect(staged.report.paths, contains('evidence/sources.json'));
-        expect(
-          staged.report.paths.every((path) => !path.startsWith('artwork/')),
-          isTrue,
+      test(
+        'evidenceOnlyStage',
+        () async {
+          expect(staged.report.changed, isTrue);
+          expect(staged.report.paths, contains('evidence/sources.json'));
+          expect(
+            staged.report.paths.every((path) => !path.startsWith('artwork/')),
+            isTrue,
+          );
+          expect(staged.report.valueKeys, contains('sourceGeneration'));
+          expect(staged.diagnostics, isEmpty);
+          expect(
+            await packFile(
+              staged.candidate,
+              'evidence/calibration.json',
+            ).readAsBytes(),
+            baselineCalibrationBytes,
+          );
+          await sharedHarness.expectUnchanged(
+            pointer: pointer,
+            manifest: activeManifest,
+            pubspecText: pubspec,
+          );
+        },
+        tags: ['qualification'],
+        timeout: fullRebuildTimeout,
+      );
+
+      test(
+        'unchangedStage',
+        () async {
+          final harness = await _stageHarness();
+          harness.transport.changedTile = null;
+          final promotedId = await promoteCandidate(
+            staged.candidate,
+            harness.packs,
+          );
+          final promotedPointer = await harness.activePointer();
+          final promoted = await verifyCommittedGeneration(harness.packs);
+          final promotedManifest = await packFile(
+            promoted.directory,
+            'manifest.json',
+          ).readAsBytes();
+          final promotedPubspec = await harness.pubspec.readAsBytes();
+          final unchanged = await _runStage(harness);
+          expect(unchanged.report.changed, isFalse);
+          expect(unchanged.report.paths, isEmpty);
+          expect(unchanged.report.valueKeys, isEmpty);
+          expect(await harness.activePointer(), promotedPointer);
+          expect(
+            await packFile(promoted.directory, 'manifest.json').readAsBytes(),
+            promotedManifest,
+          );
+          expect(await harness.pubspec.readAsBytes(), promotedPubspec);
+          expect(promoted.id, promotedId);
+          expect(
+            (await verifyCommittedGeneration(harness.packs)).id,
+            promotedId,
+          );
+        },
+        tags: ['qualification'],
+        timeout: fullRebuildTimeout,
+      );
+    });
+
+    test(
+      'retainsSixAndSelectsReviewedCalibration',
+      () async {
+        final harness = await _stageHarness();
+        harness.transport.changedTile = null;
+        final updatedCalibration = jsonDecode(
+          canonicalJson(harness.context.calibration),
+        ) as Map<String, dynamic>;
+        final updatedMap = (updatedCalibration['maps'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere((map) => map['sourceKey'] == 'interchange');
+        final updatedFloor = (updatedMap['floors'] as List)
+            .cast<Map<String, dynamic>>()
+            .first;
+        updatedFloor['label'] = 'Reviewed fixture calibration update';
+        final reviewedNoticeBytes = utf8.encode(
+          'Reviewed artwork refresh notice bytes\n',
         );
-        expect(staged.report.valueKeys, contains('sourceGeneration'));
-        expect(staged.diagnostics, isEmpty);
+        final updatedContext = MapBuildContext.reviewed(
+          calibration: updatedCalibration,
+          sourceLock: harness.context.sourceLock,
+          noticeBytes: reviewedNoticeBytes,
+        );
+        final staged = await _runStage(
+          harness,
+          context: updatedContext,
+          reviewedCalibrationUpdate: true,
+        );
+        const retained = [
+          'markers/maps.json',
+          'markers/maps_en.json',
+          'quests/tasks.json',
+          'quests/tasks_en.json',
+          'quests/traders.json',
+          'quests/traders_en.json',
+        ];
+        for (final path in retained) {
+          expect(
+            await packFile(staged.candidate, 'evidence/$path').readAsBytes(),
+            await packFile(
+              harness.baseline.directory,
+              'evidence/$path',
+            ).readAsBytes(),
+            reason: path,
+          );
+        }
         expect(
           await packFile(
             staged.candidate,
             'evidence/calibration.json',
           ).readAsBytes(),
-          baselineCalibrationBytes,
+          utf8.encode(canonicalJson(updatedCalibration)),
         );
-        await sharedHarness.expectUnchanged(
+        expect(
+          await packFile(staged.candidate, 'NOTICE.txt').readAsBytes(),
+          reviewedNoticeBytes,
+        );
+        expect(
+          harness.transport.requested.any(
+            (uri) => uri.toString().contains('/regular/'),
+          ),
+          isFalse,
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
+
+    test(
+      'staging accepts missing and unsupported metadata maps independently of artwork',
+      () async {
+        final initial = await _stageHarness();
+        final harness = await _withRetainedMarkerSource(initial, (snapshot) {
+          final maps = snapshot['data']['maps'] as Map<String, dynamic>;
+          maps.removeWhere(
+            (_, source) => source['normalizedName'] == 'interchange',
+          );
+          maps['new-upstream-map'] = {
+            'id': 'new-upstream-map',
+            'normalizedName': 'new-upstream-map',
+            'bosses': <dynamic>[],
+          };
+        });
+        final pointer = await harness.activePointer();
+        final activeManifest = await harness.baselineManifest();
+        final pubspec = await harness.pubspec.readAsString();
+        final staged = await _runStage(harness);
+        final tilePath =
+            harness.transport.routes[harness.transport.changedTile]!;
+        final tileParts = tilePath.split('/');
+        final artworkPath =
+            'artwork/${tileParts[1]}/${tileParts[2]}/${tileParts[3]}/${tileParts[4]}';
+
+        expect(staged.report.changed, isTrue);
+        expect(staged.report.paths, contains(artworkPath));
+        expect(staged.manifest['supportedMapIds'], supportedMapSources.keys);
+        expect(
+          (staged.manifest['maps'] as List).map((map) => map['sourceKey']),
+          isNot(contains('new-upstream-map')),
+        );
+        final interchange = (staged.manifest['maps'] as List)
+            .cast<Map<String, dynamic>>()
+            .singleWhere((map) => map['id'] == 'interchange');
+        expect(interchange['markers'], isEmpty);
+        await harness.expectUnchanged(
           pointer: pointer,
           manifest: activeManifest,
           pubspecText: pubspec,
         );
-      }, tags: ['qualification']);
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
 
-      test('unchangedStage', () async {
+    test(
+      'supportedAndNewIdentities',
+      () async {
         final harness = await _stageHarness();
         harness.transport.changedTile = null;
-        final promotedId = await promoteCandidate(
-          staged.candidate,
-          harness.packs,
+        final metadataFile = packFile(
+          harness.transport.raw,
+          'metadata/maps.json',
         );
-        final promotedPointer = await harness.activePointer();
-        final promoted = await verifyCommittedGeneration(harness.packs);
-        final promotedManifest = await packFile(
-          promoted.directory,
-          'manifest.json',
-        ).readAsBytes();
-        final promotedPubspec = await harness.pubspec.readAsBytes();
-        final unchanged = await _runStage(harness);
-        expect(unchanged.report.changed, isFalse);
-        expect(unchanged.report.paths, isEmpty);
-        expect(unchanged.report.valueKeys, isEmpty);
-        expect(await harness.activePointer(), promotedPointer);
+        final metadata = jsonDecode(await metadataFile.readAsString()) as List;
+        metadata.add(_identity('new-upstream-map'));
+        final metadataBytes = utf8.encode(jsonEncode(metadata));
+        harness.transport.overrides['metadata/maps.json'] = metadataBytes;
+        final sourceLock = jsonDecode(
+          canonicalJson(harness.context.sourceLock),
+        ) as Map<String, dynamic>;
+        final hashes = Map<String, String>.from(
+          (sourceLock['primaryHashes'] as Map).cast<String, String>(),
+        )..['metadata/maps.json'] = _hash(metadataBytes);
+        sourceLock['primaryHashes'] = hashes;
+        final context = MapBuildContext.reviewed(
+          calibration: harness.context.calibration,
+          sourceLock: sourceLock,
+          noticeBytes: harness.context.noticeBytes,
+        );
+
+        final staged = await _runStage(harness, context: context);
+
         expect(
-          await packFile(promoted.directory, 'manifest.json').readAsBytes(),
-          promotedManifest,
-        );
-        expect(await harness.pubspec.readAsBytes(), promotedPubspec);
-        expect(promoted.id, promotedId);
-        expect((await verifyCommittedGeneration(harness.packs)).id, promotedId);
-      }, tags: ['qualification']);
-    });
-
-    test('retainsSixAndSelectsReviewedCalibration', () async {
-      final harness = await _stageHarness();
-      harness.transport.changedTile = null;
-      final updatedCalibration = jsonDecode(
-        canonicalJson(harness.context.calibration),
-      ) as Map<String, dynamic>;
-      final updatedMap = (updatedCalibration['maps'] as List)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((map) => map['sourceKey'] == 'interchange');
-      final updatedFloor = (updatedMap['floors'] as List)
-          .cast<Map<String, dynamic>>()
-          .first;
-      updatedFloor['label'] = 'Reviewed fixture calibration update';
-      final reviewedNoticeBytes = utf8.encode(
-        'Reviewed artwork refresh notice bytes\n',
-      );
-      final updatedContext = MapBuildContext.reviewed(
-        calibration: updatedCalibration,
-        sourceLock: harness.context.sourceLock,
-        noticeBytes: reviewedNoticeBytes,
-      );
-      final staged = await _runStage(
-        harness,
-        context: updatedContext,
-        reviewedCalibrationUpdate: true,
-      );
-      const retained = [
-        'markers/maps.json',
-        'markers/maps_en.json',
-        'quests/tasks.json',
-        'quests/tasks_en.json',
-        'quests/traders.json',
-        'quests/traders_en.json',
-      ];
-      for (final path in retained) {
-        expect(
-          await packFile(staged.candidate, 'evidence/$path').readAsBytes(),
-          await packFile(
-            harness.baseline.directory,
-            'evidence/$path',
-          ).readAsBytes(),
-          reason: path,
-        );
-      }
-      expect(
-        await packFile(
-          staged.candidate,
-          'evidence/calibration.json',
-        ).readAsBytes(),
-        utf8.encode(canonicalJson(updatedCalibration)),
-      );
-      expect(
-        await packFile(staged.candidate, 'NOTICE.txt').readAsBytes(),
-        reviewedNoticeBytes,
-      );
-      expect(
-        harness.transport.requested.any(
-          (uri) => uri.toString().contains('/regular/'),
-        ),
-        isFalse,
-      );
-    }, tags: ['qualification']);
-
-    test('staging accepts missing and unsupported metadata maps independently of artwork', () async {
-      final initial = await _stageHarness();
-      final harness = await _withRetainedMarkerSource(initial, (snapshot) {
-        final maps = snapshot['data']['maps'] as Map<String, dynamic>;
-        maps.removeWhere(
-          (_, source) => source['normalizedName'] == 'interchange',
-        );
-        maps['new-upstream-map'] = {
-          'id': 'new-upstream-map',
-          'normalizedName': 'new-upstream-map',
-          'bosses': <dynamic>[],
-        };
-      });
-      final pointer = await harness.activePointer();
-      final activeManifest = await harness.baselineManifest();
-      final pubspec = await harness.pubspec.readAsString();
-      final staged = await _runStage(harness);
-      final tilePath = harness.transport.routes[harness.transport.changedTile]!;
-      final tileParts = tilePath.split('/');
-      final artworkPath =
-          'artwork/${tileParts[1]}/${tileParts[2]}/${tileParts[3]}/${tileParts[4]}';
-
-      expect(staged.report.changed, isTrue);
-      expect(staged.report.paths, contains(artworkPath));
-      expect(staged.manifest['supportedMapIds'], supportedMapSources.keys);
-      expect(
-        (staged.manifest['maps'] as List).map((map) => map['sourceKey']),
-        isNot(contains('new-upstream-map')),
-      );
-      final interchange = (staged.manifest['maps'] as List)
-          .cast<Map<String, dynamic>>()
-          .singleWhere((map) => map['id'] == 'interchange');
-      expect(interchange['markers'], isEmpty);
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: activeManifest,
-        pubspecText: pubspec,
-      );
-    }, tags: ['qualification']);
-
-    test('supportedAndNewIdentities', () async {
-      final harness = await _stageHarness();
-      harness.transport.changedTile = null;
-      final metadataFile = packFile(
-        harness.transport.raw,
-        'metadata/maps.json',
-      );
-      final metadata = jsonDecode(await metadataFile.readAsString()) as List;
-      metadata.add(_identity('new-upstream-map'));
-      final metadataBytes = utf8.encode(jsonEncode(metadata));
-      harness.transport.overrides['metadata/maps.json'] = metadataBytes;
-      final sourceLock = jsonDecode(
-        canonicalJson(harness.context.sourceLock),
-      ) as Map<String, dynamic>;
-      final hashes = Map<String, String>.from(
-        (sourceLock['primaryHashes'] as Map).cast<String, String>(),
-      )..['metadata/maps.json'] = _hash(metadataBytes);
-      sourceLock['primaryHashes'] = hashes;
-      final context = MapBuildContext.reviewed(
-        calibration: harness.context.calibration,
-        sourceLock: sourceLock,
-        noticeBytes: harness.context.noticeBytes,
-      );
-
-      final staged = await _runStage(harness, context: context);
-
-      expect(
-        staged.diagnostics,
-        contains(
-          allOf(
-            contains('new-upstream-map'),
-            contains('authored tool'),
-            contains('runtime'),
-          ),
-        ),
-      );
-      expect(
-        (staged.manifest['supportedMapIds'] as List),
-        supportedMapSources.keys.toList(),
-      );
-      expect(
-        (staged.manifest['maps'] as List).any(
-          (map) => map['sourceKey'] == 'new-upstream-map',
-        ),
-        isFalse,
-      );
-    }, tags: ['qualification']);
-
-    test('distinctInvalidTileIsRejectedAfterValidTiles', () async {
-      final harness = await _stageHarness();
-      harness.transport.changedTile = null;
-      final tiles = harness.transport.routes.entries
-          .where((entry) => entry.value.startsWith('tiles/'))
-          .toList();
-      final invalidTile = tiles.last;
-      harness.transport.overrides[invalidTile.value] = png(1, 1);
-      final pointer = await harness.activePointer();
-      final manifest = await harness.baselineManifest();
-      final pubspec = await harness.pubspec.readAsString();
-
-      await expectLater(_runStage(harness), throwsA(isA<FormatException>()));
-      expect(harness.transport.requested, contains(tiles.first.key));
-      expect(harness.transport.requested, contains(invalidTile.key));
-      expect(await packFile(harness.stage, 'manifest.json').exists(), isFalse);
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: manifest,
-        pubspecText: pubspec,
-      );
-    }, tags: ['qualification']);
-
-    test('failuresDoNotPublish', () async {
-      final harness = await _stageHarness();
-      final metadataUrl = Uri.parse(primarySourceUrls['metadata/maps.json']!);
-      harness.transport.failingUri = metadataUrl;
-      final pointer = await harness.activePointer();
-      final activeManifest = await harness.baselineManifest();
-      final pubspec = await harness.pubspec.readAsString();
-
-      await expectLater(
-        _runStage(harness),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'message',
-            contains('metadata/maps.json'),
-          ),
-        ),
-      );
-      await harness.expectUnchanged(
-        pointer: pointer,
-        manifest: activeManifest,
-        pubspecText: pubspec,
-      );
-
-      final buildHarness = await _stageHarness();
-      buildHarness.transport.changedTile = null;
-      final invalidSvg = utf8.encode('<svg><path>');
-      buildHarness.transport.overrides['interchange/Interchange.svg'] =
-          invalidSvg;
-      final sourceLock = jsonDecode(
-        canonicalJson(buildHarness.context.sourceLock),
-      ) as Map<String, dynamic>;
-      final hashes = Map<String, String>.from(
-        (sourceLock['primaryHashes'] as Map).cast<String, String>(),
-      )..['interchange/Interchange.svg'] = _hash(invalidSvg);
-      sourceLock['primaryHashes'] = hashes;
-      final buildContext = MapBuildContext.reviewed(
-        calibration: buildHarness.context.calibration,
-        sourceLock: sourceLock,
-        noticeBytes: buildHarness.context.noticeBytes,
-      );
-      final buildPointer = await buildHarness.activePointer();
-      final buildManifest = await buildHarness.baselineManifest();
-      final buildPubspec = await buildHarness.pubspec.readAsString();
-
-      await expectLater(
-        _runStage(buildHarness, context: buildContext),
-        throwsA(predicate<Object>((error) => error is! HttpException)),
-      );
-      expect(
-        buildHarness.transport.requested,
-        contains(Uri.parse(primarySourceUrls['interchange/Interchange.svg']!)),
-      );
-      expect(
-        await packFile(buildHarness.stage, 'manifest.json').exists(),
-        isFalse,
-        reason: 'a failed build must not leave a ready candidate manifest',
-      );
-      await buildHarness.expectUnchanged(
-        pointer: buildPointer,
-        manifest: buildManifest,
-        pubspecText: buildPubspec,
-      );
-    }, tags: ['qualification']);
-
-    test('reviewedSourceAdmitted', () async {
-      final missingHarness = await _stageHarness();
-      final missingPointer = await missingHarness.activePointer();
-      final missingManifest = await missingHarness.baselineManifest();
-      final missingPubspec = await missingHarness.pubspec.readAsString();
-      final missingSourceLock = jsonDecode(
-        canonicalJson(missingHarness.context.sourceLock),
-      ) as Map<String, dynamic>;
-      final missingHashes = Map<String, String>.from(
-        (missingSourceLock['primaryHashes'] as Map).cast<String, String>(),
-      )..remove('terms/tarkov-dev-README.md');
-      missingSourceLock['primaryHashes'] = missingHashes;
-      final missingContext = MapBuildContext.reviewed(
-        calibration: missingHarness.context.calibration,
-        sourceLock: missingSourceLock,
-        noticeBytes: missingHarness.context.noticeBytes,
-      );
-      await expectLater(
-        _runStage(missingHarness, context: missingContext),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'message',
-            contains('terms/tarkov-dev-README.md'),
-          ),
-        ),
-      );
-      expect(missingHarness.transport.requested, isEmpty);
-      await missingHarness.expectUnchanged(
-        pointer: missingPointer,
-        manifest: missingManifest,
-        pubspecText: missingPubspec,
-      );
-
-      final harness = await _stageHarness();
-      harness.transport.changedTile = null;
-      final staged = await _runStage(harness);
-      final sourceIndex = jsonDecode(
-        await packFile(
-          staged.candidate,
-          'evidence/sources.json',
-        ).readAsString(),
-      ) as Map<String, dynamic>;
-      final records = (sourceIndex['sources'] as List)
-          .cast<Map<String, dynamic>>();
-      Map<String, dynamic> source(String path) =>
-          records.singleWhere((record) => record['path'] == path);
-
-      final interchange = source('interchange/Interchange.svg');
-      final interchangeUrl = primarySourceUrls['interchange/Interchange.svg']!;
-      expect(harness.transport.requested, contains(Uri.parse(interchangeUrl)));
-      expect(
-        harness.transport.requested,
-        isNot(
+          staged.diagnostics,
           contains(
-            Uri.parse('https://assets.tarkov.dev/maps/svg/Interchange.svg'),
+            allOf(
+              contains('new-upstream-map'),
+              contains('authored tool'),
+              contains('runtime'),
+            ),
           ),
-        ),
-      );
-      expect(interchange['url'], interchangeUrl);
-      expect(interchange['repositoryRevision'], vectorSourceRevision);
-      expect(interchange['gitBlobSha1'], vectorSourceBlob);
-      expect(
-        source('metadata/maps.json')['repositoryRevision'],
-        metadataRepositoryRevision,
-      );
-      expect(source('metadata/maps.json')['gitBlobSha1'], metadataBlob);
-      expect(
-        interchange['sha256'],
-        harness
-            .context
-            .sourceLock['primaryHashes']['interchange/Interchange.svg'],
-      );
+        );
+        expect(
+          (staged.manifest['supportedMapIds'] as List),
+          supportedMapSources.keys.toList(),
+        );
+        expect(
+          (staged.manifest['maps'] as List).any(
+            (map) => map['sourceKey'] == 'new-upstream-map',
+          ),
+          isFalse,
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
 
-      expect(
-        source('metadata/maps.json')['url'],
-        primarySourceUrls['metadata/maps.json'],
-      );
-      expect(
-        harness.transport.requested,
-        contains(Uri.parse(primarySourceUrls['metadata/maps.json']!)),
-      );
-      for (final path in const [
-        'terms/svg-maps-README.md',
-        'terms/svg-maps-LICENSE.md',
-        'terms/tarkov-dev-README.md',
-        'terms/tarkov-dev-software-LICENSE.txt',
-        'terms/tarkovbot-creator.html',
-      ]) {
-        final record = source(path);
-        expect(record['url'], primarySourceUrls[path]);
+    test(
+      'distinctInvalidTileIsRejectedAfterValidTiles',
+      () async {
+        final harness = await _stageHarness();
+        harness.transport.changedTile = null;
+        final tiles = harness.transport.routes.entries
+            .where((entry) => entry.value.startsWith('tiles/'))
+            .toList();
+        final invalidTile = tiles.last;
+        harness.transport.overrides[invalidTile.value] = png(1, 1);
+        final pointer = await harness.activePointer();
+        final manifest = await harness.baselineManifest();
+        final pubspec = await harness.pubspec.readAsString();
+
+        await expectLater(_runStage(harness), throwsA(isA<FormatException>()));
+        expect(harness.transport.requested, contains(tiles.first.key));
+        expect(harness.transport.requested, contains(invalidTile.key));
+        expect(
+          await packFile(harness.stage, 'manifest.json').exists(),
+          isFalse,
+        );
+        await harness.expectUnchanged(
+          pointer: pointer,
+          manifest: manifest,
+          pubspecText: pubspec,
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
+
+    test(
+      'failuresDoNotPublish',
+      () async {
+        final harness = await _stageHarness();
+        final metadataUrl = Uri.parse(primarySourceUrls['metadata/maps.json']!);
+        harness.transport.failingUri = metadataUrl;
+        final pointer = await harness.activePointer();
+        final activeManifest = await harness.baselineManifest();
+        final pubspec = await harness.pubspec.readAsString();
+
+        await expectLater(
+          _runStage(harness),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('metadata/maps.json'),
+            ),
+          ),
+        );
+        await harness.expectUnchanged(
+          pointer: pointer,
+          manifest: activeManifest,
+          pubspecText: pubspec,
+        );
+
+        final buildHarness = await _stageHarness();
+        buildHarness.transport.changedTile = null;
+        final invalidSvg = utf8.encode('<svg><path>');
+        buildHarness.transport.overrides['interchange/Interchange.svg'] =
+            invalidSvg;
+        final sourceLock = jsonDecode(
+          canonicalJson(buildHarness.context.sourceLock),
+        ) as Map<String, dynamic>;
+        final hashes = Map<String, String>.from(
+          (sourceLock['primaryHashes'] as Map).cast<String, String>(),
+        )..['interchange/Interchange.svg'] = _hash(invalidSvg);
+        sourceLock['primaryHashes'] = hashes;
+        final buildContext = MapBuildContext.reviewed(
+          calibration: buildHarness.context.calibration,
+          sourceLock: sourceLock,
+          noticeBytes: buildHarness.context.noticeBytes,
+        );
+        final buildPointer = await buildHarness.activePointer();
+        final buildManifest = await buildHarness.baselineManifest();
+        final buildPubspec = await buildHarness.pubspec.readAsString();
+
+        await expectLater(
+          _runStage(buildHarness, context: buildContext),
+          throwsA(predicate<Object>((error) => error is! HttpException)),
+        );
+        expect(
+          buildHarness.transport.requested,
+          contains(
+            Uri.parse(primarySourceUrls['interchange/Interchange.svg']!),
+          ),
+        );
+        expect(
+          await packFile(buildHarness.stage, 'manifest.json').exists(),
+          isFalse,
+          reason: 'a failed build must not leave a ready candidate manifest',
+        );
+        await buildHarness.expectUnchanged(
+          pointer: buildPointer,
+          manifest: buildManifest,
+          pubspecText: buildPubspec,
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
+
+    test(
+      'reviewedSourceAdmitted',
+      () async {
+        final missingHarness = await _stageHarness();
+        final missingPointer = await missingHarness.activePointer();
+        final missingManifest = await missingHarness.baselineManifest();
+        final missingPubspec = await missingHarness.pubspec.readAsString();
+        final missingSourceLock = jsonDecode(
+          canonicalJson(missingHarness.context.sourceLock),
+        ) as Map<String, dynamic>;
+        final missingHashes = Map<String, String>.from(
+          (missingSourceLock['primaryHashes'] as Map).cast<String, String>(),
+        )..remove('terms/tarkov-dev-README.md');
+        missingSourceLock['primaryHashes'] = missingHashes;
+        final missingContext = MapBuildContext.reviewed(
+          calibration: missingHarness.context.calibration,
+          sourceLock: missingSourceLock,
+          noticeBytes: missingHarness.context.noticeBytes,
+        );
+        await expectLater(
+          _runStage(missingHarness, context: missingContext),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('terms/tarkov-dev-README.md'),
+            ),
+          ),
+        );
+        expect(missingHarness.transport.requested, isEmpty);
+        await missingHarness.expectUnchanged(
+          pointer: missingPointer,
+          manifest: missingManifest,
+          pubspecText: missingPubspec,
+        );
+
+        final harness = await _stageHarness();
+        harness.transport.changedTile = null;
+        final staged = await _runStage(harness);
+        final sourceIndex = jsonDecode(
+          await packFile(
+            staged.candidate,
+            'evidence/sources.json',
+          ).readAsString(),
+        ) as Map<String, dynamic>;
+        final records = (sourceIndex['sources'] as List)
+            .cast<Map<String, dynamic>>();
+        Map<String, dynamic> source(String path) =>
+            records.singleWhere((record) => record['path'] == path);
+
+        final interchange = source('interchange/Interchange.svg');
+        final interchangeUrl =
+            primarySourceUrls['interchange/Interchange.svg']!;
         expect(
           harness.transport.requested,
-          contains(Uri.parse(primarySourceUrls[path]!)),
+          contains(Uri.parse(interchangeUrl)),
         );
         expect(
-          record['sha256'],
-          harness.context.sourceLock['primaryHashes'][path],
-        );
-        expect(
-          record['provenance'],
-          isA<String>().having((value) => value, 'value', isNotEmpty),
-        );
-        final revision = primarySourceRepositoryRevisions[path];
-        if (revision != null) {
-          expect(record['repositoryRevision'], revision);
-        } else {
-          expect(record.containsKey('repositoryRevision'), isFalse);
-        }
-      }
-      final tileUrlsByPath = {
-        for (final entry in harness.transport.routes.entries)
-          if (entry.value.startsWith('tiles/')) entry.value: entry.key,
-      };
-      final tileRecords = records.where(
-        (record) => (record['path'] as String).startsWith('tiles/'),
-      );
-      for (final record in tileRecords) {
-        final path = record['path'] as String;
-        final expectedUrl = tileUrlsByPath[path]!.toString();
-        expect(record['url'], expectedUrl, reason: path);
-      }
-      final tileRecord = tileRecords.first;
-      final tileHash = tileRecord['sha256'] as String;
-      final carrier = (staged.manifest['outputs'] as List)
-          .cast<Map<String, dynamic>>()
-          .firstWhere((output) => output['sha256'] == tileHash);
-      await packFile(
-        staged.candidate,
-        carrier['path'] as String,
-      ).writeAsBytes(utf8.encode('corrupt tile carrier'));
-      final frozen = await FrozenInputs.fromGeneration(staged.candidate);
-      await expectLater(
-        frozen.bytes(tileRecord['path'] as String),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'message',
-            contains(tileRecord['path'] as String),
+          harness.transport.requested,
+          isNot(
+            contains(
+              Uri.parse('https://assets.tarkov.dev/maps/svg/Interchange.svg'),
+            ),
           ),
-        ),
-      );
-    }, tags: ['qualification']);
-    test('artworkReproducesWithoutRawStage', () async {
-      final harness = await _stageHarness(isolatedRaw: true);
-      final staged = await _runStage(harness);
-      await harness.transport.raw.delete(recursive: true);
+        );
+        expect(interchange['url'], interchangeUrl);
+        expect(interchange['repositoryRevision'], vectorSourceRevision);
+        expect(interchange['gitBlobSha1'], vectorSourceBlob);
+        expect(
+          source('metadata/maps.json')['repositoryRevision'],
+          metadataRepositoryRevision,
+        );
+        expect(source('metadata/maps.json')['gitBlobSha1'], metadataBlob);
+        expect(
+          interchange['sha256'],
+          harness
+              .context
+              .sourceLock['primaryHashes']['interchange/Interchange.svg'],
+        );
 
-      final packs = Directory('${harness.root.path}/reproduced-packs');
-      await packs.create();
-      await promoteCandidate(staged.candidate, packs);
-      final active = await verifyCommittedGeneration(packs);
-      final context = await MapBuildContext.fromGeneration(active);
-      final rebuiltCandidate = Directory(
-        '${harness.root.path}/reproduced-candidate',
-      );
-      expect(await rebuiltCandidate.exists(), isFalse);
-      final rebuilt = await rebuildCandidate(
-        await FrozenInputs.fromGeneration(active.directory),
-        rebuiltCandidate,
-        context: context,
-        toolchain: fixtureToolchain,
-      );
-      final report = packChangeReport(active.manifest, rebuilt);
+        expect(
+          source('metadata/maps.json')['url'],
+          primarySourceUrls['metadata/maps.json'],
+        );
+        expect(
+          harness.transport.requested,
+          contains(Uri.parse(primarySourceUrls['metadata/maps.json']!)),
+        );
+        for (final path in const [
+          'terms/svg-maps-README.md',
+          'terms/svg-maps-LICENSE.md',
+          'terms/tarkov-dev-README.md',
+          'terms/tarkov-dev-software-LICENSE.txt',
+          'terms/tarkovbot-creator.html',
+        ]) {
+          final record = source(path);
+          expect(record['url'], primarySourceUrls[path]);
+          expect(
+            harness.transport.requested,
+            contains(Uri.parse(primarySourceUrls[path]!)),
+          );
+          expect(
+            record['sha256'],
+            harness.context.sourceLock['primaryHashes'][path],
+          );
+          expect(
+            record['provenance'],
+            isA<String>().having((value) => value, 'value', isNotEmpty),
+          );
+          final revision = primarySourceRepositoryRevisions[path];
+          if (revision != null) {
+            expect(record['repositoryRevision'], revision);
+          } else {
+            expect(record.containsKey('repositoryRevision'), isFalse);
+          }
+        }
+        final tileUrlsByPath = {
+          for (final entry in harness.transport.routes.entries)
+            if (entry.value.startsWith('tiles/')) entry.value: entry.key,
+        };
+        final tileRecords = records.where(
+          (record) => (record['path'] as String).startsWith('tiles/'),
+        );
+        for (final record in tileRecords) {
+          final path = record['path'] as String;
+          final expectedUrl = tileUrlsByPath[path]!.toString();
+          expect(record['url'], expectedUrl, reason: path);
+        }
+        final tileRecord = tileRecords.first;
+        final tileHash = tileRecord['sha256'] as String;
+        final carrier = (staged.manifest['outputs'] as List)
+            .cast<Map<String, dynamic>>()
+            .firstWhere((output) => output['sha256'] == tileHash);
+        await packFile(
+          staged.candidate,
+          carrier['path'] as String,
+        ).writeAsBytes(utf8.encode('corrupt tile carrier'));
+        final frozen = await FrozenInputs.fromGeneration(staged.candidate);
+        await expectLater(
+          frozen.bytes(tileRecord['path'] as String),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains(tileRecord['path'] as String),
+            ),
+          ),
+        );
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
+    test(
+      'artworkReproducesWithoutRawStage',
+      () async {
+        final harness = await _stageHarness(isolatedRaw: true);
+        final staged = await _runStage(harness);
+        await harness.transport.raw.delete(recursive: true);
 
-      expect(report.changed, isFalse);
-      expect(report.paths, isEmpty);
-      expect(report.valueKeys, isEmpty);
-    }, tags: ['qualification']);
+        final packs = Directory('${harness.root.path}/reproduced-packs');
+        await packs.create();
+        await promoteCandidate(staged.candidate, packs);
+        final active = await verifyCommittedGeneration(packs);
+        final context = await MapBuildContext.fromGeneration(active);
+        final rebuiltCandidate = Directory(
+          '${harness.root.path}/reproduced-candidate',
+        );
+        expect(await rebuiltCandidate.exists(), isFalse);
+        final rebuilt = await rebuildCandidate(
+          await FrozenInputs.fromGeneration(active.directory),
+          rebuiltCandidate,
+          context: context,
+          toolchain: fixtureToolchain,
+        );
+        final report = packChangeReport(active.manifest, rebuilt);
+
+        expect(report.changed, isFalse);
+        expect(report.paths, isEmpty);
+        expect(report.valueKeys, isEmpty);
+      },
+      tags: ['qualification'],
+      timeout: fullRebuildTimeout,
+    );
   });
 }

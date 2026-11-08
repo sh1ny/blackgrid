@@ -202,7 +202,7 @@ void main() {
         (manifest['maps'] as List).map((map) => map['id']),
         expectedMapIds,
       );
-      expect(manifest['preparationVersion'], 3);
+      expect(manifest['preparationVersion'], 4);
       for (final map in manifest['maps'] as List) {
         final floors = map['floors'] as List;
         expect(floors.map((floor) => floor['id']), expectedFloorIds[map['id']]);
@@ -380,7 +380,7 @@ void main() {
     expect(labs['artworkFrame']['tileStride'], 175);
     expect(labs['displayCrop'], {'left': 0, 'top': 0, 'right': 1, 'bottom': 1});
     expect(labs['markers'][0]['position']['height'], isNull);
-    expect(a['preparationVersion'], 3);
+    expect(a['preparationVersion'], 4);
     final emptyTile = (labs['floors'][0]['artwork']['tiles'] as List)
         .singleWhere((tile) => tile['x'] == 0 && tile['y'] == 1);
     final witness = 'evidence/tile-alpha/${emptyTile['sourceSha256']}.png';
@@ -441,7 +441,7 @@ void main() {
           .getAttribute('href', namespace: 'http://www.w3.org/1999/xlink'),
       '#base',
     );
-  });
+  }, timeout: fullRebuildTimeout);
 
   test('full-map source fixture retains boss occurrences and explicit empty coverage', () async {
     final manifest = await readManifest(fixtures.first);
@@ -931,7 +931,7 @@ void main() {
   test('failed new generation preserves asset discovery for an older frozen floor calibration', () async {
     final older = await candidate('older');
     final olderManifest = await readManifest(older);
-    expect(olderManifest['preparationVersion'], 3);
+    expect(olderManifest['preparationVersion'], 4);
     expect(olderManifest['maps'] as List, hasLength(13));
 
     // Represent an earlier full generation whose frozen calibration has no
@@ -997,7 +997,7 @@ void main() {
     expect(originalDirectories, contains('versions/$version/'));
     final publishedOlder = Directory('${packs.path}/versions/$version');
     final validatedOlder = await validateCandidate(publishedOlder);
-    expect(validatedOlder['preparationVersion'], 3);
+    expect(validatedOlder['preparationVersion'], 4);
     expect(validatedOlder['maps'] as List, hasLength(13));
     expect(
       calibrationFor('icebreaker').containsKey('markerFloorAssignments'),
@@ -1007,7 +1007,7 @@ void main() {
 
     final newer = await candidate('newer');
     final newerManifest = await readManifest(newer);
-    expect(newerManifest['preparationVersion'], 3);
+    expect(newerManifest['preparationVersion'], 4);
     expect(newerManifest['maps'] as List, hasLength(13));
     final newerIce = (newerManifest['maps'] as List)
         .cast<Map<String, dynamic>>()
@@ -1180,6 +1180,7 @@ void main() {
       await compileCandidate(private, toolchain: fixtureToolchain);
       await validateCandidate(private);
     },
+    timeout: fullRebuildTimeout,
   );
 
   group('toolchain, determinism and vector format', () {
@@ -1230,7 +1231,7 @@ void main() {
       expect(compiled['toolchain']['vector_graphics_compiler'], '1.3.4');
       expect(compiled['vectorCodecFormat'], 1);
       expect(compiled['vectorsCompiled'], isTrue);
-    });
+    }, timeout: fullRebuildTimeout);
 
     test('unstable encoder leaves the candidate without a manifest', () async {
       final private = Directory('${temporary.path}/unstable');
@@ -1252,7 +1253,7 @@ void main() {
         ),
       );
       expect(File('${private.path}/manifest.json').existsSync(), isFalse);
-    });
+    }, timeout: fullRebuildTimeout);
 
     test(
       'substituted vec with matching output hash fails naming the path',
@@ -1353,6 +1354,7 @@ void main() {
           ),
         );
       },
+      timeout: fullRebuildTimeout,
     );
 
     test('validator refuses preparation version 2', () async {
@@ -1415,7 +1417,7 @@ void main() {
     return (floorId, victim);
   }
 
-  group('committed pack check', () {
+  group('committed pack check', timeout: fullRebuildTimeout, () {
     Future<List<String>> leftovers(Directory checkTemp) async => [
       await for (final entity in checkTemp.list()) entity.path,
     ];
@@ -1474,7 +1476,7 @@ void main() {
     });
   });
 
-  group('refresh', () {
+  group('refresh', timeout: fullRebuildTimeout, () {
     const begin =
         '    # BEGIN generated map pack assets (mise run maps:rebuild)';
     const end = '    # END generated map pack assets';
