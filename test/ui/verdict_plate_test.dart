@@ -148,6 +148,7 @@ void main() {
       expect(none.fill, isNull, reason: '$room unavailable has no fill');
       expect(none.border, isNull, reason: '$room unavailable border is dashed');
       expect(none.dashed, e.inkTertiary, reason: '$room unavailable dashes');
+      expect(none.text, e.inkTertiary, reason: '$room unavailable text');
       expect(none.height, 44);
     }
   });

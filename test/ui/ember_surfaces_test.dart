@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
+import '../support/map_widget_harness.dart';
 
 Future<void> _pumpPanels(WidgetTester tester, Brightness brightness) =>
     tester.pumpWidget(
@@ -114,4 +115,22 @@ void main() {
     expect(find.text('BLACKGRID'), findsOneWidget);
     expect(find.text('TRACK. PLAN. SURVIVE.'), findsOneWidget);
   });
+
+  testWidgets(
+    'map message uses dark-room ink on the map ground in the light room',
+    (tester) async {
+      final harness = await pumpMapFixture(tester, artwork: false);
+      expect(
+        Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
+        Brightness.light,
+        reason: 'the test platform defaults to the light room',
+      );
+      final error = harness.services.maps.error;
+      expect(error, isNotNull, reason: 'artwork must be missing here');
+      final text = tester.widget<Text>(find.text(error!));
+      // The map ground is dark in both rooms (DESIGN.md X6), so text drawn on
+      // it takes the dark room's ink.
+      expect(text.style?.color, EmberColors.dark.inkSecondary);
+    },
+  );
 }

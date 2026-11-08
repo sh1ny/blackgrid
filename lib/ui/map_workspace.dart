@@ -20,6 +20,7 @@ import '../maps/prepared_map.dart';
 import 'marker_popup.dart';
 import 'pin_editor.dart';
 import 'labels.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 
 /// How the player's position reaches the map, as the map help explains it.
@@ -570,8 +571,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                                           child: Text(
                                             maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
                                             textAlign: TextAlign.center,
+                                            // The map ground stays dark in
+                                            // both rooms (DESIGN.md X6), so
+                                            // text on it takes dark-room ink.
                                             style: TextStyle(
-                                              color: context.ember.inkSecondary,
+                                              color:
+                                                  EmberColors.dark.inkSecondary,
                                             ),
                                           ),
                                         ),

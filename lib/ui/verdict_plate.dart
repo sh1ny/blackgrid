@@ -87,7 +87,7 @@ class VerdictPlate extends StatelessWidget {
         ember.hairline,
         ember.inkSecondary,
       ),
-      Recommendation.priceUnavailable => (null, null, ember.inkSecondary),
+      Recommendation.priceUnavailable => (null, null, ember.inkTertiary),
     };
     final price = switch (recommendation) {
       Recommendation.flea => decision.fleaGross,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/price_freshness.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 import 'labels.dart';
 
@@ -64,14 +65,13 @@ class FreshnessTag extends StatelessWidget {
       decoration: warn
           ? BoxDecoration(
               color: ember.warnBg,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(EmberRadius.s),
             )
           : null,
       child: Text(
         label,
-        style: TextStyle(
+        style: EmberType.label.copyWith(
           color: warn ? ember.warnInk : ember.inkTertiary,
-          fontSize: 12,
         ),
       ),
     );

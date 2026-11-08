@@ -140,6 +140,15 @@ void main() {
     expect(look.text, 'price 3 h old');
     expect(look.ink, ember.warnInk);
     expect(look.fill, ember.warnBg);
+    // A tag: the 6px tag radius and the Label type role (DESIGN.md X3).
+    final box = tester.widget<Container>(_tag).decoration! as BoxDecoration;
+    expect(box.borderRadius, BorderRadius.circular(EmberRadius.s));
+    final style = tester
+        .widget<Text>(find.descendant(of: _tag, matching: find.byType(Text)))
+        .style!;
+    expect(style.fontFamily, EmberType.label.fontFamily);
+    expect(style.fontSize, EmberType.label.fontSize);
+    expect(style.fontWeight, EmberType.label.fontWeight);
 
     clock.now = DateTime(2026, 10, 8, 11, 8);
     h.services.selection.setFir(h.services.selection.fir);
