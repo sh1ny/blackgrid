@@ -4,20 +4,621 @@ import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/app_logo.dart';
 
 import '../support/m1_harness.dart';
-import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
+import '../fixtures/m1/catalog/fixture.dart' show fixtureNow, progressWire;
 
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/panels.dart';
+import 'package:blackgrid/data/scan_frame_recorder.dart';
+import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:blackgrid/domain/verdict_reason.dart';
+import 'package:blackgrid/ui/labels.dart';
+import 'package:blackgrid/ui/answer_strip.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:blackgrid/domain/decision.dart';
+import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/data/database.dart';
+import 'package:blackgrid/data/vision/inspection_evidence.dart';
+import 'package:blackgrid/domain/settings.dart';
+import 'package:drift/native.dart';
+
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/rendering.dart';
 
 import '../support/m1_widget_harness.dart';
 import 'support/scan_ui_support.dart';
 
+class _HeldCatalogDatabase extends BlackgridDatabase {
+  _HeldCatalogDatabase() : super(NativeDatabase.memory());
+  Completer<void>? gate;
+  final entered = Completer<void>();
+
+  @override
+  Future<CatalogSnapshot?> loadCatalog(GameMode mode) async {
+    if (gate case final held?) {
+      entered.complete();
+      await held.future;
+      gate = null;
+    }
+    return super.loadCatalog(mode);
+  }
+}
+
 void main() {
+  testWidgets(
+    'top-bar inspector toggle opens and closes details without replacing the workspace',
+    (tester) async {
+      final h = await pumpM1(tester);
+      await tester.runAsync(
+        () => h.services.selection.selectManual(
+          h.services.catalog.snapshot!.items['item-a']!,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final map = find.byKey(const PageStorageKey('map'));
+      expect(map, findsOneWidget);
+      final before = tester.element(map);
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+      expect(tester.element(map), same(before));
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('shell-inspector')), findsNothing);
+      expect(tester.element(map), same(before));
+    },
+  );
+  testWidgets('long catalog reason wraps fully inside the shared strip', (
+    tester,
+  ) async {
+    const token = 'PVP_synthetic-fixture-only';
+    final longName = '${'Long task name ' * 5}end'.padRight(80, 'x');
+    tester.view.physicalSize = const Size(960, 720);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final h = (await tester.runAsync(() async {
+      final result = M1Harness(
+        shapeWire: (wire) {
+          wire['tasks_en'] = {
+            'data': {'task-a name': longName},
+          };
+          wire['token'] = {
+            'success': true,
+            'permissions': ['GP'],
+            'token': token,
+            'owner': 'synthetic-owner',
+            'note': 'Synthetic',
+            'calls': 0,
+            'gameMode': 'pvp',
+          };
+          wire['progress'] = progressWire();
+        },
+      );
+      result.credentials.values[GameMode.pvp] = token;
+      await result.initialize();
+      await result.services.progress.refresh();
+      await result.services.selection.selectManual(
+        result.services.catalog.snapshot!.items['item-a']!,
+      );
+      result.services.selection.setFir(FirState.yes);
+      return result;
+    }))!;
+    addTearDown(h.dispose);
+    await tester.pumpWidget(BlackgridApp(services: h.services));
+    await tester.pumpAndSettle();
+    final strip = find.byKey(const Key('answer-strip'));
+    final reason = find.descendant(
+      of: strip,
+      matching: find.byKey(const Key('answer-verdict-reason')),
+    );
+    final text = tester.widget<Text>(reason);
+    expect(text.data, contains(longName));
+    expect(text.data, verdictReason(h.services.selection.decision!));
+    expect(text.maxLines, isNull);
+    expect(text.overflow, isNot(TextOverflow.ellipsis));
+    final paragraph = tester.renderObject<RenderParagraph>(reason);
+    expect(paragraph.didExceedMaxLines, isFalse);
+    final lines = paragraph
+        .getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: text.data!.length),
+        )
+        .map((box) => box.top.round())
+        .toSet();
+    expect(lines.length, greaterThanOrEqualTo(2));
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('search accepts Ctrl K and picks the first result', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pump();
+    final search = find.widgetWithText(TextField, 'Search items…');
+    expect(tester.widget<TextField>(search).focusNode!.hasFocus, isTrue);
+    await tester.enterText(search, 'item-a');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(h.services.selection.selectedId, 'item-a');
+  });
+  testWidgets(
+    'answer strip presents history loading while a different mode loads',
+    (tester) async {
+      final db = _HeldCatalogDatabase();
+      final h = await pumpM1(tester, database: db);
+      final gate = db.gate = Completer<void>();
+      final row = ItemActivity(
+        itemId: 'item-a',
+        mode: GameMode.pve,
+        source: ActivitySource.manual,
+        observedAt: fixtureNow,
+        revision: 1,
+      );
+      late Future<void> opening;
+      await tester.runAsync(() async {
+        opening = h.services.selection.openHistory(row);
+        await db.entered.future;
+      });
+      await tester.pump();
+      final strip = find.byKey(const Key('answer-strip'));
+      expect(
+        find.descendant(
+          of: strip,
+          matching: find.text('Opening saved item data…'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: strip,
+          matching: find.byKey(const Key('verdict-plate')),
+        ),
+        findsNothing,
+      );
+      gate.complete();
+      await tester.runAsync(() => opening);
+      await tester.pumpAndSettle();
+    },
+  );
+  testWidgets(
+    'answer strip renders all six verdicts and a full long reason in both rooms',
+    (tester) async {
+      final requirement = ItemRequirement(
+        kind: RequirementKind.task,
+        sourceId: 'task',
+        sourceName: List.filled(24, 'A long task name').join(' '),
+        id: 'need',
+        itemIds: ['item-a'],
+        progressIds: [],
+        gate: RequirementGate(),
+      );
+      for (final room in [Brightness.dark, Brightness.light]) {
+        for (final recommendation in Recommendation.values) {
+          final decision = ItemDecision(
+            recommendation: recommendation,
+            reasons: [
+              NeedReason(
+                requirement: requirement,
+                state: NeedState.actionable,
+                message: '',
+                detail: '',
+                remaining: 3,
+              ),
+            ],
+            warnings: const [],
+          );
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: blackgridTheme(room),
+              home: MediaQuery(
+                data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+                child: Scaffold(
+                  body: SingleChildScrollView(
+                    child: SizedBox(
+                      width: 300,
+                      child: AnswerVerdict(decision: decision, maxWidth: 300),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.text(recommendationLabel(recommendation)),
+            findsOneWidget,
+          );
+          final reason = tester.widget<Text>(
+            find.byKey(const Key('answer-verdict-reason')),
+          );
+          expect(reason.data, verdictReason(decision));
+          expect(reason.maxLines, isNull);
+          expect(reason.overflow, isNull);
+          expect(tester.takeException(), isNull);
+        }
+      }
+    },
+  );
+  testWidgets('workspace-shell: Failed live scan save', (tester) async {
+    final h = await pumpM1(tester, scanPorts: ScanFakePorts());
+    await tester.runAsync(
+      () => h.db.customStatement(
+        "CREATE TRIGGER preference_failure BEFORE INSERT ON preferences BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
+      ),
+    );
+    await tapM1Async(
+      tester,
+      find.byKey(const Key('status-live-scan')),
+      () => h.services.scanner.error != null,
+    );
+    expect(h.services.scanner.switchOn, isFalse);
+    expect(h.services.scanner.status.state, LiveScanState.off);
+    expect(find.byKey(const Key('status-live-scan-error')), findsOneWidget);
+    await tester.runAsync(
+      () => h.db.customStatement('DROP TRIGGER preference_failure'),
+    );
+    await tapM1Async(
+      tester,
+      find.byKey(const Key('status-live-scan')),
+      () => h.services.scanner.status.state == LiveScanState.ready,
+    );
+    await tester.runAsync(
+      () => h.db.customStatement(
+        "CREATE TRIGGER preference_failure BEFORE INSERT ON preferences BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
+      ),
+    );
+    await tapM1Async(
+      tester,
+      find.byKey(const Key('status-live-scan')),
+      () => h.services.scanner.error != null,
+    );
+    expect(h.services.scanner.switchOn, isFalse);
+    expect(h.services.scanner.status.state, LiveScanState.off);
+    expect(find.textContaining('preference was not saved'), findsWidgets);
+  });
+  testWidgets('scanner-evidence: Write failure', (tester) async {
+    final root = Directory.systemTemp.createTempSync(
+      'blackgrid-answer-strip-failure-',
+    );
+    addTearDown(() => root.deleteSync(recursive: true));
+    final writers = <FakeRecordWriter>[];
+    final recorder = ScanFrameRecorder(
+      root: root.path,
+      writerFactory:
+          ({required folder, required token, required onAnswer}) async {
+            final writer = FakeRecordWriter(token, onAnswer);
+            writers.add(writer);
+            return writer;
+          },
+    );
+    final h = await pumpM1(
+      tester,
+      scanPorts: ScanFakePorts(),
+      scanFrameRecorder: recorder,
+    );
+    await tester.runAsync(() async {
+      await h.services.scanner.setLiveScan(true);
+      await h.services.scanner.settled;
+    });
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    final panel = find.byKey(const Key('settings-live-scan'));
+    final toggle = find.descendant(
+      of: panel,
+      matching: find.byKey(const Key('record-frames-switch')),
+    );
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tapM1Async(
+      tester,
+      toggle,
+      () => recorder.status.value.state == ScanRecordingState.on,
+    );
+    recorder.record(recordedScan('failure'));
+    writers.single.fail('failure', 'synthetic disk failure');
+    await tester.pump();
+    final folder = recorder.status.value.folder!;
+    expect(
+      find.descendant(
+        of: panel,
+        matching: find.textContaining('synthetic disk failure'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: panel, matching: find.textContaining(folder)),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('recording-stop-note')), findsOneWidget);
+    expect(find.textContaining('synthetic disk failure'), findsOneWidget);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('settings-live-scan')),
+        matching: find.textContaining(folder),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('settings-live-scan')),
+        matching: find.textContaining('synthetic disk failure'),
+      ),
+      findsOneWidget,
+    );
+  });
+  testWidgets('workspace-shell: Settings targets', (tester) async {
+    await pumpM1(tester);
+    await tester.tap(find.byKey(const Key('status-item-data')));
+    await tester.pumpAndSettle();
+    final itemTarget = find.byKey(const Key('settings-item-data'));
+    expect(itemTarget, findsOneWidget);
+    expect(
+      tester.getTopLeft(itemTarget).dy,
+      greaterThanOrEqualTo(tester.getTopLeft(find.byType(AlertDialog)).dy),
+    );
+    expect(FocusManager.instance.primaryFocus?.hasFocus, isTrue);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('status-tracker')));
+    await tester.pumpAndSettle();
+    final trackerTarget = find.byKey(const Key('settings-tracker'));
+    expect(trackerTarget, findsOneWidget);
+    expect(
+      tester.getTopLeft(trackerTarget).dy,
+      lessThan(tester.getBottomLeft(find.byType(AlertDialog)).dy),
+    );
+    expect(FocusManager.instance.primaryFocus?.hasFocus, isTrue);
+  });
+  for (final size in [
+    const Size(1660, 870),
+    const Size(1100, 720),
+    const Size(960, 720),
+    const Size(900, 720),
+  ]) {
+    for (final room in [Brightness.dark, Brightness.light]) {
+      testWidgets('workspace-shell: Answer first in both areas $size $room', (
+        tester,
+      ) async {
+        tester.platformDispatcher.platformBrightnessTestValue = room;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        final h = await pumpM1(tester, size: size);
+        final item = h.services.catalog.snapshot!.items['item-a']!;
+        await tester.runAsync(() => h.services.selection.selectManual(item));
+        await tester.pumpAndSettle();
+        final expected = h.services.selection.decision!;
+        for (final area in ['nav-map', 'nav-scanner']) {
+          await tester.tap(find.byKey(Key(area)));
+          await tester.pumpAndSettle();
+          final strip = find.byKey(const Key('answer-strip'));
+          expect(strip, findsOneWidget);
+          expect(
+            tester.getTopLeft(strip).dy,
+            tester.getBottomLeft(find.byKey(const Key('shell-top-bar'))).dy,
+          );
+          expect(tester.getBottomLeft(strip).dy, lessThan(size.height));
+          expect(
+            find.descendant(of: strip, matching: find.text(item.name)),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: strip,
+              matching: find.text(recommendationLabel(expected.recommendation)),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: strip,
+              matching: find.text(verdictReason(expected)),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: strip,
+              matching: find.byKey(const Key('verdict-plate')),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(of: strip, matching: find.text('Found in raid')),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(of: strip, matching: find.text('item-a')),
+            findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+        }
+      });
+    }
+  }
+  testWidgets('workspace-shell: Missing item and long reason', (tester) async {
+    final h = await pumpM1(tester, size: const Size(960, 720), scale: 2);
+    final strip = find.byKey(const Key('answer-strip'));
+    expect(
+      find.descendant(of: strip, matching: find.text('Find an item')),
+      findsOneWidget,
+    );
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: strip,
+        matching: find.byKey(const Key('answer-verdict-reason')),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('workspace-shell: Selection changes across areas', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final strip = find.byKey(const Key('answer-strip'));
+    final yes = find.descendant(of: strip, matching: find.text('Yes'));
+    await tester.tap(yes);
+    await tester.pumpAndSettle();
+    expect(h.services.selection.fir, FirState.yes);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<ChoiceChip>(
+            find.ancestor(of: yes, matching: find.byType(ChoiceChip)),
+          )
+          .selected,
+      isTrue,
+    );
+    expect(h.services.selection.fir, FirState.yes);
+  });
+  testWidgets('workspace-shell: History and later rejected scan', (
+    tester,
+  ) async {
+    final ports = ScanFakePorts();
+    final h = await pumpM1(tester, scanPorts: ports);
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.runAsync(
+      () => publishTargetedScan(
+        h.services.scanner,
+        ports,
+        text: 'Alternative component',
+      ),
+    );
+    await tester.pumpAndSettle();
+    final accepted = h.services.scans.latest;
+    expect(accepted, isNotNull);
+    final historyRow = h.services.history.rows.firstWhere(
+      (r) => r.itemId == 'item-a',
+    );
+    await tester.runAsync(() => h.services.selection.openHistory(historyRow));
+    await tester.pumpAndSettle();
+    expect(h.services.selection.isHistory, isTrue);
+    await tester.runAsync(() async {
+      ports.fire(2000);
+      await ports.captureOk(1);
+      await ports.visionDeliver(
+        1,
+        scanRecognised(InspectionFrameKind.targeted, []),
+      );
+      await ports.captureOk(2);
+      await ports.visionDeliver(
+        2,
+        scanRecognised(InspectionFrameKind.fullClient, []),
+      );
+      await reportPublished(h.services.scanner, 2);
+    });
+    await tester.pumpAndSettle();
+    expect(h.services.selection.isHistory, isTrue);
+    expect(h.services.selection.selectedId, 'item-a');
+    expect(h.services.scans.latest, accepted);
+    final strip = find.byKey(const Key('answer-strip'));
+    await tester.tap(
+      find.descendant(
+        of: strip,
+        matching: find.byTooltip('Close history inspection'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: strip, matching: find.text('Back to latest scan')),
+    );
+    await tester.pumpAndSettle();
+    expect(h.services.selection.selectedId, accepted!.itemId);
+  });
+  testWidgets('workspace-shell: Wide navigation', (tester) async {
+    final h = await pumpM1(tester, size: const Size(1660, 870));
+    final bar = find.byKey(const Key('shell-top-bar'));
+    expect(tester.getSize(bar).height, 44);
+    expect(
+      find.descendant(of: bar, matching: find.text('Settings')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: find.text('Stats')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: find.text('Import')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: bar,
+        matching: find.byKey(const Key('raid-timer-strip')),
+      ),
+      findsOneWidget,
+    );
+    expect(h.services.raidTimers.view.entries, hasLength(3));
+    for (final entry in h.services.raidTimers.view.entries) {
+      expect(
+        find.descendant(of: bar, matching: find.text(entry.text)),
+        findsOneWidget,
+      );
+    }
+  });
+  testWidgets('workspace-shell: Narrow navigation and disabled timers', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester, size: const Size(960, 720), scale: 2);
+    await tester.runAsync(
+      () => h.services.settings.setRaidTimers(
+        h.services.settings.raidTimers.copyWith(showRunThrough: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final bar = find.byKey(const Key('shell-top-bar'));
+    expect(h.services.raidTimers.view.entries, hasLength(2));
+    for (final entry in h.services.raidTimers.view.entries) {
+      expect(
+        find.descendant(of: bar, matching: find.text(entry.text)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(of: bar, matching: find.textContaining('Run-through')),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('shell-top-bar')), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsWidgets);
+    expect(find.byTooltip('Stats'), findsWidgets);
+    expect(find.byTooltip('Import'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
   for (final size in [
     const Size(1672, 941),
     const Size(1912, 823),

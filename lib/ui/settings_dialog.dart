@@ -10,28 +10,61 @@ import '../domain/raid_timers.dart';
 import '../domain/settings.dart';
 import 'labels.dart';
 import 'live_map_status.dart';
+import 'live_scan_panel.dart';
 import 'ember/theme_access.dart';
 
-Future<void> showSettings(BuildContext context, AppServices services) =>
-    showDialog<void>(
-      context: context,
-      builder: (context) => SettingsDialog(services: services),
-    );
+/// Opens Settings and optionally brings one section into view and focus.
+Future<void> showSettings(
+  BuildContext context,
+  AppServices services, {
+  SettingsSection? section,
+}) => showDialog<void>(
+  context: context,
+  builder: (context) => SettingsDialog(services: services, section: section),
+);
 
+/// A Settings section that can be targeted from the status bar.
+enum SettingsSection { gameMode, itemData, tracker, liveScan }
+
+/// Existing Settings dialog, optionally opened at [section].
 class SettingsDialog extends StatefulWidget {
   const SettingsDialog({
     super.key,
     required this.services,
     this.version = app_version.appVersion,
+    this.section,
   });
   final AppServices services;
   final String version;
+
+  /// The section focused once after the dialog opens.
+  final SettingsSection? section;
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
 }
 
 class _SettingsDialogState extends State<SettingsDialog> {
   final token = TextEditingController();
+  final _sectionKeys = {
+    for (final section in SettingsSection.values) section: GlobalKey(),
+  };
+  final _sectionFocus = {
+    for (final section in SettingsSection.values) section: FocusNode(),
+  };
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.section == null) return;
+      final section = widget.section!;
+      final target = _sectionKeys[section]!.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(target, alignment: 0.05);
+        _sectionFocus[section]!.requestFocus();
+      }
+    });
+  }
+
   late final gameLogs = TextEditingController(
     text: widget.services.settings.settings.gameLogDirectory,
   );
@@ -42,6 +75,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
   String? message;
   @override
   void dispose() {
+    for (final focus in _sectionFocus.values) {
+      focus.dispose();
+    }
     token.clear();
     token.dispose();
     gameLogs.dispose();
@@ -223,35 +259,49 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   style: TextStyle(color: context.ember.inkSecondary),
                 ),
                 const SizedBox(height: 18),
-                DropdownButtonFormField<GameMode>(
-                  key: ValueKey(services.catalog.mode),
-                  initialValue: services.catalog.mode,
-                  decoration: const InputDecoration(labelText: 'Game mode'),
-                  items: GameMode.values
-                      .map(
-                        (m) => DropdownMenuItem(
-                          value: m,
-                          child: Text(modeLabel(m)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: busy || services.settings.busy
-                      ? null
-                      : (m) {
-                          if (m != null) services.setMode(m);
-                        },
+                Focus(
+                  key: _sectionKeys[SettingsSection.gameMode],
+                  focusNode: _sectionFocus[SettingsSection.gameMode],
+                  child: DropdownButtonFormField<GameMode>(
+                    key: ValueKey(services.catalog.mode),
+                    initialValue: services.catalog.mode,
+                    decoration: const InputDecoration(labelText: 'Game mode'),
+                    items: GameMode.values
+                        .map(
+                          (m) => DropdownMenuItem(
+                            value: m,
+                            child: Text(modeLabel(m)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: busy || services.settings.busy
+                        ? null
+                        : (m) {
+                            if (m != null) services.setMode(m);
+                          },
+                  ),
                 ),
                 const SizedBox(height: 14),
-                OutlinedButton.icon(
-                  onPressed: known && !services.catalog.loading
-                      ? services.catalog.refresh
-                      : null,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh item data'),
-                ),
-                Text(
-                  'Item data: ${catalogStatusLabel(services.catalog.status)}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                Focus(
+                  key: _sectionKeys[SettingsSection.itemData],
+                  focusNode: _sectionFocus[SettingsSection.itemData],
+                  child: Column(
+                    key: const Key('settings-item-data'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: known && !services.catalog.loading
+                            ? services.catalog.refresh
+                            : null,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Refresh item data'),
+                      ),
+                      Text(
+                        'Item data: ${catalogStatusLabel(services.catalog.status)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Text(
@@ -326,93 +376,120 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ),
                 const Divider(height: 28),
                 ..._raidTimerSection(context),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Use Tracker progress'),
-                  subtitle: const Text(
-                    'Blackgrid only reads your progress. Your token needs the GP permission.',
-                  ),
-                  value: services.settings.settings.trackerEnabled,
-                  onChanged: busy
-                      ? null
-                      : (value) async {
-                          final success = await services.settings.save(
-                            services.settings.settings.copyWith(
-                              trackerEnabled: value,
-                            ),
-                          );
-                          if (success && !value) {
-                            await services.progress.setMode(
-                              services.catalog.mode,
-                            );
-                          }
-                        },
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Tracker token: ${services.progress.hasCredential ? 'saved for ${modeLabel(services.progress.mode)}' : 'not saved'}',
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: token,
-                  obscureText: true,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Tracker token (current game mode)',
-                    helperText: 'Starts with PVP_, PVE_ or SZN_. It is never imported or kept in the database.',
+                Focus(
+                  key: _sectionKeys[SettingsSection.liveScan],
+                  focusNode: _sectionFocus[SettingsSection.liveScan],
+                  child: Column(
+                    key: const Key('settings-live-scan'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LiveScanPanel(
+                        scanner: services.scanner,
+                        timingLog: services.scanTimingLog,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton(
-                      onPressed: busy || !known
-                          ? null
-                          : () => action(
-                              () => services.progress.saveCredential(
-                                token.text.trim(),
-                              ),
-                              'Tracker token saved',
-                            ),
-                      child: const Text('Save token'),
-                    ),
-                    OutlinedButton(
-                      onPressed:
-                          busy || !known || !services.progress.hasCredential
-                          ? null
-                          : () => action(
-                              services.progress.removeCredential,
-                              'Token removed',
-                            ),
-                      child: const Text('Remove token'),
-                    ),
-                    OutlinedButton(
-                      onPressed:
-                          busy ||
-                              !services.progress.hasCredential ||
-                              !services.settings.settings.trackerEnabled
-                          ? null
-                          : () => action(
-                              services.progress.refresh,
-                              'Progress refreshed',
-                            ),
-                      child: const Text('Refresh progress'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  message ??
-                      services.progress.error ??
-                      'Progress: ${progressStatusLabel(services.progress.status)}',
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Your Tracker token is stored encrypted for your Windows account. Your progress is kept only while Blackgrid is open, so refresh it after a restart.',
-                  style: TextStyle(color: context.ember.inkSecondary),
+                const Divider(height: 28),
+                Focus(
+                  key: _sectionKeys[SettingsSection.tracker],
+                  focusNode: _sectionFocus[SettingsSection.tracker],
+                  child: Column(
+                    key: const Key('settings-tracker'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Use Tracker progress'),
+                        subtitle: const Text(
+                          'Blackgrid only reads your progress. Your token needs the GP permission.',
+                        ),
+                        value: services.settings.settings.trackerEnabled,
+                        onChanged: busy
+                            ? null
+                            : (value) async {
+                                final success = await services.settings.save(
+                                  services.settings.settings.copyWith(
+                                    trackerEnabled: value,
+                                  ),
+                                );
+                                if (success && !value) {
+                                  await services.progress.setMode(
+                                    services.catalog.mode,
+                                  );
+                                }
+                              },
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Tracker token: ${services.progress.hasCredential ? 'saved for ${modeLabel(services.progress.mode)}' : 'not saved'}',
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: token,
+                        obscureText: true,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        decoration: const InputDecoration(
+                          labelText: 'Tracker token (current game mode)',
+                          helperText: 'Starts with PVP_, PVE_ or SZN_. It is never imported or kept in the database.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton(
+                            onPressed: busy || !known
+                                ? null
+                                : () => action(
+                                    () => services.progress.saveCredential(
+                                      token.text.trim(),
+                                    ),
+                                    'Tracker token saved',
+                                  ),
+                            child: const Text('Save token'),
+                          ),
+                          OutlinedButton(
+                            onPressed:
+                                busy ||
+                                    !known ||
+                                    !services.progress.hasCredential
+                                ? null
+                                : () => action(
+                                    services.progress.removeCredential,
+                                    'Token removed',
+                                  ),
+                            child: const Text('Remove token'),
+                          ),
+                          OutlinedButton(
+                            onPressed:
+                                busy ||
+                                    !services.progress.hasCredential ||
+                                    !services.settings.settings.trackerEnabled
+                                ? null
+                                : () => action(
+                                    services.progress.refresh,
+                                    'Progress refreshed',
+                                  ),
+                            child: const Text('Refresh progress'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        message ??
+                            services.progress.error ??
+                            'Progress: ${progressStatusLabel(services.progress.status)}',
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Your Tracker token is stored encrypted for your Windows account. Your progress is kept only while Blackgrid is open, so refresh it after a restart.',
+                        style: TextStyle(color: context.ember.inkSecondary),
+                      ),
+                    ],
+                  ),
                 ),
                 if (services.settings.error != null)
                   Text(

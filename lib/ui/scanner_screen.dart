@@ -57,10 +57,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LiveScanPanel(
-                    scanner: services.scanner,
-                    timingLog: services.scanTimingLog,
-                  ),
+                  RecordingStopNote(scanner: services.scanner),
                   const Divider(height: 24),
                   Expanded(
                     child: ManualControls(

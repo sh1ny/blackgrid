@@ -15,37 +15,37 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 | map-rail → Rail order puts raid-time sections first | Wide layout order | `test/ui/map_screen_test.dart` | map-rail: Wide layout order | red |
 | map-rail → Rail order puts raid-time sections first | Compact layout order | `test/ui/map_screen_test.dart` | map-rail: Compact layout order | red |
 | map-rail → Rail order puts raid-time sections first | Active map row stays alone | `test/ui/map_screen_test.dart` | map-rail: Active map row stays alone | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Switching on from Scanner | `test/ui/settings_dialog_test.dart` | scanner-evidence: Switching on from Scanner | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Unavailable runtime | `test/ui/settings_dialog_test.dart` | scanner-evidence: Unavailable runtime | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved | `test/ui/settings_dialog_test.dart` | scanner-evidence: Setting cannot be saved | red |
-| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved when switching off | `test/ui/settings_dialog_test.dart` | scanner-evidence: Setting cannot be saved when switching off | red |
+| scanner-evidence → Scanner shows the live scan switch and status | Switching on from Scanner | `test/ui/settings_dialog_test.dart` | scanner-evidence: Switching on from Scanner | green |
+| scanner-evidence → Scanner shows the live scan switch and status | Unavailable runtime | `test/ui/settings_dialog_test.dart` | scanner-evidence: Unavailable runtime | green |
+| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved | `test/ui/settings_dialog_test.dart` | scanner-evidence: Setting cannot be saved | green |
+| scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved when switching off | `test/ui/settings_dialog_test.dart` | scanner-evidence: Setting cannot be saved when switching off | green |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | `test/ui/shell_test.dart` | scanner-evidence: Desktop window | red |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | `test/ui/shell_test.dart` | scanner-evidence: Short desktop window | red |
 | scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | `test/ui/shell_test.dart` | scanner-evidence: Narrow window | red |
 | scanner-evidence → Footer shows the live scan state | Live scan on | `test/ui/shell_test.dart` | footer says live scan is on when ready | green |
 | scanner-evidence → Footer shows the live scan state | Live scan off | `test/ui/shell_test.dart` | footer says live scan is off and nothing is captured | green |
 | scanner-evidence → Footer shows the live scan state | Live scan unavailable | `test/ui/shell_test.dart` | footer says live scan is unavailable | green |
-| scanner-evidence → Scanner shows the record switch and its status | Recording runs | `test/ui/settings_dialog_test.dart` | scanner-evidence: Recording runs | red |
-| scanner-evidence → Scanner shows the record switch and its status | Live scan not ready | `test/ui/settings_dialog_test.dart` | scanner-evidence: Live scan not ready | red |
-| scanner-evidence → Scanner shows the record switch and its status | Write failure | `test/ui/shell_test.dart` | scanner-evidence: Write failure | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Registered hotkey | `test/ui/settings_dialog_test.dart` | scanner-evidence: Registered hotkey | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Hotkey held by another application | `test/ui/settings_dialog_test.dart` | scanner-evidence: Hotkey held by another application | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Rebind refused | `test/ui/settings_dialog_test.dart` | scanner-evidence: Rebind refused | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan off | `test/ui/settings_dialog_test.dart` | scanner-evidence: Live scan off | red |
-| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan starting | `test/ui/settings_dialog_test.dart` | scanner-evidence: Live scan starting | red |
-| workspace-shell → Answer precedes the workspace | Answer first in both areas | `test/ui/shell_test.dart` | workspace-shell: Answer first in both areas | red |
-| workspace-shell → Answer precedes the workspace | Missing item and long reason | `test/ui/shell_test.dart` | workspace-shell: Missing item and long reason | red |
-| workspace-shell → Selection semantics survive the new layout | Selection changes across areas | `test/ui/shell_test.dart` | workspace-shell: Selection changes across areas | red |
-| workspace-shell → Selection semantics survive the new layout | History and later rejected scan | `test/ui/shell_test.dart` | workspace-shell: History and later rejected scan | red |
-| workspace-shell → Top bar keeps navigation and timers reachable | Wide navigation | `test/ui/shell_test.dart` | workspace-shell: Wide navigation | red |
-| workspace-shell → Top bar keeps navigation and timers reachable | Narrow navigation and disabled timers | `test/ui/shell_test.dart` | workspace-shell: Narrow navigation and disabled timers | red |
+| scanner-evidence → Scanner shows the record switch and its status | Recording runs | `test/ui/settings_dialog_test.dart` | scanner-evidence: Recording runs | green |
+| scanner-evidence → Scanner shows the record switch and its status | Live scan not ready | `test/ui/settings_dialog_test.dart` | scanner-evidence: Live scan not ready | green |
+| scanner-evidence → Scanner shows the record switch and its status | Write failure | `test/ui/shell_test.dart` | scanner-evidence: Write failure | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Registered hotkey | `test/ui/settings_dialog_test.dart` | scanner-evidence: Registered hotkey | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Hotkey held by another application | `test/ui/settings_dialog_test.dart` | scanner-evidence: Hotkey held by another application | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Rebind refused | `test/ui/settings_dialog_test.dart` | scanner-evidence: Rebind refused | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan off | `test/ui/settings_dialog_test.dart` | scanner-evidence: Live scan off | green |
+| scanner-evidence → Scanner shows the scan hotkey and lets the user rebind it | Live scan starting | `test/ui/settings_dialog_test.dart` | scanner-evidence: Live scan starting | green |
+| workspace-shell → Answer precedes the workspace | Answer first in both areas | `test/ui/shell_test.dart` | workspace-shell: Answer first in both areas | green |
+| workspace-shell → Answer precedes the workspace | Missing item and long reason | `test/ui/shell_test.dart` | workspace-shell: Missing item and long reason | green |
+| workspace-shell → Selection semantics survive the new layout | Selection changes across areas | `test/ui/shell_test.dart` | workspace-shell: Selection changes across areas | green |
+| workspace-shell → Selection semantics survive the new layout | History and later rejected scan | `test/ui/shell_test.dart` | workspace-shell: History and later rejected scan | green |
+| workspace-shell → Top bar keeps navigation and timers reachable | Wide navigation | `test/ui/shell_test.dart` | workspace-shell: Wide navigation | green |
+| workspace-shell → Top bar keeps navigation and timers reachable | Narrow navigation and disabled timers | `test/ui/shell_test.dart` | workspace-shell: Narrow navigation and disabled timers | green |
 | workspace-shell → Inspector preserves the workspace | Docked details | `test/ui/shell_test.dart` | workspace-shell: Docked details | red |
 | workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | red |
 | workspace-shell → History rows show item pictures | History selection | `test/ui/history_panel_test.dart` | workspace-shell: History selection | red |
 | workspace-shell → History rows show item pictures | Missing history picture | `test/ui/history_panel_test.dart` | workspace-shell: Missing history picture | red |
 | workspace-shell → History rows show item pictures | Legacy history verdict | `test/ui/history_panel_test.dart` | workspace-shell: Legacy history verdict | red |
-| workspace-shell → Status actions lead to their controls | Settings targets | `test/ui/shell_test.dart` | workspace-shell: Settings targets | red |
-| workspace-shell → Status actions lead to their controls | Failed live scan save | `test/ui/shell_test.dart` | workspace-shell: Failed live scan save | red |
+| workspace-shell → Status actions lead to their controls | Settings targets | `test/ui/shell_test.dart` | workspace-shell: Settings targets | green |
+| workspace-shell → Status actions lead to their controls | Failed live scan save | `test/ui/shell_test.dart` | workspace-shell: Failed live scan save | green |
 
 ## 1. Recorded activity verdict and migration
 
@@ -57,10 +57,10 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 
 ## 2. Shared answer strip, top bar and targeted Settings
 
-- [ ] 2.1 Add failing shell widget tests for workspace-shell → Answer precedes the workspace, Selection semantics survive the new layout and Top bar keeps navigation and timers reachable. Assert both rooms at 1660×870, 1100×720, 960×720 and 900px width, empty/loading state, long reason, per-item FIR, all six plates and raw-ID absence. Retain existing controller-level authority tests; verify failures identify the displaced layout.
-- [ ] 2.2 Extract shared summary/FIR presentation and compose the one strip directly under the top bar; move enabled timers into the bar using existing projections. Preserve Ctrl K, search selection and labelled/compact actions. Verify 2.1 tests pass, including text scale 2, no horizontal page overflow, scan rejection retention, history close and return-to-latest-scan; flip those map rows green. Update widget API documentation with the new composition.
-- [ ] 2.3 Add failing widget tests for workspace-shell → Status actions lead to their controls and scanner-evidence's live-switch, hotkey and record-switch requirements. Open Settings through the actual shell entry points. Cover section visibility/focus, live-scan save failure in both directions, all hotkey states and rebind refusal, recording readiness, counters/path and close/reopen after recording write failure. Verify red steps fail for missing relocation/targeting, using fake scanner ports only.
-- [ ] 2.4 Move displaced configuration to the existing Settings dialog, add section targeting, connect status actions through existing controllers and keep Scanner's stop/error note visible after closing Settings. Preserve effective-mode authority and expose game-mode switching without overriding detected log mode. Verify 2.3 tests, existing live_scan_panel tests, Settings tests and retained footer tests pass; flip their mapped rows green. Document section-target and focus behaviour on affected APIs.
+- [x] 2.1 Add failing shell widget tests for workspace-shell → Answer precedes the workspace, Selection semantics survive the new layout and Top bar keeps navigation and timers reachable. Assert both rooms at 1660×870, 1100×720, 960×720 and 900px width, empty/loading state, long reason, per-item FIR, all six plates and raw-ID absence. Retain existing controller-level authority tests; verify failures identify the displaced layout.
+- [x] 2.2 Extract shared summary/FIR presentation and compose the one strip directly under the top bar; move enabled timers into the bar using existing projections. Preserve Ctrl K, search selection and labelled/compact actions. Verify 2.1 tests pass, including text scale 2, no horizontal page overflow, scan rejection retention, history close and return-to-latest-scan; flip those map rows green. Update widget API documentation with the new composition.
+- [x] 2.3 Add failing widget tests for workspace-shell → Status actions lead to their controls and scanner-evidence's live-switch, hotkey and record-switch requirements. Open Settings through the actual shell entry points. Cover section visibility/focus, live-scan save failure in both directions, all hotkey states and rebind refusal, recording readiness, counters/path and close/reopen after recording write failure. Verify red steps fail for missing relocation/targeting, using fake scanner ports only.
+- [x] 2.4 Move displaced configuration to the existing Settings dialog, add section targeting, connect status actions through existing controllers and keep Scanner's stop/error note visible after closing Settings. Preserve effective-mode authority and expose game-mode switching without overriding detected log mode. Verify 2.3 tests, existing live_scan_panel tests, Settings tests and retained footer tests pass; flip their mapped rows green. Document section-target and focus behaviour on affected APIs.
 
 ## 3. Inspector, history rows and area integration
 

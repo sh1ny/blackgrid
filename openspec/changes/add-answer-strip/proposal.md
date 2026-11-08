@@ -59,5 +59,6 @@ DECISION_MAKING: important
 Blackgrid puts the current item and keep/sell answer directly below the top bar on Map and Scanner.
 
 ### Changed
+- Shared item advice and Found in raid controls now precede both workspaces; timers sit in the top bar and status actions open the relevant Settings controls. Live scan configuration, hotkeys and recording status are available in Settings.
 - Activity records now retain the verdict shown at recording time across restart and import; older records retain an unknown verdict.
 - Added an answer-first workspace with raid timers in the top bar, a details inspector, pictured history rows and clickable status controls. Configuration remains available in Settings. New history entries retain their verdict; older entries show an unknown indicator.

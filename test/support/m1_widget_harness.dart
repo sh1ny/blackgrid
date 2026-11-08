@@ -1,4 +1,6 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/data/scan_frame_recorder.dart';
+import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,8 @@ Future<M1Harness> pumpM1(
   double scale = 1,
   GameMode mode = GameMode.pvp,
   ScanFakePorts? scanPorts,
+  ScanFrameRecorder? scanFrameRecorder,
+  BlackgridDatabase? database,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -22,7 +26,11 @@ Future<M1Harness> pumpM1(
   // Create native/external async resources in the real zone too; constructing
   // them under FakeAsync can strand initialization before runAsync returns.
   final h = (await tester.runAsync(() async {
-    final result = M1Harness(scanPorts: scanPorts);
+    final result = M1Harness(
+      scanPorts: scanPorts,
+      scanFrameRecorder: scanFrameRecorder,
+      database: database,
+    );
     await result.initialize(mode: mode);
     return result;
   }))!;

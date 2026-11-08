@@ -3,7 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../application/app_services.dart';
 import '../application/scan_coordinator.dart';
+import '../domain/catalog.dart';
 import 'app_logo.dart';
+import 'answer_strip.dart';
+import 'evidence_panels.dart';
+import 'item_decision_card.dart';
 import 'import_dialog.dart';
 import 'labels.dart';
 import 'map_screen.dart';
@@ -22,6 +26,8 @@ class BlackgridShell extends StatefulWidget {
 
 class _BlackgridShellState extends State<BlackgridShell> {
   int selected = 0;
+  bool inspectorOpen = false;
+  bool sourceDetailsExpanded = false;
   final query = TextEditingController();
   final searchFocus = FocusNode();
   @override
@@ -51,62 +57,54 @@ class _BlackgridShellState extends State<BlackgridShell> {
           },
         ),
       },
-      child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                height: 66 * MediaQuery.textScalerOf(context).scale(1),
-                decoration: BoxDecoration(
-                  color: context.ember.canvas,
-                  border: Border(
-                    bottom: BorderSide(color: context.ember.hairline),
-                  ),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) => SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width:
-                          constraints.maxWidth <
-                              1220 * MediaQuery.textScalerOf(context).scale(1)
-                          ? 1220 * MediaQuery.textScalerOf(context).scale(1)
-                          : constraints.maxWidth,
-                      child: Row(
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact =
+                        constraints.maxWidth < 1300 ||
+                        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                    return Container(
+                      key: const Key('shell-top-bar'),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.ember.canvas,
+                        border: Border(
+                          bottom: BorderSide(color: context.ember.hairline),
+                        ),
+                      ),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const SizedBox(width: 20),
                           const AppLogo(),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            width:
-                                260 * MediaQuery.textScalerOf(context).scale(1),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                          if (!compact)
+                            const Column(
+                              mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'BLACKGRID',
-                                  style: TextStyle(
-                                    fontSize: 23,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
+                                Text('BLACKGRID'),
                                 Text(
                                   'TRACK. PLAN. SURVIVE.',
-                                  style: TextStyle(
-                                    color: context.ember.inkSecondary,
-                                    fontSize: 10,
-                                    letterSpacing: 1.7,
-                                  ),
+                                  style: TextStyle(fontSize: 8),
                                 ),
                               ],
                             ),
-                          ),
                           _nav(0, Icons.map_outlined, 'Map'),
                           _nav(1, Icons.center_focus_weak, 'Scanner'),
-                          const SizedBox(width: 24),
-                          Expanded(
+                          SizedBox(
+                            width: compact ? 150 : 220,
+                            height:
+                                39 * MediaQuery.textScalerOf(context).scale(1),
                             child: TextField(
                               controller: query,
                               focusNode: searchFocus,
@@ -115,9 +113,10 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                 hintText: 'Search items…',
                                 prefixIcon: Icon(Icons.search, size: 20),
                                 suffixText: 'Ctrl K',
+                                isDense: true,
                                 contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
+                                  horizontal: 8,
+                                  vertical: 6,
                                 ),
                               ),
                               onSubmitted: (_) {
@@ -133,110 +132,230 @@ class _BlackgridShellState extends State<BlackgridShell> {
                               },
                             ),
                           ),
-                          const SizedBox(width: 18),
-                          OutlinedButton.icon(
-                            onPressed: () =>
-                                showSettings(context, widget.services),
-                            icon: const Icon(Icons.settings_outlined, size: 18),
-                            label: const Text('Settings'),
+                          RaidTimerStrip(
+                            controller: widget.services.raidTimers,
                           ),
-                          const SizedBox(width: 10),
-                          OutlinedButton.icon(
+                          IconButton(
+                            key: const Key('inspector-toggle'),
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(36, 36),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            tooltip: inspectorOpen
+                                ? 'Close inspector'
+                                : 'Open inspector',
+                            constraints: const BoxConstraints.tightFor(
+                              width: 36,
+                              height: 36,
+                            ),
+                            padding: EdgeInsets.zero,
                             onPressed: () =>
+                                setState(() => inspectorOpen = !inspectorOpen),
+                            icon: const Icon(Icons.vertical_split_outlined),
+                          ),
+                          _headerAction(
+                            'Settings',
+                            Icons.settings_outlined,
+                            compact,
+                            () => showSettings(context, widget.services),
+                          ),
+                          _headerAction(
+                            'Stats',
+                            Icons.bar_chart,
+                            compact,
+                            () =>
                                 showStats(context, widget.services.localStats),
-                            icon: const Icon(Icons.bar_chart, size: 18),
-                            label: const Text('Stats'),
                           ),
-                          const SizedBox(width: 10),
-                          OutlinedButton.icon(
-                            onPressed: () =>
-                                showLegacyImport(context, widget.services),
-                            icon: const Icon(
-                              Icons.file_open_outlined,
-                              size: 18,
-                            ),
-                            label: const Text('Import'),
+                          _headerAction(
+                            'Import',
+                            Icons.file_open_outlined,
+                            compact,
+                            () => showLegacyImport(context, widget.services),
                           ),
-                          const SizedBox(width: 18),
                         ],
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ),
-              RaidTimerStrip(controller: widget.services.raidTimers),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: IndexedStack(
-                    index: selected,
-                    children: [
-                      MapScreen(
-                        key: const PageStorageKey('map'),
-                        services: widget.services,
-                      ),
-                      ScannerScreen(
-                        key: const PageStorageKey('scanner'),
-                        services: widget.services,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                height: 34 * MediaQuery.textScalerOf(context).scale(1),
-                decoration: BoxDecoration(
-                  color: context.ember.canvas,
-                  border: Border(
-                    top: BorderSide(color: context.ember.hairline),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+                AnswerStrip(services: widget.services),
+                Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ListenableBuilder(
-                      listenable: Listenable.merge([
-                        widget.services.catalog,
-                        widget.services.progress,
-                      ]),
-                      builder: (context, _) => Row(
-                        children: [
-                          Icon(
-                            Icons.touch_app_outlined,
-                            size: 14,
-                            color: context.ember.accentText,
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: IndexedStack(
+                            index: selected,
+                            children: [
+                              MapScreen(
+                                key: const PageStorageKey('map'),
+                                services: widget.services,
+                              ),
+                              ScannerScreen(
+                                key: const PageStorageKey('scanner'),
+                                services: widget.services,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          const SizedBox(width: 2),
-                          Text(
-                            'Game mode ${modeLabel(widget.services.catalog.mode)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 22),
-                          Text(
-                            'Item data ${catalogStatusLabel(widget.services.catalog.status)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 22),
-                          Text(
-                            'Tracker ${progressStatusLabel(widget.services.progress.status)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 22),
-                          ListenableBuilder(
-                            listenable: widget.services.scanner,
-                            builder: (context, _) => _liveScanFooter(
-                              widget.services.scanner.status.state,
+                        ),
+                        if (inspectorOpen) ...[
+                          const SizedBox(width: 14),
+                          SizedBox(
+                            key: const Key('shell-inspector'),
+                            width: 352,
+                            child: ListView(
+                              children: [
+                                SizedBox(
+                                  height: 450,
+                                  child: ItemDecisionCard(
+                                    services: widget.services,
+                                    compact: true,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  height: 400,
+                                  child: RequirementPanel(
+                                    services: widget.services,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  height: 400,
+                                  child: SourcePanel(
+                                    services: widget.services,
+                                    detailsExpanded: sourceDetailsExpanded,
+                                    onDetailsExpandedChanged: (value) =>
+                                        setState(
+                                          () => sourceDetailsExpanded = value,
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  height: 400,
+                                  child: HistoryPanel(
+                                    services: widget.services,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                ),
+                ListenableBuilder(
+                  listenable: widget.services.scanner,
+                  builder: (context, _) => widget.services.scanner.error == null
+                      ? const SizedBox.shrink()
+                      : Text(
+                          widget.services.scanner.error!,
+                          key: const Key('status-live-scan-error'),
+                        ),
+                ),
+                Container(
+                  height: 34 * MediaQuery.textScalerOf(context).scale(1),
+                  decoration: BoxDecoration(
+                    color: context.ember.canvas,
+                    border: Border(
+                      top: BorderSide(color: context.ember.hairline),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: ListenableBuilder(
+                        listenable: Listenable.merge([
+                          widget.services.catalog,
+                          widget.services.progress,
+                          widget.services.scanner,
+                          widget.services.mapSession,
+                        ]),
+                        builder: (context, _) => Row(
+                          children: [
+                            Icon(
+                              Icons.touch_app_outlined,
+                              size: 14,
+                              color: context.ember.accentText,
+                            ),
+                            const SizedBox(width: 8),
+                            const SizedBox(width: 2),
+                            PopupMenuButton<GameMode>(
+                              key: const Key('status-game-mode'),
+                              tooltip:
+                                  widget
+                                          .services
+                                          .mapSession
+                                          .state
+                                          .detectedMode ==
+                                      GameMode.unknown
+                                  ? 'Choose game mode'
+                                  : 'The game log currently determines the active mode',
+                              onSelected: widget.services.setMode,
+                              itemBuilder: (context) => [
+                                for (final mode in GameMode.values)
+                                  PopupMenuItem(
+                                    value: mode,
+                                    child: Text(modeLabel(mode)),
+                                  ),
+                              ],
+                              child: Text(
+                                'Game mode ${modeLabel(widget.services.catalog.mode)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            const SizedBox(width: 22),
+                            InkWell(
+                              key: const Key('status-item-data'),
+                              onTap: () => showSettings(
+                                context,
+                                widget.services,
+                                section: SettingsSection.itemData,
+                              ),
+                              child: Text(
+                                'Item data ${catalogStatusLabel(widget.services.catalog.status)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            const SizedBox(width: 22),
+                            InkWell(
+                              key: const Key('status-tracker'),
+                              onTap: () => showSettings(
+                                context,
+                                widget.services,
+                                section: SettingsSection.tracker,
+                              ),
+                              child: Text(
+                                'Tracker ${progressStatusLabel(widget.services.progress.status)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            const SizedBox(width: 22),
+                            ListenableBuilder(
+                              listenable: widget.services.scanner,
+                              builder: (context, _) => InkWell(
+                                key: const Key('status-live-scan'),
+                                onTap: () =>
+                                    widget.services.scanner.setLiveScan(
+                                      !widget.services.scanner.switchOn,
+                                    ),
+                                child: _liveScanFooter(
+                                  widget.services.scanner.status.state,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -270,14 +389,35 @@ class _BlackgridShellState extends State<BlackgridShell> {
     return Text(text, style: TextStyle(color: color, fontSize: 11));
   }
 
+  Widget _headerAction(
+    String label,
+    IconData icon,
+    bool compact,
+    VoidCallback onPressed,
+  ) => compact
+      ? IconButton(tooltip: label, onPressed: onPressed, icon: Icon(icon))
+      : Tooltip(
+          message: label,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            onPressed: onPressed,
+            icon: Icon(icon, size: 18),
+            label: Text(label),
+          ),
+        );
+
   Widget _nav(int index, IconData icon, String label) => Semantics(
     selected: selected == index,
     child: InkWell(
       key: Key(index == 0 ? 'nav-map' : 'nav-scanner'),
       onTap: () => setState(() => selected = index),
       child: Container(
-        height: 66 * MediaQuery.textScalerOf(context).scale(1),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        height: 36 * MediaQuery.textScalerOf(context).scale(1),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: selected == index
               ? context.ember.accentSoft
@@ -292,6 +432,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
           ),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,

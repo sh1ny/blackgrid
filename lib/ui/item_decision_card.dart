@@ -161,10 +161,6 @@ class ItemDecisionCard extends StatelessWidget {
                             else
                               name,
                             const SizedBox(height: 5),
-                            SelectableText(
-                              item.id,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
                             const SizedBox(height: 14),
                             VerdictPlate(decision: decision),
                             const SizedBox(height: 8),
