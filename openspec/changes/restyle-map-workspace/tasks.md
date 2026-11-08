@@ -20,7 +20,7 @@
 | map-controls → Read latest screenshot is in the picker | Empty folder | `test/ui/map_workspace_controls_test.dart` | map-controls: Empty folder | red |
 | map-controls → Read latest screenshot is in the picker | Screenshot cannot be read | `test/ui/map_workspace_controls_test.dart` | map-controls: Screenshot cannot be read | red |
 | map-controls → Read latest screenshot is in the picker | Screenshot folder is unavailable | `test/ui/map_workspace_controls_test.dart` | map-controls: Screenshot folder is unavailable | red |
-| map-controls → Read latest screenshot is in the picker | Superseded read | `test/application/map_session_controller_test.dart` | map-controls: Superseded read | red |
+| map-controls → Read latest screenshot is in the picker | Superseded read | `test/application/map_session_controller_test.dart` | map-controls: Superseded read | green |
 | map-controls → Floor control sits beside the picker | Choosing a floor | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a floor | red |
 | map-controls → Floor control sits beside the picker | Map with no floors | `test/ui/map_workspace_controls_test.dart` | map-controls: Map with no floors | red |
 | map-controls → Floor control sits beside the picker | Artwork unavailable | `test/ui/map_workspace_controls_test.dart` | map-controls: Artwork unavailable | red |
@@ -143,10 +143,10 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 4. Controller and watcher support
 
-- [ ] 4.1 Change `ScreenshotDirectoryWatcher.readLatest` to return a sealed result (found, empty, unavailable, discarded), test first in `test/data/screenshot_directory_watcher_test.dart`, with a case for each path that returns null today. A missing or inaccessible folder, an unreadable, oversized or changing file, and the no-folder-bound path are unavailable; a closed watcher or moved generation is discarded. Verify the file passes.
-- [ ] 4.2 Make `MapSessionController.readLatest` return an outcome (applied, no screenshot, unavailable, superseded), test first in `test/application/map_session_controller_test.dart`. Keep the `order` check as well as the context check, and report superseded for either. Verify `map-controls: Superseded read` passes and flip it green.
-- [ ] 4.3 Add the raid match time to `MapSessionController`, test first in the same file: set where a screenshot sets the highlights, unchanged by the re-match in `_refreshEvidenceForMap`, cleared in `_invalidate`, retained across a later screenshot with no panel. Verify the file passes.
-- [ ] 4.4 Add to `MapController` the non-culled accessor of raid-matched projections and `revealMarker(id)`, test first in a new `test/application/map_controller_test.dart`: eligible by category, floor and map only; independent of pan and zoom; pans at the same zoom only when off view; ignores an id that is no longer eligible. Verify the file passes.
+- [x] 4.1 Change `ScreenshotDirectoryWatcher.readLatest` to return a sealed result (found, empty, unavailable, discarded), test first in `test/data/screenshot_directory_watcher_test.dart`, with a case for each path that returns null today. A missing or inaccessible folder, an unreadable, oversized or changing file, and the no-folder-bound path are unavailable; a closed watcher or moved generation is discarded. Verify the file passes.
+- [x] 4.2 Make `MapSessionController.readLatest` return an outcome (applied, no screenshot, unavailable, superseded), test first in `test/application/map_session_controller_test.dart`. Keep the `order` check as well as the context check, and report superseded for either. Verify `map-controls: Superseded read` passes and flip it green.
+- [x] 4.3 Add the raid match time to `MapSessionController`, test first in the same file: set where a screenshot sets the highlights, unchanged by the re-match in `_refreshEvidenceForMap`, cleared in `_invalidate`, retained across a later screenshot with no panel. Verify the file passes.
+- [x] 4.4 Add to `MapController` the non-culled accessor of raid-matched projections and `revealMarker(id)`, test first in a new `test/application/map_controller_test.dart`: eligible by category, floor and map only; independent of pan and zoom; pans at the same zoom only when off view; ignores an id that is no longer eligible. Verify the file passes.
 
 ## 5. Controls on the map
 

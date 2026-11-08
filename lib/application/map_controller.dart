@@ -306,6 +306,48 @@ class MapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The raid-matched markers on the selected map, in pack order.
+  ///
+  /// A marker is listed when the raid highlights name it and it passes the
+  /// shared category, floor and quest eligibility on the selected map. Panning,
+  /// zooming and the viewport edge never remove one, so a list built from this
+  /// changes only with those inputs, not with the view. Positions are the
+  /// current viewport projection and may lie outside the viewport.
+  List<ProjectedMapMarker> get raidMatchedMarkers {
+    final map = _preparedMap;
+    final floors = _floorSelection;
+    if (_disposed || _raidHighlights.isEmpty || map == null || floors == null) {
+      return const [];
+    }
+    return List.unmodifiable([
+      for (final projection in _projectedMarkers ??= _projectMarkers(
+        map,
+        floors,
+      ))
+        if (projection.marker.raidHighlighted) projection.marker,
+    ]);
+  }
+
+  /// Selects the eligible marker [id] and brings it into view.
+  ///
+  /// Only when its anchor lies outside the viewport does the view pan, at the
+  /// same zoom, to centre it. An id that is not eligible is ignored, so a stale
+  /// request does nothing. Selection by [setSelectedMarker] never moves the view.
+  void revealMarker(String id) {
+    if (_disposed || !_isMarkerEligible(id)) return;
+    setSelectedMarker(id);
+    final anchor = selectedMarkerProjection?.viewportPoint;
+    if (anchor == null || !_hasViewport) return;
+    final inView =
+        anchor.x >= 0 &&
+        anchor.x <= _viewport.width &&
+        anchor.y >= 0 &&
+        anchor.y <= _viewport.height;
+    if (!inView) {
+      panBy(_viewport.width / 2 - anchor.x, _viewport.height / 2 - anchor.y);
+    }
+  }
+
   bool _isMarkerEligible(String id) {
     final floors = _floorSelection;
     if (floors == null) return false;
