@@ -139,9 +139,15 @@ class SelectionController extends ChangeNotifier {
     error = null;
     _authority = _fingerprint();
     _project();
-    notifyListeners();
+    final verdict = _decision?.recommendation;
     final mode = catalog.mode;
-    final recorded = await history.record(value.id, mode, clock().toUtc());
+    notifyListeners();
+    final recorded = await history.record(
+      value.id,
+      mode,
+      clock().toUtc(),
+      verdict: verdict,
+    );
     if (_disposed || generation != _generation) return;
     if (!recorded) error = history.error;
     notifyListeners();
@@ -175,6 +181,7 @@ class SelectionController extends ChangeNotifier {
     error = null;
     _authority = _fingerprint();
     _project();
+    // Capture the projected decision before listeners can change selection.
     final decision = _decision;
     if (decision != null) {
       _scan = AcceptedScan(
@@ -193,6 +200,7 @@ class SelectionController extends ChangeNotifier {
       mode,
       acceptedAt,
       source: ActivitySource.scan,
+      verdict: decision?.recommendation,
     );
     if (_disposed || generation != _generation) return;
     if (!recorded) error = history.error;
@@ -335,8 +343,14 @@ class SelectionController extends ChangeNotifier {
     error = null;
     _authority = _fingerprint();
     _project();
+    final verdict = _decision?.recommendation;
     notifyListeners();
-    final recorded = await history.record(itemId, offer.mode, correctedAt);
+    final recorded = await history.record(
+      itemId,
+      offer.mode,
+      correctedAt,
+      verdict: verdict,
+    );
     if (_disposed || generation != _generation) return;
     if (!recorded) {
       error = 'Correction was not recorded.';

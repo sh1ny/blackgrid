@@ -4,6 +4,7 @@ import 'package:blackgrid/application/history_controller.dart';
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +31,17 @@ class _GatedDatabase extends BlackgridDatabase {
     GameMode mode,
     DateTime time, {
     ActivitySource source = ActivitySource.manual,
+    Recommendation? verdict,
   }) async {
     await writeGate.future;
     if (failWrite) throw StateError('synthetic write failure');
-    return super.recordActivity(itemId, mode, time, source: source);
+    return super.recordActivity(
+      itemId,
+      mode,
+      time,
+      source: source,
+      verdict: verdict,
+    );
   }
 }
 
@@ -100,7 +108,14 @@ void main() {
       expect(history.rows.first.revision, 2);
       expect(
         history.rows.first.toJson().keys,
-        unorderedEquals(['itemId', 'mode', 'source', 'observedAt', 'revision']),
+        unorderedEquals([
+          'itemId',
+          'mode',
+          'source',
+          'observedAt',
+          'revision',
+          'verdict',
+        ]),
       );
       history.dispose();
       await db.close();

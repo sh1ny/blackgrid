@@ -11,7 +11,6 @@ import '../domain/marker_categories.dart';
 import '../domain/raid_lifecycle.dart';
 import '../domain/raid_panel_text_parser.dart';
 import '../domain/settings.dart';
-import 'item_decision_card.dart';
 import 'labels.dart';
 import 'manual_controls.dart';
 import 'map_workspace.dart';
@@ -201,6 +200,10 @@ class _MapInputStatusState extends State<_MapInputStatus> {
   );
 }
 
+/// The map workspace with interim rail controls until map restyling.
+///
+/// The rail retains map selection, marker preferences, manual item search,
+/// and saved-file inputs in that order. The shell owns inspection details.
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key, required this.services});
   final AppServices services;
@@ -398,11 +401,6 @@ class _MapScreenState extends State<MapScreen> {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 300 * scale,
-              child: ItemDecisionCard(services: services, compact: true),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
               height: 430 * scale,
               child: GridPanel(
                 title: 'Marker preferences',
@@ -514,25 +512,22 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ],
         );
-        if (constraints.maxWidth < 1100) {
-          return ListView(
-            key: const PageStorageKey('map-compact-scroll'),
-            children: [
-              SizedBox(height: 650 * scale, child: workspace),
-              const SizedBox(height: 14),
-              SizedBox(height: 800 * scale, child: rail),
-            ],
-          );
-        }
+        final compact = constraints.maxWidth < 1100;
+        // Keep the same workspace subtree across width changes: the direction
+        // and available extent change without reparenting the map viewport.
         return SingleChildScrollView(
+          key: const PageStorageKey('map-compact-scroll'),
           child: SizedBox(
-            height: math.max(constraints.maxHeight, 620 * scale),
-            child: Row(
+            height: compact
+                ? 1464 * scale
+                : math.max(constraints.maxHeight, 620 * scale),
+            child: Flex(
+              direction: compact ? Axis.vertical : Axis.horizontal,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(flex: 70, child: workspace),
-                const SizedBox(width: 14),
-                Expanded(flex: 30, child: rail),
+                Expanded(flex: compact ? 650 : 70, child: workspace),
+                SizedBox(width: compact ? 0 : 14, height: compact ? 14 : 0),
+                Expanded(flex: compact ? 800 : 30, child: rail),
               ],
             ),
           ),

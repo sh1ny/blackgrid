@@ -172,3 +172,30 @@ class LiveScanPanel extends StatelessWidget {
     return folder == null ? null : '$counts$where';
   }
 }
+
+/// Shows a recording stop reason after configuration has been closed.
+class RecordingStopNote extends StatelessWidget {
+  /// Creates a note bound to [scanner]'s recording status.
+  const RecordingStopNote({super.key, required this.scanner});
+
+  /// The source of recording stop information.
+  final ScanCoordinator scanner;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) => ValueListenableBuilder<ScanRecordingStatus>(
+    valueListenable: scanner.recordingStatus,
+    builder: (context, status, _) {
+      final text = switch (status.stopReason) {
+        ScanRecordingCapReached() => 'Recording stopped: scan limit reached.',
+        ScanRecordingStartFailed(:final error) ||
+        ScanRecordingWriteFailed(:final error) => 'Recording stopped: $error',
+        null => null,
+      };
+      return text == null
+          ? const SizedBox.shrink()
+          : Text(text, key: const Key('recording-stop-note'));
+    },
+  );
+}

@@ -4,7 +4,7 @@ import '../application/raid_timers_controller.dart';
 import '../domain/raid_timers.dart';
 import 'ember/theme_access.dart';
 
-/// The slim strip under the shell header that shows the raid timers.
+/// The compact raid timer entries shown in the shell top bar.
 ///
 /// Rebuilds whenever [controller] publishes a new view and takes no space
 /// while the view has no entries. Each entry's explanation is its tooltip.
@@ -21,36 +21,35 @@ class RaidTimerStrip extends StatelessWidget {
     builder: (context, _) {
       final entries = controller.view.entries;
       if (entries.isEmpty) return const SizedBox.shrink();
-      return Container(
+      return Wrap(
         key: const Key('raid-timer-strip'),
-        height: 28 * MediaQuery.textScalerOf(context).scale(1),
-        decoration: BoxDecoration(
-          color: context.ember.canvas,
-          border: Border(bottom: BorderSide(color: context.ember.hairline)),
-        ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                for (final (i, entry) in entries.indexed) ...[
-                  if (i > 0) const SizedBox(width: 22),
-                  _entry(context, entry),
-                ],
-              ],
-            ),
-          ),
-        ),
+        spacing: 12,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final (index, entry) in entries.indexed) ...[
+            if (index > 0)
+              Container(
+                key: index == 1
+                    ? const Key('timer-separator')
+                    : ValueKey('timer-separator-$index'),
+                width: 1,
+                height: 14,
+                color: context.ember.hairlineStrong,
+              ),
+            _entry(context, entry),
+          ],
+        ],
       );
     },
   );
 
   Widget _entry(BuildContext context, RaidTimerEntry entry) {
-    final text = Text(entry.text, style: Theme.of(context).textTheme.bodySmall);
-    final tooltip = entry.tooltip;
-    return Center(
-      child: tooltip == null ? text : Tooltip(message: tooltip, child: text),
+    final text = Text(
+      entry.text,
+      style: Theme.of(context).textTheme.labelSmall,
     );
+    final tooltip = entry.tooltip;
+    return tooltip == null ? text : Tooltip(message: tooltip, child: text);
   }
 }

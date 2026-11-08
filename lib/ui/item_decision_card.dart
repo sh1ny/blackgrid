@@ -27,9 +27,17 @@ class ItemDecisionCard extends StatelessWidget {
     super.key,
     required this.services,
     this.compact = false,
+    this.showCorrectionOffer = true,
+    this.fitContent = false,
   });
   final AppServices services;
   final bool compact;
+
+  /// Sizes the content within an enclosing scrolling inspector.
+  final bool fitContent;
+
+  /// Whether the card presents the shared correction controls.
+  final bool showCorrectionOffer;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([services.selection, services.scans]),
@@ -42,11 +50,12 @@ class ItemDecisionCard extends StatelessWidget {
       final decision = selection.decision;
       final scan = selection.scan;
       final correction = selection.isHistory ? null : selection.correction;
-      final offer = selection.correctionOffer;
+      final offer = showCorrectionOffer ? selection.correctionOffer : null;
       final offerBlock = offer == null
           ? null
-          : _CorrectionOfferBlock(selection: selection, offer: offer);
+          : CorrectionOfferBlock(selection: selection, offer: offer);
       return GridPanel(
+        fitContent: fitContent,
         title: selection.isHistory
             ? 'History inspection'
             : scan != null
@@ -68,6 +77,10 @@ class ItemDecisionCard extends StatelessWidget {
         child: item == null || decision == null
             ? offerBlock != null
                   ? ListView(
+                      shrinkWrap: fitContent,
+                      physics: fitContent
+                          ? const NeverScrollableScrollPhysics()
+                          : null,
                       children: [
                         // The offer replaces only the find-an-item hint; a
                         // loading or unresolved selection still says so.
@@ -95,6 +108,10 @@ class ItemDecisionCard extends StatelessWidget {
                       ],
                     )
                   : ListView(
+                      shrinkWrap: fitContent,
+                      physics: fitContent
+                          ? const NeverScrollableScrollPhysics()
+                          : null,
                       children: [
                         const SizedBox(height: 28),
                         Icon(
@@ -123,6 +140,9 @@ class ItemDecisionCard extends StatelessWidget {
                       ],
                     )
             : SingleChildScrollView(
+                physics: fitContent
+                    ? const NeverScrollableScrollPhysics()
+                    : null,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -161,10 +181,6 @@ class ItemDecisionCard extends StatelessWidget {
                             else
                               name,
                             const SizedBox(height: 5),
-                            SelectableText(
-                              item.id,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
                             const SizedBox(height: 14),
                             VerdictPlate(decision: decision),
                             const SizedBox(height: 8),
@@ -384,28 +400,35 @@ class ItemDecisionCard extends StatelessWidget {
   );
 }
 
-/// The bounded offer block: the scan's candidates, a search field and results.
+/// Candidate and search controls for a scan awaiting manual correction.
 ///
-/// It owns the search field's controller and keeps its text equal to the
-/// offer's query whenever the selection notifies, so every mounted card shows
-/// the same text.
-class _CorrectionOfferBlock extends StatefulWidget {
-  const _CorrectionOfferBlock({required this.selection, required this.offer});
+/// Owns the search field controller and synchronizes it with the offer's query
+/// whenever the selection notifies.
+class CorrectionOfferBlock extends StatefulWidget {
+  /// Creates controls bound to [selection] and its current [offer].
+  const CorrectionOfferBlock({
+    super.key,
+    required this.selection,
+    required this.offer,
+  });
 
+  /// The owner of the current query, candidates, and correction actions.
   final SelectionController selection;
+
+  /// The scan awaiting manual correction.
   final ScanCorrectionOffer offer;
 
   @override
-  State<_CorrectionOfferBlock> createState() => _CorrectionOfferBlockState();
+  State<CorrectionOfferBlock> createState() => _CorrectionOfferBlockState();
 }
 
-class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
+class _CorrectionOfferBlockState extends State<CorrectionOfferBlock> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.offer.query,
   );
 
   @override
-  void didUpdateWidget(_CorrectionOfferBlock oldWidget) {
+  void didUpdateWidget(CorrectionOfferBlock oldWidget) {
     super.didUpdateWidget(oldWidget);
     final query = widget.offer.query;
     if (_controller.text == query) return;

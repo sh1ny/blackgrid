@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../application/progress_controller.dart';
+import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
 import 'item_icon.dart';
@@ -11,6 +12,7 @@ import 'labels.dart';
 import 'requirement_rows.dart';
 import 'panels.dart';
 import 'ember/theme_access.dart';
+import 'verdict_plate.dart' show DashedBorderPainter;
 
 /// The evidence line for the newest items source update in [snapshot].
 ///
@@ -19,13 +21,60 @@ String itemsSourceUpdateLabel(CatalogSnapshot snapshot) =>
     'Items source update: '
     '${snapshot.sourceTimestamps['items']?.toUtc().toIso8601String() ?? 'unknown'}';
 
+/// Retains optional-use expansion while tracking the inspected item.
+class RequirementExpansion extends ChangeNotifier {
+  /// Creates expansion state bound to [selection].
+  RequirementExpansion(this.selection) : _openFor = selection.selectedId {
+    selection.addListener(_selectionChanged);
+  }
+
+  /// The selection whose changes collapse optional uses.
+  final SelectionController selection;
+  String? _openFor;
+  bool _open = false;
+
+  /// Whether optional uses are expanded.
+  bool get open => _open;
+
+  /// Changes whether optional uses are expanded.
+  void setOpen(bool value) {
+    _open = value;
+    notifyListeners();
+  }
+
+  void _selectionChanged() {
+    final id = selection.selectedId;
+    if (id == _openFor) return;
+    _openFor = id;
+    _open = false;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    selection.removeListener(_selectionChanged);
+    super.dispose();
+  }
+}
+
 /// The requirements and uses of the inspected item.
 ///
 /// Task and hideout rows come first. Craft and barter rows follow under an
 /// `Optional uses` header that starts collapsed for every newly inspected item.
 class RequirementPanel extends StatefulWidget {
   /// Creates the panel over [services]' selection.
-  const RequirementPanel({super.key, required this.services});
+  const RequirementPanel({
+    super.key,
+    required this.services,
+    this.fitContent = false,
+    this.expansion,
+  });
+
+  /// Sizes the panel to its rows when embedded in a scrolling inspector.
+  final bool fitContent;
+
+  /// Optional expansion state owned by a longer-lived inspector.
+  final RequirementExpansion? expansion;
 
   /// The services whose current selection the panel shows.
   final AppServices services;
@@ -35,51 +84,41 @@ class RequirementPanel extends StatefulWidget {
 }
 
 class _RequirementPanelState extends State<RequirementPanel> {
-  bool _optionalOpen = false;
-
-  /// The item [_optionalOpen] was set for.
-  String? _openFor;
+  late RequirementExpansion _expansion;
 
   @override
   void initState() {
     super.initState();
-    _openFor = widget.services.selection.selectedId;
-    widget.services.selection.addListener(_selectionChanged);
+    _expansion =
+        widget.expansion ?? RequirementExpansion(widget.services.selection);
   }
 
   @override
   void didUpdateWidget(RequirementPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.services.selection != widget.services.selection) {
-      oldWidget.services.selection.removeListener(_selectionChanged);
-      widget.services.selection.addListener(_selectionChanged);
-      _selectionChanged();
+    if (oldWidget.expansion != widget.expansion ||
+        oldWidget.services.selection != widget.services.selection) {
+      if (oldWidget.expansion == null) _expansion.dispose();
+      _expansion =
+          widget.expansion ?? RequirementExpansion(widget.services.selection);
     }
   }
 
   @override
   void dispose() {
-    widget.services.selection.removeListener(_selectionChanged);
+    if (widget.expansion == null) _expansion.dispose();
     super.dispose();
-  }
-
-  /// Collapses the group as soon as a different item is inspected, so that
-  /// returning to an earlier item never reopens it.
-  void _selectionChanged() {
-    final id = widget.services.selection.selectedId;
-    if (id == _openFor) return;
-    _openFor = id;
-    _optionalOpen = false;
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.services.selection,
+    listenable: Listenable.merge([widget.services.selection, _expansion]),
     builder: (context, _) {
       final selection = widget.services.selection;
       final reasons = selection.decision?.reasons;
-      final open = _optionalOpen;
+      final open = _expansion.open;
       return GridPanel(
+        fitContent: widget.fitContent,
         title: 'Requirements & uses',
         icon: Icons.fact_check_outlined,
         subtitle: 'Confirmed needs and unresolved gates remain distinct',
@@ -108,6 +147,8 @@ class _RequirementPanelState extends State<RequirementPanel> {
     final shownOptional = open ? optional.length : 0;
     return ListView.builder(
       key: const PageStorageKey('requirement-scroll'),
+      shrinkWrap: widget.fitContent,
+      physics: widget.fitContent ? const NeverScrollableScrollPhysics() : null,
       itemCount: obligations.length + (hasHeader ? 1 : 0) + shownOptional,
       itemBuilder: (context, index) {
         if (index < obligations.length) {
@@ -117,7 +158,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
           return _OptionalHeader(
             count: optional.length,
             open: open,
-            onTap: () => setState(() => _optionalOpen = !open),
+            onTap: () => _expansion.setOpen(!open),
           );
         }
         final need = optional[index - obligations.length - 1];
@@ -149,9 +190,11 @@ class _OptionalHeader extends StatelessWidget {
           children: [
             Icon(open ? Icons.expand_less : Icons.expand_more, size: 18),
             const SizedBox(width: 6),
-            Text(
-              'Optional uses ($count)',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            Expanded(
+              child: Text(
+                'Optional uses ($count)',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -207,7 +250,11 @@ class SourcePanel extends StatelessWidget {
     required this.services,
     required this.detailsExpanded,
     required this.onDetailsExpandedChanged,
+    this.fitContent = false,
   });
+
+  /// Sizes the panel to its contents within a scrolling inspector.
+  final bool fitContent;
 
   /// The services whose data sources the panel describes.
   final AppServices services;
@@ -245,10 +292,13 @@ class SourcePanel extends StatelessWidget {
       final progressSnapshot = progress.snapshot;
       final cooldownUntil = progress.cooldownUntil;
       return GridPanel(
+        fitContent: fitContent,
         title: 'Data sources',
         icon: Icons.description_outlined,
         subtitle: 'How old the data on screen is',
         child: ListView(
+          shrinkWrap: fitContent,
+          physics: fitContent ? const NeverScrollableScrollPhysics() : null,
           children: [
             Text(
               snapshot == null
@@ -421,27 +471,80 @@ class HistoryPanel extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: ListTile(
-                            dense: true,
-                            leading: item == null
-                                ? Icon(
-                                    Icons.inventory_2_outlined,
-                                    color: context.ember.inkSecondary,
-                                  )
-                                : ItemIcon(
-                                    key: ValueKey(item.id),
-                                    cache: services.itemIcons,
-                                    itemId: item.id,
-                                    iconLink: item.iconLink,
-                                    size: 24,
-                                    color: context.ember.inkSecondary,
-                                  ),
-                            title: Text(name ?? row.itemId),
-                            subtitle: Text(
-                              '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}\n${localTimeLabel(row.observedAt, now: DateTime.now())}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight:
+                                  38 *
+                                  MediaQuery.textScalerOf(context).scale(1),
+                              maxHeight:
+                                  MediaQuery.textScalerOf(context).scale(1) <= 1
+                                  ? 38
+                                  : double.infinity,
                             ),
-                            onTap: () => services.selection.openHistory(row),
+                            child: ListTile(
+                              dense: true,
+                              minTileHeight: 38,
+                              minVerticalPadding: 0,
+                              minLeadingWidth: 30,
+                              horizontalTitleGap: 8,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _RecordedVerdict(row.verdict),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    localTimeLabel(
+                                      row.observedAt,
+                                      now: DateTime.now(),
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
+                                  ),
+                                ],
+                              ),
+                              leading: item == null
+                                  ? Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: context.ember.raised,
+                                        border: Border.all(
+                                          color: context.ember.hairlineStrong,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.inventory_2_outlined,
+                                        size: 18,
+                                        color: context.ember.inkSecondary,
+                                      ),
+                                    )
+                                  : ItemIcon(
+                                      key: ValueKey(item.id),
+                                      cache: services.itemIcons,
+                                      itemId: item.id,
+                                      iconLink: item.iconLink,
+                                      size: 30,
+                                      color: context.ember.inkSecondary,
+                                    ),
+                              title: Text(
+                                name ?? row.itemId,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              onTap: () => services.selection.openHistory(row),
+                            ),
                           ),
                         ),
                       );
@@ -452,4 +555,50 @@ class HistoryPanel extends StatelessWidget {
             ),
     ),
   );
+}
+
+/// An activity's recorded fact, independent of current inspection advice.
+class _RecordedVerdict extends StatelessWidget {
+  const _RecordedVerdict(this.verdict);
+  final Recommendation? verdict;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (verdict) {
+      Recommendation.keep ||
+      Recommendation.keepForLater => context.blackgrid.okFill,
+      Recommendation.check => context.ember.warnInk,
+      _ => context.ember.inkTertiary,
+    };
+    final label = verdict == null
+        ? 'Verdict not recorded'
+        : 'Recorded verdict: ${recommendationLabel(verdict!)}';
+    final ring = verdict == Recommendation.keepForLater;
+    final dot = SizedBox(
+      width: 8,
+      height: 8,
+      child: verdict == null
+          ? Icon(Icons.help_outline, size: 10, color: color)
+          : verdict == Recommendation.priceUnavailable
+          ? CustomPaint(
+              painter: DashedBorderPainter(
+                color: color,
+                radius: 4,
+                dash: 2,
+                gap: 2,
+              ),
+            )
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: ring ? null : color,
+                border: ring ? Border.all(color: color) : null,
+              ),
+            ),
+    );
+    return Tooltip(
+      message: label,
+      child: Semantics(label: label, child: dot),
+    );
+  }
 }

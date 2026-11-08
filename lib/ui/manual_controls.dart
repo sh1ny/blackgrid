@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
-import '../domain/inspection_context.dart';
 import 'labels.dart';
 import 'ember/theme_access.dart';
 
@@ -93,28 +92,6 @@ class ManualControls extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           const Divider(height: 24),
-          const Text('Found in raid • this item only'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: FirState.values
-                .map(
-                  (f) => ChoiceChip(
-                    label: Text(switch (f) {
-                      FirState.unknown => 'Unknown',
-                      FirState.yes => 'Yes',
-                      FirState.no => 'No',
-                    }),
-                    selected: services.selection.fir == f,
-                    onSelected: services.selection.item == null
-                        ? null
-                        : (_) => services.selection.setFir(f),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 12),
           Text(
             services.selection.query.isEmpty
                 ? 'Type an item name.'

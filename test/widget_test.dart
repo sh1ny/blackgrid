@@ -22,11 +22,22 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.byKey(const Key('answer-strip')), findsOneWidget);
       expect(
-        find.byWidgetPredicate(
-          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+        find.descendant(
+          of: find.byKey(const Key('answer-strip')),
+          matching: find.text('Find an item'),
         ),
         findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const PageStorageKey('map-rail-scroll')),
+          matching: find.byWidgetPredicate(
+            (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+          ),
+        ),
+        findsNothing,
       );
       expect(h.requests, isEmpty);
       expect(tester.takeException(), isNull);

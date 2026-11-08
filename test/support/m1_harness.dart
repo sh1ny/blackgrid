@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/item_icon_cache.dart';
 import 'package:blackgrid/data/database.dart';
+import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
 import 'package:drift/native.dart';
@@ -33,6 +34,7 @@ class M1Harness {
     BlackgridDatabase? database,
     ScanFakePorts? scanPorts,
     ItemIconCache? itemIcons,
+    ScanFrameRecorder? scanFrameRecorder,
     DateTime Function()? clock,
     void Function(Map<String, dynamic> wire)? shapeWire,
   }) {
@@ -56,6 +58,7 @@ class M1Harness {
         return http.Response('{}', 404);
       }),
       itemIcons: itemIcons,
+      scanFrameRecorder: scanFrameRecorder,
       scanLogDirectory: scanLogs,
       scanRuntimeDirectory: scanPorts == null ? null : r'C:\fake\bundle',
       scanMarkerLoader: scanPorts?.loader,

@@ -41,6 +41,10 @@ import 'session_scan_state.dart';
 import 'settings_controller.dart';
 
 class AppServices {
+  /// Creates the application services and owns their disposal.
+  ///
+  /// If [scanFrameRecorder] is supplied, these services own and dispose it in
+  /// the same way as the default recorder.
   AppServices({
     required this.database,
     required CredentialStore credentials,
@@ -52,6 +56,7 @@ class AppServices {
     GamePathDiscovery? pathDiscovery,
     Directory? scanLogDirectory,
     Directory? scanFramesDirectory,
+    ScanFrameRecorder? scanFrameRecorder,
     ItemIconCache? itemIcons,
     MapMarkerIcons? markerIcons,
     String? scanRuntimeDirectory,
@@ -131,14 +136,16 @@ class AppServices {
       scanLogDirectory ??
           Directory('${Directory.systemTemp.path}/blackgrid-scan-logs'),
     );
-    scanFrameRecorder = ScanFrameRecorder(
-      root:
-          (scanFramesDirectory ??
-                  Directory(
-                    '${Directory.systemTemp.path}/blackgrid-scan-frames',
-                  ))
-              .path,
-    );
+    this.scanFrameRecorder =
+        scanFrameRecorder ??
+        ScanFrameRecorder(
+          root:
+              (scanFramesDirectory ??
+                      Directory(
+                        '${Directory.systemTemp.path}/blackgrid-scan-frames',
+                      ))
+                  .path,
+        );
     scanner = ScanCoordinator(
       settings: settings,
       catalog: catalog,
@@ -149,7 +156,7 @@ class AppServices {
       platformFactory: scanPlatformFactory ?? openDefaultScanPlatform,
       runtimeDirectory: scanRuntimeDirectory,
       waiter: scanWaiter,
-      recorder: scanFrameRecorder,
+      recorder: this.scanFrameRecorder,
       settleDelay: scanSettleDelay,
       fallbackDelay: scanFallbackDelay,
       epoch: _currentEpoch,

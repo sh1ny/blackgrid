@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/legacy_import.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
@@ -11,6 +12,87 @@ import 'package:test/test.dart';
 import '../fixtures/m1/legacy/legacy_fixture.dart';
 
 void main() {
+  test(
+    'history file retains optional recorded verdict through import and reopen',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-verdict-file-',
+      );
+      final file = File('${root.path}/history.json');
+      final store = File('${root.path}/store.sqlite');
+      var db = BlackgridDatabase(NativeDatabase(store));
+      addTearDown(() async {
+        await db.close();
+        await root.delete(recursive: true);
+      });
+      final rows = [
+        activity(id: 'known')..['Verdict'] = 'keep',
+        activity(id: 'missing'),
+        activity(id: 'future')..['Verdict'] = 'future',
+        activity(id: 'invalid')..['Verdict'] = 42,
+      ];
+      await file.writeAsBytes(
+        legacyBytes(history: syntheticHistory(rows: rows))['history']!,
+      );
+      final original = await file.readAsBytes();
+      var importer = LegacyImport(db);
+      var preview = await importer.previewFiles(historyPath: file.path);
+      expect(preview.exclusions, isNot(contains('History.Verdict')));
+      expect(
+        preview.winningActivity.firstWhere((r) => r.itemId == 'known').verdict,
+        Recommendation.keep,
+      );
+      expect(
+        preview.winningActivity
+            .where((r) => r.itemId != 'known')
+            .every((r) => r.verdict == null),
+        isTrue,
+      );
+      await importer.commit(preview, replaceExisting: false);
+      await db.close();
+      db = BlackgridDatabase(NativeDatabase(store));
+      expect(
+        (await db.readActivity()).rows
+            .firstWhere((r) => r.itemId == 'known')
+            .verdict,
+        Recommendation.keep,
+      );
+      expect(await file.readAsBytes(), original);
+      await file.writeAsBytes(
+        legacyBytes(
+          history: syntheticHistory(
+            rows: [activity(id: 'known')..['Verdict'] = 'trader'],
+          ),
+        )['history']!,
+      );
+      importer = LegacyImport(db);
+      preview = await importer.previewFiles(historyPath: file.path);
+      await importer.commit(preview, replaceExisting: false);
+      expect(
+        (await db.readActivity()).rows
+            .firstWhere((r) => r.itemId == 'known')
+            .verdict,
+        Recommendation.keep,
+      );
+      await file.writeAsBytes(
+        legacyBytes(
+          history: syntheticHistory(
+            rows: [activity(id: 'known', revision: 3)..['Verdict'] = 'trader'],
+          ),
+        )['history']!,
+      );
+      preview = await importer.previewFiles(historyPath: file.path);
+      await importer.commit(preview, replaceExisting: true);
+      await db.close();
+      db = BlackgridDatabase(NativeDatabase(store));
+      expect(
+        (await db.readActivity()).rows
+            .firstWhere((r) => r.itemId == 'known')
+            .verdict,
+        Recommendation.trader,
+      );
+    },
+  );
   test(
     'preference replacement imports preserve local Map input configuration',
     () async {

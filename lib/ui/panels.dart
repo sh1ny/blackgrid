@@ -36,6 +36,7 @@ class GridPanel extends StatelessWidget {
     this.trailing,
     required this.child,
     this.padding = 18,
+    this.fitContent = false,
   });
 
   /// The panel title, set in the UI Heading role.
@@ -52,6 +53,9 @@ class GridPanel extends StatelessWidget {
 
   /// The panel body.
   final Widget child;
+
+  /// Whether the body sizes itself instead of filling a bounded panel.
+  final bool fitContent;
 
   /// The padding around the panel content.
   final double padding;
@@ -85,7 +89,7 @@ class GridPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        Flexible(fit: FlexFit.loose, child: child),
+        if (fitContent) child else Flexible(fit: FlexFit.loose, child: child),
       ],
     ),
   );

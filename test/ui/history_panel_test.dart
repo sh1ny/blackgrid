@@ -1,4 +1,6 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/decision.dart';
+import 'package:blackgrid/ui/item_icon.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/labels.dart';
@@ -14,6 +16,8 @@ void main() {
     String itemId = 'item-a',
     DateTime? observedAt,
     ActivitySource source = ActivitySource.manual,
+    Recommendation? verdict,
+    GameMode mode = GameMode.pvp,
     bool seed = true,
   }) async {
     final h = (await tester.runAsync(() async {
@@ -22,9 +26,10 @@ void main() {
       if (seed) {
         await result.db.recordActivity(
           itemId,
-          GameMode.pvp,
+          mode,
           observedAt ?? DateTime.now(),
           source: source,
+          verdict: verdict,
         );
       }
       await result.services.history.load();
@@ -44,6 +49,137 @@ void main() {
     await tester.pump();
     return h;
   }
+
+  testWidgets('history rows fit the inspector at text scale two', (
+    tester,
+  ) async {
+    final h = await showHistory(
+      tester,
+      verdict: Recommendation.keep,
+      observedAt: DateTime(2020),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: blackgridTheme(Brightness.dark),
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 352,
+                height: 400,
+                child: HistoryPanel(services: h.services),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.byTooltip('Recorded verdict: Keep'), findsOneWidget);
+    expect(find.byType(ListTile), findsOneWidget);
+    final tile = find.byType(ListTile);
+    final bounds = tester.getRect(tile);
+    for (final element
+        in find.descendant(of: tile, matching: find.byType(Text)).evaluate()) {
+      final textBounds = tester.getRect(
+        find.byElementPredicate((candidate) => identical(candidate, element)),
+      );
+      expect(textBounds.top, greaterThanOrEqualTo(bounds.top));
+      expect(textBounds.bottom, lessThanOrEqualTo(bounds.bottom));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('workspace-shell: History selection', (tester) async {
+    final h = await showHistory(tester);
+    await tester.runAsync(() async {
+      await h.db.recordActivity(
+        'item-a',
+        GameMode.pvp,
+        DateTime.now(),
+        verdict: Recommendation.keep,
+      );
+      await h.services.history.load();
+    });
+    await tester.pump();
+    expect(find.byType(ItemIcon), findsOneWidget);
+    expect(find.byTooltip('Recorded verdict: Keep'), findsOneWidget);
+    expect(tester.getSize(find.byType(ListTile)).height, 38);
+    await tester.tap(find.byType(ListTile));
+    await tester.pump();
+    expect(h.services.selection.historyRow?.verdict, Recommendation.keep);
+  });
+
+  testWidgets('workspace-shell: Missing history picture', (tester) async {
+    final h = await showHistory(tester, itemId: 'missing-item');
+    expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
+    await tester.tap(find.byType(ListTile));
+    await tester.pump();
+    expect(h.services.selection.historyRow?.itemId, 'missing-item');
+  });
+
+  testWidgets('workspace-shell: Legacy history verdict', (tester) async {
+    await showHistory(tester);
+    expect(find.byTooltip('Verdict not recorded'), findsOneWidget);
+  });
+
+  for (final verdict in Recommendation.values) {
+    testWidgets('recorded indicator names ${verdict.name}', (tester) async {
+      await showHistory(tester, verdict: verdict);
+      expect(
+        find.byTooltip('Recorded verdict: ${recommendationLabel(verdict)}'),
+        findsOneWidget,
+      );
+    });
+  }
+
+  testWidgets(
+    'history from another mode uses a fallback without current mode image',
+    (tester) async {
+      final h = await showHistory(
+        tester,
+        mode: GameMode.pve,
+        verdict: Recommendation.keep,
+      );
+      expect(find.byType(ItemIcon), findsNothing);
+      expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
+      await tester.tap(find.byType(ListTile));
+      await tester.pump();
+      expect(h.services.selection.historyRow?.mode, GameMode.pve);
+    },
+  );
+
+  testWidgets(
+    'recorded indicator does not change when inspected advice differs',
+    (tester) async {
+      final h = await showHistory(tester);
+      await tester.runAsync(
+        () => h.services.selection.selectManual(
+          h.services.catalog.snapshot!.items['item-a']!,
+        ),
+      );
+      final current = h.services.selection.decision!.recommendation;
+      final recorded = current == Recommendation.keep
+          ? Recommendation.trader
+          : Recommendation.keep;
+      await tester.runAsync(() async {
+        await h.db.recordActivity(
+          'item-a',
+          GameMode.pvp,
+          DateTime.now(),
+          verdict: recorded,
+        );
+        await h.services.history.load();
+        await h.services.selection.openHistory(h.services.history.rows.single);
+      });
+      await tester.pump();
+      expect(h.services.selection.decision!.recommendation, current);
+      expect(
+        find.byTooltip('Recorded verdict: ${recommendationLabel(recorded)}'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('an imported scan row says Imported scan', (tester) async {
     await showHistory(

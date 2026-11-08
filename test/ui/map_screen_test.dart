@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
+import 'support/scan_ui_support.dart';
 
 Finder get _savedPins => find.textContaining('saved pins');
 
@@ -97,6 +98,76 @@ Future<void> _tapPanelButton(
 }
 
 void main() {
+  for (final size in [const Size(1660, 870), const Size(960, 720)]) {
+    testWidgets(
+      size.width > 1100
+          ? 'map-rail: Wide layout order'
+          : 'map-rail: Compact layout order',
+      (tester) async {
+        await pumpM1(tester, size: size);
+        final rail = tester.widget<ListView>(
+          find.byKey(const PageStorageKey('map-rail-scroll')),
+        );
+        final children =
+            (rail.childrenDelegate as SliverChildListDelegate).children;
+        final titles = <String>[];
+        for (final child in children) {
+          final panel = child is SizedBox ? child.child : child;
+          if (panel is GridPanel) titles.add(panel.title);
+          if (panel is CollapsibleGridPanel) titles.add(panel.title);
+        }
+        expect(titles, [
+          'Active map',
+          'Marker preferences',
+          'Manual item search',
+          'Map saved-file inputs',
+        ]);
+        expect(
+          find.descendant(
+            of: find.byKey(const PageStorageKey('map-rail-scroll')),
+            matching: find.text('Picked item'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+  }
+
+  testWidgets('map-rail: Active map row stays alone', (tester) async {
+    final ports = ScanFakePorts();
+    final h = await pumpM1(
+      tester,
+      size: const Size(1660, 870),
+      scanPorts: ports,
+    );
+    await tester.runAsync(
+      () => publishTargetedScan(
+        h.services.scanner,
+        ports,
+        text: 'Alternative component',
+      ),
+    );
+    await tester.pump();
+    expect(h.services.scans.latest, isNotNull);
+    expect(find.text('Active map'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('answer-strip')),
+        matching: find.text('Accepted scan'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const PageStorageKey('map-rail-scroll')),
+        matching: find.byWidgetPredicate(
+          (w) => w is GridPanel && w.title == 'Accepted scan',
+        ),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Latest accepted scan'), findsNothing);
+  });
   testWidgets(
     'Read Latest exposes assumed file provenance without filename player metadata',
     (tester) async {
@@ -465,17 +536,26 @@ void main() {
     final active = tester.getRect(
       find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Active map'),
     );
-    expect(workspace.width, greaterThan(1912 * .6));
+    final railArea = tester.getRect(
+      find.byKey(const PageStorageKey('map-rail-scroll')),
+    );
+    expect(
+      workspace.width,
+      greaterThan((railArea.right - workspace.left) * .6),
+    );
     expect(active.left, greaterThan(workspace.right));
     expect(h.services.maps.scene, isNotNull);
     expect(find.text('Latest accepted scan'), findsNothing);
     expect(find.text('No accepted scan this session'), findsNothing);
     expect(active, isNotNull);
     expect(
-      find.byWidgetPredicate(
-        (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+      find.descendant(
+        of: find.byKey(const PageStorageKey('map-rail-scroll')),
+        matching: find.byWidgetPredicate(
+          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+        ),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(h.services.scans.hasAcceptedScan, isFalse);
     expect(tester.takeException(), isNull);
@@ -643,6 +723,7 @@ void main() {
         size: layout.size,
         scale: layout.scale,
       );
+      expect(tester.takeException(), isNull, reason: 'after fixture');
       final fit = find.widgetWithText(OutlinedButton, 'Fit map');
       await tester.ensureVisible(fit);
       await tester.pumpAndSettle();

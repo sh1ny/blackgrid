@@ -6,6 +6,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/item_decision_card.dart';
 import 'package:blackgrid/ui/item_icon.dart';
+import 'package:blackgrid/ui/shell.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,6 +101,41 @@ void main() {
     );
     await readyIcon(tester);
   }
+
+  testWidgets('closed inspector does not acquire history images', (
+    tester,
+  ) async {
+    final h = await harness(tester);
+    await show(
+      tester,
+      const Size(1660, 870),
+      BlackgridShell(services: h.services),
+    );
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await h.db.recordActivity('item-a', GameMode.pvp, fixtureNow);
+      await h.services.history.load();
+    });
+    await tester.pumpAndSettle();
+    expect(cache.acquires, isEmpty);
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    final list = find
+        .descendant(
+          of: find.byKey(const Key('shell-inspector')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(list).position;
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    expect(cache.acquires, [('item-a', _link)]);
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    expect(cache.leases.single.released, isTrue);
+    expect(cache.acquires, hasLength(1));
+  });
 
   testWidgets(
     'Scanner decision card shows the cached item icon in wide and narrow layouts',

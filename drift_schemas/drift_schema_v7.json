@@ -1,0 +1,977 @@
+{
+  "_meta": {
+    "description": "This file contains a serialized version of schema entities for drift.",
+    "version": "1.3.0"
+  },
+  "options": {
+    "store_date_time_values_as_text": false
+  },
+  "entities": [
+    {
+      "id": 0,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "preferences",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "payload",
+            "getter_name": "payload",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "pin_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "map_id",
+            "getter_name": "mapId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "pin_id",
+            "getter_name": "pinId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "payload",
+            "getter_name": "payload",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "map_id",
+          "pin_id"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "activity_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "item_id",
+            "getter_name": "itemId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "mode",
+            "getter_name": "mode",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "source",
+            "getter_name": "source",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "observed_at",
+            "getter_name": "observedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "revision",
+            "getter_name": "revision",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "verdict",
+            "getter_name": "verdict",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "item_id",
+          "mode"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "catalog_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "PRIMARY KEY AUTOINCREMENT",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "PRIMARY KEY AUTOINCREMENT"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "auto-increment"
+            ]
+          },
+          {
+            "name": "cache_key",
+            "getter_name": "cacheKey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "revision",
+            "getter_name": "revision",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "payload",
+            "getter_name": "payload",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "unique_keys": [
+          [
+            "cache_key",
+            "revision"
+          ]
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "references": [
+        3
+      ],
+      "type": "table",
+      "data": {
+        "name": "active_catalogs",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "cache_key",
+            "getter_name": "cacheKey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "record_id",
+            "getter_name": "recordId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES catalog_records (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES catalog_records (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "catalog_records",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "cache_key"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "import_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "digest",
+            "getter_name": "digest",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "format_version",
+            "getter_name": "formatVersion",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "imported_at",
+            "getter_name": "importedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "record_count",
+            "getter_name": "recordCount",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "digest"
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "item_icon_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "item_id",
+            "getter_name": "itemId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "icon_link",
+            "getter_name": "iconLink",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "file_name",
+            "getter_name": "fileName",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "byte_size",
+            "getter_name": "byteSize",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "etag",
+            "getter_name": "etag",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "validated_at",
+            "getter_name": "validatedAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "last_shown_at",
+            "getter_name": "lastShownAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "failed_until",
+            "getter_name": "failedUntil",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "failed_link",
+            "getter_name": "failedLink",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "item_id"
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "raid_stat_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "folder",
+            "getter_name": "folder",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "file",
+            "getter_name": "file",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "offset",
+            "getter_name": "offset",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "mode",
+            "getter_name": "mode",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "map_id",
+            "getter_name": "mapId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "start_ms",
+            "getter_name": "startMs",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "entry",
+            "getter_name": "entry",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "folder",
+          "file",
+          "offset"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "flea_sale_records",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "folder",
+            "getter_name": "folder",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "file",
+            "getter_name": "file",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "offset",
+            "getter_name": "offset",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "mode",
+            "getter_name": "mode",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "time_ms",
+            "getter_name": "timeMs",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "item_id",
+            "getter_name": "itemId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "count",
+            "getter_name": "count",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "roubles",
+            "getter_name": "roubles",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "folder",
+          "file",
+          "offset"
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "stats_meta",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "cleared_at_ms",
+            "getter_name": "clearedAtMs",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "live_map_snapshots",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "mode",
+            "getter_name": "mode",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "checked_at",
+            "getter_name": "checkedAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "mode"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "references": [
+        10
+      ],
+      "type": "table",
+      "data": {
+        "name": "live_map_sources",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "mode",
+            "getter_name": "mode",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES live_map_snapshots (mode)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES live_map_snapshots (mode)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "live_map_snapshots",
+                    "column": "mode"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "dataset",
+            "getter_name": "dataset",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "body",
+            "getter_name": "body",
+            "moor_type": "blob",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "etag",
+            "getter_name": "etag",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "last_modified",
+            "getter_name": "lastModified",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "mode",
+          "dataset"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "references": [
+        7
+      ],
+      "type": "index",
+      "data": {
+        "on": 7,
+        "name": "raid_stat_records_mode_start",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "mode",
+            "order_by": null
+          },
+          {
+            "column": "start_ms",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "references": [
+        8
+      ],
+      "type": "index",
+      "data": {
+        "on": 8,
+        "name": "flea_sale_records_mode",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "mode",
+            "order_by": null
+          }
+        ]
+      }
+    }
+  ],
+  "fixed_sql": [
+    {
+      "name": "preferences",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"preferences\" (\"id\" INTEGER NOT NULL, \"payload\" TEXT NOT NULL, PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "pin_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"pin_records\" (\"map_id\" TEXT NOT NULL, \"pin_id\" TEXT NOT NULL, \"payload\" TEXT NOT NULL, PRIMARY KEY (\"map_id\", \"pin_id\"));"
+        }
+      ]
+    },
+    {
+      "name": "activity_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"activity_records\" (\"item_id\" TEXT NOT NULL, \"mode\" TEXT NOT NULL, \"source\" TEXT NOT NULL, \"observed_at\" INTEGER NOT NULL, \"revision\" INTEGER NOT NULL, \"verdict\" TEXT NULL, PRIMARY KEY (\"item_id\", \"mode\"));"
+        }
+      ]
+    },
+    {
+      "name": "catalog_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"catalog_records\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"cache_key\" TEXT NOT NULL, \"revision\" TEXT NOT NULL, \"payload\" TEXT NOT NULL, UNIQUE (\"cache_key\", \"revision\"));"
+        }
+      ]
+    },
+    {
+      "name": "active_catalogs",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"active_catalogs\" (\"cache_key\" TEXT NOT NULL, \"record_id\" INTEGER NOT NULL REFERENCES catalog_records (id), PRIMARY KEY (\"cache_key\"));"
+        }
+      ]
+    },
+    {
+      "name": "import_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"import_records\" (\"digest\" TEXT NOT NULL, \"format_version\" INTEGER NOT NULL, \"imported_at\" INTEGER NOT NULL, \"record_count\" INTEGER NOT NULL, PRIMARY KEY (\"digest\"));"
+        }
+      ]
+    },
+    {
+      "name": "item_icon_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"item_icon_records\" (\"item_id\" TEXT NOT NULL, \"icon_link\" TEXT NOT NULL, \"file_name\" TEXT NULL, \"byte_size\" INTEGER NOT NULL DEFAULT 0, \"etag\" TEXT NULL, \"validated_at\" INTEGER NULL, \"last_shown_at\" INTEGER NOT NULL, \"failed_until\" INTEGER NULL, \"failed_link\" TEXT NULL, PRIMARY KEY (\"item_id\"));"
+        }
+      ]
+    },
+    {
+      "name": "raid_stat_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"raid_stat_records\" (\"folder\" TEXT NOT NULL, \"file\" TEXT NOT NULL, \"offset\" INTEGER NOT NULL, \"mode\" TEXT NOT NULL, \"map_id\" TEXT NULL, \"start_ms\" INTEGER NOT NULL, \"entry\" TEXT NOT NULL, PRIMARY KEY (\"folder\", \"file\", \"offset\"));"
+        }
+      ]
+    },
+    {
+      "name": "flea_sale_records",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"flea_sale_records\" (\"folder\" TEXT NOT NULL, \"file\" TEXT NOT NULL, \"offset\" INTEGER NOT NULL, \"mode\" TEXT NOT NULL, \"time_ms\" INTEGER NOT NULL, \"item_id\" TEXT NOT NULL, \"count\" INTEGER NOT NULL, \"roubles\" INTEGER NULL, PRIMARY KEY (\"folder\", \"file\", \"offset\"));"
+        }
+      ]
+    },
+    {
+      "name": "stats_meta",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"stats_meta\" (\"id\" INTEGER NOT NULL, \"cleared_at_ms\" INTEGER NULL, PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "live_map_snapshots",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"live_map_snapshots\" (\"mode\" INTEGER NOT NULL, \"checked_at\" INTEGER NOT NULL, PRIMARY KEY (\"mode\"));"
+        }
+      ]
+    },
+    {
+      "name": "live_map_sources",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"live_map_sources\" (\"mode\" INTEGER NOT NULL REFERENCES live_map_snapshots (mode), \"dataset\" TEXT NOT NULL, \"body\" BLOB NOT NULL, \"etag\" TEXT NULL, \"last_modified\" TEXT NULL, PRIMARY KEY (\"mode\", \"dataset\"));"
+        }
+      ]
+    },
+    {
+      "name": "raid_stat_records_mode_start",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX raid_stat_records_mode_start ON raid_stat_records (mode, start_ms)"
+        }
+      ]
+    },
+    {
+      "name": "flea_sale_records_mode",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX flea_sale_records_mode ON flea_sale_records (mode)"
+        }
+      ]
+    }
+  ]
+}

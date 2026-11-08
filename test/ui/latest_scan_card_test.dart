@@ -14,6 +14,10 @@ const _back = 'Back to latest scan';
 
 Finder _card(String title) =>
     find.byWidgetPredicate((w) => w is GridPanel && w.title == title);
+Finder get _backInStrip => find.descendant(
+  of: find.byKey(const Key('answer-strip')),
+  matching: find.text(_back),
+);
 
 /// Drives one real targeted scan for "Alternative component" (`item-b`) and
 /// waits until it is recorded as a scan row.
@@ -39,9 +43,13 @@ Future<void> _acceptB(
 Future<void> _openHistoryA(WidgetTester tester, M1Harness h) async {
   await tester.tap(find.byKey(const Key('nav-scanner')));
   await tester.pumpAndSettle();
+  await showInspectorPanel(tester, 'Recent item activity');
   await tapM1Async(
     tester,
-    find.widgetWithText(ListTile, 'Synthetic component'),
+    find.descendant(
+      of: _card('Recent item activity'),
+      matching: find.widgetWithText(ListTile, 'Synthetic component'),
+    ),
     () =>
         h.services.selection.isHistory && !h.services.selection.loadingHistory,
   );
@@ -73,10 +81,11 @@ void main() {
       expect(selection.isHistory, isTrue);
       await tester.tap(find.byKey(Key(screen)));
       await tester.pumpAndSettle();
+      await showInspectorPanel(tester, 'History inspection');
       expect(_card('History inspection'), findsOneWidget);
-      expect(find.text(_back), findsOneWidget);
+      expect(_backInStrip, findsOneWidget);
 
-      await tester.tap(find.text(_back));
+      await tester.tap(_backInStrip);
       await tester.pumpAndSettle();
 
       expect(selection.isHistory, isFalse);
@@ -84,7 +93,7 @@ void main() {
       expect(selection.scan?.acceptedAt, acceptedAt);
       expect(_card('Accepted scan'), findsOneWidget);
       expect(_card('History inspection'), findsNothing);
-      expect(find.text(_back), findsNothing);
+      expect(_backInStrip, findsNothing);
       expect(h.services.scans.latest?.itemId, 'item-b');
     }
     // Neither return recorded history: item-a manual and item-b scan only.
@@ -95,13 +104,14 @@ void main() {
     final ports = ScanFakePorts();
     final h = await pumpM1(tester, scanPorts: ports);
     await _acceptB(tester, h, ports);
+    await showInspectorPanel(tester, 'Accepted scan');
 
     expect(h.services.selection.scan?.itemId, 'item-b');
     expect(_card('Accepted scan'), findsOneWidget);
-    expect(find.text(_back), findsNothing);
+    expect(_backInStrip, findsNothing);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    expect(find.text(_back), findsNothing);
+    expect(_backInStrip, findsNothing);
   });
 
   testWidgets('no Back action without or after clearing a latest scan', (
@@ -112,20 +122,20 @@ void main() {
     await _selectAByHand(tester, h);
     await tester.pumpAndSettle();
     expect(h.services.scans.latest, isNull);
-    expect(find.text(_back), findsNothing);
+    expect(_backInStrip, findsNothing);
 
     await _acceptB(tester, h, ports);
     await _selectAByHand(tester, h);
     await tester.pumpAndSettle();
-    expect(find.text(_back), findsOneWidget);
+    expect(_backInStrip, findsOneWidget);
 
     // A mode change clears the latest scan.
     await tester.runAsync(() => h.services.setMode(GameMode.pve));
     await tester.pumpAndSettle();
     expect(h.services.scans.latest, isNull);
-    expect(find.text(_back), findsNothing);
+    expect(_backInStrip, findsNothing);
     await _openHistoryAnyRow(tester, h);
-    expect(find.text(_back), findsNothing);
+    expect(_backInStrip, findsNothing);
   });
 
   testWidgets('a scan accepted with Map open shows on Map\'s card', (
@@ -137,6 +147,7 @@ void main() {
     expect(_card('Active map'), findsOneWidget);
 
     await _acceptB(tester, h, ports);
+    await showInspectorPanel(tester, 'Accepted scan');
 
     expect(_card('Accepted scan'), findsOneWidget);
     expect(
@@ -172,7 +183,7 @@ void main() {
     expect(h.services.scans.latest, isNull);
     expect(h.services.selection.scan, isNull);
     expect(_card('Accepted scan'), findsNothing);
-    expect(find.text(_back), findsNothing);
+    expect(_backInStrip, findsNothing);
     expect(
       h.services.history.rows.where((r) => r.source == ActivitySource.scan),
       isEmpty,
@@ -184,6 +195,7 @@ void main() {
 Future<void> _openHistoryAnyRow(WidgetTester tester, M1Harness h) async {
   await tester.tap(find.byKey(const Key('nav-scanner')));
   await tester.pumpAndSettle();
+  await showInspectorPanel(tester, 'Recent item activity');
   final row = find.descendant(
     of: _card('Recent item activity'),
     matching: find.byType(ListTile),

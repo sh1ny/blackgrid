@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 
 import '../domain/catalog.dart';
 import '../domain/catalog_store.dart';
+import '../domain/decision.dart';
 import '../domain/settings.dart';
 import '../domain/import_preview.dart';
 import '../domain/local_stats.dart';
@@ -35,6 +36,7 @@ class ActivityRecords extends Table {
   TextColumn get source => text()();
   DateTimeColumn get observedAt => dateTime()();
   IntColumn get revision => integer()();
+  TextColumn get verdict => text().nullable()();
   @override
   Set<Column> get primaryKey => {itemId, mode};
 }
@@ -198,13 +200,13 @@ class BlackgridDatabase extends _$BlackgridDatabase
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 6 || from >= to) {
+      if (from < 1 || to != 7 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
@@ -225,6 +227,9 @@ class BlackgridDatabase extends _$BlackgridDatabase
           await customStatement('DROP TABLE IF EXISTS live_map_snapshots');
           await m.createTable(liveMapSnapshots);
           await m.createTable(liveMapSources);
+        }
+        if (from < 7) {
+          await m.addColumn(activityRecords, activityRecords.verdict);
         }
       });
     },
@@ -515,6 +520,7 @@ class BlackgridDatabase extends _$BlackgridDatabase
             source: ActivitySource.values.byName(row.source),
             observedAt: row.observedAt.toUtc(),
             revision: row.revision,
+            verdict: activityVerdictFromName(row.verdict),
           ),
         );
       } on Object {
@@ -529,6 +535,7 @@ class BlackgridDatabase extends _$BlackgridDatabase
     GameMode mode,
     DateTime time, {
     ActivitySource source = ActivitySource.manual,
+    Recommendation? verdict,
   }) => transaction(() async {
     if (itemId.isEmpty || mode == GameMode.unknown) {
       throw ArgumentError('Activity requires a known identity and mode.');
@@ -544,6 +551,7 @@ class BlackgridDatabase extends _$BlackgridDatabase
       source: source,
       observedAt: time.toUtc(),
       revision: (old?.revision ?? 0) + 1,
+      verdict: verdict,
     );
     await _writeActivity(row);
     return row;
@@ -556,6 +564,7 @@ class BlackgridDatabase extends _$BlackgridDatabase
         source: row.source.name,
         observedAt: row.observedAt.toUtc(),
         revision: row.revision,
+        verdict: Value(row.verdict?.name),
       ),
     );
   }
