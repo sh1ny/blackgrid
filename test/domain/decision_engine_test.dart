@@ -3,6 +3,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/decision_engine.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:blackgrid/domain/price_freshness.dart';
 import 'package:blackgrid/domain/progress.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
@@ -745,6 +746,63 @@ void main() {
       a.reasons.map((r) => (r.requirement.id, r.state, r.remaining, r.message)),
       b.reasons.map((r) => (r.requirement.id, r.state, r.remaining, r.message)),
     );
+  });
+  group('open inputs', () {
+    test('openInputs is empty when nothing is open', () {
+      expect(decide().openInputs, isEmpty);
+    });
+    test('openInputs lists every open input in the fixed order', () {
+      final d = decide(
+        item: saleItem(quoteAt: fixtureNow.subtract(const Duration(hours: 2))),
+        needs: [taskNeed()],
+        catalogStale: true,
+        progressStale: true,
+        fir: FirState.unknown,
+      );
+      expect(d.openInputs, [
+        OpenInput.itemData,
+        OpenInput.trackerProgress,
+        OpenInput.foundInRaid,
+        OpenInput.unresolvedNeed,
+        OpenInput.fleaEligibility,
+        OpenInput.priceTimeStale,
+      ]);
+    });
+    test('a missing or future price time is priceTimeUnknown', () {
+      final missing = CatalogItem(
+        id: 'item-a',
+        name: 'Synthetic',
+        normalizedName: 'synthetic',
+        noFlea: false,
+        minLevelForFlea: 0,
+        fleaPrice: 400,
+      );
+      expect(decide(item: missing).openInputs, [OpenInput.priceTimeUnknown]);
+      final future = decide(
+        item: saleItem(quoteAt: fixtureNow.add(const Duration(seconds: 1))),
+      );
+      expect(future.openInputs, [OpenInput.priceTimeUnknown]);
+    });
+    test('an item that cannot be sold on the Flea ignores its price time', () {
+      final d = decide(
+        item: saleItem(
+          noFlea: true,
+          quoteAt: fixtureNow.subtract(const Duration(hours: 2)),
+        ),
+      );
+      expect(d.openInputs, isEmpty);
+    });
+    test('an unresolved need alone is recorded', () {
+      final d = decide(needs: [taskNeed(fir: null)], progress: active());
+      expect(d.openInputs, [OpenInput.unresolvedNeed]);
+    });
+    test('the Flea eligibility input is recorded when the rule is unknown', () {
+      final d = decide(item: saleItem(noFlea: null, minimum: 0));
+      expect(d.openInputs, [OpenInput.fleaEligibility]);
+    });
+    test('the price freshness limit is one hour', () {
+      expect(priceFreshnessLimit, const Duration(hours: 1));
+    });
   });
   test('outputs are immutable', () {
     final d = decide();

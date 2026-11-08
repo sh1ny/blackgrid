@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/local_stats_controller.dart';
 import '../domain/local_stats.dart';
+import '../domain/roubles.dart';
 import 'labels.dart';
 import 'theme.dart';
 

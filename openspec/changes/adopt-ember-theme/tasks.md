@@ -29,23 +29,23 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 | verdict-presentation → One plate per verdict | No plate is drawn in the accent | test/ui/verdict_plate_test.dart | no plate uses accent or accent-text | red |
 | verdict-presentation → Price on the Flea and Trader plates | Flea plate with its price | test/ui/verdict_plate_test.dart | Flea plate shows its gross price in ink | red |
 | verdict-presentation → Price on the Flea and Trader plates | A plate whose verdict has no price | test/ui/verdict_plate_test.dart | plates without a price show only the word | red |
-| verdict-presentation → One-line verdict reason | Keep names the need that decided it | test/domain/verdict_reason_test.dart | Keep names the first actionable need with its count | red |
-| verdict-presentation → One-line verdict reason | Keep with an unknown count | test/domain/verdict_reason_test.dart | Keep with an unknown count has no number | red |
-| verdict-presentation → One-line verdict reason | Keep for later names the future need | test/domain/verdict_reason_test.dart | Keep for later names the first future need | red |
-| verdict-presentation → One-line verdict reason | Check names the first open question | test/domain/verdict_reason_test.dart | Check with only found in raid open names it | red |
-| verdict-presentation → One-line verdict reason | Check picks questions in a fixed order | test/domain/verdict_reason_test.dart | Check names the first open input in the fixed order | red |
-| verdict-presentation → One-line verdict reason | Check wording for each open input | test/domain/verdict_reason_test.dart | Check wording for each open input | red |
-| verdict-presentation → One-line verdict reason | Found in raid unknown outranks the needs it leaves open | test/domain/verdict_reason_test.dart | found in raid outranks an unresolved found-in-raid need | red |
-| verdict-presentation → One-line verdict reason | Flea and Trader compare the prices | test/domain/verdict_reason_test.dart | Flea compares gross prices with the best trader | red |
-| verdict-presentation → One-line verdict reason | Trader for each way the engine reaches it | test/domain/verdict_reason_test.dart | Trader wording for each engine path | red |
-| verdict-presentation → One-line verdict reason | Flea with no trader offer | test/domain/verdict_reason_test.dart | Flea with no trader offer | red |
-| verdict-presentation → One-line verdict reason | Price unavailable | test/domain/verdict_reason_test.dart | Price unavailable wording | red |
+| verdict-presentation → One-line verdict reason | Keep names the need that decided it | test/domain/verdict_reason_test.dart | Keep names the first actionable need with its count | green |
+| verdict-presentation → One-line verdict reason | Keep with an unknown count | test/domain/verdict_reason_test.dart | Keep with an unknown count has no number | green |
+| verdict-presentation → One-line verdict reason | Keep for later names the future need | test/domain/verdict_reason_test.dart | Keep for later names the first future need | green |
+| verdict-presentation → One-line verdict reason | Check names the first open question | test/domain/verdict_reason_test.dart | Check with only found in raid open names it | green |
+| verdict-presentation → One-line verdict reason | Check picks questions in a fixed order | test/domain/verdict_reason_test.dart | Check names the first open input in the fixed order | green |
+| verdict-presentation → One-line verdict reason | Check wording for each open input | test/domain/verdict_reason_test.dart | Check wording for each open input | green |
+| verdict-presentation → One-line verdict reason | Found in raid unknown outranks the needs it leaves open | test/domain/verdict_reason_test.dart | found in raid outranks an unresolved found-in-raid need | green |
+| verdict-presentation → One-line verdict reason | Flea and Trader compare the prices | test/domain/verdict_reason_test.dart | Flea compares gross prices with the best trader | green |
+| verdict-presentation → One-line verdict reason | Trader for each way the engine reaches it | test/domain/verdict_reason_test.dart | Trader wording for each engine path | green |
+| verdict-presentation → One-line verdict reason | Flea with no trader offer | test/domain/verdict_reason_test.dart | Flea with no trader offer | green |
+| verdict-presentation → One-line verdict reason | Price unavailable | test/domain/verdict_reason_test.dart | Price unavailable wording | green |
 | verdict-presentation → One-line verdict reason | A long reason at the narrowest card | test/ui/verdict_plate_test.dart | long reason wraps in the compact Map rail card at 960 px | red |
-| verdict-presentation → Price freshness tag | Current prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | price within an hour is fresh / fresh tag reads Prices and time | red |
-| verdict-presentation → Price freshness tag | Stale prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | stale age in hours then days / stale tag uses warning style | red |
-| verdict-presentation → Price freshness tag | Unknown or future price time | test/domain/price_freshness_test.dart | missing or future price time is unknown | red |
+| verdict-presentation → Price freshness tag | Current prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | price within an hour is fresh / fresh tag reads Prices and time | domain green, ui red |
+| verdict-presentation → Price freshness tag | Stale prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | stale age in hours then days / stale tag uses warning style | domain green, ui red |
+| verdict-presentation → Price freshness tag | Unknown or future price time | test/domain/price_freshness_test.dart | missing or future price time is unknown | green |
 | verdict-presentation → Price freshness tag | The tag turns stale while shown | test/ui/freshness_tag_test.dart | tag turns stale on the age notify with a fake clock | red |
-| verdict-presentation → Price freshness tag | No tag when the Flea price cannot matter | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | hidden when not Flea-sellable / no tag on the price row | red |
+| verdict-presentation → Price freshness tag | No tag when the Flea price cannot matter | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | hidden when not Flea-sellable / no tag on the price row | domain green, ui red |
 
 ## 1. Kit, fonts and ADR
 
@@ -62,10 +62,10 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 
 ## 3. Decision reason and price freshness (domain)
 
-- [ ] 3.1 Write failing tests in `test/domain/decision_engine_test.dart` that the engine records `openInputs` in the order item data, Tracker progress, found in raid, unresolved need, Flea eligibility, stale or unknown price time, and that the recommendation and warning strings are unchanged for the existing fixtures. Then add `OpenInput` and the optional `ItemDecision.openInputs` (design D6) and replace the engine's one-hour literal with the shared `priceFreshnessLimit` (D8); verify that `decision_engine_test.dart` passes.
-- [ ] 3.2 Write the failing `test/domain/verdict_reason_test.dart` covering every "One-line verdict reason" domain row (Keep, Keep with unknown count, Keep for later with a future need listed before an actionable one, each Check open input and the fixed order, found in raid outranking an unresolved need, Flea, Flea with no trader, the three Trader paths quoting gross prices, Price unavailable, non-empty for every verdict), plus a run of `findBannedTermHits` over `lib/domain/verdict_reason.dart`. Verify the tests fail.
-- [ ] 3.3 Move the rouble formatter `rub` into `lib/domain/`, and implement `verdictReason` in `lib/domain/verdict_reason.dart` (design D7); verify 3.2 passes and flip its rows green.
-- [ ] 3.4 Write the failing `test/domain/price_freshness_test.dart` (fresh within the limit, stale whole hours under 48 h and then whole days, unknown for null or future, hidden when `fleaEligible` is false), implement `priceFreshness` (D8), verify the tests pass, and flip the domain halves of the freshness rows green.
+- [x] 3.1 Write failing tests in `test/domain/decision_engine_test.dart` that the engine records `openInputs` in the order item data, Tracker progress, found in raid, unresolved need, Flea eligibility, stale or unknown price time, and that the recommendation and warning strings are unchanged for the existing fixtures. Then add `OpenInput` and the optional `ItemDecision.openInputs` (design D6) and replace the engine's one-hour literal with the shared `priceFreshnessLimit` (D8); verify that `decision_engine_test.dart` passes.
+- [x] 3.2 Write the failing `test/domain/verdict_reason_test.dart` covering every "One-line verdict reason" domain row (Keep, Keep with unknown count, Keep for later with a future need listed before an actionable one, each Check open input and the fixed order, found in raid outranking an unresolved need, Flea, Flea with no trader, the three Trader paths quoting gross prices, Price unavailable, non-empty for every verdict), plus a run of `findBannedTermHits` over `lib/domain/verdict_reason.dart`. Verify the tests fail.
+- [x] 3.3 Move the rouble formatter `rub` into `lib/domain/`, and implement `verdictReason` in `lib/domain/verdict_reason.dart` (design D7); verify 3.2 passes and flip its rows green.
+- [x] 3.4 Write the failing `test/domain/price_freshness_test.dart` (fresh within the limit, stale whole hours under 48 h and then whole days, unknown for null or future, hidden when `fleaEligible` is false), implement `priceFreshness` (D8), verify the tests pass, and flip the domain halves of the freshness rows green.
 
 ## 4. Ember theme in the app
 

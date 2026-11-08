@@ -6,6 +6,7 @@ import '../application/scan_correction.dart';
 import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../domain/roubles.dart';
 import '../domain/title_matching.dart' show normaliseTitle;
 import 'item_icon.dart';
 import 'labels.dart';

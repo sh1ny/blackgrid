@@ -307,6 +307,3 @@ String mapLabel(String id) => switch (id) {
   'groundzero' => 'Ground Zero',
   _ => id.isEmpty ? id : '${id[0].toUpperCase()}${id.substring(1)}',
 };
-String rub(num? value) => value == null
-    ? 'Unavailable'
-    : '₽${value.toStringAsFixed(value % 1 == 0 ? 0 : 2)}';

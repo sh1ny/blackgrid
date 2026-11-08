@@ -11,6 +11,33 @@ enum Recommendation {
 
 enum NeedState { actionable, future, unresolved, satisfied, irrelevant }
 
+/// An input the engine still needs before it can give a firm answer.
+///
+/// The engine records these in the order they are declared here, which is the
+/// order the verdict reason names them.
+enum OpenInput {
+  /// Item data is missing or out of date.
+  itemData,
+
+  /// Tracker progress is missing or out of date.
+  trackerProgress,
+
+  /// Whether the item was found in raid is unknown.
+  foundInRaid,
+
+  /// A need could not be resolved from the data at hand.
+  unresolvedNeed,
+
+  /// Whether the item can be sold on the Flea is unknown.
+  fleaEligibility,
+
+  /// The Flea price time is over the freshness limit.
+  priceTimeStale,
+
+  /// The Flea price time is missing or in the future.
+  priceTimeUnknown,
+}
+
 class NeedReason {
   const NeedReason({
     required this.requirement,
@@ -43,8 +70,10 @@ class ItemDecision {
     this.nonFirNeed,
     this.unknownFirNeed,
     this.fleaEligible,
+    Iterable<OpenInput> openInputs = const [],
   }) : reasons = List.unmodifiable(reasons),
-       warnings = List.unmodifiable(warnings);
+       warnings = List.unmodifiable(warnings),
+       openInputs = List.unmodifiable(openInputs);
   final Recommendation recommendation;
   final List<NeedReason> reasons;
   final List<String> warnings;
@@ -52,4 +81,7 @@ class ItemDecision {
   final String? traderId, traderName;
   final num? firNeed, nonFirNeed, unknownFirNeed;
   final bool? fleaEligible;
+
+  /// Why the decision is open, in the engine's fixed order; empty when firm.
+  final List<OpenInput> openInputs;
 }
