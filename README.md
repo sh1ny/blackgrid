@@ -2,76 +2,83 @@
 
 ![version](https://img.shields.io/badge/version-0.7.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.9-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
-**A helper app for Escape from Tarkov that runs next to the game on Windows.** It shows you where you are on the map, which extracts you have this raid, and whether the item in your hands is worth keeping or selling.
+Blackgrid is a helper app for Escape from Tarkov that runs next to the game on Windows. It shows where you are on the map, which extracts you have this raid, and whether the item you are looking at is worth keeping or selling.
 
 | Map | Scanner |
 |---|---|
 | ![Map area: Reserve with place labels, extracts, transits, locks and loot markers, and floor buttons](docs/screenshots/map.png) | ![Scanner area: advice for a Graphics card, with prices, the quests that need it, and recent items](docs/screenshots/scanner.png) |
 
-## 🎯 What Blackgrid does for you
+## What Blackgrid does
 
-Blackgrid has two areas. You switch between them at the top of the window.
+Blackgrid has two areas, Map and Scanner. You switch between them at the top of the window.
 
-**🗺️ Map.** Interactive maps of all 13 locations (Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker and Labyrinth). Turn on the markers you care about: PMC, Scav and shared extracts, transits, quest items and objectives, bosses, cultists, spawns, hazards, loot containers, locks, switches, BTR stops and stationary weapons. Right-click to drop your own pins; they are saved per map.
+**Map.** Blackgrid has maps of all 13 locations: Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker and Labyrinth. You choose which markers to show. There are markers for PMC, Scav and shared extracts, transits, quest items and objectives, bosses, cultists, spawns, hazards, loot containers, locks, switches, BTR stops and stationary weapons. Right-click the map to drop your own pin. Blackgrid saves pins per map.
 
-**🔍 Scanner.** Search any item with **Ctrl K** and Blackgrid tells you, in plain words, what to do with it: **Keep** (a quest or hideout upgrade needs it now), **Keep for later** (needed further down the line), **Flea** (sell it on the Flea Market) or **Trader** (sell it to the trader who pays most), with the price. When it is not sure, because prices are old, you have not said whether the item is found in raid, or it does not know your progress, it says **Check / May Need** instead of guessing. A wrong "sell" costs you an item; a "check" costs you a second look.
+**Scanner.** Press Ctrl K to search for an item. Blackgrid gives one of four answers, with the price:
 
-### 📍 How it knows where you are
+- **Keep**: a quest or hideout upgrade needs the item now.
+- **Keep for later**: you will need it further down the line.
+- **Flea**: sell it on the Flea Market.
+- **Trader**: sell it to the trader who pays the most.
 
-Blackgrid never asks the game where you are. It uses two things the game already writes to your disk:
+Sometimes Blackgrid lacks what it needs to decide. The prices may be old, you may not have said whether the item is found in raid, or it may not know your quest progress. In those cases it answers **Check / May Need** instead of guessing. A wrong "sell" costs you an item, and a "check" costs you a second look.
 
-1. **The game's log files.** When you load into a raid, Escape from Tarkov writes the map name and the game mode (PvP or PvE) to its log. Blackgrid reads that log and opens the right map by itself. Turn this off with **Follow logs** if you prefer to pick the map by hand.
-2. **Your screenshots.** When you take a screenshot in game (**Print Screen** by default), the game names the file after your position and the direction you are facing. Blackgrid watches your screenshot folder and puts a marker on the map where you stood and the way you faced.
+### How it knows where you are
 
-Your position updates **only when you take a screenshot**. It is a snapshot, not live tracking.
+Blackgrid never asks the game where you are. It reads two kinds of files that the game already writes to your disk.
 
-**Which extracts do I have?** In raid, press **O** to open the list of your extracts and transits, then take a screenshot. Blackgrid reads the names from that picture with the text recognition built into Windows and highlights exactly those extracts on the map.
+1. **Log files.** When you load into a raid, the game writes the map name and the game mode (PvP or PvE) to its log. Blackgrid reads the log and opens the right map. If you prefer to pick the map yourself, turn off **Follow logs**.
+2. **Screenshots.** When you take a screenshot in game (Print Screen by default), the game puts your position and facing direction in the file name. Blackgrid watches your screenshot folder and places a marker where you stood, pointing the way you faced.
 
-### 🧪 Item scanning is optional
+Your position changes on the map only when you take a screenshot. Blackgrid does not track you live.
 
-You do not need the scanner to use the map, and you do not need the map to use the scanner. Searching items by name works without any scanning.
+To see which extracts you have, press O in raid to open the list of your extracts and transits, then take a screenshot. Blackgrid reads the names from the screenshot with the text recognition built into Windows, and highlights those extracts on the map.
 
-**Live scan** is off until you switch it on in the Scanner area. When it is on, and you inspect an item in game, Blackgrid takes a small picture of the screen around your mouse, reads the item's name and shows the advice. A scan starts when you release the mouse button over the game window, or when you press the scan key (**F9** by default; pick any of F1 to F24, or none). Switch live scan off and Blackgrid stops listening for clicks and gives the key back.
+### Item scanning is optional
 
-### 🛡️ Blackgrid does not touch the game
+The map and the scanner work independently. Searching for an item by name needs no scanning.
 
-Blackgrid **never** connects to the game, reads or changes its memory, injects anything into it, or sends it key presses or clicks. It only reads:
+Live scan stays off until you turn it on in the Scanner area. While it is on, inspecting an item in game makes Blackgrid capture a small area of the screen around your mouse, read the item's name and show the advice. A scan starts in one of two ways. You release the mouse button over the game window, or you press the scan key. The scan key is F9 by default, and you can pick any key from F1 to F24, or none. When you turn live scan off, Blackgrid stops watching mouse clicks and releases the scan key.
 
-- the **log files** the game writes to disk;
-- the **screenshots** you take;
-- with live scan on, a **small picture of your screen**, the way a screen-capture tool takes one. To know that your click landed on the game, it checks the title of the window under your mouse, which Windows shares with any program.
+### Blackgrid does not touch the game
 
-That is all. It does not modify any game file. A test in this repository fails if the capture code ever calls a Windows function that could open or control another program.
+Blackgrid never connects to the game. It does not read or change the game's memory, inject anything into it, or send it key presses or clicks. It reads only these things:
 
-> **Note:** Blackgrid is a fan-made tool, not affiliated with Battlestate Games. Only Battlestate Games decides what its anti-cheat allows. Blackgrid is built to stay well away from the game, but no third-party tool can promise how anti-cheat will treat it.
+- the log files the game writes to disk;
+- the screenshots you take;
+- with live scan on, a small capture of your screen, the same kind a screen-capture tool takes. To check that your click landed on the game, Blackgrid reads the title of the window under your mouse. Windows gives any program this title.
 
-### 🔗 What it connects to
+Blackgrid modifies no game files. A test in this repository fails if the capture code calls any Windows function that could open or control another program.
+
+> **Note:** Blackgrid is a fan-made tool, not affiliated with Battlestate Games. Only Battlestate Games decides what its anti-cheat allows. Blackgrid keeps well away from the game, but no third-party tool can promise how anti-cheat will treat it.
+
+### What it connects to
 
 | Service | What Blackgrid gets from it | Needed? |
 |---|---|---|
-| [tarkov.dev](https://tarkov.dev) | Items, prices, traders, quests, hideout, crafts and barters, refreshed at start and when you change game mode | Yes, for item advice |
-| [TarkovTracker](https://tarkovtracker.org) | Your quest and hideout progress, read only, so **Keep** means *you* still need it | No. Off until you paste a token in **Settings** |
-| Windows text recognition | Reads the extract names from your **O** screenshots, on your PC | Built into Windows |
+| [tarkov.dev](https://tarkov.dev) | Items, prices, traders, quests, hideout, crafts and barters. Blackgrid downloads them at start and when you change game mode | Yes, for item advice |
+| [TarkovTracker](https://tarkovtracker.org) | Your quest and hideout progress, read only, so that Keep means you still need the item | No. It stays off until you paste a token in Settings |
+| Windows text recognition | Reads extract names from your O screenshots, on your PC | Built into Windows |
 
-Blackgrid only downloads; it never uploads your data. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`, and a TarkovTracker token is encrypted for your Windows user. The maps ship inside the app; see [Data sources and credits](#-data-sources-and-credits) for where they come from.
+Blackgrid downloads data and never uploads yours. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`. Blackgrid encrypts a TarkovTracker token so that only your Windows user can read it. The maps ship inside the app. [Data sources and credits](#data-sources-and-credits) says where they come from.
 
 ---
 
-## 🛠️ For developers
+## For developers
 
-The rest of this page is for building and working on Blackgrid. It is a Dart/Flutter desktop app. Maps render natively from a bundled, hash-addressed pack, and one conservative decision engine drives every recommendation: an unknown or stale input gives **Check / May Need**, never a confident Sell.
+The rest of this page covers building and working on Blackgrid. Blackgrid is a Dart/Flutter desktop app. It draws maps natively from a bundled map pack whose files are named by their hashes. One decision engine produces every recommendation, and an unknown or stale input always gives Check / May Need, never Sell.
 
-## ✨ What it adds
+## Design choices
 
-- 🛡️ **Conservative keep/sell advice.** One pure-Dart [`DecisionEngine`](lib/domain/decision_engine.dart) ranks **Keep → Keep for later → Check / May Need → Flea → Trader → Price unavailable**. Missing catalog or progress authority, unknown FIR, an unresolved requirement or a quote older than one hour all fall to Check.
-- 🗺️ **Native map, no WebView.** All 13 maps render from a prepared pack in [`assets/maps/`](assets/maps/active.json). SVG is compiled to `vector_graphics` at preparation time, and the [scene](lib/maps/native_map_scene.dart) keeps decoded tiles and pictures in a 192 MiB LRU.
-- 📍 **Session evidence from files only.** [`SessionLogReader`](lib/data/session_log_reader.dart) polls the newest game log every 250 ms for map and mode. [Screenshot filenames](lib/domain/screenshot_filename.dart) give position and heading. Saved exit panels are read with Windows `Windows.Media.Ocr` through a hash-bound DLL ([`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp)).
-- 🔐 **Read-only progress with protected tokens.** [`TrackerClient`](lib/data/tracker_client.dart) only sends GET requests to `api.tarkovtracker.org`, with a 30 s timeout. Tokens are mode-scoped (`PVP_`, `PVE_`, `SZN_`) and stored as current-user DPAPI ciphertext by the [Windows runner](windows/runner/credential_protector.cpp), never in SQLite.
-- 💾 **One local store.** A single Drift SQLite file ([`database.dart`](lib/data/database.dart)) holds settings, pins, item history and one catalog snapshot per mode. The schema is versioned in [`drift_schemas/`](drift_schemas/drift_schema_v2.json), and a newer on-disk version is refused, not reset.
-- 📦 **Hash-bound native code.** At install, CMake writes the panel OCR DLL's SHA-256 and a manifest of every vision file; the app refuses to load a mismatch. Third-party vision inputs (OpenCV 4.13, Tesseract engine 5.0.0, Leptonica 1.82.0, `eng.traineddata`) are pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json) and checked offline by [`check_bundle.dart`](tool/vision/check_bundle.dart).
-- 📥 **Explicit legacy import.** [`LegacyImport`](lib/data/legacy_import.dart) reads only the settings and history JSON files you name. It shows a preview with every collision. Accepting it commits everything in one transaction, and the same files cannot be imported twice.
+- **Cautious keep/sell advice.** One pure-Dart [`DecisionEngine`](lib/domain/decision_engine.dart) picks the first answer that applies, in this order: Keep, Keep for later, Check / May Need, Flea, Trader, Price unavailable. It answers Check when the catalog or progress data is missing, when found-in-raid status is unknown, when a requirement is unresolved, or when the price quote is more than one hour old.
+- **Native map, no WebView.** All 13 maps render from a prepared pack in [`assets/maps/`](assets/maps/active.json). Preparation compiles SVG to `vector_graphics` ahead of time. The [scene](lib/maps/native_map_scene.dart) keeps decoded tiles and pictures in a 192 MiB LRU cache.
+- **Session data from files only.** [`SessionLogReader`](lib/data/session_log_reader.dart) reads the newest game log every 250 ms for the map and mode. [Screenshot file names](lib/domain/screenshot_filename.dart) give position and heading. A DLL ([`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp)) reads saved extract panels with Windows `Windows.Media.Ocr`, and the app checks the DLL's hash before loading it.
+- **Read-only progress, protected tokens.** [`TrackerClient`](lib/data/tracker_client.dart) sends only GET requests to `api.tarkovtracker.org`, with a 30 s timeout. Each token belongs to one mode (`PVP_`, `PVE_`, `SZN_`). The [Windows runner](windows/runner/credential_protector.cpp) encrypts tokens with DPAPI for the current user and stores them outside SQLite.
+- **One local database.** A single Drift SQLite file ([`database.dart`](lib/data/database.dart)) holds settings, pins, item history and one catalog snapshot per mode. [`drift_schemas/`](drift_schemas/) records every schema version. If the file on disk has a newer version than the app knows, the app refuses to open it instead of resetting it.
+- **Native code checked by hash.** At install, CMake writes the SHA-256 of the panel OCR DLL and a manifest of every vision file. The app refuses to load a file that does not match. [`third_party.lock.json`](windows/vision/third_party.lock.json) pins the third-party vision inputs (OpenCV 4.13, Tesseract engine 5.0.0, Leptonica 1.82.0, `eng.traineddata`), and [`check_bundle.dart`](tool/vision/check_bundle.dart) checks them offline.
+- **Explicit legacy import.** [`LegacyImport`](lib/data/legacy_import.dart) reads only the settings and history JSON files you name. It shows a preview that lists every collision. Accepting the preview writes everything in one transaction, and the same files cannot be imported twice.
 
-## 🔄 How it fits together
+## How the parts fit together
 
 ```mermaid
 flowchart LR
@@ -88,23 +95,23 @@ flowchart LR
     C <--> DB[("SQLite<br/>%LOCALAPPDATA%\Blackgrid")]
 ```
 
-| Part | Owned by | What happens |
+| Part | Owner | What it does |
 |---|---|---|
-| Startup | [`AppServices`](lib/application/app_services.dart) | Opens storage, credentials and the HTTP client, builds the controllers, disposes them in order |
-| Catalog | [`CatalogController`](lib/application/catalog_controller.dart) + [`CatalogClient`](lib/data/catalog_client.dart) | Downloads 6 required and 4 optional English datasets for the chosen mode, normalises them off the UI isolate, swaps the snapshot in one transaction |
-| Progress | [`ProgressController`](lib/application/progress_controller.dart) + [`TrackerClient`](lib/data/tracker_client.dart) | Reads `/token` and `/progress`, keeps them in memory only, treats them as current for 15 minutes |
-| Decision | [`SelectionController`](lib/application/selection_controller.dart) + [`DecisionEngine`](lib/domain/decision_engine.dart) | One decision for the selected item, shown in both Map and Scanner |
-| Map | [`MapController`](lib/application/map_controller.dart) + [`lib/maps/`](lib/maps/prepared_map_loader.dart) | Loads the active pack, floors, markers and pins; owns pan/zoom and hit testing |
-| Session | [`MapSessionController`](lib/application/map_session_controller.dart) | Detected map/mode, player samples and exit highlights; one active plus one pending request |
-| Storage | [`BlackgridDatabase`](lib/data/database.dart) | Settings, pins, history, catalog cache and import ledger |
+| Startup | [`AppServices`](lib/application/app_services.dart) | Opens storage, credentials and the HTTP client, builds the controllers, and disposes of them in order |
+| Catalog | [`CatalogController`](lib/application/catalog_controller.dart) and [`CatalogClient`](lib/data/catalog_client.dart) | Downloads 6 required and 4 optional English datasets for the chosen mode, normalises them off the UI isolate, and replaces the snapshot in one transaction |
+| Progress | [`ProgressController`](lib/application/progress_controller.dart) and [`TrackerClient`](lib/data/tracker_client.dart) | Reads `/token` and `/progress`, keeps the results in memory only, and treats them as current for 15 minutes |
+| Decision | [`SelectionController`](lib/application/selection_controller.dart) and [`DecisionEngine`](lib/domain/decision_engine.dart) | Makes one decision for the selected item and shows it in both Map and Scanner |
+| Map | [`MapController`](lib/application/map_controller.dart) and [`lib/maps/`](lib/maps/prepared_map_loader.dart) | Loads the active pack, floors, markers and pins, and handles pan, zoom and hit testing |
+| Session | [`MapSessionController`](lib/application/map_session_controller.dart) | Tracks the detected map and mode, player positions and highlighted extracts. It runs at most one OCR request and keeps one more waiting |
+| Storage | [`BlackgridDatabase`](lib/data/database.dart) | Holds settings, pins, history, the catalog cache and the import ledger |
 
 ---
 
-## ⚡ Install / Update
+## Install and update
 
-> **Prerequisites:** Windows 11 x64, Git, and [mise](https://mise.jdx.dev/). Visual Studio with **Desktop development with C++**, its CMake tools and a Windows SDK ([Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup)). Windows Developer Mode if a native build needs symlinks. Flutter 3.47.9 comes from [`mise.toml`](mise.toml); no global Flutter install is needed.
+> **Prerequisites:** Windows 11 x64, Git and [mise](https://mise.jdx.dev/). Visual Studio with the **Desktop development with C++** workload, its CMake tools and a Windows SDK, as [Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup) describes. Windows Developer Mode, if a native build needs symlinks. [`mise.toml`](mise.toml) supplies Flutter 3.47.9, so you do not need a global Flutter install.
 
-Install and update use the same commands:
+The same commands install and update:
 
 ```text
 git pull
@@ -114,151 +121,151 @@ mise exec -- flutter pub get
 mise run vision:fetch
 ```
 
-`vision:fetch` downloads the pinned OpenCV, Tesseract, Leptonica and model inputs into `.dart_tool/blackgrid_vision_inputs/`. The Windows build stops with an error if any input is missing or changed. Run it again after `flutter clean`.
+`vision:fetch` downloads the pinned OpenCV, Tesseract, Leptonica and model files into `.dart_tool/blackgrid_vision_inputs/`. The Windows build stops with an error if any of these files is missing or changed. Run `vision:fetch` again after `flutter clean`.
 
-Check the toolchain with `mise exec -- flutter doctor -v`. Warnings about Android or web tooling do not block a Windows build.
+To check the toolchain, run `mise exec -- flutter doctor -v`. Warnings about Android or web tooling do not block a Windows build.
 
-## ⚡ First steps
+## First steps
 
-1. **Close Escape from Tarkov**, then run `mise exec -- flutter run -d windows`.
-2. Open **Settings** and choose the **Live game mode** (PvP, PvE or Seasonal; it starts as Unknown). Choosing a mode refreshes the catalog automatically; use **Refresh complete catalog** to retry by hand.
-3. Search items with **Ctrl K**. The Scanner area shows the decision, requirements, sources and history.
-4. Optional: in **Settings**, save a Tracker token for the mode, and set the game log and screenshot directories (empty = auto-detect).
-5. On **Map**, use **Read Latest** after saving a screenshot in game, or **Follow logs** to switch maps automatically. A mode found in the game log replaces the Settings mode while it is detected.
+1. Close Escape from Tarkov, then run `mise exec -- flutter run -d windows`.
+2. Open **Settings** and choose the **Live game mode**: PvP, PvE or Seasonal. It starts as Unknown. Choosing a mode refreshes the catalog. If the refresh fails, use **Refresh complete catalog** to try again.
+3. Press Ctrl K to search for an item. The Scanner area shows the decision, the requirements, the data sources and your history.
+4. Optional: in **Settings**, save a Tracker token for the mode, and set the game log and screenshot folders. Leave a folder empty to detect it automatically.
+5. On **Map**, use **Read Latest** after you save a screenshot in game, or turn on **Follow logs** to switch maps automatically. While the game log reports a mode, that mode replaces the one in Settings.
 
-Build a Release bundle with `mise exec -- flutter build windows`. Ship the whole `build/windows/x64/runner/Release/` directory, not just `blackgrid.exe`.
+To build a Release bundle, run `mise exec -- flutter build windows`. Ship the whole `build/windows/x64/runner/Release/` folder, not only `blackgrid.exe`.
 
 ---
 
-## 🧩 What's inside
+## What's inside
 
 ### Application (`lib/`)
 
 | Layer | Files | Role |
 |---|---|---|
-| Domain | [`decision_engine.dart`](lib/domain/decision_engine.dart), [`catalog.dart`](lib/domain/catalog.dart), [`progress.dart`](lib/domain/progress.dart), [`settings.dart`](lib/domain/settings.dart), [`map_geometry.dart`](lib/domain/map_geometry.dart), [`map_floors.dart`](lib/domain/map_floors.dart), [`raid_panel_text_parser.dart`](lib/domain/raid_panel_text_parser.dart), [`raid_exfil_matcher.dart`](lib/domain/raid_exfil_matcher.dart) | Pure Dart rules: decisions, freshness, settings, map math, panel text matching |
-| Application | [`app_services.dart`](lib/application/app_services.dart), [`catalog_controller.dart`](lib/application/catalog_controller.dart), [`progress_controller.dart`](lib/application/progress_controller.dart), [`selection_controller.dart`](lib/application/selection_controller.dart), [`settings_controller.dart`](lib/application/settings_controller.dart), [`history_controller.dart`](lib/application/history_controller.dart), [`map_controller.dart`](lib/application/map_controller.dart), [`map_session_controller.dart`](lib/application/map_session_controller.dart) | `ChangeNotifier` controllers built by one composition root |
-| Data | [`database.dart`](lib/data/database.dart), [`catalog_client.dart`](lib/data/catalog_client.dart), [`tracker_client.dart`](lib/data/tracker_client.dart), [`credential_store.dart`](lib/data/credential_store.dart), [`session_log_reader.dart`](lib/data/session_log_reader.dart), [`screenshot_directory_watcher.dart`](lib/data/screenshot_directory_watcher.dart), [`game_paths.dart`](lib/data/game_paths.dart), [`raid_panel_ocr.dart`](lib/data/raid_panel_ocr.dart), [`legacy_import.dart`](lib/data/legacy_import.dart) | HTTP, SQLite, DPAPI, game files and OCR adapters |
-| Vision | [`vision_runtime.dart`](lib/data/vision/vision_runtime.dart), [`vision_primitives.dart`](lib/data/vision/vision_primitives.dart), [`tesseract_binding.dart`](lib/data/vision/tesseract_binding.dart), [`vision_self_check.dart`](lib/application/vision_self_check.dart) | Item vision runtime; used only by `--vision-self-check` and tests so far |
-| Maps | [`prepared_map_loader.dart`](lib/maps/prepared_map_loader.dart), [`prepared_map.dart`](lib/maps/prepared_map.dart), [`native_map_scene.dart`](lib/maps/native_map_scene.dart) | Pack loading and native rendering |
-| UI | [`shell.dart`](lib/ui/shell.dart), [`map_screen.dart`](lib/ui/map_screen.dart), [`map_workspace.dart`](lib/ui/map_workspace.dart), [`scanner_screen.dart`](lib/ui/scanner_screen.dart), [`item_decision_card.dart`](lib/ui/item_decision_card.dart), [`settings_dialog.dart`](lib/ui/settings_dialog.dart), [`import_dialog.dart`](lib/ui/import_dialog.dart), [`theme.dart`](lib/ui/theme.dart) | Two-area shell; both areas stay mounted |
+| Domain | [`decision_engine.dart`](lib/domain/decision_engine.dart), [`catalog.dart`](lib/domain/catalog.dart), [`progress.dart`](lib/domain/progress.dart), [`settings.dart`](lib/domain/settings.dart), [`map_geometry.dart`](lib/domain/map_geometry.dart), [`map_floors.dart`](lib/domain/map_floors.dart), [`raid_panel_text_parser.dart`](lib/domain/raid_panel_text_parser.dart), [`raid_exfil_matcher.dart`](lib/domain/raid_exfil_matcher.dart) | Pure Dart rules for decisions, data age, settings, map math and extract-panel text matching |
+| Application | [`app_services.dart`](lib/application/app_services.dart), [`catalog_controller.dart`](lib/application/catalog_controller.dart), [`progress_controller.dart`](lib/application/progress_controller.dart), [`selection_controller.dart`](lib/application/selection_controller.dart), [`settings_controller.dart`](lib/application/settings_controller.dart), [`history_controller.dart`](lib/application/history_controller.dart), [`map_controller.dart`](lib/application/map_controller.dart), [`map_session_controller.dart`](lib/application/map_session_controller.dart) | `ChangeNotifier` controllers, all built in `AppServices` |
+| Data | [`database.dart`](lib/data/database.dart), [`catalog_client.dart`](lib/data/catalog_client.dart), [`tracker_client.dart`](lib/data/tracker_client.dart), [`credential_store.dart`](lib/data/credential_store.dart), [`session_log_reader.dart`](lib/data/session_log_reader.dart), [`screenshot_directory_watcher.dart`](lib/data/screenshot_directory_watcher.dart), [`game_paths.dart`](lib/data/game_paths.dart), [`raid_panel_ocr.dart`](lib/data/raid_panel_ocr.dart), [`legacy_import.dart`](lib/data/legacy_import.dart) | Adapters for HTTP, SQLite, DPAPI, game files and OCR |
+| Vision | [`vision_runtime.dart`](lib/data/vision/vision_runtime.dart), [`vision_primitives.dart`](lib/data/vision/vision_primitives.dart), [`tesseract_binding.dart`](lib/data/vision/tesseract_binding.dart), [`vision_self_check.dart`](lib/application/vision_self_check.dart) | Item vision runtime. So far only `--vision-self-check` and the tests use it |
+| Maps | [`prepared_map_loader.dart`](lib/maps/prepared_map_loader.dart), [`prepared_map.dart`](lib/maps/prepared_map.dart), [`native_map_scene.dart`](lib/maps/native_map_scene.dart) | Loads the pack and renders it natively |
+| UI | [`shell.dart`](lib/ui/shell.dart), [`map_screen.dart`](lib/ui/map_screen.dart), [`map_workspace.dart`](lib/ui/map_workspace.dart), [`scanner_screen.dart`](lib/ui/scanner_screen.dart), [`item_decision_card.dart`](lib/ui/item_decision_card.dart), [`settings_dialog.dart`](lib/ui/settings_dialog.dart), [`import_dialog.dart`](lib/ui/import_dialog.dart), [`theme.dart`](lib/ui/theme.dart) | The window with two areas. Both areas stay mounted when you switch |
 
-Scanner has a manual catalog inspection and an opt-in **live scan** switch. With it on, a mouse release over the game window, or the scan hotkey, scans the open inspect window at the cursor and shows the evidence it found. The hotkey is **F9** by default; pick any of F1–F24, or Off, next to the switch. Blackgrid holds the key only while live scan is on, and if another application already holds it, mouse scans still work. An accepted scan selects its item and is recorded in history; see the [roadmap](openspec/roadmap.md) for what comes next.
+In Scanner you can look up items in the catalog by hand, or turn on **live scan**. With live scan on, releasing the mouse over the game window or pressing the scan key scans the open inspect window at the cursor, and Scanner shows what the scan found. The scan key is F9 by default. You can choose any key from F1 to F24, or Off, next to the switch. Blackgrid registers the key only while live scan is on. If another application already holds the key, mouse scans still work. A successful scan selects its item and adds it to history. The [roadmap](openspec/roadmap.md) lists what comes next.
 
 ### Native Windows code (`windows/`)
 
-| Part | File | Does |
+| Part | File | What it does |
 |---|---|---|
-| Credentials channel | [`credential_protector.cpp`](windows/runner/credential_protector.cpp) | `blackgrid/credentials`: LocalAppData path, atomic replace, DPAPI protect/unprotect |
-| Panel OCR DLL | [`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp) | `blackgrid_panel_ocr.dll` over `Windows.Media.Ocr` |
-| Vision DLL | [`vision.cpp`](windows/vision/vision.cpp), [`vision.h`](windows/vision/vision.h) | `blackgrid_vision.dll`: `bgv_*` C ABI over static OpenCV `core` + `imgproc` |
-| Vision build | [`CMakeLists.txt`](windows/vision/CMakeLists.txt), [`verify_inputs.cmake`](windows/vision/verify_inputs.cmake), [`write_manifest.cmake`](windows/vision/write_manifest.cmake) | Refuses unpinned inputs; writes `data/vision/runtime.manifest.json` at install |
+| Credentials channel | [`credential_protector.cpp`](windows/runner/credential_protector.cpp) | The `blackgrid/credentials` platform channel. It finds the LocalAppData path, replaces files atomically, and encrypts and decrypts with DPAPI |
+| Panel OCR DLL | [`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp) | `blackgrid_panel_ocr.dll`, a wrapper over `Windows.Media.Ocr` |
+| Vision DLL | [`vision.cpp`](windows/vision/vision.cpp), [`vision.h`](windows/vision/vision.h) | `blackgrid_vision.dll`, a `bgv_*` C ABI over static OpenCV `core` and `imgproc` |
+| Vision build | [`CMakeLists.txt`](windows/vision/CMakeLists.txt), [`verify_inputs.cmake`](windows/vision/verify_inputs.cmake), [`write_manifest.cmake`](windows/vision/write_manifest.cmake) | Refuses inputs that are not pinned, and writes `data/vision/runtime.manifest.json` at install |
 
 ### mise tasks ([`mise.toml`](mise.toml))
 
-| Task | Runs |
+| Task | What it runs |
 |---|---|
 | `analyze` | `flutter analyze` |
-| `test` | Fast suite, excludes the `qualification` tag |
-| `test:qualification` | Expensive offline qualification tier only |
-| `ci:qualification` | CI-only qualification run with a skip audit. Fails locally by design unless you confirm that no game is running; developers use `test:qualification` |
+| `test` | The fast suite, without tests tagged `qualification` |
+| `test:qualification` | Only the slow offline qualification tests |
+| `ci:qualification` | The qualification run for CI, with a check of every skipped test. It fails locally on purpose unless you confirm that no game is running. Developers use `test:qualification` instead |
 | `test:all` | Every test |
-| `format` / `format:check` | `dart format`, or check without writing |
-| `release-notes` | [`tool/changelog.dart`](tool/changelog.dart): preview the next release's notes from archived proposals, or `-- --check <proposal.md>` to validate one proposal's `## Release Notes` section |
-| `release:prepare` / `release:tag` / `build:release` | [`tool/release/release.dart`](tool/release/release.dart): prepare a release commit, tag the merged release, build a versioned Release bundle (see **Releases and changelog**) |
-| `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart): download and verify pinned vision inputs |
-| `maps:check` | [`prepare.dart check`](tool/maps/prepare.dart): rebuilds the committed map pack offline and fails unless it reproduces byte for byte |
-| `maps:rebuild` | [`prepare.dart refresh`](tool/maps/prepare.dart): rebuilds the committed map pack with the installed toolchain, promotes it, rewrites the generated asset block in `pubspec.yaml` and deletes superseded generations. Prints the changed maps and, when artwork changed, the owner check |
-| `maps:artwork:refresh` | [`prepare.dart artwork-refresh`](tool/maps/prepare.dart): stages fresh artwork without publication; pass `--packs`, `--pubspec` and `--stage` after `--` |
-| `maps:artwork:publish` | [`prepare.dart artwork-publish`](tool/maps/prepare.dart): publishes the exact staged candidate; pass `--candidate`, `--packs` and `--pubspec` after `--` |
-| `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart): offline check of a built Release bundle |
-| `capture:selftest` | Native capture self-test ([`selftest.ps1`](windows/capture/selftest.ps1)). Refuses unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms no game is running |
+| `format` / `format:check` | `dart format`, or a check that writes nothing |
+| `release-notes` | [`tool/changelog.dart`](tool/changelog.dart). Previews the next release's notes from archived proposals. With `-- --check <proposal.md>`, it validates the `## Release Notes` section of one proposal |
+| `release:prepare` / `release:tag` / `build:release` / `package:release` | [`tool/release/release.dart`](tool/release/release.dart). Prepares a release commit, tags the merged release, builds a versioned Release bundle and packages it. See **Releases and changelog** under Reference |
+| `vision:fetch` | [`fetch_runtime.dart`](tool/vision/fetch_runtime.dart). Downloads the pinned vision inputs and checks them |
+| `maps:check` | [`prepare.dart check`](tool/maps/prepare.dart). Rebuilds the committed map pack offline and fails unless the result is identical byte for byte |
+| `maps:rebuild` | [`prepare.dart refresh`](tool/maps/prepare.dart). Rebuilds the committed map pack with the installed toolchain and makes it active. It rewrites the generated asset list in `pubspec.yaml` and deletes older generations. It prints the maps that changed and, if the artwork changed, asks for an owner check |
+| `maps:artwork:refresh` | [`prepare.dart artwork-refresh`](tool/maps/prepare.dart). Builds fresh artwork in a staging folder without publishing it. Pass `--packs`, `--pubspec` and `--stage` after `--` |
+| `maps:artwork:publish` | [`prepare.dart artwork-publish`](tool/maps/prepare.dart). Publishes exactly the staged candidate. Pass `--candidate`, `--packs` and `--pubspec` after `--` |
+| `bundle:check` | [`check_bundle.dart`](tool/vision/check_bundle.dart). Checks a built Release bundle offline |
+| `capture:selftest` | The native capture self-test ([`selftest.ps1`](windows/capture/selftest.ps1)). It refuses to run unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms that no game is running |
 | `qualification:freeze` / `:validate` / `:report` | M0 reference evidence tools in [`tool/qualification/`](tool/qualification/m0.dart) |
 
 ### Tools (`tool/`)
 
-| Tool | Does |
+| Tool | What it does |
 |---|---|
-| [`maps/prepare.dart`](tool/maps/prepare.dart) | Offline map pack pipeline: `acquire`, `rebuild`, `normalize`, `compile`, `validate`, pointer-only `promote`, `assets`, `check`, `refresh`, staged `artwork-refresh` and explicit `artwork-publish` |
+| [`maps/prepare.dart`](tool/maps/prepare.dart) | The offline map pack pipeline. Its commands are `acquire`, `rebuild`, `normalize`, `compile`, `validate`, `promote` (which only moves the active pointer), `assets`, `check`, `refresh`, `artwork-refresh` (staged) and `artwork-publish` (explicit) |
 | [`ocr/read_saved_panel.dart`](tool/ocr/read_saved_panel.dart) | Reads one saved screenshot with the built panel OCR DLL |
-| [`m1/catalog_smoke.dart`](tool/m1/catalog_smoke.dart) | Real catalog download for all three modes into a temporary SQLite file, with reopen check |
-| [`vision/make_self_check_sample.dart`](tool/vision/make_self_check_sample.dart) | Regenerates the deterministic [self-check sample](assets/vision/self_check/title.json) |
+| [`m1/catalog_smoke.dart`](tool/m1/catalog_smoke.dart) | Downloads the real catalog for all three modes into a temporary SQLite file, then reopens the file to check it |
+| [`vision/make_self_check_sample.dart`](tool/vision/make_self_check_sample.dart) | Regenerates the fixed [self-check sample](assets/vision/self_check/title.json) |
 
 ### Agent tooling
 
-| Path | Holds |
+| Path | What it holds |
 |---|---|
-| [`.mcp.json`](.mcp.json) | Official Dart MCP server, launched through mise with the pinned SDKs |
-| [`.claude/skills/`](.claude/skills/UPSTREAM.json) | First-party Flutter and Dart skills (sources and hashes in `UPSTREAM.json`), plus OpenSpec and Specwright skills |
-| [`.claude/agents/`](.claude/agents/specwright-implementer.md), [`.omp/agents/`](.omp/agents/specwright-implementer.md) | Specwright implementer and reviewer agents |
-| [`openspec/`](openspec/config.yaml) | Specwright change workflow, [architecture](openspec/architecture.md), [roadmap](openspec/roadmap.md), [ADRs](docs/adr/README.md) |
+| [`.mcp.json`](.mcp.json) | The official Dart MCP server, started through mise with the pinned SDKs |
+| [`.claude/skills/`](.claude/skills/UPSTREAM.json) | The official Flutter and Dart skills, with sources and hashes in `UPSTREAM.json`, plus the OpenSpec and Specwright skills |
+| [`.claude/agents/`](.claude/agents/specwright-implementer.md), [`.omp/agents/`](.omp/agents/specwright-implementer.md) | The Specwright implementer and reviewer agents |
+| [`openspec/`](openspec/config.yaml) | The Specwright change workflow, [architecture](openspec/architecture.md), [roadmap](openspec/roadmap.md) and [ADRs](docs/adr/README.md) |
 
 ---
 
-## ⚙️ Settings
+## Settings
 
-There is no config file. The **Settings** dialog and the Map area save one JSON row (`Preferences`, id 1) in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. The fields come from [`AppSettings`](lib/domain/settings.dart):
+Blackgrid has no config file. The **Settings** dialog and the Map area save one JSON row (`Preferences`, id 1) in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. [`AppSettings`](lib/domain/settings.dart) defines the fields:
 
 ```jsonc
 {
-  "mode": "unknown",            // unknown | pvp | pve | seasonal; set in Settings. A mode found in the game log wins at runtime
+  "mode": "unknown",            // unknown | pvp | pve | seasonal. Set in Settings; a mode found in the game log takes over at runtime
   "selectedMap": "shoreline",   // one of the 13 supported map IDs
-  "saveMarkerFilters": false,   // true = remember marker category filters
-  "markerFilters": {},          // category -> visible, e.g. "PmcExtracts": true
+  "saveMarkerFilters": false,   // true = remember which marker categories are shown
+  "markerFilters": {},          // category to visibility, for example "PmcExtracts": true
   "trackerEnabled": false,      // read-only Tracker progress for the current mode
-  "gameLogDirectory": "",       // empty = detect from the registry or Steam libraries
+  "gameLogDirectory": "",       // empty = find it from the registry or the Steam libraries
   "screenshotDirectory": "",    // empty = Documents\Escape from Tarkov\Screenshots
-  "liveScan": false,            // true = live scan on at start
-  "scanHotkey": "F9",           // off | F1 .. F24; set in Scanner, held only while live scan is on
-  "followGameLogs": true        // switch the map from the logs; selectedMap is kept as the fallback
+  "liveScan": false,            // true = live scan is on at start
+  "scanHotkey": "F9",           // off | F1 .. F24. Set in Scanner; registered only while live scan is on
+  "followGameLogs": true        // switch the map from the logs; selectedMap is the fallback
 }
 ```
 
-Tracker tokens are not part of this row. They live in `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi`.
+Tracker tokens are not in this row. They are in `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi`.
 
 ---
 
-## 📖 Reference
+## Reference
 
 <details>
-<summary><b>Decision order</b> — how the recommendation is picked</summary>
+<summary><b>Decision order</b>: how Blackgrid picks a recommendation</summary>
 
-The first row that matches wins ([`decision_engine.dart`](lib/domain/decision_engine.dart)).
+The engine checks the rows from top to bottom and uses the first one that matches ([`decision_engine.dart`](lib/domain/decision_engine.dart)).
 
 | Recommendation | When |
 |---|---|
-| Keep | A requirement is actionable now |
-| Keep for later | A requirement is a known future need |
-| Check / May Need | Catalog or progress authority missing or stale, FIR unknown, a requirement unresolved, Flea eligibility unknown, or the Flea quote missing, in the future or older than one hour (unless the item cannot be sold on Flea) |
-| Flea | Eligible, and the gross Flea price is **greater than** the best named-trader RUB cash offer (or there is none) |
-| Trader | A usable trader cash offer exists. Equal Flea and trader prices choose the trader; equal trader offers use trader ID order |
-| Price unavailable | None of the above |
+| Keep | A quest or hideout requirement needs the item now |
+| Keep for later | A known future requirement needs the item |
+| Check / May Need | Any of these: catalog or progress data is missing or stale, found-in-raid status is unknown, a requirement is unresolved, Flea eligibility is unknown, or the Flea quote is missing, dated in the future or more than one hour old. An old or missing Flea quote does not count when the item cannot be sold on Flea |
+| Flea | The item can be sold on Flea, and the Flea price is higher than the best cash offer in RUB from a named trader, or there is no such offer |
+| Trader | A trader cash offer exists. When the Flea and trader prices are equal, the trader wins. When two traders offer the same price, the trader with the lower ID wins |
+| Price unavailable | None of the rows above match |
 
-Prices are gross RUB, not fee-adjusted. FIR is set per inspection and resets when the item, mode or authority context changes.
+Prices are gross RUB, before Flea fees. You set found-in-raid status for each inspection. It resets when the item, the mode or the progress data changes.
 </details>
 
 <details>
-<summary><b>Data sources and freshness</b></summary>
+<summary><b>Data sources and how long they stay current</b></summary>
 
-| Source | Endpoint | Fresh for | On failure |
+| Source | Endpoint | Current for | On failure |
 |---|---|---|---|
-| Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}` plus optional `*_en` translations | 24 h from download; source times are shown as evidence only | Last good snapshot kept, status `stale` or `failed` |
-| Map markers | `json.tarkov.dev/{regular\|pve\|pvp-season}/{maps,maps_en,tasks,tasks_en,traders,traders_en}` | Compatible last-good snapshots have no age expiry | Selected mode's last-good snapshot, otherwise labelled regular bundled fallback |
-| Flea quote | Inside the catalog | 1 h | Decision falls to Check |
-| Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, memory only | Auth or mode errors clear progress; transport errors keep it as stale. `Retry-After` is honoured; missing or bad values use 60 s |
+| Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}`, plus optional `*_en` translations | 24 h from download. The source's own timestamps are shown but not used | Blackgrid keeps the last good snapshot and shows the status `stale` or `failed` |
+| Map markers | `json.tarkov.dev/{regular\|pve\|pvp-season}/{maps,maps_en,tasks,tasks_en,traders,traders_en}` | A compatible last good snapshot never expires | Blackgrid uses the selected mode's last good snapshot. Without one, it uses the bundled regular-mode markers and labels them as such |
+| Flea quote | Inside the catalog | 1 h | The decision falls back to Check |
+| Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, in memory only | Login or mode errors clear the progress. Network errors keep it and mark it stale. Blackgrid honours `Retry-After`, and waits 60 s when the header is missing or invalid |
 
-Every request is a GET with a 30 s deadline and no redirects. The catalog refreshes once at launch and on each mode switch, and progress does too when a Tracker token is saved for the mode and the Tracker integration is enabled. A failed refresh is not retried automatically; use Refresh or select a mode again.
+Every request is a GET with a 30 s deadline, and Blackgrid follows no redirects. The catalog refreshes once at launch and again on each mode switch. Progress refreshes at the same times, if you saved a Tracker token for the mode and turned on the Tracker integration. Blackgrid does not retry a failed refresh by itself. Use Refresh, or select the mode again.
 </details>
 
 <details>
 <summary><b>Local files</b></summary>
 
-| Path | Holds |
+| Path | What it holds |
 |---|---|
-| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, import ledger and mode-specific map snapshots |
-| `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi` | Tracker token, current-user DPAPI ciphertext; not portable to another Windows user |
+| `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, the import ledger and map data snapshots per mode |
+| `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi` | The Tracker token, encrypted with DPAPI for the current user. Another Windows user cannot decrypt it |
 
-History stores item ID, mode, source, UTC time and revision only. No telemetry, account or backend exists.
+History stores only the item ID, mode, source, UTC time and revision. Blackgrid has no telemetry, account or backend.
 </details>
 
 <details>
@@ -266,83 +273,121 @@ History stores item ID, mode, source, UTC time and revision only. No telemetry, 
 
 | Input | Action |
 |---|---|
-| Select a marker badge or a marker in the accessible list | Show its summary in a bubble tethered to the badge |
-| Drag / mouse wheel outside the bubble | Pan / zoom at the cursor |
-| Operate controls or scroll inside the bubble | Use bubble controls or scroll its content without moving or selecting the map |
-| Bubble `Close` or Escape | Dismiss the marker bubble and clear its linked highlights |
-| Arrow keys | Pan the map when its canvas has focus |
-| Home | Fit map |
-| `+` `=` numpad `+` / `-` numpad `-` | Zoom in / out |
-| C | Center on the sampled player |
-| N | Add a pin at the view center |
-| Right-click outside the bubble | Add a pin at the cursor |
-| Enter | Browse visible markers and pins |
-| Delete | Remove the selected pin |
-| Escape | Clear the focused map selection |
+| Select a marker badge, or a marker in the accessible list | Shows a summary in a bubble attached to the badge |
+| Drag or mouse wheel outside the bubble | Pans, or zooms at the cursor |
+| Controls or scrolling inside the bubble | Work on the bubble only. The map does not move and nothing on it is selected |
+| Bubble `Close` button or Escape | Closes the marker bubble and removes its linked highlights |
+| Arrow keys | Pan the map while the map has focus |
+| Home | Fits the whole map in view |
+| `+`, `=` or numpad `+` / `-` or numpad `-` | Zoom in / zoom out |
+| C | Centres the view on your last known position |
+| N | Adds a pin at the centre of the view |
+| Right-click outside the bubble | Adds a pin at the cursor |
+| Enter | Lets you browse the visible markers and pins |
+| Delete | Removes the selected pin |
+| Escape | Clears the selection on the focused map |
 
-Supported maps, as labelled in the UI: Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker, Labyrinth (IDs in [`settings.dart`](lib/domain/settings.dart), labels in [`theme.dart`](lib/ui/theme.dart)).
+The supported maps, as the app labels them, are Factory, Customs, Woods, Shoreline, Interchange, The Lab, Reserve, Lighthouse, Streets, Ground Zero, Terminal, Icebreaker and Labyrinth. The IDs are in [`settings.dart`](lib/domain/settings.dart) and the labels in [`theme.dart`](lib/ui/theme.dart).
 </details>
 
 <details>
 <summary><b>Session inputs</b></summary>
 
-| Input | Bound | Reads |
+| Input | Limits | What Blackgrid reads |
 |---|---|---|
-| Game log | 250 ms poll, 64 KiB max line | `scene preset path:` for map, `Session mode:` for mode, in the newest `log_*` folder |
-| Screenshot folder | 1 s poll, 80 ms stability, 64 MiB per file | Position (XYZ) and heading (quaternion) from the filename |
-| Saved panel OCR | 64 MiB, ≤ 8192 px per side, ≤ 24 × 1024² pixels, one request at a time | Exfil and transit names; a busy worker returns `unavailable` |
+| Game log | Checked every 250 ms. Lines up to 64 KiB | `scene preset path:` for the map and `Session mode:` for the mode, in the newest `log_*` folder |
+| Screenshot folder | Checked every 1 s. A file must stay unchanged for 80 ms. Files up to 64 MiB | Position (XYZ) and heading (quaternion) from the file name |
+| Saved panel OCR | Up to 64 MiB, at most 8192 px per side and 24 × 1024² pixels in total. One request at a time | Extract and transit names. If the worker is busy, it returns `unavailable` |
 
-Evidence without a confirmed raid or map is shown as assumed. Missing or unreadable evidence is never shown as an empty panel. Check one image offline with `mise exec -- dart run tool/ocr/read_saved_panel.dart <image>`.
+When Blackgrid has data but no confirmed raid or map, it marks the data as assumed. When data is missing or unreadable, Blackgrid says so instead of showing an empty panel. To test one image offline, run `mise exec -- dart run tool/ocr/read_saved_panel.dart <image>`.
 </details>
 
 <details>
 <summary><b>Map pack preparation</b></summary>
 
-Runtime artwork and calibration come only from the active pack; marker facts can refresh independently. These commands are maintenance tools ([`prepare.dart`](tool/maps/prepare.dart)); see `--help` for details.
+At runtime, map artwork and calibration come only from the active pack. Marker data can refresh separately. The commands below are maintenance tools in [`prepare.dart`](tool/maps/prepare.dart). Run any of them with `--help` for details.
 
-| Command | Does |
+| Command | What it does |
 |---|---|
-| `acquire --raw <dir>` | Fetches the complete artwork, metadata and terms inventory into a fresh hash-locked raw directory for a later offline rebuild |
-| `rebuild --raw <dir> --candidate <dir>` | `normalize` + `compile`, offline with reviewed calibration, source-lock and notice configuration |
-| `validate --candidate <dir>` | Checks every hash, vector payload and tile witness |
-| `promote --candidate <dir> --packs <root>` | Adds an immutable `versions/<sha256>/` and swaps [`active.json`](assets/maps/active.json) atomically |
-| `assets --packs <root>` | Prints the `pubspec.yaml` asset list; Flutter does not include nested tile folders by itself |
-| `check --packs <root>` | Rebuilds the active generation offline from its inputs and generation-owned calibration, source lock and exact notice bytes, into a temp folder, and fails unless it reproduces byte for byte. Only the recorded `toolchain` may differ. Run it as `mise run maps:check`; CI runs it on every PR |
-| `refresh --packs <root> --pubspec <file>` | Rebuilds the committed inputs offline, validates and promotes the candidate, rewrites the `pubspec.yaml` lines between the `BEGIN`/`END generated map pack assets` markers, then deletes every other generation folder. Run it as `mise run maps:rebuild`; it does not download fresh metadata |
-| `artwork-refresh --packs <root> --pubspec <file> --stage <fresh-dir> [--reviewed-calibration-update]` | Fetches only current reviewed artwork metadata, source vectors, five terms documents and reviewed raster resources, then builds and reports a compiled candidate. It retains the verified generation's six regular-mode snapshots and does not publish, rewrite `pubspec.yaml` or change `active.json`. Run as `mise run maps:artwork:refresh -- --packs assets/maps --pubspec pubspec.yaml --stage <fresh-dir>`; use a new stage directory for each attempt |
-| `artwork-publish --candidate <dir> --packs <root> --pubspec <file>` | Verifies the current baseline, actual candidate closure and current reviewed source admission, prints their current comparison and publishes those exact staged bytes through the shared promotion, pubspec replacement, pruning and recovery transaction without rebuilding. The candidate remains operator-owned and is retained. Run as `mise run maps:artwork:publish -- --candidate <dir> --packs assets/maps --pubspec pubspec.yaml` |
-For fresh artwork staging and publication, source URLs and expected hashes remain under reviewed configuration; pinned repository revisions and provenance are checked where available, and raster tile bytes are checked against their frozen acquired hashes and exact URLs from current calibration. Publication rehashes the candidate's output/evidence closure and verifies it against current source admission; a manifest or its own recorded hashes do not approve altered bytes. It reports the current active-baseline comparison, even when that baseline changed since staging, and never rebuilds the candidate.
+| `acquire --raw <dir>` | Downloads all artwork, metadata and licence terms into a new raw folder, with every file's hash recorded, so that a later rebuild can run offline |
+| `rebuild --raw <dir> --candidate <dir>` | Runs `normalize` and then `compile`, offline, using the reviewed calibration, source lock and notice configuration |
+| `validate --candidate <dir>` | Checks every hash, vector file and sample tile |
+| `promote --candidate <dir> --packs <root>` | Adds a new read-only `versions/<sha256>/` folder and switches [`active.json`](assets/maps/active.json) to it in one atomic step |
+| `assets --packs <root>` | Prints the asset list for `pubspec.yaml`. Flutter does not include nested tile folders on its own |
+| `check --packs <root>` | Rebuilds the active generation offline into a temporary folder, from its own inputs, calibration, source lock and notice text. It fails unless the result is identical byte for byte. Only the recorded `toolchain` may differ. Run it as `mise run maps:check`. CI runs it on every pull request |
+| `refresh --packs <root> --pubspec <file>` | Rebuilds the committed inputs offline, validates the result and makes it active. It then rewrites the lines in `pubspec.yaml` between the `BEGIN` and `END generated map pack assets` markers, and deletes every other generation folder. Run it as `mise run maps:rebuild`. It downloads no new metadata |
+| `artwork-refresh --packs <root> --pubspec <file> --stage <fresh-dir> [--reviewed-calibration-update]` | Downloads current artwork and builds a candidate in a staging folder. See [Refreshing artwork](#refreshing-artwork). Run it as `mise run maps:artwork:refresh -- --packs assets/maps --pubspec pubspec.yaml --stage <fresh-dir>`, with a new staging folder for each attempt |
+| `artwork-publish --candidate <dir> --packs <root> --pubspec <file>` | Checks a staged candidate and publishes exactly those files, without rebuilding them. See [Publishing artwork](#publishing-artwork). Run it as `mise run maps:artwork:publish -- --candidate <dir> --packs assets/maps --pubspec pubspec.yaml` |
 
-Staging fetches, hashes and records every raster tile, inspecting each distinct tile content for valid PNG dimensions and alpha bounds.
+#### Refreshing artwork
 
-Staging output must be outside the active pack tree. Both the candidate stage and its `.raw` sibling must be fresh paths; paths that are links or have linked ancestors are refused, as are collisions with the pubspec. The stage must have a directory name. Trailing directory separators are accepted; acquisition scratch remains a sibling, not a child of the candidate.
+`artwork-refresh` downloads only what it needs for new artwork: the current reviewed artwork metadata, the source vectors, five licence documents and the reviewed raster images. It builds a compiled candidate from them and reports the result. It keeps the six regular-mode data snapshots from the current verified generation. It does not publish anything, rewrite `pubspec.yaml` or change `active.json`.
 
-The operator must serialize every writer to a pack root, including `refresh`, `artwork-publish` and bare `promote`. Baseline rechecking detects sequential changes before publication, not concurrent writers; it is not a lock. On interruption, follow the command's report of pointer, pubspec, pruning and candidate-cleanup state before retrying. Bare `promote` remains pointer-only: it does not rewrite `pubspec.yaml`, prune old generations or provide the full publication transaction. An owner check remains required before merge for any change beyond the toolchain record, including metadata, manifest and evidence-only changes. A genuine no-change or toolchain-only result requires no owner check; command success is not proof of human review or a new review gate.
+The reviewed configuration holds the source URLs and expected hashes. Where they exist, the command checks pinned repository revisions and provenance. It downloads and hashes every raster tile, and checks each tile's bytes against the hash and URL recorded at acquisition in the current calibration. It also opens each distinct tile to check its PNG dimensions and transparency.
 
-Without `--reviewed-calibration-update`, the reviewed configuration must match the active generation's frozen calibration; a mismatch names its path and stops before acquisition. The opt-in flag selects and freezes the current reviewed calibration, which must still reconcile against current artwork metadata and pass the normal geometry, frame, floor and dependency checks. Historical marker overrides apply only when their reviewed identity and placement assumptions still match; stale overrides do not block valid metadata evolution. Staging needs a path that does not exist. The active pack and pubspec are never written; temporary acquired inputs are removed after the build. If candidate construction fails after it begins, keep the named stage for diagnosis and use a different fresh stage path on the next attempt. Review the reported maps, floors, files and manifest values; the command does not publish or qualify owner approval.
+The staging folder has rules:
 
-A dependency bump that leaves `maps:check` passing needs no new pack. When it fails, the report lists the maps and floors whose files or manifest values changed. The ordinary `refresh` command rebuilds the exact frozen inputs carried by the verified active generation, using that generation's frozen calibration, manifest `sourceLock` and exact `NOTICE.txt` bytes; neither it nor `mise run maps:rebuild` fetches current REST metadata. Raw `rebuild` and `normalize` instead receive an explicit context from reviewed configuration.
+- It must be outside the active pack tree.
+- It must have a name, and it must not exist yet. The same applies to its `.raw` sibling folder. A trailing path separator is fine.
+- Neither it nor any parent folder may be a link, and it must not collide with `pubspec.yaml`.
+- Download scratch files go in a sibling folder, not inside the candidate.
 
-An explicit metadata renewal is a separate staged operation, not a new CLI mode. It verifies the active generation and acquires only the six regular-mode map, task, trader and English JSON responses into a fresh stage. `FrozenInputs.withMetadata` derives a view from the generation-backed build-read closure, substitutes those six byte-hashed files, and leaves every other carried or missing source unchanged; it does not materialize unused indexed tile entries or fetch artwork. The view goes to the existing `refreshActive(metadataInputs: ...)` owner. That branch rebuilds and validates the full candidate against its own frozen sources, rejects changes to prepared artwork, calibration and other nonmetadata properties, and uses the same map report, asset-block replacement, promotion, pruning and recovery path. It does not require new marker content to equal historical facts or assignments. The report still requires the owner to check changed maps before merge. A failure after rebuilding begins keeps and names the candidate; follow the reported recovery state rather than deleting it or retrying blindly.
+The command never writes to the active pack or to `pubspec.yaml`, and it deletes the downloaded inputs after the build. If the build fails after it started, keep the staging folder to find out why, and use a different new staging path for the next attempt.
 
-Marker and quest normalization is shared with runtime through `lib/maps/live_map_normalizer.dart`. Required JSON roots and malformed consumed records fail with their source identified; empty collections and missing optional references or translations are valid. A supported artwork map absent from REST marker metadata has an empty marker inventory, while unsupported REST maps do not become selectable. Reviewed Interchange volume/outline and Icebreaker identity/position/height/key assumptions are conditional: changed or removed markers neither block renewal nor get restored by an override. Independent artwork identity admission, source hashes, frozen reproduction and nonmetadata preservation remain enforced; REST marker-map evolution does not relax the separate artwork inventory in `metadata/maps.json`.
+By default, the reviewed configuration must match the calibration stored in the active generation. On a mismatch, the command names the path and stops before downloading anything. With `--reviewed-calibration-update`, the command adopts the current reviewed calibration instead. That calibration must still agree with the current artwork metadata and pass the usual geometry, frame, floor and dependency checks.
 
-`<use>` references to symbols the publisher deleted (Customs `path493`, Streets stairs) are dropped, as a browser does. Any other missing symbol fails preparation.
+Older marker overrides apply only while the marker they target keeps the identity and position the override expects. An override that no longer fits is ignored, so it does not block valid metadata changes.
+
+Review the maps, floors, files and manifest values that the command reports. The command does not publish, and it does not count as owner approval.
+
+#### Publishing artwork
+
+`artwork-publish` checks three things before it publishes: the current active baseline, the full set of candidate files, and the current reviewed source configuration. It hashes the candidate's output and evidence files again and checks them against the source configuration. The candidate's own manifest and recorded hashes cannot approve changed files. The command reports how the candidate compares with the active baseline as it is now, even if the baseline changed after staging. It publishes the staged files exactly as they are, through the same steps `refresh` uses: promotion, the `pubspec.yaml` rewrite, pruning and recovery. It never rebuilds the candidate, and it leaves the candidate folder in place for the operator.
+
+#### Running writers safely
+
+Only one command at a time may write to a pack root. This covers `refresh`, `artwork-publish` and a bare `promote`, and the operator is responsible for running them one at a time. The baseline check catches a change made by an earlier command, but it is not a lock and does not catch two commands running at once. If a command is interrupted, read its report of the pointer, `pubspec.yaml`, pruning and candidate cleanup state before you retry.
+
+A bare `promote` only moves the active pointer. It does not rewrite `pubspec.yaml`, delete old generations or run the full publication steps.
+
+#### When an owner check is needed
+
+Any change beyond the recorded toolchain needs an owner check before merge. This includes metadata, manifest and evidence-only changes. A result with no changes, or with only a toolchain change, needs no owner check. A command that succeeds has not been reviewed by a person, and it does not add a review step.
+
+A dependency update that leaves `maps:check` passing needs no new pack. When `maps:check` fails, its report lists the maps and floors whose files or manifest values changed.
+
+The ordinary `refresh` command, and `mise run maps:rebuild` with it, rebuilds the exact inputs stored in the verified active generation. It uses that generation's calibration, the `sourceLock` in its manifest and its exact `NOTICE.txt` text. Neither downloads current REST metadata. The raw `rebuild` and `normalize` commands instead take their settings from the reviewed configuration.
+
+#### Renewing marker metadata
+
+Renewing the metadata is a separate staged operation, not a command-line mode. It verifies the active generation, then downloads into a new staging folder only six regular-mode JSON responses: maps, tasks, traders and their English translations.
+
+`FrozenInputs.withMetadata` builds a view over the files that the active generation's build reads, and swaps in the six new files by hash. Every other source stays as it was, whether carried or missing. It does not unpack unused tile entries and does not download artwork.
+
+`refreshActive(metadataInputs: ...)` then takes the view. It rebuilds the full candidate and validates it against its own stored sources. It rejects any change to prepared artwork, calibration or other non-metadata properties. It then uses the same map report, asset list rewrite, promotion, pruning and recovery steps as `refresh`. New marker content does not have to match the old facts or assignments. The owner still checks the changed maps before merge. If the build fails after it started, the candidate stays on disk under its reported name. Follow the recovery state in the report instead of deleting the candidate or retrying blindly.
+
+#### Marker normalization
+
+The runtime and the preparation tools share marker and quest normalization through `lib/maps/live_map_normalizer.dart`. A missing required JSON root, or a malformed record that the code uses, fails with the source named. Empty collections, and missing optional references or translations, are valid. A supported artwork map that the REST marker data does not mention gets an empty marker list. A map that appears in the REST data but is not supported does not become selectable.
+
+Some reviewed assumptions apply only while they still match the data. They cover the Interchange marker volumes and outlines, and the identity, position, height and key of Icebreaker markers. If those markers change or disappear, renewal goes ahead, and the override does not bring them back. The following checks still apply: artwork identity, source hashes, exact reproduction of stored inputs and the ban on non-metadata changes. Changes to the REST marker maps do not loosen the separate artwork list in `metadata/maps.json`.
+
+Some `<use>` elements point to symbols that the map's publisher deleted, such as Customs `path493` and the Streets stairs. Preparation drops these references, as a browser does. A missing symbol anywhere else fails preparation.
 </details>
 
 <details>
 <summary><b>Vision self-check</b></summary>
 
-`blackgrid.exe --vision-self-check <report.json>` verifies and loads the bundled vision runtime, runs a template match and OCR on the bundled sample, and writes a JSON report. It shows no window and opens no database. The report directory must exist.
+`blackgrid.exe --vision-self-check <report.json>` checks and loads the bundled vision runtime, runs a template match and OCR on the bundled sample, and writes a JSON report. It opens no window and no database. The folder for the report must already exist.
 
-| Exit code | Means |
+| Exit code | Meaning |
 |---|---|
 | 0 | Pass |
 | 1 | A step failed, or the report could not be written |
-| 2 | Usage error |
-| 3 | A step did not return within 60 s |
+| 2 | Wrong command-line usage |
+| 3 | A step did not finish within 60 s |
 
-`blackgrid.exe` is a GUI-subsystem app, so wait for it: `start /wait` (cmd) or `Start-Process -Wait -PassThru` (PowerShell). Check a built bundle offline with `mise run bundle:check -- build/windows/x64/runner/Release`.
+`blackgrid.exe` is a GUI app, so the shell does not wait for it by default. Use `start /wait` in cmd or `Start-Process -Wait -PassThru` in PowerShell. To check a built bundle offline, run `mise run bundle:check -- build/windows/x64/runner/Release`.
 </details>
 
 <details>
@@ -350,12 +395,12 @@ Marker and quest normalization is shared with runtime through `lib/maps/live_map
 
 | Rule | Detail |
 |---|---|
-| Inputs | Settings and/or history JSON paths you type; no directory scan |
-| Supported revisions | Settings 0–3, scanner preferences 0–1, history 0–1 |
-| Pins | Known map IDs and frame revisions; Labs revision 0 is converted to revision 1 |
-| Never imported | Tracker keys, progress, computed advice, FIR, prices, overlay and old capture settings |
-| Collisions | Source: revision, then latest UTC time, then file order. Existing records win unless you choose to replace |
-| Commit | **Accept preview and import** writes all records and the digest ledger in one transaction; source files are not changed |
+| Inputs | The settings and history JSON paths you type. Blackgrid does not scan folders |
+| Supported revisions | Settings 0 to 3, scanner preferences 0 to 1, history 0 to 1 |
+| Pins | Known map IDs and frame revisions. Labs revision 0 pins are converted to revision 1 |
+| Never imported | Tracker keys, progress, computed advice, found-in-raid status, prices, and old overlay and capture settings |
+| Collisions | Within the source files, the higher revision wins, then the later UTC time, then file order. Existing records win unless you choose to replace them |
+| Commit | **Accept preview and import** writes all records and the file digest ledger in one transaction. It does not change the source files |
 </details>
 
 <details>
@@ -367,36 +412,65 @@ mise exec -- dart run drift_dev schema dump lib/data/database.dart drift_schemas
 mise exec -- dart run drift_dev schema generate drift_schemas test/data/generated
 ```
 
-Version 1 holds settings, pins, activity and catalog tables; version 2 adds the import ledger, version 3 the item-icon cache, and version 4 local raid/sale statistics. Version 6 adds the `live_map_snapshots` and `live_map_sources` map-data cache (version 5 was a pre-release shape of the same cache, which version 6 drops and recreates), without touching those user records.
+Schema history:
 
-`LiveMapCacheStore` keeps the last good map data per game mode: the six exact json.tarkov.dev response bodies, their ETag/Last-Modified validators and the time of the last check, replaced together in one transaction. Markers are derived from these bodies with the current normalizer and prepared pack each time they are used, so stored data never goes stale against a new app version; bodies that no longer normalize are ignored and the bundled markers are shown instead. Stored data does not expire with age.
+- Version 1 has the settings, pins, activity and catalog tables.
+- Version 2 adds the import ledger.
+- Version 3 adds the item icon cache.
+- Version 4 adds local raid and sale statistics.
+- Version 5 was a pre-release form of the map data cache.
+- Version 6 drops the version 5 cache and creates the `live_map_snapshots` and `live_map_sources` tables in its place. User records are not touched.
 
-`LiveMapFetcher` downloads six JSON sources from the selected `regular`, `pve` or `pvp-season` route: `maps`, `maps_en`, `tasks`, `tasks_en`, `traders` and `traders_en`. It prefers ETag, then Last-Modified, otherwise an unconditional GET. A 200 replaces the body and both validator fields; a 304 reuses the cached body and keeps or updates its validators. A failure never commits partial bodies or validators.
+`LiveMapCacheStore` keeps the last good map data for each game mode. That is the six exact json.tarkov.dev response bodies, their ETag and Last-Modified values, and the time of the last check. It replaces all of them together in one transaction. Each time the markers are used, Blackgrid builds them from these bodies with the current normalizer and prepared pack, so a new app version never reads outdated derived data. If a stored body no longer normalizes, Blackgrid ignores it and shows the bundled markers instead. Stored data does not expire.
 
-Requests have fixed 30-second/16-MiB decoded-body limits; one refresh has 120 seconds and 64 MiB across all six bodies, including cached 304 bodies. Redirects and automatic retries are forbidden, and closing the app aborts the request in flight. `LiveMapDataController` normalizes the bodies and parses markers in one background isolate; markers that refer to the same task, objective or location share its frozen facts, so complete local details and quest/objective/item identities stay available without detail requests. Each mode has at most one refresh; a refresh that finishes after the mode changed is stored for its mode but not shown. Saved-panel exit matching uses the same active marker generation as the visible map. Frozen offline map output is unchanged.
+`LiveMapFetcher` downloads six JSON sources from the `regular`, `pve` or `pvp-season` route of the selected mode: `maps`, `maps_en`, `tasks`, `tasks_en`, `traders` and `traders_en`. It sends a conditional request with the ETag if it has one, otherwise with Last-Modified, and otherwise a plain GET. On a 200 response it replaces the body and both validators. On a 304 it keeps the cached body and keeps or updates its validators. A failure saves no partial bodies or validators.
+
+Each request may take 30 seconds and return 16 MiB after decoding. A whole refresh may take 120 seconds and 64 MiB across all six bodies, cached 304 bodies included. Redirects and automatic retries are not allowed, and closing the app cancels the request in progress.
+
+`LiveMapDataController` normalizes the bodies and parses the markers in one background isolate. Markers that point to the same task, objective or location share one read-only copy of its data. The full details and the quest, objective and item IDs stay available without extra requests. Each mode runs at most one refresh at a time. If the mode changes before a refresh finishes, Blackgrid stores the result for the old mode but does not show it. Extract matching on saved panels uses the same marker data as the visible map. The prepared offline map output does not change.
 </details>
 
 <details>
 <summary><b>Releases and changelog</b></summary>
 
-Versions follow [SemVer 2.0.0](https://semver.org/) with `v`-prefixed tags ([ADR-0009](docs/adr/0009-release-versioning.md)). Each milestone close bumps the minor version (M2 → `0.2.0`), fixes between milestones bump the patch, and a build handed out for user-only checks is a prerelease (`0.2.0-beta.1`). Only a release commit changes `version:` in `pubspec.yaml`. The build number is the commit count of the built `HEAD`.
+Versions follow [SemVer 2.0.0](https://semver.org/), with tags that start with `v` ([ADR-0009](docs/adr/0009-release-versioning.md)). Closing a milestone raises the minor version, so M2 became `0.2.0`. Fixes between milestones raise the patch version. A build handed out for user checks is a prerelease, such as `0.2.0-beta.1`. Only a release commit changes `version:` in `pubspec.yaml`. The build number is the number of commits up to the built `HEAD`.
 
-| Step | Command | Does |
+| Step | Command | What it does |
 |---|---|---|
-| Preview | `mise run release-notes` | Prints the grouped items the next release will list, warnings for changes without valid release notes, and the commits on `main` that no change covers. Changes no file. Write the release summary from it |
-| Prepare | `mise run release:prepare -- <version> --summary-file <file>` (or `--summary "<text>"`) | Refuses without a summary of at most 600 characters (collapsed to one line) that does not start with `#`; keep the file outside the checkout. On a clean `main` equal to `origin/main`, with a version above every release tag, it builds the notes and refuses when no change was archived since the last final release, runs `analyze`, `format:check` and `test:all`, then commits `chore(release): v<version>` (pubspec version and the new `CHANGELOG.md` section) on `release/v<version>`. It does not push; it prints the push and PR commands |
-| Merge | Push the branch, open the PR titled `chore(release): v<version>` and merge it | |
-| Tag | `mise run release:tag` | On `main` right after the release merge (a merge commit, or a squash commit titled `chore(release): v<version> (#N)` that the PR API confirms): checks the merge and the pubspec version, then creates annotated tag `v<version>` and pushes only that tag as `github.login` from [`openspec/specwright.yaml`](openspec/specwright.yaml); it then prints the link to the Publish run |
-| Publish | Automatic on the tag push ([`release.yml`](.github/workflows/release.yml)) | Checks the tag and that it has no release, runs the same gates as CI on the tag, then publishes the zip, the installer and `SHA256SUMS.txt` as one GitHub release |
-| Check a build (optional) | `mise run build:release`, `mise run package:release` | Before tagging: `vision:fetch`, `flutter build windows --release` with the version, the build number and `BLACKGRID_VERSION=<version>+<count>`, `bundle:check` on `build/windows/x64/runner/Release`, then the zip, the installer and `SHA256SUMS.txt` in `build/release/`. CI does not use these outputs; it builds again on the tag |
+| Preview | `mise run release-notes` | Prints the items the next release will list, grouped by kind. It warns about changes without valid release notes, and lists commits on `main` that no change covers. It changes no files. Write the release summary from this output |
+| Prepare | `mise run release:prepare -- <version> --summary-file <file>`, or `--summary "<text>"` | See [Preparing a release](#preparing-a-release). It does not push. It prints the push and pull request commands |
+| Merge | Push the branch, open a pull request titled `chore(release): v<version>`, and merge it | |
+| Tag | `mise run release:tag` | Run it on `main` right after the release merge. It checks the merge and the version in `pubspec.yaml`, creates the annotated tag `v<version>` and pushes only that tag, as the `github.login` user from [`openspec/specwright.yaml`](openspec/specwright.yaml). It then prints a link to the Publish run. The merge can be a merge commit, or a squash commit titled `chore(release): v<version> (#N)` that the pull request API confirms |
+| Publish | Runs on the tag push ([`release.yml`](.github/workflows/release.yml)) | Checks that the tag has no release yet, runs the same gates as CI on the tag, then publishes the zip, the installer and `SHA256SUMS.txt` as one GitHub release |
+| Check a build (optional) | `mise run build:release`, then `mise run package:release` | Lets you check a build before tagging. It runs `vision:fetch`, then `flutter build windows --release` with the version, the build number and `BLACKGRID_VERSION=<version>+<count>`, then `bundle:check` on `build/windows/x64/runner/Release`. It writes the zip, the installer and `SHA256SUMS.txt` to `build/release/`. CI does not use these files. It builds again from the tag |
 
-**Retry or backfill.** Start a manual run of [`release.yml`](.github/workflows/release.yml) from `main` (Actions, Release, Run workflow) and enter a tag that has no release. A manual run from another branch is refused, and so is a tag from before release publishing such as `v0.4.0` or `v0.5.0`: they cannot be backfilled. A failed publish can leave a draft release; the preflight and the publish job refuse a tag while any release for it exists, so delete the draft on the Releases page first, then start the manual run.
+#### Preparing a release
 
-Pass `--trailer "<line>"` to `release:prepare` to add commit trailers; the commit and tag use Git's identity from the environment (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`). `release:tag` refuses when another PR merged between `prepare` and the release merge: delete `release/v<version>` locally and on `origin`, then prepare again.
+`release:prepare` needs a release summary of at most 600 characters that does not start with `#`. It joins the summary into one line. Keep the summary file outside the checkout.
 
-The version shows in the **Settings** dialog and in the `appVersion` field of the **Vision self-check** report. A build without the define (`flutter run`) shows `dev`. The executable's file version is `<major>.<minor>.<patch>.<count>`.
+It runs only on a clean `main` that matches `origin/main`, with a version higher than every release tag. It builds the notes, and refuses if no change was archived since the last final release. It then runs `analyze`, `format:check` and `test:all`, and commits `chore(release): v<version>` on the branch `release/v<version>`. The commit contains the new version in `pubspec.yaml` and the new section of `CHANGELOG.md`.
 
-Release notes come from each change's proposal ([ADR-0029](docs/adr/0029-release-notes-come-from-each-proposal.md)). Every `proposal.md` has a `## Release Notes` section: a summary, then `### Added`, `### Changed`, `### Fixed` and `### Removed` lists. `release:prepare` reads the sections of the proposals archived on `main`'s first-parent line since the last final release, groups their items as `Added:`, `Changed:`, `Fixed:` and `Removed:` with each change's PR number, puts the release summary first, and inserts that section above the newest one in `CHANGELOG.md`. Earlier sections are never regenerated. A final release drops the sections of its own prereleases and lists everything since the previous final release. A change without a valid section is listed under `Changes:` with the first sentence of its Why, and a warning names it.
+Pass `--trailer "<line>"` to add commit trailers. The commit and the tag use the Git identity from the environment (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`).
+
+`release:tag` refuses if another pull request merged between `prepare` and the release merge. In that case, delete `release/v<version>` locally and on `origin`, then prepare again.
+
+#### Retrying or backfilling a release
+
+Start a manual run of [`release.yml`](.github/workflows/release.yml) from `main` (Actions, Release, Run workflow) and enter a tag that has no release yet. The workflow refuses a manual run from another branch. It also refuses tags from before release publishing existed, such as `v0.4.0` and `v0.5.0`, so those cannot be backfilled.
+
+A failed publish can leave a draft release. Both the preflight and the publish job refuse a tag that already has any release, drafts included. Delete the draft on the Releases page first, then start the manual run.
+
+#### Where the version shows
+
+The **Settings** dialog shows the version, and so does the `appVersion` field of the vision self-check report. A build without the version define, such as `flutter run`, shows `dev`. The executable's file version is `<major>.<minor>.<patch>.<count>`.
+
+#### Where release notes come from
+
+Release notes come from each change's proposal ([ADR-0029](docs/adr/0029-release-notes-come-from-each-proposal.md)). Every `proposal.md` has a `## Release Notes` section with a summary, then `### Added`, `### Changed`, `### Fixed` and `### Removed` lists.
+
+`release:prepare` reads these sections from the proposals archived on the first-parent history of `main` since the last final release. It groups their items under `Added:`, `Changed:`, `Fixed:` and `Removed:`, with each change's pull request number. It puts the release summary first and inserts the section above the newest one in `CHANGELOG.md`. It never regenerates older sections.
+
+A final release drops the sections of its own prereleases and lists everything since the previous final release. A change without a valid section appears under `Changes:` with the first sentence of its Why, and the tool prints a warning that names it.
 
 ```text
 mise run release-notes
@@ -407,61 +481,65 @@ mise run release:prepare -- 0.7.0 --summary-file ../release-summary.txt
 
 ---
 
-## 🧪 Tests
+## Tests
 
-| Command | Covers |
+| Command | What it covers |
 |---|---|
-| `mise run test` | Domain, data, controllers, widgets, map logic and the untagged M0 contract, statistics, comparison, export and CLI tests; offline. Use during development |
-| `mise run test:qualification` | Tag `qualification` ([`dart_test.yaml`](dart_test.yaml)): map pack preparation, M0 collector and fixture integrity, panel OCR, vision runtime, CMake and bundle checks. The native capture test skips unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms no game is running |
-| `mise run test:all` | Both; run before merging |
-| [`m1_windows_smoke_test.dart`](integration_test/m1_windows_smoke_test.dart) | Real DPAPI, real catalog, SQLite reopen on Windows |
+| `mise run test` | Domain, data, controllers, widgets and map logic, plus the untagged M0 contract, statistics, comparison, export and CLI tests. All offline. Use it while you develop |
+| `mise run test:qualification` | Tests tagged `qualification` ([`dart_test.yaml`](dart_test.yaml)): map pack preparation, the M0 collector and fixture integrity, panel OCR, the vision runtime, CMake and bundle checks. The native capture test is skipped unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms that no game is running |
+| `mise run test:all` | Both of the above. Run it before you merge |
+| [`m1_windows_smoke_test.dart`](integration_test/m1_windows_smoke_test.dart) | Real DPAPI, the real catalog and reopening SQLite, on Windows |
 
-Tests live in [`test/`](test/). **Agents and live-game checks:** no agent may launch or drive Blackgrid while Escape from Tarkov is running, and checks that need the game belong to the user. See [AGENTS.md](AGENTS.md).
+The tests are in [`test/`](test/).
 
-## 🚦 Continuous integration
+AI agents must not launch or drive Blackgrid while Escape from Tarkov is running. Any check that needs the game is done by the user. See [AGENTS.md](AGENTS.md).
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`. It only calls the shared [`.github/workflows/gates.yml`](.github/workflows/gates.yml), which holds the gates below so that release publishing runs the same ones. The pull request check is named `ci / Analyze, test, build and qualify`; a branch protection rule that requires it must use that name. The gates run on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). They install the tools pinned in [`mise.toml`](mise.toml), then run these gates in order and stop at the first failure:
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and every push to `main`. It only calls [`.github/workflows/gates.yml`](.github/workflows/gates.yml), which holds the gates, so that release publishing runs the same gates. The pull request check is named `ci / Analyze, test, build and qualify`, and a branch protection rule that requires it must use that exact name.
+
+The gates run on a GitHub-hosted `windows-2025` runner ([installed software](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)). They install the tools pinned in [`mise.toml`](mise.toml), then run these steps in order and stop at the first failure:
 
 1. `mise run analyze`
 2. `mise run test`
-3. `mise run build:release` (full-history checkout, with the offline bundle check)
-4. `mise run ci:qualification`, the qualification tier against that bundle
+3. `mise run build:release`, from a checkout with full history, including the offline bundle check
+4. `mise run ci:qualification`, the qualification tests against that bundle
 
-The qualification tier cannot run every test on a hosted runner. The committed allowlist, [`tool/ci/qualification_skips.yaml`](tool/ci/qualification_skips.yaml), accepts two kinds of skip, and any other skip fails the run:
+A hosted runner cannot run every qualification test. The committed list [`tool/ci/qualification_skips.yaml`](tool/ci/qualification_skips.yaml) allows two kinds of skip, and any other skip fails the run.
 
-- **Private input** (`private_input`): three tests need private inputs that are not committed: the inspection corpus, the targeted-region replay and the supplied panel image.
-- **Host platform** (`host_platform`): a skip caused by a host setting that a hosted runner cannot provide, and only when a test that runs on CI covers the same behaviour (`covered_by`). The one such entry is the in-process Cyrillic-path vision runtime test. It needs a UTF-8 system code page, and the runner uses 1252. The `blackgrid.exe` self-check under a Cyrillic path covers it.
+- **Private input** (`private_input`). Three tests need inputs that are not committed: the inspection corpus, the targeted-region replay and the supplied panel image.
+- **Host platform** (`host_platform`). The runner lacks a host setting the test needs, and a test that does run on CI covers the same behaviour (`covered_by`). There is one such entry, the in-process vision runtime test with a Cyrillic path. It needs a UTF-8 system code page, and the runner uses code page 1252. The `blackgrid.exe` self-check under a Cyrillic path covers it.
 
-`mise run ci:qualification` is meant for CI. Locally it fails by design unless you confirm that no game is running, so developers use `mise run test:qualification`. Making the check required before merging is the repository owner's branch protection setting on GitHub.
+`mise run ci:qualification` is for CI. Locally it fails on purpose unless you confirm that no game is running, so developers use `mise run test:qualification`. Requiring the check before merge is a branch protection setting that the repository owner controls on GitHub.
 
-## 🗑️ Uninstall
+## Uninstall
 
-1. Delete the Release directory.
+1. Delete the Release folder.
 2. Delete `%LOCALAPPDATA%\Blackgrid\` to remove settings, pins, history, the catalog cache and saved tokens.
 
-## 💡 Data sources and credits
+## Data sources and credits
 
-Blackgrid is a fan-made companion tool. It is **not affiliated with, endorsed by or sponsored by Battlestate Games**. It is made for personal, non-commercial use.
+Blackgrid is a fan-made companion tool. It is not affiliated with, endorsed by or sponsored by Battlestate Games. It is for personal, non-commercial use.
 
 ### tarkov.dev
 
-Blackgrid relies heavily on the [tarkov.dev](https://tarkov.dev) project and its community data:
+Blackgrid depends on the [tarkov.dev](https://tarkov.dev) project and its community data.
 
 | Used from tarkov.dev | Purpose |
 |---|---|
 | SVG map graphics ([tarkov-dev-svg-maps](https://github.com/the-hideout/tarkov-dev-svg-maps), by Shebuka and contributors) | Map backgrounds for most locations |
-| Interactive map tiles | Map backgrounds for The Lab and Labyrinth; Icebreaker's tiles are by [TarkovBOT.eu](https://tarkovbot.eu/), hosted by tarkov.dev |
+| Interactive map tiles | Map backgrounds for The Lab and Labyrinth. The Icebreaker tiles are by [TarkovBOT.eu](https://tarkovbot.eu/), hosted by tarkov.dev |
 | Map metadata and coordinates | Bounds, transforms and floor definitions |
-| Game data ([json.tarkov.dev](https://json.tarkov.dev)) | Items, prices, traders, quests, hideout, crafts and barters; extracts, transits, spawns, bosses, hazards, switches, locks and loot positions |
+| Game data ([json.tarkov.dev](https://json.tarkov.dev)) | Items, prices, traders, quests, hideout, crafts and barters. Also extracts, transits, spawns, bosses, hazards, switches, locks and loot positions |
 | Item icons ([assets.tarkov.dev](https://assets.tarkov.dev)) | Item pictures on the decision card and in history, downloaded when an item is shown |
 
-Thank you to the tarkov.dev team and contributors for maintaining the maps and open game data.
+Thank you to the tarkov.dev team and contributors for maintaining the maps and the open game data.
 
-The map marker icons (extracts, quests, spawns, bosses, hazards and the rest) are Blackgrid's own, drawn for this project ([ADR-0023](docs/adr/0023-project-authored-map-marker-icons.md)).
+The map marker icons, for extracts, quests, spawns, bosses, hazards and the rest, are Blackgrid's own and were drawn for this project ([ADR-0023](docs/adr/0023-project-authored-map-marker-icons.md)).
 
 ### TarkovTracker
 
-Optional quest and hideout progress comes from the read-only [TarkovTracker](https://tarkovtracker.org) API ([tarkovtracker-org](https://github.com/tarkovtracker-org)).
+The optional quest and hideout progress comes from the read-only [TarkovTracker](https://tarkovtracker.org) API ([tarkovtracker-org](https://github.com/tarkovtracker-org)).
 
 ### Escape from Tarkov
 
@@ -469,8 +547,8 @@ Escape from Tarkov is a trademark of Battlestate Games Limited. Game names, item
 
 ### Other
 
-- Inspired by [TarkovTracker](https://github.com/sayser/TarkovTracker), a C# desktop companion. Blackgrid is an independent Dart/Flutter implementation and contains no code from it.
-- Map artwork and metadata: the tarkov-dev SVG maps project, Tarkov.dev and TarkovBOT.eu, under the terms recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and in each pack's evidence.
-- Item vision: OpenCV, Tesseract, Leptonica and tessdata, pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json).
-- Project direction: [STRATEGY.md](STRATEGY.md), [architecture](openspec/architecture.md), [decisions](docs/adr/README.md).
-- Blackgrid's source code is released under the [MIT License](LICENSE). Bundled third-party code, models and map artwork keep their own licenses, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The map artwork is **not** MIT: most of it is CC BY-NC-SA 4.0, which forbids commercial use and asks that changes be shared under the same terms.
+- Blackgrid was inspired by [TarkovTracker](https://github.com/sayser/TarkovTracker), a C# desktop companion. Blackgrid is a separate Dart/Flutter implementation and contains no code from it.
+- Map artwork and metadata come from the tarkov-dev SVG maps project, Tarkov.dev and TarkovBOT.eu. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and each pack's evidence files record their terms.
+- Item vision uses OpenCV, Tesseract, Leptonica and tessdata, pinned in [`third_party.lock.json`](windows/vision/third_party.lock.json).
+- Project direction is in [STRATEGY.md](STRATEGY.md), the [architecture](openspec/architecture.md) and the [decisions](docs/adr/README.md).
+- Blackgrid's source code is released under the [MIT License](LICENSE). Bundled third-party code, models and map artwork keep their own licences, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The map artwork is not MIT. Most of it is CC BY-NC-SA 4.0, which forbids commercial use and requires that changed versions be shared under the same terms.
