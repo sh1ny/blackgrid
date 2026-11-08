@@ -5,22 +5,14 @@ import '../application/app_services.dart';
 import '../application/scan_correction.dart';
 import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
-import '../domain/decision.dart';
 import '../domain/roubles.dart';
 import '../domain/title_matching.dart' show normaliseTitle;
+import '../domain/verdict_reason.dart';
 import 'item_icon.dart';
 import 'labels.dart';
 import 'panels.dart';
 import 'ember/theme_access.dart';
-
-String recommendationLabel(Recommendation value) => switch (value) {
-  Recommendation.keep => 'Keep',
-  Recommendation.keepForLater => 'Keep for later',
-  Recommendation.check => 'Check / May Need',
-  Recommendation.flea => 'Flea',
-  Recommendation.trader => 'Trader',
-  Recommendation.priceUnavailable => 'Price unavailable',
-};
+import 'verdict_plate.dart';
 
 /// A short age such as `0 s`, `42 s`, `5 min` or `3 h`, for the card.
 String scanAgeLabel(Duration age) {
@@ -173,27 +165,11 @@ class ItemDecisionCard extends StatelessWidget {
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 14),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 9,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.ember.raised,
-                                border: Border.all(
-                                  color: context.ember.accentLine,
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                recommendationLabel(decision.recommendation),
-                                key: const Key('recommendation'),
-                                style: TextStyle(
-                                  color: context.ember.accentText,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                            VerdictPlate(decision: decision),
+                            const SizedBox(height: 8),
+                            Text(
+                              verdictReason(decision),
+                              key: const Key('verdict-reason'),
                             ),
                             const SizedBox(height: 14),
                             Wrap(

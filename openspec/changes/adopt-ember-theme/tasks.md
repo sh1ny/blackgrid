@@ -24,11 +24,11 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 | interface-theme → Ember surfaces and labels | A docked panel has no shadow | test/ui/ember_surfaces_test.dart | docked panels use panel colour, hairline and no elevation in both rooms | green |
 | interface-theme → Ember surfaces and labels | Section labels are sentence case | test/ui/ember_surfaces_test.dart | section labels are sentence case | green |
 | interface-theme → Ember surfaces and labels | The brand lockup keeps its capitals | test/ui/ember_surfaces_test.dart | brand lockup keeps its capitals | green |
-| verdict-presentation → One plate per verdict | Each verdict has its style | test/ui/verdict_plate_test.dart | each verdict has its plate style in both rooms | red |
-| verdict-presentation → One plate per verdict | Verdicts differ without colour | test/ui/verdict_plate_test.dart | Keep, Flea and Price unavailable differ by fill and border | red |
-| verdict-presentation → One plate per verdict | No plate is drawn in the accent | test/ui/verdict_plate_test.dart | no plate uses accent or accent-text | red |
-| verdict-presentation → Price on the Flea and Trader plates | Flea plate with its price | test/ui/verdict_plate_test.dart | Flea plate shows its gross price in ink | red |
-| verdict-presentation → Price on the Flea and Trader plates | A plate whose verdict has no price | test/ui/verdict_plate_test.dart | plates without a price show only the word | red |
+| verdict-presentation → One plate per verdict | Each verdict has its style | test/ui/verdict_plate_test.dart | each verdict has its plate style in both rooms | green |
+| verdict-presentation → One plate per verdict | Verdicts differ without colour | test/ui/verdict_plate_test.dart | Keep, Flea and Price unavailable differ by fill and border | green |
+| verdict-presentation → One plate per verdict | No plate is drawn in the accent | test/ui/verdict_plate_test.dart | no plate uses accent or accent-text | green |
+| verdict-presentation → Price on the Flea and Trader plates | Flea plate with its price | test/ui/verdict_plate_test.dart | Flea plate shows its gross price in ink | green |
+| verdict-presentation → Price on the Flea and Trader plates | A plate whose verdict has no price | test/ui/verdict_plate_test.dart | plates without a price show only the word | green |
 | verdict-presentation → One-line verdict reason | Keep names the need that decided it | test/domain/verdict_reason_test.dart | Keep names the first actionable need with its count | green |
 | verdict-presentation → One-line verdict reason | Keep with an unknown count | test/domain/verdict_reason_test.dart | Keep with an unknown count has no number | green |
 | verdict-presentation → One-line verdict reason | Keep for later names the future need | test/domain/verdict_reason_test.dart | Keep for later names the first future need | green |
@@ -40,7 +40,7 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 | verdict-presentation → One-line verdict reason | Trader for each way the engine reaches it | test/domain/verdict_reason_test.dart | Trader wording for each engine path | green |
 | verdict-presentation → One-line verdict reason | Flea with no trader offer | test/domain/verdict_reason_test.dart | Flea with no trader offer | green |
 | verdict-presentation → One-line verdict reason | Price unavailable | test/domain/verdict_reason_test.dart | Price unavailable wording | green |
-| verdict-presentation → One-line verdict reason | A long reason at the narrowest card | test/ui/verdict_plate_test.dart | long reason wraps in the compact Map rail card at 960 px | red |
+| verdict-presentation → One-line verdict reason | A long reason at the narrowest card | test/ui/verdict_plate_test.dart | long reason wraps in the compact Map rail card at 960 px | green |
 | verdict-presentation → Price freshness tag | Current prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | price within an hour is fresh / fresh tag reads Prices and time | domain green, ui red |
 | verdict-presentation → Price freshness tag | Stale prices | test/domain/price_freshness_test.dart + test/ui/freshness_tag_test.dart | stale age in hours then days / stale tag uses warning style | domain green, ui red |
 | verdict-presentation → Price freshness tag | Unknown or future price time | test/domain/price_freshness_test.dart | missing or future price time is unknown | green |
@@ -78,8 +78,8 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 
 ## 5. Verdict plates and reason line
 
-- [ ] 5.1 Write the failing `test/ui/verdict_plate_test.dart` (every "One plate per verdict" and "Price on the Flea and Trader plates" row in both rooms, the dashed border asserted through `DashedBorderPainter.color`, and "A long reason at the narrowest card" in the compact Map rail at a 960 px window, asserting multiple lines, no ellipsis and no overflow).
-- [ ] 5.2 Build the verdict plate and the reason line into `ItemDecisionCard` (Scanner and compact Map rail), with `DashedBorderPainter` for Price unavailable; verify 5.1 passes, and that `test/ui/decision_card_text_test.dart` and `test/ui/map_rail_test.dart` still pass. Flip the rows green.
+- [x] 5.1 Write the failing `test/ui/verdict_plate_test.dart` (every "One plate per verdict" and "Price on the Flea and Trader plates" row in both rooms, the dashed border asserted through `DashedBorderPainter.color`, and "A long reason at the narrowest card" in the compact Map rail at a 960 px window, asserting multiple lines, no ellipsis and no overflow).
+- [x] 5.2 Build the verdict plate and the reason line into `ItemDecisionCard` (Scanner and compact Map rail), with `DashedBorderPainter` for Price unavailable; verify 5.1 passes, and that `test/ui/decision_card_text_test.dart` and `test/ui/map_rail_test.dart` still pass. Flip the rows green.
 
 ## 6. Freshness tag
 

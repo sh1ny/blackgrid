@@ -2,6 +2,7 @@ import '../application/catalog_controller.dart';
 import '../application/live_map_data_controller.dart';
 import '../application/progress_controller.dart';
 import '../application/scan_coordinator.dart';
+import '../domain/decision.dart';
 import '../domain/inspection_context.dart';
 import '../domain/map_session.dart';
 import '../domain/raid_lifecycle.dart';
@@ -195,4 +196,14 @@ String mapLabel(String id) => switch (id) {
   'streetsoftarkov' => 'Streets',
   'groundzero' => 'Ground Zero',
   _ => id.isEmpty ? id : '${id[0].toUpperCase()}${id.substring(1)}',
+};
+
+/// The verdict word shown on a decision card's plate.
+String recommendationLabel(Recommendation value) => switch (value) {
+  Recommendation.keep => 'Keep',
+  Recommendation.keepForLater => 'Keep for later',
+  Recommendation.check => 'Check / May Need',
+  Recommendation.flea => 'Flea',
+  Recommendation.trader => 'Trader',
+  Recommendation.priceUnavailable => 'Price unavailable',
 };
