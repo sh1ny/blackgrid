@@ -510,6 +510,17 @@ class $ActivityRecordsTable extends ActivityRecords
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _verdictMeta = const VerificationMeta(
+    'verdict',
+  );
+  @override
+  late final GeneratedColumn<String> verdict = GeneratedColumn<String>(
+    'verdict',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     itemId,
@@ -517,6 +528,7 @@ class $ActivityRecordsTable extends ActivityRecords
     source,
     observedAt,
     revision,
+    verdict,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -570,6 +582,12 @@ class $ActivityRecordsTable extends ActivityRecords
     } else if (isInserting) {
       context.missing(_revisionMeta);
     }
+    if (data.containsKey('verdict')) {
+      context.handle(
+        _verdictMeta,
+        verdict.isAcceptableOrUnknown(data['verdict']!, _verdictMeta),
+      );
+    }
     return context;
   }
 
@@ -599,6 +617,10 @@ class $ActivityRecordsTable extends ActivityRecords
         DriftSqlType.int,
         data['${effectivePrefix}revision'],
       )!,
+      verdict: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verdict'],
+      ),
     );
   }
 
@@ -614,12 +636,14 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
   final String source;
   final DateTime observedAt;
   final int revision;
+  final String? verdict;
   const ActivityRecord({
     required this.itemId,
     required this.mode,
     required this.source,
     required this.observedAt,
     required this.revision,
+    this.verdict,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -629,6 +653,9 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
     map['source'] = Variable<String>(source);
     map['observed_at'] = Variable<DateTime>(observedAt);
     map['revision'] = Variable<int>(revision);
+    if (!nullToAbsent || verdict != null) {
+      map['verdict'] = Variable<String>(verdict);
+    }
     return map;
   }
 
@@ -639,6 +666,9 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
       source: Value(source),
       observedAt: Value(observedAt),
       revision: Value(revision),
+      verdict: verdict == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verdict),
     );
   }
 
@@ -653,6 +683,7 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
       source: serializer.fromJson<String>(json['source']),
       observedAt: serializer.fromJson<DateTime>(json['observedAt']),
       revision: serializer.fromJson<int>(json['revision']),
+      verdict: serializer.fromJson<String?>(json['verdict']),
     );
   }
   @override
@@ -664,6 +695,7 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
       'source': serializer.toJson<String>(source),
       'observedAt': serializer.toJson<DateTime>(observedAt),
       'revision': serializer.toJson<int>(revision),
+      'verdict': serializer.toJson<String?>(verdict),
     };
   }
 
@@ -673,12 +705,14 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
     String? source,
     DateTime? observedAt,
     int? revision,
+    Value<String?> verdict = const Value.absent(),
   }) => ActivityRecord(
     itemId: itemId ?? this.itemId,
     mode: mode ?? this.mode,
     source: source ?? this.source,
     observedAt: observedAt ?? this.observedAt,
     revision: revision ?? this.revision,
+    verdict: verdict.present ? verdict.value : this.verdict,
   );
   ActivityRecord copyWithCompanion(ActivityRecordsCompanion data) {
     return ActivityRecord(
@@ -689,6 +723,7 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
           ? data.observedAt.value
           : this.observedAt,
       revision: data.revision.present ? data.revision.value : this.revision,
+      verdict: data.verdict.present ? data.verdict.value : this.verdict,
     );
   }
 
@@ -699,13 +734,15 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
           ..write('mode: $mode, ')
           ..write('source: $source, ')
           ..write('observedAt: $observedAt, ')
-          ..write('revision: $revision')
+          ..write('revision: $revision, ')
+          ..write('verdict: $verdict')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(itemId, mode, source, observedAt, revision);
+  int get hashCode =>
+      Object.hash(itemId, mode, source, observedAt, revision, verdict);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -714,7 +751,8 @@ class ActivityRecord extends DataClass implements Insertable<ActivityRecord> {
           other.mode == this.mode &&
           other.source == this.source &&
           other.observedAt == this.observedAt &&
-          other.revision == this.revision);
+          other.revision == this.revision &&
+          other.verdict == this.verdict);
 }
 
 class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
@@ -723,6 +761,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
   final Value<String> source;
   final Value<DateTime> observedAt;
   final Value<int> revision;
+  final Value<String?> verdict;
   final Value<int> rowid;
   const ActivityRecordsCompanion({
     this.itemId = const Value.absent(),
@@ -730,6 +769,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
     this.source = const Value.absent(),
     this.observedAt = const Value.absent(),
     this.revision = const Value.absent(),
+    this.verdict = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ActivityRecordsCompanion.insert({
@@ -738,6 +778,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
     required String source,
     required DateTime observedAt,
     required int revision,
+    this.verdict = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : itemId = Value(itemId),
        mode = Value(mode),
@@ -750,6 +791,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
     Expression<String>? source,
     Expression<DateTime>? observedAt,
     Expression<int>? revision,
+    Expression<String>? verdict,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -758,6 +800,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
       if (source != null) 'source': source,
       if (observedAt != null) 'observed_at': observedAt,
       if (revision != null) 'revision': revision,
+      if (verdict != null) 'verdict': verdict,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -768,6 +811,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
     Value<String>? source,
     Value<DateTime>? observedAt,
     Value<int>? revision,
+    Value<String?>? verdict,
     Value<int>? rowid,
   }) {
     return ActivityRecordsCompanion(
@@ -776,6 +820,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
       source: source ?? this.source,
       observedAt: observedAt ?? this.observedAt,
       revision: revision ?? this.revision,
+      verdict: verdict ?? this.verdict,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -798,6 +843,9 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
     if (revision.present) {
       map['revision'] = Variable<int>(revision.value);
     }
+    if (verdict.present) {
+      map['verdict'] = Variable<String>(verdict.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -812,6 +860,7 @@ class ActivityRecordsCompanion extends UpdateCompanion<ActivityRecord> {
           ..write('source: $source, ')
           ..write('observedAt: $observedAt, ')
           ..write('revision: $revision, ')
+          ..write('verdict: $verdict, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4347,6 +4396,7 @@ typedef $$ActivityRecordsTableCreateCompanionBuilder =
       required String source,
       required DateTime observedAt,
       required int revision,
+      Value<String?> verdict,
       Value<int> rowid,
     });
 typedef $$ActivityRecordsTableUpdateCompanionBuilder =
@@ -4356,6 +4406,7 @@ typedef $$ActivityRecordsTableUpdateCompanionBuilder =
       Value<String> source,
       Value<DateTime> observedAt,
       Value<int> revision,
+      Value<String?> verdict,
       Value<int> rowid,
     });
 
@@ -4390,6 +4441,11 @@ class $$ActivityRecordsTableFilterComposer
 
   ColumnFilters<int> get revision => $composableBuilder(
     column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verdict => $composableBuilder(
+    column: $table.verdict,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4427,6 +4483,11 @@ class $$ActivityRecordsTableOrderingComposer
     column: $table.revision,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get verdict => $composableBuilder(
+    column: $table.verdict,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ActivityRecordsTableAnnotationComposer
@@ -4454,6 +4515,9 @@ class $$ActivityRecordsTableAnnotationComposer
 
   GeneratedColumn<int> get revision =>
       $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumn<String> get verdict =>
+      $composableBuilder(column: $table.verdict, builder: (column) => column);
 }
 
 class $$ActivityRecordsTableTableManager
@@ -4498,6 +4562,7 @@ class $$ActivityRecordsTableTableManager
                 Value<String> source = const Value.absent(),
                 Value<DateTime> observedAt = const Value.absent(),
                 Value<int> revision = const Value.absent(),
+                Value<String?> verdict = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivityRecordsCompanion(
                 itemId: itemId,
@@ -4505,6 +4570,7 @@ class $$ActivityRecordsTableTableManager
                 source: source,
                 observedAt: observedAt,
                 revision: revision,
+                verdict: verdict,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4514,6 +4580,7 @@ class $$ActivityRecordsTableTableManager
                 required String source,
                 required DateTime observedAt,
                 required int revision,
+                Value<String?> verdict = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivityRecordsCompanion.insert(
                 itemId: itemId,
@@ -4521,6 +4588,7 @@ class $$ActivityRecordsTableTableManager
                 source: source,
                 observedAt: observedAt,
                 revision: revision,
+                verdict: verdict,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

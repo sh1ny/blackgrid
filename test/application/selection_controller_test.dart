@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:blackgrid/application/accepted_scan.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
+import 'package:blackgrid/application/scan_correction.dart';
 import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
@@ -7,10 +10,178 @@ import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+
+import 'package:blackgrid/data/database.dart';
+import 'package:blackgrid/domain/settings.dart';
+import 'package:drift/native.dart';
+
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/m1_harness.dart';
 
+class _HeldActivityDatabase extends BlackgridDatabase {
+  _HeldActivityDatabase() : super(NativeDatabase.memory());
+  Completer<void>? gate;
+  final entered = Completer<void>();
+
+  @override
+  Future<ItemActivity> recordActivity(
+    String itemId,
+    GameMode mode,
+    DateTime time, {
+    ActivitySource source = ActivitySource.manual,
+    Recommendation? verdict,
+  }) async {
+    if (gate case final hold?) {
+      gate = null;
+      entered.complete();
+      await hold.future;
+    }
+    return super.recordActivity(
+      itemId,
+      mode,
+      time,
+      source: source,
+      verdict: verdict,
+    );
+  }
+}
+
 void main() {
+  test('local-data-durability: Each source records its verdict', () async {
+    final h = M1Harness();
+    addTearDown(h.dispose);
+    await h.initialize();
+    final s = SelectionController(
+      database: h.db,
+      catalog: h.services.catalog,
+      progress: h.services.progress,
+      history: h.services.history,
+      clock: () => fixtureNow,
+    );
+    addTearDown(s.dispose);
+    await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+    expect(h.services.history.rows.single.verdict, s.decision!.recommendation);
+    await s.selectScan(
+      reportId: 1,
+      itemId: 'item-b',
+      mode: GameMode.pvp,
+      catalogRevision: s.catalog.snapshot!.revision,
+      epoch: const ScanEpoch(0, 0),
+    );
+    expect(
+      h.services.history.rows.firstWhere((r) => r.itemId == 'item-b').verdict,
+      s.decision!.recommendation,
+    );
+    s.offerCorrection(
+      ScanCorrectionOffer(
+        reportId: 2,
+        epoch: const ScanEpoch(0, 0),
+        mode: GameMode.pvp,
+        catalogRevision: s.catalog.snapshot!.revision,
+        ocrText: '',
+        candidates: const [],
+        query: '',
+      ),
+    );
+    await s.selectCorrection(2, 'item-a');
+    expect(s.correction, isNotNull);
+    expect(
+      h.services.history.rows.firstWhere((r) => r.itemId == 'item-a').verdict,
+      s.decision!.recommendation,
+    );
+  });
+
+  test('local-data-durability: Later data changes', () async {
+    const token = 'PVP_synthetic-fixture-only';
+    final h = M1Harness(
+      shapeWire: (wire) {
+        (wire['tasks']['data']['tasks'] as Map).clear();
+        (wire['hideout']['data'] as Map).clear();
+        wire['crafts']['data'] = [];
+        wire['barters']['data'] = [];
+        wire['token'] = {
+          'success': true,
+          'permissions': ['GP'],
+          'token': token,
+          'owner': 'synthetic-owner',
+          'note': 'Synthetic',
+          'calls': 0,
+          'gameMode': 'pvp',
+        };
+        wire['progress'] = progressWire();
+      },
+    );
+    addTearDown(h.dispose);
+    h.credentials.values[GameMode.pvp] = token;
+    await h.initialize();
+    await h.services.progress.refresh();
+    final s = h.services.selection;
+    await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+    final recorded = h.services.history.rows.single;
+    expect(recorded.verdict, isNotNull);
+    s.setFir(FirState.yes);
+    expect(s.decision!.recommendation, Recommendation.flea);
+    expect(s.decision!.recommendation, isNot(recorded.verdict));
+    await h.services.catalog.refresh();
+    await s.openHistory(recorded);
+    expect((await h.db.readActivity()).rows.single.verdict, recorded.verdict);
+    expect((await h.db.readActivity()).rows.single.revision, recorded.revision);
+  });
+
+  test(
+    'pending activity retains its item mode and projected verdict',
+    () async {
+      final db = _HeldActivityDatabase();
+      final h = M1Harness(database: db);
+      addTearDown(h.dispose);
+      await h.initialize();
+      final s = h.services.selection;
+      final gate = db.gate = Completer<void>();
+      final first = s.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      );
+      final verdict = s.decision!.recommendation;
+      await db.entered.future;
+      await s.selectManual(h.services.catalog.snapshot!.items['item-b']!);
+      gate.complete();
+      await first;
+      final rows = (await db.readActivity()).rows;
+      final saved = rows.firstWhere((r) => r.itemId == 'item-a');
+      expect(saved.mode, GameMode.pvp);
+      expect(saved.verdict, verdict);
+      expect(s.selectedId, 'item-b');
+    },
+  );
+
+  test(
+    'local-data-durability: No available decision or failed write',
+    () async {
+      final h = M1Harness();
+      addTearDown(h.dispose);
+      await h.initialize();
+      final s = h.services.selection;
+      await s.selectManual(
+        CatalogItem(id: 'missing', name: 'Missing', normalizedName: 'missing'),
+      );
+      expect(s.decision, isNull);
+      expect(h.services.history.rows.single.verdict, isNull);
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      final previous = h.services.history.rows.firstWhere(
+        (r) => r.itemId == 'item-a',
+      );
+      expect(previous.verdict, isNotNull);
+      await h.db.customStatement(
+        "CREATE TRIGGER activity_failure BEFORE INSERT ON activity_records BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
+      );
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      expect(s.error, contains('not recorded'));
+      final retained = (await h.db.readActivity()).rows.firstWhere(
+        (r) => r.itemId == 'item-a',
+      );
+      expect(retained.verdict, previous.verdict);
+      expect(retained.revision, previous.revision);
+    },
+  );
   test('manual identity activity persists and FIR resets only on new context, never accepted scan', () async {
     final h = M1Harness();
     await h.initialize();

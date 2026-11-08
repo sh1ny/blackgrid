@@ -6,12 +6,12 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| local-data-durability → History retains the recorded verdict | Each source records its verdict | `test/application/selection_controller_test.dart` | local-data-durability: Each source records its verdict | red |
-| local-data-durability → History retains the recorded verdict | Later data changes | `test/application/selection_controller_test.dart` | local-data-durability: Later data changes | red |
-| local-data-durability → History retains the recorded verdict | No available decision or failed write | `test/application/selection_controller_test.dart` | local-data-durability: No available decision or failed write | red |
-| local-data-durability → Missing history verdicts remain readable | Upgrade and reopen | `test/data/migration_test.dart` | local-data-durability: Upgrade and reopen | red |
-| local-data-durability → Missing history verdicts remain readable | Import and round trip | `test/data/database_test.dart` | local-data-durability: Import and round trip | red |
-| local-data-durability → Missing history verdicts remain readable | Unrecognised optional value | `test/data/database_test.dart` | local-data-durability: Unrecognised optional value | red |
+| local-data-durability → History retains the recorded verdict | Each source records its verdict | `test/application/selection_controller_test.dart` | local-data-durability: Each source records its verdict | green |
+| local-data-durability → History retains the recorded verdict | Later data changes | `test/application/selection_controller_test.dart` | local-data-durability: Later data changes | green |
+| local-data-durability → History retains the recorded verdict | No available decision or failed write | `test/application/selection_controller_test.dart` | local-data-durability: No available decision or failed write | green |
+| local-data-durability → Missing history verdicts remain readable | Upgrade and reopen | `test/data/migration_test.dart` | local-data-durability: Upgrade and reopen | green |
+| local-data-durability → Missing history verdicts remain readable | Import and round trip | `test/data/database_test.dart` | local-data-durability: Import and round trip | green |
+| local-data-durability → Missing history verdicts remain readable | Unrecognised optional value | `test/data/database_test.dart` | local-data-durability: Unrecognised optional value | green |
 | map-rail → Rail order puts raid-time sections first | Wide layout order | `test/ui/map_screen_test.dart` | map-rail: Wide layout order | red |
 | map-rail → Rail order puts raid-time sections first | Compact layout order | `test/ui/map_screen_test.dart` | map-rail: Compact layout order | red |
 | map-rail → Rail order puts raid-time sections first | Active map row stays alone | `test/ui/map_screen_test.dart` | map-rail: Active map row stays alone | red |
@@ -49,11 +49,11 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 
 ## 1. Recorded activity verdict and migration
 
-- [ ] 1.1 Record the accepted activity-verdict ADR using the next free number; document optional recorded verdict, unknown legacy data, coalesced item/mode history and distinction from current advice. Update openspec/architecture.md's index and ownership description; verify agreement with design D2 and existing ADR-0003.
-- [ ] 1.2 Add failing codec, database, migration and import round-trip tests for all local-data-durability → Missing history verdicts remain readable rows; cover v6→v7, earlier committed schema paths, missing/unsupported optional values without row loss or load-time mutation, and retaining unrelated settings/pins. Verify failures are the missing verdict field/migration, not fixture errors.
-- [ ] 1.3 Add the optional named verdict to ItemActivity/JSON and ActivityRecords, migrate additively, regenerate database.g.dart and drift_schemas/drift_schema_v7.json, and preserve import merge/replace behaviour. Verify 1.2 tests pass, existing newer-schema refusal tests still pass, and flip those map rows green. Document the optional field's meaning on the public API.
-- [ ] 1.4 Add failing controller tests for all local-data-durability → History retains the recorded verdict rows: manual, accepted scan and correction, later FIR/authority changes, null decision, failed write and a gated pending write while selection changes. Use explicit completers, not sleeps; verify the missing immutable verdict argument causes the red step.
-- [ ] 1.5 Capture the projected verdict before each recording await, pass it through HistoryController and persist in the existing transaction; keep existing generation and source fences. Verify 1.4 tests and current scan-feed/correction/history tests pass; flip the mapped rows green. Confirm no additional recording on history viewing or authority ticks.
+- [x] 1.1 Record the accepted activity-verdict ADR using the next free number; document optional recorded verdict, unknown legacy data, coalesced item/mode history and distinction from current advice. Update openspec/architecture.md's index and ownership description; verify agreement with design D2 and existing ADR-0003.
+- [x] 1.2 Add failing codec, database, migration and import round-trip tests for all local-data-durability → Missing history verdicts remain readable rows; cover v6→v7, earlier committed schema paths, missing/unsupported optional values without row loss or load-time mutation, and retaining unrelated settings/pins. Verify failures are the missing verdict field/migration, not fixture errors.
+- [x] 1.3 Add the optional named verdict to ItemActivity/JSON and ActivityRecords, migrate additively, regenerate database.g.dart and drift_schemas/drift_schema_v7.json, and preserve import merge/replace behaviour. Verify 1.2 tests pass, existing newer-schema refusal tests still pass, and flip those map rows green. Document the optional field's meaning on the public API.
+- [x] 1.4 Add failing controller tests for all local-data-durability → History retains the recorded verdict rows: manual, accepted scan and correction, later FIR/authority changes, null decision, failed write and a gated pending write while selection changes. Use explicit completers, not sleeps; verify the missing immutable verdict argument causes the red step.
+- [x] 1.5 Capture the projected verdict before each recording await, pass it through HistoryController and persist in the existing transaction; keep existing generation and source fences. Verify 1.4 tests and current scan-feed/correction/history tests pass; flip the mapped rows green. Confirm no additional recording on history viewing or authority ticks.
 
 ## 2. Shared answer strip, top bar and targeted Settings
 

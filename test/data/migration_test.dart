@@ -17,6 +17,85 @@ import '../fixtures/m1/catalog/fixture.dart';
 import 'generated/schema.dart';
 
 void main() {
+  test('local-data-durability: Upgrade and reopen', () async {
+    final verifier = SchemaVerifier(GeneratedHelper());
+    final schema = await verifier.schemaAt(6);
+    addTearDown(schema.close);
+    schema.rawDatabase.execute(
+      'INSERT INTO preferences(id,payload) VALUES (?,?)',
+      [
+        1,
+        jsonEncode(
+          AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson(),
+        ),
+      ],
+    );
+    final pin = CustomPin(
+      id: 'p',
+      mapId: 'woods',
+      x: 0.2,
+      y: 0.3,
+      frame: 'legacy-normalized',
+      frameRevision: 0,
+      label: 'pin',
+      updatedAt: fixtureNow,
+    );
+    schema.rawDatabase.execute(
+      'INSERT INTO pin_records(map_id,pin_id,payload) VALUES (?,?,?)',
+      ['woods', 'p', jsonEncode(pin.toJson())],
+    );
+    schema.rawDatabase.execute(
+      'INSERT INTO activity_records(item_id,mode,source,observed_at,revision) VALUES (?,?,?,?,?)',
+      ['legacy', 'pvp', 'manual', 1791244800, 3],
+    );
+    final db = BlackgridDatabase(schema.newConnection());
+    addTearDown(db.close);
+    expect(db.schemaVersion, 7);
+    await verifier.migrateAndValidate(db, db.schemaVersion);
+    expect((await db.readActivity()).rows.single.toJson()['verdict'], isNull);
+    expect((await db.readSettings()).settings.selectedMap, 'woods');
+    expect((await db.readPins()).pins.single.id, 'p');
+  });
+  test(
+    'v6 upgrade survives reopening with settings pins and unknown verdict',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'blackgrid-v6-verdict-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final file = File('${directory.path}/data.sqlite');
+      var db = BlackgridDatabase(NativeDatabase(file));
+      await db.saveSettings(
+        AppSettings(mode: GameMode.pve, selectedMap: 'woods'),
+      );
+      await db.savePin(
+        CustomPin(
+          id: 'p',
+          mapId: 'woods',
+          x: 0.2,
+          y: 0.3,
+          frame: 'legacy-normalized',
+          frameRevision: 0,
+          label: 'pin',
+          updatedAt: fixtureNow,
+        ),
+      );
+      await db.recordActivity('legacy', GameMode.pve, fixtureNow);
+      await db.close();
+      final raw = sqlite3.open(file.path);
+      raw.execute('ALTER TABLE activity_records DROP COLUMN verdict');
+      raw.execute('PRAGMA user_version = 6');
+      raw.close();
+      db = BlackgridDatabase(NativeDatabase(file));
+      expect((await db.readActivity()).rows.single.verdict, isNull);
+      await db.close();
+      db = BlackgridDatabase(NativeDatabase(file));
+      expect((await db.readActivity()).rows.single.verdict, isNull);
+      expect((await db.readSettings()).settings.selectedMap, 'woods');
+      expect((await db.readPins()).pins.single.id, 'p');
+      await db.close();
+    },
+  );
   test('committed v1 schema migrates additively through v2 retaining preferences and activity', () async {
     final verifier = SchemaVerifier(GeneratedHelper());
     final schema = await verifier.schemaAt(1);

@@ -1,4 +1,5 @@
 import 'catalog.dart';
+import 'decision.dart';
 
 const supportedMaps = <String>[
   'factory',
@@ -425,12 +426,18 @@ class ItemActivity {
     required this.source,
     required this.observedAt,
     required this.revision,
+    this.verdict,
   });
   final String itemId;
   final GameMode mode;
   final ActivitySource source;
   final DateTime observedAt;
   final int revision;
+
+  /// The verdict shown when this activity was recorded, or null if unknown.
+  ///
+  /// This is a historical fact, not the advice calculated for an inspection.
+  final Recommendation? verdict;
   String get key => '${mode.name}:$itemId';
   Map<String, Object?> toJson() => {
     'itemId': itemId,
@@ -438,6 +445,7 @@ class ItemActivity {
     'source': source.name,
     'observedAt': observedAt.toUtc().toIso8601String(),
     'revision': revision,
+    'verdict': verdict?.name,
   };
   factory ItemActivity.fromJson(Map<String, Object?> json) => ItemActivity(
     itemId: json['itemId'] as String,
@@ -445,5 +453,14 @@ class ItemActivity {
     source: ActivitySource.values.byName(json['source'] as String),
     observedAt: DateTime.parse(json['observedAt'] as String),
     revision: json['revision'] as int,
+    verdict: activityVerdictFromName(json['verdict']),
   );
+}
+
+/// Decodes a recorded verdict, treating unsupported values as unknown.
+Recommendation? activityVerdictFromName(Object? value) {
+  for (final verdict in Recommendation.values) {
+    if (verdict.name == value) return verdict;
+  }
+  return null;
 }

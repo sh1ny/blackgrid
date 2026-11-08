@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/import_preview.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -11,6 +12,74 @@ import 'package:test/test.dart';
 import '../fixtures/m1/catalog/fixture.dart';
 
 void main() {
+  test('local-data-durability: Import and round trip', () async {
+    final input = <String, Object?>{
+      'itemId': 'item-a',
+      'mode': 'pvp',
+      'source': 'manual',
+      'observedAt': fixtureNow.toIso8601String(),
+      'revision': 1,
+      'verdict': 'keep',
+    };
+    final activity = ItemActivity.fromJson(input);
+    expect(activity.toJson()['verdict'], 'keep');
+    final directory = await Directory.systemTemp.createTemp(
+      'blackgrid-verdict-import-',
+    );
+    final file = File('${directory.path}/db.sqlite');
+    var db = BlackgridDatabase(NativeDatabase(file));
+    addTearDown(() async {
+      await db.close();
+      await directory.delete(recursive: true);
+    });
+    ImportPreview preview(String digest, ItemActivity row) => ImportPreview(
+      digest: digest,
+      pins: [],
+      winningActivity: [row],
+      accounting: [],
+      exclusions: [],
+      sourcePaths: [],
+    );
+    await db.commitImport(preview('one', activity), replaceExisting: false);
+    await db.close();
+    db = BlackgridDatabase(NativeDatabase(file));
+    expect((await db.readActivity()).rows.single.toJson()['verdict'], 'keep');
+    final legacyInput = Map<String, Object?>.from(input)..remove('verdict');
+    final legacy = ItemActivity.fromJson(legacyInput);
+    expect(legacy.verdict, isNull);
+    await db.commitImport(preview('two', legacy), replaceExisting: false);
+    expect((await db.readActivity()).rows.single.toJson()['verdict'], 'keep');
+    await db.commitImport(preview('three', legacy), replaceExisting: true);
+    await db.close();
+    db = BlackgridDatabase(NativeDatabase(file));
+    expect((await db.readActivity()).rows.single.toJson()['verdict'], isNull);
+  });
+
+  test('local-data-durability: Unrecognised optional value', () async {
+    final input = <String, Object?>{
+      'itemId': 'item-a',
+      'mode': 'pvp',
+      'source': 'manual',
+      'observedAt': fixtureNow.toIso8601String(),
+      'revision': 1,
+      'verdict': 'future-value',
+    };
+    final activity = ItemActivity.fromJson(input);
+    expect(activity.toJson(), contains('verdict'));
+    expect(activity.toJson()['verdict'], isNull);
+    expect(ItemActivity.fromJson({...input, 'verdict': 12}).verdict, isNull);
+    final db = BlackgridDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db.readActivity();
+    await db.customStatement(
+      "INSERT INTO activity_records (item_id, mode, source, observed_at, revision, verdict) VALUES ('item-a', 'pvp', 'manual', 1791244800, 1, 'future-value')",
+    );
+    expect((await db.readActivity()).rows.single.toJson()['verdict'], isNull);
+    final raw = await db
+        .customSelect('SELECT verdict FROM activity_records')
+        .getSingle();
+    expect(raw.read<String>('verdict'), 'future-value');
+  });
   test('fresh defaults and restart retain settings pins identity activity and full catalog', () async {
     final directory = await Directory.systemTemp.createTemp('blackgrid-store-');
     final file = File('${directory.path}/store.sqlite');
@@ -55,7 +124,14 @@ void main() {
         .get();
     expect(
       columns.map((r) => r.read<String>('name')),
-      unorderedEquals(['item_id', 'mode', 'source', 'observed_at', 'revision']),
+      unorderedEquals([
+        'item_id',
+        'mode',
+        'source',
+        'observed_at',
+        'revision',
+        'verdict',
+      ]),
     );
     await db.close();
     await directory.delete(recursive: true);

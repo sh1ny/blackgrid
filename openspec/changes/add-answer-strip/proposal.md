@@ -59,4 +59,5 @@ DECISION_MAKING: important
 Blackgrid puts the current item and keep/sell answer directly below the top bar on Map and Scanner.
 
 ### Changed
+- Activity records now retain the verdict shown at recording time across restart and import; older records retain an unknown verdict.
 - Added an answer-first workspace with raid timers in the top bar, a details inspector, pictured history rows and clickable status controls. Configuration remains available in Settings. New history entries retain their verdict; older entries show an unknown indicator.

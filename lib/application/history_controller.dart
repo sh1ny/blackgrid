@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/database.dart';
 import '../domain/catalog.dart';
+import '../domain/decision.dart';
 import '../domain/settings.dart';
 
 class HistoryController extends ChangeNotifier {
@@ -43,14 +44,22 @@ class HistoryController extends ChangeNotifier {
   ///
   /// Returns whether the write succeeded. On failure [error] names the
   /// [source] and listeners are notified, unless this controller was disposed.
+  /// [verdict] is the advice displayed at observation time, if available.
   Future<bool> record(
     String itemId,
     GameMode mode,
     DateTime now, {
     ActivitySource source = ActivitySource.manual,
+    Recommendation? verdict,
   }) async {
     try {
-      await database.recordActivity(itemId, mode, now, source: source);
+      await database.recordActivity(
+        itemId,
+        mode,
+        now,
+        source: source,
+        verdict: verdict,
+      );
       await load();
       return true;
     } catch (_) {
