@@ -1,4 +1,6 @@
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/panels.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,7 +12,7 @@ Widget _host({
   Widget? child,
   int Function()? onBuild,
 }) => MaterialApp(
-  theme: blackgridTheme(),
+  theme: blackgridTheme(Brightness.dark),
   home: Scaffold(
     body: CollapsibleGridPanel(
       title: 'Inputs',
@@ -92,8 +94,10 @@ void main() {
     await tester.pumpWidget(_host(expanded: true, onChanged: (_) {}));
     expect(find.text('Inputs'), findsOneWidget);
     final icon = tester.widget<Icon>(find.byIcon(Icons.tune));
-    expect(icon.color, GridColors.gold);
-    expect(icon.size, 26);
+    final ember = Theme.of(tester.element(find.text('Inputs')))
+        .extension<EmberColors>()!;
+    expect(icon.color, ember.inkSecondary);
+    expect(icon.size, 16);
     final title = tester.widget<Text>(find.text('Inputs'));
     expect(
       title.style,

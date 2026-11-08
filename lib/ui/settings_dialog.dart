@@ -10,7 +10,7 @@ import '../domain/raid_timers.dart';
 import '../domain/settings.dart';
 import 'labels.dart';
 import 'live_map_status.dart';
-import 'theme.dart';
+import 'ember/theme_access.dart';
 
 Future<void> showSettings(BuildContext context, AppServices services) =>
     showDialog<void>(
@@ -151,11 +151,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
         },
       ),
       if (mode == GameMode.unknown)
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(top: 6),
           child: Text(
             'Choose a game mode first.',
-            style: TextStyle(color: GridColors.muted),
+            style: TextStyle(color: context.ember.inkSecondary),
           ),
         ),
       const Divider(height: 28),
@@ -183,13 +183,44 @@ class _SettingsDialogState extends State<SettingsDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Version ${widget.version}',
-                  style: const TextStyle(color: GridColors.muted),
+                  'Appearance',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                SegmentedButton<ThemeChoice>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeChoice.system,
+                      label: Text('System'),
+                    ),
+                    ButtonSegment(value: ThemeChoice.dark, label: Text('Dark')),
+                    ButtonSegment(
+                      value: ThemeChoice.light,
+                      label: Text('Light'),
+                    ),
+                  ],
+                  selected: {services.settings.settings.themeMode},
+                  onSelectionChanged: (choice) {
+                    final next = choice.single;
+                    if (next == services.settings.settings.themeMode) return;
+                    unawaited(services.settings.setThemeChoice(next));
+                  },
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'System follows the Windows light or dark setting.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Version ${widget.version}',
+                  style: TextStyle(color: context.ember.inkSecondary),
+                ),
+                const SizedBox(height: 8),
+                Text(
                   'The game mode below is used when the game logs do not say which mode you are playing. Blackgrid only reads saved files and never interacts with the game.',
-                  style: TextStyle(color: GridColors.muted),
+                  style: TextStyle(color: context.ember.inkSecondary),
                 ),
                 const SizedBox(height: 18),
                 DropdownButtonFormField<GameMode>(
@@ -379,9 +410,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       'Progress: ${progressStatusLabel(services.progress.status)}',
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Your Tracker token is stored encrypted for your Windows account. Your progress is kept only while Blackgrid is open, so refresh it after a restart.',
-                  style: TextStyle(color: GridColors.muted),
+                  style: TextStyle(color: context.ember.inkSecondary),
                 ),
                 if (services.settings.error != null)
                   Text(

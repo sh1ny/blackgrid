@@ -10,7 +10,8 @@ import '../domain/roubles.dart';
 import '../domain/title_matching.dart' show normaliseTitle;
 import 'item_icon.dart';
 import 'labels.dart';
-import 'theme.dart';
+import 'panels.dart';
+import 'ember/theme_access.dart';
 
 String recommendationLabel(Recommendation value) => switch (value) {
   Recommendation.keep => 'Keep',
@@ -103,10 +104,10 @@ class ItemDecisionCard extends StatelessWidget {
                   : ListView(
                       children: [
                         const SizedBox(height: 28),
-                        const Icon(
+                        Icon(
                           Icons.inventory_2_outlined,
                           size: 72,
-                          color: GridColors.muted,
+                          color: context.ember.inkSecondary,
                         ),
                         const SizedBox(height: 20),
                         Text(
@@ -158,7 +159,7 @@ class ItemDecisionCard extends StatelessWidget {
                                     itemId: item.id,
                                     iconLink: item.iconLink,
                                     size: 30,
-                                    color: GridColors.gold,
+                                    color: context.ember.accentText,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(child: name),
@@ -178,15 +179,17 @@ class ItemDecisionCard extends StatelessWidget {
                                 vertical: 9,
                               ),
                               decoration: BoxDecoration(
-                                color: GridColors.inset,
-                                border: Border.all(color: GridColors.gold),
+                                color: context.ember.raised,
+                                border: Border.all(
+                                  color: context.ember.accentLine,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 recommendationLabel(decision.recommendation),
                                 key: const Key('recommendation'),
-                                style: const TextStyle(
-                                  color: GridColors.gold,
+                                style: TextStyle(
+                                  color: context.ember.accentText,
                                   fontSize: 22,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -198,16 +201,19 @@ class ItemDecisionCard extends StatelessWidget {
                               runSpacing: 10,
                               children: [
                                 _value(
+                                  context,
                                   'Flea price',
                                   rub(decision.fleaGross),
                                   'Per slot: ${rub(decision.fleaPerSlot)}',
                                 ),
                                 _value(
+                                  context,
                                   decision.traderName ?? 'Trader unavailable',
                                   rub(decision.traderGross),
                                   'Per slot: ${rub(decision.traderPerSlot)}',
                                 ),
                                 _value(
+                                  context,
                                   'Still needed',
                                   'Found in raid: ${decision.firNeed ?? 'Unknown'}',
                                   'Not found in raid: ${decision.nonFirNeed ?? 'Unknown'}',
@@ -234,9 +240,9 @@ class ItemDecisionCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               margin: const EdgeInsets.only(right: 20),
                               decoration: BoxDecoration(
-                                color: GridColors.inset,
+                                color: context.ember.raised,
                                 border: Border.all(
-                                  color: GridColors.quietBorder,
+                                  color: context.ember.hairline,
                                 ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -249,7 +255,7 @@ class ItemDecisionCard extends StatelessWidget {
                                     itemId: item.id,
                                     iconLink: item.iconLink,
                                     size: 68,
-                                    color: GridColors.gold,
+                                    color: context.ember.accentText,
                                   ),
                                   const SizedBox(height: 14),
                                   Text(
@@ -289,7 +295,7 @@ class ItemDecisionCard extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 5),
                           child: Text(
                             '• $warning',
-                            style: const TextStyle(color: GridColors.gold),
+                            style: TextStyle(color: context.ember.warnInk),
                           ),
                         ),
                       ),
@@ -351,12 +357,17 @@ class ItemDecisionCard extends StatelessWidget {
     selection.clock().toUtc().difference(correction.correctedAt),
   );
 
-  Widget _value(String title, String value, String detail) => Container(
+  Widget _value(
+    BuildContext context,
+    String title,
+    String value,
+    String detail,
+  ) => Container(
     width: 180,
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: GridColors.inset,
-      border: Border.all(color: GridColors.quietBorder),
+      color: context.ember.raised,
+      border: Border.all(color: context.ember.hairline),
       borderRadius: BorderRadius.circular(4),
     ),
     child: Column(
@@ -364,7 +375,7 @@ class ItemDecisionCard extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(color: GridColors.muted, fontSize: 12),
+          style: TextStyle(color: context.ember.inkSecondary, fontSize: 12),
         ),
         const SizedBox(height: 4),
         Text(
@@ -374,7 +385,7 @@ class ItemDecisionCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           detail,
-          style: const TextStyle(color: GridColors.muted, fontSize: 12),
+          style: TextStyle(color: context.ember.inkSecondary, fontSize: 12),
         ),
       ],
     ),
@@ -436,8 +447,8 @@ class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
       key: const Key('correction-offer'),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: GridColors.inset,
-        border: Border.all(color: GridColors.gold),
+        color: context.ember.raised,
+        border: Border.all(color: context.ember.accentLine),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
@@ -448,8 +459,8 @@ class _CorrectionOfferBlockState extends State<_CorrectionOfferBlock> {
               Expanded(
                 child: Text(
                   'Scan #${offer.reportId} not accepted — pick the item',
-                  style: const TextStyle(
-                    color: GridColors.gold,
+                  style: TextStyle(
+                    color: context.ember.accentText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

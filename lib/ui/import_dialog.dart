@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../data/database.dart';
 import '../domain/import_preview.dart';
-import 'theme.dart';
+import 'labels.dart';
+import 'ember/theme_access.dart';
 
 Future<void> showLegacyImport(BuildContext context, AppServices services) =>
     showDialog<void>(
@@ -122,9 +123,9 @@ class _ImportDialogState extends State<ImportDialog> {
       height: MediaQuery.sizeOf(context).height * .68,
       child: ListView(
         children: [
-          const Text(
+          Text(
             'Enter the paths of the files you want to import. Blackgrid only reads them and never changes them. It does not look for files on its own and does not import tokens.',
-            style: TextStyle(color: GridColors.muted),
+            style: TextStyle(color: context.ember.inkSecondary),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -160,9 +161,9 @@ class _ImportDialogState extends State<ImportDialog> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           if (imported)
-            const Text(
+            Text(
               'Import finished; your files were not changed',
-              style: TextStyle(color: GridColors.green),
+              style: TextStyle(color: context.blackgrid.okInk),
             ),
           if (preview case final candidate?) ...[
             Text(
@@ -191,7 +192,7 @@ class _ImportDialogState extends State<ImportDialog> {
                   children: [
                     Text(
                       '${row.kind} #${row.inputOrder} • ${row.key} • ${row.disposition}',
-                      style: const TextStyle(color: GridColors.gold),
+                      style: TextStyle(color: context.ember.inkSecondary),
                     ),
                     Text(
                       row.reason,
@@ -205,9 +206,9 @@ class _ImportDialogState extends State<ImportDialog> {
             Text(
               'Left out: ${candidate.exclusions.isEmpty ? 'nothing' : candidate.exclusions.join(', ')}',
             ),
-            const Text(
+            Text(
               'Never imported: tokens, prices, item data, progress, corrections, found-in-raid choices, accepted scans, images, screenshot, overlay, hotkey and game log settings.',
-              style: TextStyle(color: GridColors.muted),
+              style: TextStyle(color: context.ember.inkSecondary),
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,

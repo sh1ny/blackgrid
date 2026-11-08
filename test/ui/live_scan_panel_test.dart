@@ -6,7 +6,7 @@ import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/live_scan_panel.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -31,7 +31,7 @@ Future<ScanUiRig> _pump(
   addTearDown(() async => tester.runAsync(rig.dispose));
   await tester.pumpWidget(
     MaterialApp(
-      theme: blackgridTheme(),
+      theme: blackgridTheme(Brightness.dark),
       home: Scaffold(
         body: LiveScanPanel(scanner: rig.coordinator, timingLog: rig.timingLog),
       ),

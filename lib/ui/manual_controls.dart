@@ -5,7 +5,7 @@ import '../application/catalog_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/inspection_context.dart';
 import 'labels.dart';
-import 'theme.dart';
+import 'ember/theme_access.dart';
 
 class ManualControls extends StatelessWidget {
   const ManualControls({
@@ -45,18 +45,14 @@ class ManualControls extends StatelessWidget {
                   },
           ),
           const SizedBox(height: 12),
-          const Text(
-            'MANUAL INSPECTION',
-            style: TextStyle(
-              color: GridColors.gold,
-              fontSize: 12,
-              letterSpacing: 1,
-            ),
+          Text(
+            'Manual inspection',
+            style: Theme.of(context).textTheme.labelSmall,
           ),
           const SizedBox(height: 5),
-          const Text(
+          Text(
             'Picking an item here does not scan.',
-            style: TextStyle(color: GridColors.muted),
+            style: TextStyle(color: context.ember.inkSecondary),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -152,7 +148,7 @@ class ManualControls extends StatelessWidget {
                         selected:
                             !services.selection.isHistory &&
                             services.selection.selectedId == item.id,
-                        selectedColor: GridColors.gold,
+                        selectedColor: context.ember.accentSoft,
                         title: Text(item.name),
                         subtitle: item.shortName == null
                             ? null

@@ -8,7 +8,7 @@ import '../application/scan_coordinator.dart';
 import '../data/vision/inspection_evidence.dart';
 import '../domain/title_matching.dart';
 import 'labels.dart';
-import 'theme.dart';
+import 'panels.dart';
 
 /// What the last accepted scan found (the latest published scan before any is
 /// accepted), a note for a later scan that was not accepted, the phase of the
@@ -132,14 +132,7 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
               ..._summary(shown),
             ],
             const Divider(height: 24),
-            const Text(
-              'RECENT SCANS',
-              style: TextStyle(
-                color: GridColors.gold,
-                fontSize: 12,
-                letterSpacing: 1,
-              ),
-            ),
+            Text('Recent scans', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 6),
             if (scanner.recent.isEmpty)
               const Text('None yet')

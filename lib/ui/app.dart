@@ -6,19 +6,46 @@ import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
 import '../data/database.dart' show NewerDatabaseException;
+import '../domain/settings.dart' show ThemeChoice;
 import 'app_logo.dart';
+import 'ember/ember_theme.dart';
 import 'shell.dart';
-import 'theme.dart';
 
+/// The light room, built once so a settings notify that does not change the
+/// room does not hand dependents a new [ThemeData].
+final ThemeData _lightTheme = blackgridTheme(Brightness.light);
+
+/// The dark room, built once for the same reason as [_lightTheme].
+final ThemeData _darkTheme = blackgridTheme(Brightness.dark);
+
+/// Maps the saved [choice] to the [ThemeMode] Flutter understands.
+ThemeMode _themeModeFor(ThemeChoice choice) => switch (choice) {
+  ThemeChoice.system => ThemeMode.system,
+  ThemeChoice.dark => ThemeMode.dark,
+  ThemeChoice.light => ThemeMode.light,
+};
+
+/// The app root: Material app with the saved room, and the shell as its home.
 class BlackgridApp extends StatelessWidget {
+  /// Creates the app over opened [services].
   const BlackgridApp({super.key, required this.services});
+
+  /// The opened services; the settings controller picks the room.
   final AppServices services;
+
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Blackgrid',
-    debugShowCheckedModeBanner: false,
-    theme: blackgridTheme(),
-    home: BlackgridShell(services: services),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: services.settings,
+    builder: (context, _) => MaterialApp(
+      title: 'Blackgrid',
+      debugShowCheckedModeBanner: false,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
+      themeMode: _themeModeFor(services.settings.settings.themeMode),
+      // The One Motion Rule: a room change lands in the next frame.
+      themeAnimationDuration: Duration.zero,
+      home: BlackgridShell(services: services),
+    ),
   );
 }
 
@@ -68,7 +95,10 @@ class _BlackgridBootstrapState extends State<BlackgridBootstrap> {
       return MaterialApp(
         title: 'Blackgrid',
         debugShowCheckedModeBanner: false,
-        theme: blackgridTheme(),
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        themeMode: ThemeMode.system,
+        themeAnimationDuration: Duration.zero,
         home: Scaffold(
           body: Center(
             child: ConstrainedBox(

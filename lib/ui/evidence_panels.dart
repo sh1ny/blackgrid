@@ -9,7 +9,8 @@ import '../domain/decision.dart';
 import 'item_icon.dart';
 import 'labels.dart';
 import 'requirement_rows.dart';
-import 'theme.dart';
+import 'panels.dart';
+import 'ember/theme_access.dart';
 
 /// The evidence line for the newest items source update in [snapshot].
 ///
@@ -172,8 +173,8 @@ class _RequirementRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 7),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: GridColors.inset,
-        border: Border.all(color: GridColors.quietBorder),
+        color: context.ember.raised,
+        border: Border.all(color: context.ember.hairline),
         borderRadius: BorderRadius.circular(3),
       ),
       child: Column(
@@ -182,7 +183,7 @@ class _RequirementRow extends StatelessWidget {
           Text(row.title, style: const TextStyle(fontWeight: FontWeight.w600)),
           Text(
             '${row.kindTag} • ${row.stateLabel}',
-            style: const TextStyle(color: GridColors.gold),
+            style: TextStyle(color: context.ember.inkSecondary),
           ),
           if (row.sourceLine case final line?) Text(line, style: small),
           if (facts.isNotEmpty) Text(facts, style: small),
@@ -257,13 +258,13 @@ class SourcePanel extends StatelessWidget {
                         '${localTimeLabel(snapshot.observedAt, now: now)}',
             ),
             if (services.catalog.error case final error?)
-              Text(error, style: const TextStyle(color: GridColors.gold)),
+              Text(error, style: TextStyle(color: context.ember.errInk)),
             Text('Game mode: ${modeLabel(inspectionMode)}', style: small),
             if (snapshot != null)
               ...snapshot.localizationErrors.map(
                 (e) => Text(
                   'Some item names could not be loaded: $e',
-                  style: const TextStyle(color: GridColors.gold),
+                  style: TextStyle(color: context.ember.errInk),
                 ),
               ),
             const SizedBox(height: 10),
@@ -293,7 +294,7 @@ class SourcePanel extends StatelessWidget {
             if (progress.error case final error?)
               Text(
                 'Tracker problem: $error',
-                style: const TextStyle(color: GridColors.gold),
+                style: TextStyle(color: context.ember.errInk),
               ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -411,21 +412,21 @@ class HistoryPanel extends StatelessWidget {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Material(
-                          color: GridColors.inset,
+                          color: context.ember.raised,
                           shape: RoundedRectangleBorder(
                             side: BorderSide(
                               color: selected
-                                  ? GridColors.gold
-                                  : GridColors.quietBorder,
+                                  ? context.ember.accentText
+                                  : context.ember.hairline,
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: ListTile(
                             dense: true,
                             leading: item == null
-                                ? const Icon(
+                                ? Icon(
                                     Icons.inventory_2_outlined,
-                                    color: GridColors.muted,
+                                    color: context.ember.inkSecondary,
                                   )
                                 : ItemIcon(
                                     key: ValueKey(item.id),
@@ -433,7 +434,7 @@ class HistoryPanel extends StatelessWidget {
                                     itemId: item.id,
                                     iconLink: item.iconLink,
                                     size: 24,
-                                    color: GridColors.muted,
+                                    color: context.ember.inkSecondary,
                                   ),
                             title: Text(name ?? row.itemId),
                             subtitle: Text(

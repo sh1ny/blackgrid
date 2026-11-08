@@ -6,8 +6,8 @@ import 'dart:ui' as ui;
 import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/domain/marker_categories.dart';
 import 'package:blackgrid/maps/map_marker_icons.dart';
+import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/marker_preferences.dart';
-import 'package:blackgrid/ui/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -446,8 +446,9 @@ void main() {
 
     expect(check('ScavExtracts'), findsOneWidget);
     expect(check('Hazards'), findsNothing);
-    expect(labelColour('Scav extracts'), GridColors.text);
-    expect(labelColour('Hazards'), GridColors.muted);
+    final ember = tester.element(find.byType(MarkerPreferencesGrid)).ember;
+    expect(labelColour('Scav extracts'), ember.ink);
+    expect(labelColour('Hazards'), ember.inkSecondary);
 
     expect(_canvas(tester, 'ScavExtracts'), _discAndRing(ring: _exitGreen));
     expect(

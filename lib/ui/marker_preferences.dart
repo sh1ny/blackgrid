@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../domain/marker_categories.dart';
 import '../maps/map_marker_icons.dart';
-import 'theme.dart';
+import 'ember/theme_access.dart';
 
 const _tileWidth = 88.0;
 const _tileHeight = 76.0;
@@ -93,11 +93,13 @@ class _MarkerTile extends StatelessWidget {
         width: _tileWidth * scale,
         height: _tileHeight * scale,
         child: Material(
-          color: GridColors.inset,
+          color: context.ember.raised,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),
             side: BorderSide(
-              color: shown ? GridColors.border : GridColors.quietBorder,
+              color: shown
+                  ? context.ember.hairlineStrong
+                  : context.ember.hairline,
             ),
           ),
           clipBehavior: Clip.antiAlias,
@@ -128,19 +130,21 @@ class _MarkerTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           height: 1.15,
-                          color: shown ? GridColors.text : GridColors.muted,
+                          color: shown
+                              ? context.ember.ink
+                              : context.ember.inkSecondary,
                         ),
                       ),
                     ],
                   ),
                   if (shown)
-                    const Positioned(
+                    Positioned(
                       top: -4,
                       right: -2,
                       child: Icon(
                         Icons.check,
                         size: 14,
-                        color: GridColors.green,
+                        color: context.blackgrid.okInk,
                       ),
                     ),
                 ],

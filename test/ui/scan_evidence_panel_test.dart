@@ -5,7 +5,8 @@ import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/panels.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,7 +26,7 @@ Future<ScanUiRig> _pump(WidgetTester tester) async {
   var expanded = false;
   await tester.pumpWidget(
     MaterialApp(
-      theme: blackgridTheme(),
+      theme: blackgridTheme(Brightness.dark),
       home: Scaffold(
         body: StatefulBuilder(
           builder: (context, setState) => ScanEvidencePanel(

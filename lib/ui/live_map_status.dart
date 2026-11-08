@@ -4,7 +4,7 @@ import 'package:flutter/widget_previews.dart';
 import '../application/live_map_data_controller.dart';
 import '../domain/catalog.dart';
 import 'labels.dart';
-import 'theme.dart';
+import 'ember/ember_theme.dart';
 
 /// Presents the selected map mode separately from the map-data authority.
 class LiveMapStatus extends StatelessWidget {
@@ -92,7 +92,7 @@ class LiveMapStatus extends StatelessWidget {
 /// Shows synthetic fallback status without constructing application services.
 @Preview(name: 'Live map status', group: 'Settings', size: Size(420, 260))
 Widget liveMapStatusPreview() => MaterialApp(
-  theme: blackgridTheme(),
+  theme: blackgridTheme(Brightness.dark),
   home: const Scaffold(
     body: Padding(
       padding: EdgeInsets.all(20),

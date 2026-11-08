@@ -6,7 +6,7 @@ import 'package:blackgrid/domain/map_session.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -460,7 +460,7 @@ void main() {
   testWidgets('Map rail has no latest-scan panel', (tester) async {
     final h = await pumpMapFixture(tester);
     final workspace = tester.getRect(
-      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'SHORELINE'),
+      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Shoreline'),
     );
     final active = tester.getRect(
       find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Active map'),

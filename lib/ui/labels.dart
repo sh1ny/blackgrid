@@ -180,3 +180,19 @@ String localTimeLabel(DateTime? time, {required DateTime now}) {
       local.day == today.day;
   return sameDay ? clock : '${local.day} ${_months[local.month - 1]} $clock';
 }
+
+/// The player-facing name of a game [mode].
+String modeLabel(Object mode) => switch (mode.toString().split('.').last) {
+  'pvp' => 'PvP',
+  'pve' => 'PvE',
+  'seasonal' => 'Seasonal',
+  _ => 'Unknown',
+};
+
+/// The player-facing name of the map with the given [id].
+String mapLabel(String id) => switch (id) {
+  'thelab' => 'The Lab',
+  'streetsoftarkov' => 'Streets',
+  'groundzero' => 'Ground Zero',
+  _ => id.isEmpty ? id : '${id[0].toUpperCase()}${id.substring(1)}',
+};

@@ -6,7 +6,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
-import 'package:blackgrid/ui/theme.dart';
+import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

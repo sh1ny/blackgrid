@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widget_previews.dart';
 
+import '../maps/map_palette.dart';
 import '../maps/marker_presentation.dart';
 
 /// Displays one selected marker summary in a measured, viewport-clamped bubble.
@@ -339,7 +340,7 @@ class _MarkerPopupTetherPainter extends CustomPainter {
       anchor.dy.clamp(rect.top, rect.bottom).toDouble(),
     );
     final paint = Paint()
-      ..color = const Color(0xffdcc05a)
+      ..color = mapPopupLeaderLine
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 1.5;

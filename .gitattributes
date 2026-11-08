@@ -16,3 +16,7 @@ windows/runner/resources/app_icon/** -text
 windows/flutter/generated_plugin_registrant.cc text eol=lf
 windows/flutter/generated_plugin_registrant.h text eol=lf
 windows/flutter/generated_plugins.cmake text eol=lf
+
+# Ember token copy must stay byte-identical to the kit file (identity test).
+lib/ui/ember/ember_tokens.dart -text
+brand/flutter/ember_tokens.dart -text

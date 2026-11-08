@@ -8,7 +8,7 @@ import 'item_decision_card.dart';
 import 'live_scan_panel.dart';
 import 'manual_controls.dart';
 import 'scan_evidence_panel.dart';
-import 'theme.dart';
+import 'panels.dart';
 
 /// Narrowest window width, in logical pixels, that gets the desktop layout.
 const double desktopWindowWidth = 1100;
