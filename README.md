@@ -6,7 +6,7 @@
 
 | Map | Scanner |
 |---|---|
-| ![Map area: Reserve with extracts, transits, locks and loot markers, and floor buttons](docs/screenshots/map.png) | ![Scanner area: advice for a Graphics card, with prices, the quests that need it, and recent items](docs/screenshots/scanner.png) |
+| ![Map area: Reserve with place labels, extracts, transits, locks and loot markers, and floor buttons](docs/screenshots/map.png) | ![Scanner area: advice for a Graphics card, with prices, the quests that need it, and recent items](docs/screenshots/scanner.png) |
 
 ## 🎯 What Blackgrid does for you
 
