@@ -40,38 +40,55 @@ class EmberColors extends ThemeExtension<EmberColors> {
 
   /// Night Desk: the page itself (top bar, rail, main column, status bar).
   final Color canvas;
+
   /// Shelf: docked side panels and in-page panels.
   final Color panel;
+
   /// Lifted Card: inputs, cards, menus, toasts, monograms.
   final Color raised;
+
   /// Row and button hover.
   final Color hover;
+
   /// Pressed state.
   final Color press;
+
   /// Divides regions.
   final Color hairline;
+
   /// Outlines controls, chips and floating layers.
   final Color hairlineStrong;
+
   /// Primary text.
   final Color ink;
+
   /// Controls and secondary text.
   final Color inkSecondary;
+
   /// Meta, labels, counts.
   final Color inkTertiary;
+
   /// Long-form serif text, a half-step softer than ink.
   final Color prose;
+
   /// Ember: the one accent, as a fill.
   final Color accent;
+
   /// Ember Text: accent as text or icon (readable on canvas).
   final Color accentText;
+
   /// Text on an accent fill.
   final Color accentInk;
+
   /// Ember Glow: selected fills, focus halo.
   final Color accentSoft;
+
   /// Ember Thread: selected borders, underlines.
   final Color accentLine;
+
   /// 2px keyboard focus outline.
   final Color focus;
+
   /// Saved dot only.
   final Color ok;
   final Color warnBg;
@@ -81,8 +98,10 @@ class EmberColors extends ThemeExtension<EmberColors> {
   final Color errBg;
   final Color errLine;
   final Color errInk;
+
   /// Selected option inside a segmented control.
   final Color segmentOn;
+
   /// Behind modal palette and narrow drawer.
   final Color scrim;
 
@@ -175,36 +194,35 @@ class EmberColors extends ThemeExtension<EmberColors> {
     Color? errInk,
     Color? segmentOn,
     Color? scrim,
-  }) =>
-      EmberColors(
-        canvas: canvas ?? this.canvas,
-        panel: panel ?? this.panel,
-        raised: raised ?? this.raised,
-        hover: hover ?? this.hover,
-        press: press ?? this.press,
-        hairline: hairline ?? this.hairline,
-        hairlineStrong: hairlineStrong ?? this.hairlineStrong,
-        ink: ink ?? this.ink,
-        inkSecondary: inkSecondary ?? this.inkSecondary,
-        inkTertiary: inkTertiary ?? this.inkTertiary,
-        prose: prose ?? this.prose,
-        accent: accent ?? this.accent,
-        accentText: accentText ?? this.accentText,
-        accentInk: accentInk ?? this.accentInk,
-        accentSoft: accentSoft ?? this.accentSoft,
-        accentLine: accentLine ?? this.accentLine,
-        focus: focus ?? this.focus,
-        ok: ok ?? this.ok,
-        warnBg: warnBg ?? this.warnBg,
-        warnLine: warnLine ?? this.warnLine,
-        warnInk: warnInk ?? this.warnInk,
-        warnStrong: warnStrong ?? this.warnStrong,
-        errBg: errBg ?? this.errBg,
-        errLine: errLine ?? this.errLine,
-        errInk: errInk ?? this.errInk,
-        segmentOn: segmentOn ?? this.segmentOn,
-        scrim: scrim ?? this.scrim,
-      );
+  }) => EmberColors(
+    canvas: canvas ?? this.canvas,
+    panel: panel ?? this.panel,
+    raised: raised ?? this.raised,
+    hover: hover ?? this.hover,
+    press: press ?? this.press,
+    hairline: hairline ?? this.hairline,
+    hairlineStrong: hairlineStrong ?? this.hairlineStrong,
+    ink: ink ?? this.ink,
+    inkSecondary: inkSecondary ?? this.inkSecondary,
+    inkTertiary: inkTertiary ?? this.inkTertiary,
+    prose: prose ?? this.prose,
+    accent: accent ?? this.accent,
+    accentText: accentText ?? this.accentText,
+    accentInk: accentInk ?? this.accentInk,
+    accentSoft: accentSoft ?? this.accentSoft,
+    accentLine: accentLine ?? this.accentLine,
+    focus: focus ?? this.focus,
+    ok: ok ?? this.ok,
+    warnBg: warnBg ?? this.warnBg,
+    warnLine: warnLine ?? this.warnLine,
+    warnInk: warnInk ?? this.warnInk,
+    warnStrong: warnStrong ?? this.warnStrong,
+    errBg: errBg ?? this.errBg,
+    errLine: errLine ?? this.errLine,
+    errInk: errInk ?? this.errInk,
+    segmentOn: segmentOn ?? this.segmentOn,
+    scrim: scrim ?? this.scrim,
+  );
 
   @override
   EmberColors lerp(ThemeExtension<EmberColors>? other, double t) {
@@ -243,26 +261,96 @@ class EmberColors extends ThemeExtension<EmberColors> {
 
 /// Shadows exist only on floating layers (The Flat Desk Rule).
 abstract final class EmberShadows {
-  static const List<BoxShadow> floatDark = [BoxShadow(color: Color(0x80000000), offset: Offset(0, 12), blurRadius: 32), BoxShadow(color: Color(0x59000000), offset: Offset(0, 2), blurRadius: 6)];
-  static const List<BoxShadow> floatLight = [BoxShadow(color: Color(0x24281E14), offset: Offset(0, 12), blurRadius: 32), BoxShadow(color: Color(0x14281E14), offset: Offset(0, 2), blurRadius: 6)];
-  static const List<BoxShadow> seatedDark = [BoxShadow(color: Color(0x40000000), offset: Offset(0, 1), blurRadius: 2)];
-  static const List<BoxShadow> seatedLight = [BoxShadow(color: Color(0x1F1D1B18), offset: Offset(0, 1), blurRadius: 2)];
+  static const List<BoxShadow> floatDark = [
+    BoxShadow(color: Color(0x80000000), offset: Offset(0, 12), blurRadius: 32),
+    BoxShadow(color: Color(0x59000000), offset: Offset(0, 2), blurRadius: 6),
+  ];
+  static const List<BoxShadow> floatLight = [
+    BoxShadow(color: Color(0x24281E14), offset: Offset(0, 12), blurRadius: 32),
+    BoxShadow(color: Color(0x14281E14), offset: Offset(0, 2), blurRadius: 6),
+  ];
+  static const List<BoxShadow> seatedDark = [
+    BoxShadow(color: Color(0x40000000), offset: Offset(0, 1), blurRadius: 2),
+  ];
+  static const List<BoxShadow> seatedLight = [
+    BoxShadow(color: Color(0x1F1D1B18), offset: Offset(0, 1), blurRadius: 2),
+  ];
 }
 
 /// Two voices: Literata for content the user wrote, Geist for the tool.
 abstract final class EmberType {
   static const String sans = 'Geist';
   static const String serif = 'Literata';
-  static const TextStyle display = TextStyle(fontFamily: 'Literata', fontFamilyFallback: ['Georgia'], fontSize: 30, fontWeight: FontWeight.w500, height: 1.2, letterSpacing: -0.45);
-  static const TextStyle headline = TextStyle(fontFamily: 'Literata', fontFamilyFallback: ['Georgia'], fontSize: 22, fontWeight: FontWeight.w500, height: 1.25, letterSpacing: -0.22);
-  static const TextStyle title = TextStyle(fontFamily: 'Literata', fontFamilyFallback: ['Georgia'], fontSize: 19, fontWeight: FontWeight.w500, height: 1.2, letterSpacing: -0.19);
-  static const TextStyle prose = TextStyle(fontFamily: 'Literata', fontFamilyFallback: ['Georgia'], fontSize: 17, fontWeight: FontWeight.w400, height: 1.75);
-  static const TextStyle proseSmall = TextStyle(fontFamily: 'Literata', fontFamilyFallback: ['Georgia'], fontSize: 14, fontWeight: FontWeight.w400, height: 1.6);
-  static const TextStyle body = TextStyle(fontFamily: 'Geist', fontSize: 13, fontWeight: FontWeight.w400, height: 1.45, fontFeatures: [FontFeature.tabularFigures()]);
-  static const TextStyle uiHeading = TextStyle(fontFamily: 'Geist', fontSize: 13, fontWeight: FontWeight.w600, height: 1.45);
-  static const TextStyle control = TextStyle(fontFamily: 'Geist', fontSize: 12.5, fontWeight: FontWeight.w500, height: 1.45);
-  static const TextStyle label = TextStyle(fontFamily: 'Geist', fontSize: 11.5, fontWeight: FontWeight.w500, height: 1.45);
-  static const TextStyle mono = TextStyle(fontFamily: 'ui-monospace', fontFamilyFallback: ['Cascadia Mono', 'Consolas'], fontSize: 14, fontWeight: FontWeight.w400, height: 1.7);
+  static const TextStyle display = TextStyle(
+    fontFamily: 'Literata',
+    fontFamilyFallback: ['Georgia'],
+    fontSize: 30,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+    letterSpacing: -0.45,
+  );
+  static const TextStyle headline = TextStyle(
+    fontFamily: 'Literata',
+    fontFamilyFallback: ['Georgia'],
+    fontSize: 22,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+    letterSpacing: -0.22,
+  );
+  static const TextStyle title = TextStyle(
+    fontFamily: 'Literata',
+    fontFamilyFallback: ['Georgia'],
+    fontSize: 19,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+    letterSpacing: -0.19,
+  );
+  static const TextStyle prose = TextStyle(
+    fontFamily: 'Literata',
+    fontFamilyFallback: ['Georgia'],
+    fontSize: 17,
+    fontWeight: FontWeight.w400,
+    height: 1.75,
+  );
+  static const TextStyle proseSmall = TextStyle(
+    fontFamily: 'Literata',
+    fontFamilyFallback: ['Georgia'],
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+  );
+  static const TextStyle body = TextStyle(
+    fontFamily: 'Geist',
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.45,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  static const TextStyle uiHeading = TextStyle(
+    fontFamily: 'Geist',
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    height: 1.45,
+  );
+  static const TextStyle control = TextStyle(
+    fontFamily: 'Geist',
+    fontSize: 12.5,
+    fontWeight: FontWeight.w500,
+    height: 1.45,
+  );
+  static const TextStyle label = TextStyle(
+    fontFamily: 'Geist',
+    fontSize: 11.5,
+    fontWeight: FontWeight.w500,
+    height: 1.45,
+  );
+  static const TextStyle mono = TextStyle(
+    fontFamily: 'ui-monospace',
+    fontFamilyFallback: ['Cascadia Mono', 'Consolas'],
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.7,
+  );
 }
 
 /// Corner radii. Pills are for controls; containers get soft corners.
