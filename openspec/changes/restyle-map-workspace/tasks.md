@@ -127,8 +127,8 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 1. Record the colour decision
 
-- [ ] 1.1 Write `docs/adr/0039-amber-on-the-map-means-selected.md`, with `Supersedes: 0023` in part: selection draws Ember and wins over highlight, the amber band (hue 25-60 degrees, saturation 10% or more) is reserved, the new quest, loot and Scav label values, the 0.08 OKLab floor and the fallback neutral. Do not edit ADR-0023. Verify the file exists with status accepted.
-- [ ] 1.2 Add 0039 to the ADR index in `openspec/architecture.md` and mark 0023's row as superseded in part. Verify with `openspec validate restyle-map-workspace --strict`.
+- [x] 1.1 Write `docs/adr/0039-amber-on-the-map-means-selected.md`, with `Supersedes: 0023` in part: selection draws Ember and wins over highlight, the amber band (hue 25-60 degrees, saturation 10% or more) is reserved, the new quest, loot and Scav label values, the 0.08 OKLab floor and the fallback neutral. Do not edit ADR-0023. Verify the file exists with status accepted.
+- [x] 1.2 Add 0039 to the ADR index in `openspec/architecture.md` and mark 0023's row as superseded in part. Verify with `openspec validate restyle-map-workspace --strict`.
 
 ## 2. Palette and selection colour
 
