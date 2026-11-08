@@ -16,6 +16,8 @@ import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/verdict_reason.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
+import 'package:blackgrid/ui/item_icon.dart';
+import 'package:blackgrid/ui/item_decision_card.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
 import 'package:blackgrid/ui/shell.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
@@ -58,10 +60,270 @@ class _HeldCatalogDatabase extends BlackgridDatabase {
 }
 
 void main() {
-  testWidgets('Escape in search preserves docked inspector', (tester) async {
+  testWidgets('workspace-shell: Price and stable normal height', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    final strip = find.byKey(const Key('answer-strip'));
+    final emptyHeight = tester.getSize(strip).height;
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(emptyHeight, 76);
+    expect(tester.getSize(strip).height, emptyHeight);
+    expect(
+      find.descendant(
+        of: strip,
+        matching: find.byKey(const Key('answer-price')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: strip,
+        matching: find.byKey(const Key('freshness-tag')),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('compact answer uses two rows for ordinary content', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester, size: const Size(960, 720));
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final strip = find.byKey(const Key('answer-strip'));
+    final icon = find.descendant(of: strip, matching: find.byType(ItemIcon));
+    final verdict = find.descendant(
+      of: strip,
+      matching: find.byType(AnswerVerdict),
+    );
+    final fir = find.descendant(of: strip, matching: find.byType(FirControls));
+    final price = find.byKey(const Key('answer-price'));
+    expect(tester.getRect(verdict).top, lessThan(tester.getRect(icon).bottom));
+    expect(
+      tester.getRect(fir).top,
+      greaterThanOrEqualTo(tester.getRect(verdict).bottom),
+    );
+    expect(tester.getRect(price).top, lessThan(tester.getRect(fir).bottom));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'workspace-shell: Anchored search results and explicit selection',
+    (tester) async {
+      final h = await pumpM1(tester, size: const Size(960, 720));
+      final search = find.widgetWithText(TextField, 'Search items…');
+      await tester.tap(search);
+      await tester.enterText(search, 'Synthetic');
+      await tester.pumpAndSettle();
+      expect(h.services.selection.selectedId, isNull);
+      expect(h.services.history.rows, isEmpty);
+      final results = find.byKey(const Key('top-search-results'));
+      expect(results, findsOneWidget);
+      expect(
+        tester.getTopLeft(results).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(search).dy),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(h.services.selection.selectedId, isNotNull);
+    },
+  );
+
+  testWidgets('workspace-shell: Wide tools alignment', (tester) async {
     await pumpM1(tester, size: const Size(1660, 870));
+    final bar = find.byKey(const Key('shell-top-bar'));
+    final action = find.widgetWithText(OutlinedButton, 'Import');
+    expect(
+      tester.getRect(bar).right - tester.getRect(action).right,
+      lessThan(40),
+    );
+    expect(find.byKey(const Key('timer-separator')), findsWidgets);
+  });
+
+  testWidgets('workspace-shell: Scanner history leads the inspector', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester, size: const Size(1660, 870));
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
+    final inspector = find.byKey(const Key('shell-inspector'));
+    final history = find.descendant(
+      of: inspector,
+      matching: find.text('Recent item activity'),
+    );
+    expect(history, findsOneWidget);
+    expect(
+      tester.getTopLeft(history).dy,
+      lessThan(tester.getTopLeft(inspector).dy + 100),
+    );
+  });
+
+  testWidgets('Scanner inspector details size to their content', (
+    tester,
+  ) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sources'));
+    await tester.pumpAndSettle();
+    final source = find.byType(SourcePanel);
+    expect(source, findsOneWidget);
+    expect(tester.getSize(source).height, lessThan(400));
+    final details = find.descendant(of: source, matching: find.text('Details'));
+    await tester.ensureVisible(details);
+    await tester.pumpAndSettle();
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Scanner inspector expands selected item and requirements at scale two',
+    (tester) async {
+      final h = await pumpM1(tester, size: const Size(960, 720), scale: 2);
+      await tester.runAsync(
+        () => h.services.selection.selectManual(
+          h.services.catalog.snapshot!.items['item-a']!,
+        ),
+      );
+      await tester.tap(find.byKey(const Key('nav-scanner')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+      final scroll = find
+          .descendant(
+            of: find.byKey(const Key('shell-inspector')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+      expect(scroll, findsOneWidget);
+      for (final (title, panel) in [
+        ('Inspection details', ItemDecisionCard),
+        ('Requirements', RequirementPanel),
+      ]) {
+        final heading = find.text(title);
+        // Drive the outer inspector position: a drag over its history list
+        // would scroll that nested list instead of revealing later sections.
+        final position = tester.state<ScrollableState>(scroll).position;
+        for (var step = 0; heading.evaluate().isEmpty && step < 30; step++) {
+          position.jumpTo(
+            (position.pixels + 150).clamp(0, position.maxScrollExtent),
+          );
+          await tester.pump();
+        }
+        expect(heading, findsOneWidget);
+        await tester.ensureVisible(heading);
+        await tester.pumpAndSettle();
+        await tester.tap(heading);
+        await tester.pumpAndSettle();
+        expect(find.byType(panel), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: title);
+        await tester.ensureVisible(heading);
+        await tester.tap(heading);
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('workspace-shell: Initial inspector state follows window width', (
+    tester,
+  ) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
     await tester.tap(find.byKey(const Key('inspector-toggle')));
     await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(960, 720);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-inspector')), findsNothing);
+    tester.view.physicalSize = const Size(1660, 870);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-inspector')), findsNothing);
+  });
+
+  testWidgets('Escape closes docked inspector when its control owns focus', (
+    tester,
+  ) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    final heading = find.text('Sources');
+    await tester.ensureVisible(heading);
+    await tester.tap(heading);
+    await tester.pumpAndSettle();
+    FocusScope.of(tester.element(heading)).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-inspector')), findsNothing);
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('inspector-toggle')))
+          .focusNode!
+          .hasFocus,
+      isTrue,
+    );
+  });
+
+  testWidgets('workspace-shell: Status bar presentation and binding', (
+    tester,
+  ) async {
+    final ports = ScanFakePorts();
+    final h = await pumpM1(tester, scanPorts: ports);
+    final bar = find.byKey(const Key('shell-status-bar'));
+    expect(bar, findsOneWidget);
+    expect(tester.getSize(bar).height, 28);
+    expect(tester.getRect(bar).left, 0);
+    expect(tester.getRect(find.byKey(const Key('status-game-mode'))).left, 20);
+    expect(
+      find.descendant(of: bar, matching: find.byIcon(Icons.touch_app_outlined)),
+      findsNothing,
+    );
+    await tester.runAsync(() async {
+      await h.services.scanner.setLiveScan(true);
+      await h.services.scanner.settled;
+    });
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: bar, matching: find.textContaining('F9 or click')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: bar,
+        matching: find.byKey(const Key('live-scan-state-dot')),
+      ),
+      findsOneWidget,
+    );
+  });
+  testWidgets('Escape in search preserves docked inspector', (tester) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
     final search = find.widgetWithText(TextField, 'Search items…');
     await tester.tap(search);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -72,8 +334,10 @@ void main() {
 
   testWidgets('closed inspector unmounts evidence panels', (tester) async {
     await pumpM1(tester);
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
     final inspector = find.byKey(const Key('shell-inspector'));
     final scroll = find
         .descendant(of: inspector, matching: find.byType(Scrollable))
@@ -98,8 +362,10 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
     final evidence = find.byType(ScanEvidencePanel);
     expect(tester.getBottomRight(evidence).dy, lessThanOrEqualTo(720));
     final page = find
@@ -218,8 +484,10 @@ void main() {
   }
   testWidgets('workspace-shell: Docked details', (tester) async {
     await pumpM1(tester, size: const Size(1660, 870));
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
     expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
     expect(find.byKey(const Key('inspector-scrim')), findsNothing);
     expect(find.byKey(const PageStorageKey('map')), findsOneWidget);
@@ -231,8 +499,10 @@ void main() {
         tester.platformDispatcher.platformBrightnessTestValue = room;
         addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
         await pumpM1(tester, size: Size(width, 720));
-        await tester.tap(find.byKey(const Key('inspector-toggle')));
-        await tester.pumpAndSettle();
+        if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+          await tester.tap(find.byKey(const Key('inspector-toggle')));
+          await tester.pumpAndSettle();
+        }
         expect(
           find.byKey(const Key('inspector-scrim')),
           width == 1080 ? findsOneWidget : findsNothing,
@@ -252,8 +522,10 @@ void main() {
     final pan = h.services.maps.transform;
     expect(pan.translationX, before.translationX + 23);
     expect(pan.translationY, before.translationY + 17);
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
     final inspector = find.byKey(const Key('shell-inspector'));
     final inspectorScroll = find
         .descendant(of: inspector, matching: find.byType(Scrollable))
@@ -337,6 +609,10 @@ void main() {
       final map = find.byKey(const PageStorageKey('map'));
       expect(map, findsOneWidget);
       final before = tester.element(map);
+      if (find.byKey(const Key('shell-inspector')).evaluate().isNotEmpty) {
+        await tester.tap(find.byKey(const Key('inspector-toggle')));
+        await tester.pumpAndSettle();
+      }
       await tester.tap(find.byKey(const Key('inspector-toggle')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
@@ -987,7 +1263,7 @@ void main() {
           await tester.tap(find.byKey(const Key('nav-scanner')));
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          expect(find.text('Live scan off • no capture'), findsOneWidget);
+          expect(find.text('Live scan off · no capture'), findsOneWidget);
           expect(find.text('Scanner Ready'), findsNothing);
           expect(find.text('Auto-scan'), findsNothing);
           expect(find.text('Capture Preview'), findsNothing);
@@ -996,29 +1272,34 @@ void main() {
       );
     }
   }
-  testWidgets('Scanner places evidence beside controls below the answer', (
-    tester,
-  ) async {
-    await pumpM1(tester);
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-    Rect panel(String title) => tester.getRect(
-      find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
-    );
-    final left = panel('Scanner'), evidence = panel('Scan evidence');
-    expect(left.left, 14);
-    expect(evidence.left, greaterThan(left.right));
-    expect(evidence.top, left.top);
-    expect(find.text('Picked item'), findsNothing);
-    expect(find.text('Recent item activity'), findsNothing);
-    expect(
-      Theme.of(tester.element(find.byKey(const Key('nav-map'))))
-          .scaffoldBackgroundColor,
-      Theme.of(tester.element(find.byKey(const Key('nav-map'))))
-          .extension<EmberColors>()!
-          .canvas,
-    );
-  });
+  testWidgets(
+    'Scanner places evidence below the answer without the old controls',
+    (tester) async {
+      await pumpM1(tester);
+      await tester.tap(find.byKey(const Key('nav-scanner')));
+      await tester.pumpAndSettle();
+      Rect panel(String title) => tester.getRect(
+        find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
+      );
+      final evidence = panel('Scan evidence');
+      expect(evidence.left, 14);
+      expect(
+        evidence.top,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(find.byKey(const Key('answer-strip'))).dy,
+        ),
+      );
+      expect(find.text('Picking an item here does not scan.'), findsNothing);
+      expect(find.text('Recent item activity'), findsOneWidget);
+      expect(
+        Theme.of(tester.element(find.byKey(const Key('nav-map'))))
+            .scaffoldBackgroundColor,
+        Theme.of(tester.element(find.byKey(const Key('nav-map'))))
+            .extension<EmberColors>()!
+            .canvas,
+      );
+    },
+  );
   testWidgets('scan evidence survives Map and back', (tester) async {
     final ports = ScanFakePorts();
     final h = await pumpM1(tester, scanPorts: ports);
@@ -1152,8 +1433,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('inspector-toggle')));
-      await tester.pumpAndSettle();
+      if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+        await tester.tap(find.byKey(const Key('inspector-toggle')));
+        await tester.pumpAndSettle();
+      }
       await tester.runAsync(() async {
         for (var i = 0; i < 10; i++) {
           await publishTargetedScan(
@@ -1170,19 +1453,26 @@ void main() {
       // Desktop layout, read with the page unscrolled.
       expect(desktopPage(tester).pixels, 0);
       final frame = evidenceFrame(tester);
-      final scannerPanel = tester.getRect(
+      expect(
         find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
+        findsNothing,
       );
-      expect(frame.left, greaterThan(scannerPanel.right));
+      expect(frame.left, greaterThanOrEqualTo(0));
       expect(frame.top, greaterThanOrEqualTo(0));
       expect(frame.bottom, lessThanOrEqualTo(720));
       // Expand detail evidence so the combined contents exceed the frame.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(ScanEvidencePanel),
-          matching: find.text('Details'),
-        ),
+      final evidenceScroll = find
+          .descendant(
+            of: find.byType(ScanEvidencePanel),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final details = find.descendant(
+        of: find.byType(ScanEvidencePanel),
+        matching: find.text('Details'),
       );
+      await tester.scrollUntilVisible(details, 150, scrollable: evidenceScroll);
+      await tester.tap(details);
       await tester.pumpAndSettle();
       // The evidence list scrolls inside its fixed frame.
       final scroll = tester.state<ScrollableState>(
@@ -1198,18 +1488,24 @@ void main() {
     },
   );
 
-  testWidgets('compact layout puts evidence before Scanner controls', (
-    tester,
-  ) async {
-    await pumpM1(tester, size: const Size(900, 1600));
-    await openScanner(tester);
-    final scanner = tester.getRect(
-      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
-    );
-    final evidence = evidenceFrame(tester);
-    expect(scanner.top, evidence.bottom + 14);
-    expect(evidence.left, scanner.left);
-  });
+  testWidgets(
+    'compact layout shows evidence without the old Scanner controls',
+    (tester) async {
+      await pumpM1(tester, size: const Size(900, 1600));
+      await openScanner(tester);
+      final evidence = evidenceFrame(tester);
+      expect(
+        evidence.top,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(find.byKey(const Key('answer-strip'))).dy,
+        ),
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
+        findsNothing,
+      );
+    },
+  );
 
   Finder footer(String text) => find.text(text);
 
@@ -1222,7 +1518,7 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(h.services.scanner.status.state, LiveScanState.ready);
-    expect(footer('Live scan on • captures on click'), findsOneWidget);
+    expect(footer('Live scan on · F9 or click'), findsOneWidget);
     expect(find.textContaining('No capture'), findsNothing);
   });
 
@@ -1230,7 +1526,7 @@ void main() {
     tester,
   ) async {
     await pumpM1(tester);
-    expect(footer('Live scan off • no capture'), findsOneWidget);
+    expect(footer('Live scan off · no capture'), findsOneWidget);
   });
 
   testWidgets('footer says live scan is unavailable', (tester) async {
@@ -1245,7 +1541,7 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(h.services.scanner.status.state, LiveScanState.unavailable);
-    expect(footer('Live scan unavailable'), findsOneWidget);
+    expect(find.textContaining('Live scan unavailable ·'), findsOneWidget);
   });
 
   testWidgets(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/raid_timers_controller.dart';
 import '../domain/raid_timers.dart';
+import 'ember/theme_access.dart';
 
 /// The compact raid timer entries shown in the shell top bar.
 ///
@@ -24,7 +25,21 @@ class RaidTimerStrip extends StatelessWidget {
         key: const Key('raid-timer-strip'),
         spacing: 12,
         runSpacing: 4,
-        children: [for (final entry in entries) _entry(context, entry)],
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final (index, entry) in entries.indexed) ...[
+            if (index > 0)
+              Container(
+                key: index == 1
+                    ? const Key('timer-separator')
+                    : ValueKey('timer-separator-$index'),
+                width: 1,
+                height: 14,
+                color: context.ember.hairlineStrong,
+              ),
+            _entry(context, entry),
+          ],
+        ],
       );
     },
   );

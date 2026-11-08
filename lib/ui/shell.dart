@@ -15,6 +15,7 @@ import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
 import 'settings_dialog.dart';
 import 'stats_dialog.dart';
+import 'top_item_search.dart';
 import 'ember/theme_access.dart';
 import 'ember/ember_tokens.dart';
 
@@ -31,6 +32,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
   bool inspectorVisible = false;
   bool inspectorEverOpened = false;
   bool _wasOverlay = false;
+  bool _inspectorInitialized = false;
   final inspectorScope = FocusScopeNode(
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
   );
@@ -42,6 +44,18 @@ class _BlackgridShellState extends State<BlackgridShell> {
   void initState() {
     super.initState();
     query.text = widget.services.selection.query;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_inspectorInitialized) {
+      _inspectorInitialized = true;
+      inspectorOpen = MediaQuery.sizeOf(context).width > 1080;
+      inspectorVisible = inspectorOpen;
+      inspectorEverOpened = inspectorOpen;
+      _wasOverlay = !inspectorOpen;
+    }
   }
 
   @override
@@ -117,104 +131,25 @@ class _BlackgridShellState extends State<BlackgridShell> {
                           bottom: BorderSide(color: context.ember.hairline),
                         ),
                       ),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          const AppLogo(),
-                          if (!compact)
-                            const Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('BLACKGRID'),
-                                Text(
-                                  'TRACK. PLAN. SURVIVE.',
-                                  style: TextStyle(fontSize: 8),
-                                ),
-                              ],
-                            ),
-                          _nav(0, Icons.map_outlined, 'Map'),
-                          _nav(1, Icons.center_focus_weak, 'Scanner'),
-                          SizedBox(
-                            width: compact ? 150 : 220,
-                            height:
-                                39 * MediaQuery.textScalerOf(context).scale(1),
-                            child: TextField(
-                              controller: query,
-                              focusNode: searchFocus,
-                              onChanged: widget.services.selection.setQuery,
-                              decoration: const InputDecoration(
-                                hintText: 'Search items…',
-                                prefixIcon: Icon(Icons.search, size: 20),
-                                suffixText: 'Ctrl K',
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                              ),
-                              onSubmitted: (_) {
-                                if (widget
-                                    .services
-                                    .selection
-                                    .results
-                                    .isNotEmpty) {
-                                  widget.services.selection.selectManual(
-                                    widget.services.selection.results.first,
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                          RaidTimerStrip(
-                            controller: widget.services.raidTimers,
-                          ),
-                          IconButton(
-                            key: const Key('inspector-toggle'),
-                            focusNode: inspectorFocus,
-                            style: IconButton.styleFrom(
-                              minimumSize: const Size(36, 36),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            tooltip: inspectorOpen
-                                ? 'Close inspector'
-                                : 'Open inspector',
-                            constraints: const BoxConstraints.tightFor(
-                              width: 36,
-                              height: 36,
-                            ),
-                            padding: EdgeInsets.zero,
-                            onPressed: () => _setInspectorOpen(!inspectorOpen),
-                            icon: const Icon(Icons.vertical_split_outlined),
-                          ),
-                          _headerAction(
-                            'Settings',
-                            Icons.settings_outlined,
-                            compact,
-                            () => showSettings(context, widget.services),
-                          ),
-                          _headerAction(
-                            'Stats',
-                            Icons.bar_chart,
-                            compact,
-                            () =>
-                                showStats(context, widget.services.localStats),
-                          ),
-                          _headerAction(
-                            'Import',
-                            Icons.file_open_outlined,
-                            compact,
-                            () => showLegacyImport(context, widget.services),
-                          ),
-                        ],
-                      ),
+                      child: compact
+                          ? Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: _headerItems(compact: true),
+                            )
+                          : Row(children: _headerItems(compact: false)),
                     );
                   },
                 ),
-                AnswerStrip(services: widget.services),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * .55,
+                  ),
+                  child: SingleChildScrollView(
+                    child: AnswerStrip(services: widget.services),
+                  ),
+                ),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -297,31 +232,47 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                     key: const Key('shell-inspector'),
                                     child: ListView(
                                       children: [
-                                        SizedBox(
-                                          height: 450,
-                                          child: inspectorOpen
-                                              ? ItemDecisionCard(
+                                        if (selected == 1) ...[
+                                          SizedBox(
+                                            height:
+                                                230 *
+                                                MediaQuery.textScalerOf(context)
+                                                    .scale(1),
+                                            child: inspectorOpen
+                                                ? HistoryPanel(
+                                                    services: widget.services,
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                          if (inspectorOpen) ...[
+                                            ExpansionTile(
+                                              title: const Text(
+                                                'Inspection details',
+                                              ),
+                                              children: [
+                                                ItemDecisionCard(
                                                   services: widget.services,
                                                   compact: true,
                                                   showCorrectionOffer: false,
-                                                )
-                                              : const SizedBox.shrink(),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        SizedBox(
-                                          height: 400,
-                                          child: inspectorOpen
-                                              ? RequirementPanel(
+                                                  fitContent: true,
+                                                ),
+                                              ],
+                                            ),
+                                            ExpansionTile(
+                                              title: const Text('Requirements'),
+                                              children: [
+                                                RequirementPanel(
                                                   services: widget.services,
-                                                )
-                                              : const SizedBox.shrink(),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        SizedBox(
-                                          height: 400,
-                                          child: inspectorOpen
-                                              ? SourcePanel(
+                                                  fitContent: true,
+                                                ),
+                                              ],
+                                            ),
+                                            ExpansionTile(
+                                              title: const Text('Sources'),
+                                              children: [
+                                                SourcePanel(
                                                   services: widget.services,
+                                                  fitContent: true,
                                                   detailsExpanded:
                                                       sourceDetailsExpanded,
                                                   onDetailsExpandedChanged:
@@ -330,18 +281,57 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                                             sourceDetailsExpanded =
                                                                 value,
                                                       ),
-                                                )
-                                              : const SizedBox.shrink(),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        SizedBox(
-                                          height: 400,
-                                          child: inspectorOpen
-                                              ? HistoryPanel(
-                                                  services: widget.services,
-                                                )
-                                              : const SizedBox.shrink(),
-                                        ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ] else ...[
+                                          SizedBox(
+                                            height: 450,
+                                            child: inspectorOpen
+                                                ? ItemDecisionCard(
+                                                    services: widget.services,
+                                                    compact: true,
+                                                    showCorrectionOffer: false,
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                          const SizedBox(height: 14),
+                                          SizedBox(
+                                            height: 400,
+                                            child: inspectorOpen
+                                                ? RequirementPanel(
+                                                    services: widget.services,
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                          const SizedBox(height: 14),
+                                          SizedBox(
+                                            height: 400,
+                                            child: inspectorOpen
+                                                ? SourcePanel(
+                                                    services: widget.services,
+                                                    detailsExpanded:
+                                                        sourceDetailsExpanded,
+                                                    onDetailsExpandedChanged:
+                                                        (value) => setState(
+                                                          () =>
+                                                              sourceDetailsExpanded =
+                                                                  value,
+                                                        ),
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                          const SizedBox(height: 14),
+                                          SizedBox(
+                                            height: 400,
+                                            child: inspectorOpen
+                                                ? HistoryPanel(
+                                                    services: widget.services,
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -363,7 +353,9 @@ class _BlackgridShellState extends State<BlackgridShell> {
                         ),
                 ),
                 Container(
-                  height: 34 * MediaQuery.textScalerOf(context).scale(1),
+                  key: const Key('shell-status-bar'),
+                  width: double.infinity,
+                  height: 28 * MediaQuery.textScalerOf(context).scale(1),
                   decoration: BoxDecoration(
                     color: context.ember.canvas,
                     border: Border(
@@ -383,13 +375,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
                         ]),
                         builder: (context, _) => Row(
                           children: [
-                            Icon(
-                              Icons.touch_app_outlined,
-                              size: 14,
-                              color: context.ember.accentText,
-                            ),
-                            const SizedBox(width: 8),
-                            const SizedBox(width: 2),
                             PopupMenuButton<GameMode>(
                               key: const Key('status-game-mode'),
                               tooltip:
@@ -468,31 +453,111 @@ class _BlackgridShellState extends State<BlackgridShell> {
     ),
   );
 
-  /// The footer line for the live scan [state]; only `ready` is gold.
+  List<Widget> _headerItems({required bool compact}) {
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    final search = SizedBox(
+      width: compact ? 150 : null,
+      height: 39 * scale,
+      child: TopItemSearch(
+        services: widget.services,
+        controller: query,
+        focusNode: searchFocus,
+      ),
+    );
+    final items = <Widget>[
+      const AppLogo(),
+      if (!compact)
+        const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('BLACKGRID'),
+            Text('TRACK. PLAN. SURVIVE.', style: TextStyle(fontSize: 8)),
+          ],
+        ),
+      _nav(0, Icons.map_outlined, 'Map'),
+      _nav(1, Icons.center_focus_weak, 'Scanner'),
+      if (compact) search else Expanded(child: search),
+      RaidTimerStrip(controller: widget.services.raidTimers),
+      IconButton(
+        key: const Key('inspector-toggle'),
+        focusNode: inspectorFocus,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(36, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        tooltip: inspectorOpen ? 'Close inspector' : 'Open inspector',
+        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        padding: EdgeInsets.zero,
+        onPressed: () => _setInspectorOpen(!inspectorOpen),
+        icon: const Icon(Icons.vertical_split_outlined),
+      ),
+      _headerAction(
+        'Settings',
+        Icons.settings_outlined,
+        compact,
+        () => showSettings(context, widget.services),
+      ),
+      _headerAction(
+        'Stats',
+        Icons.bar_chart,
+        compact,
+        () => showStats(context, widget.services.localStats),
+      ),
+      _headerAction(
+        'Import',
+        Icons.file_open_outlined,
+        compact,
+        () => showLegacyImport(context, widget.services),
+      ),
+    ];
+    if (compact) return items;
+    return [
+      for (final (index, item) in items.indexed) ...[
+        if (index > 0) const SizedBox(width: 8),
+        item,
+      ],
+    ];
+  }
+
   Widget _liveScanFooter(LiveScanState state) {
-    final (text, color) = switch (state) {
-      LiveScanState.off => (
-        'Live scan off • no capture',
-        context.ember.inkSecondary,
-      ),
-      LiveScanState.starting => (
-        'Live scan starting',
-        context.ember.inkSecondary,
-      ),
-      LiveScanState.ready => (
-        'Live scan on • captures on click',
-        context.ember.accentText,
-      ),
-      LiveScanState.stopping => (
-        'Live scan stopping',
-        context.ember.inkSecondary,
-      ),
-      LiveScanState.unavailable => (
-        'Live scan unavailable',
-        context.ember.inkSecondary,
-      ),
+    final scanner = widget.services.scanner;
+    final text = switch (state) {
+      LiveScanState.off => 'Live scan off · no capture',
+      LiveScanState.starting => 'Live scan starting',
+      LiveScanState.ready => switch (scanner.hotkeyState) {
+        ScanHotkeyRegistered(:final key) =>
+          'Live scan on · ${key.label} or click',
+        ScanHotkeyUnavailable(:final reason) =>
+          'Live scan on · click ($reason)',
+        _ => 'Live scan on · click',
+      },
+      LiveScanState.stopping => 'Live scan stopping',
+      LiveScanState.unavailable =>
+        'Live scan unavailable · ${scanner.status.reason ?? "reason unknown"}',
     };
-    return Text(text, style: TextStyle(color: color, fontSize: 11));
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          key: const Key('live-scan-state-dot'),
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: state == LiveScanState.ready
+                ? context.ember.accentText
+                : context.ember.inkTertiary,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(color: context.ember.inkSecondary, fontSize: 11),
+        ),
+      ],
+    );
   }
 
   Widget _headerAction(

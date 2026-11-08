@@ -30,8 +30,11 @@ Finder _panel(String title) =>
     find.byWidgetPredicate((w) => w is GridPanel && w.title == title);
 
 /// The decision card, whose title depends on the current selection.
-Finder get _decisionCard => find.byWidgetPredicate(
-  (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+Finder get _decisionCard => find.descendant(
+  of: find.byKey(const PageStorageKey('map-rail-scroll')),
+  matching: find.byWidgetPredicate(
+    (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+  ),
 );
 
 Finder get _inputStatus => find.byKey(const Key('map-input-status'));
@@ -215,7 +218,13 @@ void main() {
     );
     await tester.pumpAndSettle();
     final active = tester.getRect(_panel('Active map'));
-    expect(_panel('Accepted scan'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const PageStorageKey('map-rail-scroll')),
+        matching: _panel('Accepted scan'),
+      ),
+      findsNothing,
+    );
     for (final element
         in find.byWidgetPredicate((w) => w is GridPanel).evaluate()) {
       final panel = element.widget as GridPanel;

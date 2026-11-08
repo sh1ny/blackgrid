@@ -61,5 +61,7 @@ Blackgrid puts the current item and keep/sell answer directly below the top bar 
 
 ### Changed
 - Map and Scanner share item advice, Found in raid and correction controls directly below the top bar. Raid timers and status actions keep Settings controls reachable, including live scan, hotkeys and recording status.
-- A responsive details inspector preserves the map viewport. Scanner evidence fits desktop windows with internal scrolling, and Map retains its interim rail controls.
+- Top search shows its own results with keyboard selection. Typing alone leaves the current item and history unchanged.
+- The details inspector starts open on wide windows and closed on narrow windows, then preserves your choice. Scanner puts recent items first in the inspector and keeps evidence in the workspace; Map retains its interim rail controls.
+- Item advice includes available prices and freshness, with a stable strip height when the content fits. The status bar shows the active scan key and opens the relevant Settings controls.
 - Pictured history rows show the verdict recorded with each activity across restart and import. Older records show an unknown indicator; opening history still calculates current advice.

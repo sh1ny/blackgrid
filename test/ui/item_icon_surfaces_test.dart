@@ -106,15 +106,18 @@ void main() {
     tester,
   ) async {
     final h = await harness(tester);
-    await tester.runAsync(() async {
-      await h.db.recordActivity('item-a', GameMode.pvp, fixtureNow);
-      await h.services.history.load();
-    });
     await show(
       tester,
       const Size(1660, 870),
       BlackgridShell(services: h.services),
     );
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await h.db.recordActivity('item-a', GameMode.pvp, fixtureNow);
+      await h.services.history.load();
+    });
+    await tester.pumpAndSettle();
     expect(cache.acquires, isEmpty);
     await tester.tap(find.byKey(const Key('inspector-toggle')));
     await tester.pumpAndSettle();

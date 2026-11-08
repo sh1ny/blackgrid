@@ -122,7 +122,13 @@ void main() {
           'Manual item search',
           'Map saved-file inputs',
         ]);
-        expect(find.text('Picked item'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byKey(const PageStorageKey('map-rail-scroll')),
+            matching: find.text('Picked item'),
+          ),
+          findsNothing,
+        );
       },
     );
   }
@@ -152,8 +158,11 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byWidgetPredicate(
-        (w) => w is GridPanel && w.title == 'Accepted scan',
+      find.descendant(
+        of: find.byKey(const PageStorageKey('map-rail-scroll')),
+        matching: find.byWidgetPredicate(
+          (w) => w is GridPanel && w.title == 'Accepted scan',
+        ),
       ),
       findsNothing,
     );
@@ -527,15 +536,24 @@ void main() {
     final active = tester.getRect(
       find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Active map'),
     );
-    expect(workspace.width, greaterThan(1912 * .6));
+    final railArea = tester.getRect(
+      find.byKey(const PageStorageKey('map-rail-scroll')),
+    );
+    expect(
+      workspace.width,
+      greaterThan((railArea.right - workspace.left) * .6),
+    );
     expect(active.left, greaterThan(workspace.right));
     expect(h.services.maps.scene, isNotNull);
     expect(find.text('Latest accepted scan'), findsNothing);
     expect(find.text('No accepted scan this session'), findsNothing);
     expect(active, isNotNull);
     expect(
-      find.byWidgetPredicate(
-        (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+      find.descendant(
+        of: find.byKey(const PageStorageKey('map-rail-scroll')),
+        matching: find.byWidgetPredicate(
+          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
+        ),
       ),
       findsNothing,
     );

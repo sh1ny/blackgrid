@@ -113,7 +113,13 @@ void main() {
     await tester.ensureVisible(picker);
     await tester.pumpAndSettle();
     expect(find.textContaining('mouse scans still work'), findsOneWidget);
-    expect(find.textContaining('Win32 error 1409'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('settings-live-scan')),
+        matching: find.textContaining('Win32 error 1409'),
+      ),
+      findsOneWidget,
+    );
     expect(
       tester.widget<DropdownButton<ScanHotkey>>(picker).onChanged,
       isNotNull,
@@ -273,7 +279,13 @@ void main() {
       () => h.services.scanner.status.state == LiveScanState.unavailable,
     );
     expect(tester.widget<Switch>(toggle).value, isTrue);
-    expect(find.textContaining('synthetic-missing.pgm'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('settings-live-scan')),
+        matching: find.textContaining('synthetic-missing.pgm'),
+      ),
+      findsOneWidget,
+    );
   });
   testWidgets('scanner-evidence: Live scan off', (tester) async {
     await pumpM1(tester, scanPorts: ScanFakePorts());

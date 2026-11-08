@@ -26,7 +26,14 @@ String itemsSourceUpdateLabel(CatalogSnapshot snapshot) =>
 /// `Optional uses` header that starts collapsed for every newly inspected item.
 class RequirementPanel extends StatefulWidget {
   /// Creates the panel over [services]' selection.
-  const RequirementPanel({super.key, required this.services});
+  const RequirementPanel({
+    super.key,
+    required this.services,
+    this.fitContent = false,
+  });
+
+  /// Sizes the panel to its rows when embedded in a scrolling inspector.
+  final bool fitContent;
 
   /// The services whose current selection the panel shows.
   final AppServices services;
@@ -81,6 +88,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
       final reasons = selection.decision?.reasons;
       final open = _optionalOpen;
       return GridPanel(
+        fitContent: widget.fitContent,
         title: 'Requirements & uses',
         icon: Icons.fact_check_outlined,
         subtitle: 'Confirmed needs and unresolved gates remain distinct',
@@ -109,6 +117,8 @@ class _RequirementPanelState extends State<RequirementPanel> {
     final shownOptional = open ? optional.length : 0;
     return ListView.builder(
       key: const PageStorageKey('requirement-scroll'),
+      shrinkWrap: widget.fitContent,
+      physics: widget.fitContent ? const NeverScrollableScrollPhysics() : null,
       itemCount: obligations.length + (hasHeader ? 1 : 0) + shownOptional,
       itemBuilder: (context, index) {
         if (index < obligations.length) {
@@ -150,9 +160,11 @@ class _OptionalHeader extends StatelessWidget {
           children: [
             Icon(open ? Icons.expand_less : Icons.expand_more, size: 18),
             const SizedBox(width: 6),
-            Text(
-              'Optional uses ($count)',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            Expanded(
+              child: Text(
+                'Optional uses ($count)',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -208,7 +220,11 @@ class SourcePanel extends StatelessWidget {
     required this.services,
     required this.detailsExpanded,
     required this.onDetailsExpandedChanged,
+    this.fitContent = false,
   });
+
+  /// Sizes the panel to its contents within a scrolling inspector.
+  final bool fitContent;
 
   /// The services whose data sources the panel describes.
   final AppServices services;
@@ -246,10 +262,13 @@ class SourcePanel extends StatelessWidget {
       final progressSnapshot = progress.snapshot;
       final cooldownUntil = progress.cooldownUntil;
       return GridPanel(
+        fitContent: fitContent,
         title: 'Data sources',
         icon: Icons.description_outlined,
         subtitle: 'How old the data on screen is',
         child: ListView(
+          shrinkWrap: fitContent,
+          physics: fitContent ? const NeverScrollableScrollPhysics() : null,
           children: [
             Text(
               snapshot == null

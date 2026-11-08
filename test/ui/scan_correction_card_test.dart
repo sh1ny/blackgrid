@@ -103,6 +103,11 @@ GridPanel _panel(WidgetTester tester) => tester.widget<GridPanel>(
   ),
 );
 
+Finder _answerText(String text) => find.descendant(
+  of: find.byKey(const Key('answer-strip')),
+  matching: find.text(text),
+);
+
 TextEditingController _field(WidgetTester tester) => tester
     .widget<TextField>(find.byKey(const Key('correction-query')))
     .controller!;
@@ -132,7 +137,7 @@ void main() {
     'Map card shows the offer next to the item and a pick selects it',
     (tester) async {
       final h = await _arrange(tester);
-      expect(find.text('Alpha shown'), findsOneWidget);
+      expect(_answerText('Alpha shown'), findsOneWidget);
       expect(find.byKey(const Key('correction-offer')), findsOneWidget);
       expect(find.text('Scan #7 not accepted — pick the item'), findsOneWidget);
       // Candidates carry their similarity; the one the catalog lacks is out.
@@ -148,8 +153,8 @@ void main() {
       expect(h.services.selection.correction?.reportId, 7);
       expect(h.services.selection.scan, isNull);
       expect(find.byKey(const Key('correction-offer')), findsNothing);
-      expect(find.text('Corrected scan'), findsOneWidget);
-      expect(find.text('Bravo plate'), findsOneWidget);
+      expect(_answerText('Corrected scan'), findsOneWidget);
+      expect(_answerText('Bravo plate'), findsOneWidget);
     },
   );
 
@@ -196,7 +201,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('correction-offer')), findsNothing);
     expect(h.services.selection.correctionOffer, isNull);
-    expect(find.text('Alpha shown'), findsOneWidget);
+    expect(_answerText('Alpha shown'), findsOneWidget);
     await showInspectorPanel(tester, 'Picked item');
     expect(_panel(tester).title, 'Picked item');
   });
@@ -206,7 +211,7 @@ void main() {
   ) async {
     await _arrange(tester, showAlpha: false);
     expect(find.byKey(const Key('correction-offer')), findsOneWidget);
-    expect(find.text('Find an item'), findsNothing);
+    expect(_answerText('Find an item'), findsNothing);
     expect(find.byKey(const Key('correction-offer-status')), findsNothing);
   });
 
@@ -231,7 +236,7 @@ void main() {
     expect(selection.selectedId, 'alpha');
     expect(selection.item, isNull);
     expect(find.byKey(const Key('correction-offer')), findsOneWidget);
-    expect(find.text('Item data unavailable'), findsOneWidget);
+    expect(_answerText('Item data unavailable'), findsOneWidget);
   });
 
   testWidgets('search results are capped at 8 and an empty search says so', (
@@ -368,8 +373,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(h.services.selection.selectedId, noFlea);
       expect(h.services.selection.correction?.reportId, 7);
-      expect(find.text('Corrected scan'), findsOneWidget);
-      expect(find.text('Weapon case'), findsOneWidget);
+      expect(_answerText('Corrected scan'), findsOneWidget);
+      expect(_answerText('Weapon case'), findsOneWidget);
     });
   });
 }

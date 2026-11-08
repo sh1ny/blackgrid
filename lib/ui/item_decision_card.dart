@@ -28,9 +28,13 @@ class ItemDecisionCard extends StatelessWidget {
     required this.services,
     this.compact = false,
     this.showCorrectionOffer = true,
+    this.fitContent = false,
   });
   final AppServices services;
   final bool compact;
+
+  /// Sizes the content within an enclosing scrolling inspector.
+  final bool fitContent;
 
   /// Whether the card presents the shared correction controls.
   final bool showCorrectionOffer;
@@ -51,6 +55,7 @@ class ItemDecisionCard extends StatelessWidget {
           ? null
           : CorrectionOfferBlock(selection: selection, offer: offer);
       return GridPanel(
+        fitContent: fitContent,
         title: selection.isHistory
             ? 'History inspection'
             : scan != null
@@ -72,6 +77,10 @@ class ItemDecisionCard extends StatelessWidget {
         child: item == null || decision == null
             ? offerBlock != null
                   ? ListView(
+                      shrinkWrap: fitContent,
+                      physics: fitContent
+                          ? const NeverScrollableScrollPhysics()
+                          : null,
                       children: [
                         // The offer replaces only the find-an-item hint; a
                         // loading or unresolved selection still says so.
@@ -99,6 +108,10 @@ class ItemDecisionCard extends StatelessWidget {
                       ],
                     )
                   : ListView(
+                      shrinkWrap: fitContent,
+                      physics: fitContent
+                          ? const NeverScrollableScrollPhysics()
+                          : null,
                       children: [
                         const SizedBox(height: 28),
                         Icon(
@@ -127,6 +140,9 @@ class ItemDecisionCard extends StatelessWidget {
                       ],
                     )
             : SingleChildScrollView(
+                physics: fitContent
+                    ? const NeverScrollableScrollPhysics()
+                    : null,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

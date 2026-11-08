@@ -48,6 +48,28 @@ Future<void> showInspectorPanel(WidgetTester tester, String title) async {
     await tester.pumpAndSettle();
   }
   final inspector = find.byKey(const Key('shell-inspector'));
+  final section = switch (title) {
+    'Picked item' ||
+    'Accepted scan' ||
+    'Corrected scan' ||
+    'History inspection' => 'Inspection details',
+    'Requirements & uses' => 'Requirements',
+    'Data sources' => 'Sources',
+    _ => null,
+  };
+  if (section != null && find.text(section).evaluate().isNotEmpty) {
+    final heading = find.text(section);
+    await tester.ensureVisible(heading);
+    await tester.pumpAndSettle();
+    await tester.tap(heading);
+    await tester.pumpAndSettle();
+    final panel = find.byWidgetPredicate(
+      (w) => w is GridPanel && w.title == title,
+    );
+    await tester.ensureVisible(panel);
+    await tester.pumpAndSettle();
+    return;
+  }
   final scrollable = find
       .descendant(of: inspector, matching: find.byType(Scrollable))
       .first;

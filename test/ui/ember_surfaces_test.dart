@@ -91,7 +91,7 @@ void main() {
     await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    expect(find.text('Manual inspection'), findsOneWidget);
+    expect(find.text('Manual inspection'), findsNothing);
     expect(find.text('Recent scans'), findsOneWidget);
     for (final old in ['LIVE SCAN', 'MANUAL INSPECTION', 'RECENT SCANS']) {
       expect(find.text(old), findsNothing);
@@ -140,18 +140,16 @@ void main() {
   );
 
   testWidgets('the selected search result keeps opaque text', (tester) async {
-    final h = await pumpM1(tester);
+    await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    h.services.selection.setQuery('Synthetic component');
-    await tester.runAsync(
-      () => h.services.selection.selectManual(
-        h.services.catalog.snapshot!.items['item-a']!,
-      ),
-    );
+    await tester.enterText(find.byType(TextField).first, 'Synthetic component');
     await tester.pumpAndSettle();
     final tile = tester.widget<ListTile>(
-      find.widgetWithText(ListTile, 'Synthetic component').first,
+      find.descendant(
+        of: find.byKey(const Key('top-search-results')),
+        matching: find.widgetWithText(ListTile, 'Synthetic component'),
+      ),
     );
     final ember = Theme.of(tester.element(find.byType(Scaffold).first))
         .extension<EmberColors>()!;

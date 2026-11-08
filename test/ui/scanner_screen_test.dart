@@ -17,6 +17,20 @@ import 'support/scan_ui_support.dart';
 
 void main() {
   testWidgets(
+    'scanner-evidence: Scanner functions remain reachable without the old rail',
+    (tester) async {
+      await pumpM1(tester);
+      await tester.tap(find.byKey(const Key('nav-scanner')));
+      await tester.pumpAndSettle();
+      expect(find.text('Picking an item here does not scan.'), findsNothing);
+      expect(find.text('Type an item name.'), findsNothing);
+      expect(find.widgetWithText(TextField, 'Search items…'), findsOneWidget);
+      expect(find.byKey(const Key('status-game-mode')), findsOneWidget);
+      expect(find.byKey(const Key('status-item-data')), findsOneWidget);
+      expect(find.byKey(const Key('status-tracker')), findsOneWidget);
+    },
+  );
+  testWidgets(
     'search manual select FIR tab switch share projection without accepted scan',
     (tester) async {
       final h = await pumpM1(tester);

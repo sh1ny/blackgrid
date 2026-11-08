@@ -69,3 +69,45 @@ height fitted when narrowed by the inspector, and recording warnings precede
 compact evidence. Reduced-motion animation completion is deferred safely.
 The affected four-suite run passed 116 tests. The coordinator independently
 ran `mise run analyze` and `mise run test`: no findings and 2,808 passed.
+
+## Owner build-review corrections
+
+All seven new mapped scenarios were red-confirmed before their initial fixes.
+Later checks strengthened coverage: popup keyboard scrolling and mode-change
+dismissal each failed before fixes; the 50-option cap/refine hint was verified
+after implementation, not independently red-confirmed. Typing and Escape leave
+selection and database history unchanged; a real result click records one pick.
+Keyboard option visibility is checked at 1x and 2x in both rooms.
+
+Additional regressions reproduced the centered status bar (x=309), a narrow
+three-row strip, and an enlarged-text Requirements heading overflow. The status
+bar now starts at x=0 with its first item at x=20, narrow fitting content uses
+two rows, and Optional uses wraps within the inspector. The expanded-inspector
+test initially dragged its nested history list; driving the outer inspector
+position exposed the actual 162px heading overflow, which was then fixed.
+
+The first full run had 2,811 passing and 15 failing tests. These failures were
+legacy assertions searching globally for text now also visible in the initially
+open inspector, obsolete Scanner placement, and the relocated search surface.
+Assertions now target the answer strip, Map rail, top popup or Settings panel;
+the Map width ratio is measured within the remaining workspace. Behavior
+coverage was retained. Escape closes a focused docked inspector and returns
+focus to its toggle, while Escape in search preserves the docked inspector.
+
+Final coordinator checks: pinned `mise run analyze` reports no issues;
+`mise run test` passes all 2,828 fast offline tests. All 47 delta scenarios map
+once to named tests in their declared files. Release-note validation passes
+with five Changed entries, strict OpenSpec validation passes, and the diff is
+whitespace-clean. A fresh pre-ship review follows the group commit.
+
+Synthetic widget fixtures were rendered and inspected at wide and 960px widths.
+Final dark Scanner renders loaded Geist, Literata and MaterialIcons and show
+right-aligned tools, available price/freshness, history first on wide windows,
+and left-aligned status. Earlier light Map/Scanner renders were inspected for
+geometry and typography with MaterialIcons missing; they do not prove icon
+fidelity. Temporary render tests were removed. The fixtures use synthetic items,
+not Physical Bitcoin or live prices. The other Claude session reported checking
+the earlier Release build with Tarkov absent; that is its reported result, not
+agent verification of this final build. No app or game was launched here;
+live-game, final Release-build visuals and owner milestone judgment remain
+unverified.

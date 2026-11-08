@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../domain/inspection_context.dart';
 import '../domain/decision.dart';
+import '../domain/roubles.dart';
+import 'ember/ember_tokens.dart';
 import '../domain/verdict_reason.dart';
 import 'ember/theme_access.dart';
 import 'freshness_tag.dart';
@@ -84,76 +86,109 @@ class AnswerStrip extends StatelessWidget {
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      final controls = Wrap(
-                        spacing: 8,
+                      final fleaPrice = decision.fleaEligible != false
+                          ? decision.fleaGross
+                          : null;
+                      final price = fleaPrice ?? decision.traderGross;
+                      final parts = <Widget>[
+                        ItemIcon(
+                          cache: services.itemIcons,
+                          itemId: item.id,
+                          iconLink: item.iconLink,
+                          size: 48,
+                          color: context.ember.accentText,
+                        ),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 220),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.name, style: EmberType.title),
+                              if (!selection.isHistory &&
+                                  selection.scan != null)
+                                const Text('Accepted scan')
+                              else if (!selection.isHistory &&
+                                  selection.correction != null)
+                                const Text('Corrected scan'),
+                              if (selection.isHistory)
+                                const Text(
+                                  'Current advice for history inspection',
+                                ),
+                            ],
+                          ),
+                        ),
+                        AnswerVerdict(
+                          decision: decision,
+                          maxWidth: constraints.maxWidth < 1300
+                              ? 460
+                              : (constraints.maxWidth - 60).clamp(
+                                  1,
+                                  double.infinity,
+                                ),
+                        ),
+                        FirControls(services: services),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              price == null
+                                  ? 'Price unavailable'
+                                  : '${fleaPrice != null ? "Flea" : "Trader"} ${rub(price)}',
+                              key: const Key('answer-price'),
+                            ),
+                            if (fleaPrice != null)
+                              FreshnessTag(
+                                quoteAt: item.quoteAt,
+                                now: selection.clock(),
+                                fleaEligible: decision.fleaEligible,
+                              )
+                            else
+                              const Text('price time unknown'),
+                          ],
+                        ),
+                        if (selection.isHistory)
+                          IconButton(
+                            tooltip: 'Close history inspection',
+                            onPressed: selection.closeHistory,
+                            icon: const Icon(Icons.close),
+                          ),
+                        if (latest != null &&
+                            selection.scan?.reportId != latest.reportId)
+                          TextButton(
+                            onPressed: () {
+                              final current = services.scans.latest;
+                              if (current != null) selection.showScan(current);
+                            },
+                            child: const Text('Back to latest scan'),
+                          ),
+                      ];
+                      if (constraints.maxWidth >= 1300 &&
+                          MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
+                        return Row(
+                          children: [
+                            parts[0],
+                            const SizedBox(width: 12),
+                            parts[1],
+                            const SizedBox(width: 12),
+                            Expanded(child: parts[2]),
+                            const SizedBox(width: 12),
+                            parts[3],
+                            const SizedBox(width: 12),
+                            parts[4],
+                            for (final part in parts.skip(5)) ...[
+                              const SizedBox(width: 12),
+                              part,
+                            ],
+                          ],
+                        );
+                      }
+                      return Wrap(
+                        spacing: 12,
                         runSpacing: 4,
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          AnswerVerdict(
-                            decision: decision,
-                            maxWidth: constraints.maxWidth - 60,
-                          ),
-                          FirControls(services: services),
-                          FreshnessTag(
-                            quoteAt: item.quoteAt,
-                            now: selection.clock(),
-                            fleaEligible: decision.fleaEligible,
-                          ),
-                          if (selection.isHistory)
-                            IconButton(
-                              tooltip: 'Close history inspection',
-                              onPressed: selection.closeHistory,
-                              icon: const Icon(Icons.close),
-                            ),
-                          if (latest != null &&
-                              selection.scan?.reportId != latest.reportId)
-                            TextButton(
-                              onPressed: () {
-                                final current = services.scans.latest;
-                                if (current != null) {
-                                  selection.showScan(current);
-                                }
-                              },
-                              child: const Text('Back to latest scan'),
-                            ),
-                        ],
-                      );
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ItemIcon(
-                            cache: services.itemIcons,
-                            itemId: item.id,
-                            iconLink: item.iconLink,
-                            size: 48,
-                            color: context.ember.accentText,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                                if (!selection.isHistory &&
-                                    selection.scan != null)
-                                  const Text('Accepted scan')
-                                else if (!selection.isHistory &&
-                                    selection.correction != null)
-                                  const Text('Corrected scan'),
-                                if (selection.isHistory)
-                                  const Text(
-                                    'Current advice for history inspection',
-                                  ),
-                                controls,
-                              ],
-                            ),
-                          ),
-                        ],
+                        children: parts,
                       );
                     },
                   ),
@@ -231,13 +266,29 @@ class AnswerVerdict extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ConstrainedBox(
     constraints: BoxConstraints(maxWidth: maxWidth.clamp(1, double.infinity)),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        VerdictPlate(decision: decision),
-        Text(verdictReason(decision), key: const Key('answer-verdict-reason')),
-      ],
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final plate = IntrinsicWidth(child: VerdictPlate(decision: decision));
+        final reason = Text(
+          verdictReason(decision),
+          key: const Key('answer-verdict-reason'),
+        );
+        if (constraints.maxWidth >= 600 &&
+            MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
+          return Row(
+            children: [
+              plate,
+              const SizedBox(width: 8),
+              Expanded(child: reason),
+            ],
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [plate, reason],
+        );
+      },
     ),
   );
 }
