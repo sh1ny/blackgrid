@@ -6,19 +6,19 @@ Defines what the Map screen's side rail shows and in what order, so the sections
 ## Requirements
 
 ### Requirement: Rail order puts raid-time sections first
-The Map rail SHALL show, top to bottom: the Active map picker alone on the first row, then the decision card, Marker preferences, Manual item search, and Map saved-file inputs last. The same order SHALL hold in the wide layout and in the compact layout below the 1100 px breakpoint.
+The Map screen SHALL show the shared answer strip before its workspace and rail. The rail SHALL retain Active map, Marker preferences, Manual item search and Map saved-file inputs, in that order, until map restyling moves them. It SHALL NOT duplicate the strip's decision card. These controls SHALL remain reachable in wide and compact layouts.
 
 #### Scenario: Wide layout order
 - **WHEN** Map is shown in a window at least 1100 px wide
-- **THEN** the rail's sections appear top to bottom as Active map, decision card, Marker preferences, Manual item search, Map saved-file inputs
+- **THEN** the answer strip precedes the workspace and the rail retains Active map, Marker preferences, Manual item search and Map saved-file inputs in that order
 
 #### Scenario: Compact layout order
 - **WHEN** Map is shown in a window narrower than 1100 px
-- **THEN** the rail below the map workspace shows its sections in the same order, with Map saved-file inputs last
+- **THEN** the answer strip remains above the map workspace and the retained rail controls are reachable below or beside it in the same order
 
 #### Scenario: Active map row stays alone
-- **WHEN** a scan has been accepted and the decision card shows it
-- **THEN** no other panel shares the Active map row, and no "Latest accepted scan" panel is shown
+- **WHEN** a scan has been accepted
+- **THEN** the shared strip shows the current inspection, the Active map row stays alone, and no duplicate decision card or Latest accepted scan panel appears in the rail
 
 ### Requirement: Map saved-file inputs starts collapsed
 Map saved-file inputs SHALL be a collapsible section that starts collapsed. Collapsed, it SHALL show only its title row, with none of its status lines, the Follow logs switch or the Read Latest button. Expanding it SHALL show the status lines, the Follow logs switch and the Read Latest button. The log, screenshot and raid panel status lines SHALL show plain-language labels, never raw state names, and their times SHALL be in local time. Collapsing SHALL NOT change any map input setting.
