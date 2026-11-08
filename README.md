@@ -1,6 +1,6 @@
 # Blackgrid
 
-![version](https://img.shields.io/badge/version-0.7.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.9-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
+![version](https://img.shields.io/badge/version-0.8.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.47.9-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
 Blackgrid is a helper app for Escape from Tarkov that runs next to the game on Windows. It shows where you are on the map, which extracts you have this raid, and whether the item you are looking at is worth keeping or selling.
 
