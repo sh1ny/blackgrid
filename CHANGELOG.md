@@ -1,5 +1,39 @@
 # Blackgrid Changelog
 
+## v0.8.0 - 2026-11-08
+
+The map now names its places and extracts, opens a bubble at each marker, and refreshes its marker data from tarkov.dev without a new release; missing Kollontay and Glukhar locations are restored.
+
+Added:
+- Extract and transit names on the map, coloured for PMC, Scav, shared and transit exits. (#86)
+- A `?` help button on the map: your position comes from screenshots taken with the game's own screenshot key. (#86)
+- Marker bubbles follow pan and zoom, stay inside the map view and support pointer and keyboard dismissal. (#88)
+- Marker summaries resolve key and required-item names from already loaded item data; unavailable names are stated rather than shown as IDs. (#88)
+- Stage fresh artwork with source and calibration checks and a per-map change report; publish the exact staged candidate separately with interrupted-publication recovery diagnostics. (#91)
+- Design context for the coming interface redesign (M8.5): the Ember brand kit, a product record, a before-redesign record of the current interface, and a DESIGN.md that applies Ember to Blackgrid in the "Answer strip" layout. (#93)
+- Mode-specific map-data refresh at startup and from Settings, with conditional downloads, a local last-good cache and a labelled bundled fallback. (#94)
+- Place names on every map that has them in tarkov.dev's data: drawn behind markers, sized by importance, rotated along roads, shown for the floors you pick and thinned when they would overlap. (#95)
+
+Changed:
+- Blackgrid loads a map pack when it can decode the pack's vector format, instead of requiring one exact vector_graphics version, so routine library updates (#83) keep maps working. The bundled maps are rebuilt with the current tools and look the same.
+- Zone outlines use their category's colour instead of red. Extract and transit outlines show only while you hover over or select the extract. (#86)
+- Keep offline map checks, rebuilds and metadata-only renewal tied to the active generation's frozen calibration, source locks and notices while newer artwork configuration is pending. (#91)
+- Successful map-data updates replace marker facts immediately while retaining map navigation, floors, filters and saved pins; marker selection closes when content changes. (#94)
+- Shared runtime and offline normalization accepts valid upstream additions, removals, edits and empty collections. Historical floor overrides apply only while reviewed identity and placement assumptions match; artwork, calibration and frozen-source integrity remain separately protected. (#94)
+- Markers that refer to the same task, objective or location share its facts instead of copying them. (#94)
+- Extreme offscreen geometry no longer interrupts rendering. (#94)
+- Map-data availability reflects prepared-pack load failures, and malformed exit aliases are rejected before activation. (#94)
+
+Fixed:
+- Equally close overlapping map badges select the topmost visible marker, so boss badges open the boss information rather than an underlying generic spawn. (#88)
+- Map navigation shortcuts no longer pan or zoom the map while a marker bubble control has keyboard focus. (#88)
+- Removing the current session's application log resets raid input even when the folder is deleted afterward. (#88)
+- Long marker names remain readable by scrolling, and untranslated spawn-zone identifiers use readable category labels. (#88)
+- Selecting a different marker starts its summary at the top, while updates to the current marker retain its scroll position. (#88)
+- Refresh boss and non-boss metadata across all 13 supported maps, restoring the reported Kollontay locations on Streets and Glukhar locations on Reserve with independently audited source-to-pack coverage. (#90)
+- Reject malformed boss source facts and missing or ambiguous supported-map identities with source and map diagnostics, while preserving repeated positions and explicit empty coverage. (#90)
+- Prevent metadata-only renewal from changing prepared artwork, calibration or reviewed marker floor ownership; keep normal rebuilds offline. (#90)
+
 ## v0.7.0 - 2026-11-02
 
 Blackgrid now follows your raid from the game's logs: the Map shows the raid phase, a timer strip shows time in raid, the run-through countdown and the scav cooldown, and a new Stats dialog counts your flea sales and raids per map, kept only on your PC.
