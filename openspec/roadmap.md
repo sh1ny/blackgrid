@@ -8,36 +8,9 @@ Milestone IDs keep the implementation strategy's numbering (M0–M6), so they ma
 
 A change that names a GitHub issue resolves it through its PR: the PR description links the issue with a closing keyword (`Closes #41`), so merging the PR closes the issue, and the PR's body says what of the issue it delivers. If the PR delivers only part of the issue, it links it with `Refs #N` instead, and the issue says what is left.
 
-## Now: M8 - map labels and popups
+## Now: M8.5 - Ember interface
 
-Promoted from Next at the M7 close on 2026-11-02; the user agreed its split on 2026-11-01.
-
-The native map reads like tarkov.dev's: named places, labelled extracts and a bubble at the marker on click.
-
-**Exit criteria:**
-- Extract names show beside their badges in faction colours, and outlines use their category colour and show on hover or selection, proved by widget or painter tests. (agent)
-- Clicking a marker opens a bubble anchored to it that follows pan and zoom, stays in the viewport and closes, with player-facing text and raw fields in a collapsed Details section, proved by widget tests. (agent)
-- The new pack version carries tarkov.dev's place labels with a rights note, drawn behind markers at a fixed screen size, hidden on other floors and thinned when zoomed out, proved by pack and painter tests. (agent)
-- On real maps the labels, extract names and bubbles read correctly. (user)
-
-**Changes** (in order):
-1. `unpin-map-toolchain` - added 2026-11-02 after #83 moved the map toolchain (compiler 1.3.0 → 1.3.4, image 4.8.0 → 4.12.0, vector_graphics 1.2.3 → 1.2.5) past the exact versions the pack tooling and loader still gated on. Packs record the toolchain that built them (read from `pubspec.lock`) instead of gating on it. The app accepts packs by vector codec format, recompilation replaces the hand-frozen `.vec` hash table, and `mise run maps:check` (in CI) and `mise run maps:rebuild` rebuild the committed generation from its own files. Run once on main's toolchain. Prerequisite for `add-location-labels`'s new pack version.
-2. `add-extract-labels` - draw each extract's name beside its badge, coloured by faction (PMC, Scav, shared, transit) in colours we choose (ADR-0023), outlines drawn in their category's colour instead of hazard red, and extract outlines shown on hover or selection. Adds a `?` help button on the map: position tracking needs the game's own screenshot key.
-3. `add-marker-popups` - replace the details strip under the map with a bubble anchored to the marker that follows pan and zoom, stays in the viewport and closes. It shows the quest name and objective text, an extract's switches and required item, a lock's type and key name, a container's name, or a boss and spawn chance; raw fields move to a collapsed Details section (`player-facing-text`).
-4. `fix-frozen-map-metadata` - M8 corrective change added 2026-11-05 (user decision), after marker popups: refresh the frozen metadata for every supported map, verify boss identities, map assignments, positions and spawn rates against the acquired source, and regenerate the prepared pack without changing artwork or calibration. Addresses confirmed missing Kollontay locations on Streets and Glukhar locations on Reserve. Popups stay offline; this does not start the live-map-data or artwork-refresh initiatives.
-5. `add-artwork-refresh` - entry only, added 2026-11-02 (user decision); scope and split are planned when it starts. One command for "tarkov.dev changed an SVG or tiles, or added a map". It acquires the new sources into a fresh frozen generation, rebuilds, validates, and prints the same per-map, per-floor change report as `maps:rebuild`. It automates the calibration checks as far as the sources allow: unchanged artwork frames and transforms, floor inventory, marker bounds and placement controls. Only what cannot be proven offline is left for the owner to look at, map by map. A new map gets its calibration entry and its check list from the same command. Builds on `unpin-map-toolchain`'s generation-backed rebuild and report.
-6. `add-live-map-data` - entry only, added 2026-11-02 (user decision); scope and split are planned when it starts. The map's data layer (extracts, transits, quest markers, spawns, bosses, switches and loot points) comes from json.tarkov.dev at runtime, the same way Blackgrid's item catalog already does:
-   - refreshed on startup and on demand from Settings;
-   - cached locally, with conditional requests so unchanged files are not downloaded again;
-   - validated before use;
-   - falling back to a snapshot bundled with the app when offline or when the download is invalid.
-   
-   Fixes to tarkov.dev's data then reach players without a pack rebuild or a release. Artwork, calibration and location labels stay in the prepared pack.
-7. `add-location-labels` - carry tarkov.dev's place labels (`maps.json`, already frozen in the pack's evidence: 303 labels on 10 maps) into a new pack version, with a rights note (user decision 2026-10-30: use tarkov.dev's data); draw them on the canvas behind the markers at a fixed screen size, with rotation and a halo, hidden on other floors by height band and thinned when zoomed far out.
-
-## Next: M8.5 - Ember interface
-
-Added 2026-11-06 (user decision): Blackgrid is redesigned on Ember, the brand kit it shares with Mythspine, in the "Answer strip" layout (Direction B). It runs after M8 and before M9. The design authority is [DESIGN.md](../DESIGN.md) with its Blackgrid extensions X1–X14; the before state is recorded in `.impeccable/review/current/`.
+Added 2026-11-06 (user decision): Blackgrid is redesigned on Ember, the brand kit it shares with Mythspine, in the "Answer strip" layout (Direction B). It runs after M8 and before M9. Promoted to Now at the M8 close on 2026-11-08, when the user agreed its split. The design authority is [DESIGN.md](../DESIGN.md) with its Blackgrid extensions X1–X14; the before state is recorded in `.impeccable/review/current/`.
 
 **Exit criteria:**
 - Both Ember rooms are built from the DESIGN.md tokens, and Settings has a System/Dark/Light switch that is saved and restored. Proved by widget tests. (agent)
@@ -48,8 +21,8 @@ Added 2026-11-06 (user decision): Blackgrid is redesigned on Ember, the brand ki
 - Geist and Literata are bundled as font assets, with their OFL texts in the third-party notices. (agent)
 - In both rooms, on a second monitor and alt-tabbed full window, the verdict reads at a glance, and the map and dialogs look right. (user)
 
-**Proposed split** (agent draft 2026-11-06, not yet agreed; the user agrees or changes it when M8.5 is promoted to Now):
-1. `document-ember-design-context` - the brand kit, PRODUCT.md, the before-redesign record and DESIGN.md. No app code.
+**Changes** (in order):
+1. `document-ember-design-context` - the brand kit, PRODUCT.md, the before-redesign record and DESIGN.md. No app code. Merged early in [PR #93](https://github.com/sh1ny/blackgrid/pull/93) on 2026-11-06, while M8 was still Now.
 2. `adopt-ember-theme` - bundle the fonts with their licences, bring the kit's Flutter tokens and theme into `lib/` and build both rooms, add the theme switch, and replace the old colours and panel styling. Verdict plates (X1) and the freshness tag (X3) land on today's layout.
 3. `add-answer-strip` - the Direction B shell (X10, X11): top bar with the Map/Scanner switch, raid timers and labelled Settings, Stats and Import; the answer strip on both areas with Found in raid beside the verdict; the inspector with history rows that show item pictures (X14); the clickable status bar; the Answer First Rule at every width (X7). Drops the raw item ID under item names.
 4. `restyle-map-workspace` - the map takes the main column with the map picker (and its Read latest screenshot item) and floor control on it; the Map inspector gets the marker filters and the marker list with icons and switches (X13); selection becomes Ember with the new ADR for the role colours; and the marker bubble shows spawn chances as whole percentages.
@@ -57,15 +30,9 @@ Added 2026-11-06 (user decision): Blackgrid is redesigned on Ember, the brand ki
 
 The approved layout is the B view, round 2, of `.impeccable/preview/ember-directions.html` (owner, 2026-11-06).
 
-## Later
+## Next: M9 - local progress tracker
 
-The milestones below run in this order after M8.5, starting with M9. M10 was planned with the user on 2026-10-30; M11–M19 were added on 2026-11-01 from the user's future-ideas list.
-
-**Rules for everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
-
-### M9 - local progress tracker
-
-Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackgrid tracks quest and hideout progress itself, on the player's machine. The tracker is built so sync can be added later, but it syncs nothing. The existing read-only progress-site token stays exactly as it is until this milestone's last change replaces everything it provides.
+Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). The rules under Later apply to it too. Blackgrid tracks quest and hideout progress itself, on the player's machine. The tracker is built so sync can be added later, but it syncs nothing. The existing read-only progress-site token stays exactly as it is until this milestone's last change replaces everything it provides.
 
 **Exit criteria:**
 - Every progress change is stored as an event with a unique ID, device ID, timestamp, game mode, wipe and data format version, and the current state is computed from the events. Replaying an event twice changes nothing. The newest change per task, objective or station wins, and game-log events beat older manual edits. Proved by model tests. (agent)
@@ -89,6 +56,12 @@ Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). Blackg
 - **Why our own tracker:** showing tasks, availability, needed items and the hideout has to be built in Blackgrid either way, because a third-party API returns only IDs and states. Syncing with someone else's service adds daily request quotas, tokens the user must create, polling, conflict handling and terms of use, and it still cannot write hideout or trader progress. A local tracker has none of these limits and works offline. Blackgrid never writes to the progress site.
 - **Sync-ready from the first release:** tarkov.dev IDs in every key, with game mode and wipe; each app downloads tarkov.dev data itself, so a sync service would only ever hold the player's progress; the rules package gives web and mobile the same answers as the desktop. The extra cost now is one or two tasks in this change, and the event history also gives undo, log replay and the wipe summary.
 - **Upkeep:** the availability rules are the hardest part (alternatives, must-be-failed prerequisites, faction and edition rules) and need checking every wipe.
+
+## Later
+
+The milestones below run in this order after M9, starting with M10. M10 was planned with the user on 2026-10-30; M11–M19 were added on 2026-11-01 from the user's future-ideas list.
+
+**Rules for M9 and everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
 
 ### M10 - alerts and window behaviour
 
@@ -192,3 +165,4 @@ M6 moved the builds to CI: a pushed `v` tag publishes a GitHub Release with a zi
 - M4.6 - open-issue sweep - 2026-10-30 ([PR #60](https://github.com/sh1ny/blackgrid/pull/60)) - The sweep judged all 18 open issues against `main`: #30 was closed as no longer applying, 16 were deferred to after 1.0 with the `post-1.0` label and a recorded reason, and #17 was fixed by `fix-changelog-spec`, which also stopped local `merge:` commits from showing up in the changelog. Learned: judging issues at sweep time, against current `main`, left one fix-now issue out of 18, so review-filed issues are not accepted in advance.
 - M6 - Windows CI and releases - 2026-11-01 ([PR #63](https://github.com/sh1ny/blackgrid/pull/63), [PR #67](https://github.com/sh1ny/blackgrid/pull/67), [PR #68](https://github.com/sh1ny/blackgrid/pull/68), [PR #69](https://github.com/sh1ny/blackgrid/pull/69), [PR #70](https://github.com/sh1ny/blackgrid/pull/70), [PR #72](https://github.com/sh1ny/blackgrid/pull/72), [PR #73](https://github.com/sh1ny/blackgrid/pull/73)) - Agent checks passed on `main` `dc636c9`: the `ci` workflow ran every offline gate green on a hosted Windows runner; ADR-0025 records the Inno Setup installer and unsigned builds until #66; the `v0.6.0-beta.1` tag published a prerelease with the zip, the installer and the changelog notes; the committed `.ico` holds all ten sizes from 16 to 256 px; and offline tests prove that failures keep the last good data and that settings, pins, history and imports survive restart. The user picked the `hex_sweep` icon on 2026-10-31 and installed beta.1 from both the installer and the zip on 2026-11-01. Learned: with every gate on a hosted runner, a release no longer depends on the developer's machine, and the restart tests showed that one unreadable row could block startup, so stored data is now decoded one row at a time.
 - M7 - raid lifecycle, timers and local stats - 2026-11-02 ([PR #76](https://github.com/sh1ny/blackgrid/pull/76), [PR #77](https://github.com/sh1ny/blackgrid/pull/77), [PR #79](https://github.com/sh1ny/blackgrid/pull/79)) - Agent checks passed on `main` `c2b28f7`: offline fixture tests prove lines and multi-byte text split across reads, both log orders and reconnects; fake-clock tests prove the timers; restart and clear tests prove settings and stats survive. The user reported the raid state line working on `0.6.0+384` (2026-11-01) and the timers and local stats on `0.6.0+386` (2026-11-02, a short test). Learned: reconnects make "the same raid" a cross-cutting rule (lifecycle, timers and stats each had to agree on it), and a mid-raid clear followed by a reconnect and a restart can still recount one raid, accepted as [#80](https://github.com/sh1ny/blackgrid/issues/80).
+- M8 - map labels and popups - 2026-11-08 ([PR #84](https://github.com/sh1ny/blackgrid/pull/84), [PR #86](https://github.com/sh1ny/blackgrid/pull/86), [PR #88](https://github.com/sh1ny/blackgrid/pull/88), [PR #90](https://github.com/sh1ny/blackgrid/pull/90), [PR #91](https://github.com/sh1ny/blackgrid/pull/91), [PR #94](https://github.com/sh1ny/blackgrid/pull/94), [PR #95](https://github.com/sh1ny/blackgrid/pull/95)) - Agent checks passed in CI on the merged tree of `main` `7559767` (offline suite, map pack check and qualification), covering the extract label and outline painter tests, the marker bubble widget tests and the place label pack and painter tests. The user reported extract names, outlines and the map help working on `0.7.0+399` (2026-11-02), and the place labels and marker bubbles reading correctly on real maps (2026-11-08). Learned: the generation-backed rebuild with its per-map change report turned each pack change (toolchain, metadata, labels) into a reviewable regeneration, and the owner checks only the maps it lists; the full-rebuild qualification tests needed their own 10-minute timeout on CI.
