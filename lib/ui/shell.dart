@@ -80,7 +80,9 @@ class _BlackgridShellState extends State<BlackgridShell> {
       actions: {
         _CloseInspectorIntent: CallbackAction<_CloseInspectorIntent>(
           onInvoke: (_) {
-            if (inspectorOpen) _setInspectorOpen(false);
+            if (inspectorOpen && inspectorScope.hasFocus) {
+              _setInspectorOpen(false);
+            }
             return null;
           },
         ),
@@ -308,23 +310,28 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                         const SizedBox(height: 14),
                                         SizedBox(
                                           height: 400,
-                                          child: RequirementPanel(
-                                            services: widget.services,
-                                          ),
+                                          child: inspectorOpen
+                                              ? RequirementPanel(
+                                                  services: widget.services,
+                                                )
+                                              : const SizedBox.shrink(),
                                         ),
                                         const SizedBox(height: 14),
                                         SizedBox(
                                           height: 400,
-                                          child: SourcePanel(
-                                            services: widget.services,
-                                            detailsExpanded:
-                                                sourceDetailsExpanded,
-                                            onDetailsExpandedChanged: (value) =>
-                                                setState(
-                                                  () => sourceDetailsExpanded =
-                                                      value,
-                                                ),
-                                          ),
+                                          child: inspectorOpen
+                                              ? SourcePanel(
+                                                  services: widget.services,
+                                                  detailsExpanded:
+                                                      sourceDetailsExpanded,
+                                                  onDetailsExpandedChanged:
+                                                      (value) => setState(
+                                                        () =>
+                                                            sourceDetailsExpanded =
+                                                                value,
+                                                      ),
+                                                )
+                                              : const SizedBox.shrink(),
                                         ),
                                         const SizedBox(height: 14),
                                         SizedBox(

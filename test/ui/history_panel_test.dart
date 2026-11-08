@@ -77,6 +77,16 @@ void main() {
     );
     expect(find.byTooltip('Recorded verdict: Keep'), findsOneWidget);
     expect(find.byType(ListTile), findsOneWidget);
+    final tile = find.byType(ListTile);
+    final bounds = tester.getRect(tile);
+    for (final element
+        in find.descendant(of: tile, matching: find.byType(Text)).evaluate()) {
+      final textBounds = tester.getRect(
+        find.byElementPredicate((candidate) => identical(candidate, element)),
+      );
+      expect(textBounds.top, greaterThanOrEqualTo(bounds.top));
+      expect(textBounds.bottom, lessThanOrEqualTo(bounds.bottom));
+    }
     expect(tester.takeException(), isNull);
   });
 

@@ -58,6 +58,35 @@ class _HeldCatalogDatabase extends BlackgridDatabase {
 }
 
 void main() {
+  testWidgets('Escape in search preserves docked inspector', (tester) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    final search = find.widgetWithText(TextField, 'Search items…');
+    await tester.tap(search);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+    expect(tester.widget<TextField>(search).focusNode!.hasFocus, isTrue);
+  });
+
+  testWidgets('closed inspector unmounts evidence panels', (tester) async {
+    await pumpM1(tester);
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    final inspector = find.byKey(const Key('shell-inspector'));
+    final scroll = find
+        .descendant(of: inspector, matching: find.byType(Scrollable))
+        .first;
+    tester.state<ScrollableState>(scroll).position.jumpTo(800);
+    await tester.pumpAndSettle();
+    expect(find.byType(SourcePanel), findsOneWidget);
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SourcePanel, skipOffstage: false), findsNothing);
+    expect(find.byType(RequirementPanel, skipOffstage: false), findsNothing);
+  });
+
   testWidgets('docked inspector keeps desktop scanner evidence on screen', (
     tester,
   ) async {

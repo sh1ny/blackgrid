@@ -422,9 +422,16 @@ class HistoryPanel extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: SizedBox(
-                            height:
-                                38 * MediaQuery.textScalerOf(context).scale(1),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight:
+                                  38 *
+                                  MediaQuery.textScalerOf(context).scale(1),
+                              maxHeight:
+                                  MediaQuery.textScalerOf(context).scale(1) <= 1
+                                  ? 38
+                                  : double.infinity,
+                            ),
                             child: ListTile(
                               dense: true,
                               minTileHeight: 38,
