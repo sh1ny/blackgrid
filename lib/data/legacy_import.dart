@@ -23,6 +23,9 @@ class LegacyImport {
   /// comparison, so the preview may report a record as added while a commit
   /// that keeps existing data keeps the unreadable row instead. An unreadable
   /// settings record compares as the default settings.
+  ///
+  /// Optional history `Verdict` values use named recommendations; missing or
+  /// unsupported values are imported as unknown.
   Future<ImportPreview> previewFiles({
     String? settingsPath,
     String? historyPath,
@@ -293,6 +296,7 @@ ImportPreview parseLegacySources(
             source: source,
             observedAt: time,
             revision: revision,
+            verdict: activityVerdictFromName(row['Verdict']),
           ),
         );
         for (final key in row.keys) {
@@ -303,6 +307,7 @@ ImportPreview parseLegacySources(
             'Source',
             'ActivityAtUtc',
             'ActivityRevision',
+            'Verdict',
           ].contains(key)) {
             exclusions.add('History.$key');
           }

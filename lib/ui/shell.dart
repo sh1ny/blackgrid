@@ -274,16 +274,23 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                   : EmberMotion.panel,
                               curve: EmberMotion.panelEase,
                               onEnd: () {
-                                if (mounted &&
-                                    !inspectorOpen &&
-                                    inspectorVisible) {
-                                  setState(() => inspectorVisible = false);
-                                }
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (mounted &&
+                                      !inspectorOpen &&
+                                      inspectorVisible) {
+                                    setState(() => inspectorVisible = false);
+                                  }
+                                });
                               },
                               child: Offstage(
                                 offstage: !inspectorVisible,
                                 child: FocusScope(
                                   node: inspectorScope,
+                                  canRequestFocus: inspectorOpen,
+                                  descendantsAreFocusable: inspectorOpen,
+                                  descendantsAreTraversable: inspectorOpen,
                                   child: SizedBox(
                                     key: const Key('shell-inspector'),
                                     child: ListView(

@@ -54,3 +54,18 @@ check of focus, semantics, motion, layout and theme roles. Its web-only
 mechanical detector was not run or claimed as Flutter coverage. No rendered
 app inspection, live-game test, platform performance measurement, complete
 screen-reader audit, or live contrast measurement is claimed here.
+
+## Pre-ship fix round 1
+
+The fresh source review found four gaps beyond the initial passing suite.
+Regression tests reproduced each before the fixes: the actual history-file
+importer excluded `Verdict`; a closed inspector remained focusable; selected
+item plus docked details caused Scanner page scrolling at 1100×720; and the
+recording-stop warning was not visible at 900/960px after Settings closed.
+
+The importer now accepts optional named `Verdict` values, the closed focus
+scope disables descendant traversal, desktop Scanner keeps its evidence
+height fitted when narrowed by the inspector, and recording warnings precede
+compact evidence. Reduced-motion animation completion is deferred safely.
+The affected four-suite run passed 116 tests. The coordinator independently
+ran `mise run analyze` and `mise run test`: no findings and 2,808 passed.

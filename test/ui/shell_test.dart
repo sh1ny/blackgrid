@@ -58,6 +58,59 @@ class _HeldCatalogDatabase extends BlackgridDatabase {
 }
 
 void main() {
+  testWidgets('docked inspector keeps desktop scanner evidence on screen', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester, size: const Size(1100, 720));
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    final evidence = find.byType(ScanEvidencePanel);
+    expect(tester.getBottomRight(evidence).dy, lessThanOrEqualTo(720));
+    final page = find
+        .ancestor(of: evidence, matching: find.byType(Scrollable))
+        .first;
+    expect(tester.state<ScrollableState>(page).position.maxScrollExtent, 0);
+  });
+
+  for (final disableAnimations in [false, true]) {
+    testWidgets(
+      'closed inspector excludes keyboard focus reduced=$disableAnimations',
+      (tester) async {
+        final h = await pumpM1(tester, size: const Size(960, 720));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: const Size(960, 720),
+                disableAnimations: disableAnimations,
+              ),
+              child: BlackgridShell(services: h.services),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('inspector-toggle')));
+        await tester.pumpAndSettle();
+        final inspector = find.byKey(const Key('shell-inspector'));
+        final scope = FocusScope.of(tester.element(inspector));
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(scope.descendantsAreFocusable, isFalse);
+        for (var i = 0; i < 20; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.pump();
+          expect(scope.hasFocus, isFalse);
+        }
+      },
+    );
+  }
   testWidgets('one shared FIR selector stays visible in both workspaces', (
     tester,
   ) async {
@@ -553,6 +606,90 @@ void main() {
       findsOneWidget,
     );
   });
+  for (final width in [900.0, 960.0]) {
+    testWidgets('narrow recording failure stays visible $width', (
+      tester,
+    ) async {
+      final root = Directory.systemTemp.createTempSync(
+        'blackgrid-answer-strip-failure-',
+      );
+      addTearDown(() => root.deleteSync(recursive: true));
+      final writers = <FakeRecordWriter>[];
+      final recorder = ScanFrameRecorder(
+        root: root.path,
+        writerFactory:
+            ({required folder, required token, required onAnswer}) async {
+              final writer = FakeRecordWriter(token, onAnswer);
+              writers.add(writer);
+              return writer;
+            },
+      );
+      final h = await pumpM1(
+        tester,
+        size: Size(width, 720),
+        scanPorts: ScanFakePorts(),
+        scanFrameRecorder: recorder,
+      );
+      await tester.runAsync(() async {
+        await h.services.scanner.setLiveScan(true);
+        await h.services.scanner.settled;
+      });
+      await tester.tap(find.byKey(const Key('nav-scanner')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      final panel = find.byKey(const Key('settings-live-scan'));
+      final toggle = find.descendant(
+        of: panel,
+        matching: find.byKey(const Key('record-frames-switch')),
+      );
+      await tester.ensureVisible(toggle);
+      await tester.pumpAndSettle();
+      await tapM1Async(
+        tester,
+        toggle,
+        () => recorder.status.value.state == ScanRecordingState.on,
+      );
+      recorder.record(recordedScan('failure'));
+      writers.single.fail('failure', 'synthetic disk failure');
+      await tester.pump();
+      final folder = recorder.status.value.folder!;
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.textContaining('synthetic disk failure'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: panel, matching: find.textContaining(folder)),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      final note = find.byKey(const Key('recording-stop-note'));
+      expect(note, findsOneWidget);
+      expect(tester.getTopLeft(note).dy, greaterThanOrEqualTo(0));
+      expect(tester.getBottomRight(note).dy, lessThanOrEqualTo(720));
+      expect(find.textContaining('synthetic disk failure'), findsOneWidget);
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('settings-live-scan')),
+          matching: find.textContaining(folder),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('settings-live-scan')),
+          matching: find.textContaining('synthetic disk failure'),
+        ),
+        findsOneWidget,
+      );
+    });
+  }
   testWidgets('workspace-shell: Settings targets', (tester) async {
     await pumpM1(tester);
     await tester.tap(find.byKey(const Key('status-item-data')));
@@ -980,6 +1117,14 @@ void main() {
         scanPorts: ports,
       );
       await openScanner(tester);
+      await tester.runAsync(
+        () => h.services.selection.selectManual(
+          h.services.catalog.snapshot!.items['item-a']!,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
       await tester.runAsync(() async {
         for (var i = 0; i < 10; i++) {
           await publishTargetedScan(
