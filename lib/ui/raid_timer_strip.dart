@@ -20,15 +20,11 @@ class RaidTimerStrip extends StatelessWidget {
     builder: (context, _) {
       final entries = controller.view.entries;
       if (entries.isEmpty) return const SizedBox.shrink();
-      return Row(
+      return Wrap(
         key: const Key('raid-timer-strip'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final (index, entry) in entries.indexed) ...[
-            if (index > 0) const SizedBox(width: 12),
-            _entry(context, entry),
-          ],
-        ],
+        spacing: 12,
+        runSpacing: 4,
+        children: [for (final entry in entries) _entry(context, entry)],
       );
     },
   );

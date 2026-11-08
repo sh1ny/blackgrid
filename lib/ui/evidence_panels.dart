@@ -11,6 +11,7 @@ import 'labels.dart';
 import 'requirement_rows.dart';
 import 'panels.dart';
 import 'ember/theme_access.dart';
+import 'verdict_plate.dart' show DashedBorderPainter;
 
 /// The evidence line for the newest items source update in [snapshot].
 ///
@@ -421,27 +422,73 @@ class HistoryPanel extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: ListTile(
-                            dense: true,
-                            leading: item == null
-                                ? Icon(
-                                    Icons.inventory_2_outlined,
-                                    color: context.ember.inkSecondary,
-                                  )
-                                : ItemIcon(
-                                    key: ValueKey(item.id),
-                                    cache: services.itemIcons,
-                                    itemId: item.id,
-                                    iconLink: item.iconLink,
-                                    size: 24,
-                                    color: context.ember.inkSecondary,
+                          child: SizedBox(
+                            height:
+                                38 * MediaQuery.textScalerOf(context).scale(1),
+                            child: ListTile(
+                              dense: true,
+                              minTileHeight: 38,
+                              minVerticalPadding: 0,
+                              minLeadingWidth: 30,
+                              horizontalTitleGap: 8,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _RecordedVerdict(row.verdict),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    localTimeLabel(
+                                      row.observedAt,
+                                      now: DateTime.now(),
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
                                   ),
-                            title: Text(name ?? row.itemId),
-                            subtitle: Text(
-                              '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}\n${localTimeLabel(row.observedAt, now: DateTime.now())}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                                ],
+                              ),
+                              leading: item == null
+                                  ? Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: context.ember.raised,
+                                        border: Border.all(
+                                          color: context.ember.hairlineStrong,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.inventory_2_outlined,
+                                        size: 18,
+                                        color: context.ember.inkSecondary,
+                                      ),
+                                    )
+                                  : ItemIcon(
+                                      key: ValueKey(item.id),
+                                      cache: services.itemIcons,
+                                      itemId: item.id,
+                                      iconLink: item.iconLink,
+                                      size: 30,
+                                      color: context.ember.inkSecondary,
+                                    ),
+                              title: Text(
+                                name ?? row.itemId,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              onTap: () => services.selection.openHistory(row),
                             ),
-                            onTap: () => services.selection.openHistory(row),
                           ),
                         ),
                       );
@@ -452,4 +499,50 @@ class HistoryPanel extends StatelessWidget {
             ),
     ),
   );
+}
+
+/// An activity's recorded fact, independent of current inspection advice.
+class _RecordedVerdict extends StatelessWidget {
+  const _RecordedVerdict(this.verdict);
+  final Recommendation? verdict;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (verdict) {
+      Recommendation.keep ||
+      Recommendation.keepForLater => context.blackgrid.okFill,
+      Recommendation.check => context.ember.warnInk,
+      _ => context.ember.inkTertiary,
+    };
+    final label = verdict == null
+        ? 'Verdict not recorded'
+        : 'Recorded verdict: ${recommendationLabel(verdict!)}';
+    final ring = verdict == Recommendation.keepForLater;
+    final dot = SizedBox(
+      width: 8,
+      height: 8,
+      child: verdict == null
+          ? Icon(Icons.help_outline, size: 10, color: color)
+          : verdict == Recommendation.priceUnavailable
+          ? CustomPaint(
+              painter: DashedBorderPainter(
+                color: color,
+                radius: 4,
+                dash: 2,
+                gap: 2,
+              ),
+            )
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: ring ? null : color,
+                border: ring ? Border.all(color: color) : null,
+              ),
+            ),
+    );
+    return Tooltip(
+      message: label,
+      child: Semantics(label: label, child: dot),
+    );
+  }
 }

@@ -12,16 +12,16 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 | local-data-durability → Missing history verdicts remain readable | Upgrade and reopen | `test/data/migration_test.dart` | local-data-durability: Upgrade and reopen | green |
 | local-data-durability → Missing history verdicts remain readable | Import and round trip | `test/data/database_test.dart` | local-data-durability: Import and round trip | green |
 | local-data-durability → Missing history verdicts remain readable | Unrecognised optional value | `test/data/database_test.dart` | local-data-durability: Unrecognised optional value | green |
-| map-rail → Rail order puts raid-time sections first | Wide layout order | `test/ui/map_screen_test.dart` | map-rail: Wide layout order | red |
-| map-rail → Rail order puts raid-time sections first | Compact layout order | `test/ui/map_screen_test.dart` | map-rail: Compact layout order | red |
-| map-rail → Rail order puts raid-time sections first | Active map row stays alone | `test/ui/map_screen_test.dart` | map-rail: Active map row stays alone | red |
+| map-rail → Rail order puts raid-time sections first | Wide layout order | `test/ui/map_screen_test.dart` | map-rail: Wide layout order | green |
+| map-rail → Rail order puts raid-time sections first | Compact layout order | `test/ui/map_screen_test.dart` | map-rail: Compact layout order | green |
+| map-rail → Rail order puts raid-time sections first | Active map row stays alone | `test/ui/map_screen_test.dart` | map-rail: Active map row stays alone | green |
 | scanner-evidence → Scanner shows the live scan switch and status | Switching on from Scanner | `test/ui/settings_dialog_test.dart` | scanner-evidence: Switching on from Scanner | green |
 | scanner-evidence → Scanner shows the live scan switch and status | Unavailable runtime | `test/ui/settings_dialog_test.dart` | scanner-evidence: Unavailable runtime | green |
 | scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved | `test/ui/settings_dialog_test.dart` | scanner-evidence: Setting cannot be saved | green |
 | scanner-evidence → Scanner shows the live scan switch and status | Setting cannot be saved when switching off | `test/ui/settings_dialog_test.dart` | scanner-evidence: Setting cannot be saved when switching off | green |
-| scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | `test/ui/shell_test.dart` | scanner-evidence: Desktop window | red |
-| scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | `test/ui/shell_test.dart` | scanner-evidence: Short desktop window | red |
-| scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | `test/ui/shell_test.dart` | scanner-evidence: Narrow window | red |
+| scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | `test/ui/shell_test.dart` | scanner-evidence: Desktop window | green |
+| scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | `test/ui/shell_test.dart` | scanner-evidence: Short desktop window | green |
+| scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | `test/ui/shell_test.dart` | scanner-evidence: Narrow window | green |
 | scanner-evidence → Footer shows the live scan state | Live scan on | `test/ui/shell_test.dart` | footer says live scan is on when ready | green |
 | scanner-evidence → Footer shows the live scan state | Live scan off | `test/ui/shell_test.dart` | footer says live scan is off and nothing is captured | green |
 | scanner-evidence → Footer shows the live scan state | Live scan unavailable | `test/ui/shell_test.dart` | footer says live scan is unavailable | green |
@@ -39,11 +39,11 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 | workspace-shell → Selection semantics survive the new layout | History and later rejected scan | `test/ui/shell_test.dart` | workspace-shell: History and later rejected scan | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Wide navigation | `test/ui/shell_test.dart` | workspace-shell: Wide navigation | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Narrow navigation and disabled timers | `test/ui/shell_test.dart` | workspace-shell: Narrow navigation and disabled timers | green |
-| workspace-shell → Inspector preserves the workspace | Docked details | `test/ui/shell_test.dart` | workspace-shell: Docked details | red |
-| workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | red |
-| workspace-shell → History rows show item pictures | History selection | `test/ui/history_panel_test.dart` | workspace-shell: History selection | red |
-| workspace-shell → History rows show item pictures | Missing history picture | `test/ui/history_panel_test.dart` | workspace-shell: Missing history picture | red |
-| workspace-shell → History rows show item pictures | Legacy history verdict | `test/ui/history_panel_test.dart` | workspace-shell: Legacy history verdict | red |
+| workspace-shell → Inspector preserves the workspace | Docked details | `test/ui/shell_test.dart` | workspace-shell: Docked details | green |
+| workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | green |
+| workspace-shell → History rows show item pictures | History selection | `test/ui/history_panel_test.dart` | workspace-shell: History selection | green |
+| workspace-shell → History rows show item pictures | Missing history picture | `test/ui/history_panel_test.dart` | workspace-shell: Missing history picture | green |
+| workspace-shell → History rows show item pictures | Legacy history verdict | `test/ui/history_panel_test.dart` | workspace-shell: Legacy history verdict | green |
 | workspace-shell → Status actions lead to their controls | Settings targets | `test/ui/shell_test.dart` | workspace-shell: Settings targets | green |
 | workspace-shell → Status actions lead to their controls | Failed live scan save | `test/ui/shell_test.dart` | workspace-shell: Failed live scan save | green |
 
@@ -64,10 +64,10 @@ All tests are offline with fixtures and hand-written fakes. Names below are the 
 
 ## 3. Inspector, history rows and area integration
 
-- [ ] 3.1 Add failing tests for workspace-shell → Inspector preserves the workspace and History rows show item pictures; assert docked/overlay boundary, Escape, focus return, reduced motion, preserved map viewport/detail expansion, all saved-verdict indicators, unknown legacy rows, missing/mode-mismatched icon fallbacks and recorded/current verdict disagreement. Verify failures reflect the new UI requirements.
-- [ ] 3.2 Build the inspector from current detail/requirement/source/history presentation, keeping state above breakpoint branches and both area workspaces mounted. Render X14 rows through existing ItemIcon leases and the recorded verdict, with accessible unknown/current-advice labels. Verify 3.1 tests pass, existing icon request-bound tests remain green and no per-row decision or timer is introduced; flip mapped rows green. Document state ownership and recorded/current advice distinction.
-- [ ] 3.3 Add failing map-rail ordering and scanner-evidence geometry tests from the map; update obsolete placement assertions rather than deleting behavioural checks. Verify no duplicate decision card, evidence frame visibility at desktop sizes, narrow answer-first order and preserved inputs/filter/search/Read Latest/floor/pin actions. Verify the intended relocation causes failures.
-- [ ] 3.4 Recompose Map and Scanner under the shell, retain temporary rail control order and saved-input expansion behaviour, and fit Scanner evidence into its remaining area with internal scrolling. Verify 3.3 tests and existing map-control/pin/scan-evidence/navigation regression tests pass; flip remaining mapped rows green. Update affected layout documentation to describe interim controls until map restyling.
+- [x] 3.1 Add failing tests for workspace-shell → Inspector preserves the workspace and History rows show item pictures; assert docked/overlay boundary, Escape, focus return, reduced motion, preserved map viewport/detail expansion, all saved-verdict indicators, unknown legacy rows, missing/mode-mismatched icon fallbacks and recorded/current verdict disagreement. Verify failures reflect the new UI requirements.
+- [x] 3.2 Build the inspector from current detail/requirement/source/history presentation, keeping state above breakpoint branches and both area workspaces mounted. Render X14 rows through existing ItemIcon leases and the recorded verdict, with accessible unknown/current-advice labels. Verify 3.1 tests pass, existing icon request-bound tests remain green and no per-row decision or timer is introduced; flip mapped rows green. Document state ownership and recorded/current advice distinction.
+- [x] 3.3 Add failing map-rail ordering and scanner-evidence geometry tests from the map; update obsolete placement assertions rather than deleting behavioural checks. Verify no duplicate decision card, evidence frame visibility at desktop sizes, narrow answer-first order and preserved inputs/filter/search/Read Latest/floor/pin actions. Verify the intended relocation causes failures.
+- [x] 3.4 Recompose Map and Scanner under the shell, retain temporary rail control order and saved-input expansion behaviour, and fit Scanner evidence into its remaining area with internal scrolling. Verify 3.3 tests and existing map-control/pin/scan-evidence/navigation regression tests pass; flip remaining mapped rows green. Update affected layout documentation to describe interim controls until map restyling.
 
 ## 4. Integration verification
 

@@ -16,6 +16,9 @@ import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/verdict_reason.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
+import 'package:blackgrid/ui/map_workspace.dart';
+import 'package:blackgrid/ui/shell.dart';
+import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/catalog.dart';
@@ -35,6 +38,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 
 import '../support/m1_widget_harness.dart';
+import '../support/map_widget_harness.dart';
 import 'support/scan_ui_support.dart';
 
 class _HeldCatalogDatabase extends BlackgridDatabase {
@@ -54,6 +58,173 @@ class _HeldCatalogDatabase extends BlackgridDatabase {
 }
 
 void main() {
+  for (final room in [Brightness.dark, Brightness.light]) {
+    testWidgets('inspector at scale two in $room', (tester) async {
+      tester.platformDispatcher.platformBrightnessTestValue = room;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      final h = await pumpM1(tester, size: const Size(960, 720), scale: 2);
+      await tester.runAsync(
+        () => h.services.selection.selectManual(
+          h.services.catalog.snapshot!.items['item-a']!,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+  for (final size in [
+    const Size(1660, 870),
+    const Size(1100, 720),
+    const Size(900, 720),
+  ]) {
+    testWidgets(
+      size.width == 1660
+          ? 'scanner-evidence: Desktop window'
+          : size.width == 1100
+          ? 'scanner-evidence: Short desktop window'
+          : 'scanner-evidence: Narrow window',
+      (tester) async {
+        await pumpM1(tester, size: size);
+        await tester.tap(find.byKey(const Key('nav-scanner')));
+        await tester.pumpAndSettle();
+        final evidence = find.byType(ScanEvidencePanel);
+        expect(evidence, findsOneWidget);
+        expect(
+          tester.getTopLeft(evidence).dy,
+          greaterThanOrEqualTo(
+            tester.getBottomLeft(find.byKey(const Key('answer-strip'))).dy,
+          ),
+        );
+        if (size.width >= 1100) {
+          expect(
+            tester.getBottomRight(evidence).dy,
+            lessThanOrEqualTo(size.height),
+          );
+          final scroller = find
+              .descendant(
+                of: find.byKey(const PageStorageKey('scanner-desktop-scroll')),
+                matching: find.byType(Scrollable),
+              )
+              .first;
+          expect(
+            tester.state<ScrollableState>(scroller).position.maxScrollExtent,
+            0,
+          );
+        }
+      },
+    );
+  }
+  testWidgets('workspace-shell: Docked details', (tester) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+    expect(find.byKey(const Key('inspector-scrim')), findsNothing);
+    expect(find.byKey(const PageStorageKey('map')), findsOneWidget);
+  });
+
+  for (final width in [1080.0, 1081.0]) {
+    for (final room in [Brightness.dark, Brightness.light]) {
+      testWidgets('inspector boundary $width in $room', (tester) async {
+        tester.platformDispatcher.platformBrightnessTestValue = room;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        await pumpM1(tester, size: Size(width, 720));
+        await tester.tap(find.byKey(const Key('inspector-toggle')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('inspector-scrim')),
+          width == 1080 ? findsOneWidget : findsNothing,
+        );
+        expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  testWidgets('workspace-shell: Resize with open details', (tester) async {
+    final h = await pumpMapFixture(tester, size: const Size(1660, 870));
+    final map = tester.element(find.byKey(const PageStorageKey('map')));
+    final workspace = tester.element(find.byType(MapWorkspace));
+    final before = h.services.maps.transform;
+    h.services.maps.panBy(23, 17);
+    final pan = h.services.maps.transform;
+    expect(pan.translationX, before.translationX + 23);
+    expect(pan.translationY, before.translationY + 17);
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    final inspector = find.byKey(const Key('shell-inspector'));
+    final inspectorScroll = find
+        .descendant(of: inspector, matching: find.byType(Scrollable))
+        .first;
+    tester.state<ScrollableState>(inspectorScroll).position.jumpTo(800);
+    await tester.pumpAndSettle();
+    final source = find.byType(SourcePanel);
+    await tester.ensureVisible(source);
+    await tester.pumpAndSettle();
+    final details = find.descendant(of: source, matching: find.text('Details'));
+    await tester.ensureVisible(details);
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    tester.view.physicalSize = const Size(960, 720);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('inspector-scrim')), findsOneWidget);
+    expect(tester.element(find.byKey(const PageStorageKey('map'))), same(map));
+    expect(tester.element(find.byType(MapWorkspace)), same(workspace));
+    expect(h.services.maps.transform.scale, pan.scale);
+    expect(h.services.maps.transform.translationX, pan.translationX);
+    expect(h.services.maps.transform.translationY, pan.translationY);
+    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-inspector')), findsNothing);
+    expect(tester.element(find.byKey(const PageStorageKey('map'))), same(map));
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('inspector-toggle')))
+          .focusNode
+          ?.hasFocus,
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    'inspector respects reduced motion and uses panel motion otherwise',
+    (tester) async {
+      final h = await pumpM1(tester, size: const Size(960, 720));
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+      final animated = find.ancestor(
+        of: find.byKey(const Key('shell-inspector')),
+        matching: find.byType(AnimatedPositioned),
+      );
+      expect(
+        tester.widget<AnimatedPositioned>(animated).duration,
+        EmberMotion.panel,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(960, 720),
+              disableAnimations: true,
+            ),
+            child: BlackgridShell(services: h.services),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pump();
+      expect(
+        tester.widget<AnimatedPositioned>(animated).duration,
+        Duration.zero,
+      );
+    },
+  );
   testWidgets(
     'top-bar inspector toggle opens and closes details without replacing the workspace',
     (tester) async {
@@ -642,7 +813,7 @@ void main() {
       );
     }
   }
-  testWidgets('reference panel positions and proportions at Scanner aspect', (
+  testWidgets('Scanner places evidence beside controls below the answer', (
     tester,
   ) async {
     await pumpM1(tester);
@@ -651,28 +822,12 @@ void main() {
     Rect panel(String title) => tester.getRect(
       find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
     );
-    final left = panel('Scanner'),
-        evidence = panel('Scan evidence'),
-        current = panel('Picked item'),
-        history = panel('Recent item activity');
+    final left = panel('Scanner'), evidence = panel('Scan evidence');
     expect(left.left, 14);
-    expect(current.left, greaterThan(left.right));
-    expect(evidence.left, greaterThan(current.right));
-    expect(history.left, evidence.left);
-    expect(history.width, evidence.width);
-    final width = left.width + current.width + history.width;
-    expect(left.width / width, closeTo(.19, .01));
-    expect(current.width / width, closeTo(.57, .01));
-    expect(history.width / width, closeTo(.24, .01));
-    expect(evidence.top, history.top - evidence.height - 14);
-    expect(history.top, greaterThan(evidence.bottom));
-    expect(
-      evidence.height / (evidence.height + history.height),
-      closeTo(.6, .03),
-    );
-    final needs = panel('Requirements & uses'), source = panel('Data sources');
-    expect(needs.top, greaterThan(current.bottom));
-    expect(source.top, needs.top);
+    expect(evidence.left, greaterThan(left.right));
+    expect(evidence.top, left.top);
+    expect(find.text('Picked item'), findsNothing);
+    expect(find.text('Recent item activity'), findsNothing);
     expect(
       Theme.of(tester.element(find.byKey(const Key('nav-map'))))
           .scaffoldBackgroundColor,
@@ -757,19 +912,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      if (size.width < 1100) {
-        // Compact layout: the evidence panel is further down the list.
-        // Dragging would start on the manual results list at the viewport
-        // centre, so move the outer list directly past the first panel.
-        final outer = find
-            .descendant(
-              of: find.byKey(const PageStorageKey('scanner-compact-scroll')),
-              matching: find.byType(Scrollable),
-            )
-            .first;
-        tester.state<ScrollableState>(outer).position.jumpTo(1200);
-        await tester.pumpAndSettle();
-      }
+      // The compact layout puts evidence first; it is already on screen.
       expect(tester.takeException(), isNull);
       expect(find.byKey(const Key('scan-item')), findsOneWidget);
     });
@@ -842,7 +985,15 @@ void main() {
       expect(frame.left, greaterThan(scannerPanel.right));
       expect(frame.top, greaterThanOrEqualTo(0));
       expect(frame.bottom, lessThanOrEqualTo(720));
-      // The list scrolls inside the panel: its last row starts off screen.
+      // Expand detail evidence so the combined contents exceed the frame.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ScanEvidencePanel),
+          matching: find.text('Details'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // The evidence list scrolls inside its fixed frame.
       final scroll = tester.state<ScrollableState>(
         find
             .descendant(
@@ -856,7 +1007,7 @@ void main() {
     },
   );
 
-  testWidgets('compact layout puts evidence right after the Scanner controls', (
+  testWidgets('compact layout puts evidence before Scanner controls', (
     tester,
   ) async {
     await pumpM1(tester, size: const Size(900, 1600));
@@ -865,7 +1016,7 @@ void main() {
       find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
     );
     final evidence = evidenceFrame(tester);
-    expect(evidence.top, scanner.bottom + 14);
+    expect(scanner.top, evidence.bottom + 14);
     expect(evidence.left, scanner.left);
   });
 

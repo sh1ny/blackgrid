@@ -16,6 +16,7 @@ import 'scanner_screen.dart';
 import 'settings_dialog.dart';
 import 'stats_dialog.dart';
 import 'ember/theme_access.dart';
+import 'ember/ember_tokens.dart';
 
 class BlackgridShell extends StatefulWidget {
   const BlackgridShell({super.key, required this.services});
@@ -27,9 +28,16 @@ class BlackgridShell extends StatefulWidget {
 class _BlackgridShellState extends State<BlackgridShell> {
   int selected = 0;
   bool inspectorOpen = false;
+  bool inspectorVisible = false;
+  bool inspectorEverOpened = false;
+  bool _wasOverlay = false;
+  final inspectorScope = FocusScopeNode(
+    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  );
   bool sourceDetailsExpanded = false;
   final query = TextEditingController();
   final searchFocus = FocusNode();
+  final inspectorFocus = FocusNode();
   @override
   void initState() {
     super.initState();
@@ -40,16 +48,42 @@ class _BlackgridShellState extends State<BlackgridShell> {
   void dispose() {
     query.dispose();
     searchFocus.dispose();
+    inspectorFocus.dispose();
+    inspectorScope.dispose();
     super.dispose();
+  }
+
+  void _setInspectorOpen(bool open) {
+    setState(() {
+      inspectorOpen = open;
+      if (open) {
+        inspectorVisible = true;
+        inspectorEverOpened = true;
+      }
+    });
+    if (open && MediaQuery.sizeOf(context).width <= 1080) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && inspectorOpen) inspectorScope.requestFocus();
+      });
+    } else if (!open) {
+      inspectorFocus.requestFocus();
+    }
   }
 
   @override
   Widget build(BuildContext context) => Shortcuts(
     shortcuts: const {
       SingleActivator(LogicalKeyboardKey.keyK, control: true): _SearchIntent(),
+      SingleActivator(LogicalKeyboardKey.escape): _CloseInspectorIntent(),
     },
     child: Actions(
       actions: {
+        _CloseInspectorIntent: CallbackAction<_CloseInspectorIntent>(
+          onInvoke: (_) {
+            if (inspectorOpen) _setInspectorOpen(false);
+            return null;
+          },
+        ),
         _SearchIntent: CallbackAction<_SearchIntent>(
           onInvoke: (_) {
             searchFocus.requestFocus();
@@ -137,6 +171,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                           ),
                           IconButton(
                             key: const Key('inspector-toggle'),
+                            focusNode: inspectorFocus,
                             style: IconButton.styleFrom(
                               minimumSize: const Size(36, 36),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -150,8 +185,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                               height: 36,
                             ),
                             padding: EdgeInsets.zero,
-                            onPressed: () =>
-                                setState(() => inspectorOpen = !inspectorOpen),
+                            onPressed: () => _setInspectorOpen(!inspectorOpen),
                             icon: const Icon(Icons.vertical_split_outlined),
                           ),
                           _headerAction(
@@ -180,71 +214,128 @@ class _BlackgridShellState extends State<BlackgridShell> {
                 ),
                 AnswerStrip(services: widget.services),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: IndexedStack(
-                            index: selected,
-                            children: [
-                              MapScreen(
-                                key: const PageStorageKey('map'),
-                                services: widget.services,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final overlay = MediaQuery.sizeOf(context).width <= 1080;
+                      if (overlay != _wasOverlay) {
+                        _wasOverlay = overlay;
+                        if (overlay && inspectorOpen) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted && inspectorOpen && _wasOverlay) {
+                              inspectorScope.requestFocus();
+                            }
+                          });
+                        }
+                      }
+                      final panelWidth = 352.0.clamp(0.0, constraints.maxWidth);
+                      return Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                14,
+                                14,
+                                inspectorOpen && !overlay
+                                    ? panelWidth + 28
+                                    : 14,
+                                14,
                               ),
-                              ScannerScreen(
-                                key: const PageStorageKey('scanner'),
-                                services: widget.services,
+                              child: IndexedStack(
+                                index: selected,
+                                children: [
+                                  MapScreen(
+                                    key: const PageStorageKey('map'),
+                                    services: widget.services,
+                                  ),
+                                  ScannerScreen(
+                                    key: const PageStorageKey('scanner'),
+                                    services: widget.services,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                        if (inspectorOpen) ...[
-                          const SizedBox(width: 14),
-                          SizedBox(
-                            key: const Key('shell-inspector'),
-                            width: 352,
-                            child: ListView(
-                              children: [
-                                SizedBox(
-                                  height: 450,
-                                  child: ItemDecisionCard(
-                                    services: widget.services,
-                                    compact: true,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 400,
-                                  child: RequirementPanel(
-                                    services: widget.services,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 400,
-                                  child: SourcePanel(
-                                    services: widget.services,
-                                    detailsExpanded: sourceDetailsExpanded,
-                                    onDetailsExpandedChanged: (value) =>
-                                        setState(
-                                          () => sourceDetailsExpanded = value,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 400,
-                                  child: HistoryPanel(
-                                    services: widget.services,
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
+                          if (inspectorOpen && overlay)
+                            Positioned.fill(
+                              child: GestureDetector(
+                                key: const Key('inspector-scrim'),
+                                onTap: () => _setInspectorOpen(false),
+                                child: ColoredBox(color: context.ember.scrim),
+                              ),
+                            ),
+                          if (inspectorEverOpened)
+                            AnimatedPositioned(
+                              top: 14,
+                              bottom: 14,
+                              right: inspectorOpen ? 14 : -panelWidth,
+                              width: panelWidth,
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : EmberMotion.panel,
+                              curve: EmberMotion.panelEase,
+                              onEnd: () {
+                                if (mounted &&
+                                    !inspectorOpen &&
+                                    inspectorVisible) {
+                                  setState(() => inspectorVisible = false);
+                                }
+                              },
+                              child: Offstage(
+                                offstage: !inspectorVisible,
+                                child: FocusScope(
+                                  node: inspectorScope,
+                                  child: SizedBox(
+                                    key: const Key('shell-inspector'),
+                                    child: ListView(
+                                      children: [
+                                        SizedBox(
+                                          height: 450,
+                                          child: inspectorOpen
+                                              ? ItemDecisionCard(
+                                                  services: widget.services,
+                                                  compact: true,
+                                                )
+                                              : const SizedBox.shrink(),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        SizedBox(
+                                          height: 400,
+                                          child: RequirementPanel(
+                                            services: widget.services,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        SizedBox(
+                                          height: 400,
+                                          child: SourcePanel(
+                                            services: widget.services,
+                                            detailsExpanded:
+                                                sourceDetailsExpanded,
+                                            onDetailsExpandedChanged: (value) =>
+                                                setState(
+                                                  () => sourceDetailsExpanded =
+                                                      value,
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        SizedBox(
+                                          height: 400,
+                                          child: inspectorOpen
+                                              ? HistoryPanel(
+                                                  services: widget.services,
+                                                )
+                                              : const SizedBox.shrink(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
                 ListenableBuilder(
@@ -459,4 +550,8 @@ class _BlackgridShellState extends State<BlackgridShell> {
 
 class _SearchIntent extends Intent {
   const _SearchIntent();
+}
+
+class _CloseInspectorIntent extends Intent {
+  const _CloseInspectorIntent();
 }
