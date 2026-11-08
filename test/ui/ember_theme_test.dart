@@ -22,6 +22,9 @@ void main() {
     expect(ember.canvas, const Color(0xFF0C0C0E));
     expect(ember.panel, const Color(0xFF121215));
     expect(ember.ink, const Color(0xFFE8E6E1));
+    expect(ember.raised, const Color(0xFF18181C));
+    expect(ember.accent, const Color(0xFFE9A14B));
+    expect(ember.hairline, const Color(0x12FFFFFF));
     expect(theme.colorScheme.surface, ember.canvas);
     expect(theme.colorScheme.onSurface, ember.ink);
     expect(theme.colorScheme.primary, ember.accent);
@@ -44,6 +47,10 @@ void main() {
     expect(ember.canvas, const Color(0xFFF7F6F3));
     expect(ember.panel, const Color(0xFFEFEDE9));
     expect(ember.ink, const Color(0xFF1D1B18));
+    expect(ember.raised, const Color(0xFFFFFFFF));
+    expect(ember.accent, const Color(0xFFD98A2B));
+    expect(ember.hairline, const Color(0x171E1810));
+    expect(ember.accentText, const Color(0xFF8A4C05));
     expect(theme.colorScheme.surface, ember.canvas);
     expect(theme.colorScheme.onSurface, ember.ink);
     expect(theme.colorScheme.primary, ember.accent);

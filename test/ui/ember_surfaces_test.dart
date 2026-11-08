@@ -133,4 +133,27 @@ void main() {
       expect(text.style?.color, EmberColors.dark.inkSecondary);
     },
   );
+
+  testWidgets('the selected search result keeps opaque text', (tester) async {
+    final h = await pumpM1(tester);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    h.services.selection.setQuery('Synthetic component');
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final tile = tester.widget<ListTile>(
+      find.widgetWithText(ListTile, 'Synthetic component').first,
+    );
+    final ember = Theme.of(tester.element(find.byType(Scaffold).first))
+        .extension<EmberColors>()!;
+    expect(tile.selected, isTrue);
+    // selectedColor is the text and icon colour, so it must be opaque; the
+    // soft accent is a fill and belongs in selectedTileColor.
+    expect(tile.selectedColor, ember.accentText);
+    expect(tile.selectedTileColor, ember.accentSoft);
+  });
 }

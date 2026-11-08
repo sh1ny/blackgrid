@@ -148,7 +148,8 @@ class ManualControls extends StatelessWidget {
                         selected:
                             !services.selection.isHistory &&
                             services.selection.selectedId == item.id,
-                        selectedColor: context.ember.accentSoft,
+                        selectedColor: context.ember.accentText,
+                        selectedTileColor: context.ember.accentSoft,
                         title: Text(item.name),
                         subtitle: item.shortName == null
                             ? null
