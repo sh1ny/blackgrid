@@ -106,6 +106,39 @@ double _top(WidgetTester tester, String text) =>
     tester.getTopLeft(find.text(text)).dy;
 
 void main() {
+  testWidgets(
+    'optional uses survive unmount and reset on hidden selection change',
+    (tester) async {
+      final selection = _FakeSelection()
+        ..inspect('item-a', [_craft('Craft A')]);
+      final expansion = RequirementExpansion(selection);
+      addTearDown(expansion.dispose);
+      addTearDown(selection.dispose);
+      Widget panel(bool visible) => MaterialApp(
+        theme: blackgridTheme(Brightness.dark),
+        home: Scaffold(
+          body: visible
+              ? RequirementPanel(
+                  services: _FakeServices(selection),
+                  expansion: expansion,
+                )
+              : const SizedBox(),
+        ),
+      );
+      await tester.pumpWidget(panel(true));
+      await tester.tap(find.text('Optional uses (1)'));
+      await tester.pump();
+      expect(find.text('Craft A'), findsOneWidget);
+      await tester.pumpWidget(panel(false));
+      await tester.pumpWidget(panel(true));
+      expect(find.text('Craft A'), findsOneWidget);
+      await tester.pumpWidget(panel(false));
+      selection.inspect('item-b', [_craft('Craft B')]);
+      selection.inspect('item-a', [_craft('Craft A')]);
+      await tester.pumpWidget(panel(true));
+      expect(find.text('Craft A'), findsNothing);
+    },
+  );
   testWidgets('obligations by state, then a collapsed Optional uses header', (
     tester,
   ) async {

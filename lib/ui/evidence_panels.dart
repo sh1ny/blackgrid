@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../application/app_services.dart';
 import '../application/catalog_controller.dart';
 import '../application/progress_controller.dart';
+import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
 import 'item_icon.dart';
@@ -20,6 +21,42 @@ String itemsSourceUpdateLabel(CatalogSnapshot snapshot) =>
     'Items source update: '
     '${snapshot.sourceTimestamps['items']?.toUtc().toIso8601String() ?? 'unknown'}';
 
+/// Retains optional-use expansion while tracking the inspected item.
+class RequirementExpansion extends ChangeNotifier {
+  /// Creates expansion state bound to [selection].
+  RequirementExpansion(this.selection) : _openFor = selection.selectedId {
+    selection.addListener(_selectionChanged);
+  }
+
+  /// The selection whose changes collapse optional uses.
+  final SelectionController selection;
+  String? _openFor;
+  bool _open = false;
+
+  /// Whether optional uses are expanded.
+  bool get open => _open;
+
+  /// Changes whether optional uses are expanded.
+  void setOpen(bool value) {
+    _open = value;
+    notifyListeners();
+  }
+
+  void _selectionChanged() {
+    final id = selection.selectedId;
+    if (id == _openFor) return;
+    _openFor = id;
+    _open = false;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    selection.removeListener(_selectionChanged);
+    super.dispose();
+  }
+}
+
 /// The requirements and uses of the inspected item.
 ///
 /// Task and hideout rows come first. Craft and barter rows follow under an
@@ -30,10 +67,14 @@ class RequirementPanel extends StatefulWidget {
     super.key,
     required this.services,
     this.fitContent = false,
+    this.expansion,
   });
 
   /// Sizes the panel to its rows when embedded in a scrolling inspector.
   final bool fitContent;
+
+  /// Optional expansion state owned by a longer-lived inspector.
+  final RequirementExpansion? expansion;
 
   /// The services whose current selection the panel shows.
   final AppServices services;
@@ -43,50 +84,39 @@ class RequirementPanel extends StatefulWidget {
 }
 
 class _RequirementPanelState extends State<RequirementPanel> {
-  bool _optionalOpen = false;
-
-  /// The item [_optionalOpen] was set for.
-  String? _openFor;
+  late RequirementExpansion _expansion;
 
   @override
   void initState() {
     super.initState();
-    _openFor = widget.services.selection.selectedId;
-    widget.services.selection.addListener(_selectionChanged);
+    _expansion =
+        widget.expansion ?? RequirementExpansion(widget.services.selection);
   }
 
   @override
   void didUpdateWidget(RequirementPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.services.selection != widget.services.selection) {
-      oldWidget.services.selection.removeListener(_selectionChanged);
-      widget.services.selection.addListener(_selectionChanged);
-      _selectionChanged();
+    if (oldWidget.expansion != widget.expansion ||
+        oldWidget.services.selection != widget.services.selection) {
+      if (oldWidget.expansion == null) _expansion.dispose();
+      _expansion =
+          widget.expansion ?? RequirementExpansion(widget.services.selection);
     }
   }
 
   @override
   void dispose() {
-    widget.services.selection.removeListener(_selectionChanged);
+    if (widget.expansion == null) _expansion.dispose();
     super.dispose();
-  }
-
-  /// Collapses the group as soon as a different item is inspected, so that
-  /// returning to an earlier item never reopens it.
-  void _selectionChanged() {
-    final id = widget.services.selection.selectedId;
-    if (id == _openFor) return;
-    _openFor = id;
-    _optionalOpen = false;
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.services.selection,
+    listenable: Listenable.merge([widget.services.selection, _expansion]),
     builder: (context, _) {
       final selection = widget.services.selection;
       final reasons = selection.decision?.reasons;
-      final open = _optionalOpen;
+      final open = _expansion.open;
       return GridPanel(
         fitContent: widget.fitContent,
         title: 'Requirements & uses',
@@ -128,7 +158,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
           return _OptionalHeader(
             count: optional.length,
             open: open,
-            onTap: () => setState(() => _optionalOpen = !open),
+            onTap: () => _expansion.setOpen(!open),
           );
         }
         final need = optional[index - obligations.length - 1];

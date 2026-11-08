@@ -37,12 +37,17 @@ class _BlackgridShellState extends State<BlackgridShell> {
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
   );
   bool sourceDetailsExpanded = false;
+  bool inspectionExpanded = false;
+  bool requirementsExpanded = false;
+  bool sourcesExpanded = false;
+  late RequirementExpansion requirementExpansion;
   final query = TextEditingController();
   final searchFocus = FocusNode();
   final inspectorFocus = FocusNode();
   @override
   void initState() {
     super.initState();
+    requirementExpansion = RequirementExpansion(widget.services.selection);
     query.text = widget.services.selection.query;
   }
 
@@ -59,11 +64,21 @@ class _BlackgridShellState extends State<BlackgridShell> {
   }
 
   @override
+  void didUpdateWidget(BlackgridShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.services.selection != widget.services.selection) {
+      requirementExpansion.dispose();
+      requirementExpansion = RequirementExpansion(widget.services.selection);
+    }
+  }
+
+  @override
   void dispose() {
     query.dispose();
     searchFocus.dispose();
     inspectorFocus.dispose();
     inspectorScope.dispose();
+    requirementExpansion.dispose();
     super.dispose();
   }
 
@@ -246,6 +261,10 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                           ),
                                           if (inspectorOpen) ...[
                                             ExpansionTile(
+                                              initiallyExpanded:
+                                                  inspectionExpanded,
+                                              onExpansionChanged: (value) =>
+                                                  inspectionExpanded = value,
                                               title: const Text(
                                                 'Inspection details',
                                               ),
@@ -259,15 +278,25 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                               ],
                                             ),
                                             ExpansionTile(
+                                              initiallyExpanded:
+                                                  requirementsExpanded,
+                                              onExpansionChanged: (value) =>
+                                                  requirementsExpanded = value,
                                               title: const Text('Requirements'),
                                               children: [
                                                 RequirementPanel(
                                                   services: widget.services,
                                                   fitContent: true,
+                                                  expansion:
+                                                      requirementExpansion,
                                                 ),
                                               ],
                                             ),
                                             ExpansionTile(
+                                              initiallyExpanded:
+                                                  sourcesExpanded,
+                                              onExpansionChanged: (value) =>
+                                                  sourcesExpanded = value,
                                               title: const Text('Sources'),
                                               children: [
                                                 SourcePanel(
@@ -302,6 +331,8 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                             child: inspectorOpen
                                                 ? RequirementPanel(
                                                     services: widget.services,
+                                                    expansion:
+                                                        requirementExpansion,
                                                   )
                                                 : const SizedBox.shrink(),
                                           ),

@@ -198,6 +198,82 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('inspector expansion survives closing and switching areas', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester, size: const Size(1660, 2400));
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    for (final title in ['Inspection details', 'Requirements', 'Sources']) {
+      await tester.ensureVisible(find.text(title));
+      await tester.tap(find.text(title));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
+      expect(find.byType(type), findsOneWidget);
+    }
+    await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
+      expect(find.byType(type), findsOneWidget);
+    }
+  });
+
+  testWidgets('map optional uses survive inspector close and area switch', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester, size: const Size(1660, 1200));
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await showInspectorPanel(tester, 'Requirements & uses');
+    final panel = find.byType(RequirementPanel);
+    final scroll = find
+        .descendant(of: panel, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scroll).position;
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final optional = find.textContaining('Optional uses (');
+    await tester.tap(optional);
+    await tester.pumpAndSettle();
+    bool expanded() => find
+        .descendant(
+          of: find.ancestor(of: optional, matching: find.byType(InkWell)).first,
+          matching: find.byIcon(Icons.expand_less),
+        )
+        .evaluate()
+        .isNotEmpty;
+    expect(expanded(), isTrue);
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    await showInspectorPanel(tester, 'Requirements & uses');
+    expect(expanded(), isTrue);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    await showInspectorPanel(tester, 'Requirements & uses');
+    expect(expanded(), isTrue);
+  });
+
   testWidgets(
     'Scanner inspector expands selected item and requirements at scale two',
     (tester) async {

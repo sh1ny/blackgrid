@@ -111,3 +111,22 @@ the earlier Release build with Tarkov absent; that is its reported result, not
 agent verification of this final build. No app or game was launched here;
 live-game, final Release-build visuals and owner milestone judgment remain
 unverified.
+
+Pre-ship F1 regression: `inspector expansion survives closing and switching
+areas` failed because Scanner detail content disappeared after reopening;
+`map optional uses survive inspector close and area switch` failed because the
+Map header returned collapsed; `optional uses survive unmount and reset on
+hidden selection change` failed because the remounted panel lost its open
+state. The latter two red runs temporarily disconnected the retained state to
+reproduce the original local ownership. All three pass with the fix. The full
+`requirement_panel_test.dart` suite passes (6 tests), and the focused shell
+runs pass. Hidden selection changes reset Optional uses even when the user
+returns to the earlier item. No app or game was launched.
+
+The coordinator independently ran pinned analysis and the complete fast suite:
+no issues and 2,831 passed. An intermediate full run exposed the inspector test
+helper's old assumption that history is always last; preserving expansion made
+the first Scanner history panel leave the lazy cache when scrolled to the bottom.
+The helper now navigates to each area's actual history position and expands a
+section only when needed. Its original failing scanner regression passes, and
+the final complete run above includes the corrected helper.
