@@ -46,6 +46,10 @@ const _dimmedOpacity = '0.22';
 /// The map's highlight colour; it wins over the role colour.
 const _highlight = '#18FFFF';
 
+/// The map's selection colour, the dark-room Ember accent (ADR-0039); it wins
+/// over both the highlight and the role colour.
+const _selection = '#E9A14B';
+
 /// The backgrounds a badge is shown on: the app background
 /// (`GridColors.background`), a mid olive-grey like forest and shoreline
 /// artwork, and a light sand like pale interchange and customs terrain.
@@ -207,6 +211,7 @@ String renderPreview(List<IconSet> sets) {
   final names = [for (final set in sets) set.name];
   final colours = <String>{
     _highlight,
+    _selection,
     for (final set in sets) ...set.roles.values,
   };
   final html = StringBuffer()
@@ -324,7 +329,11 @@ String _cell(
   final role = set.roles[icon.role] ?? '#FFFFFF';
   final badge = set.badge;
   final size = state == 'selected' ? badge.selectedDiameter : badge.diameter;
-  final colour = state == 'highlighted' ? _highlight : role;
+  final colour = switch (state) {
+    'selected' => _selection,
+    'highlighted' => _highlight,
+    _ => role,
+  };
   final symbol = _symbolId(setIndex, icon.key);
   String draw(int scale) {
     final inset = (size - badge.glyph) / 2;

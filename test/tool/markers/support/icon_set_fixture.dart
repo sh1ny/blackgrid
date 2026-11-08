@@ -18,8 +18,8 @@ const starterRoles = <String, String>{
   'danger': '#FF5252',
   'boss': '#E57CE5',
   'spawn': '#C9CDBF',
-  'quest': '#DCC05A',
-  'loot': '#E8A04A',
+  'quest': '#C5E063',
+  'loot': '#7ED9C6',
   'utility': '#B7A6F0',
   'pin': '#40C4FF',
 };

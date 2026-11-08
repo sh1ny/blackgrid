@@ -6,11 +6,13 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:vector_graphics/vector_graphics.dart' as vg;
 
+import 'map_palette.dart' show mapSelectionColour;
+
 const _manifestPath = 'assets/map_markers/manifest.json';
 const _compiledDirectory = 'assets/map_markers/compiled';
 const _rasterSize = 64;
 
-const _gold = ui.Color(0xFFDCC05A);
+const _neutral = ui.Color(0xFFC9CDBF);
 const _exitGreen = ui.Color(0xFF48D28B);
 const _dangerRed = ui.Color(0xFFFF5252);
 const _pinBlue = ui.Color(0xFF40C4FF);
@@ -69,19 +71,21 @@ final class MarkerIcon {
 /// The fallback colour of [filterKey] used before a manifest is loaded.
 ///
 /// Extract keys are green, hazard keys red, `CustomPins` light blue and every
-/// other key gold.
+/// other key the neutral grey (`#C9CDBF`), which reads as "no category".
 ui.Color markerFallbackColour(String filterKey) => switch (filterKey) {
   'PmcExtracts' || 'ScavExtracts' || 'SharedExtracts' => _exitGreen,
   'Hazards' || 'HazardZones' => _dangerRed,
   'CustomPins' => _pinBlue,
-  _ => _gold,
+  _ => _neutral,
 };
 
 /// Resolves the colour, diameter and opacity of one marker badge.
 ///
-/// Highlight wins over [role], which wins over gold. A selected or
-/// highlighted badge uses [MarkerBadgeGeometry.selectedDiameter]. A dimmed
-/// badge is drawn at [dimmedMarkerOpacity] on top of any other state.
+/// Selection wins over highlight, which wins over [role], which wins over the
+/// neutral grey. A selected badge is [mapSelectionColour]; a highlighted one
+/// is cyan. A selected or highlighted badge uses
+/// [MarkerBadgeGeometry.selectedDiameter]. A dimmed badge is drawn at
+/// [dimmedMarkerOpacity] on top of any other state.
 ({ui.Color colour, double diameter, double opacity}) markerBadgeStyle({
   required ui.Color? role,
   required bool selected,
@@ -89,7 +93,11 @@ ui.Color markerFallbackColour(String filterKey) => switch (filterKey) {
   required bool dimmed,
   required MarkerBadgeGeometry geometry,
 }) => (
-  colour: highlighted ? _highlightCyan : (role ?? _gold),
+  colour: selected
+      ? mapSelectionColour
+      : highlighted
+      ? _highlightCyan
+      : (role ?? _neutral),
   diameter: selected || highlighted
       ? geometry.selectedDiameter
       : geometry.diameter,

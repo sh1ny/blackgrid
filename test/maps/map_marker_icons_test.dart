@@ -4,13 +4,15 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/maps/map_marker_icons.dart';
-import 'package:flutter/painting.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../tool/markers/icon_set.dart';
 
 const _manifestPath = 'assets/map_markers/manifest.json';
-const _gold = Color(0xFFDCC05A);
+const _neutral = Color(0xFFC9CDBF);
+const _ember = Color(0xFFE9A14B);
 const _green = Color(0xFF48D28B);
 const _red = Color(0xFFFF5252);
 const _blue = Color(0xFF40C4FF);
@@ -44,7 +46,7 @@ ByteData _manifest({int schemaVersion = 1}) => _data(
       'roles': {
         'exit': '#48D28B',
         'utility': '#B7A6F0',
-        'loot': '#E8A04A',
+        'loot': '#7ED9C6',
         'pin': '#40C4FF',
       },
       'icons': [
@@ -93,21 +95,106 @@ _FakeAssets _fullSet({int schemaVersion = 1}) {
   });
 }
 
+/// Paints one selected badge, as the map does, under whatever theme is active.
+class _BadgePainter extends CustomPainter {
+  _BadgePainter(this.icons);
+
+  final MapMarkerIcons icons;
+
+  @override
+  void paint(Canvas canvas, Size size) => paintMarkerBadge(
+    canvas,
+    size.center(Offset.zero),
+    icons,
+    filterKey: 'locks',
+    selected: true,
+    highlighted: false,
+    dimmed: false,
+  );
+
+  @override
+  bool shouldRepaint(_BadgePainter oldDelegate) => false;
+}
+
 void main() {
   const geometry = MarkerBadgeGeometry.standard;
 
   group('markerBadgeStyle', () {
-    test('selected uses selectedDiameter and the role colour', () {
-      final style = markerBadgeStyle(
+    test('map-marker-icons: Selected marker grows', () {
+      final selected = markerBadgeStyle(
         role: _utility,
         selected: true,
         highlighted: false,
         dimmed: false,
         geometry: geometry,
       );
-      expect(style.colour, _utility);
+      expect(selected.colour, _ember);
+      expect(selected.diameter, 30);
+      expect(selected.opacity, 1);
+
+      final other = markerBadgeStyle(
+        role: _utility,
+        selected: false,
+        highlighted: false,
+        dimmed: false,
+        geometry: geometry,
+      );
+      expect(other.colour, _utility);
+      expect(other.diameter, 24);
+    });
+
+    test('map-marker-icons: Selected and highlighted together', () {
+      final style = markerBadgeStyle(
+        role: _green,
+        selected: true,
+        highlighted: true,
+        dimmed: false,
+        geometry: geometry,
+      );
+      expect(style.colour, _ember);
+      expect(style.colour, isNot(_cyan));
       expect(style.diameter, 30);
-      expect(style.opacity, 1);
+
+      final dimmed = markerBadgeStyle(
+        role: _green,
+        selected: true,
+        highlighted: true,
+        dimmed: true,
+        geometry: geometry,
+      );
+      expect(dimmed.colour, _ember);
+      expect(dimmed.opacity, 0.22);
+    });
+
+    testWidgets('map-marker-icons: Selected marker in the light room', (
+      tester,
+    ) async {
+      final icons = MapMarkerIcons.disabled();
+      addTearDown(icons.dispose);
+      for (final brightness in Brightness.values) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: blackgridTheme(brightness),
+            home: CustomPaint(
+              key: ValueKey(brightness),
+              size: const Size(40, 40),
+              painter: _BadgePainter(icons),
+            ),
+          ),
+        );
+        final canvas = tester.renderObject(find.byKey(ValueKey(brightness)));
+        expect(
+          canvas,
+          paints..something((name, arguments) {
+            if (name != #drawCircle) return false;
+            final paint = arguments[2] as Paint;
+            return paint.style == PaintingStyle.stroke &&
+                paint.color.toARGB32() == _ember.toARGB32() &&
+                arguments[1] == 14;
+          }),
+          reason: '${brightness.name} room draws the same Ember ring',
+        );
+      }
     });
 
     test('highlighted uses cyan and selectedDiameter', () {
@@ -153,7 +240,7 @@ void main() {
                   'dimmed=$dimmed role=$role';
               expect(
                 style.colour,
-                highlighted ? _cyan : (role ?? _gold),
+                selected ? _ember : (highlighted ? _cyan : (role ?? _neutral)),
                 reason: label,
               );
               expect(
@@ -186,7 +273,7 @@ void main() {
   });
 
   group('fallback colours', () {
-    test('fallback colours before the manifest loads', () {
+    test('map-marker-icons: Fallback colours without a manifest', () {
       final icons = MapMarkerIcons(load: _fullSet().load);
       addTearDown(icons.dispose);
       for (final key in ['PmcExtracts', 'ScavExtracts', 'SharedExtracts']) {
@@ -197,7 +284,7 @@ void main() {
       }
       expect(icons.colourFor('CustomPins'), _blue);
       for (final key in ['lootLoose', 'Transits', 'locks', 'Unknown']) {
-        expect(icons.colourFor(key), _gold, reason: key);
+        expect(icons.colourFor(key), _neutral, reason: key);
       }
       expect(icons.geometry.diameter, 24);
       expect(icons.geometry.selectedDiameter, 30);
@@ -210,7 +297,7 @@ void main() {
 
   group('open', () {
     testWidgets('icon() is null for an unknown filter key and the style '
-        'falls back to gold', (tester) async {
+        'falls back to neutral grey', (tester) async {
       final icons = MapMarkerIcons(load: _fullSet().load);
       addTearDown(icons.dispose);
       await tester.runAsync(icons.open);
@@ -224,8 +311,8 @@ void main() {
         dimmed: false,
         geometry: icons.geometry,
       );
-      expect(style.colour, _gold);
-      expect(icons.colourFor('NotACategory'), _gold);
+      expect(style.colour, _neutral);
+      expect(icons.colourFor('NotACategory'), _neutral);
     });
 
     testWidgets('before open() completes every key has no glyph; completion '
@@ -316,7 +403,7 @@ void main() {
           expect(icons.icon(key), isNull, reason: key);
         }
         expect(icons.colourFor('PmcExtracts'), _green);
-        expect(icons.colourFor('locks'), _gold);
+        expect(icons.colourFor('locks'), _neutral);
         expect(icons.colourFor('CustomPins'), _blue);
         expect(icons.failures, hasLength(1));
         expect(icons.failures.single, contains('manifest.json'));

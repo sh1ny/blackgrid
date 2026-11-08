@@ -886,7 +886,9 @@ class _MapPainter extends CustomPainter {
       }
     }
     path.close();
-    final colour = markerIcons.colourFor(projected.marker.filterKey);
+    final colour = projected.marker.id == selectedMarker
+        ? mapSelectionColour
+        : markerIcons.colourFor(projected.marker.filterKey);
     _fill.color = colour.withValues(alpha: projected.dimmed ? .035 : .16);
     canvas.drawPath(path, _fill);
     _edge.color = colour.withValues(

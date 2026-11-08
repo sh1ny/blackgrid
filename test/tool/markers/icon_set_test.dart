@@ -397,35 +397,76 @@ void main() {
       );
     });
 
-    test(
-      'palette: hue 185 and contrast 2.4 are named; grey below 10% saturation '
-      'passes',
-      () {
-        roles()['teal'] = '#00EAFF';
-        roles()['dim'] = '#505050';
-        fx.write();
-        final result = checkIconSet(fx.manifestPath);
-        expectFailure(
-          result,
-          rule: 'palette',
-          subject: 'teal',
-          contains: ['#00EAFF', 'hue 184.9'],
-        );
-        expectFailure(
-          result,
-          rule: 'palette',
-          subject: 'dim',
-          contains: ['#505050', 'contrast 2.4'],
-        );
+    test('map-marker-icons: Amber role fails', () {
+      roles()['sunset'] = '#E8A04A';
+      fx.write();
+      expectFailure(
+        checkIconSet(fx.manifestPath),
+        rule: 'palette',
+        subject: 'sunset',
+        contains: ['#E8A04A', 'hue 32.7', 'amber'],
+      );
+    });
 
-        roles()
-          ..remove('teal')
-          ..remove('dim')
-          ..['mist'] = '#BEC8C8';
-        fx.write();
-        expectValid(checkIconSet(fx.manifestPath));
-      },
-    );
+    test('map-marker-icons: Amber band edges fail and just outside pass', () {
+      // 25 and 60 degrees at full saturation, and 20 and 66 just outside.
+      roles()
+        ..['low'] = '#FF6B00'
+        ..['high'] = '#FFFF00';
+      fx.write();
+      final result = checkIconSet(fx.manifestPath);
+      expectFailure(
+        result,
+        rule: 'palette',
+        subject: 'low',
+        contains: ['amber'],
+      );
+      expectFailure(
+        result,
+        rule: 'palette',
+        subject: 'high',
+        contains: ['amber'],
+      );
+
+      roles()
+        ..['low'] = '#FF5500'
+        ..['high'] = '#E6FF00';
+      fx.write();
+      expectValid(checkIconSet(fx.manifestPath));
+    });
+
+    test('map-marker-icons: Low-saturation grey near amber passes', () {
+      // Hue 42 degrees at 5% saturation, well above 3:1.
+      roles()['stone'] = '#9E9B94';
+      fx.write();
+      expectValid(checkIconSet(fx.manifestPath));
+    });
+
+    test('map-marker-icons: Reserved hue or low contrast fails', () {
+      roles()['teal'] = '#00EAFF';
+      roles()['dim'] = '#505050';
+      fx.write();
+      final result = checkIconSet(fx.manifestPath);
+      expectFailure(
+        result,
+        rule: 'palette',
+        subject: 'teal',
+        contains: ['#00EAFF', 'hue 184.9'],
+      );
+      expectFailure(
+        result,
+        rule: 'palette',
+        subject: 'dim',
+        contains: ['#505050', 'contrast 2.4'],
+      );
+
+      roles()
+        ..remove('teal')
+        ..remove('dim')
+        ..['mist'] = '#BEC8C8';
+      fx.write();
+      expectValid(checkIconSet(fx.manifestPath));
+    });
   });
 
   group('provenance', () {
