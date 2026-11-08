@@ -91,10 +91,22 @@ ThemeData emberTheme(Brightness brightness) {
       fillColor: c.raised,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(EmberRadius.m), borderSide: hairline),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(EmberRadius.m), borderSide: hairline),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(EmberRadius.m), borderSide: BorderSide(color: c.accent)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(EmberRadius.m), borderSide: BorderSide(color: c.errLine)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(EmberRadius.m),
+        borderSide: hairline,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(EmberRadius.m),
+        borderSide: hairline,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(EmberRadius.m),
+        borderSide: BorderSide(color: c.accent),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(EmberRadius.m),
+        borderSide: BorderSide(color: c.errLine),
+      ),
       hintStyle: EmberType.body.copyWith(color: c.inkTertiary),
     ),
     chipTheme: ChipThemeData(
@@ -108,7 +120,11 @@ ThemeData emberTheme(Brightness brightness) {
       style: MenuStyle(
         backgroundColor: WidgetStatePropertyAll(c.raised),
         side: WidgetStatePropertyAll(hairline),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(EmberRadius.l))),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EmberRadius.l),
+          ),
+        ),
         padding: const WidgetStatePropertyAll(EdgeInsets.all(6)),
       ),
     ),
