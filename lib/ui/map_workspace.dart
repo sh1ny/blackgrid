@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../application/app_services.dart';
 import '../application/map_controller.dart';
+import '../application/map_session_controller.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/map_marker_query.dart';
 import '../domain/map_place_labels.dart';
@@ -45,6 +46,29 @@ const _controlHelp = [
   ('Hover over an extract', 'Show its area'),
 ];
 
+/// Gap between the map's edge and the controls drawn over it.
+const _overlayInset = 12.0;
+
+/// The id of the floor control's Auto segment.
+const _autoFloor = 'auto';
+
+/// The map ground stays dark in both rooms (DESIGN.md X6), so controls drawn on
+/// it take the dark room's roles, as the map's own text does.
+const _overlayInk = EmberColors.dark;
+
+/// Compact entries keep all thirteen maps and the screenshot item on screen.
+final _menuItemStyle = MenuItemButton.styleFrom(
+  visualDensity: VisualDensity.compact,
+  minimumSize: const Size(0, 32),
+);
+
+/// The surface of a control group floating over the map.
+final _overlaySurface = BoxDecoration(
+  color: _overlayInk.raised,
+  border: Border.all(color: _overlayInk.hairlineStrong),
+  borderRadius: BorderRadius.circular(EmberRadius.m),
+);
+
 /// Native artwork and screen-space targets share the controller's view geometry.
 class MapWorkspace extends StatefulWidget {
   /// Creates the map viewport and its session-connected selection controls.
@@ -72,11 +96,13 @@ class _MapWorkspaceState extends State<MapWorkspace> {
   void initState() {
     super.initState();
     maps.addListener(_rehover);
+    maps.addListener(_dropPinForMarker);
   }
 
   @override
   void dispose() {
     maps.removeListener(_rehover);
+    maps.removeListener(_dropPinForMarker);
     _focus.dispose();
     super.dispose();
   }
@@ -91,6 +117,20 @@ class _MapWorkspaceState extends State<MapWorkspace> {
 
   ViewportPoint get _viewportCenter =>
       ViewportPoint(maps.viewportSize.width / 2, maps.viewportSize.height / 2);
+
+  /// Clears the selected pin once a marker is selected from outside the
+  /// workspace, such as a This raid row, so only one thing is selected.
+  ///
+  /// The workspace's own pin selections clear the marker first, so they never
+  /// reach this with a marker selected.
+  void _dropPinForMarker() {
+    if (_selectedPin == null || !mounted) return;
+    if (maps.selectedMarkerProjection == null) return;
+    setState(() {
+      _selectedPin = null;
+      _selectedPinMapId = null;
+    });
+  }
 
   void _selectMarker(String? id) {
     _focus.requestFocus();
@@ -370,12 +410,277 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     return KeyEventResult.handled;
   }
 
+  /// Applies the picker's choice. A hand-picked map turns log following off.
+  void _chooseMap(String id) {
+    if (widget.services.settings.busy) return;
+    widget.services.settings.setMap(id);
+  }
+
+  /// Reads the newest saved screenshot and says why nothing was applied.
+  ///
+  /// Only the two failures that leave the player guessing get a notice. An
+  /// applied read shows in the map, and a superseded one is silent.
+  Future<void> _readLatest() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final outcome = await widget.services.mapSession.readLatest();
+    if (!mounted) return;
+    final message = switch (outcome) {
+      ReadLatestApplied() || ReadLatestSuperseded() => null,
+      ReadLatestNoScreenshot() => 'There is no screenshot to read.',
+      ReadLatestUnavailable() => 'The screenshot could not be read.',
+    };
+    if (message != null) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  void _setFloorSelection(Set<String> next, Set<String> current) {
+    for (final id in {
+      ...next.difference(current),
+      ...current.difference(next),
+    }) {
+      if (id == _autoFloor) {
+        maps.setAutomaticFloorFollowing(!maps.automaticFloorFollowing);
+      } else {
+        maps.toggleFloor(id);
+      }
+    }
+  }
+
+  void _closePin() {
+    _focus.requestFocus();
+    setState(() {
+      _selectedPin = null;
+      _selectedPinMapId = null;
+    });
+  }
+
+  /// The map's name as a button that opens the map menu.
+  Widget _mapPicker(BuildContext context) {
+    final settings = widget.services.settings;
+    final session = widget.services.mapSession.state;
+    final current = maps.selectedMapId ?? settings.settings.selectedMap;
+    final reading = session.readingLatest;
+    return MenuAnchor(
+      menuChildren: [
+        for (final id in supportedMaps)
+          MenuItemButton(
+            key: Key('map-picker-item-$id'),
+            style: _menuItemStyle,
+            leadingIcon: SizedBox(
+              width: 18,
+              child: id == current ? const Icon(Icons.check, size: 18) : null,
+            ),
+            onPressed: settings.busy ? null : () => _chooseMap(id),
+            child: Text(mapLabel(id)),
+          ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: SizedBox(
+            width: 240,
+            child: Text(
+              'Choosing a map turns log following off until you turn it back '
+              'on in Settings.',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+        ),
+        const Divider(),
+        MenuItemButton(
+          key: const Key('map-picker-read-latest'),
+          style: _menuItemStyle,
+          leadingIcon: const Icon(Icons.refresh, size: 18),
+          onPressed: reading || session.screenshotDirectory.isEmpty
+              ? null
+              : _readLatest,
+          child: Text(reading ? 'Reading latest…' : 'Read latest screenshot'),
+        ),
+      ],
+      builder: (context, controller, _) => OutlinedButton.icon(
+        key: const Key('map-picker'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _overlayInk.ink,
+          backgroundColor: _overlayInk.raised,
+          side: BorderSide(color: _overlayInk.hairlineStrong),
+          textStyle: EmberType.title.copyWith(fontSize: 15),
+        ),
+        onPressed: () =>
+            controller.isOpen ? controller.close() : controller.open(),
+        icon: Icon(Icons.arrow_drop_down, color: _overlayInk.inkTertiary),
+        iconAlignment: IconAlignment.end,
+        label: Text(mapLabel(current)),
+      ),
+    );
+  }
+
+  /// Auto, when the map follows height, then each floor of the map.
+  Widget? _floorControl(PreparedMap? map) {
+    if (map == null || maps.error != null || maps.unavailable) return null;
+    final floors = map.floorPolicy.floors;
+    final selection = maps.floorSelection;
+    final auto = maps.automaticFloorSupported;
+    if (!auto && floors.isEmpty) return null;
+    final selected = {
+      if (auto && maps.automaticFloorFollowing) _autoFloor,
+      for (final floor in floors)
+        if (selection?.isLayerVisible(floor.id) ?? false) floor.id,
+    };
+    return SegmentedButton<String>(
+      key: const Key('map-floor-control'),
+      multiSelectionEnabled: true,
+      emptySelectionAllowed: true,
+      showSelectedIcon: false,
+      style: SegmentedButton.styleFrom(
+        foregroundColor: _overlayInk.inkSecondary,
+        selectedForegroundColor: _overlayInk.ink,
+        backgroundColor: _overlayInk.raised,
+        selectedBackgroundColor: _overlayInk.segmentOn,
+        side: BorderSide(color: _overlayInk.hairlineStrong),
+      ),
+      segments: [
+        if (auto) const ButtonSegment(value: _autoFloor, label: Text('Auto')),
+        for (final floor in floors)
+          ButtonSegment(value: floor.id, label: Text(floor.label)),
+      ],
+      selected: selected,
+      onSelectionChanged: (next) => _setFloorSelection(next, selected),
+    );
+  }
+
+  Widget _actionButton({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) => IconButton(
+    tooltip: tooltip,
+    onPressed: onPressed,
+    icon: Icon(icon, size: 20),
+    style: IconButton.styleFrom(
+      foregroundColor: _overlayInk.inkSecondary,
+      disabledForegroundColor: _overlayInk.inkTertiary,
+      hoverColor: _overlayInk.hover,
+      minimumSize: const Size(36, 36),
+    ),
+  );
+
+  /// The icon stack at the map's right edge.
+  Widget _actionStack(PreparedMap? map, List<ProjectedMapMarker> visible) {
+    final settings = widget.services.settings;
+    return DecoratedBox(
+      key: const Key('map-actions'),
+      decoration: _overlaySurface,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _actionButton(
+            tooltip: 'Fit map',
+            icon: Icons.fit_screen,
+            onPressed: map == null ? null : maps.fit,
+          ),
+          _actionButton(
+            tooltip: 'Zoom in',
+            icon: Icons.add,
+            onPressed: map == null
+                ? null
+                : () => maps.zoomAt(_viewportCenter, 1.25),
+          ),
+          _actionButton(
+            tooltip: 'Zoom out',
+            icon: Icons.remove,
+            onPressed: map == null
+                ? null
+                : () => maps.zoomAt(_viewportCenter, .8),
+          ),
+          _actionButton(
+            tooltip: 'Center on player',
+            icon: Icons.my_location,
+            onPressed: maps.playerPosition == null ? null : maps.centerOnPlayer,
+          ),
+          _actionButton(
+            tooltip: 'Pin at view center',
+            icon: Icons.add_location_alt_outlined,
+            onPressed: map == null || settings.busy
+                ? null
+                : () => _createPinAt(_viewportCenter),
+          ),
+          _actionButton(
+            tooltip: 'Browse markers',
+            icon: Icons.list,
+            onPressed: visible.isEmpty && !settings.pins.any(_isVisiblePin)
+                ? null
+                : _browse,
+          ),
+          _actionButton(
+            tooltip: 'Map help',
+            icon: Icons.help_outline,
+            onPressed: _showHelp,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The bar at the bottom of the map for the selected saved [pin].
+  Widget _pinBar(CustomPin pin) {
+    final busy = widget.services.settings.busy;
+    final style = TextButton.styleFrom(
+      foregroundColor: _overlayInk.ink,
+      disabledForegroundColor: _overlayInk.inkTertiary,
+      textStyle: EmberType.control,
+    );
+    return DecoratedBox(
+      key: const Key('map-pin-bar'),
+      decoration: _overlaySurface,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 12, right: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                pin.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: EmberType.uiHeading.copyWith(color: _overlayInk.ink),
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              key: const Key('map-pin-edit'),
+              style: style,
+              onPressed: busy
+                  ? null
+                  : () => showPinEditor(context, widget.services, pin: pin),
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Edit'),
+            ),
+            TextButton.icon(
+              key: const Key('map-pin-remove'),
+              style: style,
+              onPressed: busy ? null : () => _removePin(pin),
+              icon: const Icon(Icons.delete_outline, size: 16),
+              label: const Text('Remove'),
+            ),
+            TextButton.icon(
+              key: const Key('map-pin-close'),
+              style: style,
+              onPressed: _closePin,
+              icon: const Icon(Icons.close, size: 16),
+              label: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([
       maps,
       widget.services.settings,
       widget.services.catalog,
+      widget.services.mapSession,
     ]),
     builder: (context, _) {
       final map = maps.preparedMap;
@@ -390,292 +695,226 @@ class _MapWorkspaceState extends State<MapWorkspace> {
           if (pin.id == _selectedPin) selectedPin = pin;
         }
       }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              OutlinedButton.icon(
-                onPressed: map == null ? null : maps.fit,
-                icon: const Icon(Icons.fit_screen, size: 18),
-                label: const Text('Fit map'),
-              ),
-              IconButton(
-                tooltip: 'Zoom in',
-                onPressed: map == null
-                    ? null
-                    : () => maps.zoomAt(_viewportCenter, 1.25),
-                icon: const Icon(Icons.add),
-              ),
-              IconButton(
-                tooltip: 'Zoom out',
-                onPressed: map == null
-                    ? null
-                    : () => maps.zoomAt(_viewportCenter, .8),
-                icon: const Icon(Icons.remove),
-              ),
-              OutlinedButton.icon(
-                onPressed:
-                    visible.isEmpty &&
-                        !widget.services.settings.pins.any(_isVisiblePin)
-                    ? null
-                    : _browse,
-                icon: const Icon(Icons.list, size: 18),
-                label: Text('Markers (${visible.length})'),
-              ),
-              OutlinedButton.icon(
-                onPressed: maps.playerPosition == null
-                    ? null
-                    : maps.centerOnPlayer,
-                icon: const Icon(Icons.my_location, size: 18),
-                label: const Text('Center on player'),
-              ),
-              OutlinedButton.icon(
-                onPressed: map == null || widget.services.settings.busy
-                    ? null
-                    : () => _createPinAt(_viewportCenter),
-                icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-                label: const Text('Pin at view center'),
-              ),
-              if (maps.automaticFloorSupported)
-                FilterChip(
-                  label: const Text('Automatic floor'),
-                  selected: maps.automaticFloorFollowing,
-                  onSelected: maps.setAutomaticFloorFollowing,
-                ),
-              if (map != null)
-                for (final floor in map.floorPolicy.floors)
-                  FilterChip(
-                    label: Text(floor.label),
-                    selected:
-                        maps.floorSelection?.isLayerVisible(floor.id) ?? false,
-                    onSelected: (_) => maps.toggleFloor(floor.id),
-                  ),
-              IconButton(
-                tooltip: 'Map help',
-                onPressed: _showHelp,
-                icon: const Icon(Icons.help_outline),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final size = Size(constraints.maxWidth, constraints.maxHeight);
-                // Tile demand follows layout. Scheduling avoids notification in build.
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) maps.updateViewport(size);
-                });
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: context.blackgrid.mapGround,
-                    border: Border.all(color: context.ember.hairline),
-                  ),
-                  child: ClipRect(
-                    child: Focus(
-                      focusNode: _focus,
-                      onKeyEvent: (_, event) => _key(event),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Listener(
-                            onPointerSignal: (event) {
-                              if (event is PointerScrollEvent && map != null) {
-                                GestureBinding.instance.pointerSignalResolver
-                                    .register(event, (_) {
-                                      maps.zoomAt(
-                                        ViewportPoint(
-                                          event.localPosition.dx,
-                                          event.localPosition.dy,
-                                        ),
-                                        event.scrollDelta.dy < 0
-                                            ? 1.15
-                                            : 1 / 1.15,
-                                      );
-                                    });
-                              }
-                            },
-                            child: MouseRegion(
-                              onHover: _hover,
-                              onExit: (_) => _leave(),
-                              child: GestureDetector(
-                                key: const Key('native-map-viewport'),
-                                behavior: HitTestBehavior.opaque,
-                                onPanUpdate: map == null
-                                    ? null
-                                    : (event) => maps.panBy(
-                                        event.delta.dx,
-                                        event.delta.dy,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          // Tile demand follows layout. Scheduling avoids notification in build.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) maps.updateViewport(size);
+          });
+          // The action stack takes the right edge; the rest keeps clear of it.
+          final clearWidth = math.max(0.0, size.width - 2 * _overlayInset - 48);
+          final floors = _floorControl(map);
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: context.blackgrid.mapGround,
+              border: Border.all(color: context.ember.hairline),
+            ),
+            child: ClipRect(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Focus(
+                    focusNode: _focus,
+                    onKeyEvent: (_, event) => _key(event),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Listener(
+                          onPointerSignal: (event) {
+                            if (event is PointerScrollEvent && map != null) {
+                              GestureBinding.instance.pointerSignalResolver
+                                  .register(event, (_) {
+                                    maps.zoomAt(
+                                      ViewportPoint(
+                                        event.localPosition.dx,
+                                        event.localPosition.dy,
                                       ),
-                                onTapUp: (event) => _select(
-                                  ViewportPoint(
-                                    event.localPosition.dx,
-                                    event.localPosition.dy,
-                                  ),
-                                ),
-                                onSecondaryTapUp: map == null
-                                    ? null
-                                    : (event) {
-                                        if (!widget.services.settings.busy) {
-                                          _createPinAt(
-                                            ViewportPoint(
-                                              event.localPosition.dx,
-                                              event.localPosition.dy,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    CustomPaint(
-                                      painter: _MapPainter(
-                                        maps,
-                                        widget.services.markerIcons,
-                                        pins,
-                                        showPins:
-                                            widget
-                                                .services
-                                                .settings
-                                                .settings
-                                                .markerFilters['CustomPins'] !=
-                                            false,
-                                        selectedMarker: selected?.id,
-                                        hoveredMarker: _liveHover,
-                                        selectedPin: selectedPin?.id,
-                                        selectMarker: _selectMarker,
-                                        selectPin: (id) {
-                                          _focus.requestFocus();
-                                          maps.setSelectedMarker(null);
-                                          setState(() {
-                                            _selectedPin = id;
-                                            _selectedPinMapId =
-                                                maps.selectedMapId;
-                                          });
-                                        },
-                                      ),
+                                      event.scrollDelta.dy < 0
+                                          ? 1.15
+                                          : 1 / 1.15,
+                                    );
+                                  });
+                            }
+                          },
+                          child: MouseRegion(
+                            onHover: _hover,
+                            onExit: (_) => _leave(),
+                            child: GestureDetector(
+                              key: const Key('native-map-viewport'),
+                              behavior: HitTestBehavior.opaque,
+                              onPanUpdate: map == null
+                                  ? null
+                                  : (event) => maps.panBy(
+                                      event.delta.dx,
+                                      event.delta.dy,
                                     ),
-                                    if (maps.loading)
-                                      const Align(
-                                        alignment: Alignment.topCenter,
-                                        child: LinearProgressIndicator(),
-                                      ),
-                                    if (maps.error != null || maps.unavailable)
-                                      Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(24),
-                                          child: Text(
-                                            maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
-                                            textAlign: TextAlign.center,
-                                            // The map ground stays dark in
-                                            // both rooms (DESIGN.md X6), so
-                                            // text on it takes dark-room ink.
-                                            style: TextStyle(
-                                              color:
-                                                  EmberColors.dark.inkSecondary,
-                                            ),
+                              onTapUp: (event) => _select(
+                                ViewportPoint(
+                                  event.localPosition.dx,
+                                  event.localPosition.dy,
+                                ),
+                              ),
+                              onSecondaryTapUp: map == null
+                                  ? null
+                                  : (event) {
+                                      if (!widget.services.settings.busy) {
+                                        _createPinAt(
+                                          ViewportPoint(
+                                            event.localPosition.dx,
+                                            event.localPosition.dy,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  CustomPaint(
+                                    painter: _MapPainter(
+                                      maps,
+                                      widget.services.markerIcons,
+                                      pins,
+                                      showPins:
+                                          widget
+                                              .services
+                                              .settings
+                                              .settings
+                                              .markerFilters['CustomPins'] !=
+                                          false,
+                                      selectedMarker: selected?.id,
+                                      hoveredMarker: _liveHover,
+                                      selectedPin: selectedPin?.id,
+                                      selectMarker: _selectMarker,
+                                      selectPin: (id) {
+                                        _focus.requestFocus();
+                                        maps.setSelectedMarker(null);
+                                        setState(() {
+                                          _selectedPin = id;
+                                          _selectedPinMapId =
+                                              maps.selectedMapId;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  if (maps.loading)
+                                    const Align(
+                                      alignment: Alignment.topCenter,
+                                      child: LinearProgressIndicator(),
+                                    ),
+                                  if (maps.error != null || maps.unavailable)
+                                    Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(24),
+                                        child: Text(
+                                          maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
+                                          textAlign: TextAlign.center,
+                                          // The map ground stays dark in
+                                          // both rooms (DESIGN.md X6), so
+                                          // text on it takes dark-room ink.
+                                          style: TextStyle(
+                                            color:
+                                                EmberColors.dark.inkSecondary,
                                           ),
                                         ),
                                       ),
-                                  ],
-                                ),
+                                    ),
+                                ],
                               ),
                             ),
                           ),
-                          if (selectedProjection != null &&
-                              selectedProjection.viewportPoint.x >= 0 &&
-                              selectedProjection.viewportPoint.y >= 0 &&
-                              selectedProjection.viewportPoint.x < size.width &&
-                              selectedProjection.viewportPoint.y < size.height)
-                            Builder(
-                              builder: (context) {
-                                final marker = selectedProjection.marker;
-                                final mode = widget.services.catalog.mode;
-                                final snapshot =
-                                    widget.services.catalog.snapshot;
-                                final matchingSnapshot = snapshot?.mode == mode
-                                    ? snapshot
-                                    : null;
-                                final presentation = presentMarker(
-                                  marker,
-                                  mapMarkers: maps.activeMarkers,
-                                  activeMode: mode,
-                                  catalogSnapshot: matchingSnapshot,
-                                );
-                                return MarkerPopup(
-                                  key: ValueKey(marker.id),
-                                  presentation: presentation,
-                                  anchor: Offset(
-                                    selectedProjection.viewportPoint.x,
-                                    selectedProjection.viewportPoint.y,
-                                  ),
-                                  onClose: _closeMarker,
-                                );
-                              },
+                        ),
+                        if (selectedProjection != null &&
+                            selectedProjection.viewportPoint.x >= 0 &&
+                            selectedProjection.viewportPoint.y >= 0 &&
+                            selectedProjection.viewportPoint.x < size.width &&
+                            selectedProjection.viewportPoint.y < size.height)
+                          Builder(
+                            builder: (context) {
+                              final marker = selectedProjection.marker;
+                              final mode = widget.services.catalog.mode;
+                              final snapshot = widget.services.catalog.snapshot;
+                              final matchingSnapshot = snapshot?.mode == mode
+                                  ? snapshot
+                                  : null;
+                              final presentation = presentMarker(
+                                marker,
+                                mapMarkers: maps.activeMarkers,
+                                activeMode: mode,
+                                catalogSnapshot: matchingSnapshot,
+                              );
+                              return MarkerPopup(
+                                key: ValueKey(marker.id),
+                                presentation: presentation,
+                                anchor: Offset(
+                                  selectedProjection.viewportPoint.x,
+                                  selectedProjection.viewportPoint.y,
+                                ),
+                                onClose: _closeMarker,
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  // The controls are siblings of the Focus and the gesture
+                  // detector, so a key or a click on them never reaches the
+                  // map's own handlers.
+                  Positioned(
+                    left: _overlayInset,
+                    top: _overlayInset,
+                    width: clearWidth,
+                    child: Row(
+                      children: [
+                        _mapPicker(context),
+                        if (floors != null) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: floors,
                             ),
+                          ),
                         ],
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: _overlayInset,
+                    top: _overlayInset,
+                    child: _actionStack(map, visible),
+                  ),
+                  if (selectedPin != null)
+                    Positioned(
+                      left: _overlayInset,
+                      bottom: _overlayInset + 24,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: clearWidth),
+                        child: _pinBar(selectedPin),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-          if (selectedPin != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${selectedPin.label} · ${selectedPin.frame} r${selectedPin.frameRevision}',
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: widget.services.settings.busy
-                        ? null
-                        : () => showPinEditor(
-                            context,
-                            widget.services,
-                            pin: selectedPin,
+                  if (map != null)
+                    Positioned(
+                      left: _overlayInset,
+                      bottom: _overlayInset - 4,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: clearWidth),
+                        child: Text(
+                          '${map.attribution['author'] ?? map.name}',
+                          key: const Key('map-attribution'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: EmberType.label.copyWith(
+                            color: _overlayInk.inkSecondary,
                           ),
-                    child: const Text('Edit pin'),
-                  ),
-                  IconButton(
-                    tooltip: 'Remove selected pin',
-                    onPressed: widget.services.settings.busy
-                        ? null
-                        : () => _removePin(selectedPin!),
-                    icon: const Icon(Icons.delete_outline),
-                  ),
-                  IconButton(
-                    tooltip: 'Close pin details',
-                    onPressed: () => setState(() {
-                      _selectedPin = null;
-                      _selectedPinMapId = null;
-                    }),
-                    icon: const Icon(Icons.close),
-                  ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-          if (widget.services.settings.busy)
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
-              child: Text('Saving map preferences or pins…'),
-            ),
-          const SizedBox(height: 6),
-          Text(
-            map == null
-                ? 'No artwork loaded · saved files only; no live tracking'
-                : 'Select a marker for its summary · Drag/arrows pan · wheel/+/- zoom · Home fits · C centers player · Enter browses · N/right-click adds pin · Delete removes selected pin · ${map.attribution['author'] ?? map.name}',
-            style: TextStyle(color: context.ember.inkSecondary, fontSize: 12),
-          ),
-        ],
+          );
+        },
       );
     },
   );

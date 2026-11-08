@@ -38,6 +38,7 @@ class MapWidgetHarness {
     List<Map<String, Object?>> extraMarkers = const [],
     List<Map<String, Object?>> extraLabels = const [],
     bool artwork = true,
+    bool packFails = false,
     http.Client? client,
     MemoryCredentials? credentials,
   }) async {
@@ -70,17 +71,19 @@ class MapWidgetHarness {
       ],
     );
     final loader = PreparedMapPackLoader(
-      loadBytes: preparedPackBytes(
-        manifest,
-        other: (path) async {
-          if (artwork &&
-              (path == 'assets/maps/versions/fixture/base.png' ||
-                  path == 'assets/maps/versions/fixture/upper.png')) {
-            return png;
-          }
-          throw StateError('Unknown fixture asset: $path');
-        },
-      ),
+      loadBytes: packFails
+          ? (path) async => throw StateError('Fixture pack is unreadable.')
+          : preparedPackBytes(
+              manifest,
+              other: (path) async {
+                if (artwork &&
+                    (path == 'assets/maps/versions/fixture/base.png' ||
+                        path == 'assets/maps/versions/fixture/upper.png')) {
+                  return png;
+                }
+                throw StateError('Unknown fixture asset: $path');
+              },
+            ),
     );
     final wire = wireFixture();
     final scanLogs = scanPorts == null
@@ -243,6 +246,7 @@ Future<MapWidgetHarness> pumpMapFixture(
   RaidPanelOcr? panelOcr,
   List<Map<String, Object?>> extraMarkers = const [],
   bool artwork = true,
+  bool packFails = false,
   http.Client? client,
   MemoryCredentials? credentials,
   bool autoDispose = true,
@@ -261,6 +265,7 @@ Future<MapWidgetHarness> pumpMapFixture(
       panelOcr: panelOcr,
       extraMarkers: extraMarkers,
       artwork: artwork,
+      packFails: packFails,
       client: client,
       credentials: credentials,
     ),

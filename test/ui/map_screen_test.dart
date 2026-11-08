@@ -724,7 +724,7 @@ void main() {
         scale: layout.scale,
       );
       expect(tester.takeException(), isNull, reason: 'after fixture');
-      final fit = find.widgetWithText(OutlinedButton, 'Fit map');
+      final fit = find.byTooltip('Fit map');
       await tester.ensureVisible(fit);
       await tester.pumpAndSettle();
       expect(fit.hitTestable(), findsOneWidget);
@@ -737,14 +737,17 @@ void main() {
       await tester.tap(fit);
       await settleMapFixture(tester, h);
       expect(h.services.maps.transform.scale, closeTo(fitScale, 1e-9));
-      final upper = find.widgetWithText(FilterChip, 'Upper');
+      final upper = find.descendant(
+        of: find.byKey(const Key('map-floor-control')),
+        matching: find.text('Upper'),
+      );
       await tester.ensureVisible(upper);
       await tester.pumpAndSettle();
       expect(upper.hitTestable(), findsOneWidget);
       await tester.tap(upper);
       await settleMapFixture(tester, h);
       expect(h.services.maps.floorSelection!.isLayerVisible('upper'), isTrue);
-      final addPin = find.widgetWithText(OutlinedButton, 'Add pin');
+      final addPin = find.byTooltip('Pin at view center');
       await tester.ensureVisible(addPin);
       await tester.pumpAndSettle();
       expect(addPin.hitTestable(), findsOneWidget);

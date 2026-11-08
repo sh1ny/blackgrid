@@ -8,25 +8,25 @@
 | latest-accepted-scan → Map shows scans in its one decision card | Scan accepted with Map open | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: Scan accepted with Map open | red |
 | latest-accepted-scan → Map shows scans in its one decision card | Scan fenced with Map open | `test/ui/latest_scan_card_test.dart` | a fenced scan with Map open changes nothing | green |
 | map-controls → The map takes the main column | Wide and narrow windows | `test/ui/map_workspace_controls_test.dart` | map-controls: Wide and narrow windows | red |
-| map-controls → The map takes the main column | Inspector closes over a loaded map | `test/ui/map_workspace_controls_test.dart` | map-controls: Inspector closes over a loaded map | red |
+| map-controls → The map takes the main column | Inspector closes over a loaded map | `test/ui/map_workspace_controls_test.dart` | map-controls: Inspector closes over a loaded map | green |
 | map-controls → Debug information stays off the Map screen | Normal use | `test/ui/map_workspace_controls_test.dart` | map-controls: Normal use | red |
 | map-controls → Debug information stays off the Map screen | Settings cannot be saved | `test/ui/map_workspace_controls_test.dart` | map-controls: Settings cannot be saved | red |
-| map-controls → Debug information stays off the Map screen | Selected pin shows no debug text | `test/ui/map_workspace_controls_test.dart` | map-controls: Selected pin shows no debug text | red |
-| map-controls → Map picker switches the map by hand | Choosing a map | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a map | red |
-| map-controls → Map picker switches the map by hand | Picker while saving | `test/ui/map_workspace_controls_test.dart` | map-controls: Picker while saving | red |
-| map-controls → Read latest screenshot is in the picker | Reading the latest screenshot | `test/ui/map_workspace_controls_test.dart` | map-controls: Reading the latest screenshot | red |
-| map-controls → Read latest screenshot is in the picker | No screenshot folder | `test/ui/map_workspace_controls_test.dart` | map-controls: No screenshot folder | red |
-| map-controls → Read latest screenshot is in the picker | A read is running | `test/ui/map_workspace_controls_test.dart` | map-controls: A read is running | red |
-| map-controls → Read latest screenshot is in the picker | Empty folder | `test/ui/map_workspace_controls_test.dart` | map-controls: Empty folder | red |
-| map-controls → Read latest screenshot is in the picker | Screenshot cannot be read | `test/ui/map_workspace_controls_test.dart` | map-controls: Screenshot cannot be read | red |
-| map-controls → Read latest screenshot is in the picker | Screenshot folder is unavailable | `test/ui/map_workspace_controls_test.dart` | map-controls: Screenshot folder is unavailable | red |
+| map-controls → Debug information stays off the Map screen | Selected pin shows no debug text | `test/ui/map_workspace_controls_test.dart` | map-controls: Selected pin shows no debug text | green |
+| map-controls → Map picker switches the map by hand | Choosing a map | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a map | green |
+| map-controls → Map picker switches the map by hand | Picker while saving | `test/ui/map_workspace_controls_test.dart` | map-controls: Picker while saving | green |
+| map-controls → Read latest screenshot is in the picker | Reading the latest screenshot | `test/ui/map_workspace_controls_test.dart` | map-controls: Reading the latest screenshot | green |
+| map-controls → Read latest screenshot is in the picker | No screenshot folder | `test/ui/map_workspace_controls_test.dart` | map-controls: No screenshot folder | green |
+| map-controls → Read latest screenshot is in the picker | A read is running | `test/ui/map_workspace_controls_test.dart` | map-controls: A read is running | green |
+| map-controls → Read latest screenshot is in the picker | Empty folder | `test/ui/map_workspace_controls_test.dart` | map-controls: Empty folder | green |
+| map-controls → Read latest screenshot is in the picker | Screenshot cannot be read | `test/ui/map_workspace_controls_test.dart` | map-controls: Screenshot cannot be read | green |
+| map-controls → Read latest screenshot is in the picker | Screenshot folder is unavailable | `test/ui/map_workspace_controls_test.dart` | map-controls: Screenshot folder is unavailable | green |
 | map-controls → Read latest screenshot is in the picker | Superseded read | `test/application/map_session_controller_test.dart` | map-controls: Superseded read | green |
-| map-controls → Floor control sits beside the picker | Choosing a floor | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a floor | red |
-| map-controls → Floor control sits beside the picker | Map with no floors | `test/ui/map_workspace_controls_test.dart` | map-controls: Map with no floors | red |
-| map-controls → Floor control sits beside the picker | Artwork unavailable | `test/ui/map_workspace_controls_test.dart` | map-controls: Artwork unavailable | red |
-| map-controls → Map actions stay on the map | Actions are reachable | `test/ui/map_workspace_controls_test.dart` | map-controls: Actions are reachable | red |
-| map-controls → Map actions stay on the map | No position or no artwork | `test/ui/map_workspace_controls_test.dart` | map-controls: No position or no artwork | red |
-| map-controls → Map actions stay on the map | Keyboard on an on-map control | `test/ui/map_workspace_controls_test.dart` | map-controls: Keyboard on an on-map control | red |
+| map-controls → Floor control sits beside the picker | Choosing a floor | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a floor | green |
+| map-controls → Floor control sits beside the picker | Map with no floors | `test/ui/map_workspace_controls_test.dart` | map-controls: Map with no floors | green |
+| map-controls → Floor control sits beside the picker | Artwork unavailable | `test/ui/map_workspace_controls_test.dart` | map-controls: Artwork unavailable | green |
+| map-controls → Map actions stay on the map | Actions are reachable | `test/ui/map_workspace_controls_test.dart` | map-controls: Actions are reachable | green |
+| map-controls → Map actions stay on the map | No position or no artwork | `test/ui/map_workspace_controls_test.dart` | map-controls: No position or no artwork | green |
+| map-controls → Map actions stay on the map | Keyboard on an on-map control | `test/ui/map_workspace_controls_test.dart` | map-controls: Keyboard on an on-map control | green |
 | map-controls → This raid lists the matched extracts | Matched extracts | `test/ui/map_inspector_test.dart` | map-controls: Matched extracts | red |
 | map-controls → This raid lists the matched extracts | No reading | `test/ui/map_inspector_test.dart` | map-controls: No reading | red |
 | map-controls → This raid lists the matched extracts | Matched extract is hidden | `test/ui/map_inspector_test.dart` | map-controls: Matched extract is hidden | red |
@@ -39,9 +39,9 @@
 | map-controls → Pins section manages this map's pins | Pins listed | `test/ui/map_inspector_test.dart` | map-controls: Pins listed | red |
 | map-controls → Pins section manages this map's pins | No pins | `test/ui/map_inspector_test.dart` | map-controls: No pins | red |
 | map-controls → Pins section manages this map's pins | Removal while saving | `test/ui/map_inspector_test.dart` | map-controls: Removal while saving | red |
-| map-controls → A selected pin has an action bar on the map | Pin selected | `test/ui/map_workspace_controls_test.dart` | map-controls: Pin selected | red |
-| map-controls → A selected pin has an action bar on the map | Pin closed | `test/ui/map_workspace_controls_test.dart` | map-controls: Pin closed | red |
-| map-controls → A selected pin has an action bar on the map | Actions while saving | `test/ui/map_workspace_controls_test.dart` | map-controls: Actions while saving | red |
+| map-controls → A selected pin has an action bar on the map | Pin selected | `test/ui/map_workspace_controls_test.dart` | map-controls: Pin selected | green |
+| map-controls → A selected pin has an action bar on the map | Pin closed | `test/ui/map_workspace_controls_test.dart` | map-controls: Pin closed | green |
+| map-controls → A selected pin has an action bar on the map | Actions while saving | `test/ui/map_workspace_controls_test.dart` | map-controls: Actions while saving | green |
 | map-marker-icons → Category colours keep their meaning and contrast | Valid palette passes | `test/tool/markers/icon_set_test.dart` | palette: starting D7 palette passes | green |
 | map-marker-icons → Category colours keep their meaning and contrast | Required role broken fails | `test/tool/markers/icon_set_test.dart` | palette: required danger and pin roles are enforced | green |
 | map-marker-icons → Category colours keep their meaning and contrast | Reserved hue or low contrast fails | `test/tool/markers/icon_set_test.dart` | map-marker-icons: Reserved hue or low contrast fails | green |
@@ -150,9 +150,9 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 5. Controls on the map
 
-- [ ] 5.1 Write failing widget tests in `test/ui/map_workspace_controls_test.dart` for the `Map picker switches the map by hand`, `Read latest screenshot is in the picker` (except `Superseded read`), `Floor control sits beside the picker`, `Map actions stay on the map`, `A selected pin has an action bar on the map` and `The map takes the main column` rows, and `Selected pin shows no debug text`. Verify they fail because the controls are still in the toolbar.
-- [ ] 5.2 Replace the toolbar `Wrap` with viewport overlays in `MapWorkspace`: picker and floor control top left, action stack on the right edge, placed outside the `Focus` that owns `_key` and outside the `GestureDetector`. Add the `Read latest screenshot` item with its snackbars for the no screenshot and unavailable outcomes.
-- [ ] 5.3 Replace the strip below the viewport with the floating pin bar (label, Edit, Remove, Close), remove the instruction line, and draw the attribution as a bottom-left caption that does not overlap the bar. Add the `maps` listener that clears `_selectedPin` when a marker is selected from outside the workspace. Verify the group's tests pass, flip their rows green, and check the 960 px geometry test shows the overlays not overlapping each other.
+- [x] 5.1 Write failing widget tests in `test/ui/map_workspace_controls_test.dart` for the `Map picker switches the map by hand`, `Read latest screenshot is in the picker` (except `Superseded read`), `Floor control sits beside the picker`, `Map actions stay on the map`, `A selected pin has an action bar on the map` and `The map takes the main column` rows, and `Selected pin shows no debug text`. Verify they fail because the controls are still in the toolbar.
+- [x] 5.2 Replace the toolbar `Wrap` with viewport overlays in `MapWorkspace`: picker and floor control top left, action stack on the right edge, placed outside the `Focus` that owns `_key` and outside the `GestureDetector`. Add the `Read latest screenshot` item with its snackbars for the no screenshot and unavailable outcomes.
+- [x] 5.3 Replace the strip below the viewport with the floating pin bar (label, Edit, Remove, Close), remove the instruction line, and draw the attribution as a bottom-left caption that does not overlap the bar. Add the `maps` listener that clears `_selectedPin` when a marker is selected from outside the workspace. Verify the group's tests pass, flip their rows green, and check the 960 px geometry test shows the overlays not overlapping each other.
 
 ## 6. Map inspector
 
