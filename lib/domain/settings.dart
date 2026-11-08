@@ -222,6 +222,9 @@ class RaidTimerSettings {
   }
 }
 
+/// The room the user picked: follow the system, or force dark or light.
+enum ThemeChoice { system, dark, light }
+
 class AppSettings {
   AppSettings({
     this.mode = GameMode.unknown,
@@ -235,6 +238,7 @@ class AppSettings {
     this.liveScan = false,
     this.scanHotkey = ScanHotkey.f9,
     RaidTimerSettings? raidTimers,
+    this.themeMode = ThemeChoice.system,
   }) : raidTimers = raidTimers ?? RaidTimerSettings.defaults,
        markerFilters = Map.unmodifiable(markerFilters);
   final GameMode mode;
@@ -255,6 +259,9 @@ class AppSettings {
   /// The raid timer preferences and cooldown starts.
   final RaidTimerSettings raidTimers;
 
+  /// The chosen theme. [ThemeChoice.system] by default.
+  final ThemeChoice themeMode;
+
   AppSettings copyWith({
     GameMode? mode,
     String? selectedMap,
@@ -267,6 +274,7 @@ class AppSettings {
     bool? liveScan,
     ScanHotkey? scanHotkey,
     RaidTimerSettings? raidTimers,
+    ThemeChoice? themeMode,
   }) => AppSettings(
     mode: mode ?? this.mode,
     selectedMap: selectedMap ?? this.selectedMap,
@@ -279,6 +287,7 @@ class AppSettings {
     liveScan: liveScan ?? this.liveScan,
     scanHotkey: scanHotkey ?? this.scanHotkey,
     raidTimers: raidTimers ?? this.raidTimers,
+    themeMode: themeMode ?? this.themeMode,
   );
   Map<String, Object?> toJson() => {
     'mode': mode.name,
@@ -292,6 +301,7 @@ class AppSettings {
     'liveScan': liveScan,
     'scanHotkey': scanHotkey.stored,
     'raidTimers': raidTimers.toJson(),
+    'themeMode': themeMode.name,
   };
   factory AppSettings.fromJson(Map<String, Object?> json) {
     final mode = GameMode.values.firstWhere((m) => m.name == json['mode']);
@@ -312,6 +322,11 @@ class AppSettings {
     } on Object {
       timers = RaidTimerSettings.defaults;
     }
+    // Decoded on its own: a missing or unknown value reads as system.
+    final theme = ThemeChoice.values.firstWhere(
+      (c) => c.name == json['themeMode'],
+      orElse: () => ThemeChoice.system,
+    );
     return AppSettings(
       mode: mode,
       selectedMap: map,
@@ -324,6 +339,7 @@ class AppSettings {
       liveScan: json['liveScan'] as bool? ?? false,
       scanHotkey: ScanHotkey.fromStored(json['scanHotkey']),
       raidTimers: timers,
+      themeMode: theme,
     );
   }
 }

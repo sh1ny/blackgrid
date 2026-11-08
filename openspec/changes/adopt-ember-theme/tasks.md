@@ -12,10 +12,10 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 | interface-theme → Screens take colours only from the theme | A screen reads its colours from the theme | test/ui/theme_source_test.dart | lib/ui has no colour literals outside lib/ui/ember | red |
 | interface-theme → Screens take colours only from the theme | A hard-coded colour is reported | test/ui/theme_source_test.dart | reports file and line of a colour literal | red |
 | interface-theme → Saved theme choice | Default follows Windows | test/ui/theme_mode_test.dart | System follows a light Windows setting by default | red |
-| interface-theme → Saved theme choice | A chosen room survives a restart | test/application/settings_theme_test.dart | saved Dark choice is restored by load | red |
+| interface-theme → Saved theme choice | A chosen room survives a restart | test/application/settings_theme_test.dart | saved Dark choice is restored by load | green |
 | interface-theme → Saved theme choice | Windows changes while System is chosen | test/ui/theme_mode_test.dart | System follows a Windows brightness change without restart | red |
-| interface-theme → Saved theme choice | An unreadable theme value | test/domain/settings_test.dart | bad themeMode reads as system and keeps other settings | red |
-| interface-theme → Saved theme choice | Saving the choice fails | test/application/settings_theme_test.dart | failed theme save keeps the previous choice and shows the error | red |
+| interface-theme → Saved theme choice | An unreadable theme value | test/domain/settings_test.dart | bad themeMode reads as system and keeps other settings | green |
+| interface-theme → Saved theme choice | Saving the choice fails | test/application/settings_theme_test.dart | failed theme save keeps the previous choice and shows the error | green |
 | interface-theme → Theme switch in Settings | Switching rooms | test/ui/settings_dialog_theme_test.dart | selecting Light switches the room in the next frame | red |
 | interface-theme → Theme switch in Settings | Selecting the current option | test/ui/settings_dialog_theme_test.dart | selecting the current option saves nothing | red |
 | interface-theme → Bundled fonts with notices | Interface text uses the bundled family | test/ui/ember_theme_test.dart | body text uses Geist and title roles use Literata | red |
@@ -56,9 +56,9 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills per
 
 ## 2. Theme setting
 
-- [ ] 2.1 Write failing model tests in `test/domain/settings_test.dart` for `themeMode`: round trip of the three values, a missing, non-string or unknown value reads as `system` without marking settings unreadable and keeps every other key (row "An unreadable theme value"), and `ImportPreview.applyTo` keeps the stored choice. Verify they fail for the missing field.
-- [ ] 2.2 Add `ThemeChoice { system, dark, light }` and `AppSettings.themeMode` (constructor, `copyWith`, `toJson`, independent decode in `fromJson`, design D4); verify 2.1 passes and flip its row green.
-- [ ] 2.3 Write failing `test/application/settings_theme_test.dart` (rows "A chosen room survives a restart", "Saving the choice fails") with a hand-written failing database fake, then add `SettingsController.setThemeChoice` over `save`; verify they pass and flip the rows green.
+- [x] 2.1 Write failing model tests in `test/domain/settings_test.dart` for `themeMode`: round trip of the three values, a missing, non-string or unknown value reads as `system` without marking settings unreadable and keeps every other key (row "An unreadable theme value"), and `ImportPreview.applyTo` keeps the stored choice. Verify they fail for the missing field.
+- [x] 2.2 Add `ThemeChoice { system, dark, light }` and `AppSettings.themeMode` (constructor, `copyWith`, `toJson`, independent decode in `fromJson`, design D4); verify 2.1 passes and flip its row green.
+- [x] 2.3 Write failing `test/application/settings_theme_test.dart` (rows "A chosen room survives a restart", "Saving the choice fails") with a hand-written failing database fake, then add `SettingsController.setThemeChoice` over `save`; verify they pass and flip the rows green.
 
 ## 3. Decision reason and price freshness (domain)
 
