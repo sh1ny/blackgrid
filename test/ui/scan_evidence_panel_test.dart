@@ -1,6 +1,5 @@
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
-import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:blackgrid/ui/labels.dart';
@@ -23,30 +22,15 @@ Future<ScanUiRig> _pump(WidgetTester tester) async {
   final rig = (await tester.runAsync(ScanUiRig.create))!;
   addTearDown(() async => tester.runAsync(rig.dispose));
   await tester.runAsync(rig.ready);
-  var expanded = false;
   await tester.pumpWidget(
     MaterialApp(
       theme: blackgridTheme(Brightness.dark),
       home: Scaffold(
-        body: StatefulBuilder(
-          builder: (context, setState) => ScanEvidencePanel(
-            scanner: rig.coordinator,
-            catalog: rig.catalog,
-            detailsExpanded: expanded,
-            onDetailsExpandedChanged: (value) =>
-                setState(() => expanded = value),
-          ),
-        ),
+        body: ScanEvidencePanel(scanner: rig.coordinator, catalog: rig.catalog),
       ),
     ),
   );
   return rig;
-}
-
-/// Taps the Details title row to expand (or collapse) the section.
-Future<void> _toggleDetails(WidgetTester tester) async {
-  await tester.tap(find.text('Details'));
-  await tester.pump();
 }
 
 String _text(WidgetTester tester, String key) =>
@@ -57,19 +41,43 @@ bool _anyTextHas(WidgetTester tester, String word) => tester
     .widgetList<Text>(find.byType(Text))
     .any((t) => (t.data ?? '').toLowerCase().contains(word.toLowerCase()));
 
-/// Pumps until the crop has been decoded by the engine. The decode runs off
-/// the test zone, so this is a bounded poll on that single signal.
-Future<void> _untilCrop(WidgetTester tester) async {
-  final elapsed = Stopwatch()..start();
-  while (find.byKey(const Key('scan-crop-image')).evaluate().isEmpty) {
-    if (elapsed.elapsed > const Duration(seconds: 10)) {
-      throw StateError('The crop was not decoded within 10 seconds.');
-    }
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 5)),
-    );
-    await tester.pump();
+/// Expects none of the evidence that Diagnostics keeps: no ID, pass, score,
+/// crop, OCR text, code, timing, recent list or Details control.
+void _expectNoDiagnostics() {
+  for (final key in [
+    'scan-end',
+    'scan-pass',
+    'scan-marker',
+    'scan-text',
+    'scan-best',
+    'scan-runner-up',
+    'scan-margin',
+    'scan-item-id',
+    'scan-crop-image',
+    'scan-crop-placeholder',
+    'scan-reason-code',
+    'scan-failure-message',
+    'scan-fallback-failure',
+    'scan-note-code',
+    'scan-note-text',
+    'scan-note-marker',
+    'scan-timings-label',
+    'scan-timing-total',
+    'scan-recent-1',
+    'scan-recent-detail-1',
+    'scan-recent-none',
+  ]) {
+    expect(find.byKey(Key(key)), findsNothing, reason: key);
   }
+  expect(find.text('Details'), findsNothing);
+  expect(find.text('Recent scans'), findsNothing);
+  expect(find.byType(RawImage), findsNothing);
+  expect(find.textContaining(' ms'), findsNothing);
+  expect(find.textContaining('Marker score'), findsNothing);
+  expect(find.textContaining('OCR text'), findsNothing);
+  expect(find.textContaining('Code:'), findsNothing);
+  expect(find.textContaining('Item ID'), findsNothing);
+  expect(find.textContaining('Pass:'), findsNothing);
 }
 
 /// Drives one targeted scan to an accepted result with stage stamps.
@@ -190,7 +198,6 @@ void main() {
     expect(find.text('Trying a wider scan…'), findsNothing);
     expect(rig.coordinator.latest, isNull);
     expect(find.text('No scan published yet'), findsOneWidget);
-    await _toggleDetails(tester);
     expect(find.byKey(const Key('scan-end')), findsNothing);
   });
 
@@ -214,50 +221,28 @@ void main() {
     }
   });
 
-  testWidgets(
-    'accepted report shows the item name, and Details shows id, pass, score, crop and text',
-    (tester) async {
-      final rig = await _pump(tester);
-      await _accept(tester, rig);
+  testWidgets('before any scan it says none is published', (tester) async {
+    await _pump(tester);
 
-      expect(find.byKey(const Key('scan-phase')), findsNothing);
-      expect(_text(tester, 'scan-item'), scanItemName);
-      for (final key in [
-        'scan-end',
-        'scan-pass',
-        'scan-marker',
-        'scan-text',
-        'scan-best',
-        'scan-runner-up',
-        'scan-margin',
-        'scan-item-id',
-        'scan-crop-image',
-        'scan-crop-placeholder',
-      ]) {
-        expect(find.byKey(Key(key)), findsNothing, reason: key);
-      }
-      expect(find.textContaining(scanItemId), findsNothing);
+    expect(find.text('No scan published yet'), findsOneWidget);
+    expect(find.byKey(const Key('scan-item')), findsNothing);
+    expect(find.byKey(const Key('scan-phase')), findsNothing);
+    expect(find.text('None yet'), findsNothing);
+    _expectNoDiagnostics();
+  });
 
-      await _toggleDetails(tester);
-      await _untilCrop(tester);
-      expect(_text(tester, 'scan-end'), 'Accepted');
-      expect(_text(tester, 'scan-item-id'), contains(scanItemId));
-      expect(
-        _text(tester, 'scan-pass'),
-        contains(scanPassLabel(ScanPass.targeted)),
-      );
-      expect(_text(tester, 'scan-marker'), contains('0.93'));
-      expect(_text(tester, 'scan-text'), contains(scanItemName));
-      final crop = tester.widget<RawImage>(
-        find.byKey(const Key('scan-crop-image')),
-      );
-      expect((crop.image!.width, crop.image!.height), (4, 4));
-      expect(_text(tester, 'scan-best'), contains('0.97'));
-      expect(_text(tester, 'scan-runner-up'), contains('0.31'));
-      expect(_text(tester, 'scan-margin'), contains('0.66'));
-      expect(find.byKey(const Key('scan-reason')), findsNothing);
-    },
-  );
+  testWidgets('accepted report shows only the item name', (tester) async {
+    final rig = await _pump(tester);
+    await _accept(tester, rig);
+
+    expect(find.byKey(const Key('scan-phase')), findsNothing);
+    expect(_text(tester, 'scan-item'), scanItemName);
+    expect(find.byKey(const Key('scan-reason')), findsNothing);
+    expect(find.textContaining(scanItemId), findsNothing);
+    expect(find.textContaining('0.93'), findsNothing);
+    expect(find.textContaining('Accepted'), findsNothing);
+    _expectNoDiagnostics();
+  });
 
   testWidgets('a newer accepted scan replaces the shown item', (tester) async {
     final rig = await _pump(tester);
@@ -303,91 +288,67 @@ void main() {
       expect(find.textContaining('belowSimilarity'), findsNothing);
       expect(find.textContaining('0.41'), findsNothing);
       expect(find.textContaining('Accepted'), findsNothing);
-
-      await _toggleDetails(tester);
-      await _untilCrop(tester);
-      expect(_text(tester, 'scan-end'), 'Rejected');
-      expect(_text(tester, 'scan-reason-code'), contains('belowSimilarity'));
-      final best = _text(tester, 'scan-best');
-      expect(best, contains('not accepted'));
-      expect(best, contains(scanOtherName));
-      expect(best, contains('0.41'));
+      _expectNoDiagnostics();
     },
   );
 
-  testWidgets(
-    'noMarker report uses plain words and keeps the code in Details',
-    (tester) async {
-      final rig = await _pump(tester);
-      await tester.runAsync(() async {
-        final ports = rig.ports;
-        ports.fire(1000);
-        await ports.captureOk(0);
-        await ports.visionDeliver(
-          0,
-          scanRecognised(InspectionFrameKind.targeted, []),
-        );
-        (await rig.matcher.calls.at(0)).complete(
-          const OutcomeRejected<InspectionEvidence>(
-            OutcomeRejectReason.noMarker,
-          ),
-        );
-        await ports.captureOk(1);
-        await ports.visionDeliver(
-          1,
-          scanRecognised(InspectionFrameKind.fullClient, []),
-        );
-        (await rig.matcher.calls.at(1)).complete(
-          const OutcomeRejected<InspectionEvidence>(
-            OutcomeRejectReason.noMarker,
-          ),
-        );
-        await reportPublished(rig.coordinator, 1);
-      });
-      await tester.pump();
-
-      expect(
-        _text(tester, 'scan-reason'),
-        scanRejectReasonLabel(ScanRejectReason.noMarker),
+  testWidgets('noMarker report uses plain words and shows no evidence', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await tester.runAsync(() async {
+      final ports = rig.ports;
+      ports.fire(1000);
+      await ports.captureOk(0);
+      await ports.visionDeliver(
+        0,
+        scanRecognised(InspectionFrameKind.targeted, []),
       );
-      expect(find.textContaining('noMarker'), findsNothing);
-      expect(find.byKey(const Key('scan-marker')), findsNothing);
-
-      await _toggleDetails(tester);
-      expect(_text(tester, 'scan-reason-code'), contains('noMarker'));
-      expect(_text(tester, 'scan-marker'), contains('0.20'));
-      expect(_text(tester, 'scan-crop-placeholder'), 'No title crop');
-      expect(_text(tester, 'scan-text'), contains('(none)'));
-      expect(find.byKey(const Key('scan-crop-image')), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'failed report gives a plain reason and its code only in Details',
-    (tester) async {
-      final rig = await _pump(tester);
-      await tester.runAsync(() async {
-        rig.ports.fire(1000);
-        await rig.ports.captureOk(0);
-        await rig.ports.visionTimeout(0);
-        await reportPublished(rig.coordinator, 1);
-      });
-      await tester.pump();
-
-      expect(
-        _text(tester, 'scan-reason'),
-        scanFailureCodeLabel(ScanFailureCode.visionTimeout),
+      (await rig.matcher.calls.at(0)).complete(
+        const OutcomeRejected<InspectionEvidence>(OutcomeRejectReason.noMarker),
       );
-      expect(find.textContaining('visionTimeout'), findsNothing);
-      expect(find.byKey(const Key('scan-best')), findsNothing);
-      expect(find.byKey(const Key('scan-item')), findsNothing);
-      expect(find.text('No candidate'), findsOneWidget);
+      await ports.captureOk(1);
+      await ports.visionDeliver(
+        1,
+        scanRecognised(InspectionFrameKind.fullClient, []),
+      );
+      (await rig.matcher.calls.at(1)).complete(
+        const OutcomeRejected<InspectionEvidence>(OutcomeRejectReason.noMarker),
+      );
+      await reportPublished(rig.coordinator, 1);
+    });
+    await tester.pump();
 
-      await _toggleDetails(tester);
-      expect(_text(tester, 'scan-end'), 'Failed');
-      expect(_text(tester, 'scan-reason-code'), contains('visionTimeout'));
-    },
-  );
+    expect(
+      _text(tester, 'scan-reason'),
+      scanRejectReasonLabel(ScanRejectReason.noMarker),
+    );
+    expect(find.textContaining('noMarker'), findsNothing);
+    expect(find.textContaining('0.20'), findsNothing);
+    expect(find.text('No title crop'), findsNothing);
+    _expectNoDiagnostics();
+  });
+
+  testWidgets('failed report gives a plain reason and no code', (tester) async {
+    final rig = await _pump(tester);
+    await tester.runAsync(() async {
+      rig.ports.fire(1000);
+      await rig.ports.captureOk(0);
+      await rig.ports.visionTimeout(0);
+      await reportPublished(rig.coordinator, 1);
+    });
+    await tester.pump();
+
+    expect(
+      _text(tester, 'scan-reason'),
+      scanFailureCodeLabel(ScanFailureCode.visionTimeout),
+    );
+    expect(find.textContaining('visionTimeout'), findsNothing);
+    expect(find.byKey(const Key('scan-candidate')), findsNothing);
+    expect(find.byKey(const Key('scan-item')), findsNothing);
+    expect(find.text('No candidate'), findsOneWidget);
+    _expectNoDiagnostics();
+  });
 
   testWidgets(
     'rejection after an accepted item keeps it and shows a plain note',
@@ -404,38 +365,31 @@ void main() {
       );
       expect(_text(tester, 'scan-note-best'), '$scanOtherName (not accepted)');
       expect(find.textContaining('belowSimilarity'), findsNothing);
-      expect(find.byKey(const Key('scan-note-text')), findsNothing);
-      expect(find.byKey(const Key('scan-note-marker')), findsNothing);
+      expect(find.textContaining('FILTERBYITEM'), findsNothing);
       expect(
         tester.getTopLeft(find.byKey(const Key('scan-note-reason'))).dy,
         lessThan(tester.getTopLeft(find.byKey(const Key('scan-item'))).dy),
       );
-
-      await _toggleDetails(tester);
-      expect(_text(tester, 'scan-note-code'), contains('belowSimilarity'));
-      expect(_text(tester, 'scan-note-text'), contains('FILTERBYITEM'));
-      expect(_text(tester, 'scan-note-marker'), contains('0.88'));
+      _expectNoDiagnostics();
     },
   );
 
-  testWidgets(
-    "after a rejection Details keeps the accepted crop and shows the new scan's timings",
-    (tester) async {
-      final rig = await _pump(tester);
-      await _accept(tester, rig);
-      await _reject(tester, rig, index: 1);
-      await _toggleDetails(tester);
-      await _untilCrop(tester);
+  testWidgets('after a rejection the Scanner shows no crop and no timing', (
+    tester,
+  ) async {
+    final rig = await _pump(tester);
+    await _accept(tester, rig);
+    await _reject(tester, rig, index: 1);
 
-      final crop = tester.widget<RawImage>(
-        find.byKey(const Key('scan-crop-image')),
-      );
-      expect((crop.image!.width, crop.image!.height), (4, 4));
-      expect(_text(tester, 'scan-timings-label'), contains('Scan #2'));
-      expect(_text(tester, 'scan-timing-total'), 'Total 120 ms');
-      expect(find.text('Scan #1'), findsOneWidget);
-    },
-  );
+    expect(find.byKey(const Key('scan-crop-image')), findsNothing);
+    expect(find.byKey(const Key('scan-crop-placeholder')), findsNothing);
+    expect(find.byType(RawImage), findsNothing);
+    expect(find.byKey(const Key('scan-timings-label')), findsNothing);
+    expect(find.byKey(const Key('scan-timing-total')), findsNothing);
+    expect(find.textContaining(' ms'), findsNothing);
+    expect(find.textContaining('Scan #'), findsNothing);
+    expect(find.text('Details'), findsNothing);
+  });
 
   testWidgets(
     'failure after an accepted item says the game window was not in front',
@@ -458,9 +412,7 @@ void main() {
       expect(find.textContaining('targetNotForeground'), findsNothing);
       expect(find.byKey(const Key('scan-note-best')), findsNothing);
       expect(find.text('No candidate'), findsOneWidget);
-
-      await _toggleDetails(tester);
-      expect(_text(tester, 'scan-note-code'), contains('targetNotForeground'));
+      _expectNoDiagnostics();
     },
   );
 
@@ -486,116 +438,6 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('scan-note-reason')), findsNothing);
-    await _toggleDetails(tester);
-    expect(find.byKey(const Key('scan-note-code')), findsNothing);
-    expect(find.text('Scan #3'), findsOneWidget);
-    expect(_text(tester, 'scan-end'), 'Accepted');
-  });
-
-  testWidgets('timings in Details show stage and total ms', (tester) async {
-    final rig = await _pump(tester);
-    await _accept(tester, rig, captureMs: 40, publishMs: 180);
-    await _toggleDetails(tester);
-
-    expect(_text(tester, 'scan-timing-targeted-capture'), 'Capture 40 ms');
-    expect(_text(tester, 'scan-timing-targeted-vision'), 'Vision 90 ms');
-    expect(_text(tester, 'scan-timing-targeted-matching'), 'Matching 180 ms');
-    expect(_text(tester, 'scan-timing-total'), 'Total 180 ms');
-  });
-
-  testWidgets('no timing is shown while Details is collapsed', (tester) async {
-    final rig = await _pump(tester);
-    await _accept(tester, rig, captureMs: 40, publishMs: 180);
-
-    expect(find.byKey(const Key('scan-timings-label')), findsNothing);
-    expect(find.byKey(const Key('scan-timing-total')), findsNothing);
-    expect(find.textContaining(' ms'), findsNothing);
-    expect(find.textContaining('Capture'), findsNothing);
-    expect(find.textContaining('Total'), findsNothing);
-  });
-
-  testWidgets('absent stages are shown as absent, not 0', (tester) async {
-    final rig = await _pump(tester);
-    await tester.runAsync(() async {
-      rig.ports.fire(1000);
-      (await rig.ports.capture.calls.at(0)).fail(const TargetNotForeground());
-      await reportPublished(rig.coordinator, 1);
-    });
-    await tester.pump();
-    await _toggleDetails(tester);
-
-    expect(_text(tester, 'scan-timing-targeted-vision'), 'Vision absent');
-    expect(_text(tester, 'scan-timing-targeted-matching'), 'Matching absent');
-    expect(find.text('Vision 0 ms'), findsNothing);
-    expect(find.text('Matching 0 ms'), findsNothing);
-    expect(find.byKey(const Key('scan-timing-fallback-capture')), findsNothing);
-  });
-
-  testWidgets('recent list shows the 10 newest scans, newest first', (
-    tester,
-  ) async {
-    final rig = await _pump(tester);
-    for (var i = 0; i < 11; i++) {
-      await _accept(tester, rig, index: i, trigger: 1000 + i * 1000000);
-    }
-
-    for (var id = 2; id <= 11; id++) {
-      expect(find.byKey(Key('scan-recent-$id')), findsOneWidget);
-    }
-    expect(find.byKey(const Key('scan-recent-1')), findsNothing);
-    expect(
-      tester.getTopLeft(find.byKey(const Key('scan-recent-11'))).dy,
-      lessThan(tester.getTopLeft(find.byKey(const Key('scan-recent-10'))).dy),
-    );
-    expect(_text(tester, 'scan-recent-11'), contains(scanItemName));
-    expect(_text(tester, 'scan-recent-11'), isNot(contains('180 ms')));
-    expect(find.byKey(const Key('scan-recent-detail-11')), findsNothing);
-
-    await _toggleDetails(tester);
-    final row = _text(tester, 'scan-recent-detail-11');
-    expect(row, contains('Accepted'));
-    expect(row, contains('180 ms'));
-  });
-
-  testWidgets('a rejected recent entry gives a plain reason', (tester) async {
-    final rig = await _pump(tester);
-    await _accept(tester, rig);
-    await _reject(tester, rig, index: 1);
-
-    expect(
-      _text(tester, 'scan-recent-2'),
-      contains(scanRejectReasonLabel(ScanRejectReason.belowSimilarity)),
-    );
-    expect(_text(tester, 'scan-recent-2'), isNot(contains('belowSimilarity')));
-    expect(_text(tester, 'scan-recent-2'), isNot(contains('Rejected')));
-
-    await _toggleDetails(tester);
-    expect(_text(tester, 'scan-recent-detail-2'), contains('Rejected'));
-    expect(_text(tester, 'scan-recent-detail-2'), contains('120 ms'));
-  });
-
-  testWidgets('recent list labels hotkey scans', (tester) async {
-    final rig = await _pump(tester);
-    await tester.runAsync(() async {
-      final ports = rig.ports;
-      for (final (index, source) in [
-        TriggerSource.hotkey,
-        TriggerSource.mouse,
-      ].indexed) {
-        ports.fire(1000 + index * 1000, source: source);
-        await ports.captureOk(index);
-        final evidence = scanEvidence();
-        await ports.visionDeliver(
-          index,
-          scanRecognised(InspectionFrameKind.targeted, [evidence]),
-        );
-        (await rig.matcher.calls.at(index)).complete(scanAccepted(evidence));
-        await reportPublished(rig.coordinator, index + 1);
-      }
-    });
-    await tester.pump();
-
-    expect(_text(tester, 'scan-recent-1'), contains('hotkey'));
-    expect(_text(tester, 'scan-recent-2'), isNot(contains('hotkey')));
+    expect(_text(tester, 'scan-item'), scanItemName);
   });
 }

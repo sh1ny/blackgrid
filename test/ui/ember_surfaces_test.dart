@@ -92,7 +92,7 @@ void main() {
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
     expect(find.text('Manual inspection'), findsNothing);
-    expect(find.text('Recent scans'), findsOneWidget);
+    expect(find.text('Recent scans'), findsNothing);
     for (final old in ['LIVE SCAN', 'MANUAL INSPECTION', 'RECENT SCANS']) {
       expect(find.text(old), findsNothing);
     }

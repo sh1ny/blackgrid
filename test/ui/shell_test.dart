@@ -1,3 +1,4 @@
+import 'package:blackgrid/data/capture/capture_failure.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/ui/app.dart';
@@ -1443,40 +1444,8 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('scan-item'))).data,
       before,
     );
-    // The end state now lives inside the collapsed Details section.
+    // The end state lives in Diagnostics, not on the Scanner.
     expect(find.byKey(const Key('scan-end')), findsNothing);
-  });
-  testWidgets('scan evidence Details stays expanded across Map and back', (
-    tester,
-  ) async {
-    final ports = ScanFakePorts();
-    final h = await pumpM1(tester, scanPorts: ports);
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-    await tester.runAsync(
-      () => publishTargetedScan(
-        h.services.scanner,
-        ports,
-        text: 'Alternative component',
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(ScanEvidencePanel),
-        matching: find.text('Details'),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('nav-map')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-    expect(find.byKey(const Key('scan-timing-total')), findsOneWidget);
   });
   for (final size in [const Size(1672, 941), const Size(960, 640)]) {
     testWidgets('scan evidence panel does not overflow at $size', (
@@ -1536,63 +1505,44 @@ void main() {
   });
 
   testWidgets(
-    'scan evidence panel is on screen at 1100x720 with a long recent list',
+    'scan evidence panel is on screen at 1100x720 with enlarged text',
     (tester) async {
       final ports = ScanFakePorts();
       final h = await pumpM1(
         tester,
         size: const Size(1100, 720),
+        scale: 1.5,
         scanPorts: ports,
       );
       await openScanner(tester);
-      await tester.runAsync(
-        () => h.services.selection.selectManual(
-          h.services.catalog.snapshot!.items['item-a']!,
-        ),
-      );
-      await tester.pumpAndSettle();
-      if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
-        await tester.tap(find.byKey(const Key('inspector-toggle')));
-        await tester.pumpAndSettle();
-      }
+      // An accepted scan, then a failed one (the note), then a scan in flight
+      // (the phase): the most the panel ever shows.
       await tester.runAsync(() async {
-        for (var i = 0; i < 10; i++) {
-          await publishTargetedScan(
-            h.services.scanner,
-            ports,
-            text: 'Alternative component $i',
-            index: i,
-            qpc: 1000 * (i + 1),
-          );
-        }
+        await publishTargetedScan(
+          h.services.scanner,
+          ports,
+          text: 'Alternative component',
+        );
+        ports.fire(2000);
+        (await ports.capture.calls.at(1)).fail(const TargetNotForeground());
+        await reportPublished(h.services.scanner, 2);
+        ports.fire(3000);
+        await ports.captureOk(2);
       });
       await tester.pumpAndSettle();
-      expect(h.services.scanner.recent, hasLength(10));
+      expect(h.services.scanner.phase, ScanPhase.targeted);
+      expect(find.byKey(const Key('scan-phase')), findsOneWidget);
+      expect(find.byKey(const Key('scan-note-reason')), findsOneWidget);
+      expect(find.byKey(const Key('scan-item')), findsOneWidget);
       // Desktop layout, read with the page unscrolled.
       expect(desktopPage(tester).pixels, 0);
+      expect(desktopPage(tester).maxScrollExtent, 0);
       final frame = evidenceFrame(tester);
-      expect(
-        find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
-        findsNothing,
-      );
       expect(frame.left, greaterThanOrEqualTo(0));
       expect(frame.top, greaterThanOrEqualTo(0));
       expect(frame.bottom, lessThanOrEqualTo(720));
-      // Expand detail evidence so the combined contents exceed the frame.
-      final evidenceScroll = find
-          .descendant(
-            of: find.byType(ScanEvidencePanel),
-            matching: find.byType(Scrollable),
-          )
-          .first;
-      final details = find.descendant(
-        of: find.byType(ScanEvidencePanel),
-        matching: find.text('Details'),
-      );
-      await tester.scrollUntilVisible(details, 150, scrollable: evidenceScroll);
-      await tester.tap(details);
-      await tester.pumpAndSettle();
-      // The evidence list scrolls inside its fixed frame.
+      expect(frame.right, lessThanOrEqualTo(1100));
+      // The content is taller than the frame, so the list scrolls inside it.
       final scroll = tester.state<ScrollableState>(
         find
             .descendant(

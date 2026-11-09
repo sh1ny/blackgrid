@@ -151,102 +151,26 @@ class _ScanDiagnosticsState extends State<ScanDiagnostics> {
 }
 
 /// What the last accepted scan found (the latest published scan before any is
-/// accepted), a note for a later scan that was not accepted, the phase of the
-/// scan in flight and the recent scans, in plain words. Scores, codes, the
-/// title crop and the stage timings sit in a Details section.
+/// accepted), a note for a later scan that was not accepted, and the phase of
+/// the scan in flight, in plain words.
 ///
-/// It only shows evidence. It never selects an item or reads a decision, so a
-/// scan cannot change what the decision card shows.
-class ScanEvidencePanel extends StatefulWidget {
+/// It shows no item ID, pass, score, title crop, OCR text, code or timing;
+/// [ScanDiagnostics] keeps those. It only shows evidence. It never selects an
+/// item or reads a decision, so a scan cannot change what the decision card
+/// shows.
+class ScanEvidencePanel extends StatelessWidget {
   /// Creates the panel over [scanner]; [catalog] supplies item names.
   const ScanEvidencePanel({
     super.key,
     required this.scanner,
     required this.catalog,
-    required this.detailsExpanded,
-    required this.onDetailsExpandedChanged,
   });
 
-  /// The coordinator whose phase, last accepted, latest and recent scans are
-  /// shown.
+  /// The coordinator whose phase, last accepted and latest scans are shown.
   final ScanCoordinator scanner;
 
   /// The catalog the item names come from.
   final CatalogController catalog;
-
-  /// Whether the Details section is expanded; owned by the screen.
-  final bool detailsExpanded;
-
-  /// Called when the Details section asks to expand or collapse.
-  final ValueChanged<bool> onDetailsExpandedChanged;
-
-  @override
-  State<ScanEvidencePanel> createState() => _ScanEvidencePanelState();
-}
-
-class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
-  /// The decoded title crop of the report [_imageFor], else null.
-  ui.Image? _image;
-
-  /// The id of the report whose crop is decoded or being decoded.
-  int? _imageFor;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.scanner.addListener(_syncImage);
-    _syncImage();
-  }
-
-  @override
-  void didUpdateWidget(ScanEvidencePanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.scanner != widget.scanner) {
-      oldWidget.scanner.removeListener(_syncImage);
-      widget.scanner.addListener(_syncImage);
-      _imageFor = null;
-      _syncImage();
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.scanner.removeListener(_syncImage);
-    _imageFor = null;
-    _image?.dispose();
-    _image = null;
-    super.dispose();
-  }
-
-  /// Decodes the shown report's crop once per report id and disposes the
-  /// image it replaces.
-  void _syncImage() {
-    final report = _shown(widget.scanner);
-    final entry = report == null ? null : shownEvidence(report);
-    final id = entry != null && _hasCrop(entry) ? report!.id : null;
-    if (id == _imageFor) return;
-    _imageFor = id;
-    final old = _image;
-    _image = null;
-    if (old != null) {
-      if (mounted) setState(() {});
-      old.dispose();
-    }
-    if (id == null || entry == null) return;
-    ui.decodeImageFromPixels(
-      _grayToRgba(entry.crop),
-      entry.cropWidth,
-      entry.cropHeight,
-      ui.PixelFormat.rgba8888,
-      (image) {
-        if (!mounted || _imageFor != id) {
-          image.dispose();
-          return;
-        }
-        setState(() => _image = image);
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) => GridPanel(
@@ -254,12 +178,10 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
     icon: Icons.fact_check_outlined,
     subtitle: 'Latest scan · shows what was read, never a keep/sell call',
     child: ListenableBuilder(
-      listenable: Listenable.merge([widget.scanner, widget.catalog]),
+      listenable: Listenable.merge([scanner, catalog]),
       builder: (context, _) {
-        final scanner = widget.scanner;
         final latest = scanner.latest;
         final shown = _shown(scanner);
-        final frequency = scanner.clock?.qpcFrequency();
         return ListView(
           key: const PageStorageKey('scan-evidence-scroll'),
           children: [
@@ -271,27 +193,6 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
                 ..._note(context, latest),
               ..._summary(shown),
             ],
-            const Divider(height: 24),
-            Text('Recent scans', style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 6),
-            if (scanner.recent.isEmpty)
-              const Text('None yet')
-            else
-              for (final report in scanner.recent)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    _recentRow(report),
-                    key: Key('scan-recent-${report.id}'),
-                  ),
-                ),
-            const Divider(height: 24),
-            DetailsSection(
-              expanded: widget.detailsExpanded,
-              onExpandedChanged: widget.onDetailsExpandedChanged,
-              builder: (context) =>
-                  _details(context, shown, latest, scanner.recent, frequency),
-            ),
           ],
         );
       },
@@ -364,34 +265,7 @@ class _ScanEvidencePanelState extends State<ScanEvidencePanel> {
         null => const Text('No candidate'),
       };
 
-  /// The Details content, in order: the shared evidence rows, then each recent
-  /// entry's end state and total.
-  Widget _details(
-    BuildContext context,
-    ScanReport? shown,
-    ScanReport? latest,
-    List<ScanReport> recent,
-    int? frequency,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      ..._evidenceRows(
-        context,
-        widget.catalog,
-        shown,
-        latest,
-        frequency,
-        _image,
-      ),
-      ..._recentDetailRows(context, recent, frequency),
-    ],
-  );
-
-  /// The open-view recent row.
-  String _recentRow(ScanReport report) =>
-      _recentRowText(widget.catalog, report);
-
-  String _itemName(String id) => _itemNameIn(widget.catalog, id);
+  String _itemName(String id) => _itemNameIn(catalog, id);
 }
 
 /// The report whose evidence the panel shows: the last accepted scan, else
@@ -490,23 +364,6 @@ List<Widget> _evidenceRows(
       style: Theme.of(context).textTheme.titleSmall,
     ),
     ..._timings(latest, frequency),
-  ],
-];
-
-/// The Recent scans title and one end-state row per entry of [recent].
-List<Widget> _recentDetailRows(
-  BuildContext context,
-  List<ScanReport> recent,
-  int? frequency,
-) => [
-  if (recent.isNotEmpty) ...[
-    const SizedBox(height: 10),
-    Text('Recent scans', style: Theme.of(context).textTheme.titleSmall),
-    for (final report in recent)
-      Text(
-        _recentDetail(report, frequency),
-        key: Key('scan-recent-detail-${report.id}'),
-      ),
   ],
 ];
 
