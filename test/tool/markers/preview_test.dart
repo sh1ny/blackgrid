@@ -39,6 +39,35 @@ void main() {
     work.deleteSync(recursive: true);
   });
 
+  test('selected cells draw the Ember selection colour, not the role', () {
+    final set = newSet();
+    final out = outPath();
+
+    expect(
+      runCli(
+        [set.manifestPath, '--out', out],
+        out: StringBuffer(),
+        err: StringBuffer(),
+      ),
+      0,
+    );
+
+    final html = File(out).readAsStringSync();
+    final selected = RegExp(
+      r'data-state="selected".*?</div>',
+      dotAll: true,
+    ).allMatches(html).map((m) => m.group(0)!).toList();
+    expect(selected, hasLength(iconKeys.length * 3));
+    for (final cell in selected) {
+      expect(cell, contains('stroke="#E9A14B"'));
+      expect(cell, contains('tint-E9A14B'));
+    }
+    expect(html, contains('flood-color="#E9A14B"'));
+    for (final cell in html.split('data-state="normal"').skip(1)) {
+      expect(cell.split('</div>').first, isNot(contains('E9A14B')));
+    }
+  });
+
   test('sheet has every key x state x background and no external URL', () {
     final set = newSet();
     final out = outPath();

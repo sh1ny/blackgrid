@@ -17,7 +17,8 @@ const _background = Color(0xFF090F0D);
 const _exitGreen = Color(0xFF48D28B);
 const _dangerRed = Color(0xFFFF5252);
 const _pinBlue = Color(0xFF40C4FF);
-const _gold = Color(0xFFDCC05A);
+const _neutral = Color(0xFFC9CDBF);
+const _ember = Color(0xFFE9A14B);
 
 const _tinySvg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
@@ -343,32 +344,35 @@ void main() {
     expect(_canvas(tester), pattern);
   });
 
-  testWidgets(
-    'an unknown filter key paints a gold fallback dot while others paint '
-    'glyphs',
-    (tester) async {
-      final f = await _pump(tester);
-      await _loaded(tester, f);
-      final unknown = f.marker('mystery');
-      final known = f.marker('ground-exit');
+  testWidgets('map-marker-icons: Unknown filter key falls back', (
+    tester,
+  ) async {
+    final f = await _pump(tester);
+    await _loaded(tester, f);
+    final unknown = f.marker('mystery');
+    final known = f.marker('ground-exit');
 
-      final pattern = paints;
-      _discAndRing(pattern, unknown, ring: _gold);
-      pattern.something(
-        _circleAt(unknown, style: PaintingStyle.fill, radius: 3, colour: _gold),
-      );
-      expect(_canvas(tester), pattern);
-      expect(
-        _canvas(tester),
-        paints..something(_glyphAt(known, colour: _exitGreen)),
-      );
-      expect(
-        _canvas(tester),
-        isNot(paints..something(_glyphAt(unknown))),
-        reason: 'the fallback badge draws no glyph',
-      );
-    },
-  );
+    final pattern = paints;
+    _discAndRing(pattern, unknown, ring: _neutral);
+    pattern.something(
+      _circleAt(
+        unknown,
+        style: PaintingStyle.fill,
+        radius: 3,
+        colour: _neutral,
+      ),
+    );
+    expect(_canvas(tester), pattern);
+    expect(
+      _canvas(tester),
+      paints..something(_glyphAt(known, colour: _exitGreen)),
+    );
+    expect(
+      _canvas(tester),
+      isNot(paints..something(_glyphAt(unknown))),
+      reason: 'the fallback badge draws no glyph',
+    );
+  });
 
   testWidgets('a dimmed marker paints disc, ring and glyph at 0.22 alpha', (
     tester,
@@ -426,6 +430,40 @@ void main() {
       ),
     );
     expect(_canvas(tester), pattern);
+  });
+
+  testWidgets('map-marker-icons: Selected pin is Ember', (tester) async {
+    final f = await _pump(tester);
+    await _loaded(tester, f);
+    final origin = tester.getTopLeft(
+      find.byKey(const Key('native-map-viewport')),
+    );
+    await tester.tapAt(origin + f.pin);
+    await tester.pump();
+    await tester.pump();
+    // The selected-pin strip resizes the viewport, so read the point again.
+    final at = f.pin;
+
+    final pattern = paints;
+    _discAndRing(pattern, at, ring: _ember, radius: 14);
+    pattern.something(
+      _glyphAt(at, image: f.icons.icon('CustomPins')!.glyph, colour: _ember),
+    );
+    expect(_canvas(tester), pattern);
+    expect(
+      _canvas(tester),
+      isNot(
+        paints..something(
+          _circleAt(
+            at,
+            style: PaintingStyle.stroke,
+            radius: 14,
+            colour: _pinBlue,
+          ),
+        ),
+      ),
+      reason: 'the selected pin no longer draws its light-blue ring',
+    );
   });
 
   testWidgets('CustomPins off paints no pin badge', (tester) async {
@@ -515,12 +553,7 @@ void main() {
     // The summary remains anchored while the selected badge is painted.
     await tester.pump();
     final selected = paints;
-    _discAndRing(
-      selected,
-      f.marker('ground-exit'),
-      ring: _exitGreen,
-      radius: 14,
-    );
+    _discAndRing(selected, f.marker('ground-exit'), ring: _ember, radius: 14);
     expect(_canvas(tester), selected);
   });
 }

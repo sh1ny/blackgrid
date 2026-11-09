@@ -484,4 +484,32 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Save marker filters is a Settings switch that saves', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    final row = find.descendant(
+      of: find.byType(SettingsDialog),
+      matching: find.widgetWithText(SwitchListTile, 'Save marker filters'),
+    );
+    expect(row, findsOneWidget);
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    final before = h.services.settings.settings.saveMarkerFilters;
+    expect(tester.widget<SwitchListTile>(row).value, before);
+    await tapM1Async(
+      tester,
+      row,
+      () => h.services.settings.settings.saveMarkerFilters == !before,
+    );
+    expect(tester.widget<SwitchListTile>(row).value, !before);
+    final stored = (await tester.runAsync(
+      () => h.services.database.readSettings(),
+    ))!.settings;
+    expect(stored.saveMarkerFilters, !before);
+    expect(tester.takeException(), isNull);
+  });
 }

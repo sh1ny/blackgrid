@@ -10,6 +10,7 @@ import 'evidence_panels.dart';
 import 'item_decision_card.dart';
 import 'import_dialog.dart';
 import 'labels.dart';
+import 'map_inspector.dart';
 import 'map_screen.dart';
 import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
@@ -314,55 +315,15 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                               ],
                                             ),
                                           ],
-                                        ] else ...[
-                                          SizedBox(
-                                            height: 450,
-                                            child: inspectorOpen
-                                                ? ItemDecisionCard(
-                                                    services: widget.services,
-                                                    compact: true,
-                                                    showCorrectionOffer: false,
-                                                  )
-                                                : const SizedBox.shrink(),
+                                        ] else if (inspectorOpen)
+                                          Padding(
+                                            padding: const EdgeInsets.all(
+                                              EmberSpace.md,
+                                            ),
+                                            child: MapInspector(
+                                              services: widget.services,
+                                            ),
                                           ),
-                                          const SizedBox(height: 14),
-                                          SizedBox(
-                                            height: 400,
-                                            child: inspectorOpen
-                                                ? RequirementPanel(
-                                                    services: widget.services,
-                                                    expansion:
-                                                        requirementExpansion,
-                                                  )
-                                                : const SizedBox.shrink(),
-                                          ),
-                                          const SizedBox(height: 14),
-                                          SizedBox(
-                                            height: 400,
-                                            child: inspectorOpen
-                                                ? SourcePanel(
-                                                    services: widget.services,
-                                                    detailsExpanded:
-                                                        sourceDetailsExpanded,
-                                                    onDetailsExpandedChanged:
-                                                        (value) => setState(
-                                                          () =>
-                                                              sourceDetailsExpanded =
-                                                                  value,
-                                                        ),
-                                                  )
-                                                : const SizedBox.shrink(),
-                                          ),
-                                          const SizedBox(height: 14),
-                                          SizedBox(
-                                            height: 400,
-                                            child: inspectorOpen
-                                                ? HistoryPanel(
-                                                    services: widget.services,
-                                                  )
-                                                : const SizedBox.shrink(),
-                                          ),
-                                        ],
                                       ],
                                     ),
                                   ),

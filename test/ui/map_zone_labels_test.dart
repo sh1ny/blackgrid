@@ -19,7 +19,9 @@ const _background = Color(0xFF090F0D);
 const _mapFill = Color(0xFF253541);
 const _exitGreen = Color(0xFF48D28B);
 const _dangerRed = Color(0xFFFF5252);
-const _questGold = Color(0xFFDCC05A);
+const _questLime = Color(0xFFC5E063);
+const _neutral = Color(0xFFC9CDBF);
+const _ember = Color(0xFFE9A14B);
 const _utilityViolet = Color(0xFFB7A6F0);
 const _highlightCyan = Color(0xFF18FFFF);
 
@@ -62,7 +64,7 @@ ByteData _manifest() => _data(
       'roles': {
         'exit': '#48D28B',
         'danger': '#FF5252',
-        'quest': '#DCC05A',
+        'quest': '#C5E063',
         'utility': '#B7A6F0',
         'pin': '#40C4FF',
       },
@@ -552,17 +554,17 @@ void main() {
     expect(_paragraphs(calls), hasLength(_labelledMarkers * 2));
   });
 
-  testWidgets('four factions paint four label colours over exit-green badges', (
+  testWidgets('map-zone-labels: Each faction draws its own colour', (
     tester,
   ) async {
     final f = await _pumpLoaded(tester);
     final calls = _calls(tester);
     final colours = <Color>[];
-    for (final (id, faction) in [
-      ('pmc', LabelFaction.pmc),
-      ('scav', LabelFaction.scav),
-      ('shared', LabelFaction.shared),
-      ('transit', LabelFaction.transit),
+    for (final (id, want) in [
+      ('pmc', const Color(0xFF7BE495)),
+      ('scav', const Color(0xFFF59AB8)),
+      ('shared', const Color(0xFF8CB4FF)),
+      ('transit', const Color(0xFFD29BF2)),
     ]) {
       final at = f.marker(id);
       expect(
@@ -577,7 +579,7 @@ void main() {
         reason: '$id keeps the exit-green ring',
       );
       final pixel = await _pixel(tester, f, _labelCentre(at));
-      _expectColour(pixel, _label(faction));
+      _expectColour(pixel, want);
       colours.add(pixel);
     }
     expect({for (final c in colours) c.toARGB32()}, hasLength(4));
@@ -694,23 +696,23 @@ void main() {
     );
   });
 
-  testWidgets('hazard, quest and switch outlines paint in their role colours', (
+  testWidgets('map-zone-labels: Categories draw their own outline colours', (
     tester,
   ) async {
     final f = await _pumpLoaded(tester);
     final calls = _calls(tester);
 
     expect(_outlineDrawn(f, calls, 'zone', _dangerRed), isTrue);
-    expect(_outlineDrawn(f, calls, 'quest', _questGold), isTrue);
+    expect(_outlineDrawn(f, calls, 'quest', _questLime), isTrue);
     expect(_outlineDrawn(f, calls, 'switch', _utilityViolet), isTrue);
     expect(_outlineDrawn(f, calls, 'quest', _dangerRed), isFalse);
   });
 
-  testWidgets('before icons load a quest outline paints gold', (tester) async {
+  testWidgets('map-zone-labels: Icons not loaded yet', (tester) async {
     final f = await _pump(tester, hold: true);
     final calls = _calls(tester);
 
-    expect(_outlineDrawn(f, calls, 'quest', _questGold), isTrue);
+    expect(_outlineDrawn(f, calls, 'quest', _neutral), isTrue);
     expect(_outlineDrawn(f, calls, 'quest', _dangerRed), isFalse);
     expect(_outlineDrawn(f, calls, 'zone', _dangerRed), isTrue);
   });
@@ -809,24 +811,36 @@ void main() {
     );
   });
 
-  testWidgets('a selected extract keeps its outline after the pointer leaves', (
-    tester,
-  ) async {
+  testWidgets('map-zone-labels: Selected outline is Ember', (tester) async {
     final f = await _pumpLoaded(tester);
     final mouse = await _mouse(tester);
     final at = f.marker('pmc');
 
     await mouse.moveTo(_global(tester, at));
+    await tester.pump();
+    expect(
+      _outlineDrawn(f, _calls(tester), 'pmc', _exitGreen),
+      isTrue,
+      reason: 'a hovered extract draws exit green',
+    );
+    expect(_outlineDrawn(f, _calls(tester), 'pmc', _ember), isFalse);
+
     await mouse.down(_global(tester, at));
     await mouse.up();
     await tester.pump();
     await tester.pump();
     expect(find.text('Med Tent Gate'), findsOneWidget);
+    expect(_outlineDrawn(f, _calls(tester), 'pmc', _ember), isTrue);
+    expect(_outlineDrawn(f, _calls(tester), 'pmc', _exitGreen), isFalse);
 
     await mouse.moveTo(_global(tester, const Offset(5, 5)));
     await tester.pump();
 
-    expect(_outlineDrawn(f, _calls(tester), 'pmc', _exitGreen), isTrue);
+    expect(
+      _outlineDrawn(f, _calls(tester), 'pmc', _ember),
+      isTrue,
+      reason: 'the selected outline stays after the pointer leaves',
+    );
   });
 
   testWidgets('leaving the viewport clears the hovered outline', (

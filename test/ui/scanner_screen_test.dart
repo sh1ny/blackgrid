@@ -5,6 +5,7 @@ import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/labels.dart';
+import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
@@ -62,12 +63,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(h.services.selection.decision, same(decision));
       expect(find.text('Latest accepted scan'), findsNothing);
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is GridPanel && w.title == 'Active map',
-        ),
-        findsOneWidget,
-      );
+      expect(find.byType(MapScreen), findsOneWidget);
+      expect(find.text('Active map'), findsNothing);
       expect(find.byKey(const Key('answer-strip')), findsOneWidget);
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();

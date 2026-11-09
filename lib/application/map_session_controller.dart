@@ -15,6 +15,32 @@ import '../domain/settings.dart';
 import '../maps/prepared_map.dart';
 import 'settings_controller.dart';
 
+/// How an explicit Read Latest ended.
+sealed class ReadLatestOutcome {
+  const ReadLatestOutcome();
+}
+
+/// The newest screenshot was read and applied to the session.
+final class ReadLatestApplied extends ReadLatestOutcome {
+  const ReadLatestApplied();
+}
+
+/// The folder exists and holds no screenshot.
+final class ReadLatestNoScreenshot extends ReadLatestOutcome {
+  const ReadLatestNoScreenshot();
+}
+
+/// The folder or its newest screenshot could not be read.
+final class ReadLatestUnavailable extends ReadLatestOutcome {
+  const ReadLatestUnavailable();
+}
+
+/// The read was overtaken by a newer read, a screenshot, a context change or
+/// closing, so nothing was applied and nothing should be reported.
+final class ReadLatestSuperseded extends ReadLatestOutcome {
+  const ReadLatestSuperseded();
+}
+
 /// The sole ephemeral selection/evidence authority. No Scanner collaborator.
 class MapSessionController extends ChangeNotifier {
   MapSessionController({
@@ -62,6 +88,7 @@ class MapSessionController extends ChangeNotifier {
   bool _initialized = false;
   bool _closed = false;
   bool _readingLatest = false;
+  DateTime? _raidMatchedAt;
   StreamSubscription<SessionLogState>? _logSubscription;
   StreamSubscription<SavedScreenshot>? _screenshotSubscription;
   StreamSubscription<(MapInputStatus, String?)>? _statusSubscription;
@@ -70,6 +97,9 @@ class MapSessionController extends ChangeNotifier {
   Future<void>? _closing;
   Future<void>? _initializing;
   _ScreenshotRequest? _pending;
+
+  /// The saved screenshot time of the panel that set the raid highlights.
+  DateTime? get raidMatchedAt => _raidMatchedAt;
 
   String get effectiveMapId =>
       settings.settings.followGameLogs && _log.detectedMapId != null
@@ -164,6 +194,7 @@ class MapSessionController extends ChangeNotifier {
     _rawEvidence = null;
     _evidence = null;
     _highlights = const {};
+    _raidMatchedAt = null;
     _pending?.complete();
     _pending = null;
   }
@@ -339,19 +370,39 @@ class MapSessionController extends ChangeNotifier {
     _highlights = Set.unmodifiable(result.ids);
   }
 
-  Future<void> readLatest() async {
-    if (_closed) return;
+  Future<ReadLatestOutcome> readLatest() async {
+    if (_closed) return const ReadLatestSuperseded();
     final order = ++_order;
     final context = _context;
     _readingLatest = true;
     notifyListeners();
     try {
       await _binding;
-      final saved = await _screenshots.readLatest();
-      if (_closed || order != _order || context != _context || saved == null) {
-        return;
+      final read = await _screenshots.readLatest();
+      // The order check stays: a watched screenshot advances it without
+      // changing the context. Whatever the watcher returned is overridden.
+      if (_closed || order != _order || context != _context) {
+        return const ReadLatestSuperseded();
       }
-      await _enqueue(saved, assumed: true, order: order, context: context);
+      switch (read) {
+        case ScreenshotFound(:final screenshot):
+          await _enqueue(
+            screenshot,
+            assumed: true,
+            order: order,
+            context: context,
+          );
+          // A newer read or screenshot can replace this job while it waits.
+          return _closed || order != _order || context != _context
+              ? const ReadLatestSuperseded()
+              : const ReadLatestApplied();
+        case ScreenshotEmpty():
+          return const ReadLatestNoScreenshot();
+        case ScreenshotUnavailable():
+          return const ReadLatestUnavailable();
+        case ScreenshotDiscarded():
+          return const ReadLatestSuperseded();
+      }
     } finally {
       if (!_closed && order == _order) {
         _readingLatest = false;
@@ -475,6 +526,7 @@ class MapSessionController extends ChangeNotifier {
       if (result.state == RaidPanelState.recognized ||
           result.state == RaidPanelState.empty) {
         _highlights = Set.unmodifiable(result.ids);
+        _raidMatchedAt = request.saved.modifiedAt;
       }
     }
   }

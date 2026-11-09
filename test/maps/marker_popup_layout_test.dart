@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/maps/map_palette.dart';
 import 'package:blackgrid/maps/marker_presentation.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
 import 'package:blackgrid/ui/marker_popup.dart';
@@ -21,6 +22,7 @@ Future<List<bool>> _paintsTetherEndpoints(
 ) async {
   final painter = tester.widget<CustomPaint>(tetherFinder).painter!;
   final size = tester.getSize(viewportFinder);
+  const leader = mapPopupLeaderLine;
   return (await tester.runAsync(() async {
     final recorder = ui.PictureRecorder();
     painter.paint(Canvas(recorder), size);
@@ -44,10 +46,19 @@ Future<List<bool>> _paintsTetherEndpoints(
             continue;
           }
           final offset = (y * size.width.ceil() + x) * 4;
-          final red = pixels.getUint8(offset);
-          final green = pixels.getUint8(offset + 1);
-          final blue = pixels.getUint8(offset + 2);
-          if (red > 150 && green > 125 && blue < 150) return true;
+          // The canvas stores premultiplied colour; undo it so an
+          // antialiased edge of the leader line still reads as its colour.
+          final alpha = pixels.getUint8(offset + 3);
+          if (alpha < 100) continue;
+          int straight(int channel) => (channel * 255 / alpha).round();
+          final red = straight(pixels.getUint8(offset));
+          final green = straight(pixels.getUint8(offset + 1));
+          final blue = straight(pixels.getUint8(offset + 2));
+          if ((red - leader.r * 255).abs() < 30 &&
+              (green - leader.g * 255).abs() < 30 &&
+              (blue - leader.b * 255).abs() < 30) {
+            return true;
+          }
         }
       }
       return false;

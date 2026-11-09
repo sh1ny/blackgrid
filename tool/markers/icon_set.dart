@@ -803,10 +803,15 @@ String? _promptRecordProblem(Directory directory, String relative) {
 
 const _contrastFloor = 3.0;
 const _reservedHue = (low: 170.0, high: 190.0);
+const _amberBand = (low: 25.0, high: 60.0);
 const _greySaturation = 0.10;
 
-/// Applies the palette rule: contrast, the reserved hue band and the roles
-/// that carry meaning.
+/// Applies the palette rule: contrast, the reserved cyan and amber hue bands
+/// and the roles that carry meaning.
+///
+/// Cyan is reserved for highlighted markers and amber for the selected
+/// marker (ADR-0039). A colour below 10% saturation counts as grey and passes
+/// both bands.
 void _checkPalette(
   String background,
   Map<String, String> roles,
@@ -834,6 +839,17 @@ void _checkPalette(
         '$colour has hue ${hue.toStringAsFixed(1)} degrees at '
             '${(saturation * 100).round()}% saturation, inside the reserved '
             '170-190 degree band',
+      );
+    }
+    if (saturation >= _greySaturation &&
+        hue >= _amberBand.low &&
+        hue <= _amberBand.high) {
+      fail(
+        'palette',
+        role,
+        '$colour has hue ${hue.toStringAsFixed(1)} degrees at '
+            '${(saturation * 100).round()}% saturation, inside the reserved '
+            '25-60 degree amber band',
       );
     }
   }

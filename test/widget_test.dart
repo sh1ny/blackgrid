@@ -1,4 +1,5 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,12 +17,8 @@ void main() {
       expect(find.text('Progression'), findsNothing);
       expect(find.text('Tools'), findsNothing);
       expect(find.text('Latest accepted scan'), findsNothing);
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is GridPanel && w.title == 'Active map',
-        ),
-        findsOneWidget,
-      );
+      expect(find.byType(MapScreen), findsOneWidget);
+      expect(find.text('Active map'), findsNothing);
       expect(find.byKey(const Key('answer-strip')), findsOneWidget);
       expect(
         find.descendant(
@@ -32,7 +29,7 @@ void main() {
       );
       expect(
         find.descendant(
-          of: find.byKey(const PageStorageKey('map-rail-scroll')),
+          of: find.byType(MapScreen),
           matching: find.byWidgetPredicate(
             (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
           ),

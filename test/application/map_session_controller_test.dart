@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:blackgrid/application/map_session_controller.dart';
 import 'package:blackgrid/application/settings_controller.dart';
@@ -644,6 +645,205 @@ void main() {
       expect(session.state.raidHighlightIds, isEmpty);
     },
   );
+
+  Future<_ScriptedWatcher> scripted() async {
+    await session.close();
+    final scripted = _ScriptedWatcher();
+    watcher = scripted;
+    session = MapSessionController(
+      settings: settings,
+      logReader: SessionLogReader(pollInterval: const Duration(days: 1)),
+      screenshotWatcher: scripted,
+      clock: () => now,
+      recognize: (_) async => RaidPanelEvidence(
+        state: RaidPanelState.recognized,
+        extractNames: ['Fixture exit'],
+      ),
+    );
+    await session.initialize();
+    session.updateMapContext(_map('shoreline'), 1);
+    return scripted;
+  }
+
+  test(
+    'map-controls: Read latest outcome reports each watcher result',
+    () async {
+      await screenshot(1);
+      await session.initialize();
+      session.updateMapContext(_map('shoreline'), 1);
+      expect(await session.readLatest(), isA<ReadLatestApplied>());
+      expect(session.state.savedScreenshotPath, isNotNull);
+
+      final script = await scripted();
+      for (final (result, expected) in <(ScreenshotRead, Type)>[
+        (const ScreenshotEmpty(), ReadLatestNoScreenshot),
+        (const ScreenshotUnavailable(), ReadLatestUnavailable),
+        (const ScreenshotDiscarded(), ReadLatestSuperseded),
+      ]) {
+        final read = session.readLatest();
+        await script.called;
+        script.answer(result);
+        expect((await read).runtimeType, expected, reason: '$result');
+        expect(session.state.readingLatest, isFalse);
+      }
+    },
+  );
+
+  test('map-controls: Superseded read', () async {
+    final script = await scripted();
+    final results = <ScreenshotRead>[
+      ScreenshotFound(
+        SavedScreenshot(
+          path: 'a.png',
+          modifiedAt: now,
+          bytes: Uint8List.fromList([1]),
+          contentId: 'a',
+        ),
+      ),
+      const ScreenshotEmpty(),
+      const ScreenshotUnavailable(),
+      const ScreenshotDiscarded(),
+    ];
+    var content = 1;
+    for (final result in results) {
+      // A later explicit read moves the order.
+      final first = session.readLatest();
+      await script.called;
+      final second = session.readLatest();
+      await script.called;
+      script.answer(const ScreenshotEmpty(), call: 1);
+      script.answer(result, call: 0);
+      expect(await first, isA<ReadLatestSuperseded>(), reason: 'order $result');
+      expect(await second, isA<ReadLatestNoScreenshot>());
+
+      // A context change moves the context.
+      final moved = session.readLatest();
+      await script.called;
+      session.updateMapContext(_map('shoreline'), ++content);
+      script.answer(result);
+      expect(
+        await moved,
+        isA<ReadLatestSuperseded>(),
+        reason: 'context $result',
+      );
+      expect(session.state.readingLatest, isFalse);
+    }
+
+    // A watched screenshot advances the order without changing the context.
+    final raced = session.readLatest();
+    await script.called;
+    script.emit(
+      SavedScreenshot(
+        path: 'watched.png',
+        modifiedAt: now.add(const Duration(minutes: 1)),
+        bytes: Uint8List.fromList([1]),
+        contentId: 'w',
+      ),
+    );
+    script.answer(const ScreenshotUnavailable());
+    expect(await raced, isA<ReadLatestSuperseded>(), reason: 'watched');
+
+    // Closing supersedes whatever the watcher returned.
+    for (final result in results) {
+      final fresh = await scripted();
+      final read = session.readLatest();
+      await fresh.called;
+      final closing = session.close();
+      fresh.answer(result);
+      expect(await read, isA<ReadLatestSuperseded>(), reason: 'closed $result');
+      await closing;
+    }
+    expect(await session.readLatest(), isA<ReadLatestSuperseded>());
+  });
+
+  test('map-controls: Raid match time follows the panel highlights', () async {
+    await session.close();
+    final panels = [
+      RaidPanelEvidence(
+        state: RaidPanelState.recognized,
+        extractNames: ['Fixture exit'],
+      ),
+      RaidPanelEvidence(state: RaidPanelState.partial),
+      RaidPanelEvidence(state: RaidPanelState.empty),
+    ];
+    session = MapSessionController(
+      settings: settings,
+      clock: () => now,
+      screenshotWatcher: ScreenshotDirectoryWatcher(
+        stabilityDelay: Duration.zero,
+      ),
+      recognize: (_) async => panels.removeAt(0),
+    );
+    await session.initialize();
+    final map = _map('shoreline');
+    session.updateMapContext(map, 1);
+    expect(session.raidMatchedAt, isNull);
+
+    // The value is the screenshot's time, not the clock's.
+    await screenshot(1);
+    await session.readLatest();
+    final first = now.add(const Duration(minutes: 1));
+    expect(session.state.raidHighlightIds, {'shoreline-exit'});
+    expect(session.raidMatchedAt, first);
+
+    // The re-match on a marker change reads no new screenshot.
+    session.updateMapContext(
+      map,
+      2,
+      activeMarkers: [_exitMarker('refreshed-exit', 'Fixture exit')],
+    );
+    expect(session.state.raidHighlightIds, {'refreshed-exit'});
+    expect(session.raidMatchedAt, first);
+
+    // A later screenshot with no panel keeps the earlier match and its time.
+    await screenshot(2);
+    await session.readLatest();
+    expect(session.state.raidEvidence!.state, RaidPanelState.partial);
+    expect(session.raidMatchedAt, first);
+
+    // An empty panel replaces the match, and its time.
+    await screenshot(3);
+    await session.readLatest();
+    expect(session.state.raidHighlightIds, isEmpty);
+    expect(session.raidMatchedAt, now.add(const Duration(minutes: 3)));
+
+    // Invalidation clears it.
+    await settings.setMap('woods');
+    expect(session.raidMatchedAt, isNull);
+  });
+}
+
+class _ScriptedWatcher extends ScreenshotDirectoryWatcher {
+  final List<Completer<ScreenshotRead>> _reads = [];
+  Completer<void> _called = Completer<void>();
+  final StreamController<SavedScreenshot> _emitted =
+      StreamController<SavedScreenshot>.broadcast(sync: true);
+
+  /// Completes when the next read starts.
+  Future<void> get called => _called.future;
+
+  @override
+  Stream<SavedScreenshot> get screenshots => _emitted.stream;
+
+  @override
+  Future<ScreenshotRead> readLatest() {
+    final read = Completer<ScreenshotRead>();
+    _reads.add(read);
+    _called.complete();
+    _called = Completer<void>();
+    return read.future;
+  }
+
+  /// Answers the newest unanswered read, or read number [call] since reset.
+  void answer(ScreenshotRead result, {int? call}) {
+    final read = call == null
+        ? _reads.lastWhere((read) => !read.isCompleted)
+        : _reads[call];
+    read.complete(result);
+    if (_reads.every((read) => read.isCompleted)) _reads.clear();
+  }
+
+  void emit(SavedScreenshot saved) => _emitted.add(saved);
 }
 
 Future<void> _until(

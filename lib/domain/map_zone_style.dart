@@ -34,11 +34,12 @@ LabelFaction? labelFactionFor(String filterKey) => switch (filterKey) {
 /// Returns the opaque ARGB name label colour of [faction].
 ///
 /// Each colour reaches at least 3:1 contrast against the map background
-/// `#090F0D` and stays outside the cyan highlight band, following the marker
-/// palette rules of ADR-0023. Badges keep their own role colours.
+/// `#090F0D` and stays outside the cyan highlight band and the amber selection
+/// band, following the marker palette rules of ADR-0023 and ADR-0039. Badges
+/// keep their own role colours.
 int labelColourFor(LabelFaction faction) => switch (faction) {
   LabelFaction.pmc => 0xFF7BE495,
-  LabelFaction.scav => 0xFFF2C14E,
+  LabelFaction.scav => 0xFFF59AB8,
   LabelFaction.shared => 0xFF8CB4FF,
   LabelFaction.transit => 0xFFD29BF2,
 };

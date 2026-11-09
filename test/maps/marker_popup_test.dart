@@ -52,11 +52,14 @@ Map<String, List<PreparedMarker>> _popupMarkers(
     },
 };
 
-Finder get _viewport => find.byKey(const Key('native-map-viewport'));
-Finder get _markerBrowser => find.ancestor(
-  of: find.byIcon(Icons.list),
-  matching: find.byType(OutlinedButton),
+/// The Upper segment of the floor control over the map.
+final _upperFloor = find.descendant(
+  of: find.byKey(const Key('map-floor-control')),
+  matching: find.text('Upper'),
 );
+
+Finder get _viewport => find.byKey(const Key('native-map-viewport'));
+Finder get _markerBrowser => find.byTooltip('Browse markers');
 
 Offset _project(WidgetTester tester, MapWidgetHarness h, ScenePoint point) {
   final projected = h.services.maps.transform.sceneToViewport(point);
@@ -516,10 +519,16 @@ void main() {
     await _openMarkerBrowser(tester);
     await _chooseBrowserEntry(tester, 'Popup pin');
     await settleMapFixture(tester, h);
-    expect(find.textContaining('Popup pin'), findsOneWidget);
-    expect(find.text('Edit pin'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('map-pin-bar')),
+        matching: find.textContaining('Popup pin'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('map-pin-edit')), findsOneWidget);
     expect(h.services.maps.selectedMarkerProjection, isNull);
-    await tester.tap(find.text('Edit pin'));
+    await tester.tap(find.byKey(const Key('map-pin-edit')));
     await tester.pumpAndSettle();
     expect(find.byType(PinEditor), findsOneWidget);
     expect(
@@ -535,8 +544,8 @@ void main() {
     await _chooseBrowserEntry(tester, 'Ground hazard');
     await settleMapFixture(tester, h);
     expect(find.text('Ground hazard'), findsOneWidget);
-    expect(find.text('Edit pin'), findsNothing);
-    expect(find.byTooltip('Close pin details'), findsNothing);
+    expect(find.byKey(const Key('map-pin-edit')), findsNothing);
+    expect(find.byKey(const Key('map-pin-close')), findsNothing);
   });
 
   testWidgets('marker bubble shows summary without raw details', (
@@ -767,14 +776,14 @@ void main() {
           },
         ],
       );
-      await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
+      await tester.tap(_upperFloor);
       await settleMapFixture(tester, h);
       await _select(tester, h, ScenePoint(192, 64));
       expect(h.services.maps.selectedMarkerProjection?.marker.id, 'upper-exit');
-      await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
+      await tester.tap(_upperFloor);
       await settleMapFixture(tester, h);
       expect(h.services.maps.selectedMarkerProjection, isNull);
-      await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
+      await tester.tap(_upperFloor);
       await settleMapFixture(tester, h);
       expect(h.services.maps.selectedMarkerProjection, isNull);
       await _select(tester, h, ScenePoint(128, 128));

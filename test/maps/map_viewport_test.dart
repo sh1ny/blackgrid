@@ -12,13 +12,16 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
 
+/// The Upper segment of the floor control over the map.
+final _upperFloor = find.descendant(
+  of: find.byKey(const Key('map-floor-control')),
+  matching: find.text('Upper'),
+);
+
 Finder get _viewport => find.byKey(const Key('native-map-viewport'));
 
 // Match the button by its icon, independent of a count that changes on filtering.
-Finder get _markerBrowser => find.ancestor(
-  of: find.byIcon(Icons.list),
-  matching: find.byType(OutlinedButton),
-);
+Finder get _markerBrowser => find.byTooltip('Browse markers');
 
 Offset _project(WidgetTester tester, MapWidgetHarness h, ScenePoint point) {
   final projected = h.services.maps.transform.sceneToViewport(point);
@@ -54,32 +57,11 @@ Future<(int, int, int)> _paintPixel(
   }))!;
 }
 
+/// The inspector's row for [filterKey], scrolled into view and hit-testable.
 Future<Finder> _showMarkerFilter(WidgetTester tester, String filterKey) async {
-  final search = find.byKey(const ValueKey('marker-search'));
-  // The outer rail lazily builds the preferences panel too. Materialize its
-  // search control before using that control to identify the inner list.
-  await scrollMapRailTo(tester, search);
-  // Bring the whole panel into view before dragging its inner list.
-  await tester.ensureVisible(find.text('Marker preferences'));
-  await tester.pumpAndSettle();
-  final filter = find.byKey(ValueKey('marker-tile-$filterKey'));
-  // The tiles are a lazy child below the search/quest controls. Scroll the
-  // inner preferences list to build them. Moving its position directly avoids
-  // revealing the tile with a top-aligned scroll of the outer rail, which would
-  // unbuild the whole panel.
-  final inner = tester
-      .state<ScrollableState>(
-        find.ancestor(of: search, matching: find.byType(Scrollable)).first,
-      )
-      .position;
-  while (filter.evaluate().isEmpty && inner.pixels < inner.maxScrollExtent) {
-    inner.jumpTo(
-      (inner.pixels + 160).clamp(0, inner.maxScrollExtent).toDouble(),
-    );
-    await tester.pump();
-  }
-  await tester.pumpAndSettle();
-  await Scrollable.ensureVisible(tester.element(filter), alignment: .5);
+  final filter = find.byKey(ValueKey('marker-row-$filterKey'));
+  expect(filter, findsOneWidget);
+  await tester.ensureVisible(filter);
   await tester.pumpAndSettle();
   expect(filter.hitTestable(), findsOneWidget);
   return filter;
@@ -371,16 +353,34 @@ void main() {
           target.properties.onTap!();
         }
         await settleMapFixture(tester, h);
-        expect(find.textContaining('Source pin ·'), findsOneWidget);
-        expect(find.text('Edit pin'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('map-pin-bar')),
+            matching: find.text('Source pin'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('map-pin-edit')), findsOneWidget);
         expect(
           await tester.runAsync(() => h.services.settings.setMap('thelab')),
           isTrue,
         );
         await settleMapFixture(tester, h);
         expect(h.services.maps.selectedMapId, 'thelab');
-        expect(find.textContaining('Source pin ·'), findsNothing);
-        expect(find.textContaining('Other map pin ·'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('map-pin-bar')),
+            matching: find.text('Source pin'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('map-pin-bar')),
+            matching: find.text('Other map pin'),
+          ),
+          findsNothing,
+        );
         // A previously selected duplicate id must not authorize deletion in B.
         await tester.tapAt(_project(tester, h, ScenePoint(128, 128)));
         await settleMapFixture(tester, h);
@@ -388,7 +388,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Remove pin record?'), findsNothing);
         expect(h.services.settings.pins, hasLength(2));
-        expect(find.text('Edit pin'), findsNothing);
+        expect(find.byKey(const Key('map-pin-edit')), findsNothing);
         final painter = tester
             .widget<CustomPaint>(
               find
@@ -405,8 +405,14 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(ListTile, otherPin.label));
         await settleMapFixture(tester, h);
-        expect(find.textContaining('Other map pin ·'), findsOneWidget);
-        await tester.tap(find.text('Edit pin'));
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('map-pin-bar')),
+            matching: find.text('Other map pin'),
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('map-pin-edit')));
         await tester.pumpAndSettle();
         expect(
           double.parse(
@@ -433,7 +439,7 @@ void main() {
         expect(h.services.settings.pins, hasLength(2));
         await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Remove selected pin'));
+        await tester.tap(find.byKey(const Key('map-pin-remove')));
         await tester.pumpAndSettle();
         await tapM1Async(
           tester,
@@ -492,7 +498,9 @@ void main() {
       await settleMapFixture(tester, h);
       expect(h.services.maps.visibleMarkers(), isEmpty);
       expect(
-        tester.widget<OutlinedButton>(_markerBrowser).onPressed,
+        tester
+            .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.list))
+            .onPressed,
         isNotNull,
       );
       expect(
@@ -503,7 +511,12 @@ void main() {
       );
       await settleMapFixture(tester, h);
       expect(h.services.settings.pins.single.id, pin.id);
-      expect(tester.widget<OutlinedButton>(_markerBrowser).onPressed, isNull);
+      expect(
+        tester
+            .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.list))
+            .onPressed,
+        isNull,
+      );
       await tester.tap(_markerBrowser);
       await tester.pumpAndSettle();
       expect(find.text('Visible map markers and pins'), findsNothing);
@@ -515,7 +528,9 @@ void main() {
       );
       await settleMapFixture(tester, h);
       expect(
-        tester.widget<OutlinedButton>(_markerBrowser).onPressed,
+        tester
+            .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.list))
+            .onPressed,
         isNotNull,
       );
       await tester.tap(_markerBrowser);
@@ -523,7 +538,7 @@ void main() {
       expect(find.widgetWithText(ListTile, 'Browser pin'), findsOneWidget);
       await tester.tap(find.widgetWithText(ListTile, 'Browser pin'));
       await settleMapFixture(tester, h);
-      await tester.tap(find.text('Edit pin'));
+      await tester.tap(find.byKey(const Key('map-pin-edit')));
       await tester.pumpAndSettle();
       expect(
         double.parse(
@@ -669,7 +684,7 @@ void main() {
           await tester.pumpAndSettle();
           await tester.tap(find.widgetWithText(ListTile, 'Extreme saved pin'));
           await settleMapFixture(tester, h);
-          await tester.tap(find.text('Edit pin'));
+          await tester.tap(find.byKey(const Key('map-pin-edit')));
           await tester.pumpAndSettle();
           final x = find.widgetWithText(TextField, 'Position across (0–1)');
           final y = find.widgetWithText(TextField, 'Position down (0–1)');
@@ -846,7 +861,7 @@ void main() {
         await tester.tapAt(_project(tester, h, ScenePoint(192, 64)));
         await settleMapFixture(tester, h);
         expect(find.text('Upper exit'), findsNothing);
-        await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
+        await tester.tap(_upperFloor);
         await settleMapFixture(tester, h);
         expect(
           find.semantics
@@ -862,7 +877,7 @@ void main() {
         await tester.tapAt(_project(tester, h, ScenePoint(192, 64)));
         await settleMapFixture(tester, h);
         expect(find.text('Upper exit'), findsOneWidget);
-        await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
+        await tester.tap(_upperFloor);
         await settleMapFixture(tester, h);
         expect(find.text('Upper exit'), findsNothing);
         expect(
@@ -964,7 +979,7 @@ void main() {
     'locks',
     'stationaryWeapons',
   ]) {
-    testWidgets('$category markers can be filtered through the Map rail', (
+    testWidgets('$category markers can be filtered through the Map inspector', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
@@ -1061,8 +1076,14 @@ void main() {
         expect(pin.frameRevision, map == 'thelab' ? 1 : 0);
         await tester.tapAt(_project(tester, h, ScenePoint(64, 64)));
         await settleMapFixture(tester, h);
-        expect(find.textContaining('Cursor-created pin'), findsOneWidget);
-        expect(find.text('Edit pin'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('map-pin-bar')),
+            matching: find.text('Cursor-created pin'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('map-pin-edit')), findsOneWidget);
         expect(h.services.scans.hasAcceptedScan, isFalse);
         expect(tester.takeException(), isNull);
       },
@@ -1073,7 +1094,7 @@ void main() {
     'Scanner round trip retains Map view, floors and selected marker summary',
     (tester) async {
       final h = await pumpMapFixture(tester);
-      await tester.tap(find.widgetWithText(FilterChip, 'Upper'));
+      await tester.tap(_upperFloor);
       await settleMapFixture(tester, h);
       await tester.drag(_viewport, const Offset(35, -20));
       await settleMapFixture(tester, h);
@@ -1093,11 +1114,14 @@ void main() {
       expect(after.translationY, before.translationY);
       expect(h.services.maps.floorSelection!.isLayerVisible('upper'), isTrue);
       expect(find.text('Upper exit'), findsOneWidget);
+      // The floor control shows the restored selection.
       expect(
         tester
-            .widget<FilterChip>(find.widgetWithText(FilterChip, 'Upper'))
+            .widget<SegmentedButton<String>>(
+              find.byKey(const Key('map-floor-control')),
+            )
             .selected,
-        isTrue,
+        contains('upper'),
       );
       await tester.tap(find.byTooltip('Close marker details'));
       await settleMapFixture(tester, h);

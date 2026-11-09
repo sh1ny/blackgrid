@@ -1,74 +1,33 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
 import 'package:blackgrid/domain/map_coordinates.dart';
-import 'package:blackgrid/domain/map_session.dart';
-import 'package:blackgrid/domain/raid_panel_text_parser.dart';
-import 'package:blackgrid/ui/labels.dart';
+import 'package:blackgrid/ui/marker_preferences.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
-import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
-import 'support/scan_ui_support.dart';
 
-Finder get _savedPins => find.textContaining('saved pins');
+Finder get _addPin => find.byKey(const ValueKey('pins-add'));
+Finder _pinRow(String id) => find.byKey(ValueKey('pin-row-$id'));
+Finder _pinRemove(String id) => find.byKey(ValueKey('pin-remove-$id'));
+Finder _marker(String key) => find.byKey(ValueKey('marker-row-$key'));
 
-Finder _tile(String key) => find.byKey(ValueKey('marker-tile-$key'));
-
-Finder get _search => find.byKey(const ValueKey('marker-search'));
-
-/// The scroll position of the Marker preferences list.
-ScrollPosition _preferencesList(WidgetTester tester) => tester
-    .state<ScrollableState>(
-      find.ancestor(of: _search, matching: find.byType(Scrollable)).first,
-    )
-    .position;
-
-/// Builds the tile for [key] by scrolling the preferences list, and brings it
-/// into view.
-Future<Finder> _revealTile(WidgetTester tester, String key) async {
-  await scrollMapRailTo(tester, _search);
-  await tester.ensureVisible(find.text('Marker preferences'));
+/// Brings [target] into view in the inspector and asserts it can be pressed.
+Future<void> _reveal(WidgetTester tester, Finder target) async {
+  expect(target, findsOneWidget);
+  await tester.ensureVisible(target);
   await tester.pumpAndSettle();
-  final tile = _tile(key);
-  final list = _preferencesList(tester);
-  while (tile.evaluate().isEmpty && list.pixels < list.maxScrollExtent) {
-    list.jumpTo((list.pixels + 160).clamp(0, list.maxScrollExtent).toDouble());
-    await tester.pump();
-  }
-  await tester.pumpAndSettle();
-  await Scrollable.ensureVisible(tester.element(tile), alignment: .5);
-  await tester.pumpAndSettle();
-  return tile;
+  expect(target.hitTestable(), findsOneWidget);
 }
 
-/// Whether the tile for [key] is built and shows the shown state.
-bool _tileShown(String key) {
-  expect(_tile(key), findsOneWidget);
+/// Whether the inspector row for [key] is built and shows the shown state.
+bool _shown(String key) {
+  expect(_marker(key), findsOneWidget);
   return find
-      .descendant(of: _tile(key), matching: find.byIcon(Icons.check))
+      .descendant(of: _marker(key), matching: find.byType(MarkerToggleSwitch))
       .evaluate()
-      .isNotEmpty;
-}
-
-/// Every marker tile key the panel currently builds.
-Set<String> _tileKeys(WidgetTester tester) {
-  const prefix = 'marker-tile-';
-  return {
-    for (final element
-        in find
-            .byWidgetPredicate(
-              (widget) => switch (widget.key) {
-                ValueKey<String>(:final value) => value.startsWith(prefix),
-                _ => false,
-              },
-            )
-            .evaluate())
-      (element.widget.key! as ValueKey<String>).value.substring(prefix.length),
-  };
+      .map((element) => (element.widget as MarkerToggleSwitch).on)
+      .single;
 }
 
 /// A prepared-pack marker on the ground floor with an explicit filter key.
@@ -84,199 +43,26 @@ Map<String, Object?> _extraMarker(String id, String category, String filter) =>
       'source': {'fixture': true},
     };
 
-Future<void> _tapPanelButton(
+Future<void> _tapButton(
   WidgetTester tester,
   String label,
   bool Function() completed,
 ) async {
   final button = find.widgetWithText(TextButton, label);
-  await scrollMapRailTo(tester, _search);
-  await Scrollable.ensureVisible(tester.element(button), alignment: .5);
-  await tester.pumpAndSettle();
-  expect(button.hitTestable(), findsOneWidget);
+  await _reveal(tester, button);
   await tapM1Async(tester, button, completed);
 }
 
-void main() {
-  for (final size in [const Size(1660, 870), const Size(960, 720)]) {
-    testWidgets(
-      size.width > 1100
-          ? 'map-rail: Wide layout order'
-          : 'map-rail: Compact layout order',
-      (tester) async {
-        await pumpM1(tester, size: size);
-        final rail = tester.widget<ListView>(
-          find.byKey(const PageStorageKey('map-rail-scroll')),
-        );
-        final children =
-            (rail.childrenDelegate as SliverChildListDelegate).children;
-        final titles = <String>[];
-        for (final child in children) {
-          final panel = child is SizedBox ? child.child : child;
-          if (panel is GridPanel) titles.add(panel.title);
-          if (panel is CollapsibleGridPanel) titles.add(panel.title);
-        }
-        expect(titles, [
-          'Active map',
-          'Marker preferences',
-          'Manual item search',
-          'Map saved-file inputs',
-        ]);
-        expect(
-          find.descendant(
-            of: find.byKey(const PageStorageKey('map-rail-scroll')),
-            matching: find.text('Picked item'),
-          ),
-          findsNothing,
-        );
-      },
-    );
+/// Opens the inspector when the window is narrow enough to start it closed.
+Future<void> _openInspector(WidgetTester tester) async {
+  if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
   }
+  expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
+}
 
-  testWidgets('map-rail: Active map row stays alone', (tester) async {
-    final ports = ScanFakePorts();
-    final h = await pumpM1(
-      tester,
-      size: const Size(1660, 870),
-      scanPorts: ports,
-    );
-    await tester.runAsync(
-      () => publishTargetedScan(
-        h.services.scanner,
-        ports,
-        text: 'Alternative component',
-      ),
-    );
-    await tester.pump();
-    expect(h.services.scans.latest, isNotNull);
-    expect(find.text('Active map'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('answer-strip')),
-        matching: find.text('Accepted scan'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const PageStorageKey('map-rail-scroll')),
-        matching: find.byWidgetPredicate(
-          (w) => w is GridPanel && w.title == 'Accepted scan',
-        ),
-      ),
-      findsNothing,
-    );
-    expect(find.text('Latest accepted scan'), findsNothing);
-  });
-  testWidgets(
-    'Read Latest exposes assumed file provenance without filename player metadata',
-    (tester) async {
-      final directory = (await tester.runAsync(
-        () => Directory.systemTemp.createTemp('blackgrid-map-ui-evidence-'),
-      ))!;
-      addTearDown(() => directory.delete(recursive: true));
-      final screenshot = File(
-        '${directory.path}${Platform.pathSeparator}saved-panel.png',
-      );
-      await tester.runAsync(() async {
-        final recorder = ui.PictureRecorder();
-        Canvas(recorder).drawColor(Colors.black, BlendMode.src);
-        final picture = recorder.endRecording();
-        final image = await picture.toImage(8, 8);
-        final png = (await image.toByteData(format: ui.ImageByteFormat.png))!;
-        await screenshot.writeAsBytes(
-          png.buffer.asUint8List(png.offsetInBytes, png.lengthInBytes),
-        );
-        await screenshot.setLastModified(
-          DateTime.now().toUtc().subtract(const Duration(hours: 1)),
-        );
-        image.dispose();
-        picture.dispose();
-      });
-      final h = await pumpMapFixture(tester);
-      await tester.runAsync(
-        () => h.services.settings.setMapInputs(
-          screenshotDirectory: directory.path,
-          followGameLogs: false,
-        ),
-      );
-      await settleMapFixture(tester, h);
-      await expandMapInputs(tester);
-      final read = find.text('Read Latest');
-      await tester.ensureVisible(read);
-      await tester.pumpAndSettle();
-      await tapM1Async(
-        tester,
-        read,
-        () =>
-            h.services.mapSession.state.savedScreenshotPath ==
-                screenshot.path &&
-            !h.services.mapSession.state.readingLatest &&
-            h.services.mapSession.state.raidEvidence != null,
-      );
-      expect(h.services.mapSession.state.playerSample, isNull);
-      expect(h.services.mapSession.state.assumedAssociation, isTrue);
-      expect(
-        find.text('Saved evidence source: ${screenshot.path}'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('File modified:'), findsOneWidget);
-      expect(find.textContaining('Saved evidence age:'), findsOneWidget);
-      expect(
-        find.text(
-          'Assumed saved evidence for the selected map; not confirmed raid association.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('No sampled player position'), findsOneWidget);
-      final evidence = h.services.mapSession.state.raidEvidence!;
-      expect(
-        evidence.state,
-        isNot(isIn([RaidPanelState.recognized, RaidPanelState.empty])),
-      );
-      expect(evidence.extractNames, isEmpty);
-      expect(evidence.transitNames, isEmpty);
-      expect(h.services.mapSession.state.raidHighlightIds, isEmpty);
-      expect(
-        find.text('Raid panel: ${raidPanelStateLabel(evidence.state)}'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Filename sample:'), findsNothing);
-      await tester.runAsync(screenshot.delete);
-      await tester.ensureVisible(find.text('Read Latest'));
-      await tester.pumpAndSettle();
-      await tapM1Async(
-        tester,
-        find.text('Read Latest'),
-        () =>
-            h.services.mapSession.state.screenshotStatus ==
-                MapInputStatus.empty &&
-            !h.services.mapSession.state.readingLatest,
-      );
-      expect(h.services.mapSession.state.raidEvidence, same(evidence));
-      expect(h.services.mapSession.state.raidHighlightIds, isEmpty);
-      expect(
-        find.text(
-          'Previous raid panel: ${raidPanelStateLabel(evidence.state)}',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('No saved screenshots found.'), findsOneWidget);
-      expect(
-        find.text('Saved evidence source: ${screenshot.path}'),
-        findsOneWidget,
-      );
-      expect(
-        find.text(
-          'Assumed saved evidence for the selected map; not confirmed raid association.',
-        ),
-        findsOneWidget,
-      );
-      expect(h.services.scans.hasAcceptedScan, isFalse);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
+void main() {
   testWidgets(
     'marker search survives show/hide-all and dimmed targets remain eligible',
     (tester) async {
@@ -286,19 +72,8 @@ void main() {
           h.services.settings.settings.copyWith(saveMarkerFilters: true),
         ),
       );
-      final search = find.byKey(const ValueKey('marker-search'));
-      await tester.scrollUntilVisible(
-        search,
-        160,
-        scrollable: find
-            .descendant(
-              of: find.byKey(const PageStorageKey('map-rail-scroll')),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.ensureVisible(search);
-      await tester.pumpAndSettle();
+      final search = find.byKey(const ValueKey('marker-section-search'));
+      await _reveal(tester, search);
       await tester.enterText(search, 'exit, tunnel');
       await tester.pumpAndSettle();
       expect(h.services.maps.search, 'exit, tunnel');
@@ -309,21 +84,14 @@ void main() {
             .map((marker) => marker.marker.id),
         ['ground-hazard'],
       );
-      // Dimming by search must not change what any tile says is shown.
+      // Dimming by search must not change what any row says is shown.
       for (final key in ['PmcExtracts', 'Hazards']) {
-        await _revealTile(tester, key);
-        expect(_tileShown(key), isTrue, reason: '$key tile while searching');
+        await _reveal(tester, _marker(key));
+        expect(_shown(key), isTrue, reason: '$key row while searching');
       }
-      expect(_tileKeys(tester), containsAll(['PmcExtracts', 'Hazards']));
-      _preferencesList(tester).jumpTo(0);
-      await tester.pumpAndSettle();
-      final hide = find.widgetWithText(TextButton, 'Hide all');
-      await Scrollable.ensureVisible(tester.element(hide), alignment: .5);
-      await tester.pumpAndSettle();
-      expect(hide.hitTestable(), findsOneWidget);
-      await tapM1Async(
+      await _tapButton(
         tester,
-        hide,
+        'Hide all',
         () => h.services.maps.visibleMarkers().isEmpty,
       );
       expect(h.services.maps.search, 'exit, tunnel');
@@ -336,32 +104,27 @@ void main() {
       await tester.runAsync(h.services.settings.load);
       await tester.pumpAndSettle();
       expect(h.services.maps.visibleMarkers(), isEmpty);
-      final extracts = await _revealTile(tester, 'PmcExtracts');
-      expect(_tileShown('PmcExtracts'), isFalse);
-      expect(_tileShown('Hazards'), isFalse);
-      expect(extracts.hitTestable(), findsOneWidget);
+      await _reveal(tester, _marker('PmcExtracts'));
+      expect(_shown('PmcExtracts'), isFalse);
+      expect(_shown('Hazards'), isFalse);
       await tapM1Async(
         tester,
-        extracts,
+        _marker('PmcExtracts'),
         () => h.services.maps.visibleMarkers().length == 1,
       );
       expect(h.services.maps.visibleMarkers().single.marker.id, 'ground-exit');
-      final show = find.widgetWithText(TextButton, 'Show all');
-      await Scrollable.ensureVisible(tester.element(show), alignment: .5);
-      await tester.pumpAndSettle();
-      expect(show.hitTestable(), findsOneWidget);
-      await tapM1Async(
+      await _tapButton(
         tester,
-        show,
+        'Show all',
         () => h.services.maps.visibleMarkers().length == 2,
       );
       expect(
         h.services.maps.visibleMarkers().map((marker) => marker.marker.id),
         ['ground-exit', 'ground-hazard'],
       );
-      await _revealTile(tester, 'PmcExtracts');
-      expect(_tileShown('PmcExtracts'), isTrue);
-      expect(_tileShown('Hazards'), isTrue);
+      await _reveal(tester, _marker('PmcExtracts'));
+      expect(_shown('PmcExtracts'), isTrue);
+      expect(_shown('Hazards'), isTrue);
       final shown = (await tester.runAsync(
         () => h.services.database.readSettings(),
       ))!.settings;
@@ -394,7 +157,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(h.services.maps.applicableCategories, isNot(contains('ScavSpawns')));
 
-    await _tapPanelButton(
+    await _tapButton(
       tester,
       'Show all',
       () => h.services.settings.settings.markerFilters['PmcExtracts'] == true,
@@ -408,55 +171,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('quest filters leave tile states unchanged', (tester) async {
-    final h = await pumpMapFixture(
-      tester,
-      extraMarkers: [_extraMarker('quest-item', 'questItems', 'QuestItems')],
-    );
-    await tester.runAsync(
-      () => h.services.settings.setMarker('Hazards', false),
-    );
-    await tester.pumpAndSettle();
-    await _revealTile(tester, 'QuestItems');
-    expect(_tileShown('QuestItems'), isTrue);
-    expect(_tileShown('Hazards'), isFalse);
-
-    _preferencesList(tester).jumpTo(0);
-    await tester.pumpAndSettle();
-    final trader = find.widgetWithText(TextFormField, 'Quest trader');
-    await tester.ensureVisible(trader);
-    await tester.pumpAndSettle();
-    await tester.enterText(trader, 'Prapor');
-    await tester.pumpAndSettle();
-    expect(h.services.maps.questTrader, 'Prapor');
-
-    await _revealTile(tester, 'QuestItems');
-    expect(_tileShown('QuestItems'), isTrue);
-    expect(_tileShown('PmcExtracts'), isTrue);
-    expect(_tileShown('Hazards'), isFalse);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('unsaveable marker key gets no tile and stays drawn', (
-    tester,
-  ) async {
-    final h = await pumpMapFixture(
-      tester,
-      extraMarkers: [_extraMarker('zip', 'ziplines', 'Ziplines')],
-    );
-    expect(h.services.maps.applicableCategories, contains('Ziplines'));
-    await _revealTile(tester, 'PmcExtracts');
-
-    expect(_tileKeys(tester), contains('PmcExtracts'));
-    expect(_tileKeys(tester), contains('Hazards'));
-    expect(_tileKeys(tester), isNot(contains('Ziplines')));
-    expect(find.text('Ziplines'), findsNothing);
-    expect(
-      h.services.maps.visibleMarkers().map((marker) => marker.marker.id),
-      contains('zip'),
-    );
-  });
-
   testWidgets('Hide all never saves an unsaveable key and settings reload', (
     tester,
   ) async {
@@ -464,6 +178,8 @@ void main() {
       tester,
       extraMarkers: [_extraMarker('zip', 'ziplines', 'Ziplines')],
     );
+    expect(h.services.maps.applicableCategories, contains('Ziplines'));
+    expect(_marker('Ziplines'), findsNothing);
     // Filters survive a reload only while Save marker filters is on.
     await tester.runAsync(
       () => h.services.settings.save(
@@ -471,7 +187,7 @@ void main() {
       ),
     );
 
-    await _tapPanelButton(
+    await _tapButton(
       tester,
       'Hide all',
       () => h.services.settings.settings.markerFilters['PmcExtracts'] == false,
@@ -492,72 +208,9 @@ void main() {
     expect(h.services.maps.visibleMarkers().map((marker) => marker.marker.id), [
       'zip',
     ]);
-    await _revealTile(tester, 'PmcExtracts');
-    expect(_tileShown('PmcExtracts'), isFalse);
-    expect(_tileShown('Hazards'), isFalse);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets(
-    'manual map authority is explicit and Follow logs does not overwrite stored manual selection',
-    (tester) async {
-      final h = await pumpMapFixture(tester);
-      await tester.runAsync(() => h.services.settings.setMap('thelab'));
-      await settleMapFixture(tester, h);
-      await expandMapInputs(tester);
-      expect(find.text('Manual map · The Lab'), findsOneWidget);
-      final follow = find.widgetWithText(SwitchListTile, 'Follow logs');
-      await tester.ensureVisible(follow);
-      await tester.pumpAndSettle();
-      await tapM1Async(
-        tester,
-        follow,
-        () => h.services.settings.settings.followGameLogs,
-      );
-      expect(
-        find.text('Follow logs (manual fallback) · The Lab'),
-        findsOneWidget,
-      );
-      final stored = (await tester.runAsync(
-        () => h.services.database.readSettings(),
-      ))!.settings;
-      expect(stored.selectedMap, 'thelab');
-      expect(stored.followGameLogs, isTrue);
-      expect(h.services.maps.selectedMapId, 'thelab');
-      expect(h.services.scans.hasAcceptedScan, isFalse);
-    },
-  );
-
-  testWidgets('Map rail has no latest-scan panel', (tester) async {
-    final h = await pumpMapFixture(tester);
-    final workspace = tester.getRect(
-      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Shoreline'),
-    );
-    final active = tester.getRect(
-      find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Active map'),
-    );
-    final railArea = tester.getRect(
-      find.byKey(const PageStorageKey('map-rail-scroll')),
-    );
-    expect(
-      workspace.width,
-      greaterThan((railArea.right - workspace.left) * .6),
-    );
-    expect(active.left, greaterThan(workspace.right));
-    expect(h.services.maps.scene, isNotNull);
-    expect(find.text('Latest accepted scan'), findsNothing);
-    expect(find.text('No accepted scan this session'), findsNothing);
-    expect(active, isNotNull);
-    expect(
-      find.descendant(
-        of: find.byKey(const PageStorageKey('map-rail-scroll')),
-        matching: find.byWidgetPredicate(
-          (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
-        ),
-      ),
-      findsNothing,
-    );
-    expect(h.services.scans.hasAcceptedScan, isFalse);
+    await _reveal(tester, _marker('PmcExtracts'));
+    expect(_shown('PmcExtracts'), isFalse);
+    expect(_shown('Hazards'), isFalse);
     expect(tester.takeException(), isNull);
   });
 
@@ -573,7 +226,8 @@ void main() {
           await tester.runAsync(() => h.services.settings.setMap(map));
           await settleMapFixture(tester, h);
         }
-        await tester.tap(find.text('Add pin'));
+        await _reveal(tester, _addPin);
+        await tester.tap(_addPin);
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextField, 'Pin label'),
@@ -602,14 +256,15 @@ void main() {
 
   for (final map in ['shoreline', 'thelab']) {
     testWidgets(
-      '$map saved-pin browser edits and removes finite off-map pins without reframing them',
+      '$map inspector pins edit and remove finite off-map pins without reframing them',
       (tester) async {
         final h = await pumpMapFixture(tester);
         if (map != 'shoreline') {
           await tester.runAsync(() => h.services.settings.setMap(map));
           await settleMapFixture(tester, h);
         }
-        await tester.tap(find.text('Add pin'));
+        await _reveal(tester, _addPin);
+        await tester.tap(_addPin);
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextField, 'Pin label'),
@@ -651,9 +306,8 @@ void main() {
         expect(original.frameRevision, map == 'thelab' ? 1 : 0);
         expect(find.byType(PinEditor), findsNothing);
         // Off-map records remain discoverable even when no glyph is visible.
-        await tester.tap(_savedPins);
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(ListTile, original.label));
+        await _reveal(tester, _pinRow(original.id));
+        await tester.tap(_pinRow(original.id));
         await tester.pumpAndSettle();
         expect(
           tester
@@ -690,20 +344,27 @@ void main() {
         expect(edited.y, original.y);
         expect(edited.frame, original.frame);
         expect(edited.frameRevision, original.frameRevision);
-        expect(find.widgetWithText(ListTile, edited.label), findsOneWidget);
-        await tester.tap(find.byTooltip('Remove pin ${edited.label}'));
+        expect(
+          find.descendant(
+            of: _pinRow(edited.id),
+            matching: find.text(edited.label),
+          ),
+          findsOneWidget,
+        );
+        await _reveal(tester, _pinRemove(edited.id));
+        await tester.tap(_pinRemove(edited.id));
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
         await tester.pumpAndSettle();
         expect(h.services.settings.pins.single.id, original.id);
-        await tester.tap(find.byTooltip('Remove pin ${edited.label}'));
+        await tester.tap(_pinRemove(edited.id));
         await tester.pumpAndSettle();
         await tapM1Async(
           tester,
           find.widgetWithText(FilledButton, 'Remove'),
           () => h.services.settings.pins.isEmpty,
         );
-        expect(find.widgetWithText(ListTile, edited.label), findsNothing);
+        expect(_pinRow(edited.id), findsNothing);
         expect(h.services.scans.hasAcceptedScan, isFalse);
         expect(tester.takeException(), isNull);
       },
@@ -724,7 +385,7 @@ void main() {
         scale: layout.scale,
       );
       expect(tester.takeException(), isNull, reason: 'after fixture');
-      final fit = find.widgetWithText(OutlinedButton, 'Fit map');
+      final fit = find.byTooltip('Fit map');
       await tester.ensureVisible(fit);
       await tester.pumpAndSettle();
       expect(fit.hitTestable(), findsOneWidget);
@@ -737,14 +398,17 @@ void main() {
       await tester.tap(fit);
       await settleMapFixture(tester, h);
       expect(h.services.maps.transform.scale, closeTo(fitScale, 1e-9));
-      final upper = find.widgetWithText(FilterChip, 'Upper');
+      final upper = find.descendant(
+        of: find.byKey(const Key('map-floor-control')),
+        matching: find.text('Upper'),
+      );
       await tester.ensureVisible(upper);
       await tester.pumpAndSettle();
       expect(upper.hitTestable(), findsOneWidget);
       await tester.tap(upper);
       await settleMapFixture(tester, h);
       expect(h.services.maps.floorSelection!.isLayerVisible('upper'), isTrue);
-      final addPin = find.widgetWithText(OutlinedButton, 'Add pin');
+      final addPin = find.byTooltip('Pin at view center');
       await tester.ensureVisible(addPin);
       await tester.pumpAndSettle();
       expect(addPin.hitTestable(), findsOneWidget);
@@ -764,13 +428,12 @@ void main() {
         find.text('Save pin'),
         () => h.services.settings.pins.isNotEmpty,
       );
-      await tester.ensureVisible(_savedPins);
-      await tester.pumpAndSettle();
-      expect(_savedPins.hitTestable(), findsOneWidget);
-      await tester.tap(_savedPins);
-      await tester.pumpAndSettle();
+      // The saved pin is listed in the inspector, however narrow the window.
+      await _openInspector(tester);
+      final row = _pinRow(h.services.settings.pins.single.id);
+      await _reveal(tester, row);
       expect(
-        find.widgetWithText(ListTile, 'Reachable controls'),
+        find.descendant(of: row, matching: find.text('Reachable controls')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

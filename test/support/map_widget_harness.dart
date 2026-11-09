@@ -38,6 +38,7 @@ class MapWidgetHarness {
     List<Map<String, Object?>> extraMarkers = const [],
     List<Map<String, Object?>> extraLabels = const [],
     bool artwork = true,
+    bool packFails = false,
     http.Client? client,
     MemoryCredentials? credentials,
   }) async {
@@ -70,17 +71,19 @@ class MapWidgetHarness {
       ],
     );
     final loader = PreparedMapPackLoader(
-      loadBytes: preparedPackBytes(
-        manifest,
-        other: (path) async {
-          if (artwork &&
-              (path == 'assets/maps/versions/fixture/base.png' ||
-                  path == 'assets/maps/versions/fixture/upper.png')) {
-            return png;
-          }
-          throw StateError('Unknown fixture asset: $path');
-        },
-      ),
+      loadBytes: packFails
+          ? (path) async => throw StateError('Fixture pack is unreadable.')
+          : preparedPackBytes(
+              manifest,
+              other: (path) async {
+                if (artwork &&
+                    (path == 'assets/maps/versions/fixture/base.png' ||
+                        path == 'assets/maps/versions/fixture/upper.png')) {
+                  return png;
+                }
+                throw StateError('Unknown fixture asset: $path');
+              },
+            ),
     );
     final wire = wireFixture();
     final scanLogs = scanPorts == null
@@ -243,6 +246,7 @@ Future<MapWidgetHarness> pumpMapFixture(
   RaidPanelOcr? panelOcr,
   List<Map<String, Object?>> extraMarkers = const [],
   bool artwork = true,
+  bool packFails = false,
   http.Client? client,
   MemoryCredentials? credentials,
   bool autoDispose = true,
@@ -261,6 +265,7 @@ Future<MapWidgetHarness> pumpMapFixture(
       panelOcr: panelOcr,
       extraMarkers: extraMarkers,
       artwork: artwork,
+      packFails: packFails,
       client: client,
       credentials: credentials,
     ),
@@ -287,52 +292,5 @@ Future<void> settleMapFixture(
     );
     await tester.pump();
   }
-  await tester.pumpAndSettle();
-}
-
-/// The header button of the collapsible Map saved-file inputs section.
-Finder get mapInputsHeader => find.byKey(const Key('map-inputs-toggle'));
-
-/// Scrolls the Map rail until [target] is built, then brings it into view and
-/// asserts it was found.
-///
-/// The rail is a lazy list, so the sections near its end are not built until
-/// it is scrolled. The rail position is moved directly because a drag at the
-/// center of a tall rail can miss the visible window.
-Future<void> scrollMapRailTo(WidgetTester tester, Finder target) async {
-  final position = tester
-      .state<ScrollableState>(
-        find
-            .descendant(
-              of: find.byKey(const PageStorageKey('map-rail-scroll')),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      )
-      .position;
-  while (target.evaluate().isEmpty &&
-      position.pixels < position.maxScrollExtent) {
-    position.jumpTo(
-      (position.pixels + 200).clamp(0, position.maxScrollExtent).toDouble(),
-    );
-    await tester.pump();
-  }
-  expect(target, findsOneWidget);
-  await tester.ensureVisible(target);
-  await tester.pumpAndSettle();
-}
-
-/// Scrolls the Map rail to the saved-file inputs header and asserts it is
-/// built.
-///
-/// Assertions about the section's absence must call this first so that they
-/// cannot pass vacuously.
-Future<void> showMapInputsHeader(WidgetTester tester) =>
-    scrollMapRailTo(tester, mapInputsHeader);
-
-/// Brings the saved-file inputs header into view, taps it and pumps.
-Future<void> expandMapInputs(WidgetTester tester) async {
-  await showMapInputsHeader(tester);
-  await tester.tap(mapInputsHeader);
   await tester.pumpAndSettle();
 }
