@@ -189,7 +189,7 @@ Next to the live scan switch in Settings' Live scan section, the app SHALL show 
 - **THEN** the control is disabled
 
 ### Requirement: Scanner workspace omits configuration rail
-Scanner SHALL present its working evidence without the legacy manual/configuration rail. Top search SHALL provide item selection; game mode, data refresh, Tracker and live-scan controls SHALL remain reachable from the status bar or Settings. This SHALL NOT remove or restyle the interim Map rail controls.
+Scanner SHALL present its working evidence without the legacy manual/configuration rail. Top search SHALL provide item selection; game mode, data refresh, Tracker and live-scan controls SHALL remain reachable from the status bar or Settings.
 
 #### Scenario: Scanner functions remain reachable without the old rail
 - **WHEN** Scanner is shown with the legacy left panel removed

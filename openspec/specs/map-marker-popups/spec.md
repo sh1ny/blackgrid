@@ -98,7 +98,7 @@ The bubble SHALL expose named, keyboard-operable controls and SHALL consume its 
 - **THEN** the marker selection clears and keyboard focus remains usable on the map
 
 ### Requirement: Summaries reflect prepared marker facts
-The bubble SHALL use player-facing category and marker names from the active validated marker generation, whether downloaded, cached or bundled, and show available category-specific facts without inventing data or initiating a map-data request. Quest markers show their quest and objective or item text; extracts show linked switch names and required or payment item counts; locks show lock type and key name; containers show their name; bosses show their name and available boss-wide spawn chance.
+The bubble SHALL use player-facing category and marker names from the active validated marker generation, whether downloaded, cached or bundled, and show available category-specific facts without inventing data or initiating a map-data request. Quest markers show their quest and objective or item text; extracts show linked switch names and required or payment item counts; locks show lock type and key name; containers show their name; bosses show their name and available boss-wide spawn chance, as a whole percentage. A chance strictly between 0 and 1 SHALL show between 1% and 99%.
 
 #### Scenario: Quest and container
 - **WHEN** a selected quest objective contains a translated quest name and objective description, or a container has an available display name
@@ -115,6 +115,14 @@ The bubble SHALL use player-facing category and marker names from the active val
 #### Scenario: Boss chance scope
 - **WHEN** the active boss-wide spawn chance is 0.35
 - **THEN** the bubble presents 35% as the boss spawn chance and does not claim it is the chance for that location
+
+#### Scenario: Fractional boss chance
+- **WHEN** the active boss-wide spawn chance is 0.125
+- **THEN** the bubble presents 13% with no decimal point
+
+#### Scenario: Chance near the ends
+- **WHEN** the chance is 0.004, 0.997, 0 or 1
+- **THEN** the bubble presents 1%, 99%, 0% or 100% respectively
 
 #### Scenario: Refreshed marker facts
 - **WHEN** a validated replacement changes a marker's facts and the player selects a marker from that generation

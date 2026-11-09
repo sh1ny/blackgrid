@@ -56,10 +56,10 @@ Each icon SHALL be an SVG file of at most 8 KiB with a `0 0 24 24` view box. It 
 - **THEN** the check exits non-zero and names the file, and it does not report the set as valid
 
 ### Requirement: Category colours keep their meaning and contrast
-Each category SHALL map to one named colour role. Extract keys SHALL use the exit role (green), `Hazards` and `HazardZones` the danger role (red), and `CustomPins` the pin role (light blue). No role SHALL use the highlight hue band (cyan, hue 170°–190°), which stays reserved for highlighted markers. Each role colour SHALL have a contrast ratio of at least 3:1 against the marker background `#090F0D`.
+Each category SHALL map to one named colour role. Extract keys SHALL use the exit role (green), `Hazards` and `HazardZones` the danger role (red), and `CustomPins` the pin role (light blue). No role SHALL use the highlight hue band (cyan, hue 170°–190°), which stays reserved for highlighted markers. No role SHALL use the amber band (hue 25°–60° at HSL saturation 10% or more), which stays reserved for selection. Each role colour SHALL have a contrast ratio of at least 3:1 against the marker background `#090F0D`.
 
 #### Scenario: Valid palette passes
-- **WHEN** every role colour reaches 3:1 against `#090F0D`, sits outside 170°–190° hue, and the extract, hazard and pin keys use their required roles
+- **WHEN** every role colour reaches 3:1 against `#090F0D`, sits outside 170°–190° hue and the amber band, and the extract, hazard and pin keys use their required roles
 - **THEN** the palette rule passes
 
 #### Scenario: Required role broken fails
@@ -69,6 +69,14 @@ Each category SHALL map to one named colour role. Extract keys SHALL use the exi
 #### Scenario: Reserved hue or low contrast fails
 - **WHEN** a role colour has a hue of 185° or a contrast ratio of 2.4:1 against `#090F0D`
 - **THEN** the check exits non-zero and names the role, its colour and the measured hue or ratio
+
+#### Scenario: Amber role fails
+- **WHEN** a role colour is `#E8A04A`
+- **THEN** the check exits non-zero and names the role, its colour and its hue in the amber band
+
+#### Scenario: Low-saturation grey near amber passes
+- **WHEN** a role colour has a hue of 40° at 5% saturation and reaches 3:1
+- **THEN** the amber rule passes for that role
 
 ### Requirement: Every icon file carries a complete provenance record
 Each icon file SHALL have one provenance record in the manifest. The record SHALL hold the file's SHA-256, the author, the origin, the method (`hand-authored` or `ai-assisted`), the tools used (required for `ai-assisted`), the concept source (`none`, or a named tool with its prompt record), and the date. The recorded hash SHALL match the file's bytes.
@@ -128,14 +136,14 @@ The native map SHALL draw each visible marker as a badge: a disc in the marker b
 
 #### Scenario: Unknown filter key falls back
 - **WHEN** a prepared map marker carries a filter key that has no icon in the set
-- **THEN** the map draws a badge with a gold ring and a gold centre dot at that point, and every other marker still draws its own icon
+- **THEN** the map draws a badge with a neutral grey ring and a neutral grey centre dot at that point, and every other marker still draws its own icon
 
 ### Requirement: Marker states keep their meaning on the badge
-A selected marker SHALL draw at the selected badge size. A linked or raid-highlighted marker SHALL draw at the selected size with its ring and glyph in the highlight cyan instead of its role colour. A dimmed marker SHALL draw its whole badge (disc, ring and glyph) at 22% opacity. Highlight SHALL win over the role colour, and dimming SHALL apply on top of any other state.
+A selected marker SHALL draw at the selected badge size with its ring and glyph in Ember, the dark-room value on the map in both rooms. A linked or raid-highlighted marker SHALL draw at the selected size with its ring and glyph in the highlight cyan instead of its role colour. A dimmed marker SHALL draw its whole badge (disc, ring and glyph) at 22% opacity. Selection SHALL win over highlight, highlight SHALL win over the role colour, and dimming SHALL apply on top of any other state.
 
 #### Scenario: Selected marker grows
 - **WHEN** the user selects a `locks` marker
-- **THEN** that marker draws a 30 px badge in the utility colour, and the other markers stay 24 px
+- **THEN** that marker draws a 30 px badge with an Ember ring and glyph, and the other markers stay 24 px
 
 #### Scenario: Highlighted exit draws cyan
 - **WHEN** a `ScavExtracts` marker is raid-highlighted
@@ -149,8 +157,16 @@ A selected marker SHALL draw at the selected badge size. A linked or raid-highli
 - **WHEN** a marker is both highlighted and dimmed
 - **THEN** it draws cyan at the selected size and at 22% opacity
 
+#### Scenario: Selected and highlighted together
+- **WHEN** a raid-highlighted `ScavExtracts` marker is selected
+- **THEN** it draws at the selected size with an Ember ring and glyph, not cyan
+
+#### Scenario: Selected marker in the light room
+- **WHEN** the light room is active and a marker is selected
+- **THEN** its ring and glyph use the same Ember value as in the dark room
+
 ### Requirement: Saved pins draw the pin icon
-Each visible saved pin SHALL draw as a badge with the `CustomPins` glyph in the pin colour. A selected pin SHALL draw at the selected size. A pin whose label does not match the active map search SHALL draw at 22% opacity. Hiding `CustomPins` SHALL hide every pin badge.
+Each visible saved pin SHALL draw as a badge with the `CustomPins` glyph in the pin colour. A selected pin SHALL draw at the selected size with its ring and glyph in Ember. A pin whose label does not match the active map search SHALL draw at 22% opacity. Hiding `CustomPins` SHALL hide every pin badge.
 
 #### Scenario: Pin draws its icon
 - **WHEN** a saved pin on the current map is visible and the search is empty
@@ -164,12 +180,16 @@ Each visible saved pin SHALL draw as a badge with the `CustomPins` glyph in the 
 - **WHEN** the `CustomPins` filter is off
 - **THEN** no pin badge is drawn
 
+#### Scenario: Selected pin is Ember
+- **WHEN** a saved pin is selected
+- **THEN** it draws a 30 px badge with an Ember ring and the Ember `CustomPins` glyph
+
 ### Requirement: Missing or failed icons never block the map
 Until the icons are loaded, and when the bundled manifest or any icon fails to load or decode, the map SHALL draw each affected marker as a fallback badge: the disc, the ring in the category's role colour once the manifest is loaded, otherwise in the key's fallback colour, and a centre dot. Markers, selection, hit testing and pins SHALL keep working. A load failure SHALL be logged once with the failing file.
 
 #### Scenario: Fallback colours without a manifest
 - **WHEN** the manifest has not loaded
-- **THEN** fallback rings for `PmcExtracts`, `ScavExtracts` and `SharedExtracts` are exit green, for `Hazards` and `HazardZones` danger red, for saved pins light blue, and for every other key gold
+- **THEN** fallback rings for `PmcExtracts`, `ScavExtracts` and `SharedExtracts` are exit green, for `Hazards` and `HazardZones` danger red, for saved pins light blue, and for every other key neutral grey
 
 #### Scenario: Icons still loading
 - **WHEN** the map paints before the icons finish loading
@@ -181,7 +201,7 @@ Until the icons are loaded, and when the bundled manifest or any icon fails to l
 
 #### Scenario: Manifest unreadable
 - **WHEN** the bundled manifest is missing or is not valid JSON
-- **THEN** every marker draws a fallback badge in its key's fallback colour (for example `lootLoose` gold, `PmcExtracts` green, a saved pin light blue), a log entry names the manifest, and selecting and hit testing markers still work
+- **THEN** every marker draws a fallback badge in its key's fallback colour (for example `lootLoose` neutral grey, `PmcExtracts` green, a saved pin light blue), a log entry names the manifest, and selecting and hit testing markers still work
 
 ### Requirement: The bundled icons are the compiled release set
 The app SHALL bundle the release set's manifest and one compiled vector file per manifest icon, compiled from its SVG with the set check's compile settings, and no SVG source or prompt record. An offline check SHALL fail when a compiled file differs from compiling its SVG, when an icon has no compiled file, or when a compiled file has no manifest icon.
