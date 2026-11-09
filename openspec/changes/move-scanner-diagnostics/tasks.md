@@ -11,18 +11,18 @@ Every group follows the "Dart and Flutter code" section of AGENTS.md. Load `flut
 | settings-diagnostics → Main windows keep diagnostic detail out of normal use | Corrected scan subtitle | test/ui/scan_correction_card_test.dart | a picked correction is titled and aged as not accepted | red |
 | settings-diagnostics → Problems the player must act on stay on the main windows | Rejected scan still explains itself | test/ui/scan_evidence_panel_test.dart | rejected report gives a plain reason with the best candidate not accepted | red |
 | settings-diagnostics → Problems the player must act on stay on the main windows | Errors the player must act on stay visible | test/ui/shell_test.dart | catalog error and recording stop note stay on the Scanner | red |
-| settings-diagnostics → Diagnostics shows the latest scans' evidence | Accepted scan | test/ui/scan_diagnostics_test.dart | accepted scan shows number, item id, pass, score, crop and text | red |
-| settings-diagnostics → Diagnostics shows the latest scans' evidence | Rejection after an accepted item | test/ui/scan_diagnostics_test.dart | a later rejection shows its code and text and keeps the accepted crop | red |
-| settings-diagnostics → Diagnostics shows the latest scans' evidence | Failed scan | test/ui/scan_diagnostics_test.dart | a failed scan shows its code and message and no crop | red |
-| settings-diagnostics → Diagnostics shows the latest scans' evidence | No scan yet | test/ui/scan_diagnostics_test.dart | before any scan it says none is published and shows no timings | red |
+| settings-diagnostics → Diagnostics shows the latest scans' evidence | Accepted scan | test/ui/scan_diagnostics_test.dart | accepted scan shows number, item id, pass, score, crop and text | green |
+| settings-diagnostics → Diagnostics shows the latest scans' evidence | Rejection after an accepted item | test/ui/scan_diagnostics_test.dart | a later rejection shows its code and text and keeps the accepted crop | green |
+| settings-diagnostics → Diagnostics shows the latest scans' evidence | Failed scan | test/ui/scan_diagnostics_test.dart | a failed scan shows its code and message and no crop | green |
+| settings-diagnostics → Diagnostics shows the latest scans' evidence | No scan yet | test/ui/scan_diagnostics_test.dart | before any scan it says none is published and shows no timings | green |
 | settings-diagnostics → Diagnostics shows the latest scans' evidence | A scan arrives while open | test/ui/settings_diagnostics_test.dart | a scan published while Diagnostics is open is shown at once | red |
-| settings-diagnostics → Diagnostics shows stage timings | Timings of an accepted scan | test/ui/scan_diagnostics_test.dart | timings show stage and total ms labelled with the scan number | red |
-| settings-diagnostics → Diagnostics shows stage timings | Early failure | test/ui/scan_diagnostics_test.dart | absent stages are shown as absent, not 0 | red |
-| settings-diagnostics → Diagnostics shows stage timings | Timings follow the latest scan after a rejection | test/ui/scan_diagnostics_test.dart | after a rejection the timings are the new scan's | red |
-| settings-diagnostics → Diagnostics lists the recent scans | Recent list bound | test/ui/scan_diagnostics_test.dart | recent list shows the 10 newest scans, newest first | red |
-| settings-diagnostics → Diagnostics lists the recent scans | Hotkey and mouse scans | test/ui/scan_diagnostics_test.dart | recent list labels hotkey scans | red |
-| settings-diagnostics → Diagnostics lists the recent scans | Rejected entry | test/ui/scan_diagnostics_test.dart | a rejected recent entry gives a plain reason and its end state | red |
-| settings-diagnostics → Diagnostics lists the recent scans | No scans | test/ui/scan_diagnostics_test.dart | an empty recent list says there are no scans yet | red |
+| settings-diagnostics → Diagnostics shows stage timings | Timings of an accepted scan | test/ui/scan_diagnostics_test.dart | timings show stage and total ms labelled with the scan number | green |
+| settings-diagnostics → Diagnostics shows stage timings | Early failure | test/ui/scan_diagnostics_test.dart | absent stages are shown as absent, not 0 | green |
+| settings-diagnostics → Diagnostics shows stage timings | Timings follow the latest scan after a rejection | test/ui/scan_diagnostics_test.dart | after a rejection the timings are the new scan's | green |
+| settings-diagnostics → Diagnostics lists the recent scans | Recent list bound | test/ui/scan_diagnostics_test.dart | recent list shows the 10 newest scans, newest first | green |
+| settings-diagnostics → Diagnostics lists the recent scans | Hotkey and mouse scans | test/ui/scan_diagnostics_test.dart | recent list labels hotkey scans | green |
+| settings-diagnostics → Diagnostics lists the recent scans | Rejected entry | test/ui/scan_diagnostics_test.dart | a rejected recent entry gives a plain reason and its end state | green |
+| settings-diagnostics → Diagnostics lists the recent scans | No scans | test/ui/scan_diagnostics_test.dart | an empty recent list says there are no scans yet | green |
 | settings-diagnostics → Diagnostics shows data source detail | Current catalog | test/ui/data_sources_panel_test.dart | Diagnostics shows source, UTC download time and record counts | red |
 | settings-diagnostics → Diagnostics shows data source detail | No catalog | test/ui/data_sources_panel_test.dart | Diagnostics says there is no complete item data download | red |
 | settings-diagnostics → Diagnostics shows data source detail | Tracker in cooldown | test/ui/data_sources_panel_test.dart | Diagnostics shows when progress refresh is available again | red |
@@ -75,8 +75,8 @@ Rows marked "existing ... (re-run)" name behaviour already tested in that file; 
 
 ## 1. Scan diagnostics widget
 
-- [ ] 1.1 Create `test/ui/scan_diagnostics_test.dart` by moving the Details tests from `test/ui/scan_evidence_panel_test.dart` (id/pass/score/crop/text, codes, timings, recent list) onto a new `ScanDiagnostics` widget, renamed per the test map. Add "before any scan…", "an empty recent list…", "a rejected recent entry … end state" and "timings … labelled with the scan number". Verify they fail to compile or fail because `ScanDiagnostics` does not exist.
-- [ ] 1.2 Add `ScanDiagnostics` to `lib/ui/scan_evidence_panel.dart` (design D1): today's `_details` content, the recent list with plain row, hotkey label, end state and total, and the crop decode with its per-id fence and dispose on unmount, moved from `_ScanEvidencePanelState`. It listens to the coordinator and catalog only while mounted. Document it with `///`. Verify that every `scan_diagnostics_test.dart` row in the test map passes, and flip those rows green.
+- [x] 1.1 Create `test/ui/scan_diagnostics_test.dart` by moving the Details tests from `test/ui/scan_evidence_panel_test.dart` (id/pass/score/crop/text, codes, timings, recent list) onto a new `ScanDiagnostics` widget, renamed per the test map. Add "before any scan…", "an empty recent list…", "a rejected recent entry … end state" and "timings … labelled with the scan number". Verify they fail to compile or fail because `ScanDiagnostics` does not exist.
+- [x] 1.2 Add `ScanDiagnostics` to `lib/ui/scan_evidence_panel.dart` (design D1): today's `_details` content, the recent list with plain row, hotkey label, end state and total, and the crop decode with its per-id fence and dispose on unmount, moved from `_ScanEvidencePanelState`. It listens to the coordinator and catalog only while mounted. Document it with `///`. Verify that every `scan_diagnostics_test.dart` row in the test map passes, and flip those rows green.
 
 ## 2. Scanner keeps only the plain result
 
