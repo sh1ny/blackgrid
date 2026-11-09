@@ -131,7 +131,7 @@ To check the toolchain, run `mise exec -- flutter doctor -v`. Warnings about And
 2. Open **Settings** and choose the **Live game mode**: PvP, PvE or Seasonal. It starts as Unknown. Choosing a mode refreshes the catalog. If the refresh fails, use **Refresh complete catalog** to try again.
 3. Press Ctrl K to search for an item. The Scanner area shows the decision, the requirements, the data sources and your history.
 4. Optional: in **Settings**, save a Tracker token for the mode, and set the game log and screenshot folders. Leave a folder empty to detect it automatically.
-5. On **Map**, use **Read Latest** after you save a screenshot in game, or turn on **Follow logs** to switch maps automatically. While the game log reports a mode, that mode replaces the one in Settings.
+5. On **Map**, choose **Read latest screenshot** in the map picker after you save a screenshot in game, or turn on **Follow logs** in **Settings** to switch maps automatically. While the game log reports a mode, that mode replaces the one in Settings.
 
 To build a Release bundle, run `mise exec -- flutter build windows`. Ship the whole `build/windows/x64/runner/Release/` folder, not only `blackgrid.exe`.
 

@@ -236,6 +236,21 @@ void main() {
     expect(h.services.mapSession.raidMatchedAt, isNull);
   });
 
+  testWidgets('map-controls: No reading after an empty raid panel', (
+    tester,
+  ) async {
+    final h = await _pumpApp(
+      tester,
+      panels: [RaidPanelEvidence(state: RaidPanelState.empty)],
+    );
+    await _match(tester, h, modified);
+
+    expect(h.services.mapSession.raidMatchedAt, isNotNull);
+    expect(_empty, findsOneWidget);
+    expect(_anyRaidRow, findsNothing);
+    expect(_age, findsNothing);
+  });
+
   testWidgets('map-controls: Matched extract is hidden', (tester) async {
     final h = await _pumpApp(tester, panels: [_matched(_bothNames)]);
     await _match(tester, h, modified);

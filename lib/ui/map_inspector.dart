@@ -127,7 +127,7 @@ class _RaidSectionState extends State<_RaidSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (matched != null)
+        if (matched != null && rows.isNotEmpty)
           Padding(
             key: const ValueKey('raid-age'),
             padding: const EdgeInsets.only(bottom: EmberSpace.xs),
