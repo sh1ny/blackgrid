@@ -1046,7 +1046,7 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | collection | 1.19.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/collection/versions/1.19.1) |
 | convert | 3.1.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/convert/versions/3.1.2) |
 | crypto | 3.0.8 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/crypto/versions/3.0.8) |
-| drift | 2.35.3 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/drift/versions/2.35.3) |
+| drift | 2.35.4 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/drift/versions/2.35.4) |
 | ffi | 2.2.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/ffi/versions/2.2.0) |
 | file | 7.0.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/file/versions/7.0.1) |
 | flutter | Flutter 3.47.9 | Framework / desktop runtime | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
@@ -1063,14 +1063,14 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | record_use | 1.1.1 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/record_use/versions/1.1.1) |
 | sky_engine | Flutter 3.47.9 | Engine / aggregate native notices | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
 | source_span | 1.10.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/source_span/versions/1.10.2) |
-| sqlite3 | 3.8.0 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/sqlite3/versions/3.8.0) |
+| sqlite3 | 3.9.1 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/sqlite3/versions/3.9.1) |
 | stack_trace | 1.12.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stack_trace/versions/1.12.2) |
 | stream_channel | 2.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stream_channel/versions/2.1.4) |
 | string_scanner | 1.4.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/string_scanner/versions/1.4.1) |
 | term_glyph | 1.2.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/term_glyph/versions/1.2.2) |
 | typed_data | 1.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/typed_data/versions/1.4.0) |
 | unorm_dart | 0.3.3 | Item-title NFKC normalisation | [pub.dev](https://pub.dev/packages/unorm_dart/versions/0.3.3) |
-| vector_graphics | 1.2.5 | Native compiled-vector rendering| [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.5) |
+| vector_graphics | 1.2.6 | Native compiled-vector rendering| [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.6) |
 | vector_graphics_codec | 1.1.13 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.1.13) |
 | vector_graphics_compiler | 1.3.4 | Offline map preparation| [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.4) |
 | xml | 6.6.1 | Offline SVG dependency/style preparation | [pub.dev](https://pub.dev/packages/xml/versions/6.6.1) |
@@ -1081,7 +1081,7 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | vector_math | 2.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/vector_math/versions/2.4.0) |
 | web | 1.1.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/web/versions/1.1.1) |
 | yaml | 3.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/yaml/versions/3.1.4) |
-| drift_dev | 2.35.2 | Development / generation / tests| [pub.dev](https://pub.dev/packages/drift_dev/versions/2.35.2) |
+| drift_dev | 2.35.3 | Development / generation / tests| [pub.dev](https://pub.dev/packages/drift_dev/versions/2.35.3) |
 | build_runner | 2.16.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/build_runner/versions/2.16.1) |
 | test | 1.31.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/test/versions/1.31.1) |
 | flutter_lints | 6.0.0 | Development / generation / tests | [pub.dev](https://pub.dev/packages/flutter_lints/versions/6.0.0) |
