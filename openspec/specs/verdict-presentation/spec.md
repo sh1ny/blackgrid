@@ -6,7 +6,7 @@ Defines how a keep/sell verdict is shown to the player so it reads at a glance: 
 ## Requirements
 
 ### Requirement: One plate per verdict
-Wherever the decision card shows a verdict, on the Scanner and in the Map rail, the verdict word SHALL sit on a 44px plate with soft corners, in the verdict type role (Geist 600, 22px), styled by verdict as DESIGN.md X1 describes. The style SHALL come from the theme, in both rooms, and no plate SHALL use the accent colour.
+Wherever the decision card shows a verdict, on the Scanner and in the answer strip on both areas, the verdict word SHALL sit on a 44px plate with soft corners, in the verdict type role (Geist 600, 22px), styled by verdict as DESIGN.md X1 describes. The style SHALL come from the theme, in both rooms, and no plate SHALL use the accent colour.
 
 #### Scenario: Each verdict has its style
 - **WHEN** the decision card shows each verdict in turn, in either room
@@ -33,7 +33,7 @@ The Flea and Trader plates SHALL show the price that decided them after the verd
 - **THEN** the plate shows only the verdict word
 
 ### Requirement: One-line verdict reason
-Below every plate the card SHALL show one plain-language reason, derived from the decision alone, never empty. It SHALL wrap onto further lines rather than clip, fade or truncate, in both the wide card and the compact Map rail card. Developer terms and internal IDs SHALL NOT appear in it.
+Below every plate the card SHALL show one plain-language reason, derived from the decision alone, never empty. It SHALL wrap onto further lines rather than clip, fade or truncate, in both the wide card and the answer strip. Developer terms and internal IDs SHALL NOT appear in it.
 
 #### Scenario: Keep names the need that decided it
 - **GIVEN** a Keep decision whose first actionable need is the task "Shortage" needing 3 found-in-raid items
@@ -90,7 +90,7 @@ Below every plate the card SHALL show one plain-language reason, derived from th
 
 #### Scenario: A long reason at the narrowest card
 - **GIVEN** a reason whose need source name is 80 characters long
-- **WHEN** the compact Map rail card is rendered at its narrowest width in a 960px window
+- **WHEN** the answer strip is rendered at its narrowest width in a 960px window
 - **THEN** the whole reason text is laid out on two or more lines, with no ellipsis and no overflow
 
 ### Requirement: Price freshness tag

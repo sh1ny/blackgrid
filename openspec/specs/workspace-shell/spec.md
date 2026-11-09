@@ -51,10 +51,10 @@ The top bar SHALL contain the brand, Map/Scanner switch, item search with Ctrl K
 - **THEN** search flexes into available space, timers and tools align at the right edge and timer entries have hairline separators; compact and enlarged-text layouts retain reachable actions without horizontal overflow
 
 ### Requirement: Inspector preserves the workspace
-The inspector SHALL provide details, requirements, sources and history. It SHALL start open above 1080px and closed otherwise, initialized once per shell session; later resizing SHALL preserve the user's open/closed state. At widths at most 1080px it SHALL float with a scrim. Closing or resizing SHALL retain the mounted workspace and return focus to the opener. Panel motion SHALL follow DESIGN.md and reduced-motion settings.
+On Scanner the inspector SHALL provide history, details, requirements and sources. On Map it SHALL provide This raid, Markers and Pins, and no item details. It SHALL start open above 1080px and closed otherwise, initialized once per shell session; later resizing SHALL preserve the user's open/closed state. At widths at most 1080px it SHALL float with a scrim. Closing or resizing SHALL retain the mounted workspace and return focus to the opener. Panel motion SHALL follow DESIGN.md and reduced-motion settings.
 
 #### Scenario: Docked details
-- **WHEN** the inspector is opened in a wide window
+- **WHEN** the inspector is opened in a wide window on Scanner
 - **THEN** it shows inspection details beside the workspace without replacing the current subject
 
 #### Scenario: Resize with open details
@@ -68,6 +68,10 @@ The inspector SHALL provide details, requirements, sources and history. It SHALL
 #### Scenario: Initial inspector state follows window width
 - **WHEN** a new shell opens above 1080px or at or below 1080px
 - **THEN** its inspector starts open or closed respectively, and a subsequent user toggle followed by resizing preserves the user's current state
+
+#### Scenario: Map inspector holds working lists
+- **WHEN** Map's inspector opens with an item selected
+- **THEN** it shows This raid, Markers and Pins in that order, and no requirements, sources or history panel
 
 ### Requirement: History rows show item pictures
 The inspector SHALL use DESIGN.md X14 history rows with picture, name, recorded-verdict indicator and age. Pictures SHALL follow existing icon fallback rules. Dots SHALL use saved verdicts, never current advice. Missing verdicts SHALL show a distinct unknown indicator labelled "Verdict not recorded". Opening a row SHALL preserve existing history-inspection semantics and label its current advice separately from the recorded verdict.
