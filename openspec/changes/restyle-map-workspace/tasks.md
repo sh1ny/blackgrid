@@ -4,13 +4,13 @@
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| latest-accepted-scan → Map shows scans in its one decision card | No separate panel | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: No separate panel | red |
-| latest-accepted-scan → Map shows scans in its one decision card | Scan accepted with Map open | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: Scan accepted with Map open | red |
+| latest-accepted-scan → Map shows scans in its one decision card | No separate panel | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: No separate panel | green |
+| latest-accepted-scan → Map shows scans in its one decision card | Scan accepted with Map open | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: Scan accepted with Map open | green |
 | latest-accepted-scan → Map shows scans in its one decision card | Scan fenced with Map open | `test/ui/latest_scan_card_test.dart` | a fenced scan with Map open changes nothing | green |
-| map-controls → The map takes the main column | Wide and narrow windows | `test/ui/map_workspace_controls_test.dart` | map-controls: Wide and narrow windows | red |
+| map-controls → The map takes the main column | Wide and narrow windows | `test/ui/map_workspace_controls_test.dart` | map-controls: Wide and narrow windows | green |
 | map-controls → The map takes the main column | Inspector closes over a loaded map | `test/ui/map_workspace_controls_test.dart` | map-controls: Inspector closes over a loaded map | green |
-| map-controls → Debug information stays off the Map screen | Normal use | `test/ui/map_workspace_controls_test.dart` | map-controls: Normal use | red |
-| map-controls → Debug information stays off the Map screen | Settings cannot be saved | `test/ui/map_workspace_controls_test.dart` | map-controls: Settings cannot be saved | red |
+| map-controls → Debug information stays off the Map screen | Normal use | `test/ui/map_workspace_controls_test.dart` | map-controls: Normal use | green |
+| map-controls → Debug information stays off the Map screen | Settings cannot be saved | `test/ui/map_workspace_controls_test.dart` | map-controls: Settings cannot be saved | green |
 | map-controls → Debug information stays off the Map screen | Selected pin shows no debug text | `test/ui/map_workspace_controls_test.dart` | map-controls: Selected pin shows no debug text | green |
 | map-controls → Map picker switches the map by hand | Choosing a map | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a map | green |
 | map-controls → Map picker switches the map by hand | Picker while saving | `test/ui/map_workspace_controls_test.dart` | map-controls: Picker while saving | green |
@@ -71,13 +71,13 @@
 | map-marker-popups → Summaries reflect prepared marker facts | Fractional boss chance | `test/maps/marker_presentation_test.dart` | map-marker-popups: Fractional boss chance | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Chance near the ends | `test/maps/marker_presentation_test.dart` | map-marker-popups: Chance near the ends | green |
 | map-marker-popups → Summaries reflect prepared marker facts | Refreshed marker facts | `test/maps/marker_popup_test.dart` | refreshed marker selection shows new facts without a request | green |
-| map-rail → Map saved-file inputs starts collapsed | Collapsed on first show | `test/ui/map_diagnostics_test.dart` | map-rail: Collapsed on first show | red |
-| map-rail → Map saved-file inputs starts collapsed | Expanding shows the inputs | `test/ui/map_diagnostics_test.dart` | map-rail: Expanding shows the inputs | red |
-| map-rail → Map saved-file inputs starts collapsed | Status lines use labels | `test/ui/map_diagnostics_test.dart` | map-rail: Status lines use labels | red |
-| map-rail → Map saved-file inputs starts collapsed | Collapsing keeps settings | `test/ui/map_diagnostics_test.dart` | map-rail: Collapsing keeps settings | red |
-| map-rail → Map saved-file inputs starts collapsed | Pending screenshot while collapsed | `test/ui/map_diagnostics_test.dart` | map-rail: Pending screenshot while collapsed | red |
-| map-rail → Collapsed section does no periodic work | No ticking while collapsed | `test/ui/map_diagnostics_test.dart` | map-rail: No ticking while collapsed | red |
-| map-rail → Collapsed section does no periodic work | Age resumes on expand | `test/ui/map_diagnostics_test.dart` | map-rail: Age resumes on expand | red |
+| map-rail → Map saved-file inputs starts collapsed | Collapsed on first show | `test/ui/map_diagnostics_test.dart` | map-rail: Collapsed on first show | green |
+| map-rail → Map saved-file inputs starts collapsed | Expanding shows the inputs | `test/ui/map_diagnostics_test.dart` | map-rail: Expanding shows the inputs | green |
+| map-rail → Map saved-file inputs starts collapsed | Status lines use labels | `test/ui/map_diagnostics_test.dart` | map-rail: Status lines use labels | green |
+| map-rail → Map saved-file inputs starts collapsed | Collapsing keeps settings | `test/ui/map_diagnostics_test.dart` | map-rail: Collapsing keeps settings | green |
+| map-rail → Map saved-file inputs starts collapsed | Pending screenshot while collapsed | `test/ui/map_diagnostics_test.dart` | map-rail: Pending screenshot while collapsed | green |
+| map-rail → Collapsed section does no periodic work | No ticking while collapsed | `test/ui/map_diagnostics_test.dart` | map-rail: No ticking while collapsed | green |
+| map-rail → Collapsed section does no periodic work | Age resumes on expand | `test/ui/map_diagnostics_test.dart` | map-rail: Age resumes on expand | green |
 | map-zone-labels → Name labels are coloured by faction | Each faction draws its own colour | `test/ui/map_zone_labels_test.dart` | map-zone-labels: Each faction draws its own colour | green |
 | map-zone-labels → Name labels are coloured by faction | Palette rule rejects a bad label colour | `test/domain/map_zone_style_test.dart` | map-zone-labels: Palette rule rejects a bad label colour | green |
 | map-zone-labels → Name labels are coloured by faction | Highlighted extract keeps its faction name colour | `test/ui/map_zone_labels_test.dart` | a raid-highlighted Scav extract keeps its Scav label colour | green |
@@ -162,9 +162,9 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 7. Diagnostics and the rail's removal
 
-- [ ] 7.1 Move the `map-rail` behaviour tests to `test/ui/map_diagnostics_test.dart` against a public `MapDiagnostics` in a collapsed section at the end of the Settings dialog; add the Save marker filters control to Settings. Verify they fail because the section does not exist.
-- [ ] 7.2 Extract `MapDiagnostics` from `_MapInputStatus` into its own file, without Follow logs or Read Latest, and mount it in the Settings dialog, collapsed each time it opens. Add the Diagnostics row to DESIGN.md X12. Verify `test/ui/map_diagnostics_test.dart` and `test/ui/settings_dialog_test.dart` pass and flip the `map-rail` rows green.
-- [ ] 7.3 Write failing tests for `Normal use`, `Settings cannot be saved`, `No separate panel` and `Scan accepted with Map open` against the Map with no rail. Remove the rail from `MapScreen`, delete `lib/ui/manual_controls.dart` and its tests, and delete or move what `test/ui/map_rail_test.dart` still covers. Verify the rows turn green and re-run the green `latest-accepted-scan`, `scanner-evidence` and `verdict-presentation` rows.
+- [x] 7.1 Move the `map-rail` behaviour tests to `test/ui/map_diagnostics_test.dart` against a public `MapDiagnostics` in a collapsed section at the end of the Settings dialog; add the Save marker filters control to Settings. Verify they fail because the section does not exist.
+- [x] 7.2 Extract `MapDiagnostics` from `_MapInputStatus` into its own file, without Follow logs or Read Latest, and mount it in the Settings dialog, collapsed each time it opens. Add the Diagnostics row to DESIGN.md X12. Verify `test/ui/map_diagnostics_test.dart` and `test/ui/settings_dialog_test.dart` pass and flip the `map-rail` rows green.
+- [x] 7.3 Write failing tests for `Normal use`, `Settings cannot be saved`, `No separate panel` and `Scan accepted with Map open` against the Map with no rail. Remove the rail from `MapScreen`, delete `lib/ui/manual_controls.dart` and its tests, and delete or move what `test/ui/map_rail_test.dart` still covers. Verify the rows turn green and re-run the green `latest-accepted-scan`, `scanner-evidence` and `verdict-presentation` rows.
 
 ## 8. Integration
 

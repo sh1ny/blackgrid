@@ -11,6 +11,8 @@ import '../domain/settings.dart';
 import 'labels.dart';
 import 'live_map_status.dart';
 import 'live_scan_panel.dart';
+import 'map_diagnostics.dart';
+import 'panels.dart';
 import 'ember/theme_access.dart';
 
 /// Opens Settings and optionally brings one section into view and focus.
@@ -73,6 +75,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
   );
   bool busy = false;
   String? message;
+
+  /// Whether Diagnostics is expanded. It is dialog state, so each opening of
+  /// Settings starts collapsed.
+  bool _diagnosticsExpanded = false;
   @override
   void dispose() {
     for (final focus in _sectionFocus.values) {
@@ -374,6 +380,21 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           followGameLogs: value,
                         ),
                 ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Save marker filters'),
+                  subtitle: const Text(
+                    'Keep which marker types are shown the next time Blackgrid starts.',
+                  ),
+                  value: services.settings.settings.saveMarkerFilters,
+                  onChanged: services.settings.busy
+                      ? null
+                      : (value) => services.settings.save(
+                          services.settings.settings.copyWith(
+                            saveMarkerFilters: value,
+                          ),
+                        ),
+                ),
                 const Divider(height: 28),
                 ..._raidTimerSection(context),
                 Focus(
@@ -505,6 +526,19 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                   ),
+                const SizedBox(height: 18),
+                CollapsibleGridPanel(
+                  title: 'Diagnostics',
+                  icon: Icons.folder_open_outlined,
+                  expanded: _diagnosticsExpanded,
+                  onExpandedChanged: (value) =>
+                      setState(() => _diagnosticsExpanded = value),
+                  toggleKey: const Key('settings-diagnostics-toggle'),
+                  child: MapDiagnostics(
+                    key: const Key('map-input-status'),
+                    services: services,
+                  ),
+                ),
               ],
             ),
           ),

@@ -388,20 +388,10 @@ class _TraderChip extends StatelessWidget {
 /// badge and label. Rows ignore clicks while settings are being saved.
 class MarkerRows extends StatelessWidget {
   /// Creates the rows for the map `services.maps` shows.
-  const MarkerRows({
-    super.key,
-    required this.services,
-    this.keyPrefix = 'marker',
-  });
+  const MarkerRows({super.key, required this.services});
 
   /// The services whose settings and marker icons the rows use.
   final AppServices services;
-
-  /// The start of each row and switch key, `<prefix>-row-<category>`.
-  ///
-  /// The Map rail uses its own prefix while it and the inspector are both
-  /// mounted, so each row stays unique.
-  final String keyPrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -427,8 +417,8 @@ class MarkerRows extends StatelessWidget {
                     for (final key in keys)
                       if (facts.keys.contains(key))
                         _MarkerRow(
-                          key: ValueKey('$keyPrefix-row-$key'),
-                          switchKey: ValueKey('$keyPrefix-switch-$key'),
+                          key: ValueKey('marker-row-$key'),
+                          switchKey: ValueKey('marker-switch-$key'),
                           filterKey: key,
                           icons: services.markerIcons,
                           count: key == 'CustomPins'

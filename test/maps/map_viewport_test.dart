@@ -57,32 +57,11 @@ Future<(int, int, int)> _paintPixel(
   }))!;
 }
 
+/// The inspector's row for [filterKey], scrolled into view and hit-testable.
 Future<Finder> _showMarkerFilter(WidgetTester tester, String filterKey) async {
-  final search = find.byKey(const ValueKey('marker-search'));
-  // The outer rail lazily builds the preferences panel too. Materialize its
-  // search control before using that control to identify the inner list.
-  await scrollMapRailTo(tester, search);
-  // Bring the whole panel into view before dragging its inner list.
-  await tester.ensureVisible(find.text('Marker preferences'));
-  await tester.pumpAndSettle();
-  final filter = find.byKey(ValueKey('rail-marker-row-$filterKey'));
-  // The tiles are a lazy child below the search/quest controls. Scroll the
-  // inner preferences list to build them. Moving its position directly avoids
-  // revealing the tile with a top-aligned scroll of the outer rail, which would
-  // unbuild the whole panel.
-  final inner = tester
-      .state<ScrollableState>(
-        find.ancestor(of: search, matching: find.byType(Scrollable)).first,
-      )
-      .position;
-  while (filter.evaluate().isEmpty && inner.pixels < inner.maxScrollExtent) {
-    inner.jumpTo(
-      (inner.pixels + 160).clamp(0, inner.maxScrollExtent).toDouble(),
-    );
-    await tester.pump();
-  }
-  await tester.pumpAndSettle();
-  await Scrollable.ensureVisible(tester.element(filter), alignment: .5);
+  final filter = find.byKey(ValueKey('marker-row-$filterKey'));
+  expect(filter, findsOneWidget);
+  await tester.ensureVisible(filter);
   await tester.pumpAndSettle();
   expect(filter.hitTestable(), findsOneWidget);
   return filter;
@@ -1000,7 +979,7 @@ void main() {
     'locks',
     'stationaryWeapons',
   ]) {
-    testWidgets('$category markers can be filtered through the Map rail', (
+    testWidgets('$category markers can be filtered through the Map inspector', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();

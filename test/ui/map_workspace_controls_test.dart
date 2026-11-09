@@ -23,9 +23,6 @@ final class _GatedOcr extends RaidPanelOcr {
   Future<RaidPanelEvidence> recognize(Uint8List imageBytes) => gate.future;
 }
 
-/// Whether the Map screen still has its configuration rail (removed in 7.3).
-const _railStillPresent = true;
-
 /// An OCR that finds no panel at once, so a read ends without a worker.
 final class _InstantOcr extends RaidPanelOcr {
   @override
@@ -202,40 +199,97 @@ Future<void> _readLatestForNotice(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets(
-    'map-controls: Wide and narrow windows',
-    (tester) async {
-      for (final size in [const Size(1660, 870), const Size(960, 720)]) {
-        await pumpMapFixture(tester, size: size);
-        final bar = tester.getRect(find.byKey(const Key('shell-top-bar')));
-        final strip = tester.getRect(find.byKey(const Key('answer-strip')));
-        final map = tester.getRect(_viewport);
-        expect(
-          strip.top,
-          greaterThanOrEqualTo(bar.bottom - .5),
-          reason: '$size',
-        );
-        expect(
-          map.top,
-          greaterThanOrEqualTo(strip.bottom - .5),
-          reason: '$size',
-        );
-        // The map is the whole main column: nothing sits beside it.
-        final column = tester.getRect(find.byType(MapScreen));
-        expect(map.width, greaterThan(column.width * .9), reason: '$size');
-        for (final panel in [
-          'Active map',
-          'Marker preferences',
-          'Manual item search',
-          'Map saved-file inputs',
-        ]) {
-          expect(find.text(panel), findsNothing, reason: '$panel at $size');
-        }
+  testWidgets('map-controls: Wide and narrow windows', (tester) async {
+    for (final size in [const Size(1660, 870), const Size(960, 720)]) {
+      await pumpMapFixture(tester, size: size);
+      final bar = tester.getRect(find.byKey(const Key('shell-top-bar')));
+      final strip = tester.getRect(find.byKey(const Key('answer-strip')));
+      final map = tester.getRect(_viewport);
+      expect(strip.top, greaterThanOrEqualTo(bar.bottom - .5), reason: '$size');
+      expect(map.top, greaterThanOrEqualTo(strip.bottom - .5), reason: '$size');
+      // The map is the whole main column: nothing sits beside it.
+      final column = tester.getRect(find.byType(MapScreen));
+      expect(map.width, greaterThan(column.width * .9), reason: '$size');
+      for (final panel in [
+        'Active map',
+        'Marker preferences',
+        'Manual item search',
+        'Map saved-file inputs',
+      ]) {
+        expect(find.text(panel), findsNothing, reason: '$panel at $size');
       }
-    },
-    // The rail goes in task 7.3; the main column cannot be proved before.
-    skip: _railStillPresent,
-  );
+    }
+  });
+
+  testWidgets('map-controls: Normal use', (tester) async {
+    final screenshot = await _savedScreenshot(tester);
+    final h = await pumpMapFixture(tester, panelOcr: _InstantOcr());
+    await _useScreenshotFolder(tester, h, screenshot.parent.path);
+    final pin = _pin('Normal-use pin');
+    expect(
+      await tester.runAsync(() => h.services.settings.savePin(pin)),
+      isTrue,
+    );
+    await tester.runAsync(h.services.mapSession.readLatest);
+    await _until(
+      tester,
+      () =>
+          h.services.mapSession.state.savedScreenshotPath != null &&
+          !h.services.mapSession.state.readingLatest,
+    );
+    // The fixture really holds a saved screenshot, a pin and the map.
+    expect(h.services.mapSession.state.savedScreenshotPath, screenshot.path);
+    expect(h.services.settings.pins.map((p) => p.id), contains(pin.id));
+    expect(h.services.maps.scene, isNotNull);
+
+    expect(find.textContaining('Logs:'), findsNothing);
+    expect(find.textContaining('Screenshots:'), findsNothing);
+    expect(find.textContaining('Saved evidence'), findsNothing);
+    expect(find.textContaining(screenshot.path), findsNothing);
+    expect(find.textContaining(pin.frame), findsNothing);
+    expect(find.textContaining('revision'), findsNothing);
+    expect(find.textContaining(RegExp(r'X [-\d.]+ [•·] Y')), findsNothing);
+    // The Map screen has no leftover debug or rail sections.
+    for (final text in ['Diagnostics', 'Map saved-file inputs']) {
+      expect(
+        find.descendant(of: find.byType(MapScreen), matching: find.text(text)),
+        findsNothing,
+        reason: text,
+      );
+    }
+    expect(
+      find.descendant(
+        of: find.byType(MapScreen),
+        matching: find.textContaining('saved pins'),
+      ),
+      findsNothing,
+    );
+    expect(_attribution, findsOneWidget);
+  });
+
+  testWidgets('map-controls: Settings cannot be saved', (tester) async {
+    final h = await pumpMapFixture(tester);
+    await tester.runAsync(
+      () => h.services.database.customStatement(
+        "CREATE TRIGGER preference_failure BEFORE INSERT ON preferences BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
+      ),
+    );
+    await tapM1Async(
+      tester,
+      find.byKey(const ValueKey('marker-row-PmcExtracts')),
+      () => h.services.settings.error != null,
+    );
+    final error = h.services.settings.error!;
+    expect(
+      find.descendant(of: find.byType(MapScreen), matching: find.text(error)),
+      findsOneWidget,
+    );
+    // The switch did not change: the failed save is not shown as applied.
+    expect(
+      h.services.settings.settings.markerFilters['PmcExtracts'] ?? true,
+      isTrue,
+    );
+  });
 
   testWidgets('map-controls: Inspector closes over a loaded map', (
     tester,
