@@ -168,6 +168,6 @@ Tests are offline only. No task launches or inspects a game, and no task sets `B
 
 ## 8. Integration
 
-- [ ] 8.1 Confirm every test map row is green, each with a test by that name. Verify by listing rows still marked red and finding none.
-- [ ] 8.2 Run `dart format`, `mise run analyze` and `mise run test`. Verify all pass offline, with no game running and none launched.
-- [ ] 8.3 Run `openspec validate restyle-map-workspace --strict` and `mise run release-notes -- --check openspec/changes/restyle-map-workspace/proposal.md`. Verify both pass.
+- [x] 8.1 Confirm every test map row is green, each with a test by that name. Verify by listing rows still marked red and finding none.
+- [x] 8.2 Run `dart format`, `mise run analyze` and `mise run test`. Verify all pass offline, with no game running and none launched.
+- [x] 8.3 Run `openspec validate restyle-map-workspace --strict` and `mise run release-notes -- --check openspec/changes/restyle-map-workspace/proposal.md`. Verify both pass.
