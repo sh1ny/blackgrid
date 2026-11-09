@@ -9,31 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_harness.dart';
 
-/// Owns the Details flag the way the screen does, so a test can tap Details.
-class _Host extends StatefulWidget {
-  const _Host(this.h);
-
-  final M1Harness h;
-
-  @override
-  State<_Host> createState() => _HostState();
-}
-
-class _HostState extends State<_Host> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) => SourcePanel(
-    services: widget.h.services,
-    detailsExpanded: _expanded,
-    onDetailsExpandedChanged: (value) => setState(() => _expanded = value),
-  );
-}
-
 void main() {
-  Future<M1Harness> harness(WidgetTester tester, {bool noMode = false}) async {
+  Future<M1Harness> harness(
+    WidgetTester tester, {
+    bool noMode = false,
+    DateTime Function()? clock,
+  }) async {
     final h = (await tester.runAsync(() async {
-      final result = M1Harness();
+      final result = M1Harness(clock: clock);
       await result.initialize(
         mode: noMode ? GameMode.unknown : GameMode.pvp,
         refresh: !noMode,
@@ -44,7 +27,11 @@ void main() {
     return h;
   }
 
-  Future<void> show(WidgetTester tester, M1Harness h) async {
+  Future<void> show(
+    WidgetTester tester,
+    M1Harness h, {
+    bool diagnostics = false,
+  }) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -52,19 +39,20 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: blackgridTheme(Brightness.dark),
-        home: Scaffold(body: _Host(h)),
+        home: Scaffold(
+          body: diagnostics
+              ? SingleChildScrollView(
+                  child: DataSourceDiagnostics(services: h.services),
+                )
+              : SourcePanel(services: h.services),
+        ),
       ),
     );
     await tester.pump();
   }
 
-  Future<void> openDetails(WidgetTester tester) async {
-    await tester.tap(find.text('Details'));
-    await tester.pump();
-  }
-
   testWidgets(
-    'current item data says up to date with its local time and hides the URL',
+    'current item data says up to date with its local time and has no Details',
     (tester) async {
       final h = await harness(tester);
       final snapshot = h.services.catalog.snapshot!;
@@ -78,18 +66,13 @@ void main() {
         findsOneWidget,
       );
       expect(snapshot.source, isNotEmpty);
+      expect(find.text('Details'), findsNothing);
       expect(find.textContaining(snapshot.source), findsNothing);
+      expect(find.textContaining('http'), findsNothing);
+      expect(find.textContaining('records'), findsNothing);
       expect(
         find.textContaining(snapshot.observedAt.toUtc().toIso8601String()),
         findsNothing,
-      );
-
-      await openDetails(tester);
-
-      expect(find.textContaining(snapshot.source), findsOneWidget);
-      expect(
-        find.textContaining(snapshot.observedAt.toUtc().toIso8601String()),
-        findsWidgets,
       );
     },
   );
@@ -104,9 +87,7 @@ void main() {
     expect(find.text('Item data: not downloaded yet'), findsOneWidget);
   });
 
-  testWidgets('cooldown is said in the open and its end time only in Details', (
-    tester,
-  ) async {
+  testWidgets('cooldown is said in the panel with no end time', (tester) async {
     final h = await harness(tester);
     final until = DateTime.now().add(const Duration(minutes: 3));
     h.services.progress
@@ -122,13 +103,13 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('cooling down'), findsWidgets);
+    expect(find.text('Details'), findsNothing);
     expect(find.textContaining('available again'), findsNothing);
     expect(find.textContaining(until.toUtc().toIso8601String()), findsNothing);
-
-    await openDetails(tester);
-
-    final time = localTimeLabel(until, now: DateTime.now());
-    expect(find.text('Refresh available again at $time'), findsOneWidget);
+    expect(
+      find.textContaining(localTimeLabel(until, now: DateTime.now())),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -191,5 +172,52 @@ void main() {
     await show(tester, h);
 
     expect(find.text('Prices: price time unknown'), findsOneWidget);
+  });
+
+  testWidgets('Diagnostics shows source, UTC download time and record counts', (
+    tester,
+  ) async {
+    final downloaded = DateTime.utc(2026, 11, 10, 8, 5);
+    final h = await harness(tester, clock: () => downloaded);
+    final snapshot = h.services.catalog.snapshot!;
+    expect(snapshot.observedAt.toUtc(), downloaded);
+    expect(snapshot.datasetCounts, isNotEmpty);
+    await show(tester, h, diagnostics: true);
+
+    expect(find.text('Source: ${snapshot.source}'), findsOneWidget);
+    expect(
+      find.text('Item data downloaded (UTC): 2026-11-10T08:05:00.000Z'),
+      findsOneWidget,
+    );
+    for (final e in snapshot.datasetCounts.entries) {
+      expect(find.text('${e.key}: ${e.value} records'), findsOneWidget);
+    }
+    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+  });
+
+  testWidgets('Diagnostics says there is no complete item data download', (
+    tester,
+  ) async {
+    final h = await harness(tester, noMode: true);
+    expect(h.services.catalog.snapshot, isNull);
+    await show(tester, h, diagnostics: true);
+
+    expect(find.text('No complete item data download.'), findsOneWidget);
+    expect(find.textContaining('records'), findsNothing);
+    expect(find.textContaining('Source:'), findsNothing);
+  });
+
+  testWidgets('Diagnostics shows when progress refresh is available again', (
+    tester,
+  ) async {
+    final h = await harness(tester);
+    final until = DateTime.now().add(const Duration(minutes: 3));
+    h.services.progress
+      ..status = ProgressStatus.cooldown
+      ..cooldownUntil = until;
+    await show(tester, h, diagnostics: true);
+
+    final time = localTimeLabel(until, now: DateTime.now());
+    expect(find.text('Refresh available again at $time'), findsOneWidget);
   });
 }

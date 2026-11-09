@@ -190,12 +190,11 @@ void main() {
     final source = find.byType(SourcePanel);
     expect(source, findsOneWidget);
     expect(tester.getSize(source).height, lessThan(400));
-    final details = find.descendant(of: source, matching: find.text('Details'));
-    await tester.ensureVisible(details);
-    await tester.pumpAndSettle();
-    await tester.tap(details);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    expect(
+      find.descendant(of: source, matching: find.text('Details')),
+      findsNothing,
+    );
+    expect(find.textContaining('Data is treated as old after'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

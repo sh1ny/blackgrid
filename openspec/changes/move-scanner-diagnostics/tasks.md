@@ -23,9 +23,9 @@ Every group follows the "Dart and Flutter code" section of AGENTS.md. Load `flut
 | settings-diagnostics → Diagnostics lists the recent scans | Hotkey and mouse scans | test/ui/scan_diagnostics_test.dart | recent list labels hotkey scans | green |
 | settings-diagnostics → Diagnostics lists the recent scans | Rejected entry | test/ui/scan_diagnostics_test.dart | a rejected recent entry gives a plain reason and its end state | green |
 | settings-diagnostics → Diagnostics lists the recent scans | No scans | test/ui/scan_diagnostics_test.dart | an empty recent list says there are no scans yet | green |
-| settings-diagnostics → Diagnostics shows data source detail | Current catalog | test/ui/data_sources_panel_test.dart | Diagnostics shows source, UTC download time and record counts | red |
-| settings-diagnostics → Diagnostics shows data source detail | No catalog | test/ui/data_sources_panel_test.dart | Diagnostics says there is no complete item data download | red |
-| settings-diagnostics → Diagnostics shows data source detail | Tracker in cooldown | test/ui/data_sources_panel_test.dart | Diagnostics shows when progress refresh is available again | red |
+| settings-diagnostics → Diagnostics shows data source detail | Current catalog | test/ui/data_sources_panel_test.dart | Diagnostics shows source, UTC download time and record counts | green |
+| settings-diagnostics → Diagnostics shows data source detail | No catalog | test/ui/data_sources_panel_test.dart | Diagnostics says there is no complete item data download | green |
+| settings-diagnostics → Diagnostics shows data source detail | Tracker in cooldown | test/ui/data_sources_panel_test.dart | Diagnostics shows when progress refresh is available again | green |
 | settings-diagnostics → Collapsed Diagnostics does no scan or source work | Collapsed with an accepted scan | test/ui/settings_diagnostics_test.dart | collapsed Diagnostics builds no scan evidence or crop | red |
 | settings-diagnostics → Collapsed Diagnostics does no scan or source work | Expand after scans | test/ui/settings_diagnostics_test.dart | expanding shows the latest scan and every recent scan | red |
 | scanner-evidence → Scanner shows the latest scan's evidence | Accepted scan | test/ui/scan_evidence_panel_test.dart | accepted report shows only the item name | green |
@@ -49,9 +49,9 @@ Every group follows the "Dart and Flutter code" section of AGENTS.md. Load `flut
 | player-facing-text → Times are shown in local time | Earlier day | test/ui/labels_test.dart | localTimeLabel gives date and time for an earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/data_sources_panel_test.dart | a missing flea quote time reads unknown | green |
 | player-facing-text → Times are shown in local time | No UTC time in the inspector | test/ui/shell_test.dart | the Scanner inspector shows no UTC time | red |
-| player-facing-text → Data sources panel reads in plain language | Current item data | test/ui/data_sources_panel_test.dart | current item data says up to date with its local time and has no Details | red |
+| player-facing-text → Data sources panel reads in plain language | Current item data | test/ui/data_sources_panel_test.dart | current item data says up to date with its local time and has no Details | green |
 | player-facing-text → Data sources panel reads in plain language | No catalog | test/ui/data_sources_panel_test.dart | no catalog says item data is not downloaded yet | green |
-| player-facing-text → Data sources panel reads in plain language | Tracker in cooldown | test/ui/data_sources_panel_test.dart | cooldown is said in the panel with no end time | red |
+| player-facing-text → Data sources panel reads in plain language | Tracker in cooldown | test/ui/data_sources_panel_test.dart | cooldown is said in the panel with no end time | green |
 | interface-theme → Ember surfaces and labels | A docked panel has no shadow | test/ui/ember_surfaces_test.dart | docked panels use panel colour, hairline and no elevation in both rooms | green |
 | interface-theme → Ember surfaces and labels | Section labels are sentence case | test/ui/ember_surfaces_test.dart | section labels are sentence case | red |
 | interface-theme → Ember surfaces and labels | The brand lockup keeps its capitals | test/ui/ember_surfaces_test.dart | brand lockup keeps its capitals | green |
@@ -86,8 +86,8 @@ Rows marked "existing ... (re-run)" name behaviour already tested in that file; 
 
 ## 3. Data sources detail moves
 
-- [ ] 3.1 In `test/ui/data_sources_panel_test.dart`, make the current-item-data and cooldown tests assert that `SourcePanel` has no Details control, URL, record count or cooldown end time. Add the three `DataSourceDiagnostics` tests from the test map. The no-catalog test uses a missing catalog. A history-catalog case, if added, uses a row from another game mode, because a same-mode row reads the live catalog (`lib/application/selection_controller.dart:57-60`). Verify the new tests fail.
-- [ ] 3.2 Add `DataSourceDiagnostics` to `lib/ui/evidence_panels.dart` from `SourcePanel`'s Details builder, reading the selection's inspection catalog and quote (design D3). Drop the Details section and its parameters from `SourcePanel`, and `sourceDetailsExpanded` from `lib/ui/shell.dart`. Delete `DetailsSection` from `lib/ui/panels.dart` and `test/ui/details_section_test.dart`. Verify `data_sources_panel_test.dart` passes and flip its rows green.
+- [x] 3.1 In `test/ui/data_sources_panel_test.dart`, make the current-item-data and cooldown tests assert that `SourcePanel` has no Details control, URL, record count or cooldown end time. Add the three `DataSourceDiagnostics` tests from the test map. The no-catalog test uses a missing catalog. A history-catalog case, if added, uses a row from another game mode, because a same-mode row reads the live catalog (`lib/application/selection_controller.dart:57-60`). Verify the new tests fail.
+- [x] 3.2 Add `DataSourceDiagnostics` to `lib/ui/evidence_panels.dart` from `SourcePanel`'s Details builder, reading the selection's inspection catalog and quote (design D3). Drop the Details section and its parameters from `SourcePanel`, and `sourceDetailsExpanded` from `lib/ui/shell.dart`. Delete `DetailsSection` from `lib/ui/panels.dart` and `test/ui/details_section_test.dart`. Verify `data_sources_panel_test.dart` passes and flip its rows green.
 
 ## 4. Diagnostics in Settings and the correction offer
 
