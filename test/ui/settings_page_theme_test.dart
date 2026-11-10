@@ -22,7 +22,7 @@ void main() {
     final h = await pumpM1(tester);
     expect(_theme(tester).extension<EmberColors>(), same(EmberColors.dark));
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
     expect(_segment('System'), findsOneWidget);
     expect(_segment('Dark'), findsOneWidget);
@@ -52,7 +52,7 @@ void main() {
 
   testWidgets('selecting the current option saves nothing', (tester) async {
     final h = await pumpM1(tester);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
 
     final before = h.services.settings.settings;

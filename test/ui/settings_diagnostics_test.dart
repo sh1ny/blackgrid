@@ -24,7 +24,7 @@ Finder _inSettings(String text) =>
     find.descendant(of: find.byType(SettingsPage), matching: find.text(text));
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
   await tester.pumpAndSettle();
   // Fail rather than pass vacuously when the section is not there.
   expect(_toggle, findsOneWidget);

@@ -19,7 +19,7 @@ import 'dart:io';
 
 /// Opens the Settings page from the top bar.
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
   await tester.pumpAndSettle();
   expect(find.byType(SettingsPage), findsOneWidget);
 }

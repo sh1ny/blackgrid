@@ -110,16 +110,16 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | settings-diagnostics → Problems the player must act on stay on the main windows | Rejected scan still explains itself | `test/ui/scan_evidence_panel_test.dart` | rejected report gives a plain reason with the best candidate not accepted | green |
 | settings-diagnostics → Problems the player must act on stay on the main windows | Errors the player must act on stay visible | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > catalog error and recording stop note stay on the Scanner | green |
 | settings-diagnostics → Problems the player must act on stay on the main windows | Tracker error stays reachable | `test/ui/settings_page_shell_test.dart` | settings-diagnostics: Tracker error stays reachable | green |
-| settings-page → Settings opens as a page | Open and go back | `test/ui/settings_page_shell_test.dart` | settings-page: Open and go back | red |
-| settings-page → Settings opens as a page | Inspector hidden while open | `test/ui/settings_page_shell_test.dart` | settings-page: Inspector hidden while open | red |
-| settings-page → Settings opens as a page | Switch area from Settings | `test/ui/settings_page_shell_test.dart` | settings-page: Switch area from Settings | red |
-| settings-page → Settings opens as a page | Choose the area Settings was opened from | `test/ui/settings_page_shell_test.dart` | settings-page: Choose the area Settings was opened from | red |
-| settings-page → Settings opens as a page | Item search from Settings | `test/ui/settings_page_shell_test.dart` | settings-page: Item search from Settings | red |
-| settings-page → Settings opens as a page | Escape with an unsaved invalid edit | `test/ui/settings_page_shell_test.dart` | settings-page: Escape with an unsaved invalid edit | red |
-| settings-page → Settings opens as a page | Map keys while Settings is open | `test/ui/settings_page_shell_test.dart` | settings-page: Map keys while Settings is open | red |
-| settings-page → Settings opens as a page | Escape with a valid edit | `test/ui/settings_page_shell_test.dart` | settings-page: Escape with a valid edit | red |
-| settings-page → Settings opens as a page | Scan while Settings is open | `test/ui/settings_page_shell_test.dart` | settings-page: Scan while Settings is open | red |
-| settings-page → Settings opens as a page | Settings action while open | `test/ui/settings_page_shell_test.dart` | settings-page: Settings action while open | red |
+| settings-page → Settings opens as a page | Open and go back | `test/ui/settings_page_shell_test.dart` | settings-page: Open and go back | green |
+| settings-page → Settings opens as a page | Inspector hidden while open | `test/ui/settings_page_shell_test.dart` | settings-page: Inspector hidden while open | green |
+| settings-page → Settings opens as a page | Switch area from Settings | `test/ui/settings_page_shell_test.dart` | settings-page: Switch area from Settings | green |
+| settings-page → Settings opens as a page | Choose the area Settings was opened from | `test/ui/settings_page_shell_test.dart` | settings-page: Choose the area Settings was opened from | green |
+| settings-page → Settings opens as a page | Item search from Settings | `test/ui/settings_page_shell_test.dart` | settings-page: Item search from Settings | green |
+| settings-page → Settings opens as a page | Escape with an unsaved invalid edit | `test/ui/settings_page_shell_test.dart` | settings-page: Escape with an unsaved invalid edit | green |
+| settings-page → Settings opens as a page | Map keys while Settings is open | `test/ui/settings_page_shell_test.dart` | settings-page: Map keys while Settings is open | green |
+| settings-page → Settings opens as a page | Escape with a valid edit | `test/ui/settings_page_shell_test.dart` | settings-page: Escape with a valid edit | green |
+| settings-page → Settings opens as a page | Scan while Settings is open | `test/ui/settings_page_shell_test.dart` | settings-page: Scan while Settings is open | green |
+| settings-page → Settings opens as a page | Settings action while open | `test/ui/settings_page_shell_test.dart` | settings-page: Settings action while open | green |
 | verdict-presentation → One plate per verdict | Each verdict has its style | `test/ui/verdict_plate_test.dart` | each verdict has its plate style in both rooms | green |
 | verdict-presentation → One plate per verdict | Verdicts differ without colour | `test/ui/verdict_plate_test.dart` | Keep, Flea and Price unavailable differ by fill and border | green |
 | verdict-presentation → One plate per verdict | No plate is drawn in the accent | `test/ui/verdict_plate_test.dart` | no plate uses accent or accent-text | green |
@@ -152,13 +152,13 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | workspace-shell → Answer precedes the workspace | Provenance line | `test/ui/shell_test.dart` | workspace-shell: Provenance line | green |
 | workspace-shell → Answer precedes the workspace | Provenance age moves on | `test/ui/shell_test.dart` | workspace-shell: Provenance age moves on | green |
 | workspace-shell → Answer precedes the workspace | Price block with both prices | `test/ui/shell_test.dart` | workspace-shell: Price block with both prices | green |
-| workspace-shell → Answer precedes the workspace | Long reason with Found in raid at 1300px | `test/ui/shell_test.dart` | workspace-shell: Long reason with Found in raid at 1300px | green |
+| workspace-shell → Answer precedes the workspace | Long reason with Found in raid at 1300px | `test/ui/real_fonts_layout_test.dart` | workspace-shell: Long reason with Found in raid at 1300px | green |
 | workspace-shell → Answer precedes the workspace | Price block without a Flea price | `test/ui/shell_test.dart` | workspace-shell: Price block without a Flea price | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Wide navigation | `test/ui/shell_test.dart` | workspace-shell: Wide navigation | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Narrow navigation and disabled timers | `test/ui/shell_test.dart` | workspace-shell: Narrow navigation and disabled timers | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Anchored search results and explicit selection | `test/ui/shell_test.dart` | workspace-shell: Anchored search results and explicit selection | green |
-| workspace-shell → Top bar keeps navigation and timers reachable | Wide tools alignment | `test/ui/shell_test.dart` | workspace-shell: Wide tools alignment | red |
-| workspace-shell → Top bar keeps navigation and timers reachable | Segmented area switch | `test/ui/shell_test.dart` | workspace-shell: Segmented area switch | red |
+| workspace-shell → Top bar keeps navigation and timers reachable | Wide tools alignment | `test/ui/shell_test.dart` | workspace-shell: Wide tools alignment | green |
+| workspace-shell → Top bar keeps navigation and timers reachable | Segmented area switch | `test/ui/shell_test.dart` | workspace-shell: Segmented area switch | green |
 | workspace-shell → Inspector preserves the workspace | Docked details | `test/ui/shell_test.dart` | workspace-shell: Docked details | green |
 | workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | green |
 | workspace-shell → Inspector preserves the workspace | Scanner history leads the inspector | `test/ui/shell_test.dart` | workspace-shell: Scanner history leads the inspector | green |
@@ -199,9 +199,9 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 ## 6. Top bar
 
-- [ ] 6.1 Write failing tests in `test/ui/shell_test.dart` for `Segmented area switch`, `Wide tools alignment` (search at most 480px; Stats, Import, Settings as text buttons with Settings last) and in `test/ui/settings_page_shell_test.dart` for `Choose the area Settings was opened from`; update the settings-page tests' `_settingsAction` finder from `OutlinedButton` to the new button. Verify the new tests fail.
-- [ ] 6.2 Implement D8 in `lib/ui/shell.dart`: `SegmentedButton<int>` keeping the `nav-map` / `nav-scanner` keys, `emptySelectionAllowed` with no selection while Settings is open, search in `ConstrainedBox(maxWidth: 480)`, `TextButton.icon` actions in the order Stats, Import, Settings. Verify `test/ui/shell_test.dart` and `test/ui/settings_page_shell_test.dart` pass and flip the `workspace-shell` top bar and `settings-page` rows green.
-- [ ] 6.3 Update DESIGN.md: X11 action order (Stats, Import, Settings) and segmented area switch; X14 mode and "Imported scan" tags and relative age. Verify by reading the X11 and X14 sections against D8, D11 and D13.
+- [x] 6.1 Write failing tests in `test/ui/shell_test.dart` for `Segmented area switch`, `Wide tools alignment` (search at most 480px; Stats, Import, Settings as text buttons with Settings last) and in `test/ui/settings_page_shell_test.dart` for `Choose the area Settings was opened from`; update the settings-page tests' `_settingsAction` finder from `OutlinedButton` to the new button. Verify the new tests fail.
+- [x] 6.2 Implement D8 in `lib/ui/shell.dart`: `SegmentedButton<int>` keeping the `nav-map` / `nav-scanner` keys, `emptySelectionAllowed` with no selection while Settings is open, search in `ConstrainedBox(maxWidth: 480)`, `TextButton.icon` actions in the order Stats, Import, Settings. Verify `test/ui/shell_test.dart` and `test/ui/settings_page_shell_test.dart` pass and flip the `workspace-shell` top bar and `settings-page` rows green.
+- [x] 6.3 Update DESIGN.md: X11 action order (Stats, Import, Settings) and segmented area switch; X14 mode and "Imported scan" tags and relative age. Verify by reading the X11 and X14 sections against D8, D11 and D13.
 
 ## 7. Integration and sign-off
 

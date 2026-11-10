@@ -37,6 +37,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/services.dart';
 
@@ -173,75 +174,6 @@ void main() {
     expect(_inStrip(find.text("Can't be sold on the Flea")), findsOneWidget);
     expect(_inStrip(find.text('Price unavailable')), findsOneWidget);
     expect(_inStrip(find.byKey(const Key('freshness-tag'))), findsNothing);
-  });
-
-  testWidgets('workspace-shell: Long reason with Found in raid at 1300px', (
-    tester,
-  ) async {
-    const token = 'PVP_synthetic-fixture-only';
-    final longName = 'Long task name ${'y' * 100}';
-    tester.view.physicalSize = const Size(1300, 870);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final h = (await tester.runAsync(() async {
-      final result = M1Harness(
-        shapeWire: (wire) {
-          wire['tasks_en'] = {
-            'data': {'task-a name': longName},
-          };
-          wire['token'] = {
-            'success': true,
-            'permissions': ['GP'],
-            'token': token,
-            'owner': 'synthetic-owner',
-            'note': 'Synthetic',
-            'calls': 0,
-            'gameMode': 'pvp',
-          };
-          wire['progress'] = progressWire();
-        },
-      );
-      result.credentials.values[GameMode.pvp] = token;
-      await result.initialize();
-      await result.services.progress.refresh();
-      await result.services.selection.selectManual(
-        result.services.catalog.snapshot!.items['item-a']!,
-      );
-      result.services.selection.setFir(FirState.yes);
-      return result;
-    }))!;
-    addTearDown(h.dispose);
-    await tester.pumpWidget(BlackgridApp(services: h.services));
-    await tester.pumpAndSettle();
-    final reasonText = verdictReason(h.services.selection.decision!);
-    expect(reasonText.length, greaterThanOrEqualTo(120));
-    final reason = _inStrip(find.byKey(const Key('answer-verdict-reason')));
-    expect(tester.widget<Text>(reason).data, reasonText);
-    expect(tester.widget<Text>(reason).maxLines, isNull);
-    final plate = tester.getRect(
-      _inStrip(find.byKey(const Key('verdict-plate'))),
-    );
-    final fir = tester.getRect(_inStrip(find.byType(FirControls)));
-    final price = tester.getRect(
-      _inStrip(find.byKey(const Key('answer-price'))),
-    );
-    final strip = tester.getRect(find.byKey(const Key('answer-strip')));
-    for (final rect in [plate, fir, price]) {
-      expect(rect.left, greaterThanOrEqualTo(strip.left));
-      expect(rect.right, lessThanOrEqualTo(strip.right));
-    }
-    final beside = (fir.center.dy - plate.center.dy).abs() <= 4;
-    final under = fir.top >= plate.bottom && (fir.left - plate.left).abs() <= 1;
-    expect(beside || under, isTrue, reason: 'plate $plate fir $fir');
-    expect(
-      tester.renderObject<RenderParagraph>(reason).didExceedMaxLines,
-      isFalse,
-    );
-    // The top bar overflows by 91px at 1300 on main already (shell.dart's bar
-    // row), so that report is consumed and the strip's own geometry above
-    // carries the no-overflow check.
-    tester.takeException();
   });
 
   testWidgets('workspace-shell: Provenance line', (tester) async {
@@ -444,17 +376,6 @@ void main() {
       expect(h.services.selection.selectedId, isNotNull);
     },
   );
-
-  testWidgets('workspace-shell: Wide tools alignment', (tester) async {
-    await pumpM1(tester, size: const Size(1660, 870));
-    final bar = find.byKey(const Key('shell-top-bar'));
-    final action = find.widgetWithText(OutlinedButton, 'Import');
-    expect(
-      tester.getRect(bar).right - tester.getRect(action).right,
-      lessThan(40),
-    );
-    expect(find.byKey(const Key('timer-separator')), findsWidgets);
-  });
 
   testWidgets('workspace-shell: Scanner history leads the inspector', (
     tester,
@@ -1335,7 +1256,7 @@ void main() {
     });
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
     final panel = find.byKey(const Key('settings-live-scan'));
     final toggle = find.descendant(
@@ -1368,7 +1289,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('recording-stop-note')), findsOneWidget);
     expect(find.textContaining('synthetic disk failure'), findsOneWidget);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
     expect(
       find.descendant(
@@ -1493,7 +1414,7 @@ void main() {
     tester,
   ) async {
     await pumpM1(tester);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
     final page = find.byType(SettingsPage);
     final tracker = find.byKey(const Key('settings-title-tracker'));
@@ -1723,6 +1644,104 @@ void main() {
       );
     }
   });
+  testWidgets('workspace-shell: Segmented area switch', (tester) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    final handle = tester.ensureSemantics();
+    final bar = find.byKey(const Key('shell-top-bar'));
+    expect(
+      find.descendant(of: bar, matching: find.byType(SegmentedButton<int>)),
+      findsOneWidget,
+    );
+    bool selected(String key) =>
+        tester.getSemantics(find.byKey(Key(key))).flagsCollection.isSelected ==
+        Tristate.isTrue;
+
+    await tester.tap(find.byKey(const Key('nav-map')));
+    await tester.pumpAndSettle();
+    expect(find.byType(MapWorkspace), findsOneWidget);
+    expect(find.byType(ScannerScreen), findsNothing);
+    expect(selected('nav-map'), isTrue);
+    expect(selected('nav-scanner'), isFalse);
+
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ScannerScreen), findsOneWidget);
+    expect(find.byType(MapWorkspace), findsNothing);
+    expect(selected('nav-scanner'), isTrue);
+    expect(selected('nav-map'), isFalse);
+    handle.dispose();
+  });
+
+  testWidgets('workspace-shell: Wide tools alignment', (tester) async {
+    final h = await pumpM1(tester, size: const Size(1660, 870));
+    final bar = find.byKey(const Key('shell-top-bar'));
+    final barRect = tester.getRect(bar);
+    final search = tester.getRect(
+      find.descendant(of: bar, matching: find.byType(TextField)),
+    );
+    expect(search.width, lessThanOrEqualTo(480));
+    final timers = tester.getRect(
+      find.descendant(
+        of: bar,
+        matching: find.byKey(const Key('raid-timer-strip')),
+      ),
+    );
+    expect(timers.left, greaterThanOrEqualTo(search.right));
+
+    Finder action(String label) => find.descendant(
+      of: bar,
+      matching: find.widgetWithText(TextButton, label),
+    );
+    expect(
+      find.descendant(of: bar, matching: find.byType(OutlinedButton)),
+      findsNothing,
+    );
+    final stats = tester.getRect(action('Stats'));
+    final import = tester.getRect(action('Import'));
+    final settings = tester.getRect(action('Settings'));
+    expect(stats.right, lessThanOrEqualTo(import.left));
+    expect(import.right, lessThanOrEqualTo(settings.left));
+    for (final label in ['Stats', 'Import', 'Settings']) {
+      final style = tester.widget<TextButton>(action(label)).style;
+      expect(style?.side?.resolve({}), isNull, reason: '$label has no outline');
+    }
+    expect(barRect.right - settings.right, lessThanOrEqualTo(16));
+    expect(timers.right, lessThanOrEqualTo(settings.left));
+    expect(h.services.raidTimers.view.entries, hasLength(3));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('raid-timer-strip')),
+        matching: find.byWidgetPredicate(
+          (w) => w.key.toString().contains('timer-separator'),
+        ),
+      ),
+      findsNWidgets(2),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final (size, scale) in [
+    (const Size(960, 720), 1.0),
+    (const Size(1660, 870), 1.5),
+  ]) {
+    testWidgets(
+      'workspace-shell: Wide tools alignment compact $size scale $scale',
+      (tester) async {
+        await pumpM1(tester, size: size, scale: scale);
+        expect(tester.takeException(), isNull);
+        final bar = find.byKey(const Key('shell-top-bar'));
+        double left(String tip) => tester
+            .getTopLeft(
+              find.descendant(of: bar, matching: find.byTooltip(tip)).first,
+            )
+            .dx;
+        expect(left('Stats'), lessThan(left('Import')));
+        expect(left('Import'), lessThan(left('Settings')));
+        expect(tester.getRect(bar).right, lessThanOrEqualTo(size.width));
+      },
+    );
+  }
+
   testWidgets('workspace-shell: Narrow navigation and disabled timers', (
     tester,
   ) async {
@@ -2072,7 +2091,7 @@ void main() {
 
   testWidgets('the header Stats button opens the Stats dialog', (tester) async {
     await pumpM1(tester);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Stats'));
+    await tester.tap(find.widgetWithText(TextButton, 'Stats'));
     await tester.pumpAndSettle();
 
     expect(find.text('PvP stats'), findsOneWidget);
