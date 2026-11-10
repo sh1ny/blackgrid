@@ -6,7 +6,7 @@ Blackgrid is a helper app for Escape from Tarkov that runs next to the game on W
 
 | Map | Scanner |
 |---|---|
-| ![Map area: Reserve with place labels, extracts, transits, locks and loot markers, and floor buttons](docs/screenshots/map.png) | ![Scanner area: advice for a Graphics card, with prices, the quests that need it, and recent items](docs/screenshots/scanner.png) |
+| ![Map area: Reserve with place labels, extracts, transits and spawns, floor buttons, and the marker filters](docs/screenshots/map.png) | ![Scanner area: advice for a Graphics card, with prices, the quests that need it, and recent items](docs/screenshots/scanner.png) |
 
 ## What Blackgrid does
 
