@@ -37,6 +37,35 @@ void main() {
     expect(scanPassLabel(ScanPass.targeted), 'Targeted');
   });
 
+  group('relativeAgeLabel', () {
+    final now = DateTime(2026, 10, 3, 18, 0);
+    String at(Duration ago) => relativeAgeLabel(now.subtract(ago), now);
+
+    test('reads just now under ten seconds', () {
+      expect(at(Duration.zero), 'just now');
+      expect(at(const Duration(seconds: 9)), 'just now');
+    });
+
+    test('counts seconds, minutes, hours and days, flooring each', () {
+      expect(at(const Duration(seconds: 10)), '10 s');
+      expect(at(const Duration(seconds: 59)), '59 s');
+      expect(at(const Duration(seconds: 60)), '1 min');
+      expect(at(const Duration(seconds: 179)), '2 min');
+      expect(at(const Duration(minutes: 59)), '59 min');
+      expect(at(const Duration(minutes: 60)), '1 h');
+      expect(at(const Duration(hours: 23)), '23 h');
+      expect(at(const Duration(hours: 24)), '1 d');
+      expect(at(const Duration(days: 2, hours: 5)), '2 d');
+    });
+
+    test('a future time reads just now', () {
+      expect(
+        relativeAgeLabel(now.add(const Duration(minutes: 5)), now),
+        'just now',
+      );
+    });
+  });
+
   group('localTimeLabel', () {
     final now = DateTime(2026, 10, 3, 18, 0);
 

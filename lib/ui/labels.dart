@@ -163,6 +163,19 @@ const _months = [
   'Dec',
 ];
 
+/// How long ago [observedAt] was, as of [now].
+///
+/// Reads "just now" under 10 seconds (and for a future time), then "N s",
+/// "N min", "N h" or "N d", flooring to the largest whole unit.
+String relativeAgeLabel(DateTime observedAt, DateTime now) {
+  final age = now.difference(observedAt);
+  if (age.inSeconds < 10) return 'just now';
+  if (age.inSeconds < 60) return '${age.inSeconds} s';
+  if (age.inMinutes < 60) return '${age.inMinutes} min';
+  if (age.inHours < 24) return '${age.inHours} h';
+  return '${age.inDays} d';
+}
+
 /// Formats [time] in the local time zone relative to [now].
 ///
 /// Returns `HH:mm` when [time] falls on the same local day as [now],

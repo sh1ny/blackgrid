@@ -129,9 +129,9 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | verdict-presentation → One-line verdict reason | Check names the first open question | `test/domain/verdict_reason_test.dart` | Check with only found in raid open names it | green |
 | verdict-presentation → One-line verdict reason | Check picks questions in a fixed order | `test/domain/verdict_reason_test.dart` | Check names the first open input in the fixed order | green |
 | verdict-presentation → One-line verdict reason | Check wording for each open input | `test/domain/verdict_reason_test.dart` | Check wording for each open input | green |
-| verdict-presentation → One-line verdict reason | Found in raid unknown outranks the needs it leaves open | `test/domain/verdict_reason_test.dart` | found in raid outranks an unresolved found-in-raid need | red |
-| verdict-presentation → One-line verdict reason | Found in raid unknown names the first need that requires it | `test/domain/verdict_reason_test.dart` | Found in raid unknown names the first need that requires it | red |
-| verdict-presentation → One-line verdict reason | Needs that do not apply are skipped | `test/domain/verdict_reason_test.dart` | Needs that do not apply are skipped | red |
+| verdict-presentation → One-line verdict reason | Found in raid unknown outranks the needs it leaves open | `test/domain/verdict_reason_test.dart` | found in raid outranks an unresolved found-in-raid need | green |
+| verdict-presentation → One-line verdict reason | Found in raid unknown names the first need that requires it | `test/domain/verdict_reason_test.dart` | Found in raid unknown names the first need that requires it | green |
+| verdict-presentation → One-line verdict reason | Needs that do not apply are skipped | `test/domain/verdict_reason_test.dart` | Needs that do not apply are skipped | green |
 | verdict-presentation → One-line verdict reason | Found in raid unknown with no need that requires it | `test/domain/verdict_reason_test.dart` | Check with only found in raid open names it | green |
 | verdict-presentation → One-line verdict reason | Flea and Trader compare the prices | `test/domain/verdict_reason_test.dart` | Flea compares gross prices with the best trader | green |
 | verdict-presentation → One-line verdict reason | Trader for each way the engine reaches it | `test/domain/verdict_reason_test.dart` | Trader wording for each engine path | green |
@@ -172,9 +172,9 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 ## 1. Domain wording and ages
 
-- [ ] 1.1 Write failing tests in `test/domain/verdict_reason_test.dart` for `Found in raid unknown names the first need that requires it` and `Needs that do not apply are skipped`, and a test for the shared `needTitle` ("Medstation level 1" for a station level, the task name for a task). Verify they fail on today's wording.
-- [ ] 1.2 Add `needTitle(ItemRequirement)` in `lib/domain` and use it from `lib/domain/verdict_reason.dart` (first need with `foundInRaid == true && state == NeedState.unresolved`, in engine order) and from `lib/ui/requirement_rows.dart`. Verify `test/domain/verdict_reason_test.dart` and the requirement-rows tests pass, flip the two rows green, and re-run the green `verdict-presentation` reason rows.
-- [ ] 1.3 Add `relativeAgeLabel(observedAt, now)` to `lib/ui/labels.dart` ("just now" under 10 s, then "N s", "N min", "N h", "N d", floored; a future time is "just now"), test first with a unit test covering each boundary. Verify the test passes.
+- [x] 1.1 Write failing tests in `test/domain/verdict_reason_test.dart` for `Found in raid unknown names the first need that requires it` and `Needs that do not apply are skipped`, and a test for the shared `needTitle` ("Medstation level 1" for a station level, the task name for a task). Verify they fail on today's wording.
+- [x] 1.2 Add `needTitle(ItemRequirement)` in `lib/domain` and use it from `lib/domain/verdict_reason.dart` (first need with `foundInRaid == true && state == NeedState.unresolved`, in engine order) and from `lib/ui/requirement_rows.dart`. Verify `test/domain/verdict_reason_test.dart` and the requirement-rows tests pass, flip the two rows green, and re-run the green `verdict-presentation` reason rows.
+- [x] 1.3 Add `relativeAgeLabel(observedAt, now)` to `lib/ui/labels.dart` ("just now" under 10 s, then "N s", "N min", "N h", "N d", floored; a future time is "just now"), test first with a unit test covering each boundary. Verify the test passes.
 
 ## 2. Answer strip
 

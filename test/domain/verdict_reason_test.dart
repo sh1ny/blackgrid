@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
+import 'package:blackgrid/domain/need_title.dart';
 import 'package:blackgrid/domain/verdict_reason.dart';
 
 import '../ui/support/plain_language_check.dart';
@@ -13,9 +14,11 @@ NeedReason need(
   num? remaining,
   bool? foundInRaid,
   RequirementKind kind = RequirementKind.task,
+  int? stationLevel,
 }) => NeedReason(
   requirement: ItemRequirement(
     kind: kind,
+    stationLevel: stationLevel,
     sourceId: 'source-$source',
     sourceName: source,
     id: 'req-$source',
@@ -156,7 +159,81 @@ void main() {
       ],
       open: const [OpenInput.foundInRaid, OpenInput.unresolvedNeed],
     );
-    expect(verdictReason(d), 'Found in raid unknown for this item');
+    expect(
+      verdictReason(d),
+      'Found in raid unknown: Shortage needs it found in raid',
+    );
+  });
+
+  test('Found in raid unknown names the first need that requires it', () {
+    final d = decision(
+      Recommendation.check,
+      reasons: [
+        need('Plain', NeedState.unresolved, remaining: 1),
+        need(
+          'Medstation',
+          NeedState.unresolved,
+          remaining: 2,
+          foundInRaid: true,
+          kind: RequirementKind.hideout,
+          stationLevel: 1,
+        ),
+        need('Later', NeedState.unresolved, remaining: 2, foundInRaid: true),
+      ],
+      open: const [OpenInput.foundInRaid],
+    );
+    expect(
+      verdictReason(d),
+      'Found in raid unknown: Medstation level 1 needs it found in raid',
+    );
+  });
+
+  test('Needs that do not apply are skipped', () {
+    final d = decision(
+      Recommendation.check,
+      reasons: [
+        need('Optional', NeedState.irrelevant, remaining: 1, foundInRaid: true),
+        need('Shortage', NeedState.unresolved, remaining: 2, foundInRaid: true),
+      ],
+      open: const [OpenInput.foundInRaid],
+    );
+    expect(
+      verdictReason(d),
+      'Found in raid unknown: Shortage needs it found in raid',
+    );
+    final none = decision(
+      Recommendation.check,
+      reasons: [
+        need('Optional', NeedState.irrelevant, remaining: 1, foundInRaid: true),
+      ],
+      open: const [OpenInput.foundInRaid],
+    );
+    expect(verdictReason(none), 'Found in raid unknown for this item');
+  });
+
+  test('needTitle names a station level or a task', () {
+    expect(
+      needTitle(
+        need(
+          'Medstation',
+          NeedState.future,
+          kind: RequirementKind.hideout,
+          stationLevel: 1,
+        ).requirement,
+      ),
+      'Medstation level 1',
+    );
+    expect(
+      needTitle(
+        need(
+          'Medstation',
+          NeedState.future,
+          kind: RequirementKind.hideout,
+        ).requirement,
+      ),
+      'Medstation',
+    );
+    expect(needTitle(need('Debut', NeedState.future).requirement), 'Debut');
   });
 
   test('Flea compares gross prices with the best trader', () {
