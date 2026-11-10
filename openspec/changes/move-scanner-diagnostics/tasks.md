@@ -96,9 +96,9 @@ Every group follows the "Dart and Flutter code" section of AGENTS.md. Load `flut
 
 ## 5. Specs, docs and checks
 
-- [ ] 5.1 Reword the Purpose lines of `openspec/specs/scanner-evidence/spec.md` (the Scanner shows the scan phase and result in plain words; evidence and timings are in Settings under Diagnostics) and `openspec/specs/player-facing-text/spec.md` (developer detail is kept in the Diagnostics section of Settings, not in Details sections). Verify `openspec validate --specs --strict` passes.
-- [ ] 5.2 Update DESIGN.md X12's Diagnostics row to list the scan evidence, timings and recent scans, and the data source detail, beside the map input lines. Verify by reading the row.
-- [ ] 5.3 Run `dart format lib test`, `mise run analyze` and `mise run test`, and `mise run release-notes -- --check openspec/changes/move-scanner-diagnostics/proposal.md`. Verify all exit 0.
+- [x] 5.1 Reword the Purpose lines of `openspec/specs/scanner-evidence/spec.md` (the Scanner shows the scan phase and result in plain words; evidence and timings are in Settings under Diagnostics) and `openspec/specs/player-facing-text/spec.md` (developer detail is kept in the Diagnostics section of Settings, not in Details sections). Verify `openspec validate --specs --strict` passes.
+- [x] 5.2 Update DESIGN.md X12's Diagnostics row to list the scan evidence, timings and recent scans, and the data source detail, beside the map input lines. Verify by reading the row.
+- [x] 5.3 Run `dart format lib test`, `mise run analyze` and `mise run test`, and `mise run release-notes -- --check openspec/changes/move-scanner-diagnostics/proposal.md`. Verify all exit 0.
 
 ## Workflow follow-up
 

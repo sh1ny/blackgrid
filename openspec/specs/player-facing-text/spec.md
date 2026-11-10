@@ -1,7 +1,7 @@
 # player-facing-text Specification
 
 ## Purpose
-Defines what Blackgrid's screens may say to a player: plain-language labels for every state, reason and category it shows, local times, and developer detail kept behind collapsed Details sections.
+Defines what Blackgrid's screens may say to a player: plain-language labels for every state, reason and category it shows, local times, and developer detail kept in the Diagnostics section of Settings rather than in Details sections on the main windows.
 
 ## Requirements
 

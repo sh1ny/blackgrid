@@ -582,7 +582,7 @@ The status bar holds status that can be changed in one click: the game mode (cli
 | Game files | Game log folder, screenshot folder, follow logs |
 | Raid timers | Show raid timers; time in raid, run-through and scav cooldown each on or off; run-through length (m:ss); Fence reputation per game mode |
 | Map | Save marker filters |
-| Diagnostics | A collapsed section at the end, closed each time Settings opens: the log, screenshot and raid-panel status lines, the folders in use, and the saved screenshot's source and age. It holds the debug detail the Map screen does not show |
+| Diagnostics | A collapsed section at the end, closed each time Settings opens: the log, screenshot and raid-panel status lines, the folders in use, and the saved screenshot's source and age (Map inputs); the latest scan's evidence, its stage timings and the 10 recent scans (Scans); and the data source URL, UTC times, record counts, cooldown end and age limits (Data sources). It holds the debug detail the Map and Scanner do not show |
 
 Two controls stay on the work screens because they belong to what is in front of the player: Found in raid sits with the verdict (X10), and the marker switches and filters sit in the Map inspector (X13).
 

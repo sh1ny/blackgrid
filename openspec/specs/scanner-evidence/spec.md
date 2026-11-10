@@ -1,7 +1,7 @@
 # scanner-evidence Specification
 
 ## Purpose
-Shows the user, in the Scanner area, what live scanning is doing and what each scan found: the switch and its status, the current phase including a visible fallback, and per-scan evidence and timings. It never turns scan evidence into keep/sell advice.
+Shows the user, in the Scanner area, what live scanning is doing and what each scan found: the switch and its status, the current phase including a visible fallback, and the latest scan's result in plain words. Scan evidence, stage timings and the recent scans list are in Settings under Diagnostics. It never turns scan evidence into keep/sell advice.
 
 ## Requirements
 
