@@ -18,6 +18,7 @@ Future<M1Harness> pumpM1(
   ScanFakePorts? scanPorts,
   ScanFrameRecorder? scanFrameRecorder,
   BlackgridDatabase? database,
+  DateTime Function()? clock,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -32,6 +33,7 @@ Future<M1Harness> pumpM1(
       scanPorts: scanPorts,
       scanFrameRecorder: scanFrameRecorder,
       database: database,
+      clock: clock,
     );
     await result.initialize(mode: mode);
     return result;

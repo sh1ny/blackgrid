@@ -188,7 +188,10 @@ void main() {
     expect(h.services.selection.correction?.reportId, 7);
     expect(h.services.selection.scan, isNull);
     expect(find.byKey(const Key('correction-offer')), findsNothing);
-    expect(_answerText('Corrected scan'), findsOneWidget);
+    expect(
+      _answerText('Corrected from a scan · just now · chosen by hand'),
+      findsOneWidget,
+    );
     expect(_answerText('Bravo plate'), findsOneWidget);
   });
 
@@ -447,7 +450,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(h.services.selection.selectedId, noFlea);
       expect(h.services.selection.correction?.reportId, 7);
-      expect(_answerText('Corrected scan'), findsOneWidget);
+      expect(
+        _answerText('Corrected from a scan · just now · chosen by hand'),
+        findsOneWidget,
+      );
       expect(_answerText('Weapon case'), findsOneWidget);
     });
   });

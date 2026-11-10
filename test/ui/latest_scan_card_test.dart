@@ -173,7 +173,10 @@ void main() {
     expect(find.byKey(const Key('map-picker')), findsOneWidget);
     final strip = find.byKey(const Key('answer-strip'));
     expect(
-      find.descendant(of: strip, matching: find.text('Accepted scan')),
+      find.descendant(
+        of: strip,
+        matching: find.text('Accepted scan · just now'),
+      ),
       findsOneWidget,
     );
     expect(

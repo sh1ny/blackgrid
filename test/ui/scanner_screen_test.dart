@@ -53,7 +53,12 @@ void main() {
       );
       expect(h.services.selection.item!.id, 'item-a');
       expect(h.services.history.rows.length, 1);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Yes'));
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('answer-strip')),
+          matching: find.text('Yes'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(h.services.selection.fir, FirState.yes);
       final decision = h.services.selection.decision;
@@ -249,7 +254,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Accepted scan'), findsOneWidget);
+    expect(find.text('Accepted scan · just now'), findsOneWidget);
 
     selection.retireScan();
     await tester.pumpAndSettle();
@@ -258,6 +263,6 @@ void main() {
       find.text('Last scan was in an earlier mode or session; scan again'),
       findsOneWidget,
     );
-    expect(find.text('Accepted scan'), findsNothing);
+    expect(find.text('Accepted scan · just now'), findsNothing);
   });
 }
