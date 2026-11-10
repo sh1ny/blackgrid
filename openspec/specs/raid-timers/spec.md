@@ -184,8 +184,8 @@ A timer strip under the shell header SHALL show, on both Map and Scanner, each t
 - **WHEN** the timers are on and only the scav cooldown is chosen
 - **THEN** the strip shows only the scav entry
 
-### Requirement: Timer settings live in the Settings dialog
-A "Raid timers" section in the Settings dialog SHALL set: timers on or off (on by default), which of time in raid, run-through and scav cooldown show (all by default), the run-through length (m:ss) and the Fence reputation for the active mode (−7.00 to 6.00, two decimals, 0.00 by default). An invalid entry SHALL be refused with a message and SHALL keep the previous value.
+### Requirement: Timer settings live on the Settings page
+A "Raid timers" section on the Settings page SHALL set: timers on or off (on by default), which of time in raid, run-through and scav cooldown show (all by default), the run-through length (m:ss) and the Fence reputation for the active mode (−7.00 to 6.00, two decimals, 0.00 by default). An invalid entry SHALL be refused with a message and SHALL keep the previous value.
 
 #### Scenario: Valid run-through length
 - **WHEN** the run-through length "8:00" is entered

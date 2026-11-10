@@ -89,11 +89,15 @@ The inspector SHALL use DESIGN.md X14 history rows with picture, name, recorded-
 - **THEN** its indicator says "Verdict not recorded" and does not use any of the six known verdict indicators
 
 ### Requirement: Status actions lead to their controls
-The status bar SHALL let the user switch game mode, open Item data or Tracker Settings at the relevant section, and toggle live scan. Displaced configuration SHALL remain in the existing Settings dialog until the Settings page replaces it. Live scan status SHALL state actual pipeline state and use DESIGN.md X4.
+The status bar SHALL let the user switch game mode, open the Settings page at Item and map data or at Tracker progress, and toggle live scan. Every setting displaced from the work screens SHALL live on the Settings page. Live scan status SHALL state actual pipeline state and use DESIGN.md X4.
 
 #### Scenario: Settings targets
 - **WHEN** the Item data or Tracker status is activated
-- **THEN** Settings opens with that section visible and keyboard reachable
+- **THEN** the Settings page opens with Item and map data or Tracker progress visible and keyboard reachable
+
+#### Scenario: Settings target while the page is open
+- **WHEN** the Settings page is open at General and the Tracker status is activated
+- **THEN** Tracker progress scrolls into view and no second Settings opens
 
 #### Scenario: Failed live scan save
 - **WHEN** live scan is toggled through the status bar and saving fails

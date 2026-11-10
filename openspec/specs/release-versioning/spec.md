@@ -224,12 +224,12 @@ A release build SHALL take its version from `pubspec.yaml` and its build number 
 - **THEN** the release build exits non-zero, reporting the integrity check's failure
 
 ### Requirement: The running app reports its version
-The application SHALL show its app version in the Settings dialog. A build made without a release version SHALL report `dev`.
+The application SHALL show its app version in the General section of the Settings page. A build made without a release version SHALL report `dev`.
 
 #### Scenario: Release build shows its version
-- **WHEN** the Settings dialog opens in a build made with app version `0.2.0+120`
-- **THEN** the dialog shows `0.2.0+120`
+- **WHEN** the Settings page opens in a build made with app version `0.2.0+120`
+- **THEN** the General section shows `0.2.0+120`
 
 #### Scenario: Development build
-- **WHEN** the Settings dialog opens in a build made without an app version
-- **THEN** the dialog shows `dev`
+- **WHEN** the Settings page opens in a build made without an app version
+- **THEN** the General section shows `dev`
