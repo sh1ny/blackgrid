@@ -2,6 +2,7 @@ import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
 import 'package:blackgrid/ui/settings/settings_row.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Future<void> _pump(WidgetTester tester, Widget row) => tester.pumpWidget(
@@ -18,6 +19,27 @@ Finder _semanticsOf(String label) => find.byWidgetPredicate(
 );
 
 void main() {
+  testWidgets('a switch row takes keyboard focus and toggles on Space', (
+    tester,
+  ) async {
+    final changes = <bool>[];
+    await _pump(
+      tester,
+      SettingsRow.toggle(
+        name: 'Show raid timers',
+        explanation: 'Shows the timers in the top bar.',
+        value: false,
+        onChanged: changes.add,
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(changes, [true]);
+  });
+
   testWidgets('shows the name, a one-line explanation and a trailing control', (
     tester,
   ) async {

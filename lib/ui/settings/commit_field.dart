@@ -11,14 +11,23 @@ import 'package:flutter/material.dart';
 class SettingsFlushController {
   final _fields = <_CommitFieldState>{};
 
-  /// Starts the commit of every field with typed, uncommitted text.
+  /// Commits every field with typed, uncommitted text, one after the other.
   ///
-  /// Each [CommitField.onCommit] is called before this returns. The future
-  /// completes when every commit has finished; a caller that unmounts the
-  /// fields in the same frame may ignore it, because a field that is gone
-  /// ignores its save result.
-  Future<void> flush() =>
-      Future.wait([for (final field in _fields.toList()) field.commit()]);
+  /// The texts are taken before this returns, so a caller may unmount the
+  /// fields in the same frame and ignore the future: a field that is gone
+  /// still saves its text and ignores the result. The saves run in turn, after
+  /// any save a field already has in flight, because a save that starts while
+  /// another one is running is refused. With no save in flight, the first
+  /// [CommitField.onCommit] is called before this returns.
+  Future<void> flush() async {
+    final fields = _fields.toList();
+    final running = [for (final field in fields) ?field._inFlight];
+    final pending = [for (final field in fields) ?field._takePending()];
+    if (running.isNotEmpty) await Future.wait(running);
+    for (final run in pending) {
+      await run();
+    }
+  }
 }
 
 /// Connects the [CommitField]s below it to a [SettingsFlushController].
@@ -50,8 +59,8 @@ class SettingsFlushScope extends InheritedWidget {
 /// `null` when the text was saved. A refused or unsaved edit keeps the typed
 /// text, so the field never shows a value as saved when it was not. The field
 /// follows [value] when it changes, so an accepted edit shows in its saved
-/// form. An edit that equals [value], or that is already being committed, is
-/// not committed again.
+/// form, unless newer text was typed since the last commit. An edit that
+/// equals [value], or that is already being committed, is not committed again.
 ///
 /// Inside a [SettingsFlushScope] the field also commits when the scope's
 /// controller flushes.
@@ -95,6 +104,12 @@ class _CommitFieldState extends State<CommitField> {
   /// The text whose commit is in flight, or `null` when none is.
   String? _saving;
 
+  /// The text last handed to [CommitField.onCommit], or `null` before any.
+  String? _sent;
+
+  /// The latest commit still running, or `null` when none is.
+  Future<void>? _inFlight;
+
   @override
   void initState() {
     super.initState();
@@ -113,7 +128,12 @@ class _CommitFieldState extends State<CommitField> {
   @override
   void didUpdateWidget(CommitField old) {
     super.didUpdateWidget(old);
-    if (widget.value != old.value) controller.text = widget.value;
+    if (widget.value == old.value) return;
+    // Text typed after the last commit is a newer edit: it stays.
+    final text = controller.text;
+    if (text == _sent || text.trim() == old.value) {
+      controller.text = widget.value;
+    }
   }
 
   @override
@@ -130,25 +150,40 @@ class _CommitFieldState extends State<CommitField> {
   }
 
   /// Commits the typed text unless it equals the saved value.
-  Future<void> commit() async {
-    if (!mounted || !widget.enabled) return;
+  Future<void> commit() => _takePending()?.call() ?? Future.value();
+
+  /// Claims the typed text and returns the function that commits it, or `null`
+  /// when there is nothing to commit.
+  ///
+  /// The returned function works after the field is unmounted.
+  Future<void> Function()? _takePending() {
+    if (!mounted || !widget.enabled) return null;
     if (controller.text.trim() == widget.value) {
       if (error != null) setState(() => error = null);
-      return;
+      return null;
     }
     final text = controller.text;
     // Leaving the field and then a flush can both ask to commit the same text.
-    if (_saving == text) return;
+    if (_saving == text) return null;
     _saving = text;
-    final String? result;
-    try {
-      result = await widget.onCommit(text);
-    } finally {
-      if (_saving == text) _saving = null;
-    }
-    // A newer edit replaced the text this result belongs to.
-    if (!mounted || controller.text != text) return;
-    setState(() => error = result);
+    _sent = text;
+    final onCommit = widget.onCommit;
+    return () {
+      late final Future<void> run;
+      run = () async {
+        final String? result;
+        try {
+          result = await onCommit(text);
+        } finally {
+          if (_saving == text) _saving = null;
+          if (identical(_inFlight, run)) _inFlight = null;
+        }
+        // A newer edit replaced the text this result belongs to.
+        if (!mounted || controller.text != text) return;
+        setState(() => error = result);
+      }();
+      return _inFlight = run;
+    };
   }
 
   @override

@@ -125,4 +125,141 @@ void main() {
     await done;
     await tester.pump();
   });
+
+  testWidgets('a flush saves two pending fields one after the other', (
+    tester,
+  ) async {
+    final commits = <String>[];
+    final first = Completer<String?>();
+    final flush = SettingsFlushController();
+    await tester.pumpWidget(
+      _twoFields(
+        flush,
+        onFirst: (text) {
+          commits.add(text);
+          return first.future;
+        },
+        onSecond: (text) async {
+          commits.add(text);
+          return null;
+        },
+      ),
+    );
+    await tester.enterText(find.widgetWithText(TextField, 'First'), 'one');
+    await tester.enterText(find.widgetWithText(TextField, 'Second'), 'two');
+
+    final done = flush.flush();
+    // The page closes in the frame that starts the flush.
+    await tester.pumpWidget(const SizedBox());
+    expect(commits, ['one'], reason: 'the second save waits for the first');
+
+    first.complete(null);
+    await done;
+    expect(commits, ['one', 'two']);
+  });
+
+  testWidgets('a flush waits for the save another field has in flight', (
+    tester,
+  ) async {
+    final commits = <String>[];
+    final first = Completer<String?>();
+    final flush = SettingsFlushController();
+    await tester.pumpWidget(
+      _twoFields(
+        flush,
+        onFirst: (text) {
+          commits.add(text);
+          return first.future;
+        },
+        onSecond: (text) async {
+          commits.add(text);
+          return null;
+        },
+      ),
+    );
+    await tester.enterText(find.widgetWithText(TextField, 'First'), 'one');
+    // Moving to the second field commits the first.
+    await tester.tap(find.widgetWithText(TextField, 'Second'));
+    await tester.pump();
+    await tester.enterText(find.widgetWithText(TextField, 'Second'), 'two');
+    expect(commits, ['one']);
+
+    final done = flush.flush();
+    await tester.pumpWidget(const SizedBox());
+    expect(commits, ['one'], reason: 'the first save is still running');
+
+    first.complete(null);
+    await done;
+    expect(commits, ['one', 'two']);
+  });
+
+  testWidgets('text typed during a save survives the saved value arriving', (
+    tester,
+  ) async {
+    final saving = Completer<String?>();
+    Widget field(String value) => MaterialApp(
+      home: Scaffold(
+        body: Column(
+          children: [
+            CommitField(
+              label: 'Folder',
+              value: value,
+              onCommit: (_) => saving.future,
+            ),
+            const TextField(key: Key('other')),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpWidget(field('saved'));
+    final folder = find.widgetWithText(TextField, 'Folder');
+    await tester.enterText(folder, 'one');
+    await tester.tap(find.byKey(const Key('other')));
+    await tester.pump();
+    await tester.enterText(folder, 'one more');
+
+    await tester.pumpWidget(field('one'));
+    expect(find.text('one more'), findsOneWidget);
+
+    saving.complete(null);
+    await tester.pump();
+  });
+
+  testWidgets('an accepted edit shows in its saved form', (tester) async {
+    Widget field(String value) => MaterialApp(
+      home: Scaffold(
+        body: CommitField(
+          label: 'Reputation',
+          value: value,
+          onCommit: (_) async => null,
+        ),
+      ),
+    );
+    await tester.pumpWidget(field('0.00'));
+    await tester.enterText(find.byType(TextField), '1.5');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    await tester.pumpWidget(field('1.50'));
+    expect(find.text('1.50'), findsOneWidget);
+  });
 }
+
+/// Two [CommitField]s, labelled First and Second, under one flush scope.
+Widget _twoFields(
+  SettingsFlushController flush, {
+  required Future<String?> Function(String text) onFirst,
+  required Future<String?> Function(String text) onSecond,
+}) => MaterialApp(
+  home: Scaffold(
+    body: SettingsFlushScope(
+      controller: flush,
+      child: Column(
+        children: [
+          CommitField(label: 'First', value: 'saved', onCommit: onFirst),
+          CommitField(label: 'Second', value: 'saved', onCommit: onSecond),
+        ],
+      ),
+    ),
+  ),
+);
