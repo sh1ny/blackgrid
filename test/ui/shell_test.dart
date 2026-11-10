@@ -13,7 +13,8 @@ import '../fixtures/m1/catalog/fixture.dart' show fixtureNow, progressWire;
 
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
-import 'package:blackgrid/ui/scan_evidence_panel.dart';
+import 'package:blackgrid/ui/scanner_screen.dart';
+import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
@@ -555,7 +556,11 @@ void main() {
     final position = tester.state<ScrollableState>(scroll).position;
     position.jumpTo(position.maxScrollExtent);
     await tester.pumpAndSettle();
-    final optional = find.textContaining('Optional uses (');
+    // The Scanner's Why section lists optional uses too; this is the panel's.
+    final optional = find.descendant(
+      of: panel,
+      matching: find.textContaining('Optional uses ('),
+    );
     await tester.tap(optional);
     await tester.pumpAndSettle();
     bool expanded() => find
@@ -753,12 +758,15 @@ void main() {
       await tester.tap(find.byKey(const Key('inspector-toggle')));
       await tester.pumpAndSettle();
     }
-    final evidence = find.byType(ScanEvidencePanel);
+    // The column scrolls as one beside the docked inspector, so the evidence
+    // can always be scrolled fully into the window.
+    final evidence = find.byWidgetPredicate(
+      (w) => w is ScannerSection && w.title == 'Scan evidence',
+    );
+    await tester.ensureVisible(evidence);
+    await tester.pumpAndSettle();
     expect(tester.getBottomRight(evidence).dy, lessThanOrEqualTo(720));
-    final page = find
-        .ancestor(of: evidence, matching: find.byType(Scrollable))
-        .first;
-    expect(tester.state<ScrollableState>(page).position.maxScrollExtent, 0);
+    expect(tester.takeException(), isNull);
   });
 
   for (final disableAnimations in [false, true]) {
@@ -827,6 +835,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+  Rect sectionRect(WidgetTester tester, String title) => tester.getRect(
+    find.byWidgetPredicate((w) => w is ScannerSection && w.title == title),
+  );
   for (final size in [
     const Size(1660, 870),
     const Size(1100, 720),
@@ -839,33 +850,74 @@ void main() {
           ? 'scanner-evidence: Short desktop window'
           : 'scanner-evidence: Narrow window',
       (tester) async {
-        await pumpM1(tester, size: size);
-        await tester.tap(find.byKey(const Key('nav-scanner')));
-        await tester.pumpAndSettle();
-        final evidence = find.byType(ScanEvidencePanel);
-        expect(evidence, findsOneWidget);
-        expect(
-          tester.getTopLeft(evidence).dy,
-          greaterThanOrEqualTo(
-            tester.getBottomLeft(find.byKey(const Key('answer-strip'))).dy,
+        final h = await pumpM1(tester, size: size);
+        await tester.runAsync(
+          () => h.services.selection.selectManual(
+            h.services.catalog.snapshot!.items['item-a']!,
           ),
         );
-        if (size.width >= 1100) {
+        await tester.tap(find.byKey(const Key('nav-scanner')));
+        await tester.pumpAndSettle();
+        final strip = tester.getBottomLeft(
+          find.byKey(const Key('answer-strip')),
+        );
+        final evidence = sectionRect(tester, 'Scan evidence');
+        expect(evidence.top, greaterThanOrEqualTo(strip.dy));
+        expect(
+          evidence.top,
+          greaterThanOrEqualTo(sectionRect(tester, 'Why').bottom),
+        );
+        expect(
+          evidence.top,
+          greaterThanOrEqualTo(sectionRect(tester, 'Prices').bottom),
+        );
+        if (size.width == 1660) {
+          // The title is on screen with the column unscrolled.
+          final title = find.descendant(
+            of: find.byType(ScannerScreen),
+            matching: find.text('Scan evidence'),
+          );
           expect(
-            tester.getBottomRight(evidence).dy,
+            tester.getBottomLeft(title).dy,
             lessThanOrEqualTo(size.height),
           );
-          final scroller = find
-              .descendant(
-                of: find.byKey(const PageStorageKey('scanner-desktop-scroll')),
-                matching: find.byType(Scrollable),
-              )
-              .first;
           expect(
-            tester.state<ScrollableState>(scroller).position.maxScrollExtent,
+            tester
+                .state<ScrollableState>(
+                  find
+                      .descendant(
+                        of: find.byKey(
+                          const PageStorageKey('scanner-desktop-scroll'),
+                        ),
+                        matching: find.byType(Scrollable),
+                      )
+                      .first,
+                )
+                .position
+                .pixels,
             0,
           );
+        } else {
+          // One scroll view carries the whole column.
+          expect(
+            find.descendant(
+              of: find.byType(ScannerScreen),
+              matching: find.byType(Scrollable),
+            ),
+            findsOneWidget,
+          );
+          await tester.ensureVisible(
+            find.byWidgetPredicate(
+              (w) => w is ScannerSection && w.title == 'Scan evidence',
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            sectionRect(tester, 'Scan evidence').bottom,
+            lessThanOrEqualTo(size.height),
+          );
         }
+        expect(tester.takeException(), isNull);
       },
     );
   }
@@ -1727,11 +1779,8 @@ void main() {
       await pumpM1(tester);
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
-      Rect panel(String title) => tester.getRect(
-        find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
-      );
-      final evidence = panel('Scan evidence');
-      expect(evidence.left, 14);
+      final evidence = sectionRect(tester, 'Scan evidence');
+      expect(evidence.left, 14 + EmberSpace.lg);
       expect(
         evidence.top,
         greaterThanOrEqualTo(
@@ -1804,10 +1853,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Rect evidenceFrame(WidgetTester tester) => tester.getRect(
-    find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scan evidence'),
-  );
-
   ScrollPosition desktopPage(WidgetTester tester) => tester
       .state<ScrollableState>(
         find
@@ -1819,18 +1864,46 @@ void main() {
       )
       .position;
 
+  Finder evidenceSection() => find.byWidgetPredicate(
+    (w) => w is ScannerSection && w.title == 'Scan evidence',
+  );
+
+  Future<void> selectItemA(WidgetTester tester, M1Harness h) async {
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('scan evidence panel is fully on screen at 1660x870', (
     tester,
   ) async {
-    await pumpM1(tester, size: const Size(1660, 870));
+    final h = await pumpM1(tester, size: const Size(1660, 870));
+    await selectItemA(tester, h);
     await openScanner(tester);
-    final frame = evidenceFrame(tester);
-    expect(frame.top, greaterThanOrEqualTo(0));
-    expect(frame.bottom, lessThanOrEqualTo(870));
-    expect(frame.left, greaterThanOrEqualTo(0));
-    expect(frame.right, lessThanOrEqualTo(1660));
-    // The page has nothing to scroll at this size.
-    expect(desktopPage(tester).maxScrollExtent, 0);
+    // The Scan evidence title is on screen with the column unscrolled, below
+    // Why and Prices.
+    final title = find.descendant(
+      of: evidenceSection(),
+      matching: find.text('Scan evidence'),
+    );
+    final top = tester.getTopLeft(title);
+    expect(top.dy, greaterThanOrEqualTo(0));
+    expect(tester.getBottomRight(title).dy, lessThanOrEqualTo(870));
+    expect(top.dx, greaterThanOrEqualTo(0));
+    expect(tester.getBottomRight(title).dx, lessThanOrEqualTo(1660));
+    expect(desktopPage(tester).pixels, 0);
+    final evidence = tester.getRect(evidenceSection());
+    expect(
+      evidence.top,
+      greaterThanOrEqualTo(sectionRect(tester, 'Why').bottom),
+    );
+    expect(
+      evidence.top,
+      greaterThanOrEqualTo(sectionRect(tester, 'Prices').bottom),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -1846,7 +1919,7 @@ void main() {
       );
       await openScanner(tester);
       // An accepted scan, then a failed one (the note), then a scan in flight
-      // (the phase): the most the panel ever shows.
+      // (the phase): the most the section ever shows.
       await tester.runAsync(() async {
         await publishTargetedScan(
           h.services.scanner,
@@ -1861,27 +1934,28 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(h.services.scanner.phase, ScanPhase.targeted);
-      expect(find.byKey(const Key('scan-phase')), findsOneWidget);
-      expect(find.byKey(const Key('scan-note-reason')), findsOneWidget);
-      expect(find.byKey(const Key('scan-item')), findsOneWidget);
-      // Desktop layout, read with the page unscrolled.
-      expect(desktopPage(tester).pixels, 0);
-      expect(desktopPage(tester).maxScrollExtent, 0);
-      final frame = evidenceFrame(tester);
-      expect(frame.left, greaterThanOrEqualTo(0));
-      expect(frame.top, greaterThanOrEqualTo(0));
-      expect(frame.bottom, lessThanOrEqualTo(720));
-      expect(frame.right, lessThanOrEqualTo(1100));
-      // The content is taller than the frame, so the list scrolls inside it.
-      final scroll = tester.state<ScrollableState>(
-        find
-            .descendant(
-              of: find.byType(ScanEvidencePanel),
-              matching: find.byType(Scrollable),
-            )
-            .first,
+      // The column is taller than the window and scrolls as one view.
+      final scrollables = find.descendant(
+        of: find.byType(ScannerScreen),
+        matching: find.byType(Scrollable),
       );
-      expect(scroll.position.maxScrollExtent, greaterThan(0));
+      expect(scrollables, findsOneWidget);
+      final position = tester.state<ScrollableState>(scrollables).position;
+      expect(position.maxScrollExtent, greaterThan(0));
+      // Every Scan evidence line can be scrolled into view.
+      for (final (name, line) in [
+        ('phase', find.byKey(const Key('scan-phase'))),
+        ('note', find.byKey(const Key('scan-note-reason'))),
+        ('note candidate', find.text('No candidate')),
+        ('accepted item', find.byKey(const Key('scan-item'))),
+      ]) {
+        expect(line, findsOneWidget, reason: name);
+        await tester.ensureVisible(line);
+        await tester.pumpAndSettle();
+        final rect = tester.getRect(line);
+        expect(rect.top, greaterThanOrEqualTo(0), reason: name);
+        expect(rect.bottom, lessThanOrEqualTo(720), reason: name);
+      }
       expect(tester.takeException(), isNull);
     },
   );
@@ -1889,15 +1963,17 @@ void main() {
   testWidgets(
     'compact layout shows evidence without the old Scanner controls',
     (tester) async {
-      await pumpM1(tester, size: const Size(900, 1600));
+      final h = await pumpM1(tester, size: const Size(900, 1600));
+      await selectItemA(tester, h);
       await openScanner(tester);
-      final evidence = evidenceFrame(tester);
-      expect(
-        evidence.top,
-        greaterThanOrEqualTo(
-          tester.getBottomLeft(find.byKey(const Key('answer-strip'))).dy,
-        ),
-      );
+      final strip = tester.getBottomLeft(find.byKey(const Key('answer-strip')));
+      final why = sectionRect(tester, 'Why');
+      final prices = sectionRect(tester, 'Prices');
+      final evidence = sectionRect(tester, 'Scan evidence');
+      expect(why.top, greaterThanOrEqualTo(strip.dy));
+      expect(prices.top, greaterThanOrEqualTo(strip.dy));
+      expect(evidence.top, greaterThanOrEqualTo(why.bottom));
+      expect(evidence.top, greaterThanOrEqualTo(prices.bottom));
       expect(
         find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
         findsNothing,

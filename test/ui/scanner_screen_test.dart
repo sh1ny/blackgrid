@@ -6,6 +6,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/panels.dart';
+import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -142,11 +143,14 @@ void main() {
       find.widgetWithText(ListTile, 'Synthetic component'),
       () => h.services.history.rows.length == 1,
     );
-    await showInspectorPanel(tester, 'Picked item');
-    GridPanel titled(String title) => tester.widget<GridPanel>(
-      find.byWidgetPredicate((w) => w is GridPanel && w.title == title),
+    String provenance() =>
+        tester.widget<Text>(find.byKey(const Key('answer-provenance'))).data!;
+    Finder inStrip(String text) => find.descendant(
+      of: find.byKey(const Key('answer-strip')),
+      matching: find.text(text),
     );
-    expect(titled('Picked item').subtitle, contains('Chosen by hand'));
+    expect(provenance(), 'Chosen by hand');
+    expect(inStrip('Synthetic component'), findsOneWidget);
 
     final report = (await tester.runAsync(
       () => publishTargetedScan(
@@ -165,23 +169,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect((report.end as ScanAccepted).itemId, 'item-b');
-    final card = find.byWidgetPredicate(
-      (w) => w is GridPanel && w.title == 'Accepted scan',
-    );
-    expect(card, findsOneWidget);
-    expect(
-      tester.widget<GridPanel>(card).subtitle,
-      matches(RegExp(r'^Scanned .+ ago')),
-    );
+    // The strip is driven by the accepted scan.
+    expect(provenance(), matches(RegExp(r'^Accepted scan · ')));
+    expect(inStrip('Alternative component'), findsOneWidget);
+    expect(inStrip('Synthetic component'), findsNothing);
     expect(h.services.selection.item!.id, 'item-b');
     expect(h.services.selection.scan, isNotNull);
+    // So are the sections under it: Why shows item-b's needs.
     expect(
-      find.descendant(of: card, matching: find.text('Alternative component')),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(of: card, matching: find.text('Synthetic component')),
-      findsNothing,
+      find.descendant(
+        of: find.byType(WhySection),
+        matching: find.byKey(const Key('why-summary')),
+      ),
+      findsOneWidget,
     );
     final rows = h.services.history.rows;
     expect(rows.length, 2);

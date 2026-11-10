@@ -81,24 +81,24 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | scan-decisions → Accepted scans are recorded in history as scans | History write fails | `test/application/selection_controller_test.dart` | selectScan > failed scan history write keeps the decision with an error | green |
 | scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Prices go stale after a scan | `test/application/selection_controller_test.dart` | selectScan > stale Flea quote downgrades the scan to Check, acceptance unchanged | green |
 | scan-decisions → Scan advice shows its age and stops being current on a mode or session change | Mode changes after a scan | `test/application/scan_decision_feed_test.dart` | mode change retires the scan and records nothing | green |
-| scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | `test/ui/shell_test.dart` | scan evidence panel is fully on screen at 1660x870 | red |
-| scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | `test/ui/shell_test.dart` | scan evidence panel is on screen at 1100x720 with enlarged text | red |
-| scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | `test/ui/shell_test.dart` | compact layout shows evidence without the old Scanner controls | red |
-| scanner-evidence → Unaccepted scan evidence never produces a recommendation | Accepted scan drives the decision card | `test/ui/scanner_screen_test.dart` | accepted scan drives the decision card | red |
+| scanner-evidence → Scan evidence panel is visible without scrolling | Desktop window | `test/ui/shell_test.dart` | scan evidence panel is fully on screen at 1660x870 | green |
+| scanner-evidence → Scan evidence panel is visible without scrolling | Short desktop window | `test/ui/shell_test.dart` | scan evidence panel is on screen at 1100x720 with enlarged text | green |
+| scanner-evidence → Scan evidence panel is visible without scrolling | Narrow window | `test/ui/shell_test.dart` | compact layout shows evidence without the old Scanner controls | green |
+| scanner-evidence → Unaccepted scan evidence never produces a recommendation | Accepted scan drives the decision card | `test/ui/scanner_screen_test.dart` | accepted scan drives the decision card | green |
 | scanner-evidence → Unaccepted scan evidence never produces a recommendation | Rejected scan with a best candidate | `test/application/scan_decision_feed_test.dart` | rejected scan with a candidate changes nothing | green |
-| scanner-workspace → Scanner main column sections | Wide window places Why beside Prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Wide window places Why beside Prices | red |
-| scanner-workspace → Scanner main column sections | Narrow window stacks the sections | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Narrow window stacks the sections | red |
-| scanner-workspace → Scanner main column sections | No bordered card | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No bordered card | red |
-| scanner-workspace → Why lists the item's needs | Needs for a selected item | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Needs for a selected item | red |
-| scanner-workspace → Why lists the item's needs | No item or unavailable item data | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No item or unavailable item data | red |
-| scanner-workspace → Why lists the item's needs | Warning that repeats the found-in-raid question | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Warning that repeats the found-in-raid question | red |
-| scanner-workspace → Why lists the item's needs | Recording stopped | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Recording stopped | red |
-| scanner-workspace → Why lists the item's needs | Needs unknown | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Needs unknown | red |
-| scanner-workspace → Prices breaks the price down | Item with both prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Item with both prices | red |
-| scanner-workspace → Prices breaks the price down | Item that cannot be sold on the Flea | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Item that cannot be sold on the Flea | red |
-| scanner-workspace → Prices breaks the price down | Missing prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Missing prices | red |
-| scanner-workspace → Scan evidence follows the details | Accepted scan | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Accepted scan | red |
-| scanner-workspace → Scan evidence follows the details | No scan yet | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No scan yet | red |
+| scanner-workspace → Scanner main column sections | Wide window places Why beside Prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Wide window places Why beside Prices | green |
+| scanner-workspace → Scanner main column sections | Narrow window stacks the sections | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Narrow window stacks the sections | green |
+| scanner-workspace → Scanner main column sections | No bordered card | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No bordered card | green |
+| scanner-workspace → Why lists the item's needs | Needs for a selected item | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Needs for a selected item | green |
+| scanner-workspace → Why lists the item's needs | No item or unavailable item data | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No item or unavailable item data | green |
+| scanner-workspace → Why lists the item's needs | Warning that repeats the found-in-raid question | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Warning that repeats the found-in-raid question | green |
+| scanner-workspace → Why lists the item's needs | Recording stopped | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Recording stopped | green |
+| scanner-workspace → Why lists the item's needs | Needs unknown | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Needs unknown | green |
+| scanner-workspace → Prices breaks the price down | Item with both prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Item with both prices | green |
+| scanner-workspace → Prices breaks the price down | Item that cannot be sold on the Flea | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Item that cannot be sold on the Flea | green |
+| scanner-workspace → Prices breaks the price down | Missing prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Missing prices | green |
+| scanner-workspace → Scan evidence follows the details | Accepted scan | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Accepted scan | green |
+| scanner-workspace → Scan evidence follows the details | No scan yet | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No scan yet | green |
 | scanner-workspace → Scanner inspector holds recent items and the live scan note | Recent items without clipping | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Recent items without clipping | red |
 | scanner-workspace → Scanner inspector holds recent items and the live scan note | Relative ages | `test/ui/history_panel_test.dart` | scanner-workspace: Relative ages | red |
 | scanner-workspace → Scanner inspector holds recent items and the live scan note | Ages move on while shown | `test/ui/history_panel_test.dart` | scanner-workspace: Ages move on while shown | red |
@@ -184,8 +184,8 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 ## 3. Scanner main column
 
-- [ ] 3.1 Write failing widget tests in `test/ui/scanner_workspace_test.dart` for the `scanner-workspace` rows of Scanner main column sections, Why, Prices and Scan evidence (wide 1660×870 and narrow 960×720 geometry, the content edge after padding, no bordered card, totals summary, warnings without the found-in-raid one, empty states, per-slot values). Verify they fail because the sections do not exist.
-- [ ] 3.2 Build the main column per D1 in `lib/ui/scanner_screen.dart`: one scroll view of flat `ScannerSection`s, `RecordingStopNote` first, Why and Prices side by side at ≥720px and stacked below, Scan evidence last; extract the `RequirementPanel` and `ScanEvidencePanel` bodies. Verify the 3.1 tests and `test/ui/scan_evidence_panel_test.dart` pass, update `test/ui/scanner_screen_test.dart` for `Desktop window` / `Short desktop window` / `Narrow window`, and flip the `scanner-workspace` and `scanner-evidence` rows green.
+- [x] 3.1 Write failing widget tests in `test/ui/scanner_workspace_test.dart` for the `scanner-workspace` rows of Scanner main column sections, Why, Prices and Scan evidence (wide 1660×870 and narrow 1100×720 with the inspector docked geometry, the content edge after padding, no bordered card, totals summary, warnings without the found-in-raid one, empty states, per-slot values). Verify they fail because the sections do not exist.
+- [x] 3.2 Build the main column per D1 in `lib/ui/scanner_screen.dart`: one scroll view of flat `ScannerSection`s, `RecordingStopNote` first, Why and Prices side by side at ≥720px and stacked below, Scan evidence last; extract the `RequirementPanel` and `ScanEvidencePanel` bodies. Verify the 3.1 tests and `test/ui/scan_evidence_panel_test.dart` pass, update `test/ui/scanner_screen_test.dart` for `Desktop window` / `Short desktop window` / `Narrow window`, and flip the `scanner-workspace` and `scanner-evidence` rows green.
 
 ## 4. Scanner inspector and history rows
 

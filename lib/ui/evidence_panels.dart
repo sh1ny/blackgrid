@@ -11,6 +11,7 @@ import 'item_icon.dart';
 import 'labels.dart';
 import 'requirement_rows.dart';
 import 'panels.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 import 'verdict_plate.dart' show DashedBorderPainter;
 
@@ -168,6 +169,56 @@ class _RequirementPanelState extends State<RequirementPanel> {
   }
 }
 
+/// The requirement rows of one inspected item, sized to their content.
+///
+/// Task and hideout rows come first. Craft and barter rows follow under an
+/// `Optional uses` header that stays collapsed until [expansion] opens it. The
+/// list does not scroll; the surface that holds it does.
+class RequirementList extends StatelessWidget {
+  /// Creates the list of [reasons], resolving names through [catalog].
+  const RequirementList({
+    super.key,
+    required this.reasons,
+    required this.catalog,
+    required this.expansion,
+  });
+
+  /// The item's needs, in catalog order.
+  final List<NeedReason> reasons;
+
+  /// The catalog that names items and traders, or `null` when none is loaded.
+  final CatalogSnapshot? catalog;
+
+  /// The optional-uses expansion state.
+  final RequirementExpansion expansion;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: expansion,
+    builder: (context, _) {
+      final arranged = arrangeRequirementRows(reasons);
+      final optional = arranged.optionalUses;
+      final open = expansion.open;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final need in arranged.obligations)
+            _RequirementRow(requirementRow(need, catalog)),
+          if (optional.isNotEmpty)
+            _OptionalHeader(
+              count: optional.length,
+              open: open,
+              onTap: () => expansion.setOpen(!open),
+            ),
+          if (open)
+            for (final need in optional)
+              _RequirementRow(requirementRow(need, catalog)),
+        ],
+      );
+    },
+  );
+}
+
 class _OptionalHeader extends StatelessWidget {
   const _OptionalHeader({
     required this.count,
@@ -203,6 +254,7 @@ class _OptionalHeader extends StatelessWidget {
   );
 }
 
+/// One dense requirement row: flat, with a hairline under it.
 class _RequirementRow extends StatelessWidget {
   const _RequirementRow(this.row);
 
@@ -210,29 +262,26 @@ class _RequirementRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final small = Theme.of(context).textTheme.bodySmall;
+    final ember = context.ember;
+    final small = EmberType.label.copyWith(color: ember.inkSecondary);
     final facts = [?row.needs, ?row.remaining].join(' • ');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 7),
-      padding: const EdgeInsets.all(10),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.ember.raised,
-        border: Border.all(color: context.ember.hairline),
-        borderRadius: BorderRadius.circular(3),
+        border: Border(bottom: BorderSide(color: ember.hairline)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(row.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Text(
-            '${row.kindTag} • ${row.stateLabel}',
-            style: TextStyle(color: context.ember.inkSecondary),
-          ),
-          if (row.sourceLine case final line?) Text(line, style: small),
-          if (facts.isNotEmpty) Text(facts, style: small),
-          if (row.reason case final reason?) Text(reason, style: small),
-          if (row.foundInRaidLine case final fir?) Text(fir, style: small),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: EmberSpace.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(row.title, style: EmberType.uiHeading),
+            Text('${row.kindTag} • ${row.stateLabel}', style: small),
+            if (row.sourceLine case final line?) Text(line, style: small),
+            if (facts.isNotEmpty) Text(facts, style: small),
+            if (row.reason case final reason?) Text(reason, style: small),
+            if (row.foundInRaidLine case final fir?) Text(fir, style: small),
+          ],
+        ),
       ),
     );
   }
