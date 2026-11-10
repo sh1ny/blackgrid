@@ -241,15 +241,13 @@ class _RequirementRow extends StatelessWidget {
 /// Where the item data, prices and tracker progress come from, and how old
 /// each is.
 ///
-/// The open view says what a player needs; the source URL, UTC times, the
-/// freshness limits and the cooldown end time sit behind Details.
+/// It says what a player needs. The source URL, UTC times, record counts,
+/// freshness limits and cooldown end time are in [DataSourceDiagnostics].
 class SourcePanel extends StatelessWidget {
   /// Creates the panel over [services].
   const SourcePanel({
     super.key,
     required this.services,
-    required this.detailsExpanded,
-    required this.onDetailsExpandedChanged,
     this.fitContent = false,
   });
 
@@ -258,12 +256,6 @@ class SourcePanel extends StatelessWidget {
 
   /// The services whose data sources the panel describes.
   final AppServices services;
-
-  /// Whether the Details section is expanded; owned by the screen.
-  final bool detailsExpanded;
-
-  /// Called when the Details section asks to expand or collapse.
-  final ValueChanged<bool> onDetailsExpandedChanged;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -290,7 +282,6 @@ class SourcePanel extends StatelessWidget {
       final now = DateTime.now();
       final small = Theme.of(context).textTheme.bodySmall;
       final progressSnapshot = progress.snapshot;
-      final cooldownUntil = progress.cooldownUntil;
       return GridPanel(
         fitContent: fitContent,
         title: 'Data sources',
@@ -356,54 +347,80 @@ class SourcePanel extends StatelessWidget {
               icon: const Icon(Icons.sync, size: 18),
               label: const Text('Refresh read-only progress'),
             ),
-            const SizedBox(height: 6),
-            DetailsSection(
-              expanded: detailsExpanded,
-              onExpandedChanged: onDetailsExpandedChanged,
-              builder: (context) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (snapshot == null)
-                    Text('No complete item data download.', style: small)
-                  else ...[
-                    Text('Source: ${snapshot.source}', style: small),
-                    Text(
-                      'Item data downloaded (UTC): '
-                      '${snapshot.observedAt.toUtc().toIso8601String()}',
-                      style: small,
-                    ),
-                    Text(itemsSourceUpdateLabel(snapshot), style: small),
-                    ...snapshot.datasetCounts.entries.map(
-                      (e) => Text('${e.key}: ${e.value} records', style: small),
-                    ),
-                  ],
-                  Text(
-                    'Price time (UTC): '
-                    '${quote?.toUtc().toIso8601String() ?? 'unknown'}',
-                    style: small,
-                  ),
-                  if (progressSnapshot != null)
-                    Text(
-                      'Progress updated (UTC): '
-                      '${progressSnapshot.observedAt.toUtc().toIso8601String()}',
-                      style: small,
-                    ),
-                  if (cooldownUntil != null)
-                    Text(
-                      'Refresh available again at '
-                      '${localTimeLabel(cooldownUntil, now: now)}',
-                      style: small,
-                    ),
-                  Text(
-                    'Data is treated as old after: item data 24h, '
-                    'prices 1h, tracker progress 15m.',
-                    style: small,
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
+      );
+    },
+  );
+}
+
+/// The technical detail behind the item data, prices and tracker progress.
+///
+/// It describes the item data behind the inspected item: for a history item
+/// from another game mode, that mode's saved item data, otherwise the live
+/// catalog. It shows the source, UTC times, record counts, the cooldown end
+/// time and the age limits that [SourcePanel] leaves out.
+class DataSourceDiagnostics extends StatelessWidget {
+  /// Creates the diagnostics over [services].
+  const DataSourceDiagnostics({super.key, required this.services});
+
+  /// The services whose data sources are described.
+  final AppServices services;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([
+      services.catalog,
+      services.progress,
+      services.selection,
+    ]),
+    builder: (context, _) {
+      final selection = services.selection;
+      final snapshot = selection.inspectionCatalog;
+      final quote = selection.item?.quoteAt;
+      final progressSnapshot = services.progress.snapshot;
+      final cooldownUntil = services.progress.cooldownUntil;
+      final small = Theme.of(context).textTheme.bodySmall;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (snapshot == null)
+            Text('No complete item data download.', style: small)
+          else ...[
+            Text('Source: ${snapshot.source}', style: small),
+            Text(
+              'Item data downloaded (UTC): '
+              '${snapshot.observedAt.toUtc().toIso8601String()}',
+              style: small,
+            ),
+            Text(itemsSourceUpdateLabel(snapshot), style: small),
+            ...snapshot.datasetCounts.entries.map(
+              (e) => Text('${e.key}: ${e.value} records', style: small),
+            ),
+          ],
+          Text(
+            'Price time (UTC): '
+            '${quote?.toUtc().toIso8601String() ?? 'unknown'}',
+            style: small,
+          ),
+          if (progressSnapshot != null)
+            Text(
+              'Progress updated (UTC): '
+              '${progressSnapshot.observedAt.toUtc().toIso8601String()}',
+              style: small,
+            ),
+          if (cooldownUntil != null)
+            Text(
+              'Refresh available again at '
+              '${localTimeLabel(cooldownUntil, now: DateTime.now())}',
+              style: small,
+            ),
+          Text(
+            'Data is treated as old after: item data 24h, '
+            'prices 1h, tracker progress 15m.',
+            style: small,
+          ),
+        ],
       );
     },
   );

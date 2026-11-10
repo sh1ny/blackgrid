@@ -1,3 +1,8 @@
+import 'package:blackgrid/application/scan_correction.dart';
+import 'package:blackgrid/application/scan_epoch.dart';
+import 'package:blackgrid/data/capture/capture_failure.dart';
+import 'package:blackgrid/data/catalog_normalizer.dart' show catalogDatasets;
+import 'package:blackgrid/domain/title_matching.dart' show TitleCandidate;
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/ui/app.dart';
@@ -189,12 +194,11 @@ void main() {
     final source = find.byType(SourcePanel);
     expect(source, findsOneWidget);
     expect(tester.getSize(source).height, lessThan(400));
-    final details = find.descendant(of: source, matching: find.text('Details'));
-    await tester.ensureVisible(details);
-    await tester.pumpAndSettle();
-    await tester.tap(details);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Data is treated as old after'), findsOneWidget);
+    expect(
+      find.descendant(of: source, matching: find.text('Details')),
+      findsNothing,
+    );
+    expect(find.textContaining('Data is treated as old after'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -1443,40 +1447,8 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('scan-item'))).data,
       before,
     );
-    // The end state now lives inside the collapsed Details section.
+    // The end state lives in Diagnostics, not on the Scanner.
     expect(find.byKey(const Key('scan-end')), findsNothing);
-  });
-  testWidgets('scan evidence Details stays expanded across Map and back', (
-    tester,
-  ) async {
-    final ports = ScanFakePorts();
-    final h = await pumpM1(tester, scanPorts: ports);
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-    await tester.runAsync(
-      () => publishTargetedScan(
-        h.services.scanner,
-        ports,
-        text: 'Alternative component',
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(ScanEvidencePanel),
-        matching: find.text('Details'),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('nav-map')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-    expect(find.byKey(const Key('scan-timing-total')), findsOneWidget);
   });
   for (final size in [const Size(1672, 941), const Size(960, 640)]) {
     testWidgets('scan evidence panel does not overflow at $size', (
@@ -1536,63 +1508,44 @@ void main() {
   });
 
   testWidgets(
-    'scan evidence panel is on screen at 1100x720 with a long recent list',
+    'scan evidence panel is on screen at 1100x720 with enlarged text',
     (tester) async {
       final ports = ScanFakePorts();
       final h = await pumpM1(
         tester,
         size: const Size(1100, 720),
+        scale: 1.5,
         scanPorts: ports,
       );
       await openScanner(tester);
-      await tester.runAsync(
-        () => h.services.selection.selectManual(
-          h.services.catalog.snapshot!.items['item-a']!,
-        ),
-      );
-      await tester.pumpAndSettle();
-      if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
-        await tester.tap(find.byKey(const Key('inspector-toggle')));
-        await tester.pumpAndSettle();
-      }
+      // An accepted scan, then a failed one (the note), then a scan in flight
+      // (the phase): the most the panel ever shows.
       await tester.runAsync(() async {
-        for (var i = 0; i < 10; i++) {
-          await publishTargetedScan(
-            h.services.scanner,
-            ports,
-            text: 'Alternative component $i',
-            index: i,
-            qpc: 1000 * (i + 1),
-          );
-        }
+        await publishTargetedScan(
+          h.services.scanner,
+          ports,
+          text: 'Alternative component',
+        );
+        ports.fire(2000);
+        (await ports.capture.calls.at(1)).fail(const TargetNotForeground());
+        await reportPublished(h.services.scanner, 2);
+        ports.fire(3000);
+        await ports.captureOk(2);
       });
       await tester.pumpAndSettle();
-      expect(h.services.scanner.recent, hasLength(10));
+      expect(h.services.scanner.phase, ScanPhase.targeted);
+      expect(find.byKey(const Key('scan-phase')), findsOneWidget);
+      expect(find.byKey(const Key('scan-note-reason')), findsOneWidget);
+      expect(find.byKey(const Key('scan-item')), findsOneWidget);
       // Desktop layout, read with the page unscrolled.
       expect(desktopPage(tester).pixels, 0);
+      expect(desktopPage(tester).maxScrollExtent, 0);
       final frame = evidenceFrame(tester);
-      expect(
-        find.byWidgetPredicate((w) => w is GridPanel && w.title == 'Scanner'),
-        findsNothing,
-      );
       expect(frame.left, greaterThanOrEqualTo(0));
       expect(frame.top, greaterThanOrEqualTo(0));
       expect(frame.bottom, lessThanOrEqualTo(720));
-      // Expand detail evidence so the combined contents exceed the frame.
-      final evidenceScroll = find
-          .descendant(
-            of: find.byType(ScanEvidencePanel),
-            matching: find.byType(Scrollable),
-          )
-          .first;
-      final details = find.descendant(
-        of: find.byType(ScanEvidencePanel),
-        matching: find.text('Details'),
-      );
-      await tester.scrollUntilVisible(details, 150, scrollable: evidenceScroll);
-      await tester.tap(details);
-      await tester.pumpAndSettle();
-      // The evidence list scrolls inside its fixed frame.
+      expect(frame.right, lessThanOrEqualTo(1100));
+      // The content is taller than the frame, so the list scrolls inside it.
       final scroll = tester.state<ScrollableState>(
         find
             .descendant(
@@ -1735,5 +1688,260 @@ void main() {
       lessThan(tester.getRect(find.text('BLACKGRID')).left),
     );
     expect(find.byIcon(Icons.hub_outlined), findsNothing);
+  });
+
+  group('main windows keep diagnostic detail out', () {
+    CatalogItem item(String id, String name) => CatalogItem(
+      id: id,
+      name: name,
+      normalizedName: name.toLowerCase(),
+      width: 1,
+      height: 1,
+      noFlea: false,
+      minLevelForFlea: 0,
+      fleaPrice: 400,
+      quoteAt: fixtureNow,
+      sellOffers: const [
+        CashOffer(traderId: 'trader-a', currency: 'RUB', price: 120),
+      ],
+    );
+
+    CatalogSnapshot snapshotOf(Map<String, String> names) => CatalogSnapshot(
+      mode: GameMode.pvp,
+      revision: 'guard-revision',
+      observedAt: fixtureNow,
+      items: {for (final e in names.entries) e.key: item(e.key, e.value)},
+      traders: const {
+        'trader-a': CatalogTrader(id: 'trader-a', name: 'Synthetic Alpha'),
+      },
+      requirements: const [],
+      sourceTimestamps: {for (final key in catalogDatasets) key: fixtureNow},
+    );
+
+    /// The plain text of every `Text`, `RichText` and `EditableText` on screen.
+    List<String> screenText(WidgetTester tester) => [
+      for (final w in tester.widgetList<Text>(find.byType(Text)))
+        w.data ?? w.textSpan?.toPlainText() ?? '',
+      for (final w in tester.widgetList<RichText>(find.byType(RichText)))
+        w.text.toPlainText(),
+      for (final w in tester.widgetList<EditableText>(
+        find.byType(EditableText),
+      ))
+        w.controller.text,
+    ];
+
+    void expectNoText(WidgetTester tester, List<String> forbidden) {
+      final shown = screenText(tester);
+      expect(shown, isNotEmpty);
+      for (final needle in forbidden) {
+        final hits = [
+          for (final text in shown)
+            if (text.contains(needle)) text,
+        ];
+        expect(hits, isEmpty, reason: 'text containing "$needle" is on screen');
+      }
+    }
+
+    Future<void> expandInspector(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('nav-scanner')));
+      await tester.pumpAndSettle();
+      for (final title in ['Inspection details', 'Requirements', 'Sources']) {
+        await tester.ensureVisible(find.text(title));
+        await tester.tap(find.text(title));
+        await tester.pumpAndSettle();
+      }
+      for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
+        expect(find.byType(type), findsOneWidget);
+      }
+    }
+
+    testWidgets('main windows show no diagnostic detail for an accepted scan', (
+      tester,
+    ) async {
+      final ports = ScanFakePorts();
+      final h = await pumpM1(
+        tester,
+        size: const Size(1660, 2400),
+        scanPorts: ports,
+      );
+      h.services.catalog.snapshot = snapshotOf({scanItemId: 'Can of sprats'});
+      await tester.runAsync(
+        () => publishTargetedScan(
+          h.services.scanner,
+          ports,
+          text: 'CAN OF SPRATS',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(h.services.scanner.lastAccepted, isNotNull);
+      expect(h.services.selection.selectedId, scanItemId);
+
+      final forbidden = [
+        scanItemId,
+        'CAN OF SPRATS',
+        'Marker score',
+        'Margin',
+        'Scan #',
+        ' ms',
+        'Targeted',
+        'records',
+        'Source:',
+      ];
+      await expandInspector(tester);
+      expect(find.text('Can of sprats'), findsWidgets);
+      expectNoText(tester, forbidden);
+
+      await tester.tap(find.byKey(const Key('nav-map')));
+      await tester.pumpAndSettle();
+      expect(find.text('Can of sprats'), findsWidgets);
+      expectNoText(tester, forbidden);
+    });
+
+    testWidgets('main windows show no diagnostic detail beside a correction '
+        'offer', (tester) async {
+      final h = await pumpM1(tester, size: const Size(1660, 2400));
+      h.services.catalog.snapshot = snapshotOf({
+        'ana-a': 'Ana plate alpha',
+        'ana-b': 'Ana plate bravo',
+      });
+      h.services.selection.offerCorrection(
+        const ScanCorrectionOffer(
+          reportId: 7,
+          epoch: ScanEpoch(2, 2),
+          mode: GameMode.pvp,
+          catalogRevision: 'guard-revision',
+          ocrText: 'ANA M1',
+          candidates: [
+            TitleCandidate('ana-a', 1.0),
+            TitleCandidate('ana-b', .974),
+          ],
+          query: 'ANA M1',
+        ),
+      );
+      final forbidden = [
+        '#7',
+        'ambiguous',
+        '1.00',
+        '0.97',
+        'Marker score',
+        ' ms',
+      ];
+      for (final area in ['nav-map', 'nav-scanner']) {
+        await tester.tap(find.byKey(Key(area)));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('correction-offer')), findsOneWidget);
+        expect(find.text('Read: ANA M1'), findsOneWidget);
+        expect(
+          find.byKey(const Key('correction-candidate-ana-a')),
+          findsOneWidget,
+        );
+        expectNoText(tester, forbidden);
+      }
+    });
+
+    testWidgets('catalog error and recording stop note stay on the Scanner', (
+      tester,
+    ) async {
+      final root = Directory.systemTemp.createTempSync('blackgrid-guard-');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final writers = <FakeRecordWriter>[];
+      final recorder = ScanFrameRecorder(
+        root: root.path,
+        writerFactory:
+            ({required folder, required token, required onAnswer}) async {
+              final writer = FakeRecordWriter(token, onAnswer);
+              writers.add(writer);
+              return writer;
+            },
+      );
+      final h = await pumpM1(
+        tester,
+        size: const Size(1660, 2400),
+        scanPorts: ScanFakePorts(),
+        scanFrameRecorder: recorder,
+      );
+      await tester.runAsync(() async {
+        await h.services.scanner.setLiveScan(true);
+        await h.services.scanner.settled;
+        await h.services.scanner.setRecording(true);
+      });
+      expect(recorder.status.value.state, ScanRecordingState.on);
+      recorder.record(recordedScan('failure'));
+      writers.single.fail('failure', 'synthetic disk failure');
+      h.failNetwork = true;
+      await tester.runAsync(h.services.catalog.refresh);
+      final error = h.services.catalog.error;
+      expect(error, isNotNull);
+      await tester.pumpAndSettle();
+
+      await expandInspector(tester);
+      expect(find.byKey(const Key('recording-stop-note')), findsOneWidget);
+      expect(
+        find.textContaining('Recording stopped: synthetic disk failure'),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(SourcePanel),
+          matching: find.text(error!),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the Scanner inspector shows no UTC time', (tester) async {
+      const token = 'PVP_synthetic-fixture-only';
+      tester.view.physicalSize = const Size(1660, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final h = (await tester.runAsync(() async {
+        final result = M1Harness(
+          shapeWire: (wire) {
+            wire['token'] = {
+              'success': true,
+              'permissions': ['GP'],
+              'token': token,
+              'owner': 'synthetic-owner',
+              'note': 'Synthetic',
+              'calls': 0,
+              'gameMode': 'pvp',
+            };
+            wire['progress'] = progressWire();
+          },
+        );
+        result.credentials.values[GameMode.pvp] = token;
+        await result.initialize();
+        await result.services.progress.refresh();
+        await result.services.selection.selectManual(
+          result.services.catalog.snapshot!.items['item-a']!,
+        );
+        return result;
+      }))!;
+      addTearDown(h.dispose);
+      await tester.pumpWidget(BlackgridApp(services: h.services));
+      await tester.pumpAndSettle();
+      // Item data, a price time and Tracker progress are all known.
+      expect(h.services.catalog.snapshot, isNotNull);
+      expect(h.services.selection.item?.quoteAt, isNotNull);
+      expect(h.services.progress.snapshot, isNotNull);
+
+      await expandInspector(tester);
+      final inspector = find.byKey(const Key('shell-inspector'));
+      final isoTime = RegExp(r'\d{4}-\d{2}-\d{2}T[\d:.]+Z');
+      final texts = [
+        for (final w in tester.widgetList<Text>(
+          find.descendant(of: inspector, matching: find.byType(Text)),
+        ))
+          w.data ?? w.textSpan?.toPlainText() ?? '',
+        for (final w in tester.widgetList<RichText>(
+          find.descendant(of: inspector, matching: find.byType(RichText)),
+        ))
+          w.text.toPlainText(),
+      ];
+      expect(texts, isNotEmpty);
+      expect(texts.where(isoTime.hasMatch), isEmpty);
+      expect(find.textContaining('(UTC)'), findsNothing);
+    });
   });
 }

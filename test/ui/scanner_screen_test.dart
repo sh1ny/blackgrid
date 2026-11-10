@@ -3,10 +3,8 @@ import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
-import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/map_screen.dart';
-import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -209,10 +207,6 @@ void main() {
       findsOneWidget,
     );
   });
-  final evidenceDetails = find.descendant(
-    of: find.byType(ScanEvidencePanel),
-    matching: find.text('Details'),
-  );
   Future<M1Harness> pumpWithScan(WidgetTester tester) async {
     final ports = ScanFakePorts();
     final h = await pumpM1(tester, scanPorts: ports);
@@ -229,59 +223,15 @@ void main() {
     return h;
   }
 
-  testWidgets(
-    'scan evidence Details starts collapsed with no score or timing',
-    (tester) async {
-      await pumpWithScan(tester);
+  testWidgets('the Scanner has no Details control', (tester) async {
+    await pumpWithScan(tester);
 
-      expect(evidenceDetails, findsOneWidget);
-      expect(find.byKey(const Key('scan-item')), findsOneWidget);
-      expect(find.byKey(const Key('scan-marker')), findsNothing);
-      expect(find.byKey(const Key('scan-best')), findsNothing);
-      expect(find.byKey(const Key('scan-timing-total')), findsNothing);
-      expect(find.byKey(const Key('scan-timings-label')), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'scan evidence Details stays expanded across the compact breakpoint',
-    (tester) async {
-      await pumpWithScan(tester);
-      await tester.tap(evidenceDetails);
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-
-      tester.view.physicalSize = const Size(900, 1600);
-      await tester.pumpAndSettle();
-      final outer = find
-          .descendant(
-            of: find.byKey(const PageStorageKey('scanner-compact-scroll')),
-            matching: find.byType(Scrollable),
-          )
-          .first;
-      tester.state<ScrollableState>(outer).position.jumpTo(1200);
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-      expect(find.byKey(const Key('scan-timing-total')), findsOneWidget);
-    },
-  );
-
-  testWidgets('a new app starts with Details collapsed', (tester) async {
-    final h = await pumpWithScan(tester);
-    await tester.tap(evidenceDetails);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('scan-marker')), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpWidget(BlackgridApp(services: h.services));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-
-    expect(evidenceDetails, findsOneWidget);
     expect(find.byKey(const Key('scan-item')), findsOneWidget);
+    expect(find.text('Details'), findsNothing);
     expect(find.byKey(const Key('scan-marker')), findsNothing);
+    expect(find.byKey(const Key('scan-best')), findsNothing);
+    expect(find.byKey(const Key('scan-timing-total')), findsNothing);
+    expect(find.byKey(const Key('scan-timings-label')), findsNothing);
   });
 
   testWidgets('retired scan shows the scan-again message', (tester) async {

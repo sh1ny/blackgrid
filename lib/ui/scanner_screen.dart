@@ -11,19 +11,9 @@ const double desktopWindowWidth = 1100;
 ///
 /// Desktop keeps the evidence frame in view and scrolls its content inside.
 /// Compact layouts allow the frame to scroll when text needs more room.
-class ScannerScreen extends StatefulWidget {
+class ScannerScreen extends StatelessWidget {
   const ScannerScreen({super.key, required this.services});
   final AppServices services;
-  @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
-}
-
-class _ScannerScreenState extends State<ScannerScreen> {
-  /// Whether the scan evidence Details section is open. Lives here, above the
-  /// breakpoint switch, so it survives a resize. Never saved.
-  bool _scanDetailsExpanded = false;
-
-  AppServices get services => widget.services;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -36,9 +26,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
             final evidence = ScanEvidencePanel(
               scanner: services.scanner,
               catalog: services.catalog,
-              detailsExpanded: _scanDetailsExpanded,
-              onDetailsExpandedChanged: (value) =>
-                  setState(() => _scanDetailsExpanded = value),
             );
             return SingleChildScrollView(
               key: PageStorageKey(

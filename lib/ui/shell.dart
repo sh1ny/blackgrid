@@ -37,7 +37,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
   final inspectorScope = FocusScopeNode(
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
   );
-  bool sourceDetailsExpanded = false;
   bool inspectionExpanded = false;
   bool requirementsExpanded = false;
   bool sourcesExpanded = false;
@@ -303,14 +302,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                                 SourcePanel(
                                                   services: widget.services,
                                                   fitContent: true,
-                                                  detailsExpanded:
-                                                      sourceDetailsExpanded,
-                                                  onDetailsExpandedChanged:
-                                                      (value) => setState(
-                                                        () =>
-                                                            sourceDetailsExpanded =
-                                                                value,
-                                                      ),
                                                 ),
                                               ],
                                             ),

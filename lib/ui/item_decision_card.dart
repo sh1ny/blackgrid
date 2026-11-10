@@ -69,7 +69,7 @@ class ItemDecisionCard extends StatelessWidget {
             : scan != null
             ? 'Scanned ${_scanAge(selection, scan)} ago'
             : correction != null
-            ? 'Corrected from scan #${correction.reportId} • '
+            ? 'Corrected from a scan • '
                   '${_correctionAge(selection, correction)} ago • '
                   'chosen by hand'
             : 'Chosen by hand',
@@ -473,7 +473,7 @@ class _CorrectionOfferBlockState extends State<CorrectionOfferBlock> {
             children: [
               Expanded(
                 child: Text(
-                  'Scan #${offer.reportId} not accepted — pick the item',
+                  'Last scan not accepted — pick the item',
                   style: TextStyle(
                     color: context.ember.accentText,
                     fontWeight: FontWeight.w600,
@@ -499,10 +499,7 @@ class _CorrectionOfferBlockState extends State<CorrectionOfferBlock> {
                     key: Key('correction-candidate-${c.item.id}'),
                     onPressed: () =>
                         selection.selectCorrection(offer.reportId, c.item.id),
-                    child: Text(
-                      '${_rowLabel(c.item, shared)} • '
-                      '${c.score.toStringAsFixed(2)}',
-                    ),
+                    child: Text(_rowLabel(c.item, shared)),
                   ),
               ],
             ),

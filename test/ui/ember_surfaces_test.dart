@@ -91,20 +91,44 @@ void main() {
     await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
+    expect(find.text('Scan evidence'), findsOneWidget);
     expect(find.text('Manual inspection'), findsNothing);
-    expect(find.text('Recent scans'), findsOneWidget);
-    for (final old in ['LIVE SCAN', 'MANUAL INSPECTION', 'RECENT SCANS']) {
+    expect(find.text('Recent scans'), findsNothing);
+    for (final old in [
+      'SCAN EVIDENCE',
+      'LIVE SCAN',
+      'MANUAL INSPECTION',
+      'RECENT SCANS',
+    ]) {
       expect(find.text(old), findsNothing);
     }
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Live scan'), findsOneWidget);
     expect(find.text('LIVE SCAN'), findsNothing);
+    // Recent scans lives in Diagnostics, which starts collapsed.
+    expect(find.text('Recent scans'), findsNothing);
+    final toggle = find.byKey(const Key('settings-diagnostics-toggle'));
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.text('Recent scans'), findsOneWidget);
+    expect(find.text('RECENT SCANS'), findsNothing);
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('nav-map')));
     await tester.pumpAndSettle();
+    // The map picker shows the map's display name, not shouted.
+    final picker = find.byKey(const Key('map-picker'));
+    expect(picker, findsOneWidget);
+    final pickerLabel = tester
+        .widget<Text>(find.descendant(of: picker, matching: find.byType(Text)))
+        .data!;
+    expect(pickerLabel, isNotEmpty);
+    expect(pickerLabel, isNot(pickerLabel.toUpperCase()));
+    expect(find.text(pickerLabel), findsWidgets);
     final titles = [
       for (final panel in tester.widgetList<GridPanel>(find.byType(GridPanel)))
         panel.title,

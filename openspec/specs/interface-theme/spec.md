@@ -92,8 +92,8 @@ Docked panels SHALL be separated by surface tone and a 1px hairline, with no sha
 - **THEN** each docked panel has the panel surface colour, a 1px hairline border and no elevation or shadow
 
 #### Scenario: Section labels are sentence case
-- **WHEN** the Scanner's live scan, manual inspection and recent scans sections, and the Map's active map panel, are rendered
-- **THEN** their labels read "Live scan", "Manual inspection", "Recent scans" and the map's display name (for example "Customs"), none of them in uppercase
+- **WHEN** the Scanner's scan evidence panel, Settings' Live scan section, the recent scans part of Diagnostics, and the Map's map picker are rendered
+- **THEN** their labels read "Scan evidence", "Live scan", "Recent scans" and the map's display name (for example "Customs"), none of them in uppercase, and the Scanner shows no "Manual inspection" or "Recent scans" label
 
 #### Scenario: The brand lockup keeps its capitals
 - **WHEN** the header is rendered

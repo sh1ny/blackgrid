@@ -33,11 +33,11 @@ A scan published rejected `ambiguous` or `belowSimilarity`, with non-empty OCR t
 - **THEN** no correction offer is made for it
 
 ### Requirement: The offer lists the scan's best candidates
-The offer SHALL list the scan's candidates in the matcher's rank order: up to 5 distinct items, each with its name and similarity, that the live catalog holds and that score at least .40. A candidate with no live catalog item SHALL be left out. The offer SHALL name the scan's id and its OCR text. It SHALL show no recommendation for any candidate.
+The offer SHALL list the scan's candidates in the matcher's rank order: up to 5 distinct items, each with its name, that the live catalog holds and that score at least .40. A candidate with no live catalog item SHALL be left out. The offer SHALL show the scan's OCR text and SHALL NOT show the scan's id or any candidate's similarity. It SHALL show no recommendation for any candidate.
 
 #### Scenario: Close-named variants
 - **WHEN** a scan ends rejected `ambiguous` with candidates ANA M1 (OD Green) at 1.0 and ANA M1 (Black) at 0.974
-- **THEN** the offer lists ANA M1 (OD Green) first and ANA M1 (Black) second, each with its similarity, and shows no recommendation
+- **THEN** the offer lists ANA M1 (OD Green) first and ANA M1 (Black) second, shows neither `1.00` nor `0.97`, and shows no recommendation
 
 #### Scenario: More than five candidates
 - **WHEN** the scan's match ranks seven distinct candidates at or above .40
@@ -50,6 +50,10 @@ The offer SHALL list the scan's candidates in the matcher's rank order: up to 5 
 #### Scenario: Candidate gone from the catalog
 - **WHEN** a scan's second candidate is not in the live catalog when the offer is shown
 - **THEN** the offer lists the other candidates and leaves that one out
+
+#### Scenario: No scan id in the offer
+- **WHEN** scan 7 ends rejected `ambiguous` with OCR text `ANA M1` and an offer is shown
+- **THEN** the offer says the last scan was not accepted and shows `ANA M1`, and no offer text contains `#7`
 
 ### Requirement: The offer searches the catalog from the scan's text
 The offer SHALL include a text field pre-filled with the scan's OCR text. Its results SHALL be the live catalog's items whose ID, name, short name or normalised name, lower-cased, contains every word of the field's normalised text, in ID order, at most 8. Editing the field SHALL NOT change the selection, the decision or the main item search.
@@ -67,15 +71,15 @@ The offer SHALL include a text field pre-filled with the scan's OCR text. Its re
 - **THEN** the offer shows that nothing matched, and the selection is unchanged
 
 ### Requirement: Picking a correction makes it the current selection
-Picking a candidate or a search result from a current offer SHALL make that item the current selection in the live mode, with its decision from the shared engine. It SHALL close an open history view, reset transient FIR to unknown and clear the offer. The card SHALL label the item as corrected from the scan's id and show how long ago it was corrected. A failed history write SHALL leave the correction shown with an error.
+Picking a candidate or a search result from a current offer SHALL make that item the current selection in the live mode, with its decision from the shared engine. It SHALL close an open history view, reset transient FIR to unknown and clear the offer. The card SHALL label the item as corrected from a scan, without the scan's id, and show how long ago it was corrected. A failed history write SHALL leave the correction shown with an error.
 
 #### Scenario: Pick the runner-up
-- **WHEN** an offer lists candidates A and B and the user picks B
-- **THEN** the decision card shows B with the shared engine's decision, labelled as corrected from that scan, and the offer is gone
+- **WHEN** an offer for scan 7 lists candidates A and B and the user picks B
+- **THEN** the decision card shows B with the shared engine's decision, labelled "Corrected from a scan" with no `#7`, and the offer is gone
 
 #### Scenario: Pick from search
 - **WHEN** the user edits the offer's text, and picks search result C
-- **THEN** the decision card shows C labelled as corrected from that scan
+- **THEN** the decision card shows C labelled as corrected from a scan
 
 #### Scenario: FIR from the earlier item
 - **WHEN** item A is shown with FIR set to yes and the user picks candidate A from an offer
@@ -188,11 +192,11 @@ When two or more rows the offer lists, candidates and search results together, h
 
 #### Scenario: Weapon case variants
 - **WHEN** a scan ends rejected `ambiguous` with candidates "Weapon case" (ID ending `4b423c`, flea-listable) at 1.0 and "Weapon case" (ID ending `045d88`, no flea) at .909
-- **THEN** the offer lists "Weapon case · flea · 4b423c" first and "Weapon case · no flea · 045d88" second, each with its similarity, and shows no recommendation
+- **THEN** the offer lists "Weapon case · flea · 4b423c" first and "Weapon case · no flea · 045d88" second, shows neither `1.00` nor `0.91`, and shows no recommendation
 
 #### Scenario: Only one listed same-name item
 - **WHEN** an offer lists "Weapon case" and "Item case", and the other Weapon case variant is not in the live catalog
-- **THEN** both rows show only name and similarity
+- **THEN** both rows show only their names
 
 #### Scenario: Unknown flea status
 - **WHEN** an offer lists two "Weapon case" candidates, one flea-listable and one whose catalog entry does not say whether it can be sold on the flea market

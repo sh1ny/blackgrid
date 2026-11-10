@@ -1,7 +1,7 @@
 # scanner-evidence Specification
 
 ## Purpose
-Shows the user, in the Scanner area, what live scanning is doing and what each scan found: the switch and its status, the current phase including a visible fallback, and per-scan evidence and timings. It never turns scan evidence into keep/sell advice.
+Shows the user, in the Scanner area, what live scanning is doing and what each scan found: the switch and its status, the current phase including a visible fallback, and the latest scan's result in plain words. Scan evidence, stage timings and the recent scans list are in Settings under Diagnostics. It never turns scan evidence into keep/sell advice.
 
 ## Requirements
 
@@ -36,73 +36,50 @@ While a scan runs, Scanner SHALL show its phase in plain words: that it is readi
 - **THEN** Scanner says it is reading the item for the new scan, and shows no evidence from the superseded scan
 
 ### Requirement: Scanner shows the latest scan's evidence
-Scanner SHALL show the evidence of the most recent accepted scan or, before any scan is accepted, of the latest published scan. The open view SHALL show the accepted item's name, or a plain-language rejection or failure reason with the best candidate's name labelled not accepted. A collapsed Details section SHALL hold the end state and winning pass, the marker score, the thresholded title crop, the OCR text, the best and runner-up candidates with their scores and margin, the accepted item's ID, and the rejection or failure code. The evidence SHALL survive switching to Map and back.
+Scanner SHALL show the result of the most recent accepted scan or, before any scan is accepted, of the latest published scan, in plain words: the accepted item's name, or a plain-language rejection or failure reason with the best candidate's name labelled not accepted. Scanner SHALL NOT have a Details section; the scan's codes, scores, title crop, OCR text, candidates and item ID SHALL be shown only in Settings under Diagnostics. The result SHALL survive switching to Map and back.
 
 #### Scenario: Accepted scan
 - **WHEN** a scan is accepted for item ID `5449016a4bdc2d6f028b456f` from the targeted pass
-- **THEN** Scanner shows that item's name in the open view, and Details, once expanded, shows the item ID, `Targeted` as the pass, its marker score, crop and OCR text
+- **THEN** Scanner shows that item's name, and shows no item ID, pass, marker score, title crop or OCR text
 
 #### Scenario: Rejected scan
 - **WHEN** no scan has been accepted and a scan ends rejected `belowSimilarity` with best candidate X at .41
-- **THEN** the open view says the name did not match any item closely enough and shows X labelled not accepted, with no accepted item and no `belowSimilarity`, and Details, once expanded, shows the code `belowSimilarity` and the score .41
+- **THEN** Scanner says the name did not match any item closely enough and shows X labelled not accepted, with no accepted item, no `belowSimilarity` and no `0.41`
 
 #### Scenario: Failed scan
 - **WHEN** no scan has been accepted and a scan ends failed with `visionTimeout`
-- **THEN** the open view says reading the item took too long and shows no candidate, and Details, once expanded, shows the code `visionTimeout`
+- **THEN** Scanner says reading the item took too long and shows no candidate and no `visionTimeout`
+
+#### Scenario: No scan yet
+- **WHEN** no scan has been published
+- **THEN** Scanner says no scan is published yet
 
 #### Scenario: Navigation keeps evidence
 - **WHEN** the user switches from Scanner to Map and back after a scan was published
-- **THEN** Scanner shows the same scan's evidence
+- **THEN** Scanner shows the same scan's result
 
 #### Scenario: Newer accepted scan replaces the shown one
 - **WHEN** scan 1 is accepted for item A and later scan 2 is accepted for item B
-- **THEN** Scanner shows item B's evidence and no longer shows item A's
-
-### Requirement: Scanner shows stage timings and recent scans
-Scanner SHALL show, inside the scan evidence Details section, the latest scan's stage durations in milliseconds from its trigger, and its total. A stage not reached SHALL be shown as absent, not 0. Scanner SHALL list the 10 most recent published scans in the open view, newest first, each with its item's name or a plain-language reason and whether the hotkey started the scan. Each entry's end state code and total time SHALL be inside Details.
-
-#### Scenario: Timings of an accepted scan
-- **WHEN** a scan is accepted with capture ending 40 ms and publication 180 ms after its trigger, and the user expands Details
-- **THEN** Scanner shows 40 ms for the capture stage and 180 ms total
-
-#### Scenario: Timings hidden while collapsed
-- **WHEN** a scan is published and Details is collapsed
-- **THEN** no stage duration and no total is shown
-
-#### Scenario: Early failure
-- **WHEN** a scan fails at targeted capture and the user expands Details
-- **THEN** the vision and matching stages are shown as absent
-
-#### Scenario: Recent list bound
-- **WHEN** an 11th scan is published
-- **THEN** the list shows the 10 newest scans and the oldest is gone
-
-#### Scenario: Recent rejected entry
-- **WHEN** a rejected `noMarker` scan is in the recent list
-- **THEN** its entry gives a plain-language reason and does not contain `noMarker`
-
-#### Scenario: Hotkey scan in the list
-- **WHEN** a scan started by the hotkey and a scan started by a mouse release are published
-- **THEN** the hotkey scan's entry is labelled as a hotkey scan, and the mouse scan's entry carries no such label
+- **THEN** Scanner shows item B's name and no longer shows item A's
 
 ### Requirement: A later unaccepted scan is shown as a note
-When the latest published scan is rejected or failed and an earlier scan was accepted, Scanner SHALL keep showing the accepted scan's evidence and SHALL show, above it, a note that the last scan was not accepted. The note SHALL give that scan's plain-language rejection or failure reason and its best candidate's name labelled not accepted. Its OCR text, marker score and code SHALL be inside the Details section. The stage timings and the recent scans list SHALL still follow the latest published scan.
+When the latest published scan is rejected or failed and an earlier scan was accepted, Scanner SHALL keep showing the accepted scan's result and SHALL show, above it, a note that the last scan was not accepted. The note SHALL give that scan's plain-language rejection or failure reason and its best candidate's name labelled not accepted. Its OCR text, marker score and code SHALL be shown only in Settings under Diagnostics.
 
 #### Scenario: Rejection after an accepted item
 - **WHEN** scan 1 is accepted for item A and scan 2 then ends rejected `belowSimilarity` with OCR text `FILTERBYITEM` and best candidate C
-- **THEN** Scanner still shows item A's evidence, and a note gives the plain reason and C labelled not accepted, and Details, once expanded, shows `belowSimilarity` and `FILTERBYITEM`
+- **THEN** Scanner still shows item A's name, and a note gives the plain reason and C labelled not accepted, and no Scanner text contains `belowSimilarity` or `FILTERBYITEM`
 
 #### Scenario: Crop and timings after a rejection
-- **WHEN** scan 1 is accepted for item A, scan 2 then ends rejected and the user expands Details
-- **THEN** Scanner still shows item A's title crop, and the stage timings shown are scan 2's, labelled with scan 2's id
+- **WHEN** scan 1 is accepted for item A and scan 2 then ends rejected
+- **THEN** Scanner shows no title crop and no stage timing, and Settings' Diagnostics, once expanded, shows item A's title crop and scan 2's timings labelled with scan 2's number
 
 #### Scenario: Failure after an accepted item
 - **WHEN** scan 1 is accepted for item A and scan 2 then fails at targeted capture with `targetNotForeground`
-- **THEN** Scanner still shows item A's evidence, and a note says the game window was not in front, with no candidate and no `targetNotForeground` outside Details
+- **THEN** Scanner still shows item A's name, and a note says the game window was not in front, with no candidate and no `targetNotForeground`
 
 #### Scenario: Accepted again
 - **WHEN** a note is shown for a rejected scan and a newer scan is accepted
-- **THEN** the note is gone and the newer scan's evidence is shown
+- **THEN** the note is gone and the newer scan's name is shown
 
 ### Requirement: Scan evidence panel is visible without scrolling
 On the desktop Scanner layout (window at least 1100 logical pixels wide), the scan evidence panel SHALL lie fully within the window without scrolling the page, at window heights of 720 logical pixels and more. Content that does not fit SHALL scroll inside the panel. On narrower windows the panel SHALL follow the shared answer strip, with scan configuration in Settings.
@@ -112,8 +89,8 @@ On the desktop Scanner layout (window at least 1100 logical pixels wide), the sc
 - **THEN** the scan evidence panel's whole frame is on screen with the page unscrolled
 
 #### Scenario: Short desktop window
-- **WHEN** Scanner is shown in a 1100 by 720 logical pixel window with a long recent scans list
-- **THEN** the panel's frame is still on screen and the list scrolls inside the panel
+- **WHEN** Scanner is shown in a 1100 by 720 logical pixel window with a scan phase, a note and an accepted scan, at a text scale large enough that the panel's content is taller than its frame
+- **THEN** the panel's frame is still on screen with the page unscrolled, and the content scrolls inside the panel
 
 #### Scenario: Narrow window
 - **WHEN** Scanner is shown in a 900 logical pixel wide window
