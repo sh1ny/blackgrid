@@ -81,3 +81,13 @@ Technical choices, migration classification, validation gates, and replacement c
 **One-liner:** A desktop tactical companion for raid-time decisions.
 
 **Key message:** Blackgrid is the product name; the name and application branding must not contain “Tarkov”. Blackgrid uses Ember, the brand kit it shares with Mythspine (`brand/`, applied in [DESIGN.md](DESIGN.md); user decision 2026-11-06): layered near-black surfaces and a warm paper-light theme, one warm accent kept for what the player is touching, Geist for the tool and Literata for item and map names, and verdicts told apart at a glance — no military decoration or visual clutter.
+
+## Decision summary
+
+- close M8.5 2026-11-10: important (source: setting)
+
+| # | Run | Decision | Choice | Rejected | Reason | Important | Chosen by |
+|---|---|---|---|---|---|---|---|
+| R1 | close M8.5 | Where `detect-found-in-raid` goes once M9 is Now | First change of M9 | Its own M8.6 milestone; leave it as a standalone note | The owner decided on 2026-11-10 that it runs before M9's first change | yes | user |
+| R2 | close M8.5 | Is the listed M10 split agreed? | Yes, agreed 2026-11-10 | Decide the split at the M9 close | The three changes were planned with the owner on 2026-10-30 | no | user |
+| R3 | close M8.5 | The owner's follow-up fixes to the Ember interface | `polish-ember-ui` as the last change of M9 | Raise them later as their own change or as issues | The owner listed the first candidates at the close | no | user |
