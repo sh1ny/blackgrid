@@ -2,8 +2,6 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/ui/app.dart';
-import 'package:blackgrid/ui/panels.dart';
-import 'package:blackgrid/ui/scanner_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,6 +16,7 @@ Future<M1Harness> pumpM1(
   ScanFakePorts? scanPorts,
   ScanFrameRecorder? scanFrameRecorder,
   BlackgridDatabase? database,
+  DateTime Function()? clock,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -32,6 +31,7 @@ Future<M1Harness> pumpM1(
       scanPorts: scanPorts,
       scanFrameRecorder: scanFrameRecorder,
       database: database,
+      clock: clock,
     );
     await result.initialize(mode: mode);
     return result;
@@ -40,72 +40,6 @@ Future<M1Harness> pumpM1(
   await tester.pumpWidget(BlackgridApp(services: h.services));
   await tester.pumpAndSettle();
   return h;
-}
-
-/// Opens the shared inspector and brings its named panel into view.
-Future<void> showInspectorPanel(WidgetTester tester, String title) async {
-  if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
-  }
-  final inspector = find.byKey(const Key('shell-inspector'));
-  final scrollable = find
-      .descendant(of: inspector, matching: find.byType(Scrollable))
-      .first;
-  final position = tester.state<ScrollableState>(scrollable).position;
-  final section = switch (title) {
-    'Picked item' ||
-    'Accepted scan' ||
-    'Corrected scan' ||
-    'History inspection' => 'Inspection details',
-    'Requirements & uses' => 'Requirements',
-    'Data sources' => 'Sources',
-    _ => null,
-  };
-  // Scanner sections may be outside the outer list's lazy cache. Scroll its
-  // position directly so the nested history list cannot consume the gesture.
-  if (section != null && find.byType(ScannerScreen).evaluate().isNotEmpty) {
-    position.jumpTo(0);
-    await tester.pumpAndSettle();
-    final heading = find.text(section);
-    for (var step = 0; heading.evaluate().isEmpty && step < 30; step++) {
-      position.jumpTo(
-        (position.pixels + 150).clamp(0, position.maxScrollExtent),
-      );
-      await tester.pump();
-    }
-  }
-  if (section != null && find.text(section).evaluate().isNotEmpty) {
-    final heading = find.text(section);
-    await tester.ensureVisible(heading);
-    await tester.pumpAndSettle();
-    final panel = find.byWidgetPredicate(
-      (w) => w is GridPanel && w.title == title,
-    );
-    if (panel.evaluate().isEmpty) {
-      await tester.tap(heading);
-      await tester.pumpAndSettle();
-    }
-    await tester.ensureVisible(panel);
-    await tester.pumpAndSettle();
-    return;
-  }
-  final targetOffset = switch (title) {
-    'Data sources' => 850.0,
-    'Recent item activity' =>
-      find.byType(ScannerScreen).evaluate().isNotEmpty
-          ? 0.0
-          : position.maxScrollExtent,
-    _ => 0.0,
-  };
-  position.jumpTo(targetOffset.clamp(0, position.maxScrollExtent));
-  await tester.pumpAndSettle();
-  final panel = find.byWidgetPredicate(
-    (w) => w is GridPanel && w.title == title,
-  );
-  expect(panel, findsOneWidget);
-  await tester.ensureVisible(panel);
-  await tester.pumpAndSettle();
 }
 
 Future<void> tapM1Async(

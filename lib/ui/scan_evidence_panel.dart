@@ -8,7 +8,7 @@ import '../application/scan_coordinator.dart';
 import '../data/vision/inspection_evidence.dart';
 import '../domain/title_matching.dart';
 import 'labels.dart';
-import 'panels.dart';
+import 'scanner_sections.dart';
 
 /// The scan evidence for debugging, always expanded: the shown scan's end
 /// state, pass, marker score, title crop, OCR text, candidates, item ID and
@@ -150,17 +150,20 @@ class _ScanDiagnosticsState extends State<ScanDiagnostics> {
   );
 }
 
-/// What the last accepted scan found (the latest published scan before any is
-/// accepted), a note for a later scan that was not accepted, and the phase of
-/// the scan in flight, in plain words.
+/// The subtitle of the scan evidence on every surface that shows it.
+const String scanEvidenceSubtitle =
+    'Latest scan · shows what was read, never a keep/sell call';
+
+/// The phase of the scan in flight, the accepted or latest scan's summary and
+/// the note for a later scan that was not accepted, with no frame around them.
 ///
 /// It shows no item ID, pass, score, title crop, OCR text, code or timing;
 /// [ScanDiagnostics] keeps those. It only shows evidence. It never selects an
-/// item or reads a decision, so a scan cannot change what the decision card
-/// shows.
-class ScanEvidencePanel extends StatelessWidget {
-  /// Creates the panel over [scanner]; [catalog] supplies item names.
-  const ScanEvidencePanel({
+/// item or reads a decision, so a scan cannot change what the answer strip
+/// shows. It sizes itself to its content and does not scroll.
+class ScanEvidenceBody extends StatelessWidget {
+  /// Creates the body over [scanner]; [catalog] supplies item names.
+  const ScanEvidenceBody({
     super.key,
     required this.scanner,
     required this.catalog,
@@ -173,30 +176,25 @@ class ScanEvidencePanel extends StatelessWidget {
   final CatalogController catalog;
 
   @override
-  Widget build(BuildContext context) => GridPanel(
-    title: 'Scan evidence',
-    icon: Icons.fact_check_outlined,
-    subtitle: 'Latest scan · shows what was read, never a keep/sell call',
-    child: ListenableBuilder(
-      listenable: Listenable.merge([scanner, catalog]),
-      builder: (context, _) {
-        final latest = scanner.latest;
-        final shown = _shown(scanner);
-        return ListView(
-          key: const PageStorageKey('scan-evidence-scroll'),
-          children: [
-            ..._phase(scanner.phase),
-            if (shown == null)
-              const Text('No scan published yet')
-            else ...[
-              if (latest != null && latest.id != shown.id)
-                ..._note(context, latest),
-              ..._summary(shown),
-            ],
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([scanner, catalog]),
+    builder: (context, _) {
+      final latest = scanner.latest;
+      final shown = _shown(scanner);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ..._phase(scanner.phase),
+          if (shown == null)
+            const Text('No scan published yet')
+          else ...[
+            if (latest != null && latest.id != shown.id)
+              ..._note(context, latest),
+            ..._summary(shown),
           ],
-        );
-      },
-    ),
+        ],
+      );
+    },
   );
 
   List<Widget> _phase(ScanPhase phase) => switch (phase) {
@@ -266,6 +264,31 @@ class ScanEvidencePanel extends StatelessWidget {
       };
 
   String _itemName(String id) => _itemNameIn(catalog, id);
+}
+
+/// The scan evidence as a flat section of the Scanner's main column.
+///
+/// It scrolls with the column and has no frame or scroll view of its own.
+class ScanEvidenceSection extends StatelessWidget {
+  /// Creates the section over [scanner]; [catalog] supplies item names.
+  const ScanEvidenceSection({
+    super.key,
+    required this.scanner,
+    required this.catalog,
+  });
+
+  /// The coordinator whose phase, last accepted and latest scans are shown.
+  final ScanCoordinator scanner;
+
+  /// The catalog the item names come from.
+  final CatalogController catalog;
+
+  @override
+  Widget build(BuildContext context) => ScannerSection(
+    title: 'Scan evidence',
+    subtitle: scanEvidenceSubtitle,
+    child: ScanEvidenceBody(scanner: scanner, catalog: catalog),
+  );
 }
 
 /// The report whose evidence the panel shows: the last accepted scan, else

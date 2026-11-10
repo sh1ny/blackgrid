@@ -34,7 +34,7 @@ class DecisionEngine {
       open.add(OpenInput.trackerProgress);
     }
     if (context.fir == FirState.unknown) {
-      warnings.add('Found in raid unknown for this item');
+      warnings.add(foundInRaidUnknownWarning);
       open.add(OpenInput.foundInRaid);
     }
     final requirements =

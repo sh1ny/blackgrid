@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import '../application/app_services.dart';
-import '../application/catalog_controller.dart';
-import '../application/progress_controller.dart';
 import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../domain/settings.dart';
+import 'age_tick.dart';
 import 'item_icon.dart';
 import 'labels.dart';
 import 'requirement_rows.dart';
 import 'panels.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 import 'verdict_plate.dart' show DashedBorderPainter;
 
@@ -168,6 +169,56 @@ class _RequirementPanelState extends State<RequirementPanel> {
   }
 }
 
+/// The requirement rows of one inspected item, sized to their content.
+///
+/// Task and hideout rows come first. Craft and barter rows follow under an
+/// `Optional uses` header that stays collapsed until [expansion] opens it. The
+/// list does not scroll; the surface that holds it does.
+class RequirementList extends StatelessWidget {
+  /// Creates the list of [reasons], resolving names through [catalog].
+  const RequirementList({
+    super.key,
+    required this.reasons,
+    required this.catalog,
+    required this.expansion,
+  });
+
+  /// The item's needs, in catalog order.
+  final List<NeedReason> reasons;
+
+  /// The catalog that names items and traders, or `null` when none is loaded.
+  final CatalogSnapshot? catalog;
+
+  /// The optional-uses expansion state.
+  final RequirementExpansion expansion;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: expansion,
+    builder: (context, _) {
+      final arranged = arrangeRequirementRows(reasons);
+      final optional = arranged.optionalUses;
+      final open = expansion.open;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final need in arranged.obligations)
+            _RequirementRow(requirementRow(need, catalog)),
+          if (optional.isNotEmpty)
+            _OptionalHeader(
+              count: optional.length,
+              open: open,
+              onTap: () => expansion.setOpen(!open),
+            ),
+          if (open)
+            for (final need in optional)
+              _RequirementRow(requirementRow(need, catalog)),
+        ],
+      );
+    },
+  );
+}
+
 class _OptionalHeader extends StatelessWidget {
   const _OptionalHeader({
     required this.count,
@@ -203,6 +254,7 @@ class _OptionalHeader extends StatelessWidget {
   );
 }
 
+/// One dense requirement row: flat, with a hairline under it.
 class _RequirementRow extends StatelessWidget {
   const _RequirementRow(this.row);
 
@@ -210,148 +262,29 @@ class _RequirementRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final small = Theme.of(context).textTheme.bodySmall;
+    final ember = context.ember;
+    final small = EmberType.label.copyWith(color: ember.inkSecondary);
     final facts = [?row.needs, ?row.remaining].join(' • ');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 7),
-      padding: const EdgeInsets.all(10),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.ember.raised,
-        border: Border.all(color: context.ember.hairline),
-        borderRadius: BorderRadius.circular(3),
+        border: Border(bottom: BorderSide(color: ember.hairline)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(row.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Text(
-            '${row.kindTag} • ${row.stateLabel}',
-            style: TextStyle(color: context.ember.inkSecondary),
-          ),
-          if (row.sourceLine case final line?) Text(line, style: small),
-          if (facts.isNotEmpty) Text(facts, style: small),
-          if (row.reason case final reason?) Text(reason, style: small),
-          if (row.foundInRaidLine case final fir?) Text(fir, style: small),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: EmberSpace.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(row.title, style: EmberType.uiHeading),
+            Text('${row.kindTag} • ${row.stateLabel}', style: small),
+            if (row.sourceLine case final line?) Text(line, style: small),
+            if (facts.isNotEmpty) Text(facts, style: small),
+            if (row.reason case final reason?) Text(reason, style: small),
+            if (row.foundInRaidLine case final fir?) Text(fir, style: small),
+          ],
+        ),
       ),
     );
   }
-}
-
-/// Where the item data, prices and tracker progress come from, and how old
-/// each is.
-///
-/// It says what a player needs. The source URL, UTC times, record counts,
-/// freshness limits and cooldown end time are in [DataSourceDiagnostics].
-class SourcePanel extends StatelessWidget {
-  /// Creates the panel over [services].
-  const SourcePanel({
-    super.key,
-    required this.services,
-    this.fitContent = false,
-  });
-
-  /// Sizes the panel to its contents within a scrolling inspector.
-  final bool fitContent;
-
-  /// The services whose data sources the panel describes.
-  final AppServices services;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([
-      services.catalog,
-      services.progress,
-      services.selection,
-    ]),
-    builder: (context, _) {
-      final selection = services.selection;
-      final snapshot = selection.inspectionCatalog;
-      final inspectionMode = selection.inspectionMode;
-      final usesLive =
-          !selection.isHistory || inspectionMode == services.catalog.mode;
-      final catalogStatus = usesLive
-          ? services.catalog.status
-          : selection.loadingHistory
-          ? CatalogStatus.loading
-          : snapshot == null
-          ? CatalogStatus.missing
-          : CatalogStatus.stale;
-      final progress = services.progress;
-      final quote = selection.item?.quoteAt;
-      final now = DateTime.now();
-      final small = Theme.of(context).textTheme.bodySmall;
-      final progressSnapshot = progress.snapshot;
-      return GridPanel(
-        fitContent: fitContent,
-        title: 'Data sources',
-        icon: Icons.description_outlined,
-        subtitle: 'How old the data on screen is',
-        child: ListView(
-          shrinkWrap: fitContent,
-          physics: fitContent ? const NeverScrollableScrollPhysics() : null,
-          children: [
-            Text(
-              snapshot == null
-                  ? 'Item data: ${catalogStatusLabel(catalogStatus)}'
-                  : 'Item data: ${catalogStatusLabel(catalogStatus)}'
-                        ' · updated '
-                        '${localTimeLabel(snapshot.observedAt, now: now)}',
-            ),
-            if (services.catalog.error case final error?)
-              Text(error, style: TextStyle(color: context.ember.errInk)),
-            Text('Game mode: ${modeLabel(inspectionMode)}', style: small),
-            if (snapshot != null)
-              ...snapshot.localizationErrors.map(
-                (e) => Text(
-                  'Some item names could not be loaded: $e',
-                  style: TextStyle(color: context.ember.errInk),
-                ),
-              ),
-            const SizedBox(height: 10),
-            Text(
-              quote == null
-                  ? 'Prices: price time unknown'
-                  : 'Prices: ${localTimeLabel(quote, now: now)}',
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Tracker progress: ${progressStatusLabel(progress.status)}'
-              ' · ${modeLabel(progress.mode)}',
-            ),
-            Text(
-              progressSnapshot == null
-                  ? 'No tracker progress yet. Anything missing stays unknown.'
-                  : 'Progress updated '
-                        '${localTimeLabel(progressSnapshot.observedAt, now: now)}'
-                        ' (this session only)',
-              style: small,
-            ),
-            if (progress.status == ProgressStatus.cooldown)
-              Text(
-                'Progress refresh is cooling down. Try again shortly.',
-                style: small,
-              ),
-            if (progress.error case final error?)
-              Text(
-                'Tracker problem: $error',
-                style: TextStyle(color: context.ember.errInk),
-              ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed:
-                  progress.hasCredential &&
-                      services.settings.settings.trackerEnabled
-                  ? progress.refresh
-                  : null,
-              icon: const Icon(Icons.sync, size: 18),
-              label: const Text('Refresh read-only progress'),
-            ),
-          ],
-        ),
-      );
-    },
-  );
 }
 
 /// The technical detail behind the item data, prices and tracker progress.
@@ -359,7 +292,7 @@ class SourcePanel extends StatelessWidget {
 /// It describes the item data behind the inspected item: for a history item
 /// from another game mode, that mode's saved item data, otherwise the live
 /// catalog. It shows the source, UTC times, record counts, the cooldown end
-/// time and the age limits that [SourcePanel] leaves out. It ends with the map
+/// time and the age limits that the Settings page leaves out. It ends with the map
 /// data: the mode selected for it, the mode whose data the map uses, its source
 /// and the time of its last check.
 class DataSourceDiagnostics extends StatelessWidget {
@@ -445,10 +378,22 @@ class DataSourceDiagnostics extends StatelessWidget {
 /// The items the player picked or scanned, newest first.
 class HistoryPanel extends StatelessWidget {
   /// Creates the panel over [services].
-  const HistoryPanel({super.key, required this.services});
+  const HistoryPanel({
+    super.key,
+    required this.services,
+    this.clock,
+    this.period = const Duration(seconds: 5),
+  });
 
   /// The services whose activity history the panel lists.
   final AppServices services;
+
+  /// The source of the current time for row ages, or `null` for the selection
+  /// controller's clock.
+  final DateTime Function()? clock;
+
+  /// How often the row ages are refreshed.
+  final Duration period;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -457,135 +402,190 @@ class HistoryPanel extends StatelessWidget {
       services.catalog,
       services.selection,
     ]),
-    builder: (context, _) => GridPanel(
-      title: 'Recent item activity',
-      icon: Icons.history,
-      subtitle: 'Items you picked or scanned',
-      child: services.history.rows.isEmpty
-          ? Center(child: Text(services.history.error ?? 'No items yet.'))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (services.history.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      services.history.error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+    builder: (context, _) {
+      final ember = context.ember;
+      final rows = services.history.rows;
+      final error = services.history.error;
+      return CustomScrollView(
+        key: const PageStorageKey('history-scroll'),
+        // Rows past the edge would otherwise request their icons.
+        scrollCacheExtent: const ScrollCacheExtent.pixels(0),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                EmberSpace.md,
+                EmberSpace.md,
+                EmberSpace.md,
+                EmberSpace.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Recent items',
+                    style: EmberType.uiHeading.copyWith(color: ember.ink),
+                  ),
+                  Text(
+                    'Items you picked or scanned',
+                    style: EmberType.label.copyWith(color: ember.inkSecondary),
+                  ),
+                  if (error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: EmberSpace.sm),
+                      child: Text(
+                        error,
+                        style: EmberType.body.copyWith(color: ember.errInk),
                       ),
                     ),
-                  ),
-                Expanded(
-                  child: ListView.builder(
-                    key: const PageStorageKey('history-scroll'),
-                    // Rows past the edge would otherwise request their icons.
-                    scrollCacheExtent: const ScrollCacheExtent.pixels(0),
-                    itemCount: services.history.rows.length,
-                    itemBuilder: (context, index) {
-                      final row = services.history.rows[index];
-                      // Only the current catalog may name an item or supply its
-                      // icon; a row from another mode gets neither.
-                      final item = services.catalog.mode == row.mode
-                          ? services.catalog.snapshot?.items[row.itemId]
-                          : null;
-                      final name = item?.name;
-                      final selected =
-                          services.selection.historyRow?.key == row.key;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Material(
-                          color: context.ember.raised,
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              color: selected
-                                  ? context.ember.accentText
-                                  : context.ember.hairline,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight:
-                                  38 *
-                                  MediaQuery.textScalerOf(context).scale(1),
-                              maxHeight:
-                                  MediaQuery.textScalerOf(context).scale(1) <= 1
-                                  ? 38
-                                  : double.infinity,
-                            ),
-                            child: ListTile(
-                              dense: true,
-                              minTileHeight: 38,
-                              minVerticalPadding: 0,
-                              minLeadingWidth: 30,
-                              horizontalTitleGap: 8,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _RecordedVerdict(row.verdict),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    localTimeLabel(
-                                      row.observedAt,
-                                      now: DateTime.now(),
-                                    ),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall,
-                                  ),
-                                ],
-                              ),
-                              leading: item == null
-                                  ? Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        color: context.ember.raised,
-                                        border: Border.all(
-                                          color: context.ember.hairlineStrong,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Icon(
-                                        Icons.inventory_2_outlined,
-                                        size: 18,
-                                        color: context.ember.inkSecondary,
-                                      ),
-                                    )
-                                  : ItemIcon(
-                                      key: ValueKey(item.id),
-                                      cache: services.itemIcons,
-                                      itemId: item.id,
-                                      iconLink: item.iconLink,
-                                      size: 30,
-                                      color: context.ember.inkSecondary,
-                                    ),
-                              title: Text(
-                                name ?? row.itemId,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              onTap: () => services.selection.openHistory(row),
-                            ),
-                          ),
+                  if (rows.isEmpty && error == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: EmberSpace.sm),
+                      child: Text(
+                        'No items yet.',
+                        style: EmberType.body.copyWith(
+                          color: ember.inkSecondary,
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (rows.isNotEmpty)
+            // One tick for the whole list keeps every row's age moving on.
+            AgeTick(
+              clock: clock ?? services.selection.clock,
+              period: period,
+              builder: (context, now) => SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  EmberSpace.md,
+                  0,
+                  EmberSpace.md,
+                  EmberSpace.md,
+                ),
+                sliver: SliverList.builder(
+                  itemCount: rows.length,
+                  itemBuilder: (context, index) =>
+                      _historyRow(context, rows[index], now),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
+
+  /// One X14 row: picture, name, tags, recorded-verdict dot and age.
+  Widget _historyRow(BuildContext context, ItemActivity row, DateTime now) {
+    // Only the current catalog may name an item or supply its icon; a row from
+    // another mode gets neither.
+    final sameMode = services.catalog.mode == row.mode;
+    final item = sameMode ? services.catalog.snapshot?.items[row.itemId] : null;
+    final selected = services.selection.historyRow?.key == row.key;
+    final ember = context.ember;
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: ember.raised,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: selected ? ember.accentText : ember.hairline),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: 38 * scale,
+            maxHeight: scale <= 1 ? 38 : double.infinity,
+          ),
+          child: ListTile(
+            dense: true,
+            minTileHeight: 38,
+            minVerticalPadding: 0,
+            minLeadingWidth: 30,
+            horizontalTitleGap: 8,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            visualDensity: VisualDensity.compact,
+            leading: item == null
+                ? Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: ember.raised,
+                      border: Border.all(color: ember.hairlineStrong),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      size: 18,
+                      color: ember.inkSecondary,
+                    ),
+                  )
+                : ItemIcon(
+                    key: ValueKey(item.id),
+                    cache: services.itemIcons,
+                    itemId: item.id,
+                    iconLink: item.iconLink,
+                    size: 30,
+                    color: ember.inkSecondary,
                   ),
+            title: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    item?.name ?? row.itemId,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (!sameMode) _RowTag(modeLabel(row.mode)),
+                if (row.source == ActivitySource.importedScan)
+                  _RowTag(activitySourceLabel(row.source)),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _RecordedVerdict(row.verdict),
+                const SizedBox(width: 8),
+                Text(
+                  relativeAgeLabel(row.observedAt, now),
+                  style: EmberType.label.copyWith(color: ember.inkTertiary),
                 ),
               ],
             ),
+            onTap: () => services.selection.openHistory(row),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A Label-type tag on a history row, such as the mode of another game mode.
+class _RowTag extends StatelessWidget {
+  const _RowTag(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Flexible(
+    child: Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: context.ember.hairlineStrong),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: EmberType.label.copyWith(color: context.ember.inkTertiary),
+          ),
+        ),
+      ),
     ),
   );
 }

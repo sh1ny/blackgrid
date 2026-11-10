@@ -1,13 +1,13 @@
-import 'package:blackgrid/ui/item_decision_card.dart';
+import 'package:blackgrid/domain/inspection_context.dart' show FirState;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
 
-/// Every string the decision card shows, joined for substring checks.
-String _cardText(WidgetTester tester) {
+/// Every string the answer strip shows, joined for substring checks.
+String _stripText(WidgetTester tester) {
   final texts = find.descendant(
-    of: find.byType(ItemDecisionCard),
+    of: find.byKey(const Key('answer-strip')),
     matching: find.byType(Text),
   );
   return [
@@ -28,10 +28,24 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Picked item');
 
-    final text = _cardText(tester);
-    expect(text, contains('Found in raid: unknown'));
+    final text = _stripText(tester);
+    // The strip names the question in words and marks the answer Unknown.
+    expect(text, contains('Found in raid'));
+    final choice = tester.widget<SegmentedButton<FirState>>(
+      find.descendant(
+        of: find.byKey(const Key('answer-strip')),
+        matching: find.byType(SegmentedButton<FirState>),
+      ),
+    );
+    expect(choice.selected, {FirState.unknown});
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('answer-strip')),
+        matching: find.text('Unknown'),
+      ),
+      findsOneWidget,
+    );
     for (final banned in [
       'FIR: unknown',
       'gross RUB',

@@ -1,4 +1,5 @@
 import 'decision.dart';
+import 'need_title.dart';
 import 'roubles.dart';
 
 /// The one-line, plain-language reason shown below a verdict.
@@ -41,7 +42,7 @@ String _check(ItemDecision decision) {
     return switch (input) {
       OpenInput.itemData => 'Item data missing or out of date',
       OpenInput.trackerProgress => 'Tracker progress missing or out of date',
-      OpenInput.foundInRaid => 'Found in raid unknown for this item',
+      OpenInput.foundInRaid => _foundInRaid(decision),
       OpenInput.unresolvedNeed => _unresolved(decision),
       OpenInput.fleaEligibility => 'Not known if it can be sold on the Flea',
       OpenInput.priceTimeStale => 'Flea price is over an hour old',
@@ -49,6 +50,16 @@ String _check(ItemDecision decision) {
     };
   }
   return 'Some of what is needed to decide is not known yet';
+}
+
+String _foundInRaid(ItemDecision decision) {
+  for (final r in decision.reasons) {
+    if (r.requirement.foundInRaid == true && r.state == NeedState.unresolved) {
+      return 'Found in raid unknown: ${needTitle(r.requirement)} '
+          'needs it found in raid';
+    }
+  }
+  return 'Found in raid unknown for this item';
 }
 
 String _unresolved(ItemDecision decision) {

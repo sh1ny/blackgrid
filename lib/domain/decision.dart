@@ -38,6 +38,9 @@ enum OpenInput {
   priceTimeUnknown,
 }
 
+/// The warning the engine adds when found in raid is unknown for the item.
+const String foundInRaidUnknownWarning = 'Found in raid unknown for this item';
+
 class NeedReason {
   const NeedReason({
     required this.requirement,

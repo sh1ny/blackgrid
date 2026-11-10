@@ -443,10 +443,17 @@ class _SettingsPageState extends State<SettingsPage> {
       LiveMapDataState(:final checkedAt?) =>
         'Checked ${checkedTimeLabel(checkedAt, now: DateTime.now())}.',
     };
+    final problems = [
+      ?catalog.error,
+      for (final failure in catalog.snapshot?.localizationErrors ?? const [])
+        'Some item names could not be loaded: $failure',
+    ];
+    final itemDataMessage = problems.isEmpty ? null : problems.join('\n');
     return [
       SettingsRow(
         name: 'Item data',
         explanation: _sentence(catalogStatusLabel(catalog.status)),
+        message: itemDataMessage,
         trailing: OutlinedButton(
           onPressed: known && !catalog.loading ? catalog.refresh : null,
           child: const Text('Refresh item data'),
@@ -552,12 +559,20 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       Padding(
         padding: const EdgeInsets.only(top: EmberSpace.md),
-        child: Text(
-          _tokenMessage ??
-              progress.error ??
-              'Progress: ${progressStatusLabel(progress.status)}',
-          style: EmberType.label.copyWith(color: context.ember.inkTertiary),
-        ),
+        child: () {
+          final error = _tokenMessage == null ? progress.error : null;
+          return Text(
+            _tokenMessage ??
+                (error == null
+                    ? 'Progress: ${progressStatusLabel(progress.status)}'
+                    : 'Tracker problem: $error'),
+            style: EmberType.label.copyWith(
+              color: error == null
+                  ? context.ember.inkTertiary
+                  : context.ember.errInk,
+            ),
+          );
+        }(),
       ),
       Padding(
         padding: const EdgeInsets.only(top: EmberSpace.sm),

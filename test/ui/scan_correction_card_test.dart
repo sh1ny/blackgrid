@@ -3,7 +3,6 @@ import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/title_matching.dart';
-import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -97,12 +96,6 @@ Future<M1Harness> _arrange(
   return h;
 }
 
-GridPanel _panel(WidgetTester tester) => tester.widget<GridPanel>(
-  find.byWidgetPredicate(
-    (w) => w is GridPanel && w.icon == Icons.center_focus_strong,
-  ),
-);
-
 Finder _answerText(String text) => find.descendant(
   of: find.byKey(const Key('answer-strip')),
   matching: find.text(text),
@@ -188,7 +181,10 @@ void main() {
     expect(h.services.selection.correction?.reportId, 7);
     expect(h.services.selection.scan, isNull);
     expect(find.byKey(const Key('correction-offer')), findsNothing);
-    expect(_answerText('Corrected scan'), findsOneWidget);
+    expect(
+      _answerText('Corrected from a scan · just now · chosen by hand'),
+      findsOneWidget,
+    );
     expect(_answerText('Bravo plate'), findsOneWidget);
   });
 
@@ -223,14 +219,14 @@ void main() {
       () => h.services.selection.selectCorrection(7, 'bravo'),
     );
     await tester.pumpAndSettle();
-    // Item details live on Scanner; the Map inspector holds the working lists.
+    // The answer strip says where the item came from, on either area.
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Corrected scan');
-    final panel = _panel(tester);
-    expect(panel.title, 'Corrected scan');
-    expect(panel.subtitle, 'Corrected from a scan • 0 s ago • chosen by hand');
-    expect(panel.subtitle, isNot(contains('#7')));
+    expect(
+      _answerText('Corrected from a scan · just now · chosen by hand'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('#7'), findsNothing);
   });
 
   testWidgets('a search pick is labelled corrected from a scan', (
@@ -251,10 +247,9 @@ void main() {
     expect(h.services.selection.correction?.reportId, 7);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Corrected scan');
     expect(
-      _panel(tester).subtitle,
-      'Corrected from a scan • 0 s ago • chosen by hand',
+      _answerText('Corrected from a scan · just now · chosen by hand'),
+      findsOneWidget,
     );
   });
 
@@ -265,11 +260,9 @@ void main() {
     expect(find.byKey(const Key('correction-offer')), findsNothing);
     expect(h.services.selection.correctionOffer, isNull);
     expect(_answerText('Alpha shown'), findsOneWidget);
-    // Item details live on Scanner; the Map inspector holds the working lists.
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Picked item');
-    expect(_panel(tester).title, 'Picked item');
+    expect(_answerText('Chosen by hand'), findsOneWidget);
   });
 
   testWidgets('the offer shows in place of the hint when nothing is selected', (
@@ -447,7 +440,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(h.services.selection.selectedId, noFlea);
       expect(h.services.selection.correction?.reportId, 7);
-      expect(_answerText('Corrected scan'), findsOneWidget);
+      expect(
+        _answerText('Corrected from a scan · just now · chosen by hand'),
+        findsOneWidget,
+      );
       expect(_answerText('Weapon case'), findsOneWidget);
     });
   });

@@ -3,6 +3,7 @@ library;
 
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../domain/need_title.dart';
 
 /// One requirement row, ready to show; every field is final display text.
 class RequirementRowView {
@@ -148,8 +149,7 @@ String _title(ItemRequirement r, CatalogSnapshot? catalog) {
     case RequirementKind.task:
       return r.sourceName;
     case RequirementKind.hideout:
-      final level = r.stationLevel;
-      return level == null ? r.sourceName : '${r.sourceName} level $level';
+      return needTitle(r);
     case RequirementKind.craft:
     case RequirementKind.barter:
       final product = r.productItemId;

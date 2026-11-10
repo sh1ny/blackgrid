@@ -1,23 +1,11 @@
-import 'dart:convert';
-
-import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
-import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/ui/ember/blackgrid_tokens.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
-import 'package:blackgrid/ui/item_decision_card.dart';
 import 'package:blackgrid/ui/labels.dart' show recommendationLabel;
 import 'package:blackgrid/ui/verdict_plate.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-
-import '../fixtures/m1/catalog/fixture.dart';
-import '../support/m1_harness.dart';
-import '../support/map_widget_harness.dart';
 
 const _rooms = [Brightness.dark, Brightness.light];
 
@@ -235,86 +223,5 @@ void main() {
         );
       }
     }
-  });
-
-  testWidgets('long reason wraps in the compact inspector card at 960 px', (
-    tester,
-  ) async {
-    const token = 'PVP_synthetic-fixture-only';
-    final source = 'Long task name ' * 5; // 75 characters
-    final longName = '${source}end'.padRight(80, 'x'); // 80 characters
-    expect(longName.length, 80);
-    final wire = wireFixture();
-    wire['tasks_en'] = {
-      'data': {'task-a name': longName},
-    };
-    wire['token'] = {
-      'success': true,
-      'permissions': ['GP'],
-      'token': token,
-      'owner': 'synthetic-owner',
-      'note': 'Synthetic',
-      'calls': 0,
-      'gameMode': 'pvp',
-    };
-    wire['progress'] = progressWire();
-    final credentials = MemoryCredentials()..values[GameMode.pvp] = token;
-    final h = await pumpMapFixture(
-      tester,
-      size: const Size(960, 900),
-      credentials: credentials,
-      client: MockClient((request) async {
-        final value = wire[request.url.pathSegments.last];
-        return http.Response(
-          jsonEncode(value ?? {}),
-          value == null ? 404 : 200,
-        );
-      }),
-    );
-    await tester.runAsync(() async {
-      await h.services.progress.refresh();
-      await h.services.selection.selectManual(
-        h.services.catalog.snapshot!.items['item-a']!,
-      );
-    });
-    h.services.selection.setFir(FirState.yes);
-    await tester.pumpAndSettle();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Align(
-            alignment: Alignment.topRight,
-            child: SizedBox(
-              width: 352,
-              height: 600,
-              child: ItemDecisionCard(services: h.services, compact: true),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final card = find.byType(ItemDecisionCard);
-    expect(card, findsOneWidget);
-    expect(tester.widget<ItemDecisionCard>(card).compact, isTrue);
-    final reason = find.byKey(const Key('verdict-reason'));
-    await tester.ensureVisible(reason);
-    await tester.pumpAndSettle();
-    final text = tester.widget<Text>(reason);
-    expect(text.data, contains(longName));
-    expect(text.maxLines, isNull);
-    expect(text.overflow, isNot(TextOverflow.ellipsis));
-    expect(text.softWrap, isNot(false));
-    final paragraph = tester.renderObject<RenderParagraph>(reason);
-    expect(paragraph.didExceedMaxLines, isFalse);
-    final lines = paragraph
-        .getBoxesForSelection(
-          TextSelection(baseOffset: 0, extentOffset: text.data!.length),
-        )
-        .map((box) => box.top.round())
-        .toSet();
-    expect(lines.length, greaterThanOrEqualTo(2), reason: 'wraps');
-    expect(tester.takeException(), isNull);
   });
 }

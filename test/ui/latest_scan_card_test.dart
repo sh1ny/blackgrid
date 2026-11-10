@@ -2,6 +2,7 @@ import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,11 +46,10 @@ Future<void> _acceptB(
 Future<void> _openHistoryA(WidgetTester tester, M1Harness h) async {
   await tester.tap(find.byKey(const Key('nav-scanner')));
   await tester.pumpAndSettle();
-  await showInspectorPanel(tester, 'Recent item activity');
   await tapM1Async(
     tester,
     find.descendant(
-      of: _card('Recent item activity'),
+      of: find.byType(HistoryPanel),
       matching: find.widgetWithText(ListTile, 'Synthetic component'),
     ),
     () =>
@@ -83,12 +83,6 @@ void main() {
       expect(selection.isHistory, isTrue);
       await tester.tap(find.byKey(Key(screen)));
       await tester.pumpAndSettle();
-      // Only Scanner's inspector carries the item cards.
-      final onScanner = screen == 'nav-scanner';
-      if (onScanner) {
-        await showInspectorPanel(tester, 'History inspection');
-        expect(_card('History inspection'), findsOneWidget);
-      }
       expect(_backInStrip, findsOneWidget);
 
       await tester.tap(_backInStrip);
@@ -97,10 +91,6 @@ void main() {
       expect(selection.isHistory, isFalse);
       expect(selection.selectedId, 'item-b');
       expect(selection.scan?.acceptedAt, acceptedAt);
-      if (onScanner) {
-        expect(_card('Accepted scan'), findsOneWidget);
-        expect(_card('History inspection'), findsNothing);
-      }
       expect(_backInStrip, findsNothing);
       expect(h.services.scans.latest?.itemId, 'item-b');
     }
@@ -114,10 +104,9 @@ void main() {
     await _acceptB(tester, h.services, ports);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Accepted scan');
 
     expect(h.services.selection.scan?.itemId, 'item-b');
-    expect(_card('Accepted scan'), findsOneWidget);
+    expect(find.byKey(const Key('answer-provenance')), findsOneWidget);
     expect(_backInStrip, findsNothing);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
@@ -173,7 +162,10 @@ void main() {
     expect(find.byKey(const Key('map-picker')), findsOneWidget);
     final strip = find.byKey(const Key('answer-strip'));
     expect(
-      find.descendant(of: strip, matching: find.text('Accepted scan')),
+      find.descendant(
+        of: strip,
+        matching: find.text('Accepted scan · just now'),
+      ),
       findsOneWidget,
     );
     expect(
@@ -221,9 +213,8 @@ void main() {
 Future<void> _openHistoryAnyRow(WidgetTester tester, M1Harness h) async {
   await tester.tap(find.byKey(const Key('nav-scanner')));
   await tester.pumpAndSettle();
-  await showInspectorPanel(tester, 'Recent item activity');
   final row = find.descendant(
-    of: _card('Recent item activity'),
+    of: find.byType(HistoryPanel),
     matching: find.byType(ListTile),
   );
   await tapM1Async(

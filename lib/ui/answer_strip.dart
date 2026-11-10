@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
-import '../domain/inspection_context.dart';
+import '../application/selection_controller.dart';
+import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../domain/inspection_context.dart';
 import '../domain/roubles.dart';
-import 'ember/ember_tokens.dart';
 import '../domain/verdict_reason.dart';
+import 'age_tick.dart';
+import 'correction_offer_block.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 import 'freshness_tag.dart';
 import 'item_icon.dart';
-import 'item_decision_card.dart' show CorrectionOfferBlock;
+import 'labels.dart';
 import 'verdict_plate.dart';
+
+/// The one height the empty and ordinary single-line strip share.
+const double _normalStripHeight = 100;
 
 /// The shared current inspection shown before either workspace.
 ///
@@ -18,10 +25,17 @@ import 'verdict_plate.dart';
 /// controller. The strip grows when the reason or text scale needs more room.
 class AnswerStrip extends StatelessWidget {
   /// Creates the strip using the shared application [services].
-  const AnswerStrip({super.key, required this.services});
+  const AnswerStrip({
+    super.key,
+    required this.services,
+    this.tickPeriod = const Duration(seconds: 5),
+  });
 
   /// The current inspection and item icon cache.
   final AppServices services;
+
+  /// How often the provenance age is refreshed.
+  final Duration tickPeriod;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -32,10 +46,27 @@ class AnswerStrip extends StatelessWidget {
       final decision = selection.decision;
       final latest = services.scans.latest;
       final offer = selection.correctionOffer;
+      final actions = <Widget>[
+        if (selection.isHistory)
+          IconButton(
+            tooltip: 'Close history inspection',
+            onPressed: selection.closeHistory,
+            icon: const Icon(Icons.close),
+          ),
+        if (latest != null && selection.scan?.reportId != latest.reportId)
+          TextButton(
+            onPressed: () {
+              final current = services.scans.latest;
+              if (current != null) selection.showScan(current);
+            },
+            child: const Text('Back to latest scan'),
+          ),
+      ];
       return Container(
         key: const Key('answer-strip'),
-        constraints: const BoxConstraints(minHeight: 76),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        constraints: const BoxConstraints(minHeight: _normalStripHeight),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: context.ember.panel,
           border: Border(bottom: BorderSide(color: context.ember.hairline)),
@@ -66,121 +97,43 @@ class AnswerStrip extends StatelessWidget {
                             !selection.loadingHistory &&
                             offer == null)
                           const Text('Search with Ctrl K'),
-                        if (selection.isHistory)
-                          IconButton(
-                            tooltip: 'Close history inspection',
-                            onPressed: selection.closeHistory,
-                            icon: const Icon(Icons.close),
-                          ),
-                        if (latest != null &&
-                            selection.scan?.reportId != latest.reportId)
-                          TextButton(
-                            onPressed: () {
-                              final current = services.scans.latest;
-                              if (current != null) selection.showScan(current);
-                            },
-                            child: const Text('Back to latest scan'),
-                          ),
+                        ...actions,
                       ],
                     ),
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      final fleaPrice = decision.fleaEligible != false
-                          ? decision.fleaGross
-                          : null;
-                      final price = fleaPrice ?? decision.traderGross;
-                      final parts = <Widget>[
-                        ItemIcon(
-                          cache: services.itemIcons,
-                          itemId: item.id,
-                          iconLink: item.iconLink,
-                          size: 48,
-                          color: context.ember.accentText,
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 220),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.name, style: EmberType.title),
-                              if (!selection.isHistory &&
-                                  selection.scan != null)
-                                const Text('Accepted scan')
-                              else if (!selection.isHistory &&
-                                  selection.correction != null)
-                                const Text('Corrected scan'),
-                              if (selection.isHistory)
-                                const Text(
-                                  'Current advice for history inspection',
-                                ),
-                            ],
-                          ),
-                        ),
-                        AnswerVerdict(
-                          decision: decision,
-                          maxWidth: constraints.maxWidth < 1300
-                              ? 460
-                              : (constraints.maxWidth - 60).clamp(
-                                  1,
-                                  double.infinity,
-                                ),
-                        ),
-                        FirControls(services: services),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              price == null
-                                  ? 'Price unavailable'
-                                  : '${fleaPrice != null ? "Flea" : "Trader"} ${rub(price)}',
-                              key: const Key('answer-price'),
-                            ),
-                            if (fleaPrice != null)
-                              FreshnessTag(
-                                quoteAt: item.quoteAt,
-                                now: selection.clock(),
-                                fleaEligible: decision.fleaEligible,
-                              )
-                            else
-                              const Text('price time unknown'),
-                          ],
-                        ),
-                        if (selection.isHistory)
-                          IconButton(
-                            tooltip: 'Close history inspection',
-                            onPressed: selection.closeHistory,
-                            icon: const Icon(Icons.close),
-                          ),
-                        if (latest != null &&
-                            selection.scan?.reportId != latest.reportId)
-                          TextButton(
-                            onPressed: () {
-                              final current = services.scans.latest;
-                              if (current != null) selection.showScan(current);
-                            },
-                            child: const Text('Back to latest scan'),
-                          ),
-                      ];
-                      if (constraints.maxWidth >= 1300 &&
-                          MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
+                      final wide =
+                          constraints.maxWidth >= 1300 &&
+                          MediaQuery.textScalerOf(context).scale(1) <= 1.2;
+                      final who = _WhoBlock(
+                        services: services,
+                        item: item,
+                        tickPeriod: tickPeriod,
+                      );
+                      final answer = AnswerVerdict(
+                        decision: decision,
+                        maxWidth: wide ? double.infinity : 460,
+                        control: FirControls(services: services),
+                      );
+                      final price = _PriceBlock(
+                        decision: decision,
+                        quoteAt: item.quoteAt,
+                        now: selection.clock(),
+                      );
+                      if (wide) {
                         return Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            parts[0],
-                            const SizedBox(width: 12),
-                            parts[1],
-                            const SizedBox(width: 12),
-                            Expanded(child: parts[2]),
-                            const SizedBox(width: 12),
-                            parts[3],
-                            const SizedBox(width: 12),
-                            parts[4],
-                            for (final part in parts.skip(5)) ...[
+                            who,
+                            const SizedBox(width: 16),
+                            Expanded(child: answer),
+                            const SizedBox(width: 16),
+                            for (final action in actions) ...[
+                              action,
                               const SizedBox(width: 12),
-                              part,
                             ],
+                            price,
                           ],
                         );
                       }
@@ -188,7 +141,7 @@ class AnswerStrip extends StatelessWidget {
                         spacing: 12,
                         runSpacing: 4,
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        children: parts,
+                        children: [who, answer, ...actions, price],
                       );
                     },
                   ),
@@ -221,41 +174,222 @@ class AnswerStrip extends StatelessWidget {
   );
 }
 
-/// Per-item Found in raid selector shared with manual inspection.
-class FirControls extends StatelessWidget {
-  /// Creates a selector bound to [services]' selection controller.
-  const FirControls({super.key, required this.services});
+/// The item picture, its name and the line saying where the item came from.
+class _WhoBlock extends StatelessWidget {
+  const _WhoBlock({
+    required this.services,
+    required this.item,
+    required this.tickPeriod,
+  });
 
-  /// The owner of the current item's FIR state.
   final AppServices services;
+  final CatalogItem item;
+  final Duration tickPeriod;
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 4,
-    runSpacing: 4,
-    crossAxisAlignment: WrapCrossAlignment.center,
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
     children: [
-      const Text('Found in raid'),
-      for (final fir in FirState.values)
-        ChoiceChip(
-          label: Text(switch (fir) {
-            FirState.unknown => 'Unknown',
-            FirState.yes => 'Yes',
-            FirState.no => 'No',
-          }),
-          selected: services.selection.fir == fir,
-          onSelected: services.selection.item == null
-              ? null
-              : (_) => services.selection.setFir(fir),
+      ItemIcon(
+        cache: services.itemIcons,
+        itemId: item.id,
+        iconLink: item.iconLink,
+        size: 48,
+        color: context.ember.accentText,
+      ),
+      const SizedBox(width: 12),
+      ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.name, style: EmberType.title),
+            AgeTick(
+              clock: services.selection.clock,
+              period: tickPeriod,
+              builder: (context, now) => Text(
+                provenanceLine(services.selection, now),
+                key: const Key('answer-provenance'),
+                style: EmberType.label.copyWith(
+                  color: context.ember.inkSecondary,
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
     ],
   );
 }
 
-/// The complete verdict plate and its wrapping reason in the answer strip.
+/// The words after a relative age: `3 min ago`, or `just now` when it is new.
+String _ago(DateTime at, DateTime now) {
+  final age = relativeAgeLabel(at, now);
+  return age == 'just now' ? age : '$age ago';
+}
+
+/// The line under the item name saying where the shown item came from.
+///
+/// [now] is the current time in UTC. A scan number never appears.
+String provenanceLine(SelectionController selection, DateTime now) {
+  final saved = selection.historyRow;
+  return switch ((saved, selection.scan, selection.correction)) {
+    (final row?, _, _) =>
+      'Current advice · saved ${_ago(row.observedAt, now)}'
+          '${row.mode == selection.catalog.mode ? '' : ' in ${modeLabel(row.mode)}'}',
+    (_, final scan?, _) => 'Accepted scan · ${_ago(scan.acceptedAt, now)}',
+    (_, _, final correction?) =>
+      'Corrected from a scan · ${_ago(correction.correctedAt, now)}'
+          ' · chosen by hand',
+    _ => 'Chosen by hand',
+  };
+}
+
+/// The Flea and trader prices as aligned label and value rows, then the
+/// freshness tag.
+class _PriceBlock extends StatelessWidget {
+  const _PriceBlock({
+    required this.decision,
+    required this.quoteAt,
+    required this.now,
+  });
+
+  final ItemDecision decision;
+  final DateTime? quoteAt;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final ember = context.ember;
+    final fleaPrice = decision.fleaEligible != false
+        ? decision.fleaGross
+        : null;
+    final label = EmberType.label.copyWith(color: ember.inkSecondary);
+    final value = EmberType.body.copyWith(color: ember.ink);
+    TableRow row(String name, String main, String? detail) => TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: Text(name, style: label),
+        ),
+        Text(main, style: value),
+        Padding(
+          padding: const EdgeInsets.only(left: 10),
+          child: Text(detail ?? '', style: label),
+        ),
+      ],
+    );
+    return Column(
+      key: const Key('answer-price'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Table(
+          defaultColumnWidth: const IntrinsicColumnWidth(),
+          defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            row(
+              'Flea',
+              fleaPrice != null
+                  ? rub(fleaPrice)
+                  : decision.fleaEligible == false
+                  ? "Can't be sold on the Flea"
+                  : 'Price unavailable',
+              fleaPrice != null && decision.fleaPerSlot != null
+                  ? '${rub(decision.fleaPerSlot)} / slot'
+                  : null,
+            ),
+            row(
+              'Trader',
+              decision.traderGross == null
+                  ? 'Price unavailable'
+                  : rub(decision.traderGross),
+              decision.traderGross == null ? null : decision.traderName,
+            ),
+          ],
+        ),
+        if (fleaPrice != null)
+          FreshnessTag(
+            quoteAt: quoteAt,
+            now: now,
+            fleaEligible: decision.fleaEligible,
+          ),
+      ],
+    );
+  }
+}
+
+/// Per-item Found in raid selector shared with manual inspection.
+class FirControls extends StatelessWidget {
+  /// Creates a selector bound to [services]' selection controller.
+  ///
+  /// A non-null [caption] shows after the control on the same row, for a note
+  /// on where the value came from. Null shows nothing.
+  const FirControls({super.key, required this.services, this.caption});
+
+  /// The owner of the current item's FIR state.
+  final AppServices services;
+
+  /// An optional note shown inline after the control.
+  final String? caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final ember = context.ember;
+    final selection = services.selection;
+    final note = caption;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          'Found in raid',
+          style: EmberType.label.copyWith(color: ember.inkSecondary),
+        ),
+        SegmentedButton<FirState>(
+          showSelectedIcon: false,
+          style: SegmentedButton.styleFrom(
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          segments: [
+            for (final fir in FirState.values)
+              ButtonSegment(
+                value: fir,
+                label: Text(switch (fir) {
+                  FirState.unknown => 'Unknown',
+                  FirState.yes => 'Yes',
+                  FirState.no => 'No',
+                }),
+              ),
+          ],
+          selected: {selection.fir},
+          onSelectionChanged: selection.item == null
+              ? null
+              : (chosen) => selection.setFir(chosen.first),
+        ),
+        if (note != null)
+          Text(note, style: EmberType.label.copyWith(color: ember.inkTertiary)),
+      ],
+    );
+  }
+}
+
+/// The verdict plate, its optional control and the wrapping reason below.
 class AnswerVerdict extends StatelessWidget {
   /// Creates the verdict from the already projected [decision].
-  const AnswerVerdict({super.key, required this.decision, this.maxWidth = 420});
+  ///
+  /// A [control] sits beside the plate, wrapping directly under it when the
+  /// two do not fit on one line.
+  const AnswerVerdict({
+    super.key,
+    required this.decision,
+    this.maxWidth = 420,
+    this.control,
+  });
 
   /// The existing selection controller's projected advice.
   final ItemDecision decision;
@@ -263,32 +397,28 @@ class AnswerVerdict extends StatelessWidget {
   /// Maximum width available for the reason to wrap.
   final double maxWidth;
 
+  /// The widget shown beside the plate, such as the Found in raid control.
+  final Widget? control;
+
   @override
   Widget build(BuildContext context) => ConstrainedBox(
     constraints: BoxConstraints(maxWidth: maxWidth.clamp(1, double.infinity)),
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final plate = IntrinsicWidth(child: VerdictPlate(decision: decision));
-        final reason = Text(
-          verdictReason(decision),
-          key: const Key('answer-verdict-reason'),
-        );
-        if (constraints.maxWidth >= 600 &&
-            MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
-          return Row(
-            children: [
-              plate,
-              const SizedBox(width: 8),
-              Expanded(child: reason),
-            ],
-          );
-        }
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [plate, reason],
-        );
-      },
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 14,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            IntrinsicWidth(child: VerdictPlate(decision: decision)),
+            ?control,
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(verdictReason(decision), key: const Key('answer-verdict-reason')),
+      ],
     ),
   );
 }

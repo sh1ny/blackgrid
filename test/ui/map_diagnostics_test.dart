@@ -40,7 +40,7 @@ bool _followOn(WidgetTester tester) => tester
     .on;
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
   await tester.pumpAndSettle();
 }
 

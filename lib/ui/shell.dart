@@ -8,13 +8,12 @@ import '../application/scan_coordinator.dart';
 import '../domain/catalog.dart';
 import 'brand_lockup.dart';
 import 'answer_strip.dart';
-import 'evidence_panels.dart';
-import 'item_decision_card.dart';
 import 'import_dialog.dart';
 import 'labels.dart';
 import 'map_inspector.dart';
 import 'map_screen.dart';
 import 'raid_timer_strip.dart';
+import 'scanner_inspector.dart';
 import 'scanner_screen.dart';
 import 'settings/commit_field.dart';
 import 'settings/settings_page.dart';
@@ -62,10 +61,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
   final inspectorScope = FocusScopeNode(
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
   );
-  bool inspectionExpanded = false;
-  bool requirementsExpanded = false;
-  bool sourcesExpanded = false;
-  late RequirementExpansion requirementExpansion;
   final query = TextEditingController();
   final searchFocus = FocusNode();
   final inspectorFocus = FocusNode();
@@ -82,7 +77,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
   @override
   void initState() {
     super.initState();
-    requirementExpansion = RequirementExpansion(widget.services.selection);
     query.text = widget.services.selection.query;
   }
 
@@ -99,22 +93,12 @@ class _BlackgridShellState extends State<BlackgridShell> {
   }
 
   @override
-  void didUpdateWidget(BlackgridShell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.services.selection != widget.services.selection) {
-      requirementExpansion.dispose();
-      requirementExpansion = RequirementExpansion(widget.services.selection);
-    }
-  }
-
-  @override
   void dispose() {
     query.dispose();
     searchFocus.dispose();
     inspectorFocus.dispose();
     _rootFocus.dispose();
     inspectorScope.dispose();
-    requirementExpansion.dispose();
     super.dispose();
   }
 
@@ -464,64 +448,21 @@ class _BlackgridShellState extends State<BlackgridShell> {
                   descendantsAreTraversable: inspectorOpen,
                   child: SizedBox(
                     key: const Key('shell-inspector'),
-                    child: ListView(
-                      children: [
-                        if (selected == 1) ...[
-                          SizedBox(
-                            height:
-                                230 * MediaQuery.textScalerOf(context).scale(1),
-                            child: inspectorOpen
-                                ? HistoryPanel(services: widget.services)
-                                : const SizedBox.shrink(),
+                    child: selected == 1
+                        ? (inspectorOpen
+                              ? ScannerInspector(services: widget.services)
+                              : const SizedBox.shrink())
+                        : ListView(
+                            children: [
+                              if (inspectorOpen)
+                                Padding(
+                                  padding: const EdgeInsets.all(EmberSpace.md),
+                                  child: MapInspector(
+                                    services: widget.services,
+                                  ),
+                                ),
+                            ],
                           ),
-                          if (inspectorOpen) ...[
-                            ExpansionTile(
-                              initiallyExpanded: inspectionExpanded,
-                              onExpansionChanged: (value) =>
-                                  inspectionExpanded = value,
-                              title: const Text('Inspection details'),
-                              children: [
-                                ItemDecisionCard(
-                                  services: widget.services,
-                                  compact: true,
-                                  showCorrectionOffer: false,
-                                  fitContent: true,
-                                ),
-                              ],
-                            ),
-                            ExpansionTile(
-                              initiallyExpanded: requirementsExpanded,
-                              onExpansionChanged: (value) =>
-                                  requirementsExpanded = value,
-                              title: const Text('Requirements'),
-                              children: [
-                                RequirementPanel(
-                                  services: widget.services,
-                                  fitContent: true,
-                                  expansion: requirementExpansion,
-                                ),
-                              ],
-                            ),
-                            ExpansionTile(
-                              initiallyExpanded: sourcesExpanded,
-                              onExpansionChanged: (value) =>
-                                  sourcesExpanded = value,
-                              title: const Text('Sources'),
-                              children: [
-                                SourcePanel(
-                                  services: widget.services,
-                                  fitContent: true,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ] else if (inspectorOpen)
-                          Padding(
-                            padding: const EdgeInsets.all(EmberSpace.md),
-                            child: MapInspector(services: widget.services),
-                          ),
-                      ],
-                    ),
                   ),
                 ),
               ),
@@ -547,9 +488,18 @@ class _BlackgridShellState extends State<BlackgridShell> {
     );
     final items = <Widget>[
       BrandLockup.topBar(compact: compact),
-      _nav(0, Icons.map_outlined, 'Map'),
-      _nav(1, Icons.center_focus_weak, 'Scanner'),
-      if (compact) search else Expanded(child: search),
+      _areaSwitch(),
+      if (compact)
+        search
+      else ...[
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: search,
+          ),
+        ),
+        const Spacer(),
+      ],
       RaidTimerStrip(controller: widget.services.raidTimers),
       IconButton(
         key: const Key('inspector-toggle'),
@@ -569,12 +519,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
         icon: const Icon(Icons.vertical_split_outlined),
       ),
       _headerAction(
-        'Settings',
-        Icons.settings_outlined,
-        compact,
-        _openSettings,
-      ),
-      _headerAction(
         'Stats',
         Icons.bar_chart,
         compact,
@@ -585,6 +529,12 @@ class _BlackgridShellState extends State<BlackgridShell> {
         Icons.file_open_outlined,
         compact,
         () => showLegacyImport(context, widget.services),
+      ),
+      _headerAction(
+        'Settings',
+        Icons.settings_outlined,
+        compact,
+        _openSettings,
       ),
     ];
     if (compact) return items;
@@ -644,8 +594,8 @@ class _BlackgridShellState extends State<BlackgridShell> {
       ? IconButton(tooltip: label, onPressed: onPressed, icon: Icon(icon))
       : Tooltip(
           message: label,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
               minimumSize: const Size(0, 36),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
@@ -656,56 +606,41 @@ class _BlackgridShellState extends State<BlackgridShell> {
           ),
         );
 
-  Widget _nav(int index, IconData icon, String label) => Semantics(
-    selected: selected == index,
-    child: InkWell(
-      key: Key(index == 0 ? 'nav-map' : 'nav-scanner'),
-      onTap: () {
-        if (_settings != null) {
-          _closeSettings(area: index);
-        } else {
-          setState(() => selected = index);
-        }
-      },
-      child: Container(
-        height: 36 * MediaQuery.textScalerOf(context).scale(1),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: selected == index
-              ? context.ember.accentSoft
-              : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(
-              color: selected == index
-                  ? context.ember.accentText
-                  : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: selected == index
-                  ? context.ember.accentText
-                  : context.ember.ink,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected == index
-                    ? context.ember.accentText
-                    : context.ember.ink,
-              ),
-            ),
-          ],
-        ),
-      ),
+  /// The Map and Scanner switch.
+  ///
+  /// While Settings is open the selection is empty, so choosing either area,
+  /// including the one Settings was opened from, closes Settings to it.
+  Widget _areaSwitch() => SegmentedButton<int>(
+    showSelectedIcon: false,
+    emptySelectionAllowed: true,
+    style: SegmentedButton.styleFrom(
+      minimumSize: const Size(0, 36),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
     ),
+    segments: [
+      ButtonSegment(
+        value: 0,
+        icon: const Icon(Icons.map_outlined, size: 20),
+        label: const Text('Map', key: Key('nav-map')),
+      ),
+      ButtonSegment(
+        value: 1,
+        icon: const Icon(Icons.center_focus_weak, size: 20),
+        label: const Text('Scanner', key: Key('nav-scanner')),
+      ),
+    ],
+    selected: _settings != null ? const <int>{} : {selected},
+    onSelectionChanged: (choice) {
+      // Pressing the shown area again would empty the selection.
+      if (choice.isEmpty) return;
+      final index = choice.single;
+      if (_settings != null) {
+        _closeSettings(area: index);
+      } else {
+        setState(() => selected = index);
+      }
+    },
   );
 }
 

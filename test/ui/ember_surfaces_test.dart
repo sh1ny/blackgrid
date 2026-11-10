@@ -153,7 +153,7 @@ void main() {
     ]) {
       expect(find.text(old), findsNothing);
     }
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('settings-title-liveScan')), findsOneWidget);
     expect(find.text('LIVE SCAN'), findsNothing);

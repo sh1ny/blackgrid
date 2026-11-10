@@ -50,11 +50,11 @@ A stored catalog projection written before icon links existed SHALL still load, 
 
 ### Requirement: Icons download only for shown items
 
-Blackgrid SHALL request an item's icon only while the decision card or a visible history row shows that item and the item has an icon link. It SHALL NOT prefetch icons in bulk, for catalog items not shown, or for an item with no icon link.
+Blackgrid SHALL request an item's icon only while the answer strip or a visible history row shows that item and the item has an icon link. It SHALL NOT prefetch icons in bulk, for catalog items not shown, or for an item with no icon link.
 
 #### Scenario: Showing an uncached item downloads its icon once
 
-- **WHEN** the decision card shows an item with an icon link and no cached icon
+- **WHEN** the answer strip shows an item with an icon link and no cached icon
 - **THEN** exactly one GET is sent to that icon link, and the icon is shown after it completes
 
 #### Scenario: A catalog refresh downloads nothing
@@ -64,7 +64,7 @@ Blackgrid SHALL request an item's icon only while the decision card or a visible
 
 #### Scenario: An item without a picture sends no request
 
-- **WHEN** the decision card shows an item with no icon link
+- **WHEN** the answer strip shows an item with no icon link
 - **THEN** no icon request is sent, and the generic icon is shown
 
 ### Requirement: One download per item at a time
@@ -73,7 +73,7 @@ At most one icon request SHALL be in flight for an item at a time, however many 
 
 #### Scenario: The card and a history row share one download
 
-- **WHEN** the decision card and a history row show the same uncached item at the same time
+- **WHEN** the answer strip and a history row show the same uncached item at the same time
 - **THEN** exactly one GET is sent, and both show the icon after it completes
 
 #### Scenario: Showing the item again during a download starts no second one
@@ -203,7 +203,7 @@ When every place that requested an item's icon stops showing that item before it
 
 #### Scenario: A download still shown elsewhere is not cancelled
 
-- **WHEN** the card moves from item A to item B while a visible history row still shows A
+- **WHEN** the strip moves from item A to item B while a visible history row still shows A
 - **THEN** A's download continues and its icon is shown in the history row
 
 ### Requirement: The icon cache stays within 64 MB
@@ -234,29 +234,29 @@ Blackgrid SHALL show only complete, stored icon files. A file left by an interru
 - **WHEN** the icon folder holds a file the cache has no record for
 - **THEN** the file is removed when the cache starts
 
-### Requirement: The decision card shows the item's icon
+### Requirement: The answer strip shows the item's icon
 
-The decision card on Scanner, in wide and narrow layouts, and on Map SHALL show the shown item's icon. It SHALL show the generic item icon while the icon loads, when it failed, when the item has no picture, or when the icon cannot be decoded. The card SHALL NOT show the `Identity only • no artwork` label.
+The answer strip, on Scanner and on Map, in wide and narrow layouts, SHALL show the shown item's icon. It SHALL show the generic item icon while the icon loads, when it failed, when the item has no picture, or when the icon cannot be decoded. The strip SHALL NOT show the `Identity only • no artwork` label.
 
 #### Scenario: Scanner shows the icon
 
-- **WHEN** Scanner's decision card shows an item whose icon is cached
-- **THEN** the card shows that icon in place of the generic item icon
+- **WHEN** the answer strip on Scanner shows an item whose icon is cached
+- **THEN** the strip shows that icon in place of the generic item icon
 
 #### Scenario: Map's compact card shows the icon
 
-- **WHEN** Map's decision card shows an item whose icon is cached
-- **THEN** the card shows that icon next to the item's name
+- **WHEN** the answer strip on Map shows an item whose icon is cached
+- **THEN** the strip shows that icon next to the item's name
 
 #### Scenario: The generic icon shows while loading or offline
 
-- **WHEN** the card shows an item whose icon is still downloading or whose download failed
-- **THEN** the card shows the generic item icon
+- **WHEN** the strip shows an item whose icon is still downloading or whose download failed
+- **THEN** the strip shows the generic item icon
 
 #### Scenario: An undecodable icon falls back
 
 - **WHEN** a cached icon file cannot be decoded as an image
-- **THEN** the card shows the generic item icon and no error
+- **THEN** the strip shows the generic item icon and no error
 
 ### Requirement: The previous item's icon is never shown for a new item
 
@@ -264,17 +264,17 @@ The icon shown with an item SHALL always be that item's own icon or the generic 
 
 #### Scenario: A new scan shows the generic icon until its own icon is ready
 
-- **WHEN** the card showed item A's icon and a newer scan shows uncached item B
-- **THEN** the card shows the generic icon until B's icon is ready, then B's icon
+- **WHEN** the strip showed item A's icon and a newer scan shows uncached item B
+- **THEN** the strip shows the generic icon until B's icon is ready, then B's icon
 
 #### Scenario: A late download for the old item does not reach the new one
 
-- **WHEN** the card moves from item A to item B and A's download completes afterwards
-- **THEN** the card keeps showing B's icon or the generic icon, never A's
+- **WHEN** the strip moves from item A to item B and A's download completes afterwards
+- **THEN** the strip keeps showing B's icon or the generic icon, never A's
 
 ### Requirement: History rows show the item's icon
 
-Each Recent item activity row whose item is in the current catalog SHALL show that item's icon, with the same generic fallback as the decision card. A row whose item is not in the current catalog SHALL show the generic icon and request nothing.
+Each Recent item activity row whose item is in the current catalog SHALL show that item's icon, with the same generic fallback as the answer strip. A row whose item is not in the current catalog SHALL show the generic icon and request nothing.
 
 #### Scenario: A row shows its item's icon
 

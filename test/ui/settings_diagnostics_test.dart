@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/evidence_panels.dart';
+import 'package:blackgrid/ui/labels.dart' show localTimeLabel;
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
@@ -21,7 +24,7 @@ Finder _inSettings(String text) =>
     find.descendant(of: find.byType(SettingsPage), matching: find.text(text));
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
   await tester.pumpAndSettle();
   // Fail rather than pass vacuously when the section is not there.
   expect(_toggle, findsOneWidget);
@@ -212,6 +215,94 @@ void main() {
           reason: line,
         );
       }
+    });
+  });
+
+  group('data source detail', () {
+    Future<M1Harness> harness(
+      WidgetTester tester, {
+      bool noMode = false,
+      DateTime Function()? clock,
+    }) async {
+      final h = (await tester.runAsync(() async {
+        final result = M1Harness(clock: clock);
+        await result.initialize(
+          mode: noMode ? GameMode.unknown : GameMode.pvp,
+          refresh: !noMode,
+        );
+        return result;
+      }))!;
+      addTearDown(h.dispose);
+      return h;
+    }
+
+    Future<void> show(WidgetTester tester, M1Harness h) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: blackgridTheme(Brightness.dark),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: DataSourceDiagnostics(services: h.services),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets(
+      'Diagnostics shows source, UTC download time and record counts',
+      (tester) async {
+        final downloaded = DateTime.utc(2026, 11, 10, 8, 5);
+        final h = await harness(tester, clock: () => downloaded);
+        final snapshot = h.services.catalog.snapshot!;
+        expect(snapshot.observedAt.toUtc(), downloaded);
+        expect(snapshot.datasetCounts, isNotEmpty);
+        await show(tester, h);
+
+        expect(find.text('Source: ${snapshot.source}'), findsOneWidget);
+        expect(
+          find.text('Item data downloaded (UTC): 2026-11-10T08:05:00.000Z'),
+          findsOneWidget,
+        );
+        for (final e in snapshot.datasetCounts.entries) {
+          expect(find.text('${e.key}: ${e.value} records'), findsOneWidget);
+        }
+        expect(
+          find.textContaining('Data is treated as old after'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('Diagnostics says there is no complete item data download', (
+      tester,
+    ) async {
+      final h = await harness(tester, noMode: true);
+      expect(h.services.catalog.snapshot, isNull);
+      await show(tester, h);
+
+      expect(find.text('No complete item data download.'), findsOneWidget);
+      expect(find.textContaining('records'), findsNothing);
+      expect(find.textContaining('Source:'), findsNothing);
+    });
+
+    testWidgets('Diagnostics shows when progress refresh is available again', (
+      tester,
+    ) async {
+      final h = await harness(tester);
+      final until = DateTime.now().add(const Duration(minutes: 3));
+      h.services.progress
+        ..status = ProgressStatus.cooldown
+        ..cooldownUntil = until;
+      await show(tester, h);
+
+      final time = localTimeLabel(until, now: DateTime.now());
+      expect(find.text('Refresh available again at $time'), findsOneWidget);
     });
   });
 }

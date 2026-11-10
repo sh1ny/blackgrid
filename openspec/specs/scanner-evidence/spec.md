@@ -82,19 +82,19 @@ When the latest published scan is rejected or failed and an earlier scan was acc
 - **THEN** the note is gone and the newer scan's name is shown
 
 ### Requirement: Scan evidence panel is visible without scrolling
-On the desktop Scanner layout (window at least 1100 logical pixels wide), the scan evidence panel SHALL lie fully within the window without scrolling the page, at window heights of 720 logical pixels and more. Content that does not fit SHALL scroll inside the panel. On narrower windows the panel SHALL follow the shared answer strip, with scan configuration in Settings.
+On the Scanner, scan evidence SHALL be a section of the main column that follows Why and Prices, as the scanner-workspace capability places it, and SHALL scroll with the column rather than inside a frame of its own. On a desktop window (at least 1100 logical pixels wide) of 870 logical pixels or more in height, with an item selected and ordinary single-line needs, its title SHALL be on screen with the column unscrolled. On every width the section SHALL follow the shared answer strip, with scan configuration in Settings.
 
 #### Scenario: Desktop window
-- **WHEN** Scanner is shown in a 1660 by 870 logical pixel window
-- **THEN** the scan evidence panel's whole frame is on screen with the page unscrolled
+- **WHEN** Scanner is shown in a 1660 by 870 logical pixel window with an item that has up to three requirement rows
+- **THEN** the Scan evidence title is on screen with the main column unscrolled, below Why and Prices
 
 #### Scenario: Short desktop window
-- **WHEN** Scanner is shown in a 1100 by 720 logical pixel window with a scan phase, a note and an accepted scan, at a text scale large enough that the panel's content is taller than its frame
-- **THEN** the panel's frame is still on screen with the page unscrolled, and the content scrolls inside the panel
+- **WHEN** Scanner is shown in a 1100 by 720 logical pixel window with a scan phase, a note and an accepted scan, at a text scale large enough that the column's content is taller than the window
+- **THEN** the main column scrolls as one, every Scan evidence line can be scrolled into view, and nothing overflows
 
 #### Scenario: Narrow window
 - **WHEN** Scanner is shown in a 900 logical pixel wide window
-- **THEN** the scan evidence panel comes after the answer strip, with no configuration controls above the answer
+- **THEN** Scan evidence comes after the answer strip, Why and Prices, with no configuration controls above the answer
 
 ### Requirement: Footer shows the live scan state
 The app footer SHALL show the live scan pipeline state: `off`, `starting`, `ready`, `stopping` or `unavailable`. It SHALL NOT claim that nothing is captured while live scan is `starting` or `ready`.
@@ -132,11 +132,11 @@ The counters and folder path SHALL appear in Settings beside the switch. When re
 - **THEN** the Settings switch shows off with the error and folder path; closing Settings leaves the error note visible on Scanner, and reopening Settings still shows the failed session folder path
 
 ### Requirement: Unaccepted scan evidence never produces a recommendation
-Publishing a scan that is not accepted, whether rejected or failed, SHALL NOT change the current selection, the decision card, the needs and sources panels, or the history. Only an accepted scan reaches keep/sell advice, through the scan-decisions rules; the evidence panel itself never shows a recommendation.
+Publishing a scan that is not accepted, whether rejected or failed, SHALL NOT change the current selection, the answer strip, the Why and Prices sections, or the history. Only an accepted scan reaches keep/sell advice, through the scan-decisions rules; the evidence panel itself never shows a recommendation.
 
 #### Scenario: Accepted scan drives the decision card
 - **WHEN** the user has manually selected item A and a scan is accepted for item B
-- **THEN** the decision card shows item B, and history gains one entry for B with source `scan`
+- **THEN** the answer strip shows item B, and history gains one entry for B with source `scan`
 
 #### Scenario: Rejected scan with a best candidate
 - **WHEN** a scan is rejected with best candidate C
