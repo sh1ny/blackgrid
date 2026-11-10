@@ -15,7 +15,7 @@ The Scanner's main column SHALL show three sections in this order: Why, Prices, 
 - **THEN** Why's left edge is at the main column's content edge, after its padding, Prices starts to the right of Why with the same top, Scan evidence starts below the lower of the two, and all three lie within the main column
 
 #### Scenario: Narrow window stacks the sections
-- **WHEN** Scanner is shown at 960 by 720 logical pixels with an item selected
+- **WHEN** Scanner is shown at 1100 by 720 logical pixels with the inspector docked open and an item selected, so the main column is under 720 logical pixels wide
 - **THEN** Why, Prices and Scan evidence are stacked top to bottom in that order, each the full main-column width, and the column scrolls when they do not fit, with no overflow
 
 #### Scenario: No bordered card
