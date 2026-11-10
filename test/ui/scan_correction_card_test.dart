@@ -133,30 +133,64 @@ void main() {
     );
   }
 
-  testWidgets(
-    'Map card shows the offer next to the item and a pick selects it',
-    (tester) async {
-      final h = await _arrange(tester);
-      expect(_answerText('Alpha shown'), findsOneWidget);
-      expect(find.byKey(const Key('correction-offer')), findsOneWidget);
-      expect(find.text('Scan #7 not accepted — pick the item'), findsOneWidget);
-      // Candidates carry their similarity; the one the catalog lacks is out.
-      expect(find.text('Bravo plate • 0.87'), findsOneWidget);
-      expect(find.text('Charlie plate • 0.50'), findsOneWidget);
-      expect(find.textContaining('0.61'), findsNothing);
+  testWidgets('the offer says the last scan was not accepted without its '
+      'number', (tester) async {
+    await _arrange(tester);
+    expect(_answerText('Alpha shown'), findsOneWidget);
+    expect(find.byKey(const Key('correction-offer')), findsOneWidget);
+    expect(find.text('Last scan not accepted — pick the item'), findsOneWidget);
+    expect(find.textContaining('#7'), findsNothing);
+    expect(find.textContaining('Scan #'), findsNothing);
+    expect(find.text('Read: plate'), findsOneWidget);
+    expect(find.byKey(const Key('correction-query')), findsOneWidget);
+    expect(_field(tester).text, 'plate');
+  });
 
-      await tester.runAsync(
-        () => tester.tap(find.byKey(const Key('correction-candidate-bravo'))),
+  testWidgets('the offer lists candidates in rank order without scores', (
+    tester,
+  ) async {
+    final h = await _arrange(tester);
+    // The candidate the catalog lacks is out; the rest keep their rank.
+    final order = [
+      for (final w in tester.widgetList(
+        find.byWidgetPredicate(
+          (w) => w.key.toString().startsWith("[<'correction-candidate-"),
+        ),
+      ))
+        (w.key! as ValueKey<String>).value,
+    ];
+    expect(order, [
+      'correction-candidate-bravo',
+      'correction-candidate-charlie',
+    ]);
+    for (final (id, name) in [
+      ('bravo', 'Bravo plate'),
+      ('charlie', 'Charlie plate'),
+    ]) {
+      expect(
+        find.descendant(
+          of: find.byKey(Key('correction-candidate-$id')),
+          matching: find.text(name),
+        ),
+        findsOneWidget,
       );
-      await tester.pumpAndSettle();
-      expect(h.services.selection.selectedId, 'bravo');
-      expect(h.services.selection.correction?.reportId, 7);
-      expect(h.services.selection.scan, isNull);
-      expect(find.byKey(const Key('correction-offer')), findsNothing);
-      expect(_answerText('Corrected scan'), findsOneWidget);
-      expect(_answerText('Bravo plate'), findsOneWidget);
-    },
-  );
+    }
+    expect(find.textContaining('0.87'), findsNothing);
+    expect(find.textContaining('0.50'), findsNothing);
+    expect(find.textContaining('0.61'), findsNothing);
+    expect(find.textContaining(' • 0.'), findsNothing);
+
+    await tester.runAsync(
+      () => tester.tap(find.byKey(const Key('correction-candidate-bravo'))),
+    );
+    await tester.pumpAndSettle();
+    expect(h.services.selection.selectedId, 'bravo');
+    expect(h.services.selection.correction?.reportId, 7);
+    expect(h.services.selection.scan, isNull);
+    expect(find.byKey(const Key('correction-offer')), findsNothing);
+    expect(_answerText('Corrected scan'), findsOneWidget);
+    expect(_answerText('Bravo plate'), findsOneWidget);
+  });
 
   testWidgets('the shared offer and query persist across Scanner and Map', (
     tester,
@@ -195,7 +229,33 @@ void main() {
     await showInspectorPanel(tester, 'Corrected scan');
     final panel = _panel(tester);
     expect(panel.title, 'Corrected scan');
-    expect(panel.subtitle, 'Corrected from scan #7 • 0 s ago • chosen by hand');
+    expect(panel.subtitle, 'Corrected from a scan • 0 s ago • chosen by hand');
+    expect(panel.subtitle, isNot(contains('#7')));
+  });
+
+  testWidgets('a search pick is labelled corrected from a scan', (
+    tester,
+  ) async {
+    final h = await _arrange(
+      tester,
+      extra: {'delta': _item('delta', 'Delta plate')},
+    );
+    // `delta` is not one of the candidates; only the search lists it.
+    expect(find.byKey(const Key('correction-candidate-delta')), findsNothing);
+    final result = find.byKey(const Key('correction-result-delta'));
+    await tester.ensureVisible(result);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => tester.tap(result));
+    await tester.pumpAndSettle();
+    expect(h.services.selection.selectedId, 'delta');
+    expect(h.services.selection.correction?.reportId, 7);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await showInspectorPanel(tester, 'Corrected scan');
+    expect(
+      _panel(tester).subtitle,
+      'Corrected from a scan • 0 s ago • chosen by hand',
+    );
   });
 
   testWidgets('Dismiss removes the offer and keeps the item', (tester) async {
@@ -291,10 +351,12 @@ void main() {
       tester,
     ) async {
       await _arrange(tester, extra: weapons(), offer: weaponOffer());
-      final first = find.text('Weapon case · flea · 4b423c • 1.00');
-      final second = find.text('Weapon case · no flea · 045d88 • 0.91');
+      final first = find.text('Weapon case · flea · 4b423c');
+      final second = find.text('Weapon case · no flea · 045d88');
       expect(first, findsOneWidget);
       expect(second, findsOneWidget);
+      expect(find.textContaining('1.00'), findsNothing);
+      expect(find.textContaining('0.91'), findsNothing);
       final order = [
         for (final w in tester.widgetList(
           find.byWidgetPredicate(
@@ -309,7 +371,7 @@ void main() {
       ]);
     });
 
-    testWidgets('a lone same-name candidate shows name and score only', (
+    testWidgets('a lone same-name candidate shows its name only', (
       tester,
     ) async {
       await _arrange(
@@ -325,8 +387,10 @@ void main() {
           ],
         ),
       );
-      expect(find.text('Weapon case • 1.00'), findsOneWidget);
-      expect(find.text('Item case • 0.80'), findsOneWidget);
+      expect(find.text('Weapon case'), findsOneWidget);
+      expect(find.text('Item case'), findsOneWidget);
+      expect(find.textContaining('1.00'), findsNothing);
+      expect(find.textContaining('0.80'), findsNothing);
       expect(find.textContaining('· flea'), findsNothing);
     });
 
@@ -336,11 +400,8 @@ void main() {
         extra: weapons(secondNoFlea: null),
         offer: weaponOffer(),
       );
-      expect(
-        find.text('Weapon case · flea unknown · 045d88 • 0.91'),
-        findsOneWidget,
-      );
-      expect(find.text('Weapon case · flea · 045d88 • 0.91'), findsNothing);
+      expect(find.text('Weapon case · flea unknown · 045d88'), findsOneWidget);
+      expect(find.text('Weapon case · flea · 045d88'), findsNothing);
     });
 
     testWidgets('a search row in a same-name group is labelled', (
@@ -367,7 +428,14 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Weapon case · flea · 000000 • 1.00'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(Key('correction-candidate-${id(0)}')),
+          matching: find.text('Weapon case · flea · 000000'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('1.00'), findsNothing);
     });
 
     testWidgets('picking the no-flea variant selects it', (tester) async {
