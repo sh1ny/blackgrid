@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../application/app_services.dart';
 import '../application/scan_coordinator.dart';
 import '../domain/catalog.dart';
-import 'app_logo.dart';
+import 'brand_lockup.dart';
 import 'answer_strip.dart';
 import 'evidence_panels.dart';
 import 'item_decision_card.dart';
@@ -448,16 +448,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
       ),
     );
     final items = <Widget>[
-      const AppLogo(),
-      if (!compact)
-        const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('BLACKGRID'),
-            Text('TRACK. PLAN. SURVIVE.', style: TextStyle(fontSize: 8)),
-          ],
-        ),
+      BrandLockup.topBar(compact: compact),
       _nav(0, Icons.map_outlined, 'Map'),
       _nav(1, Icons.center_focus_weak, 'Scanner'),
       if (compact) search else Expanded(child: search),

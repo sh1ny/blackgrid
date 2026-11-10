@@ -151,8 +151,31 @@ ThemeData blackgridTheme(Brightness brightness) {
     dialogTheme: DialogThemeData(
       backgroundColor: c.raised,
       surfaceTintColor: Colors.transparent,
+      barrierColor: c.scrim,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(EmberRadius.l),
+        side: hairline,
+      ),
+      titleTextStyle: EmberType.title.copyWith(color: c.ink),
+      contentTextStyle: EmberType.body.copyWith(color: c.ink),
+      actionsPadding: const EdgeInsets.fromLTRB(
+        EmberSpace.xl,
+        0,
+        EmberSpace.xl,
+        EmberSpace.lg,
+      ),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: c.panel,
+      modalBackgroundColor: c.panel,
+      surfaceTintColor: Colors.transparent,
+      modalBarrierColor: c.scrim,
+      elevation: 0,
+      modalElevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(EmberRadius.l),
+        ),
         side: hairline,
       ),
     ),

@@ -72,11 +72,11 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 
 Skills: `dart-write-documentation`, `flutter-add-widget-test`, `dart-run-static-analysis`.
 
-- [ ] 1.1 Move `MarkerToggleSwitch` (`lib/ui/marker_preferences.dart:158`) to `lib/ui/ember/ember_toggle_switch.dart` as `EmberToggleSwitch` and update the Map inspector's import (D7); verify `flutter test test/ui/marker_preferences_test.dart` passes unchanged.
-- [ ] 1.2 Write failing widget tests for a `SettingsRow` (name, one-line explanation, trailing control; a switch row toggles on a press anywhere in the row and exposes `toggled` semantics; disabled rows ignore presses), then build `SettingsRow` in `lib/ui/settings/settings_row.dart` (D7); verify the new tests pass.
-- [ ] 1.3 Move `_CommitField` out of `settings_dialog.dart` into `lib/ui/settings/commit_field.dart` with a `SettingsFlushScope` that lets a parent ask every field with pending text to call `onCommit` before unmount (D3, D5). Write failing tests first: a flush commits pending valid text, a flush of refused text keeps the saved value, a flush with no edit commits nothing. Verify they pass.
-- [ ] 1.4 Write a failing test, then add `BrandLockup` (logo, `BLACKGRID`, `TRACK. PLAN. SURVIVE.`; top bar and startup sizes) in `lib/ui/brand_lockup.dart`, and use it in the shell header in place of `shell.dart:452-459` (D9); verify `header shows the 32x32 app logo and no hub icon` and `the logo adds no semantics node` still pass.
-- [ ] 1.5 Add `bottomSheetTheme` and dialog title and actions styles to `blackgridTheme` (`lib/ui/ember/ember_theme.dart`) from Ember tokens only (D8, ADR-0037); verify `test/ui/ember_theme_test.dart` and `test/ui/theme_source_test.dart` pass.
+- [x] 1.1 Move `MarkerToggleSwitch` (`lib/ui/marker_preferences.dart:158`) to `lib/ui/ember/ember_toggle_switch.dart` as `EmberToggleSwitch` and update the Map inspector's import (D7); verify `flutter test test/ui/marker_preferences_test.dart` passes unchanged.
+- [x] 1.2 Write failing widget tests for a `SettingsRow` (name, one-line explanation, trailing control; a switch row toggles on a press anywhere in the row and exposes `toggled` semantics; disabled rows ignore presses), then build `SettingsRow` in `lib/ui/settings/settings_row.dart` (D7); verify the new tests pass.
+- [x] 1.3 Move `_CommitField` out of `settings_dialog.dart` into `lib/ui/settings/commit_field.dart` with a `SettingsFlushScope` that lets a parent ask every field with pending text to call `onCommit` before unmount (D3, D5). Write failing tests first: a flush commits pending valid text, a flush of refused text keeps the saved value, a flush with no edit commits nothing. Verify they pass.
+- [x] 1.4 Write a failing test, then add `BrandLockup` (logo, `BLACKGRID`, `TRACK. PLAN. SURVIVE.`; top bar and startup sizes) in `lib/ui/brand_lockup.dart`, and use it in the shell header in place of `shell.dart:452-459` (D9); verify `header shows the 32x32 app logo and no hub icon` and `the logo adds no semantics node` still pass.
+- [x] 1.5 Add `bottomSheetTheme` and dialog title and actions styles to `blackgridTheme` (`lib/ui/ember/ember_theme.dart`) from Ember tokens only (D8, ADR-0037); verify `test/ui/ember_theme_test.dart` and `test/ui/theme_source_test.dart` pass.
 
 ## 2. The Settings page and its sections
 

@@ -92,4 +92,49 @@ void main() {
     expect(BlackgridType.verdict.fontSize, 22);
     expect(BlackgridType.verdict.height, 1.2);
   });
+
+  test('bottom sheets use the panel surface with 12px top corners', () {
+    for (final brightness in Brightness.values) {
+      final theme = blackgridTheme(brightness);
+      final ember = theme.extension<EmberColors>()!;
+      final sheet = theme.bottomSheetTheme;
+      expect(sheet.backgroundColor, ember.panel);
+      expect(sheet.modalBackgroundColor, ember.panel);
+      expect(sheet.surfaceTintColor, Colors.transparent);
+      expect(sheet.elevation, 0);
+      expect(
+        sheet.shape,
+        RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(EmberRadius.l),
+          ),
+          side: BorderSide(color: ember.hairlineStrong),
+        ),
+      );
+    }
+  });
+
+  test('dialogs title in Literata Title and space their actions', () {
+    for (final brightness in Brightness.values) {
+      final theme = blackgridTheme(brightness);
+      final ember = theme.extension<EmberColors>()!;
+      final dialog = theme.dialogTheme;
+      expect(dialog.backgroundColor, ember.raised);
+      expect(dialog.barrierColor, ember.scrim);
+      expect(dialog.titleTextStyle!.fontFamily, 'Literata');
+      expect(dialog.titleTextStyle!.fontSize, EmberType.title.fontSize);
+      expect(dialog.titleTextStyle!.color, ember.ink);
+      expect(dialog.contentTextStyle!.fontFamily, 'Geist');
+      expect(dialog.contentTextStyle!.color, ember.ink);
+      expect(
+        dialog.actionsPadding,
+        const EdgeInsets.fromLTRB(
+          EmberSpace.xl,
+          0,
+          EmberSpace.xl,
+          EmberSpace.lg,
+        ),
+      );
+    }
+  });
 }

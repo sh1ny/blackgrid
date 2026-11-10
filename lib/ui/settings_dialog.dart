@@ -16,6 +16,7 @@ import 'map_diagnostics.dart';
 import 'panels.dart';
 import 'scan_evidence_panel.dart';
 import 'ember/theme_access.dart';
+import 'settings/commit_field.dart';
 
 /// Opens Settings and optionally brings one section into view and focus.
 Future<void> showSettings(
@@ -166,7 +167,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         (v) => timers.copyWith(showScavCooldown: v),
       ),
       const SizedBox(height: 12),
-      _CommitField(
+      CommitField(
         label: 'Run-through length (m:ss)',
         helper: 'From 1:00 to 30:00.',
         value: formatTimerSeconds(timers.runThroughSeconds),
@@ -180,7 +181,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         },
       ),
       const SizedBox(height: 12),
-      _CommitField(
+      CommitField(
         label: 'Fence reputation',
         helper: mode == GameMode.unknown
             ? null
@@ -615,88 +616,4 @@ double? _parseReputation(String text) {
     return null;
   }
   return value;
-}
-
-/// A text field that commits on the keyboard's done action and when it loses
-/// focus.
-///
-/// [onCommit] completes with an error message to show under the field, or
-/// `null` when the text was saved. A refused or unsaved edit keeps the typed
-/// text, so the field never shows a value as saved when it was not. The field follows [value] when it changes, so an
-/// accepted edit shows in its saved form. An edit that equals [value] is not
-/// committed again.
-class _CommitField extends StatefulWidget {
-  const _CommitField({
-    required this.label,
-    required this.value,
-    required this.onCommit,
-    this.helper,
-    this.enabled = true,
-  });
-  final String label;
-  final String? helper;
-  final String value;
-  final bool enabled;
-  final Future<String?> Function(String text) onCommit;
-  @override
-  State<_CommitField> createState() => _CommitFieldState();
-}
-
-class _CommitFieldState extends State<_CommitField> {
-  late final controller = TextEditingController(text: widget.value);
-  final focus = FocusNode();
-  String? error;
-
-  @override
-  void initState() {
-    super.initState();
-    focus.addListener(_onFocus);
-  }
-
-  @override
-  void didUpdateWidget(_CommitField old) {
-    super.didUpdateWidget(old);
-    if (widget.value != old.value) controller.text = widget.value;
-  }
-
-  @override
-  void dispose() {
-    focus.removeListener(_onFocus);
-    focus.dispose();
-    controller.dispose();
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (!focus.hasFocus) unawaited(_commit());
-  }
-
-  Future<void> _commit() async {
-    if (!mounted || !widget.enabled) return;
-    if (controller.text.trim() == widget.value) {
-      if (error != null) setState(() => error = null);
-      return;
-    }
-    final text = controller.text;
-    final result = await widget.onCommit(text);
-    // A newer edit replaced the text this result belongs to.
-    if (!mounted || controller.text != text) return;
-    setState(() => error = result);
-  }
-
-  @override
-  Widget build(BuildContext context) => TextField(
-    controller: controller,
-    focusNode: focus,
-    enabled: widget.enabled,
-    onChanged: (_) {
-      if (error != null) setState(() => error = null);
-    },
-    onSubmitted: (_) => unawaited(_commit()),
-    decoration: InputDecoration(
-      labelText: widget.label,
-      helperText: widget.helper,
-      errorText: error,
-    ),
-  );
 }

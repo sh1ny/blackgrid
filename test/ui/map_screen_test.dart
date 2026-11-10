@@ -1,5 +1,5 @@
 import 'package:blackgrid/domain/map_coordinates.dart';
-import 'package:blackgrid/ui/marker_preferences.dart';
+import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,9 +24,9 @@ Future<void> _reveal(WidgetTester tester, Finder target) async {
 bool _shown(String key) {
   expect(_marker(key), findsOneWidget);
   return find
-      .descendant(of: _marker(key), matching: find.byType(MarkerToggleSwitch))
+      .descendant(of: _marker(key), matching: find.byType(EmberToggleSwitch))
       .evaluate()
-      .map((element) => (element.widget as MarkerToggleSwitch).on)
+      .map((element) => (element.widget as EmberToggleSwitch).on)
       .single;
 }
 

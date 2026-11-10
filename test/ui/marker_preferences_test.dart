@@ -7,6 +7,7 @@ import 'package:blackgrid/application/settings_controller.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/maps/map_marker_icons.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
+import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
 import 'package:blackgrid/ui/marker_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -237,7 +238,7 @@ Finder _label(String key, String text) =>
     find.descendant(of: _row(key), matching: find.text(text));
 
 bool _switchOn(WidgetTester tester, String key) =>
-    tester.widget<MarkerToggleSwitch>(_switch(key)).on;
+    tester.widget<EmberToggleSwitch>(_switch(key)).on;
 
 /// The `y` of the group heading [title].
 double _heading(WidgetTester tester, String title) =>
