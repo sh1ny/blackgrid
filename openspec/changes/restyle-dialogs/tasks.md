@@ -65,6 +65,7 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 | legacy-import → The import preview keeps technical detail under Details | Already imported | test/ui/import_dialog_test.dart | legacy-import: Already imported | red |
 | interface-theme → Dialogs, sheets and the startup screen in Ember | Stats dialog | test/ui/ember_surfaces_test.dart | interface-theme: Stats dialog | red |
 | interface-theme → Dialogs, sheets and the startup screen in Ember | Confirm dialog | test/ui/ember_surfaces_test.dart | interface-theme: Confirm dialog | red |
+| interface-theme → Dialogs, sheets and the startup screen in Ember | Marker list sheet | test/ui/ember_surfaces_test.dart | interface-theme: Marker list sheet | red |
 | interface-theme → Dialogs, sheets and the startup screen in Ember | Map help closes | test/ui/map_help_test.dart | interface-theme: Map help closes | red |
 | interface-theme → Dialogs, sheets and the startup screen in Ember | Startup error | test/ui/app_test.dart | interface-theme: Startup error | red |
 
@@ -103,7 +104,7 @@ Skills: `flutter-add-widget-test`, `dart-run-static-analysis`.
 
 - [ ] 4.1 Write failing tests for Stats dialog and Confirm dialog in `ember_surfaces_test.dart` (both rooms), then restyle `lib/ui/stats_dialog.dart` (dense rows, Literata title, Close primary, Clear stats quiet) and the remove-pin and clear-stats confirms (`map_workspace.dart:242`, `map_inspector.dart:228`, `stats_dialog.dart:129`). Verify both rows turn green and `test/ui/stats_dialog_test.dart` passes.
 - [ ] 4.2 Write the four failing legacy-import tests, then restyle `lib/ui/import_dialog.dart` with the collapsed Details toggle reset on each preview read (S3, D10) and an Ember switch row for Replace. Verify the rows turn green and the existing `import_dialog_test.dart` cases pass.
-- [ ] 4.3 Write the failing Map help closes test, then restyle Map help, the marker browser sheet (`map_workspace.dart:299`) and the pin editor (`lib/ui/pin_editor.dart`) with Ember rows and buttons; content and keys unchanged. Verify the row turns green and `test/ui/map_help_test.dart` and `test/ui/map_workspace_controls_test.dart` pass.
+- [ ] 4.3 Write the failing Map help closes and Marker list sheet tests, then restyle Map help, the marker browser sheet (`map_workspace.dart:299`) and the pin editor (`lib/ui/pin_editor.dart`) with Ember rows and buttons; content and keys unchanged. Verify both rows turn green and `test/ui/map_help_test.dart` and `test/ui/map_workspace_controls_test.dart` pass.
 - [ ] 4.4 Write the failing app-icon Startup screen shows the logo and interface-theme Startup error tests, then rebuild the startup screen in `lib/ui/app.dart` with `BrandLockup` on the Canvas, Ember loading indicator and Retry; messages word for word. Verify both rows turn green and the two existing `app_test.dart` cases pass.
 
 ## 5. Integration

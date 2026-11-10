@@ -108,6 +108,14 @@ See proposal.md for scope. Current state the approach depends on:
 - **Important:** no; S3 records the user-facing choice.
 - **Chosen by:** agent
 
+### D11: Dialogs keep the Raised surface
+
+- **Choice:** Dialogs keep the Raised surface the theme already gives them (`ember_theme.dart` `dialogTheme`), which DESIGN.md assigns to anything that sits on top. Bottom sheets take the Panel surface (D8). The first version of the `interface-theme` delta said Panel for both; apply found the conflict with the shipped theme and DESIGN.md, and the spec was amended.
+- **Rejected:** Switch dialogs to Panel as first specified, because it departs from DESIGN.md's Lifted Card rule and turns light-room dialogs warm grey. Raised for sheets too, which would change D8 for no reported need.
+- **Reversal cost:** low
+- **Important:** yes, changes what users see.
+- **Chosen by:** user
+
 ### Decision summary
 
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
@@ -128,6 +136,7 @@ See proposal.md for scope. Current state the approach depends on:
 | D8 | Dialog styling | Theme first, per-dialog button variants | `EmberDialog` wrapper | low | no | agent |
 | D9 | Brand lockup | One `BrandLockup` widget | Two inline copies | low | no | agent |
 | D10 | Import Details state | Dialog-local, reset per preview | Move to Diagnostics | low | no | agent |
+| D11 | Dialog surface | Raised, as shipped; sheets Panel | Panel for dialogs; Raised for sheets too | low | yes | user |
 
 ## Diagrams (FULL)
 
