@@ -109,8 +109,8 @@ Skills: `flutter-add-widget-test`, `dart-run-static-analysis`.
 
 ## 5. Integration
 
-- [ ] 5.1 Run `dart format lib test`, `mise run analyze` and `mise run test`; all pass, and every test map row reads green.
-- [ ] 5.2 Re-check the proposal's `## Release Notes` against what shipped and run `mise run release-notes -- --check openspec/changes/restyle-dialogs/proposal.md`; it exits 0.
+- [x] 5.1 Run `dart format lib test`, `mise run analyze` and `mise run test`; all pass, and every test map row reads green.
+- [x] 5.2 Re-check the proposal's `## Release Notes` against what shipped and run `mise run release-notes -- --check openspec/changes/restyle-dialogs/proposal.md`; it exits 0.
 
 ## Workflow follow-up
 
