@@ -25,7 +25,7 @@ Wherever a screen shows a catalog or Tracker progress status, a map input status
 - **THEN** the card says found in raid is unknown in words, and no card text contains `FIR: unknown`
 
 ### Requirement: Developer wording stays out of the open view
-Text shown outside a Details section SHALL NOT contain these terms: `canonical`, `identity`, `durable`, `DPAPI`, `authority`, `authorized`, `normalized`, `M1`, `gross RUB` or `session-only`. Internal category keys and tarkov.dev IDs SHALL NOT be shown when a name resolves. Search SHALL still find an item by its ID.
+Text shown outside the Diagnostics section of Settings SHALL NOT contain these terms: `canonical`, `identity`, `durable`, `DPAPI`, `authority`, `authorized`, `normalized`, `M1`, `gross RUB` or `session-only`. Internal category keys and tarkov.dev IDs SHALL NOT be shown when a name resolves. Search SHALL still find an item by its ID.
 
 #### Scenario: Search field hint
 - **WHEN** the shell's search field is empty
@@ -44,7 +44,7 @@ Text shown outside a Details section SHALL NOT contain these terms: `canonical`,
 - **THEN** no string literal other than a widget key contains a listed term, and the check fails naming the file and line when one does
 
 ### Requirement: Times are shown in local time
-Times shown outside a Details section SHALL be in the user's local time zone, as a time for today and a date and time for an earlier day, never as a UTC ISO 8601 string. A missing time SHALL be shown as unknown. UTC ISO 8601 times SHALL appear only inside a Details section.
+Times shown outside the Diagnostics section of Settings SHALL be in the user's local time zone, as a time for today and a date and time for an earlier day, never as a UTC ISO 8601 string. A missing time SHALL be shown as unknown. UTC ISO 8601 times SHALL appear only inside Diagnostics.
 
 #### Scenario: History row time
 - **WHEN** a history row was observed today at 14:32 local time
@@ -58,35 +58,16 @@ Times shown outside a Details section SHALL be in the user's local time zone, as
 - **WHEN** the flea quote has no source time
 - **THEN** the Data sources panel says the price time is unknown
 
-### Requirement: Details sections start collapsed
-A Details section SHALL start collapsed and show only its title row while collapsed. Its content SHALL be built only while it is expanded. Its expanded state SHALL last for the app session, surviving a switch between Map and Scanner and a resize across the compact-layout breakpoint. It SHALL NOT be saved, so each launch starts collapsed.
-
-#### Scenario: Collapsed at launch
-- **WHEN** Scanner is first shown after launch with an accepted scan
-- **THEN** the scan evidence Details title is shown and no marker score, margin or stage timing is shown
-
-#### Scenario: Expanding shows the detail
-- **WHEN** the user clicks the collapsed Details title
-- **THEN** the detail content is shown
-
-#### Scenario: Survives a tab switch
-- **WHEN** the user expands a Details section, switches to Map and back to Scanner
-- **THEN** that Details section is still expanded
-
-#### Scenario: Survives a layout change
-- **WHEN** the user expands the scan evidence Details in the desktop layout and the window narrows below 1100 px
-- **THEN** the scan evidence Details is still expanded in the compact layout
-
-#### Scenario: New launch
-- **WHEN** a Details section was expanded and the app is started again with the same settings
-- **THEN** the section is collapsed
+#### Scenario: No UTC time in the inspector
+- **WHEN** the Scanner's inspector is open with item data, a price time and Tracker progress all known
+- **THEN** no text in the inspector contains an ISO 8601 time with `T` and `Z`
 
 ### Requirement: Data sources panel reads in plain language
-The Scanner panel that showed source authority SHALL be titled "Data sources". In the open view it SHALL say whether item data and Tracker progress are up to date, missing, loading, out of date, failed or cooling down, and when each was last updated. The source URL, UTC times, freshness limits and the cooldown end time SHALL be inside its Details section. Refresh read-only progress SHALL stay in the open view.
+The Scanner panel that showed source authority SHALL be titled "Data sources". It SHALL say whether item data and Tracker progress are up to date, missing, loading, out of date, failed or cooling down, and when each was last updated. It SHALL have no Details section: the source URL, UTC times, record counts, freshness limits and the cooldown end time SHALL be shown only in Settings under Diagnostics. Refresh read-only progress SHALL stay in the panel.
 
 #### Scenario: Current item data
 - **WHEN** the catalog is current and was downloaded today at 09:05
-- **THEN** the panel says item data is up to date and was updated at 09:05, and shows no source URL until Details is expanded
+- **THEN** the panel says item data is up to date and was updated at 09:05, and shows no source URL, no record count and no Details control
 
 #### Scenario: No catalog
 - **WHEN** no complete catalog is available and the catalog status is missing (no download running or failed)
@@ -94,7 +75,7 @@ The Scanner panel that showed source authority SHALL be titled "Data sources". I
 
 #### Scenario: Tracker in cooldown
 - **WHEN** Tracker progress is in cooldown
-- **THEN** the open view says progress refresh is cooling down, and the cooldown end time is shown only inside Details
+- **THEN** the panel says progress refresh is cooling down and shows no cooldown end time
 
 ### Requirement: Raw enum names are never interpolated into UI text
 The offline test suite SHALL include a check over `lib/ui` that fails when UI text interpolates `.name` of a status, state, reason, code, pass or found-in-raid value. The check SHALL name the file and line of each hit.
