@@ -5,10 +5,20 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
 import '../support/m1_harness.dart';
+
+/// One activity to record before the panel is shown.
+typedef _Seed = ({
+  String itemId,
+  DateTime at,
+  GameMode mode,
+  ActivitySource source,
+});
 
 void main() {
   Future<M1Harness> showHistory(
@@ -19,11 +29,22 @@ void main() {
     Recommendation? verdict,
     GameMode mode = GameMode.pvp,
     bool seed = true,
+    List<_Seed>? seeds,
+    DateTime Function()? clock,
+    Duration period = const Duration(seconds: 5),
   }) async {
     final h = (await tester.runAsync(() async {
       final result = M1Harness();
       await result.initialize();
-      if (seed) {
+      for (final row in seeds ?? const <_Seed>[]) {
+        await result.db.recordActivity(
+          row.itemId,
+          row.mode,
+          row.at,
+          source: row.source,
+        );
+      }
+      if (seed && seeds == null) {
         await result.db.recordActivity(
           itemId,
           mode,
@@ -43,7 +64,13 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: blackgridTheme(Brightness.dark),
-        home: Scaffold(body: HistoryPanel(services: h.services)),
+        home: Scaffold(
+          body: HistoryPanel(
+            services: h.services,
+            clock: clock,
+            period: period,
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -185,11 +212,11 @@ void main() {
     await showHistory(
       tester,
       itemId: 'item-a',
-      observedAt: DateTime.now(),
+      observedAt: fixtureNow,
       source: ActivitySource.importedScan,
     );
 
-    expect(find.textContaining('Imported scan'), findsOneWidget);
+    expect(find.text('Imported scan'), findsOneWidget);
     expect(find.textContaining('importedScan'), findsNothing);
     expect(find.text('Items you picked or scanned'), findsOneWidget);
   });
@@ -197,13 +224,111 @@ void main() {
   testWidgets('a row observed today shows its local time without ISO', (
     tester,
   ) async {
-    final observed = DateTime.now();
-    await showHistory(tester, itemId: 'item-a', observedAt: observed);
+    await showHistory(
+      tester,
+      itemId: 'item-a',
+      observedAt: fixtureNow.subtract(const Duration(minutes: 3)),
+    );
 
-    final time = localTimeLabel(observed, now: DateTime.now());
-    expect(find.textContaining(time), findsOneWidget);
+    expect(find.text('3 min'), findsOneWidget);
     expect(find.textContaining(RegExp(r'\d{4}-\d{2}-\d{2}T')), findsNothing);
     expect(find.textContaining('Z'), findsNothing);
+    expect(find.textContaining('T'), findsNothing);
+  });
+
+  testWidgets('player-facing-text: Earlier day', (tester) async {
+    await showHistory(
+      tester,
+      itemId: 'item-a',
+      observedAt: fixtureNow.subtract(const Duration(days: 2)),
+    );
+
+    expect(find.text('2 d'), findsOneWidget);
+  });
+
+  testWidgets('scanner-workspace: Relative ages', (tester) async {
+    _Seed seed(String id, Duration ago) => (
+      itemId: id,
+      at: fixtureNow.subtract(ago),
+      mode: GameMode.pvp,
+      source: ActivitySource.manual,
+    );
+    await showHistory(
+      tester,
+      seeds: [
+        seed('one', const Duration(seconds: 5)),
+        seed('two', const Duration(seconds: 12)),
+        seed('three', const Duration(minutes: 3)),
+        seed('four', const Duration(hours: 5)),
+        seed('five', const Duration(days: 2)),
+      ],
+    );
+
+    for (final age in ['just now', '12 s', '3 min', '5 h', '2 d']) {
+      expect(find.text(age), findsOneWidget, reason: age);
+    }
+  });
+
+  testWidgets('scanner-workspace: Ages move on while shown', (tester) async {
+    var now = fixtureNow;
+    await showHistory(
+      tester,
+      observedAt: fixtureNow,
+      clock: () => now,
+      period: const Duration(milliseconds: 10),
+    );
+    expect(find.text('just now'), findsOneWidget);
+
+    now = fixtureNow.add(const Duration(minutes: 3));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('3 min'), findsOneWidget);
+    expect(find.text('just now'), findsNothing);
+  });
+
+  testWidgets('scanner-workspace: History read fails', (tester) async {
+    final h = await showHistory(tester, itemId: 'ghost-item');
+    await tester.runAsync(() async {
+      await h.db.customStatement(
+        'CREATE TRIGGER no_activity BEFORE INSERT ON activity_records '
+        "BEGIN SELECT RAISE(ABORT, 'synthetic'); END",
+      );
+      await h.services.history.record(
+        'item-b',
+        GameMode.pvp,
+        fixtureNow,
+        source: ActivitySource.scan,
+      );
+    });
+    await tester.pump();
+
+    final message = find.text('The accepted scan was not recorded in history.');
+    expect(message, findsOneWidget);
+    expect(
+      tester.widget<Text>(message).style?.color,
+      tester.element(message).ember.errInk,
+    );
+    expect(
+      tester.getTopLeft(message).dy,
+      greaterThan(tester.getTopLeft(find.text('Recent items')).dy),
+    );
+    await tester.tap(find.text('ghost-item'));
+    await tester.pump();
+    expect(h.services.selection.historyRow?.itemId, 'ghost-item');
+  });
+
+  testWidgets('workspace-shell: Rows from another game mode', (tester) async {
+    _Seed seed(GameMode mode) => (
+      itemId: 'item-a',
+      at: fixtureNow,
+      mode: mode,
+      source: ActivitySource.manual,
+    );
+    await showHistory(tester, seeds: [seed(GameMode.pvp), seed(GameMode.pve)]);
+
+    expect(find.byType(ListTile), findsNWidgets(2));
+    expect(find.text('PvE'), findsOneWidget);
+    expect(find.text('PvP'), findsNothing);
   });
 
   testWidgets('a row whose item has no name shows its id', (tester) async {

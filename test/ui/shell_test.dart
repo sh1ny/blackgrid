@@ -21,6 +21,7 @@ import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/verdict_reason.dart';
 import 'package:blackgrid/ui/labels.dart';
+import 'package:blackgrid/ui/age_tick.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
 import 'package:blackgrid/ui/item_icon.dart';
 import 'package:blackgrid/ui/item_decision_card.dart';
@@ -474,68 +475,33 @@ void main() {
     final inspector = find.byKey(const Key('shell-inspector'));
     final history = find.descendant(
       of: inspector,
-      matching: find.text('Recent item activity'),
+      matching: find.text('Recent items'),
     );
     expect(history, findsOneWidget);
     expect(
       tester.getTopLeft(history).dy,
       lessThan(tester.getTopLeft(inspector).dy + 100),
     );
-  });
-
-  testWidgets('Scanner inspector details size to their content', (
-    tester,
-  ) async {
-    await pumpM1(tester, size: const Size(1660, 870));
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Sources'));
-    await tester.pumpAndSettle();
-    final source = find.byType(SourcePanel);
-    expect(source, findsOneWidget);
-    expect(tester.getSize(source).height, lessThan(400));
-    expect(
-      find.descendant(of: source, matching: find.text('Details')),
-      findsNothing,
-    );
-    expect(find.textContaining('Data is treated as old after'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('inspector expansion survives closing and switching areas', (
-    tester,
-  ) async {
-    final h = await pumpM1(tester, size: const Size(1660, 2400));
-    await tester.runAsync(
-      () => h.services.selection.selectManual(
-        h.services.catalog.snapshot!.items['item-a']!,
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
+    // The item's details, requirements and sources live in the main column.
     for (final title in ['Inspection details', 'Requirements', 'Sources']) {
-      await tester.ensureVisible(find.text(title));
-      await tester.tap(find.text(title));
-      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: inspector, matching: find.text(title)),
+        findsNothing,
+        reason: title,
+      );
     }
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('inspector-toggle')));
-    await tester.pumpAndSettle();
-    for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
-      expect(find.byType(type), findsOneWidget);
-    }
-    await tester.tap(find.byKey(const Key('nav-map')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-    for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
-      expect(find.byType(type), findsOneWidget);
-    }
+    // Rows size to their content and the Live scan note stays pinned below.
+    expect(
+      find.descendant(of: inspector, matching: find.byType(ListTile)),
+      findsWidgets,
+    );
+    expect(
+      tester.getTopLeft(find.byKey(const Key('live-scan-note'))).dy,
+      greaterThan(tester.getBottomLeft(find.byType(ListTile).last).dy),
+    );
   });
 
-  testWidgets('map optional uses survive inspector close and area switch', (
+  testWidgets('optional uses survive inspector close and area switch', (
     tester,
   ) async {
     final h = await pumpM1(tester, size: const Size(1660, 1200));
@@ -545,22 +511,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // Requirements live in the Scanner inspector; Map holds the working lists.
+    // Requirements live in the Scanner's Why section; its expansion state
+    // belongs to the Scanner column, not to the inspector.
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Requirements & uses');
-    final panel = find.byType(RequirementPanel);
-    final scroll = find
-        .descendant(of: panel, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scroll).position;
-    position.jumpTo(position.maxScrollExtent);
-    await tester.pumpAndSettle();
-    // The Scanner's Why section lists optional uses too; this is the panel's.
     final optional = find.descendant(
-      of: panel,
+      of: find.byType(WhySection),
       matching: find.textContaining('Optional uses ('),
     );
+    await tester.ensureVisible(optional);
     await tester.tap(optional);
     await tester.pumpAndSettle();
     bool expanded() => find
@@ -575,65 +534,44 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('inspector-toggle')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Requirements & uses');
     expect(expanded(), isTrue);
     await tester.tap(find.byKey(const Key('nav-map')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await showInspectorPanel(tester, 'Requirements & uses');
     expect(expanded(), isTrue);
   });
 
-  testWidgets(
-    'Scanner inspector expands selected item and requirements at scale two',
-    (tester) async {
-      final h = await pumpM1(tester, size: const Size(960, 720), scale: 2);
-      await tester.runAsync(
-        () => h.services.selection.selectManual(
-          h.services.catalog.snapshot!.items['item-a']!,
-        ),
-      );
-      await tester.tap(find.byKey(const Key('nav-scanner')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('inspector-toggle')));
-      await tester.pumpAndSettle();
-      final scroll = find
-          .descendant(
-            of: find.byKey(const Key('shell-inspector')),
-            matching: find.byType(Scrollable),
+  testWidgets('Scanner inspector fits at scale two', (tester) async {
+    final h = await pumpM1(tester, size: const Size(960, 720), scale: 2);
+    await tester.runAsync(
+      () => h.services.selection.selectManual(
+        h.services.catalog.snapshot!.items['item-a']!,
+      ),
+    );
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('inspector-toggle')));
+    await tester.pumpAndSettle();
+    final inspector = find.byKey(const Key('shell-inspector'));
+    expect(inspector, findsOneWidget);
+    expect(
+      find.descendant(of: inspector, matching: find.text('Recent items')),
+      findsOneWidget,
+    );
+    final bounds = tester.getRect(inspector);
+    // The pinned note scrolls inside its own viewport when it does not fit.
+    final viewport = tester.getRect(
+      find
+          .ancestor(
+            of: find.byKey(const Key('live-scan-note')),
+            matching: find.byType(SingleChildScrollView),
           )
-          .first;
-      expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
-      expect(scroll, findsOneWidget);
-      for (final (title, panel) in [
-        ('Inspection details', ItemDecisionCard),
-        ('Requirements', RequirementPanel),
-      ]) {
-        final heading = find.text(title);
-        // Drive the outer inspector position: a drag over its history list
-        // would scroll that nested list instead of revealing later sections.
-        final position = tester.state<ScrollableState>(scroll).position;
-        for (var step = 0; heading.evaluate().isEmpty && step < 30; step++) {
-          position.jumpTo(
-            (position.pixels + 150).clamp(0, position.maxScrollExtent),
-          );
-          await tester.pump();
-        }
-        expect(heading, findsOneWidget);
-        await tester.ensureVisible(heading);
-        await tester.pumpAndSettle();
-        await tester.tap(heading);
-        await tester.pumpAndSettle();
-        expect(find.byType(panel), findsOneWidget);
-        expect(tester.takeException(), isNull, reason: title);
-        await tester.ensureVisible(heading);
-        await tester.tap(heading);
-        await tester.pumpAndSettle();
-      }
-      expect(tester.takeException(), isNull);
-    },
-  );
+          .first,
+    );
+    expect(viewport.bottom, lessThanOrEqualTo(bounds.bottom));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('workspace-shell: Initial inspector state follows window width', (
     tester,
@@ -656,10 +594,10 @@ void main() {
     await pumpM1(tester, size: const Size(1660, 870));
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    final heading = find.text('Sources');
-    await tester.ensureVisible(heading);
-    await tester.tap(heading);
-    await tester.pumpAndSettle();
+    final heading = find.descendant(
+      of: find.byKey(const Key('shell-inspector')),
+      matching: find.text('Recent items'),
+    );
     FocusScope.of(tester.element(heading)).requestFocus();
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -719,7 +657,7 @@ void main() {
     expect(tester.widget<TextField>(search).focusNode!.hasFocus, isTrue);
   });
 
-  testWidgets('closed inspector unmounts evidence panels', (tester) async {
+  testWidgets('closed inspector unmounts the history list', (tester) async {
     await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
@@ -727,20 +665,11 @@ void main() {
       await tester.tap(find.byKey(const Key('inspector-toggle')));
       await tester.pumpAndSettle();
     }
-    final inspector = find.byKey(const Key('shell-inspector'));
-    final scroll = find
-        .descendant(of: inspector, matching: find.byType(Scrollable))
-        .first;
-    tester.state<ScrollableState>(scroll).position.jumpTo(800);
-    await tester.pumpAndSettle();
-    // Sources start collapsed on Scanner; expanding builds the panel.
-    await tester.tap(find.text('Sources'));
-    await tester.pumpAndSettle();
-    expect(find.byType(SourcePanel), findsOneWidget);
+    expect(find.byType(HistoryPanel), findsOneWidget);
     await tester.tap(find.byKey(const Key('inspector-toggle')));
     await tester.pumpAndSettle();
-    expect(find.byType(SourcePanel, skipOffstage: false), findsNothing);
-    expect(find.byType(RequirementPanel, skipOffstage: false), findsNothing);
+    expect(find.byType(HistoryPanel, skipOffstage: false), findsNothing);
+    expect(find.byType(AgeTick, skipOffstage: false), findsNothing);
   });
 
   testWidgets('docked inspector keeps desktop scanner evidence on screen', (
@@ -930,6 +859,40 @@ void main() {
     expect(find.byKey(const Key('shell-inspector')), findsOneWidget);
     expect(find.byKey(const Key('inspector-scrim')), findsNothing);
     expect(find.byKey(const PageStorageKey('map')), findsOneWidget);
+    // On Scanner the inspector holds Recent items and the Live scan note
+    // beside the main column, and none of the old panels.
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    final inspector = find.byKey(const Key('shell-inspector'));
+    expect(
+      find.descendant(of: inspector, matching: find.text('Recent items')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: inspector,
+        matching: find.byKey(const Key('live-scan-note')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getRect(find.byType(ScannerScreen)).right,
+      lessThanOrEqualTo(tester.getRect(inspector).left),
+    );
+    for (final title in ['Inspection details', 'Requirements', 'Sources']) {
+      expect(
+        find.descendant(of: inspector, matching: find.text(title)),
+        findsNothing,
+        reason: title,
+      );
+    }
+    for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
+      expect(
+        find.descendant(of: inspector, matching: find.byType(type)),
+        findsNothing,
+        reason: '$type',
+      );
+    }
   });
 
   for (final width in [1080.0, 1081.0]) {
@@ -1034,6 +997,50 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    'workspace-shell: Resize with open details keeps the optional-uses '
+    'expansion',
+    (tester) async {
+      final h = await pumpM1(tester, size: const Size(1660, 1200));
+      await tester.runAsync(
+        () => h.services.selection.selectManual(
+          h.services.catalog.snapshot!.items['item-a']!,
+        ),
+      );
+      await tester.tap(find.byKey(const Key('nav-scanner')));
+      await tester.pumpAndSettle();
+      final optional = find.descendant(
+        of: find.byType(WhySection),
+        matching: find.textContaining('Optional uses ('),
+      );
+      await tester.ensureVisible(optional);
+      await tester.tap(optional);
+      await tester.pumpAndSettle();
+      Finder open() => find.descendant(
+        of: find.ancestor(of: optional, matching: find.byType(InkWell)).first,
+        matching: find.byIcon(Icons.expand_less),
+      );
+      expect(open(), findsOneWidget);
+
+      tester.view.physicalSize = const Size(960, 720);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('inspector-scrim')), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('shell-inspector')), findsNothing);
+      expect(h.services.selection.selectedId, 'item-a');
+      expect(open(), findsOneWidget);
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const Key('inspector-toggle')))
+            .focusNode
+            ?.hasFocus,
+        isTrue,
+      );
+    },
+  );
 
   testWidgets(
     'inspector respects reduced motion and uses panel motion otherwise',
@@ -1788,7 +1795,7 @@ void main() {
         ),
       );
       expect(find.text('Picking an item here does not scan.'), findsNothing);
-      expect(find.text('Recent item activity'), findsOneWidget);
+      expect(find.text('Recent items'), findsOneWidget);
       expect(
         Theme.of(tester.element(find.byKey(const Key('nav-map'))))
             .scaffoldBackgroundColor,
@@ -2145,17 +2152,10 @@ void main() {
       }
     }
 
+    /// Shows the Scanner, whose main column and inspector hold the details.
     Future<void> expandInspector(WidgetTester tester) async {
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
-      for (final title in ['Inspection details', 'Requirements', 'Sources']) {
-        await tester.ensureVisible(find.text(title));
-        await tester.tap(find.text(title));
-        await tester.pumpAndSettle();
-      }
-      for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
-        expect(find.byType(type), findsOneWidget);
-      }
     }
 
     testWidgets('main windows show no diagnostic detail for an accepted scan', (

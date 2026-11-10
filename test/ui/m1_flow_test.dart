@@ -1,4 +1,5 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,7 +81,6 @@ void main() {
       });
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
-      await showInspectorPanel(tester, 'Recent item activity');
       await tapM1Async(
         tester,
         find.widgetWithText(ListTile, 'item-a'),
@@ -90,8 +90,14 @@ void main() {
       );
       expect(h.services.selection.inspectionMode, GameMode.pve);
       expect(h.services.catalog.mode, GameMode.pvp);
-      await showInspectorPanel(tester, 'History inspection');
-      expect(find.textContaining('Saved from PvE'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('answer-strip')),
+          matching: find.textContaining('Current advice · saved '),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('in PvE'), findsWidgets);
       await tester.tap(
         find.descendant(
           of: find.byKey(const Key('answer-strip')),
@@ -120,17 +126,13 @@ void main() {
       });
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
-      await showInspectorPanel(tester, 'Recent item activity');
-      final panel = find.byWidgetPredicate(
-        (w) => w is GridPanel && w.title == 'Recent item activity',
-      );
-      final list = find.descendant(of: panel, matching: find.byType(ListView));
-      await tester.drag(list, const Offset(0, -350));
-      await tester.pumpAndSettle();
+      final panel = find.byType(HistoryPanel);
       final scroll = find.descendant(
         of: panel,
         matching: find.byType(Scrollable),
       );
+      await tester.drag(scroll, const Offset(0, -350));
+      await tester.pumpAndSettle();
       final offset = tester.state<ScrollableState>(scroll).position.pixels;
       expect(offset, greaterThan(0));
       await tester.tap(find.byKey(const Key('nav-map')));

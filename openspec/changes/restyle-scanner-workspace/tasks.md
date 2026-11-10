@@ -34,10 +34,10 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | latest-accepted-scan → Map shows scans in its one answer strip | No separate panel | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: No separate panel | green |
 | latest-accepted-scan → Map shows scans in its one answer strip | Scan accepted with Map open | `test/ui/latest_scan_card_test.dart` | latest-accepted-scan: Scan accepted with Map open | green |
 | latest-accepted-scan → Map shows scans in its one answer strip | Scan fenced with Map open | `test/ui/latest_scan_card_test.dart` | a fenced scan with Map open changes nothing | green |
-| player-facing-text → Times are shown in local time | History row time | `test/ui/history_panel_test.dart` | a row observed today shows its local time without ISO | red |
-| player-facing-text → Times are shown in local time | Earlier day | `test/ui/history_panel_test.dart` | player-facing-text: Earlier day | red |
+| player-facing-text → Times are shown in local time | History row time | `test/ui/history_panel_test.dart` | a row observed today shows its local time without ISO | green |
+| player-facing-text → Times are shown in local time | Earlier day | `test/ui/history_panel_test.dart` | player-facing-text: Earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | `test/ui/freshness_tag_test.dart` | missing price time reads price time unknown | red |
-| player-facing-text → Times are shown in local time | No UTC time in the inspector | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > the Scanner inspector shows no UTC time | red |
+| player-facing-text → Times are shown in local time | No UTC time in the inspector | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > the Scanner inspector shows no UTC time | green |
 | scan-correction → An unaccepted scan with a title offers a correction | Ambiguous scan with item A shown | `test/application/scan_correction_test.dart` | offers > ambiguous scan offers a correction and keeps the selection | green |
 | scan-correction → An unaccepted scan with a title offers a correction | Below-similarity scan with nothing shown | `test/application/scan_correction_test.dart` | offers > below-similarity scan offers a correction with no recommendation | green |
 | scan-correction → An unaccepted scan with a title offers a correction | Rejections that offer nothing | `test/application/scan_correction_test.dart` | offers > other rejection reasons offer nothing | green |
@@ -99,11 +99,11 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | scanner-workspace → Prices breaks the price down | Missing prices | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Missing prices | green |
 | scanner-workspace → Scan evidence follows the details | Accepted scan | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Accepted scan | green |
 | scanner-workspace → Scan evidence follows the details | No scan yet | `test/ui/scanner_workspace_test.dart` | scanner-workspace: No scan yet | green |
-| scanner-workspace → Scanner inspector holds recent items and the live scan note | Recent items without clipping | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Recent items without clipping | red |
-| scanner-workspace → Scanner inspector holds recent items and the live scan note | Relative ages | `test/ui/history_panel_test.dart` | scanner-workspace: Relative ages | red |
-| scanner-workspace → Scanner inspector holds recent items and the live scan note | Ages move on while shown | `test/ui/history_panel_test.dart` | scanner-workspace: Ages move on while shown | red |
-| scanner-workspace → Scanner inspector holds recent items and the live scan note | Empty history | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Empty history | red |
-| scanner-workspace → Scanner inspector holds recent items and the live scan note | History read fails | `test/ui/history_panel_test.dart` | scanner-workspace: History read fails | red |
+| scanner-workspace → Scanner inspector holds recent items and the live scan note | Recent items without clipping | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Recent items without clipping | green |
+| scanner-workspace → Scanner inspector holds recent items and the live scan note | Relative ages | `test/ui/history_panel_test.dart` | scanner-workspace: Relative ages | green |
+| scanner-workspace → Scanner inspector holds recent items and the live scan note | Ages move on while shown | `test/ui/history_panel_test.dart` | scanner-workspace: Ages move on while shown | green |
+| scanner-workspace → Scanner inspector holds recent items and the live scan note | Empty history | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Empty history | green |
+| scanner-workspace → Scanner inspector holds recent items and the live scan note | History read fails | `test/ui/history_panel_test.dart` | scanner-workspace: History read fails | green |
 | settings-diagnostics → Main windows keep diagnostic detail out of normal use | Accepted scan on the Scanner | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > main windows show no diagnostic detail for an accepted scan | red |
 | settings-diagnostics → Main windows keep diagnostic detail out of normal use | Rejected scan with a correction offer | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > main windows show no diagnostic detail beside a correction offer | green |
 | settings-diagnostics → Main windows keep diagnostic detail out of normal use | Corrected scan subtitle | `test/ui/scan_correction_card_test.dart` | a picked correction is titled and aged as not accepted | green |
@@ -159,16 +159,16 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | workspace-shell → Top bar keeps navigation and timers reachable | Anchored search results and explicit selection | `test/ui/shell_test.dart` | workspace-shell: Anchored search results and explicit selection | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Wide tools alignment | `test/ui/shell_test.dart` | workspace-shell: Wide tools alignment | red |
 | workspace-shell → Top bar keeps navigation and timers reachable | Segmented area switch | `test/ui/shell_test.dart` | workspace-shell: Segmented area switch | red |
-| workspace-shell → Inspector preserves the workspace | Docked details | `test/ui/shell_test.dart` | workspace-shell: Docked details | red |
-| workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | red |
-| workspace-shell → Inspector preserves the workspace | Scanner history leads the inspector | `test/ui/shell_test.dart` | workspace-shell: Scanner history leads the inspector | red |
+| workspace-shell → Inspector preserves the workspace | Docked details | `test/ui/shell_test.dart` | workspace-shell: Docked details | green |
+| workspace-shell → Inspector preserves the workspace | Resize with open details | `test/ui/shell_test.dart` | workspace-shell: Resize with open details | green |
+| workspace-shell → Inspector preserves the workspace | Scanner history leads the inspector | `test/ui/shell_test.dart` | workspace-shell: Scanner history leads the inspector | green |
 | workspace-shell → Inspector preserves the workspace | Initial inspector state follows window width | `test/ui/shell_test.dart` | workspace-shell: Initial inspector state follows window width | green |
-| workspace-shell → Inspector preserves the workspace | Map inspector holds working lists | `test/ui/shell_test.dart` | workspace-shell: Map inspector holds working lists | red |
+| workspace-shell → Inspector preserves the workspace | Map inspector holds working lists | `test/ui/shell_test.dart` | workspace-shell: Map inspector holds working lists | green |
 | workspace-shell → History rows show item pictures | History selection | `test/ui/history_panel_test.dart` | workspace-shell: History selection | green |
 | workspace-shell → History rows show item pictures | Missing history picture | `test/ui/history_panel_test.dart` | workspace-shell: Missing history picture | green |
 | workspace-shell → History rows show item pictures | Legacy history verdict | `test/ui/history_panel_test.dart` | workspace-shell: Legacy history verdict | green |
-| workspace-shell → History rows show item pictures | Rows from another game mode | `test/ui/history_panel_test.dart` | workspace-shell: Rows from another game mode | red |
-| workspace-shell → History rows show item pictures | Imported scan row | `test/ui/history_panel_test.dart` | an imported scan row says Imported scan | red |
+| workspace-shell → History rows show item pictures | Rows from another game mode | `test/ui/history_panel_test.dart` | workspace-shell: Rows from another game mode | green |
+| workspace-shell → History rows show item pictures | Imported scan row | `test/ui/history_panel_test.dart` | an imported scan row says Imported scan | green |
 
 ## 1. Domain wording and ages
 
@@ -189,8 +189,8 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 ## 4. Scanner inspector and history rows
 
-- [ ] 4.1 Write failing tests in `test/ui/history_panel_test.dart` and `test/ui/scanner_workspace_test.dart` for `Recent items without clipping`, `Relative ages`, `Ages move on while shown` (injected clock and period), `Empty history`, `History read fails`, `Rows from another game mode`, `Imported scan row`, `History row time` and `Earlier day`. Verify they fail on today's clock-time subtitles and fixed-height box.
-- [ ] 4.2 Rebuild the Scanner inspector per D2 in `lib/ui/shell.dart`: `Column[Expanded(CustomScrollView(header, lazy SliverList)), pinned Live scan note]`, X14 one-line rows with relative age, the mode tag (D11) and the "Imported scan" tag (D13), sharing the age-tick widget from 2.2. Remove the `SizedBox(230)` and the three accordions and their flags. Verify the 4.1 tests pass, update `test/ui/shell_test.dart` `Docked details`, `Resize with open details` and `Scanner history leads the inspector`, and flip those rows green; re-run the green `workspace-shell` history rows and `item-icons` row tests.
+- [x] 4.1 Write failing tests in `test/ui/history_panel_test.dart` and `test/ui/scanner_workspace_test.dart` for `Recent items without clipping`, `Relative ages`, `Ages move on while shown` (injected clock and period), `Empty history`, `History read fails`, `Rows from another game mode`, `Imported scan row`, `History row time` and `Earlier day`. Verify they fail on today's clock-time subtitles and fixed-height box.
+- [x] 4.2 Rebuild the Scanner inspector per D2 in `lib/ui/shell.dart`: `Column[Expanded(CustomScrollView(header, lazy SliverList)), pinned Live scan note]`, X14 one-line rows with relative age, the mode tag (D11) and the "Imported scan" tag (D13), sharing the age-tick widget from 2.2. Remove the `SizedBox(230)` and the three accordions and their flags. Verify the 4.1 tests pass, update `test/ui/shell_test.dart` `Docked details`, `Resize with open details` and `Scanner history leads the inspector`, and flip those rows green; re-run the green `workspace-shell` history rows and `item-icons` row tests.
 
 ## 5. Retire the card and the Sources panel
 

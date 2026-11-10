@@ -7,6 +7,8 @@ import '../application/progress_controller.dart';
 import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../domain/settings.dart';
+import 'age_tick.dart';
 import 'item_icon.dart';
 import 'labels.dart';
 import 'requirement_rows.dart';
@@ -494,10 +496,22 @@ class DataSourceDiagnostics extends StatelessWidget {
 /// The items the player picked or scanned, newest first.
 class HistoryPanel extends StatelessWidget {
   /// Creates the panel over [services].
-  const HistoryPanel({super.key, required this.services});
+  const HistoryPanel({
+    super.key,
+    required this.services,
+    this.clock,
+    this.period = const Duration(seconds: 5),
+  });
 
   /// The services whose activity history the panel lists.
   final AppServices services;
+
+  /// The source of the current time for row ages, or `null` for the selection
+  /// controller's clock.
+  final DateTime Function()? clock;
+
+  /// How often the row ages are refreshed.
+  final Duration period;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -506,135 +520,190 @@ class HistoryPanel extends StatelessWidget {
       services.catalog,
       services.selection,
     ]),
-    builder: (context, _) => GridPanel(
-      title: 'Recent item activity',
-      icon: Icons.history,
-      subtitle: 'Items you picked or scanned',
-      child: services.history.rows.isEmpty
-          ? Center(child: Text(services.history.error ?? 'No items yet.'))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (services.history.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      services.history.error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+    builder: (context, _) {
+      final ember = context.ember;
+      final rows = services.history.rows;
+      final error = services.history.error;
+      return CustomScrollView(
+        key: const PageStorageKey('history-scroll'),
+        // Rows past the edge would otherwise request their icons.
+        scrollCacheExtent: const ScrollCacheExtent.pixels(0),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                EmberSpace.md,
+                EmberSpace.md,
+                EmberSpace.md,
+                EmberSpace.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Recent items',
+                    style: EmberType.uiHeading.copyWith(color: ember.ink),
+                  ),
+                  Text(
+                    'Items you picked or scanned',
+                    style: EmberType.label.copyWith(color: ember.inkSecondary),
+                  ),
+                  if (error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: EmberSpace.sm),
+                      child: Text(
+                        error,
+                        style: EmberType.body.copyWith(color: ember.errInk),
                       ),
                     ),
-                  ),
-                Expanded(
-                  child: ListView.builder(
-                    key: const PageStorageKey('history-scroll'),
-                    // Rows past the edge would otherwise request their icons.
-                    scrollCacheExtent: const ScrollCacheExtent.pixels(0),
-                    itemCount: services.history.rows.length,
-                    itemBuilder: (context, index) {
-                      final row = services.history.rows[index];
-                      // Only the current catalog may name an item or supply its
-                      // icon; a row from another mode gets neither.
-                      final item = services.catalog.mode == row.mode
-                          ? services.catalog.snapshot?.items[row.itemId]
-                          : null;
-                      final name = item?.name;
-                      final selected =
-                          services.selection.historyRow?.key == row.key;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Material(
-                          color: context.ember.raised,
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              color: selected
-                                  ? context.ember.accentText
-                                  : context.ember.hairline,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight:
-                                  38 *
-                                  MediaQuery.textScalerOf(context).scale(1),
-                              maxHeight:
-                                  MediaQuery.textScalerOf(context).scale(1) <= 1
-                                  ? 38
-                                  : double.infinity,
-                            ),
-                            child: ListTile(
-                              dense: true,
-                              minTileHeight: 38,
-                              minVerticalPadding: 0,
-                              minLeadingWidth: 30,
-                              horizontalTitleGap: 8,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _RecordedVerdict(row.verdict),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    localTimeLabel(
-                                      row.observedAt,
-                                      now: DateTime.now(),
-                                    ),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall,
-                                  ),
-                                ],
-                              ),
-                              leading: item == null
-                                  ? Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        color: context.ember.raised,
-                                        border: Border.all(
-                                          color: context.ember.hairlineStrong,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Icon(
-                                        Icons.inventory_2_outlined,
-                                        size: 18,
-                                        color: context.ember.inkSecondary,
-                                      ),
-                                    )
-                                  : ItemIcon(
-                                      key: ValueKey(item.id),
-                                      cache: services.itemIcons,
-                                      itemId: item.id,
-                                      iconLink: item.iconLink,
-                                      size: 30,
-                                      color: context.ember.inkSecondary,
-                                    ),
-                              title: Text(
-                                name ?? row.itemId,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                '${modeLabel(row.mode)} • ${activitySourceLabel(row.source)}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              onTap: () => services.selection.openHistory(row),
-                            ),
-                          ),
+                  if (rows.isEmpty && error == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: EmberSpace.sm),
+                      child: Text(
+                        'No items yet.',
+                        style: EmberType.body.copyWith(
+                          color: ember.inkSecondary,
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (rows.isNotEmpty)
+            // One tick for the whole list keeps every row's age moving on.
+            AgeTick(
+              clock: clock ?? services.selection.clock,
+              period: period,
+              builder: (context, now) => SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  EmberSpace.md,
+                  0,
+                  EmberSpace.md,
+                  EmberSpace.md,
+                ),
+                sliver: SliverList.builder(
+                  itemCount: rows.length,
+                  itemBuilder: (context, index) =>
+                      _historyRow(context, rows[index], now),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
+
+  /// One X14 row: picture, name, tags, recorded-verdict dot and age.
+  Widget _historyRow(BuildContext context, ItemActivity row, DateTime now) {
+    // Only the current catalog may name an item or supply its icon; a row from
+    // another mode gets neither.
+    final sameMode = services.catalog.mode == row.mode;
+    final item = sameMode ? services.catalog.snapshot?.items[row.itemId] : null;
+    final selected = services.selection.historyRow?.key == row.key;
+    final ember = context.ember;
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: ember.raised,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: selected ? ember.accentText : ember.hairline),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: 38 * scale,
+            maxHeight: scale <= 1 ? 38 : double.infinity,
+          ),
+          child: ListTile(
+            dense: true,
+            minTileHeight: 38,
+            minVerticalPadding: 0,
+            minLeadingWidth: 30,
+            horizontalTitleGap: 8,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            visualDensity: VisualDensity.compact,
+            leading: item == null
+                ? Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: ember.raised,
+                      border: Border.all(color: ember.hairlineStrong),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      size: 18,
+                      color: ember.inkSecondary,
+                    ),
+                  )
+                : ItemIcon(
+                    key: ValueKey(item.id),
+                    cache: services.itemIcons,
+                    itemId: item.id,
+                    iconLink: item.iconLink,
+                    size: 30,
+                    color: ember.inkSecondary,
                   ),
+            title: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    item?.name ?? row.itemId,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (!sameMode) _RowTag(modeLabel(row.mode)),
+                if (row.source == ActivitySource.importedScan)
+                  _RowTag(activitySourceLabel(row.source)),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _RecordedVerdict(row.verdict),
+                const SizedBox(width: 8),
+                Text(
+                  relativeAgeLabel(row.observedAt, now),
+                  style: EmberType.label.copyWith(color: ember.inkTertiary),
                 ),
               ],
             ),
+            onTap: () => services.selection.openHistory(row),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A Label-type tag on a history row, such as the mode of another game mode.
+class _RowTag extends StatelessWidget {
+  const _RowTag(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Flexible(
+    child: Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: context.ember.hairlineStrong),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: EmberType.label.copyWith(color: context.ember.inkTertiary),
+          ),
+        ),
+      ),
     ),
   );
 }

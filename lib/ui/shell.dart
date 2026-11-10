@@ -8,13 +8,12 @@ import '../application/scan_coordinator.dart';
 import '../domain/catalog.dart';
 import 'brand_lockup.dart';
 import 'answer_strip.dart';
-import 'evidence_panels.dart';
-import 'item_decision_card.dart';
 import 'import_dialog.dart';
 import 'labels.dart';
 import 'map_inspector.dart';
 import 'map_screen.dart';
 import 'raid_timer_strip.dart';
+import 'scanner_inspector.dart';
 import 'scanner_screen.dart';
 import 'settings/commit_field.dart';
 import 'settings/settings_page.dart';
@@ -62,10 +61,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
   final inspectorScope = FocusScopeNode(
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
   );
-  bool inspectionExpanded = false;
-  bool requirementsExpanded = false;
-  bool sourcesExpanded = false;
-  late RequirementExpansion requirementExpansion;
   final query = TextEditingController();
   final searchFocus = FocusNode();
   final inspectorFocus = FocusNode();
@@ -82,7 +77,6 @@ class _BlackgridShellState extends State<BlackgridShell> {
   @override
   void initState() {
     super.initState();
-    requirementExpansion = RequirementExpansion(widget.services.selection);
     query.text = widget.services.selection.query;
   }
 
@@ -99,22 +93,12 @@ class _BlackgridShellState extends State<BlackgridShell> {
   }
 
   @override
-  void didUpdateWidget(BlackgridShell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.services.selection != widget.services.selection) {
-      requirementExpansion.dispose();
-      requirementExpansion = RequirementExpansion(widget.services.selection);
-    }
-  }
-
-  @override
   void dispose() {
     query.dispose();
     searchFocus.dispose();
     inspectorFocus.dispose();
     _rootFocus.dispose();
     inspectorScope.dispose();
-    requirementExpansion.dispose();
     super.dispose();
   }
 
@@ -464,64 +448,21 @@ class _BlackgridShellState extends State<BlackgridShell> {
                   descendantsAreTraversable: inspectorOpen,
                   child: SizedBox(
                     key: const Key('shell-inspector'),
-                    child: ListView(
-                      children: [
-                        if (selected == 1) ...[
-                          SizedBox(
-                            height:
-                                230 * MediaQuery.textScalerOf(context).scale(1),
-                            child: inspectorOpen
-                                ? HistoryPanel(services: widget.services)
-                                : const SizedBox.shrink(),
+                    child: selected == 1
+                        ? (inspectorOpen
+                              ? ScannerInspector(services: widget.services)
+                              : const SizedBox.shrink())
+                        : ListView(
+                            children: [
+                              if (inspectorOpen)
+                                Padding(
+                                  padding: const EdgeInsets.all(EmberSpace.md),
+                                  child: MapInspector(
+                                    services: widget.services,
+                                  ),
+                                ),
+                            ],
                           ),
-                          if (inspectorOpen) ...[
-                            ExpansionTile(
-                              initiallyExpanded: inspectionExpanded,
-                              onExpansionChanged: (value) =>
-                                  inspectionExpanded = value,
-                              title: const Text('Inspection details'),
-                              children: [
-                                ItemDecisionCard(
-                                  services: widget.services,
-                                  compact: true,
-                                  showCorrectionOffer: false,
-                                  fitContent: true,
-                                ),
-                              ],
-                            ),
-                            ExpansionTile(
-                              initiallyExpanded: requirementsExpanded,
-                              onExpansionChanged: (value) =>
-                                  requirementsExpanded = value,
-                              title: const Text('Requirements'),
-                              children: [
-                                RequirementPanel(
-                                  services: widget.services,
-                                  fitContent: true,
-                                  expansion: requirementExpansion,
-                                ),
-                              ],
-                            ),
-                            ExpansionTile(
-                              initiallyExpanded: sourcesExpanded,
-                              onExpansionChanged: (value) =>
-                                  sourcesExpanded = value,
-                              title: const Text('Sources'),
-                              children: [
-                                SourcePanel(
-                                  services: widget.services,
-                                  fitContent: true,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ] else if (inspectorOpen)
-                          Padding(
-                            padding: const EdgeInsets.all(EmberSpace.md),
-                            child: MapInspector(services: widget.services),
-                          ),
-                      ],
-                    ),
                   ),
                 ),
               ),

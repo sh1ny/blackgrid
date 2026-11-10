@@ -3,9 +3,9 @@ import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/map_screen.dart';
-import 'package:blackgrid/ui/panels.dart';
 import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -189,28 +189,30 @@ void main() {
       ('item-a', ActivitySource.manual),
       ('item-b', ActivitySource.scan),
     });
-    await showInspectorPanel(tester, 'Recent item activity');
-    final history = find.byWidgetPredicate(
-      (w) => w is GridPanel && w.title == 'Recent item activity',
-    );
+    // Recent items lists both rows as one-line X14 rows, with no source
+    // subtitle.
+    final history = find.byType(HistoryPanel);
+    expect(history, findsOneWidget);
     expect(
-      find.descendant(
-        of: history,
-        matching: find.textContaining(
-          ' • ${activitySourceLabel(ActivitySource.scan)}',
-        ),
-      ),
-      findsOneWidget,
+      find.descendant(of: history, matching: find.byType(ListTile)),
+      findsNWidgets(2),
     );
-    expect(
-      find.descendant(
-        of: history,
-        matching: find.textContaining(
-          ' • ${activitySourceLabel(ActivitySource.manual)}',
+    for (final name in ['Synthetic component', 'Alternative component']) {
+      expect(
+        find.descendant(of: history, matching: find.text(name)),
+        findsOneWidget,
+        reason: name,
+      );
+    }
+    for (final source in ActivitySource.values) {
+      expect(
+        find.descendant(
+          of: history,
+          matching: find.textContaining(' • ${activitySourceLabel(source)}'),
         ),
-      ),
-      findsOneWidget,
-    );
+        findsNothing,
+      );
+    }
   });
   Future<M1Harness> pumpWithScan(WidgetTester tester) async {
     final ports = ScanFakePorts();

@@ -4,6 +4,7 @@ import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
+import 'package:blackgrid/domain/settings.dart' show ActivitySource;
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
@@ -554,5 +555,96 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('scanner-workspace: Recent items without clipping', (
+    tester,
+  ) async {
+    final h = await _scannerWithItem(tester, const Size(1660, 870));
+    await tester.runAsync(() async {
+      for (var i = 0; i < 12; i++) {
+        await h.db.recordActivity(
+          'row-${String.fromCharCode(97 + i)}',
+          GameMode.pvp,
+          fixtureNow.subtract(Duration(minutes: i)),
+          source: ActivitySource.manual,
+        );
+      }
+      await h.services.history.load();
+    });
+    await tester.pumpAndSettle();
+
+    final inspector = find.byKey(const Key('shell-inspector'));
+    final scrollable = find
+        .descendant(of: inspector, matching: find.byType(Scrollable))
+        .first;
+    final note = find.byKey(const Key('live-scan-note'));
+    expect(note, findsOneWidget);
+    expect(
+      find.descendant(of: scrollable, matching: note),
+      findsNothing,
+      reason: 'the Live scan note is pinned, not a sliver',
+    );
+
+    void expectRowsUnclipped() {
+      final rows = find.descendant(
+        of: inspector,
+        matching: find.byType(ListTile),
+      );
+      expect(rows, findsWidgets);
+      for (final row in rows.evaluate()) {
+        expect(row.size!.height, 38);
+        // Nothing between the row and the scroll view fixes a height.
+        row.visitAncestorElements((ancestor) {
+          final widget = ancestor.widget;
+          if (widget is Scrollable) return false;
+          if (widget is SizedBox) {
+            expect(widget.height, isNull, reason: 'a SizedBox boxes a row');
+          }
+          return true;
+        });
+      }
+    }
+
+    void expectNoteOnScreen(double height) {
+      final rect = tester.getRect(note);
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.bottom, lessThanOrEqualTo(height));
+    }
+
+    expectRowsUnclipped();
+    expectNoteOnScreen(870);
+
+    // A window too short for all rows scrolls the list, not the note.
+    tester.view.physicalSize = const Size(1660, 560);
+    await tester.pumpAndSettle();
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.maxScrollExtent, greaterThan(0));
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    expectRowsUnclipped();
+    expectNoteOnScreen(560);
+    expect(find.text('row-l'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('scanner-workspace: Empty history', (tester) async {
+    await pumpM1(tester, size: const Size(1660, 870));
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    final inspector = find.byKey(const Key('shell-inspector'));
+
+    expect(
+      find.descendant(of: inspector, matching: find.text('No items yet.')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: inspector,
+        matching: find.byKey(const Key('live-scan-note')),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 }
