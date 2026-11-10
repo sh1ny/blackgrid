@@ -1,3 +1,5 @@
+import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/scanner_screen.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_section.dart';
@@ -286,6 +288,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(_page, findsNothing);
     expect(find.byType(ScannerScreen), findsOneWidget);
+  });
+
+  testWidgets('settings-diagnostics: Tracker error stays reachable', (
+    tester,
+  ) async {
+    final h = await pumpM1(tester);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    const failure = 'Tracker refresh failed: synthetic fixture failure';
+    h.services.progress.error = failure;
+    h.services.progress.status = ProgressStatus.failed;
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('status-tracker')), findsOneWidget);
+    expect(find.textContaining(failure), findsNothing);
+
+    await _openFromStatus(tester, 'status-tracker');
+
+    final line = find.text('Tracker problem: $failure');
+    expect(line, findsOneWidget);
+    expect(_inView(tester, line), isTrue);
+    expect(
+      tester.widget<Text>(line).style?.color,
+      tester.element(line).ember.errInk,
+    );
   });
 
   testWidgets('settings-page: Already open', (tester) async {

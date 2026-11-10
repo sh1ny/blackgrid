@@ -24,7 +24,6 @@ import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/age_tick.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
 import 'package:blackgrid/ui/item_icon.dart';
-import 'package:blackgrid/ui/item_decision_card.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/shell.dart';
@@ -886,7 +885,7 @@ void main() {
         reason: title,
       );
     }
-    for (final type in [ItemDecisionCard, RequirementPanel, SourcePanel]) {
+    for (final type in [RequirementPanel]) {
       expect(
         find.descendant(of: inspector, matching: find.byType(type)),
         findsNothing,
@@ -935,12 +934,7 @@ void main() {
         .dy;
     expect(top('This raid'), lessThan(top('Markers')));
     expect(top('Markers'), lessThan(top('Pins')));
-    for (final type in [
-      RequirementPanel,
-      SourcePanel,
-      HistoryPanel,
-      ItemDecisionCard,
-    ]) {
+    for (final type in [RequirementPanel, HistoryPanel]) {
       expect(
         find.descendant(of: inspector, matching: find.byType(type)),
         findsNothing,
@@ -2283,11 +2277,24 @@ void main() {
         find.textContaining('Recording stopped: synthetic disk failure'),
         findsOneWidget,
       );
+      // The Scanner no longer carries the catalog error text itself.
+      expect(find.text(error!), findsNothing);
       expect(
         find.descendant(
-          of: find.byType(SourcePanel),
-          matching: find.text(error!),
+          of: find.byKey(const Key('status-item-data')),
+          matching: find.text('Item data out of date'),
         ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('status-item-data')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SettingsPage), findsOneWidget);
+      final section = find.byKey(const Key('settings-item-data'));
+      expect(section, findsOneWidget);
+      expect(
+        find.descendant(of: section, matching: find.text(error)),
         findsOneWidget,
       );
     });

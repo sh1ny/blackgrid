@@ -4,7 +4,7 @@ import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
-import 'package:blackgrid/ui/panels.dart';
+import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +26,12 @@ Future<ScanUiRig> _pump(WidgetTester tester) async {
     MaterialApp(
       theme: blackgridTheme(Brightness.dark),
       home: Scaffold(
-        body: ScanEvidencePanel(scanner: rig.coordinator, catalog: rig.catalog),
+        body: SingleChildScrollView(
+          child: ScanEvidenceSection(
+            scanner: rig.coordinator,
+            catalog: rig.catalog,
+          ),
+        ),
       ),
     ),
   );
@@ -203,8 +208,8 @@ void main() {
 
   testWidgets('subtitle avoids internal vocabulary', (tester) async {
     await _pump(tester);
-    final panel = tester.widget<GridPanel>(find.byType(GridPanel));
-    final subtitle = panel.subtitle!.toLowerCase();
+    final panel = tester.widget<ScannerSection>(find.byType(ScannerSection));
+    final subtitle = panel.subtitle.toLowerCase();
     for (final banned in [
       'canonical',
       'identity',

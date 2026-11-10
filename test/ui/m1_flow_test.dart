@@ -1,6 +1,6 @@
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
-import 'package:blackgrid/ui/panels.dart';
+import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,33 +30,55 @@ void main() {
           });
           await tester.tap(find.byKey(const Key('nav-scanner')));
           await tester.pumpAndSettle();
-          await showInspectorPanel(tester, 'Data sources');
-          final panel = find.byWidgetPredicate(
-            (w) => w is GridPanel && w.title == 'Data sources',
-          );
+          // The history item is read from its own mode's saved item data,
+          // never from the live PvP catalog that is also loaded here.
+          final selection = h.services.selection;
+          expect(selection.inspectionMode, GameMode.pve);
           expect(
-            find.descendant(of: panel, matching: find.text('Game mode: PvE')),
-            findsOneWidget,
+            selection.inspectionCatalog?.mode,
+            stored ? GameMode.pve : null,
           );
-          expect(
-            find.descendant(
-              of: panel,
-              matching: find.textContaining(
-                stored
-                    ? 'Item data: out of date · updated '
-                    : 'Item data: not downloaded yet',
-              ),
-            ),
-            findsOneWidget,
-          );
-          if (!stored) {
+          final strip = find.byKey(const Key('answer-strip'));
+          final why = find.byType(WhySection, skipOffstage: false);
+          final prices = find.byType(PricesSection, skipOffstage: false);
+          for (final section in [why, prices]) {
             expect(
               find.descendant(
-                of: panel,
-                matching: find.textContaining('updated'),
+                of: section,
+                matching: find.text(
+                  'Item data unavailable',
+                  skipOffstage: false,
+                ),
               ),
-              findsNothing,
+              stored ? findsNothing : findsOneWidget,
             );
+          }
+          if (stored) {
+            expect(
+              find.descendant(
+                of: strip,
+                matching: find.textContaining('saved '),
+              ),
+              findsOneWidget,
+            );
+            expect(
+              find.descendant(
+                of: strip,
+                matching: find.textContaining(' in PvE'),
+              ),
+              findsOneWidget,
+            );
+            expect(selection.item?.name, 'Synthetic component');
+          } else {
+            expect(
+              find.descendant(
+                of: strip,
+                matching: find.text('Item data unavailable'),
+              ),
+              findsOneWidget,
+            );
+            expect(find.text('Synthetic component'), findsNothing);
+            expect(selection.item, isNull);
           }
           expect(h.services.catalog.mode, GameMode.pvp);
         },

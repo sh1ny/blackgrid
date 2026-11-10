@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import '../application/app_services.dart';
-import '../application/catalog_controller.dart';
-import '../application/progress_controller.dart';
 import '../application/selection_controller.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
@@ -289,128 +287,12 @@ class _RequirementRow extends StatelessWidget {
   }
 }
 
-/// Where the item data, prices and tracker progress come from, and how old
-/// each is.
-///
-/// It says what a player needs. The source URL, UTC times, record counts,
-/// freshness limits and cooldown end time are in [DataSourceDiagnostics].
-class SourcePanel extends StatelessWidget {
-  /// Creates the panel over [services].
-  const SourcePanel({
-    super.key,
-    required this.services,
-    this.fitContent = false,
-  });
-
-  /// Sizes the panel to its contents within a scrolling inspector.
-  final bool fitContent;
-
-  /// The services whose data sources the panel describes.
-  final AppServices services;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([
-      services.catalog,
-      services.progress,
-      services.selection,
-    ]),
-    builder: (context, _) {
-      final selection = services.selection;
-      final snapshot = selection.inspectionCatalog;
-      final inspectionMode = selection.inspectionMode;
-      final usesLive =
-          !selection.isHistory || inspectionMode == services.catalog.mode;
-      final catalogStatus = usesLive
-          ? services.catalog.status
-          : selection.loadingHistory
-          ? CatalogStatus.loading
-          : snapshot == null
-          ? CatalogStatus.missing
-          : CatalogStatus.stale;
-      final progress = services.progress;
-      final quote = selection.item?.quoteAt;
-      final now = DateTime.now();
-      final small = Theme.of(context).textTheme.bodySmall;
-      final progressSnapshot = progress.snapshot;
-      return GridPanel(
-        fitContent: fitContent,
-        title: 'Data sources',
-        icon: Icons.description_outlined,
-        subtitle: 'How old the data on screen is',
-        child: ListView(
-          shrinkWrap: fitContent,
-          physics: fitContent ? const NeverScrollableScrollPhysics() : null,
-          children: [
-            Text(
-              snapshot == null
-                  ? 'Item data: ${catalogStatusLabel(catalogStatus)}'
-                  : 'Item data: ${catalogStatusLabel(catalogStatus)}'
-                        ' · updated '
-                        '${localTimeLabel(snapshot.observedAt, now: now)}',
-            ),
-            if (services.catalog.error case final error?)
-              Text(error, style: TextStyle(color: context.ember.errInk)),
-            Text('Game mode: ${modeLabel(inspectionMode)}', style: small),
-            if (snapshot != null)
-              ...snapshot.localizationErrors.map(
-                (e) => Text(
-                  'Some item names could not be loaded: $e',
-                  style: TextStyle(color: context.ember.errInk),
-                ),
-              ),
-            const SizedBox(height: 10),
-            Text(
-              quote == null
-                  ? 'Prices: price time unknown'
-                  : 'Prices: ${localTimeLabel(quote, now: now)}',
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Tracker progress: ${progressStatusLabel(progress.status)}'
-              ' · ${modeLabel(progress.mode)}',
-            ),
-            Text(
-              progressSnapshot == null
-                  ? 'No tracker progress yet. Anything missing stays unknown.'
-                  : 'Progress updated '
-                        '${localTimeLabel(progressSnapshot.observedAt, now: now)}'
-                        ' (this session only)',
-              style: small,
-            ),
-            if (progress.status == ProgressStatus.cooldown)
-              Text(
-                'Progress refresh is cooling down. Try again shortly.',
-                style: small,
-              ),
-            if (progress.error case final error?)
-              Text(
-                'Tracker problem: $error',
-                style: TextStyle(color: context.ember.errInk),
-              ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed:
-                  progress.hasCredential &&
-                      services.settings.settings.trackerEnabled
-                  ? progress.refresh
-                  : null,
-              icon: const Icon(Icons.sync, size: 18),
-              label: const Text('Refresh read-only progress'),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
 /// The technical detail behind the item data, prices and tracker progress.
 ///
 /// It describes the item data behind the inspected item: for a history item
 /// from another game mode, that mode's saved item data, otherwise the live
 /// catalog. It shows the source, UTC times, record counts, the cooldown end
-/// time and the age limits that [SourcePanel] leaves out. It ends with the map
+/// time and the age limits that the Settings page leaves out. It ends with the map
 /// data: the mode selected for it, the mode whose data the map uses, its source
 /// and the time of its last check.
 class DataSourceDiagnostics extends StatelessWidget {

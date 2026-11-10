@@ -6,11 +6,11 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| catalog-authority → Settings shows the catalog error | Failure shown in the panel | `test/ui/settings_page_test.dart` | catalog-authority: Failure shown in the panel | red |
-| catalog-authority → Settings shows the catalog error | Error cleared by a successful refresh | `test/ui/settings_page_test.dart` | catalog-authority: Error cleared by a successful refresh | red |
-| catalog-authority → Settings shows the catalog error | Item names that could not be loaded | `test/ui/settings_page_test.dart` | rows > Item and map data > catalog-authority: Item names that could not be loaded | red |
-| item-icons → The answer strip shows the item's icon | Scanner shows the icon | `test/ui/item_icon_surfaces_test.dart` | Scanner decision card shows the cached item icon in wide and narrow layouts | red |
-| item-icons → The answer strip shows the item's icon | Map's compact card shows the icon | `test/ui/item_icon_surfaces_test.dart` | Map compact decision card shows the cached item icon | red |
+| catalog-authority → Settings shows the catalog error | Failure shown in the panel | `test/ui/settings_page_test.dart` | catalog-authority: Failure shown in the panel | green |
+| catalog-authority → Settings shows the catalog error | Error cleared by a successful refresh | `test/ui/settings_page_test.dart` | catalog-authority: Error cleared by a successful refresh | green |
+| catalog-authority → Settings shows the catalog error | Item names that could not be loaded | `test/ui/settings_page_test.dart` | rows > Item and map data > catalog-authority: Item names that could not be loaded | green |
+| item-icons → The answer strip shows the item's icon | Scanner shows the icon | `test/ui/item_icon_surfaces_test.dart` | Scanner decision card shows the cached item icon in wide and narrow layouts | green |
+| item-icons → The answer strip shows the item's icon | Map's compact card shows the icon | `test/ui/item_icon_surfaces_test.dart` | Map compact decision card shows the cached item icon | green |
 | item-icons → The answer strip shows the item's icon | The generic icon shows while loading or offline | `test/ui/item_icon_test.dart` | shows the generic icon while loading and after a failure | green |
 | item-icons → The answer strip shows the item's icon | An undecodable icon falls back | `test/ui/item_icon_test.dart` | an undecodable file shows the generic icon without an error | green |
 | item-icons → Icons download only for shown items | Showing an uncached item downloads its icon once | `test/application/item_icon_cache_test.dart` | item icon cache > first acquire of an uncached item sends one GET and becomes ready | green |
@@ -36,7 +36,7 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | latest-accepted-scan → Map shows scans in its one answer strip | Scan fenced with Map open | `test/ui/latest_scan_card_test.dart` | a fenced scan with Map open changes nothing | green |
 | player-facing-text → Times are shown in local time | History row time | `test/ui/history_panel_test.dart` | a row observed today shows its local time without ISO | green |
 | player-facing-text → Times are shown in local time | Earlier day | `test/ui/history_panel_test.dart` | player-facing-text: Earlier day | green |
-| player-facing-text → Times are shown in local time | Missing flea quote time | `test/ui/freshness_tag_test.dart` | missing price time reads price time unknown | red |
+| player-facing-text → Times are shown in local time | Missing flea quote time | `test/ui/freshness_tag_test.dart` | missing price time reads price time unknown | green |
 | player-facing-text → Times are shown in local time | No UTC time in the inspector | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > the Scanner inspector shows no UTC time | green |
 | scan-correction → An unaccepted scan with a title offers a correction | Ambiguous scan with item A shown | `test/application/scan_correction_test.dart` | offers > ambiguous scan offers a correction and keeps the selection | green |
 | scan-correction → An unaccepted scan with a title offers a correction | Below-similarity scan with nothing shown | `test/application/scan_correction_test.dart` | offers > below-similarity scan offers a correction with no recommendation | green |
@@ -104,12 +104,12 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | scanner-workspace → Scanner inspector holds recent items and the live scan note | Ages move on while shown | `test/ui/history_panel_test.dart` | scanner-workspace: Ages move on while shown | green |
 | scanner-workspace → Scanner inspector holds recent items and the live scan note | Empty history | `test/ui/scanner_workspace_test.dart` | scanner-workspace: Empty history | green |
 | scanner-workspace → Scanner inspector holds recent items and the live scan note | History read fails | `test/ui/history_panel_test.dart` | scanner-workspace: History read fails | green |
-| settings-diagnostics → Main windows keep diagnostic detail out of normal use | Accepted scan on the Scanner | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > main windows show no diagnostic detail for an accepted scan | red |
+| settings-diagnostics → Main windows keep diagnostic detail out of normal use | Accepted scan on the Scanner | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > main windows show no diagnostic detail for an accepted scan | green |
 | settings-diagnostics → Main windows keep diagnostic detail out of normal use | Rejected scan with a correction offer | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > main windows show no diagnostic detail beside a correction offer | green |
 | settings-diagnostics → Main windows keep diagnostic detail out of normal use | Corrected scan subtitle | `test/ui/scan_correction_card_test.dart` | a picked correction is titled and aged as not accepted | green |
 | settings-diagnostics → Problems the player must act on stay on the main windows | Rejected scan still explains itself | `test/ui/scan_evidence_panel_test.dart` | rejected report gives a plain reason with the best candidate not accepted | green |
-| settings-diagnostics → Problems the player must act on stay on the main windows | Errors the player must act on stay visible | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > catalog error and recording stop note stay on the Scanner | red |
-| settings-diagnostics → Problems the player must act on stay on the main windows | Tracker error stays reachable | `test/ui/settings_page_shell_test.dart` | settings-diagnostics: Tracker error stays reachable | red |
+| settings-diagnostics → Problems the player must act on stay on the main windows | Errors the player must act on stay visible | `test/ui/shell_test.dart` | main windows keep diagnostic detail out > catalog error and recording stop note stay on the Scanner | green |
+| settings-diagnostics → Problems the player must act on stay on the main windows | Tracker error stays reachable | `test/ui/settings_page_shell_test.dart` | settings-diagnostics: Tracker error stays reachable | green |
 | settings-page → Settings opens as a page | Open and go back | `test/ui/settings_page_shell_test.dart` | settings-page: Open and go back | red |
 | settings-page → Settings opens as a page | Inspector hidden while open | `test/ui/settings_page_shell_test.dart` | settings-page: Inspector hidden while open | red |
 | settings-page → Settings opens as a page | Switch area from Settings | `test/ui/settings_page_shell_test.dart` | settings-page: Switch area from Settings | red |
@@ -138,11 +138,11 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 | verdict-presentation → One-line verdict reason | Flea with no trader offer | `test/domain/verdict_reason_test.dart` | Flea with no trader offer | green |
 | verdict-presentation → One-line verdict reason | Price unavailable | `test/domain/verdict_reason_test.dart` | Price unavailable wording | green |
 | verdict-presentation → One-line verdict reason | A long reason at the narrowest card | `test/ui/shell_test.dart` | long catalog reason wraps fully inside the shared strip | green |
-| verdict-presentation → Price freshness tag | Current prices | `test/ui/freshness_tag_test.dart` | fresh tag reads Prices and time | red |
-| verdict-presentation → Price freshness tag | Stale prices | `test/ui/freshness_tag_test.dart` | stale tag uses warning style | red |
-| verdict-presentation → Price freshness tag | Unknown or future price time | `test/ui/freshness_tag_test.dart` | missing price time reads price time unknown | red |
-| verdict-presentation → Price freshness tag | The tag turns stale while shown | `test/ui/freshness_tag_test.dart` | tag turns stale on the age notify with a fake clock | red |
-| verdict-presentation → Price freshness tag | No tag when the Flea price cannot matter | `test/ui/freshness_tag_test.dart` | no tag on the price row | red |
+| verdict-presentation → Price freshness tag | Current prices | `test/ui/freshness_tag_test.dart` | fresh tag reads Prices and time | green |
+| verdict-presentation → Price freshness tag | Stale prices | `test/ui/freshness_tag_test.dart` | stale tag uses warning style | green |
+| verdict-presentation → Price freshness tag | Unknown or future price time | `test/ui/freshness_tag_test.dart` | missing price time reads price time unknown | green |
+| verdict-presentation → Price freshness tag | The tag turns stale while shown | `test/ui/freshness_tag_test.dart` | tag turns stale on the age notify with a fake clock | green |
+| verdict-presentation → Price freshness tag | No tag when the Flea price cannot matter | `test/ui/freshness_tag_test.dart` | no tag on the price row | green |
 | workspace-shell → Selection semantics survive the new layout | Selection changes across areas | `test/ui/shell_test.dart` | workspace-shell: Selection changes across areas | green |
 | workspace-shell → Selection semantics survive the new layout | History and later rejected scan | `test/ui/shell_test.dart` | workspace-shell: History and later rejected scan | green |
 | workspace-shell → Answer precedes the workspace | Answer first in both areas | `test/ui/shell_test.dart` | workspace-shell: Answer first in both areas $size $room | green |
@@ -194,8 +194,8 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 ## 5. Retire the card and the Sources panel
 
-- [ ] 5.1 Move the catalog-error tests from `test/ui/data_sources_panel_test.dart` to `test/ui/settings_page_test.dart` (`Failure shown in the panel`, `Error cleared by a successful refresh`, `Item names that could not be loaded`) and add `Tracker error stays reachable` and `Errors the player must act on stay visible` (status bar word opens the Settings section with the error text). Verify they fail.
-- [ ] 5.2 Show `catalog.error` and the localization errors as the Item data `SettingsRow` message in error ink (D10), and the Tracker error as "Tracker problem: <error>" in error ink in Tracker progress (D13). Delete `ItemDecisionCard` (with `scanAgeLabel`), `SourcePanel` and `test/ui/data_sources_panel_test.dart`. Move the tests that mounted the card to the strip and the Prices section (`test/ui/freshness_tag_test.dart`, `test/ui/item_icon_surfaces_test.dart`, `test/ui/verdict_plate_test.dart`, `test/ui/decision_card_text_test.dart`, `test/support/m1_widget_harness.dart`); the player-facing-text "Unknown found-in-raid state" test moves to the strip, and its scenario's leftover "decision card" wording waits for the later spec cleanup. Verify those files pass and flip the `catalog-authority`, `settings-diagnostics`, `verdict-presentation` freshness and `item-icons` rows green.
+- [x] 5.1 Move the catalog-error tests from `test/ui/data_sources_panel_test.dart` to `test/ui/settings_page_test.dart` (`Failure shown in the panel`, `Error cleared by a successful refresh`, `Item names that could not be loaded`) and add `Tracker error stays reachable` and `Errors the player must act on stay visible` (status bar word opens the Settings section with the error text). Verify they fail.
+- [x] 5.2 Show `catalog.error` and the localization errors as the Item data `SettingsRow` message in error ink (D10), and the Tracker error as "Tracker problem: <error>" in error ink in Tracker progress (D13). Delete `ItemDecisionCard` (with `scanAgeLabel`), `SourcePanel` and `test/ui/data_sources_panel_test.dart`. Move the tests that mounted the card to the strip and the Prices section (`test/ui/freshness_tag_test.dart`, `test/ui/item_icon_surfaces_test.dart`, `test/ui/verdict_plate_test.dart`, `test/ui/decision_card_text_test.dart`, `test/support/m1_widget_harness.dart`); the player-facing-text "Unknown found-in-raid state" test moves to the strip, and its scenario's leftover "decision card" wording waits for the later spec cleanup. Verify those files pass and flip the `catalog-authority`, `settings-diagnostics`, `verdict-presentation` freshness and `item-icons` rows green.
 
 ## 6. Top bar
 

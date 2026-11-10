@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:blackgrid/application/item_icon_cache.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
-import 'package:blackgrid/ui/item_decision_card.dart';
 import 'package:blackgrid/ui/item_icon.dart';
 import 'package:blackgrid/ui/shell.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
@@ -62,14 +61,22 @@ void main() {
   ///
   /// The load starts inside [WidgetTester.runAsync] so that its file I/O
   /// completes on the real event loop.
-  Future<void> readyIcon(WidgetTester tester) async {
+  Future<void> readyIcon(WidgetTester tester, {Finder? within}) async {
+    final images = within == null
+        ? find.byType(Image)
+        : find.descendant(of: within, matching: find.byType(Image));
     await tester.runAsync(() async {
-      cache.leasesFor('item-a').last.value = ReadyItemIcon(iconFile);
+      final leases = cache.leasesFor('item-a');
+      // A closed inspector's released lease is not the one on screen.
+      final live = within == null
+          ? leases.last
+          : leases.lastWhere((lease) => !lease.released);
+      live.value = ReadyItemIcon(iconFile);
       await tester.pump();
-      final image = tester.widget<Image>(find.byType(Image));
+      final image = tester.widget<Image>(images);
       final done = Completer<void>();
       final stream = image.image.resolve(
-        createLocalImageConfiguration(tester.element(find.byType(Image))),
+        createLocalImageConfiguration(tester.element(images)),
       );
       final listener = ImageStreamListener(
         (_, _) => done.complete(),
@@ -88,18 +95,24 @@ void main() {
     ),
   );
 
-  Future<void> showCard(
+  final strip = find.byKey(const Key('answer-strip'));
+
+  /// Shows the shell on [area] at [size] and waits for the strip's icon.
+  Future<void> showStrip(
     WidgetTester tester,
     M1Harness h,
-    Size size, {
-    bool compact = false,
-  }) async {
-    await show(
-      tester,
-      size,
-      ItemDecisionCard(services: h.services, compact: compact),
-    );
-    await readyIcon(tester);
+    Size size,
+    String area,
+  ) async {
+    await show(tester, size, BlackgridShell(services: h.services));
+    await tester.tap(find.byKey(Key(area)));
+    await tester.pumpAndSettle();
+    // An open inspector's history row would also lease the icon.
+    if (find.byKey(const Key('shell-inspector')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
+    await readyIcon(tester, within: strip);
   }
 
   testWidgets('closed inspector does not acquire history images', (
@@ -146,25 +159,24 @@ void main() {
       final h = await harness(tester);
       await selectA(tester, h);
 
-      // Wide layout: the image box.
-      await showCard(tester, h, const Size(900, 700));
-      expect(find.byType(ItemIcon), findsOneWidget);
+      // Wide layout: the strip lays its blocks out in one row.
+      await showStrip(tester, h, const Size(1672, 941), 'nav-scanner');
+      final icon = find.descendant(of: strip, matching: find.byType(ItemIcon));
+      expect(icon, findsOneWidget);
       expect(find.byKey(readyItemIconKey), findsOneWidget);
       expect(find.text(_noArtwork), findsNothing);
-      expect(find.byKey(const Key('item-title-row')), findsNothing);
-      expect(cache.acquires, [('item-a', _link)]);
+      // The inspector's history row leased the icon too; only the strip's
+      // lease is still held once it is closed.
+      expect(cache.acquires.toSet(), {('item-a', _link)});
+      expect(cache.leasesFor('item-a').where((l) => !l.released), hasLength(1));
 
-      // Narrow layout: beside the name.
-      cache.acquires.clear();
-      await showCard(tester, h, const Size(420, 700));
-      expect(find.byType(ItemIcon), findsOneWidget);
+      // Narrow layout: the blocks wrap, the icon stays beside the name.
+      await showStrip(tester, h, const Size(960, 720), 'nav-scanner');
+      expect(icon, findsOneWidget);
       expect(find.byKey(readyItemIconKey), findsOneWidget);
       expect(find.text(_noArtwork), findsNothing);
       expect(
-        find.descendant(
-          of: find.byKey(const Key('item-title-row')),
-          matching: find.byType(ItemIcon),
-        ),
+        find.descendant(of: strip, matching: find.text('Synthetic component')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -177,19 +189,21 @@ void main() {
     final h = await harness(tester);
     await selectA(tester, h);
 
-    await showCard(tester, h, const Size(900, 700), compact: true);
+    await showStrip(tester, h, const Size(1672, 941), 'nav-map');
 
-    expect(find.byType(ItemIcon), findsOneWidget);
+    final icon = find.descendant(of: strip, matching: find.byType(ItemIcon));
+    expect(icon, findsOneWidget);
     expect(find.byKey(readyItemIconKey), findsOneWidget);
     expect(find.text(_noArtwork), findsNothing);
-    final row = find.byKey(const Key('item-title-row'));
-    expect(
-      find.descendant(of: row, matching: find.byType(ItemIcon)),
-      findsOneWidget,
+    final name = find.descendant(
+      of: strip,
+      matching: find.text('Synthetic component'),
     );
+    expect(name, findsOneWidget);
+    // The icon sits beside the name, on the same row.
     expect(
-      find.descendant(of: row, matching: find.text('Synthetic component')),
-      findsOneWidget,
+      (tester.getCenter(icon).dy - tester.getCenter(name).dy).abs(),
+      lessThan(48),
     );
     expect(cache.acquires, [('item-a', _link)]);
   });

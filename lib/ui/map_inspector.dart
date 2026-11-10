@@ -8,7 +8,6 @@ import '../domain/settings.dart';
 import '../maps/map_marker_icons.dart';
 import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
-import 'item_decision_card.dart';
 import 'labels.dart';
 import 'marker_preferences.dart';
 import 'panels.dart';
@@ -132,7 +131,7 @@ class _RaidSectionState extends State<_RaidSection> {
             key: const ValueKey('raid-age'),
             padding: const EdgeInsets.only(bottom: EmberSpace.xs),
             child: Text(
-              'Screenshot ${scanAgeLabel(age)} ago',
+              'Screenshot ${_shortAge(age)} ago',
               style: EmberType.label.copyWith(color: ember.inkTertiary),
             ),
           ),
@@ -298,4 +297,11 @@ class _ListRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A short age such as `0 s`, `42 s`, `5 min` or `3 h`.
+String _shortAge(Duration age) {
+  if (age.inMinutes < 1) return '${age.inSeconds} s';
+  if (age.inHours < 1) return '${age.inMinutes} min';
+  return '${age.inHours} h';
 }

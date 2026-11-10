@@ -8,7 +8,6 @@ import '../application/scan_coordinator.dart';
 import '../data/vision/inspection_evidence.dart';
 import '../domain/title_matching.dart';
 import 'labels.dart';
-import 'panels.dart';
 import 'scanner_sections.dart';
 
 /// The scan evidence for debugging, always expanded: the shown scan's end
@@ -289,33 +288,6 @@ class ScanEvidenceSection extends StatelessWidget {
     title: 'Scan evidence',
     subtitle: scanEvidenceSubtitle,
     child: ScanEvidenceBody(scanner: scanner, catalog: catalog),
-  );
-}
-
-/// The scan evidence in a titled panel that scrolls its own content.
-class ScanEvidencePanel extends StatelessWidget {
-  /// Creates the panel over [scanner]; [catalog] supplies item names.
-  const ScanEvidencePanel({
-    super.key,
-    required this.scanner,
-    required this.catalog,
-  });
-
-  /// The coordinator whose phase, last accepted and latest scans are shown.
-  final ScanCoordinator scanner;
-
-  /// The catalog the item names come from.
-  final CatalogController catalog;
-
-  @override
-  Widget build(BuildContext context) => GridPanel(
-    title: 'Scan evidence',
-    icon: Icons.fact_check_outlined,
-    subtitle: scanEvidenceSubtitle,
-    child: ListView(
-      key: const PageStorageKey('scan-evidence-scroll'),
-      children: [ScanEvidenceBody(scanner: scanner, catalog: catalog)],
-    ),
   );
 }
 

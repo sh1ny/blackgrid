@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:blackgrid/application/app_services.dart';
+import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/live_map_data_controller.dart';
 import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
@@ -11,6 +12,7 @@ import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_row.dart';
@@ -319,6 +321,38 @@ void main() {
   });
 
   group('rows', () {
+    group('Item and map data', () {
+      testWidgets('catalog-authority: Item names that could not be loaded', (
+        tester,
+      ) async {
+        final h = await _harness(tester);
+        h.services.catalog.snapshot = CatalogSnapshot(
+          mode: GameMode.pvp,
+          revision: 'names-revision',
+          observedAt: DateTime.utc(2026, 11, 10),
+          items: const {},
+          traders: const {},
+          requirements: const [],
+          localizationErrors: const ['items'],
+        );
+        await _pump(tester, h.services);
+        final section = find.byKey(const Key('settings-item-data'));
+        await _show(tester, section);
+
+        final message = find.descendant(
+          of: section,
+          matching: find.textContaining(
+            'Some item names could not be loaded: items',
+          ),
+        );
+        expect(message, findsOneWidget);
+        expect(
+          tester.widget<Text>(message).style?.color,
+          tester.element(message).ember.errInk,
+        );
+      });
+    });
+
     testWidgets('settings-page: Toggle by row', (tester) async {
       final h = await _pumpHarness(tester);
       final before = _settings(h).followGameLogs;
@@ -590,6 +624,69 @@ void main() {
 
       expect(button(tester, 'Refresh map data').onPressed, isNull);
       expect(button(tester, 'Refresh item data').onPressed, isNotNull);
+    });
+
+    testWidgets('catalog-authority: Failure shown in the panel', (
+      tester,
+    ) async {
+      final h = await _harness(tester);
+      h.failNetwork = true;
+      await tester.runAsync(h.services.catalog.refresh);
+      expect(h.services.catalog.status, CatalogStatus.stale);
+      await _pump(tester, h.services);
+      final section = find.byKey(const Key('settings-item-data'));
+      await _show(tester, section);
+
+      expect(
+        find.descendant(of: section, matching: find.text('Out of date')),
+        findsOneWidget,
+      );
+      final error = find.descendant(
+        of: section,
+        matching: find.text(
+          'Item data could not be downloaded: tarkov.dev answered with an '
+          'error. The last item data is still in use.',
+        ),
+      );
+      expect(error, findsOneWidget);
+      expect(
+        tester.widget<Text>(error).style?.color,
+        tester.element(error).ember.errInk,
+      );
+    });
+
+    testWidgets('catalog-authority: Error cleared by a successful refresh', (
+      tester,
+    ) async {
+      final h = await _harness(tester);
+      h.failNetwork = true;
+      await tester.runAsync(h.services.catalog.refresh);
+      await _pump(tester, h.services);
+      final section = find.byKey(const Key('settings-item-data'));
+      await _show(tester, section);
+      expect(
+        find.descendant(
+          of: section,
+          matching: find.textContaining('Item data could not be'),
+        ),
+        findsOneWidget,
+      );
+
+      h.failNetwork = false;
+      await tester.runAsync(h.services.catalog.refresh);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: section, matching: find.text('Up to date')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: section,
+          matching: find.textContaining('Item data could not be'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('settings-page: Map data refresh fails', (tester) async {
