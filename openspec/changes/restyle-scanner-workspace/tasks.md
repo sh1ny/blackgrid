@@ -205,7 +205,7 @@ Rows that start `green` ride along unchanged inside a MODIFIED requirement and a
 
 ## 7. Integration and sign-off
 
-- [ ] 7.1 Confirm every test map row is green, each with a test by that name. Verify by listing rows still marked red and finding none.
-- [ ] 7.2 Run `dart format`, `mise run analyze` and `mise run test`. Verify all pass offline, with no game running and none launched.
-- [ ] 7.3 Run `openspec validate restyle-scanner-workspace --strict` and `mise run release-notes -- --check openspec/changes/restyle-scanner-workspace/proposal.md`; set the PR number in the Release Notes. Verify both pass.
+- [x] 7.1 Confirm every test map row is green, each with a test by that name. Verify by listing rows still marked red and finding none.
+- [x] 7.2 Run `dart format`, `mise run analyze` and `mise run test`. Verify all pass offline, with no game running and none launched.
+- [x] 7.3 Run `openspec validate restyle-scanner-workspace --strict` and `mise run release-notes -- --check openspec/changes/restyle-scanner-workspace/proposal.md`; set the PR number in the Release Notes. Verify both pass.
 - [ ] 7.4 [user] The owner signs off the Scanner design against the B view of `.impeccable/preview/ember-directions.html` (M8.5 exit criterion), including two deliberate departures from the mockup's who line: "Chosen by hand" (mockup: "Picked by search · just now") and "Current advice · saved …" (mockup: "History · …"). Recorded as unverified until the owner reports it.
