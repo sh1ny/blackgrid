@@ -4,6 +4,8 @@ import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/app_logo.dart';
+import 'package:blackgrid/ui/brand_lockup.dart';
+import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,7 +17,77 @@ void expectStartupLogo(WidgetTester tester) {
   expect(find.byIcon(Icons.hub_outlined), findsNothing);
 }
 
+/// Pumps the startup screen in the room [brightness] that the system asks for.
+Future<void> _pumpStartup(
+  WidgetTester tester,
+  Future<AppServices> Function() open,
+  Brightness brightness,
+) async {
+  tester.platformDispatcher.platformBrightnessTestValue = brightness;
+  addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  await tester.pumpWidget(BlackgridBootstrap(key: UniqueKey(), open: open));
+  await tester.pump();
+}
+
 void main() {
+  testWidgets('app-icon: Startup screen shows the logo', (tester) async {
+    for (final brightness in Brightness.values) {
+      final pending = Completer<AppServices>();
+      await _pumpStartup(tester, () => pending.future, brightness);
+      final ember = brightness == Brightness.dark
+          ? EmberColors.dark
+          : EmberColors.light;
+
+      expect(find.byType(BrandLockup), findsOneWidget);
+      expectStartupLogo(tester);
+      final logo = tester.getTopLeft(find.byType(AppLogo)).dy;
+      final name = tester.getTopLeft(find.text('BLACKGRID')).dy;
+      final tagline = tester.getTopLeft(find.text('TRACK. PLAN. SURVIVE.')).dy;
+      expect(logo, lessThan(name), reason: 'logo above BLACKGRID');
+      expect(name, lessThan(tagline), reason: 'tagline below BLACKGRID');
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+        ember.canvas,
+        reason: 'Canvas of the $brightness room',
+      );
+      final spinner = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(spinner.color, ember.inkSecondary);
+    }
+  });
+
+  testWidgets('interface-theme: Startup error', (tester) async {
+    for (final brightness in Brightness.values) {
+      await _pumpStartup(
+        tester,
+        () => Future<AppServices>.error(StateError('storage')),
+        brightness,
+      );
+      final ember = brightness == Brightness.dark
+          ? EmberColors.dark
+          : EmberColors.light;
+
+      expect(
+        find.text(
+          'Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted.',
+        ),
+        findsOneWidget,
+      );
+      final retry = find.widgetWithText(
+        FilledButton,
+        'Retry opening local storage',
+      );
+      expect(retry, findsOneWidget);
+      expect(find.byType(OutlinedButton), findsNothing);
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+        ember.canvas,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    }
+  });
+
   testWidgets(
     'startup and storage error screens show the 54x54 app logo and no hub icon',
     (tester) async {

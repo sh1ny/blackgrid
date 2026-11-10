@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/app_services.dart';
 import '../application/scan_coordinator.dart';
 import '../domain/catalog.dart';
-import 'app_logo.dart';
+import 'brand_lockup.dart';
 import 'answer_strip.dart';
 import 'evidence_panels.dart';
 import 'item_decision_card.dart';
@@ -14,7 +16,9 @@ import 'map_inspector.dart';
 import 'map_screen.dart';
 import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
-import 'settings_dialog.dart';
+import 'settings/commit_field.dart';
+import 'settings/settings_page.dart';
+import 'settings/settings_section.dart';
 import 'stats_dialog.dart';
 import 'top_item_search.dart';
 import 'ember/theme_access.dart';
@@ -25,6 +29,27 @@ class BlackgridShell extends StatefulWidget {
   final AppServices services;
   @override
   State<BlackgridShell> createState() => _BlackgridShellState();
+}
+
+/// What the shell remembers while the Settings page is open.
+///
+/// The page is a view state of the shell, not a route: the areas and the
+/// inspector stay mounted underneath, so closing it shows them as they were.
+class _SettingsView {
+  const _SettingsView({required this.backArea, this.section, this.request = 0});
+
+  /// The area the page was opened from, which Back returns to.
+  final int backArea;
+
+  /// The section the latest link asked for, or `null` for none.
+  final SettingsSection? section;
+
+  /// The number of the latest request, which rises with every link.
+  final int request;
+
+  /// The same view retargeted at [section] under a higher request number.
+  _SettingsView retarget(SettingsSection section) =>
+      _SettingsView(backArea: backArea, section: section, request: request + 1);
 }
 
 class _BlackgridShellState extends State<BlackgridShell> {
@@ -44,6 +69,16 @@ class _BlackgridShellState extends State<BlackgridShell> {
   final query = TextEditingController();
   final searchFocus = FocusNode();
   final inspectorFocus = FocusNode();
+
+  /// The shell's own focus node, which takes focus back when Settings closes.
+  final _rootFocus = FocusNode();
+
+  /// Commits the page's pending text edits before it closes.
+  final _settingsFlush = SettingsFlushController();
+
+  /// The open Settings page, or `null` while it is closed.
+  _SettingsView? _settings;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +112,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
     query.dispose();
     searchFocus.dispose();
     inspectorFocus.dispose();
+    _rootFocus.dispose();
     inspectorScope.dispose();
     requirementExpansion.dispose();
     super.dispose();
@@ -99,8 +135,54 @@ class _BlackgridShellState extends State<BlackgridShell> {
     }
   }
 
+  /// Opens the Settings page in place of the answer strip and the main column.
+  ///
+  /// With a [section], the page scrolls to it and focuses its title. While the
+  /// page is already open, a section only retargets it and Back keeps the
+  /// area the page was first opened from; no section changes nothing.
+  void _openSettings({SettingsSection? section}) {
+    final open = _settings;
+    if (open != null) {
+      if (section != null) setState(() => _settings = open.retarget(section));
+      return;
+    }
+    setState(() {
+      _settings = _SettingsView(
+        backArea: selected,
+        section: section,
+        request: section == null ? 0 : 1,
+      );
+    });
+  }
+
+  /// Closes the Settings page, the one path every close goes through.
+  ///
+  /// Pending text edits start their commit first. The page unmounts in the
+  /// same frame, which a field survives because it ignores a result that
+  /// arrives after it is gone. [area] shows that area instead of the one the
+  /// page was opened from.
+  void _closeSettings({int? area}) {
+    final open = _settings;
+    if (open == null) return;
+    unawaited(_settingsFlush.flush());
+    setState(() {
+      selected = area ?? open.backArea;
+      _settings = null;
+    });
+    // Focus moves once the page is gone, so leaving its field is not a second
+    // commit of the same text.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _settings == null) _rootFocus.requestFocus();
+    });
+  }
+
   @override
-  Widget build(BuildContext context) => Shortcuts(
+  Widget build(BuildContext context) {
+    final settings = _settings;
+    return _shell(context, settings);
+  }
+
+  Widget _shell(BuildContext context, _SettingsView? settings) => Shortcuts(
     shortcuts: const {
       SingleActivator(LogicalKeyboardKey.keyK, control: true): _SearchIntent(),
       SingleActivator(LogicalKeyboardKey.escape): _CloseInspectorIntent(),
@@ -109,7 +191,9 @@ class _BlackgridShellState extends State<BlackgridShell> {
       actions: {
         _CloseInspectorIntent: CallbackAction<_CloseInspectorIntent>(
           onInvoke: (_) {
-            if (inspectorOpen && inspectorScope.hasFocus) {
+            if (_settings != null) {
+              _closeSettings();
+            } else if (inspectorOpen && inspectorScope.hasFocus) {
               _setInspectorOpen(false);
             }
             return null;
@@ -123,6 +207,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
         ),
       },
       child: Focus(
+        focusNode: _rootFocus,
         autofocus: true,
         child: Scaffold(
           body: SafeArea(
@@ -157,173 +242,45 @@ class _BlackgridShellState extends State<BlackgridShell> {
                     );
                   },
                 ),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.sizeOf(context).height * .55,
-                  ),
-                  child: SingleChildScrollView(
-                    child: AnswerStrip(services: widget.services),
+                Offstage(
+                  offstage: settings != null,
+                  child: ExcludeFocus(
+                    excluding: settings != null,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.sizeOf(context).height * .55,
+                      ),
+                      child: SingleChildScrollView(
+                        child: AnswerStrip(services: widget.services),
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final overlay = MediaQuery.sizeOf(context).width <= 1080;
-                      if (overlay != _wasOverlay) {
-                        _wasOverlay = overlay;
-                        if (overlay && inspectorOpen) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted && inspectorOpen && _wasOverlay) {
-                              inspectorScope.requestFocus();
-                            }
-                          });
-                        }
-                      }
-                      final panelWidth = 352.0.clamp(0.0, constraints.maxWidth);
-                      return Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                14,
-                                14,
-                                inspectorOpen && !overlay
-                                    ? panelWidth + 28
-                                    : 14,
-                                14,
-                              ),
-                              child: IndexedStack(
-                                index: selected,
-                                children: [
-                                  MapScreen(
-                                    key: const PageStorageKey('map'),
-                                    services: widget.services,
-                                  ),
-                                  ScannerScreen(
-                                    key: const PageStorageKey('scanner'),
-                                    services: widget.services,
-                                  ),
-                                ],
-                              ),
-                            ),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Offstage(
+                          offstage: settings != null,
+                          child: ExcludeFocus(
+                            excluding: settings != null,
+                            child: _main(),
                           ),
-                          if (inspectorOpen && overlay)
-                            Positioned.fill(
-                              child: GestureDetector(
-                                key: const Key('inspector-scrim'),
-                                onTap: () => _setInspectorOpen(false),
-                                child: ColoredBox(color: context.ember.scrim),
-                              ),
-                            ),
-                          if (inspectorEverOpened)
-                            AnimatedPositioned(
-                              top: 14,
-                              bottom: 14,
-                              right: inspectorOpen ? 14 : -panelWidth,
-                              width: panelWidth,
-                              duration: MediaQuery.disableAnimationsOf(context)
-                                  ? Duration.zero
-                                  : EmberMotion.panel,
-                              curve: EmberMotion.panelEase,
-                              onEnd: () {
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted &&
-                                      !inspectorOpen &&
-                                      inspectorVisible) {
-                                    setState(() => inspectorVisible = false);
-                                  }
-                                });
-                              },
-                              child: Offstage(
-                                offstage: !inspectorVisible,
-                                child: FocusScope(
-                                  node: inspectorScope,
-                                  canRequestFocus: inspectorOpen,
-                                  descendantsAreFocusable: inspectorOpen,
-                                  descendantsAreTraversable: inspectorOpen,
-                                  child: SizedBox(
-                                    key: const Key('shell-inspector'),
-                                    child: ListView(
-                                      children: [
-                                        if (selected == 1) ...[
-                                          SizedBox(
-                                            height:
-                                                230 *
-                                                MediaQuery.textScalerOf(context)
-                                                    .scale(1),
-                                            child: inspectorOpen
-                                                ? HistoryPanel(
-                                                    services: widget.services,
-                                                  )
-                                                : const SizedBox.shrink(),
-                                          ),
-                                          if (inspectorOpen) ...[
-                                            ExpansionTile(
-                                              initiallyExpanded:
-                                                  inspectionExpanded,
-                                              onExpansionChanged: (value) =>
-                                                  inspectionExpanded = value,
-                                              title: const Text(
-                                                'Inspection details',
-                                              ),
-                                              children: [
-                                                ItemDecisionCard(
-                                                  services: widget.services,
-                                                  compact: true,
-                                                  showCorrectionOffer: false,
-                                                  fitContent: true,
-                                                ),
-                                              ],
-                                            ),
-                                            ExpansionTile(
-                                              initiallyExpanded:
-                                                  requirementsExpanded,
-                                              onExpansionChanged: (value) =>
-                                                  requirementsExpanded = value,
-                                              title: const Text('Requirements'),
-                                              children: [
-                                                RequirementPanel(
-                                                  services: widget.services,
-                                                  fitContent: true,
-                                                  expansion:
-                                                      requirementExpansion,
-                                                ),
-                                              ],
-                                            ),
-                                            ExpansionTile(
-                                              initiallyExpanded:
-                                                  sourcesExpanded,
-                                              onExpansionChanged: (value) =>
-                                                  sourcesExpanded = value,
-                                              title: const Text('Sources'),
-                                              children: [
-                                                SourcePanel(
-                                                  services: widget.services,
-                                                  fitContent: true,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ] else if (inspectorOpen)
-                                          Padding(
-                                            padding: const EdgeInsets.all(
-                                              EmberSpace.md,
-                                            ),
-                                            child: MapInspector(
-                                              services: widget.services,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
+                        ),
+                      ),
+                      if (settings != null)
+                        Positioned.fill(
+                          child: SettingsPage(
+                            services: widget.services,
+                            backLabel:
+                                'Back to ${_areaName(settings.backArea)}',
+                            onBack: _closeSettings,
+                            flush: _settingsFlush,
+                            section: settings.section,
+                            request: settings.request,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 ListenableBuilder(
@@ -385,9 +342,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                             const SizedBox(width: 22),
                             InkWell(
                               key: const Key('status-item-data'),
-                              onTap: () => showSettings(
-                                context,
-                                widget.services,
+                              onTap: () => _openSettings(
                                 section: SettingsSection.itemData,
                               ),
                               child: Text(
@@ -398,9 +353,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                             const SizedBox(width: 22),
                             InkWell(
                               key: const Key('status-tracker'),
-                              onTap: () => showSettings(
-                                context,
-                                widget.services,
+                              onTap: () => _openSettings(
                                 section: SettingsSection.tracker,
                               ),
                               child: Text(
@@ -436,6 +389,150 @@ class _BlackgridShellState extends State<BlackgridShell> {
     ),
   );
 
+  /// The Map and Scanner areas with the inspector, which stay mounted while
+  /// Settings is open.
+  Widget _main() => LayoutBuilder(
+    builder: (context, constraints) {
+      final overlay = MediaQuery.sizeOf(context).width <= 1080;
+      if (overlay != _wasOverlay) {
+        _wasOverlay = overlay;
+        if (overlay && inspectorOpen) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && inspectorOpen && _wasOverlay) {
+              inspectorScope.requestFocus();
+            }
+          });
+        }
+      }
+      final panelWidth = 352.0.clamp(0.0, constraints.maxWidth);
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                14,
+                14,
+                inspectorOpen && !overlay ? panelWidth + 28 : 14,
+                14,
+              ),
+              child: IndexedStack(
+                index: selected,
+                children: [
+                  MapScreen(
+                    key: const PageStorageKey('map'),
+                    services: widget.services,
+                  ),
+                  ScannerScreen(
+                    key: const PageStorageKey('scanner'),
+                    services: widget.services,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (inspectorOpen && overlay)
+            Positioned.fill(
+              child: GestureDetector(
+                key: const Key('inspector-scrim'),
+                onTap: () => _setInspectorOpen(false),
+                child: ColoredBox(color: context.ember.scrim),
+              ),
+            ),
+          if (inspectorEverOpened)
+            AnimatedPositioned(
+              top: 14,
+              bottom: 14,
+              right: inspectorOpen ? 14 : -panelWidth,
+              width: panelWidth,
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : EmberMotion.panel,
+              curve: EmberMotion.panelEase,
+              onEnd: () {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && !inspectorOpen && inspectorVisible) {
+                    setState(() => inspectorVisible = false);
+                  }
+                });
+              },
+              child: Offstage(
+                offstage: !inspectorVisible,
+                child: FocusScope(
+                  node: inspectorScope,
+                  canRequestFocus: inspectorOpen,
+                  descendantsAreFocusable: inspectorOpen,
+                  descendantsAreTraversable: inspectorOpen,
+                  child: SizedBox(
+                    key: const Key('shell-inspector'),
+                    child: ListView(
+                      children: [
+                        if (selected == 1) ...[
+                          SizedBox(
+                            height:
+                                230 * MediaQuery.textScalerOf(context).scale(1),
+                            child: inspectorOpen
+                                ? HistoryPanel(services: widget.services)
+                                : const SizedBox.shrink(),
+                          ),
+                          if (inspectorOpen) ...[
+                            ExpansionTile(
+                              initiallyExpanded: inspectionExpanded,
+                              onExpansionChanged: (value) =>
+                                  inspectionExpanded = value,
+                              title: const Text('Inspection details'),
+                              children: [
+                                ItemDecisionCard(
+                                  services: widget.services,
+                                  compact: true,
+                                  showCorrectionOffer: false,
+                                  fitContent: true,
+                                ),
+                              ],
+                            ),
+                            ExpansionTile(
+                              initiallyExpanded: requirementsExpanded,
+                              onExpansionChanged: (value) =>
+                                  requirementsExpanded = value,
+                              title: const Text('Requirements'),
+                              children: [
+                                RequirementPanel(
+                                  services: widget.services,
+                                  fitContent: true,
+                                  expansion: requirementExpansion,
+                                ),
+                              ],
+                            ),
+                            ExpansionTile(
+                              initiallyExpanded: sourcesExpanded,
+                              onExpansionChanged: (value) =>
+                                  sourcesExpanded = value,
+                              title: const Text('Sources'),
+                              children: [
+                                SourcePanel(
+                                  services: widget.services,
+                                  fitContent: true,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ] else if (inspectorOpen)
+                          Padding(
+                            padding: const EdgeInsets.all(EmberSpace.md),
+                            child: MapInspector(services: widget.services),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
+
+  String _areaName(int area) => area == 0 ? 'Map' : 'Scanner';
+
   List<Widget> _headerItems({required bool compact}) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     final search = SizedBox(
@@ -445,19 +542,11 @@ class _BlackgridShellState extends State<BlackgridShell> {
         services: widget.services,
         controller: query,
         focusNode: searchFocus,
+        onPicked: _closeSettings,
       ),
     );
     final items = <Widget>[
-      const AppLogo(),
-      if (!compact)
-        const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('BLACKGRID'),
-            Text('TRACK. PLAN. SURVIVE.', style: TextStyle(fontSize: 8)),
-          ],
-        ),
+      BrandLockup.topBar(compact: compact),
       _nav(0, Icons.map_outlined, 'Map'),
       _nav(1, Icons.center_focus_weak, 'Scanner'),
       if (compact) search else Expanded(child: search),
@@ -473,14 +562,17 @@ class _BlackgridShellState extends State<BlackgridShell> {
         tooltip: inspectorOpen ? 'Close inspector' : 'Open inspector',
         constraints: const BoxConstraints.tightFor(width: 36, height: 36),
         padding: EdgeInsets.zero,
-        onPressed: () => _setInspectorOpen(!inspectorOpen),
+        // The inspector is hidden while Settings is open.
+        onPressed: _settings != null
+            ? null
+            : () => _setInspectorOpen(!inspectorOpen),
         icon: const Icon(Icons.vertical_split_outlined),
       ),
       _headerAction(
         'Settings',
         Icons.settings_outlined,
         compact,
-        () => showSettings(context, widget.services),
+        _openSettings,
       ),
       _headerAction(
         'Stats',
@@ -568,7 +660,13 @@ class _BlackgridShellState extends State<BlackgridShell> {
     selected: selected == index,
     child: InkWell(
       key: Key(index == 0 ? 'nav-map' : 'nav-scanner'),
-      onTap: () => setState(() => selected = index),
+      onTap: () {
+        if (_settings != null) {
+          _closeSettings(area: index);
+        } else {
+          setState(() => selected = index);
+        }
+      },
       child: Container(
         height: 36 * MediaQuery.textScalerOf(context).scale(1),
         padding: const EdgeInsets.symmetric(horizontal: 8),

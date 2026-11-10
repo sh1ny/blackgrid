@@ -15,10 +15,10 @@ const _notSavedMessage = 'Not saved. Try again.';
 final _runThrough = find.widgetWithText(TextField, 'Run-through length (m:ss)');
 final _reputation = find.widgetWithText(TextField, 'Fence reputation');
 
+/// Checks that the page shows the Raid timers section; the page is already
+/// on screen.
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.text('Settings'));
-  await tester.pumpAndSettle();
-  expect(find.text('Raid timers'), findsOneWidget);
+  expect(find.byKey(const Key('settings-title-raidTimers')), findsOneWidget);
 }
 
 /// Types [text] in [field] and commits it the way a user does: the keyboard's
@@ -37,7 +37,7 @@ Future<void> _enterAndSubmit(
 
 void main() {
   testWidgets('valid run-through length is saved', (tester) async {
-    final h = await pumpTimerApp(tester);
+    final h = await pumpTimerSettingsPage(tester);
     await _openSettings(tester);
     // The field starts at the default 7:10.
     expect(tester.widget<TextField>(_runThrough).controller!.text, '7:10');
@@ -64,7 +64,7 @@ void main() {
   });
 
   testWidgets('invalid run-through lengths are refused', (tester) async {
-    final h = await pumpTimerApp(tester);
+    final h = await pumpTimerSettingsPage(tester);
     await _openSettings(tester);
     final before = h.services.settings.settings.raidTimers.runThroughSeconds;
     for (final bad in const ['0:30', '31:00', 'abc']) {
@@ -84,7 +84,7 @@ void main() {
   });
 
   testWidgets('out-of-range reputation is refused', (tester) async {
-    final h = await pumpTimerApp(tester);
+    final h = await pumpTimerSettingsPage(tester);
     await _openSettings(tester);
     await _enterAndSubmit(tester, _reputation, '7.5');
     expect(find.text(_reputationMessage), findsOneWidget);
@@ -99,7 +99,7 @@ void main() {
 
   testWidgets('reputation edits the active mode\'s value', (tester) async {
     // Nothing is saved as the mode; the logs say the session is PvP.
-    final h = await pumpTimerApp(tester, mode: GameMode.unknown);
+    final h = await pumpTimerSettingsPage(tester, mode: GameMode.unknown);
     await useLogLines(tester, h, const [
       ('22:00:10.000', 'Session mode: Regular'),
     ]);
@@ -122,15 +122,16 @@ void main() {
   });
 
   testWidgets('reputation field disabled without a mode', (tester) async {
-    await _noModeDialog(tester);
+    await _noModePage(tester);
     expect(tester.widget<TextField>(_reputation).enabled, isFalse);
-    expect(find.text(_chooseMode), findsOneWidget);
+    // The Item and map data row says it too: one line per section.
+    expect(find.text(_chooseMode), findsNWidgets(2));
   });
 
   testWidgets('a value typed during another save is not shown as saved', (
     tester,
   ) async {
-    final h = await pumpTimerApp(tester);
+    final h = await pumpTimerSettingsPage(tester);
     await _openSettings(tester);
     final runThrough = h.services.settings.raidTimers.runThroughSeconds;
     final reputation = h.services.settings.raidTimers.fenceReputationFor(
@@ -163,32 +164,29 @@ void main() {
   });
 
   testWidgets('timer switches are saved', (tester) async {
-    final h = await pumpTimerApp(tester);
+    final h = await pumpTimerSettingsPage(tester);
     await _openSettings(tester);
     for (final (label, read) in <(String, bool Function())>[
       ('Time in raid', () => h.services.settings.raidTimers.showTimeInRaid),
       ('Run-through', () => h.services.settings.raidTimers.showRunThrough),
       ('Scav cooldown', () => h.services.settings.raidTimers.showScavCooldown),
+      ('Show raid timers', () => h.services.settings.raidTimers.enabled),
     ]) {
-      final box = find.widgetWithText(CheckboxListTile, label);
-      await tester.ensureVisible(box);
+      // The whole row is the switch, so pressing the name turns it off.
+      final name = find.text(label);
+      await tester.ensureVisible(name);
       await tester.pumpAndSettle();
-      await tester.runAsync(() => tester.tap(box));
+      await tester.runAsync(() => tester.tap(name));
       await pumpUntil(tester, () => !read());
     }
-    final toggle = find.widgetWithText(SwitchListTile, 'Show raid timers');
-    await tester.ensureVisible(toggle);
-    await tester.pumpAndSettle();
-    await tester.runAsync(() => tester.tap(toggle));
-    await pumpUntil(tester, () => !h.services.settings.raidTimers.enabled);
     final stored = await tester.runAsync(h.services.database.readSettings);
     expect(stored!.settings.raidTimers.enabled, isFalse);
     expect(stored.settings.raidTimers.showScavCooldown, isFalse);
   });
 }
 
-Future<M1Harness> _noModeDialog(WidgetTester tester) async {
-  final h = await pumpTimerApp(tester, mode: GameMode.unknown);
+Future<M1Harness> _noModePage(WidgetTester tester) async {
+  final h = await pumpTimerSettingsPage(tester, mode: GameMode.unknown);
   expect(h.services.catalog.mode, GameMode.unknown);
   await _openSettings(tester);
   await tester.ensureVisible(_reputation);

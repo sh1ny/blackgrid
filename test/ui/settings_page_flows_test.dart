@@ -1,19 +1,42 @@
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/ui/settings_dialog.dart';
+import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
+import '../support/raid_timer_support.dart';
 import 'support/scan_ui_support.dart';
 
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 
 import 'dart:async';
 import 'dart:io';
+
+/// Opens the Settings page from the top bar.
+Future<void> _openSettings(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
+  await tester.pumpAndSettle();
+  expect(find.byType(SettingsPage), findsOneWidget);
+}
+
+/// Whether the switch row [row] is on.
+bool _on(WidgetTester tester, Finder row) => tester
+    .widget<EmberToggleSwitch>(
+      find.descendant(of: row, matching: find.byType(EmberToggleSwitch)),
+    )
+    .on;
+
+/// The press handler of the switch row [row], or `null` while it is disabled.
+VoidCallback? _tap(WidgetTester tester, Finder row) => tester
+    .widget<InkWell>(
+      find.descendant(of: row, matching: find.byType(InkWell)).first,
+    )
+    .onTap;
 
 void main() {
   testWidgets('scanner-evidence: Setting cannot be saved', (tester) async {
@@ -23,8 +46,7 @@ void main() {
         "CREATE TRIGGER preference_failure BEFORE INSERT ON preferences BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
       ),
     );
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final toggle = find.descendant(
       of: find.byKey(const Key('settings-live-scan')),
       matching: find.byKey(const Key('live-scan-switch')),
@@ -32,7 +54,7 @@ void main() {
     await tester.ensureVisible(toggle);
     await tester.pumpAndSettle();
     await tapM1Async(tester, toggle, () => h.services.scanner.error != null);
-    expect(tester.widget<Switch>(toggle).value, isFalse);
+    expect(_on(tester, toggle), isFalse);
     expect(h.services.scanner.status.state, LiveScanState.off);
     expect(
       find.descendant(
@@ -55,8 +77,7 @@ void main() {
         "CREATE TRIGGER preference_failure BEFORE INSERT ON preferences BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END",
       ),
     );
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final toggle = find.descendant(
       of: find.byKey(const Key('settings-live-scan')),
       matching: find.byKey(const Key('live-scan-switch')),
@@ -64,7 +85,7 @@ void main() {
     await tester.ensureVisible(toggle);
     await tester.pumpAndSettle();
     await tapM1Async(tester, toggle, () => h.services.scanner.error != null);
-    expect(tester.widget<Switch>(toggle).value, isFalse);
+    expect(_on(tester, toggle), isFalse);
     expect(h.services.scanner.status.state, LiveScanState.off);
     expect(
       find.descendant(
@@ -80,8 +101,7 @@ void main() {
       await h.services.scanner.setLiveScan(true);
       await h.services.scanner.settled;
     });
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final panel = find.byKey(const Key('settings-live-scan'));
     final picker = find.descendant(
       of: panel,
@@ -104,8 +124,7 @@ void main() {
       await h.services.scanner.setLiveScan(true);
       await h.services.scanner.settled;
     });
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final picker = find.descendant(
       of: find.byKey(const Key('settings-live-scan')),
       matching: find.byKey(const Key('scan-hotkey-picker')),
@@ -125,41 +144,11 @@ void main() {
       isNotNull,
     );
   });
-  testWidgets('scanner-evidence: Rebind refused', (tester) async {
-    final ports = ScanFakePorts();
-    final h = await pumpM1(tester, scanPorts: ports);
-    await tester.runAsync(() async {
-      await h.services.scanner.setLiveScan(true);
-      await h.services.scanner.settled;
-    });
-    ports.platform!.trigger.heldKeys.add(ScanHotkey.f10);
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-    final picker = find.descendant(
-      of: find.byKey(const Key('settings-live-scan')),
-      matching: find.byKey(const Key('scan-hotkey-picker')),
-    );
-    await tester.ensureVisible(picker);
-    await tester.pumpAndSettle();
-    await tester.tap(picker);
-    await tester.pumpAndSettle();
-    await tapM1Async(
-      tester,
-      find.text('F10').last,
-      () => h.services.scanner.hotkeyError != null,
-    );
-    expect(find.textContaining('F10 could not be registered'), findsOneWidget);
-    expect(
-      tester.widget<DropdownButton<ScanHotkey>>(picker).value,
-      ScanHotkey.f9,
-    );
-  });
   testWidgets('scanner-evidence: Live scan starting', (tester) async {
     final gate = Completer<MarkerTemplateResult>();
     final ports = ScanFakePorts()..markerGate = gate.future;
     final h = await pumpM1(tester, scanPorts: ports);
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final panel = find.byKey(const Key('settings-live-scan'));
     final toggle = find.descendant(
       of: panel,
@@ -204,8 +193,7 @@ void main() {
       await h.services.scanner.setLiveScan(true);
       await h.services.scanner.settled;
     });
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final panel = find.byKey(const Key('settings-live-scan'));
     final toggle = find.descendant(
       of: panel,
@@ -238,8 +226,7 @@ void main() {
     final h = await pumpM1(tester, scanPorts: ports);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final target = find.byKey(const Key('settings-live-scan'));
     expect(target, findsOneWidget);
     final toggle = find.descendant(
@@ -254,7 +241,7 @@ void main() {
       () => h.services.scanner.status.state == LiveScanState.ready,
     );
     expect(h.services.scanner.status.state, LiveScanState.ready);
-    expect(tester.widget<Switch>(toggle).value, isTrue);
+    expect(_on(tester, toggle), isTrue);
     expect(find.text('Live scan is ready'), findsOneWidget);
   });
   testWidgets('scanner-evidence: Unavailable runtime', (tester) async {
@@ -263,8 +250,7 @@ void main() {
         VisionMissingFile('synthetic-missing.pgm'),
       );
     final h = await pumpM1(tester, scanPorts: ports);
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final target = find.byKey(const Key('settings-live-scan'));
     expect(target, findsOneWidget);
     final toggle = find.descendant(
@@ -278,7 +264,7 @@ void main() {
       toggle,
       () => h.services.scanner.status.state == LiveScanState.unavailable,
     );
-    expect(tester.widget<Switch>(toggle).value, isTrue);
+    expect(_on(tester, toggle), isTrue);
     expect(
       find.descendant(
         of: find.byKey(const Key('settings-live-scan')),
@@ -289,8 +275,7 @@ void main() {
   });
   testWidgets('scanner-evidence: Live scan off', (tester) async {
     await pumpM1(tester, scanPorts: ScanFakePorts());
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final target = find.byKey(const Key('settings-live-scan'));
     expect(target, findsOneWidget);
     final picker = find.descendant(
@@ -312,8 +297,7 @@ void main() {
     final gate = Completer<MarkerTemplateResult>();
     final ports = ScanFakePorts()..markerGate = gate.future;
     final h = await pumpM1(tester, scanPorts: ports);
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
+    await _openSettings(tester);
     final target = find.byKey(const Key('settings-live-scan'));
     expect(target, findsOneWidget);
     final record = find.descendant(
@@ -321,8 +305,8 @@ void main() {
       matching: find.byKey(const Key('record-frames-switch')),
     );
     await tester.ensureVisible(record);
-    expect(tester.widget<Switch>(record).value, isFalse);
-    expect(tester.widget<Switch>(record).onChanged, isNull);
+    expect(_on(tester, record), isFalse);
+    expect(_tap(tester, record), isNull);
     final toggle = find.descendant(
       of: target,
       matching: find.byKey(const Key('live-scan-switch')),
@@ -334,8 +318,8 @@ void main() {
       toggle,
       () => h.services.scanner.status.state == LiveScanState.starting,
     );
-    expect(tester.widget<Switch>(record).value, isFalse);
-    expect(tester.widget<Switch>(record).onChanged, isNull);
+    expect(_on(tester, record), isFalse);
+    expect(_tap(tester, record), isNull);
     gate.complete(
       const MarkerTemplateUnavailable(
         VisionMissingFile('synthetic-missing.pgm'),
@@ -344,59 +328,47 @@ void main() {
     await tester.runAsync(() => h.services.scanner.settled);
     await tester.pumpAndSettle();
     expect(h.services.scanner.status.state, LiveScanState.unavailable);
-    expect(tester.widget<Switch>(record).value, isFalse);
-    expect(tester.widget<Switch>(record).onChanged, isNull);
+    expect(_on(tester, record), isFalse);
+    expect(_tap(tester, record), isNull);
   });
-  testWidgets('settings dialog shows the given app version', (tester) async {
-    final h = await pumpM1(tester);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SettingsDialog(services: h.services, version: '0.2.0+120'),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.textContaining('0.2.0+120'), findsOneWidget);
-  });
-
-  testWidgets('settings dialog shows dev by default', (tester) async {
-    final h = await pumpM1(tester);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SettingsDialog(services: h.services)),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Version dev'), findsOneWidget);
-  });
-
   testWidgets(
     'Map file inputs persist independently of the Follow logs preference',
     (tester) async {
       final h = await pumpM1(tester);
-      await tester.tap(find.text('Settings'));
-      await tester.pumpAndSettle();
-      final logs = find.widgetWithText(TextField, 'Game log folder');
-      final screenshots = find.widgetWithText(TextField, 'Screenshot folder');
-      await tester.ensureVisible(logs);
-      await tester.enterText(logs, ' C:/blackgrid-synthetic-missing/logs ');
-      await tester.ensureVisible(screenshots);
-      await tester.enterText(
-        screenshots,
-        ' C:/blackgrid-synthetic-missing/screenshots ',
-      );
-      final save = find.text('Save map files');
-      await tester.ensureVisible(save);
-      await tester.pumpAndSettle();
-      await tapM1Async(
-        tester,
-        save,
+      await _openSettings(tester);
+      final settings = h.services.settings;
+      Future<void> commit(
+        String label,
+        String text,
+        bool Function() saved,
+      ) async {
+        final field = find.widgetWithText(TextField, label);
+        await tester.ensureVisible(field);
+        await tester.pumpAndSettle();
+        await tester.enterText(field, text);
+        // A saved folder binds watchers, so the commit starts in the real zone.
+        await tester.runAsync(
+          () => tester.testTextInput.receiveAction(TextInputAction.done),
+        );
+        await tester.pump();
+        await pumpUntil(tester, saved);
+      }
+
+      await commit(
+        'Game log folder',
+        ' C:/blackgrid-synthetic-missing/logs ',
         () =>
-            h.services.settings.settings.gameLogDirectory ==
+            settings.settings.gameLogDirectory ==
             'C:/blackgrid-synthetic-missing/logs',
       );
-      final follow = find.widgetWithText(SwitchListTile, 'Follow logs').last;
+      await commit(
+        'Screenshot folder',
+        ' C:/blackgrid-synthetic-missing/screenshots ',
+        () =>
+            settings.settings.screenshotDirectory ==
+            'C:/blackgrid-synthetic-missing/screenshots',
+      );
+      final follow = find.text('Follow logs');
       await tester.ensureVisible(follow);
       await tester.pumpAndSettle();
       await tapM1Async(
@@ -425,8 +397,7 @@ void main() {
     'configuration masks active-mode token saves and removes through controller',
     (tester) async {
       final h = await pumpM1(tester);
-      await tester.tap(find.text('Settings'));
-      await tester.pumpAndSettle();
+      await _openSettings(tester);
       final field = find.widgetWithText(
         TextField,
         'Tracker token (current game mode)',
@@ -457,13 +428,13 @@ void main() {
     'mode and catalog refresh configuration are working supporting controls',
     (tester) async {
       final h = await pumpM1(tester);
-      await tester.tap(find.text('Settings'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(DropdownButtonFormField<GameMode>).last);
-      await tester.pumpAndSettle();
+      await _openSettings(tester);
       await tapM1Async(
         tester,
-        find.text('PvE').last,
+        find.descendant(
+          of: find.byType(SegmentedButton<GameMode>),
+          matching: find.text('PvE'),
+        ),
         () =>
             h.services.catalog.mode == GameMode.pve &&
             !h.services.catalog.loading,
@@ -471,10 +442,7 @@ void main() {
       expect(h.services.catalog.mode, GameMode.pve);
       await tapM1Async(
         tester,
-        find.descendant(
-          of: find.byType(SettingsDialog),
-          matching: find.text('Refresh item data'),
-        ),
+        find.widgetWithText(OutlinedButton, 'Refresh item data'),
         () =>
             h.services.catalog.snapshot?.mode == GameMode.pve &&
             !h.services.catalog.loading,
@@ -484,32 +452,4 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-
-  testWidgets('Save marker filters is a Settings switch that saves', (
-    tester,
-  ) async {
-    final h = await pumpM1(tester);
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-    final row = find.descendant(
-      of: find.byType(SettingsDialog),
-      matching: find.widgetWithText(SwitchListTile, 'Save marker filters'),
-    );
-    expect(row, findsOneWidget);
-    await tester.ensureVisible(row);
-    await tester.pumpAndSettle();
-    final before = h.services.settings.settings.saveMarkerFilters;
-    expect(tester.widget<SwitchListTile>(row).value, before);
-    await tapM1Async(
-      tester,
-      row,
-      () => h.services.settings.settings.saveMarkerFilters == !before,
-    );
-    expect(tester.widget<SwitchListTile>(row).value, !before);
-    final stored = (await tester.runAsync(
-      () => h.services.database.readSettings(),
-    ))!.settings;
-    expect(stored.saveMarkerFilters, !before);
-    expect(tester.takeException(), isNull);
-  });
 }

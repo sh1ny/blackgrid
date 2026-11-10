@@ -5,7 +5,8 @@ import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/domain/settings.dart';
-import 'package:blackgrid/ui/live_scan_panel.dart';
+import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
+import 'package:blackgrid/ui/settings/live_scan_settings.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,7 +34,10 @@ Future<ScanUiRig> _pump(
     MaterialApp(
       theme: blackgridTheme(Brightness.dark),
       home: Scaffold(
-        body: LiveScanPanel(scanner: rig.coordinator, timingLog: rig.timingLog),
+        body: LiveScanSettings(
+          scanner: rig.coordinator,
+          timingLog: rig.timingLog,
+        ),
       ),
     ),
   );
@@ -61,14 +65,29 @@ Future<void> _until(
   await tester.pump();
 }
 
-bool _switchValue(WidgetTester tester) =>
-    tester.widget<Switch>(find.byKey(_switchKey)).value;
+/// Whether the switch row [key] is on.
+bool _switchValueOf(WidgetTester tester, Key key) => tester
+    .widget<EmberToggleSwitch>(
+      find.descendant(
+        of: find.byKey(key),
+        matching: find.byType(EmberToggleSwitch),
+      ),
+    )
+    .on;
+
+bool _switchValue(WidgetTester tester) => _switchValueOf(tester, _switchKey);
+
+/// The press handler of the switch row [key], or `null` while it is disabled.
+VoidCallback? _rowTap(WidgetTester tester, Key key) => tester
+    .widget<InkWell>(
+      find
+          .descendant(of: find.byKey(key), matching: find.byType(InkWell))
+          .first,
+    )
+    .onTap;
 
 String _status(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(_statusKey)).data!;
-
-bool _switchValueOf(WidgetTester tester, Key key) =>
-    tester.widget<Switch>(find.byKey(key)).value;
 
 String _recordStatus(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(_recordStatusKey)).data!;
@@ -296,11 +315,10 @@ void main() {
     tester,
   ) async {
     final rig = await _pump(tester);
-    Switch recordSwitch() => tester.widget<Switch>(find.byKey(_recordKey));
 
     // Off.
-    expect(recordSwitch().value, isFalse);
-    expect(recordSwitch().onChanged, isNull);
+    expect(_switchValueOf(tester, _recordKey), isFalse);
+    expect(_rowTap(tester, _recordKey), isNull);
 
     // Starting: the marker loader never answers.
     final gate = Completer<MarkerTemplateResult>();
@@ -311,8 +329,8 @@ void main() {
       tester,
       () => rig.coordinator.status.state == LiveScanState.starting,
     );
-    expect(recordSwitch().value, isFalse);
-    expect(recordSwitch().onChanged, isNull);
+    expect(_switchValueOf(tester, _recordKey), isFalse);
+    expect(_rowTap(tester, _recordKey), isNull);
     gate.complete(await loader(''));
 
     // Ready.
@@ -320,8 +338,8 @@ void main() {
       tester,
       () => rig.coordinator.status.state == LiveScanState.ready,
     );
-    expect(recordSwitch().value, isFalse);
-    expect(recordSwitch().onChanged, isNotNull);
+    expect(_switchValueOf(tester, _recordKey), isFalse);
+    expect(_rowTap(tester, _recordKey), isNotNull);
 
     // Unavailable.
     await tester.tap(find.byKey(_switchKey));
@@ -338,8 +356,8 @@ void main() {
       tester,
       () => rig.coordinator.status.state == LiveScanState.unavailable,
     );
-    expect(recordSwitch().value, isFalse);
-    expect(recordSwitch().onChanged, isNull);
+    expect(_switchValueOf(tester, _recordKey), isFalse);
+    expect(_rowTap(tester, _recordKey), isNull);
   });
 
   testWidgets('a starting recording session can be switched off', (
@@ -355,9 +373,8 @@ void main() {
       tester,
       () => rig.recorder.status.value.state == ScanRecordingState.starting,
     );
-    final recordSwitch = tester.widget<Switch>(find.byKey(_recordKey));
-    expect(recordSwitch.value, isTrue);
-    expect(recordSwitch.onChanged, isNotNull);
+    expect(_switchValueOf(tester, _recordKey), isTrue);
+    expect(_rowTap(tester, _recordKey), isNotNull);
 
     await tester.tap(find.byKey(_recordKey));
     await tester.pump();

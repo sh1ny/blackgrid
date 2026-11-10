@@ -182,6 +182,16 @@ String localTimeLabel(DateTime? time, {required DateTime now}) {
   return sameDay ? clock : '${local.day} ${_months[local.month - 1]} $clock';
 }
 
+/// Formats the time of a completed check as [localTimeLabel] does, with the
+/// year appended when it is not the year of [now].
+///
+/// A check from an earlier year would otherwise read as a recent day.
+String checkedTimeLabel(DateTime time, {required DateTime now}) {
+  final label = localTimeLabel(time, now: now);
+  final year = time.toLocal().year;
+  return year == now.toLocal().year ? label : '$label ($year)';
+}
+
 /// The player-facing name of a game [mode].
 String modeLabel(Object mode) => switch (mode.toString().split('.').last) {
   'pvp' => 'PvP',

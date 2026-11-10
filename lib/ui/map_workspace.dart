@@ -206,13 +206,16 @@ class _MapWorkspaceState extends State<MapWorkspace> {
             children: [
               Text(
                 'Your position',
-                style: Theme.of(context).textTheme.titleSmall,
+                style: EmberType.uiHeading.copyWith(color: context.ember.ink),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: EmberSpace.xs),
               const Text(_positionHelp),
-              const SizedBox(height: 16),
-              Text('Controls', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
+              const SizedBox(height: EmberSpace.lg),
+              Text(
+                'Controls',
+                style: EmberType.uiHeading.copyWith(color: context.ember.ink),
+              ),
+              const SizedBox(height: EmberSpace.xs),
               for (final (control, action) in _controlHelp)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
@@ -220,7 +223,14 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(width: 180, child: Text(control)),
-                      Expanded(child: Text(action)),
+                      Expanded(
+                        child: Text(
+                          action,
+                          style: EmberType.body.copyWith(
+                            color: context.ember.inkSecondary,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -303,9 +313,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         height: 450,
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text('Visible map markers and pins'),
+            Padding(
+              padding: const EdgeInsets.all(EmberSpace.md),
+              child: Text(
+                'Visible map markers and pins',
+                style: EmberType.title.copyWith(color: context.ember.ink),
+              ),
             ),
             Expanded(
               child: ListView.builder(
@@ -314,17 +327,17 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                 itemBuilder: (context, index) {
                   if (index < visible.length) {
                     final marker = visible[index].marker;
-                    return ListTile(
-                      title: Text(marker.name),
-                      subtitle: Text(markerCategoryLabel(marker.filterKey)),
+                    return MarkerBrowserRow(
+                      title: marker.name,
+                      subtitle: markerCategoryLabel(marker.filterKey),
                       onTap: () =>
                           Navigator.pop(context, 'marker:${marker.id}'),
                     );
                   }
                   final pin = visiblePins[index - visible.length.toInt()];
-                  return ListTile(
-                    title: Text(pin.label),
-                    subtitle: const Text('Saved pin'),
+                  return MarkerBrowserRow(
+                    title: pin.label,
+                    subtitle: 'Saved pin',
                     onTap: () => Navigator.pop(context, 'pin:${pin.id}'),
                   );
                 },
@@ -1251,4 +1264,61 @@ class _MapPainter extends CustomPainter {
   bool shouldRepaint(covariant _MapPainter oldDelegate) => true;
   @override
   bool shouldRebuildSemantics(covariant _MapPainter oldDelegate) => true;
+}
+
+/// One pressable row of the marker browser sheet: a title over a subtitle.
+///
+/// Takes its type and colours from the Ember theme, keeps at least
+/// [EmberSize.row] of height (scaled with the text scaler) and is reachable
+/// and activated from the keyboard like a button.
+class MarkerBrowserRow extends StatelessWidget {
+  /// Creates a row showing [title] over [subtitle] that calls [onTap] when
+  /// pressed.
+  const MarkerBrowserRow({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  /// The marker or pin name.
+  final String title;
+
+  /// The marker category, or `Saved pin`.
+  final String subtitle;
+
+  /// Called when the row is pressed or activated from the keyboard.
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ember = context.ember;
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: EmberSize.row * scale),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: EmberSpace.lg,
+              vertical: EmberSpace.sm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: EmberType.body.copyWith(color: ember.ink)),
+                Text(
+                  subtitle,
+                  style: EmberType.label.copyWith(color: ember.inkTertiary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

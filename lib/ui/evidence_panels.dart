@@ -359,7 +359,9 @@ class SourcePanel extends StatelessWidget {
 /// It describes the item data behind the inspected item: for a history item
 /// from another game mode, that mode's saved item data, otherwise the live
 /// catalog. It shows the source, UTC times, record counts, the cooldown end
-/// time and the age limits that [SourcePanel] leaves out.
+/// time and the age limits that [SourcePanel] leaves out. It ends with the map
+/// data: the mode selected for it, the mode whose data the map uses, its source
+/// and the time of its last check.
 class DataSourceDiagnostics extends StatelessWidget {
   /// Creates the diagnostics over [services].
   const DataSourceDiagnostics({super.key, required this.services});
@@ -373,9 +375,11 @@ class DataSourceDiagnostics extends StatelessWidget {
       services.catalog,
       services.progress,
       services.selection,
+      services.mapData,
     ]),
     builder: (context, _) {
       final selection = services.selection;
+      final map = services.mapData.state;
       final snapshot = selection.inspectionCatalog;
       final quote = selection.item?.quoteAt;
       final progressSnapshot = services.progress.snapshot;
@@ -420,6 +424,18 @@ class DataSourceDiagnostics extends StatelessWidget {
             'prices 1h, tracker progress 15m.',
             style: small,
           ),
+          Text('Selected mode: ${modeLabel(map.mode)}', style: small),
+          Text('Map data mode: ${modeLabel(map.dataMode)}', style: small),
+          Text(
+            'Map data source: ${liveMapDataSourceLabel(map.source)}',
+            style: small,
+          ),
+          Text(switch (map.checkedAt) {
+            final checked? =>
+              'Last map data check: '
+                  '${checkedTimeLabel(checked, now: DateTime.now())}',
+            null => 'Map data has not been checked.',
+          }, style: small),
         ],
       );
     },

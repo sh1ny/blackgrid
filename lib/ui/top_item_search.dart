@@ -18,6 +18,7 @@ class TopItemSearch extends StatefulWidget {
     required this.services,
     required this.controller,
     required this.focusNode,
+    this.onPicked,
   });
 
   /// The existing catalog and selection owners.
@@ -28,6 +29,10 @@ class TopItemSearch extends StatefulWidget {
 
   /// The shell-owned focus target used by Ctrl K.
   final FocusNode focusNode;
+
+  /// Called after the player picks an item, and never for a change of the
+  /// selection that did not come from this search.
+  final VoidCallback? onPicked;
 
   @override
   State<TopItemSearch> createState() => _TopItemSearchState();
@@ -95,6 +100,7 @@ class _TopItemSearchState extends State<TopItemSearch> {
   void _select(CatalogItem item) {
     _hide();
     unawaited(widget.services.selection.selectManual(item));
+    widget.onPicked?.call();
     widget.focusNode.unfocus();
   }
 

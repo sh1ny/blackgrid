@@ -89,6 +89,17 @@ void main() {
     expect(_dialogText(tester), withArtwork);
   });
 
+  testWidgets('interface-theme: Map help closes', (tester) async {
+    await pumpMapFixture(tester);
+    await _openHelp(tester);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(_dialog, findsNothing);
+    expect(_mapFocused(), isTrue);
+  });
+
   testWidgets('Escape closes the help and keeps the selected marker', (
     tester,
   ) async {

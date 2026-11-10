@@ -4,7 +4,9 @@ import '../application/app_services.dart';
 import '../data/database.dart';
 import '../domain/import_preview.dart';
 import 'labels.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
+import 'settings/settings_row.dart';
 
 Future<void> showLegacyImport(BuildContext context, AppServices services) =>
     showDialog<void>(
@@ -29,6 +31,10 @@ class _ImportDialogState extends State<ImportDialog> {
   ImportPreview? preview;
   String? error;
   bool busy = false, replace = false, imported = false;
+
+  /// Whether the file fingerprint and the per-record lines show. Collapsed
+  /// again whenever a preview is read.
+  bool detailsExpanded = false;
   @override
   void dispose() {
     settingsPath.dispose();
@@ -42,6 +48,7 @@ class _ImportDialogState extends State<ImportDialog> {
       error = null;
       preview = null;
       imported = false;
+      detailsExpanded = false;
     });
     try {
       final result = await widget.services.importer.previewFiles(
@@ -115,127 +122,153 @@ class _ImportDialogState extends State<ImportDialog> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Import saved settings and history'),
-    content: SizedBox(
-      width: 720,
-      height: MediaQuery.sizeOf(context).height * .68,
-      child: ListView(
-        children: [
-          Text(
-            'Enter the paths of the files you want to import. Blackgrid only reads them and never changes them. It does not look for files on its own and does not import tokens.',
-            style: TextStyle(color: context.ember.inkSecondary),
+  /// The rows of the dialog body, each built only when the list scrolls to it,
+  /// so a preview with many records builds nothing for its detail lines until
+  /// Details is open and they come into view.
+  List<WidgetBuilder> _rows(BuildContext context) {
+    final ember = context.ember;
+    final secondary = EmberType.label.copyWith(color: ember.inkSecondary);
+    final candidate = preview;
+    return [
+      (_) => Text(
+        'Enter the paths of the files you want to import. Blackgrid only reads them and never changes them. It does not look for files on its own and does not import tokens.',
+        style: secondary,
+      ),
+      (_) => const SizedBox(height: EmberSpace.md),
+      (_) => TextField(
+        controller: settingsPath,
+        enabled: !busy,
+        onChanged: (_) => setState(() => preview = null),
+        decoration: const InputDecoration(
+          labelText: 'Settings file path (optional)',
+        ),
+      ),
+      (_) => const SizedBox(height: EmberSpace.md),
+      (_) => TextField(
+        controller: historyPath,
+        enabled: !busy,
+        onChanged: (_) => setState(() => preview = null),
+        decoration: const InputDecoration(
+          labelText: 'History file path (optional)',
+        ),
+      ),
+      (_) => const SizedBox(height: EmberSpace.md),
+      (_) => Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: busy ? null : readPreview,
+          icon: const Icon(Icons.preview_outlined),
+          label: const Text('Read files and preview'),
+        ),
+      ),
+      (_) => const SizedBox(height: EmberSpace.md),
+      if (error != null)
+        (_) =>
+            Text(error!, style: EmberType.body.copyWith(color: ember.errInk)),
+      if (imported)
+        (_) => Text(
+          'Import finished; your files were not changed',
+          style: EmberType.body.copyWith(color: context.blackgrid.okInk),
+        ),
+      if (candidate != null) ...[
+        (_) => Text(
+          candidate.alreadyImported
+              ? 'These files were already imported.'
+              : '${candidate.accounting.length} records found • ${candidate.pins.length} pins • ${candidate.winningActivity.length} history entries to keep',
+          style: EmberType.uiHeading.copyWith(color: ember.ink),
+        ),
+        (_) => const SizedBox(height: EmberSpace.sm),
+        if (candidate.settings != null)
+          (_) => Text(
+            'Settings: ${modeLabel(candidate.settings!.mode)} • ${mapLabel(candidate.settings!.selectedMap)} • remember marker filters: ${candidate.settings!.saveMarkerFilters ? 'yes' : 'no'} • use Tracker progress: ${candidate.settings!.trackerEnabled ? 'yes' : 'no'}',
           ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: settingsPath,
-            enabled: !busy,
-            onChanged: (_) => setState(() => preview = null),
-            decoration: const InputDecoration(
-              labelText: 'Settings file path (optional)',
+        for (final p in candidate.pins)
+          (_) => Text('Pin ${p.mapId}/${p.id} at (${p.x}, ${p.y})'),
+        (_) => const SizedBox(height: EmberSpace.sm),
+        (_) => Text(
+          'Left out: ${candidate.exclusions.isEmpty ? 'nothing' : candidate.exclusions.join(', ')}',
+        ),
+        (_) => Text(
+          'Never imported: tokens, prices, item data, progress, corrections, found-in-raid choices, accepted scans, images, screenshot, overlay, hotkey and game log settings.',
+          style: secondary,
+        ),
+        (_) => SettingsRow.toggle(
+          name: 'Replace entries that already exist here',
+          explanation: 'Off by default: entries you already have are kept.',
+          value: replace,
+          enabled: !(busy || candidate.alreadyImported),
+          onChanged: (value) => setState(() => replace = value),
+        ),
+        (_) => Text(
+          'When the files hold the same entry twice, the newest one is used.',
+          style: EmberType.label.copyWith(color: ember.inkTertiary),
+        ),
+        (_) => Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const Key('import-details-toggle'),
+            onPressed: () => setState(() => detailsExpanded = !detailsExpanded),
+            icon: Icon(
+              detailsExpanded ? Icons.expand_less : Icons.expand_more,
+              size: EmberSize.icon,
             ),
+            label: const Text('Details'),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: historyPath,
-            enabled: !busy,
-            onChanged: (_) => setState(() => preview = null),
-            decoration: const InputDecoration(
-              labelText: 'History file path (optional)',
-            ),
+        ),
+        if (detailsExpanded) ...[
+          (_) => SelectableText(
+            'File fingerprint: ${candidate.digest}',
+            style: secondary,
           ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: busy ? null : readPreview,
-              icon: const Icon(Icons.preview_outlined),
-              label: const Text('Read files and preview'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (error != null)
-            Text(
-              error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          if (imported)
-            Text(
-              'Import finished; your files were not changed',
-              style: TextStyle(color: context.blackgrid.okInk),
-            ),
-          if (preview case final candidate?) ...[
-            Text(
-              candidate.alreadyImported
-                  ? 'These files were already imported.'
-                  : '${candidate.accounting.length} records found • ${candidate.pins.length} pins • ${candidate.winningActivity.length} history entries to keep',
-            ),
-            const SizedBox(height: 8),
-            SelectableText(
-              'File fingerprint: ${candidate.digest}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (candidate.settings != null)
-              Text(
-                'Settings: ${modeLabel(candidate.settings!.mode)} • ${mapLabel(candidate.settings!.selectedMap)} • remember marker filters: ${candidate.settings!.saveMarkerFilters ? 'yes' : 'no'} • use Tracker progress: ${candidate.settings!.trackerEnabled ? 'yes' : 'no'}',
+          for (final row in candidate.accounting)
+            (_) => Padding(
+              padding: const EdgeInsets.only(top: EmberSpace.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${row.kind} #${row.inputOrder} • ${row.key} • ${row.disposition}',
+                    style: secondary,
+                  ),
+                  Text(
+                    row.reason,
+                    style: EmberType.label.copyWith(color: ember.inkTertiary),
+                  ),
+                ],
               ),
-            ...candidate.pins.map(
-              (p) => Text('Pin ${p.mapId}/${p.id} at (${p.x}, ${p.y})'),
             ),
-            const Divider(height: 24),
-            ...candidate.accounting.map(
-              (row) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${row.kind} #${row.inputOrder} • ${row.key} • ${row.disposition}',
-                      style: TextStyle(color: context.ember.inkSecondary),
-                    ),
-                    Text(
-                      row.reason,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const Divider(height: 24),
-            Text(
-              'Left out: ${candidate.exclusions.isEmpty ? 'nothing' : candidate.exclusions.join(', ')}',
-            ),
-            Text(
-              'Never imported: tokens, prices, item data, progress, corrections, found-in-raid choices, accepted scans, images, screenshot, overlay, hotkey and game log settings.',
-              style: TextStyle(color: context.ember.inkSecondary),
-            ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: replace,
-              onChanged: busy || candidate.alreadyImported
-                  ? null
-                  : (value) => setState(() => replace = value ?? false),
-              title: const Text('Replace entries that already exist here'),
-              subtitle: const Text(
-                'Off by default: entries you already have are kept. When the files hold the same entry twice, the newest one is used.',
-              ),
-            ),
-          ],
         ],
+      ],
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _rows(context);
+    return AlertDialog(
+      title: const Text('Import saved settings and history'),
+      content: SizedBox(
+        width: 720,
+        height: MediaQuery.sizeOf(context).height * .68,
+        child: ListView.builder(
+          itemCount: rows.length,
+          itemBuilder: (context, index) => rows[index](context),
+        ),
       ),
+      actions: _actions(),
+    );
+  }
+
+  List<Widget> _actions() => [
+    TextButton(
+      onPressed: busy ? null : () => Navigator.pop(context),
+      child: const Text('Close'),
     ),
-    actions: [
-      TextButton(
-        onPressed: busy ? null : () => Navigator.pop(context),
-        child: const Text('Close'),
-      ),
-      FilledButton(
-        onPressed: busy || preview == null || preview!.alreadyImported
-            ? null
-            : commit,
-        child: Text(busy ? 'Working…' : 'Import now'),
-      ),
-    ],
-  );
+    FilledButton(
+      onPressed: busy || preview == null || preview!.alreadyImported
+          ? null
+          : commit,
+      child: Text(busy ? 'Working…' : 'Import now'),
+    ),
+  ];
 }
