@@ -4,6 +4,7 @@ import '../application/local_stats_controller.dart';
 import '../domain/local_stats.dart';
 import '../domain/roubles.dart';
 import 'labels.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 
 /// Opens the Stats dialog for [controller] and, once it closes, drops the
@@ -65,8 +66,7 @@ class StatsDialog extends StatelessWidget {
   );
 
   List<Widget> _body(BuildContext context) {
-    final muted = Theme.of(context).textTheme.bodySmall
-        ?.copyWith(color: context.ember.inkSecondary);
+    final muted = EmberType.label.copyWith(color: context.ember.inkTertiary);
     final totals = controller.totals;
     return [
       Text("Counted from the game's logs.", style: muted),
@@ -93,7 +93,7 @@ class StatsDialog extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               message,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: EmberType.body.copyWith(color: context.ember.errInk),
             ),
           ),
     ];
@@ -104,12 +104,17 @@ class StatsDialog extends StatelessWidget {
     for (final MapEntry(:key, :value) in totals.raidsByMap.entries)
       Padding(
         key: Key('stats-map-${key ?? 'unknown'}'),
-        padding: const EdgeInsets.only(left: 12, top: 2),
-        child: Row(
-          children: [
-            Expanded(child: Text(key == null ? 'Unknown map' : mapLabel(key))),
-            Text('$value'),
-          ],
+        padding: const EdgeInsets.only(left: EmberSpace.md),
+        child: SizedBox(
+          height: EmberSize.row,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(key == null ? 'Unknown map' : mapLabel(key)),
+              ),
+              Text('$value'),
+            ],
+          ),
         ),
       ),
     const SizedBox(height: 12),
@@ -121,7 +126,7 @@ class StatsDialog extends StatelessWidget {
         totals.salesNotInRoubles == 1
             ? '1 sale not paid in roubles'
             : '${totals.salesNotInRoubles} sales not paid in roubles',
-        style: TextStyle(color: context.ember.inkSecondary),
+        style: EmberType.label.copyWith(color: context.ember.inkTertiary),
       ),
   ];
 

@@ -4,6 +4,7 @@ import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/marker_categories.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/app.dart';
+import 'package:blackgrid/ui/map_workspace.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -117,8 +118,11 @@ void main() {
         expect(find.text('Ground hazard'), findsOneWidget);
         await tester.tap(_markerBrowser);
         await tester.pumpAndSettle();
-        expect(find.widgetWithText(ListTile, 'Ground hazard'), findsOneWidget);
-        await tester.tap(find.widgetWithText(ListTile, 'Ground exit'));
+        expect(
+          find.widgetWithText(MarkerBrowserRow, 'Ground hazard'),
+          findsOneWidget,
+        );
+        await tester.tap(find.widgetWithText(MarkerBrowserRow, 'Ground exit'));
         await settleMapFixture(tester, h);
         expect(find.text('Ground exit'), findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -227,7 +231,7 @@ void main() {
       await tester.runAsync(() => h.services.settings.setMap('thelab'));
       await settleMapFixture(tester, h);
       expect(h.services.maps.contentGeneration, generation + 1);
-      await tester.tap(find.widgetWithText(ListTile, 'Ground exit'));
+      await tester.tap(find.widgetWithText(MarkerBrowserRow, 'Ground exit'));
       await tester.pumpAndSettle();
       expect(find.text('Visible map markers and pins'), findsNothing);
       expect(find.text('Ground exit'), findsNothing);
@@ -262,10 +266,10 @@ void main() {
         );
         await tester.tap(_markerBrowser);
         await tester.pumpAndSettle();
-        final row = tester.widget<ListTile>(
-          find.widgetWithText(ListTile, 'Jacket'),
+        final row = tester.widget<MarkerBrowserRow>(
+          find.widgetWithText(MarkerBrowserRow, 'Jacket'),
         );
-        expect((row.subtitle! as Text).data, subtitle);
+        expect(row.subtitle, subtitle);
       },
     );
   }
@@ -329,7 +333,9 @@ void main() {
         if (selection == 'browser') {
           await tester.tap(_markerBrowser);
           await tester.pumpAndSettle();
-          await tester.tap(find.widgetWithText(ListTile, sourcePin.label));
+          await tester.tap(
+            find.widgetWithText(MarkerBrowserRow, sourcePin.label),
+          );
         } else if (selection == 'canvas') {
           final point = h.services.maps.projectPin(sourcePin)!;
           await tester.tapAt(
@@ -403,7 +409,7 @@ void main() {
         expect(otherTarget.properties.selected, isFalse);
         await tester.tap(_markerBrowser);
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(ListTile, otherPin.label));
+        await tester.tap(find.widgetWithText(MarkerBrowserRow, otherPin.label));
         await settleMapFixture(tester, h);
         expect(
           find.descendant(
@@ -535,8 +541,11 @@ void main() {
       );
       await tester.tap(_markerBrowser);
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(ListTile, 'Browser pin'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ListTile, 'Browser pin'));
+      expect(
+        find.widgetWithText(MarkerBrowserRow, 'Browser pin'),
+        findsOneWidget,
+      );
+      await tester.tap(find.widgetWithText(MarkerBrowserRow, 'Browser pin'));
       await settleMapFixture(tester, h);
       await tester.tap(find.byKey(const Key('map-pin-edit')));
       await tester.pumpAndSettle();
@@ -682,7 +691,9 @@ void main() {
           expect(tester.takeException(), isNull);
           await tester.tap(_markerBrowser);
           await tester.pumpAndSettle();
-          await tester.tap(find.widgetWithText(ListTile, 'Extreme saved pin'));
+          await tester.tap(
+            find.widgetWithText(MarkerBrowserRow, 'Extreme saved pin'),
+          );
           await settleMapFixture(tester, h);
           await tester.tap(find.byKey(const Key('map-pin-edit')));
           await tester.pumpAndSettle();
@@ -940,27 +951,39 @@ void main() {
         expect(find.text('Ground hazard'), findsNothing);
         await tester.tap(_markerBrowser);
         await tester.pumpAndSettle();
-        expect(find.widgetWithText(ListTile, 'Ground exit'), findsOneWidget);
-        expect(find.widgetWithText(ListTile, 'Upper exit'), findsNothing);
-        expect(find.widgetWithText(ListTile, 'Ground hazard'), findsNothing);
+        expect(
+          find.widgetWithText(MarkerBrowserRow, 'Ground exit'),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(MarkerBrowserRow, 'Upper exit'),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(MarkerBrowserRow, 'Ground hazard'),
+          findsNothing,
+        );
         // Browse is the keyboard-accessible alternative to canvas targets. Traverse
         // normally, without directly invoking callbacks or assigning a focus node.
-        ListTile? focusedTile;
+        MarkerBrowserRow? focusedTile;
         for (var attempt = 0; attempt < 20 && focusedTile == null; attempt++) {
           await tester.sendKeyEvent(LogicalKeyboardKey.tab);
           await tester.pump();
           focusedTile = FocusManager.instance.primaryFocus?.context
-              ?.findAncestorWidgetOfExactType<ListTile>();
+              ?.findAncestorWidgetOfExactType<MarkerBrowserRow>();
         }
         expect(
           focusedTile,
           isNotNull,
           reason: 'A visible marker must be keyboard reachable in Browse.',
         );
-        expect((focusedTile!.title! as Text).data, 'Ground exit');
+        expect(focusedTile!.title, 'Ground exit');
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await settleMapFixture(tester, h);
-        expect(find.widgetWithText(ListTile, 'Ground exit'), findsNothing);
+        expect(
+          find.widgetWithText(MarkerBrowserRow, 'Ground exit'),
+          findsNothing,
+        );
         expect(find.text('Ground exit'), findsOneWidget);
         expect(find.text('Upper exit'), findsNothing);
         expect(find.text('Ground hazard'), findsNothing);

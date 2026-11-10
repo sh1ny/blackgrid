@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import '../application/app_services.dart';
 import '../data/database.dart' show NewerDatabaseException;
 import '../domain/settings.dart' show ThemeChoice;
-import 'app_logo.dart';
+import 'brand_lockup.dart';
 import 'ember/ember_theme.dart';
+import 'ember/ember_tokens.dart';
+import 'ember/theme_access.dart';
 import 'shell.dart';
 
 /// The light room, built once so a settings notify that does not change the
@@ -99,48 +101,53 @@ class _BlackgridBootstrapState extends State<BlackgridBootstrap> {
         darkTheme: _darkTheme,
         themeMode: ThemeMode.system,
         themeAnimationDuration: Duration.zero,
-        home: Scaffold(
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const AppLogo(size: 54),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'BLACKGRID',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                        ),
+        home: Builder(
+          builder: (context) {
+            final ember = context.ember;
+            return Scaffold(
+              backgroundColor: ember.canvas,
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Padding(
+                    padding: const EdgeInsets.all(EmberSpace.xl),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const BrandLockup.startup(),
+                          const SizedBox(height: EmberSpace.xl),
+                          if (!snapshot.hasError)
+                            SizedBox.square(
+                              dimension: EmberSize.controlLarge,
+                              child: CircularProgressIndicator(
+                                color: ember.inkSecondary,
+                                strokeWidth: EmberSize.iconStroke,
+                              ),
+                            )
+                          else ...[
+                            Text(
+                              isNewerDatabaseError(snapshot.error)
+                                  ? 'Your data was saved by a newer version of Blackgrid. Install that version or a later one to open it. Your data has not been changed.'
+                                  : 'Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted.',
+                              textAlign: TextAlign.center,
+                              style: EmberType.body.copyWith(color: ember.ink),
+                            ),
+                            const SizedBox(height: EmberSpace.lg),
+                            FilledButton(
+                              onPressed: () =>
+                                  setState(() => _opening = widget.open()),
+                              child: const Text('Retry opening local storage'),
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      if (!snapshot.hasError)
-                        const CircularProgressIndicator()
-                      else ...[
-                        Text(
-                          isNewerDatabaseError(snapshot.error)
-                              ? 'Your data was saved by a newer version of Blackgrid. Install that version or a later one to open it. Your data has not been changed.'
-                              : 'Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted.',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 14),
-                        OutlinedButton(
-                          onPressed: () =>
-                              setState(() => _opening = widget.open()),
-                          child: const Text('Retry opening local storage'),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       );
     },

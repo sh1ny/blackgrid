@@ -5,6 +5,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
+import 'package:blackgrid/ui/map_workspace.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -105,7 +106,7 @@ Future<Finder> _ensureBrowserEntryVisible(
   WidgetTester tester,
   String title,
 ) async {
-  final row = find.widgetWithText(ListTile, title);
+  final row = find.widgetWithText(MarkerBrowserRow, title);
   final list = find.byKey(const ValueKey('marker-browser-list'));
   final scrollable = find.descendant(
     of: list,
@@ -342,7 +343,10 @@ void main() {
 
         await _openMarkerBrowser(tester);
         await _ensureBrowserEntryVisible(tester, 'New exit');
-        expect(find.widgetWithText(ListTile, 'Ground exit'), findsNothing);
+        expect(
+          find.widgetWithText(MarkerBrowserRow, 'Ground exit'),
+          findsNothing,
+        );
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
 

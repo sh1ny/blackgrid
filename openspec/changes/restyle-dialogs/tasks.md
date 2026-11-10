@@ -54,20 +54,20 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 | release-versioning → The running app reports its version | Release build shows its version | test/ui/settings_page_test.dart | release-versioning: Release build shows its version | red |
 | release-versioning → The running app reports its version | Development build | test/ui/settings_page_test.dart | release-versioning: Development build | red |
 | app-icon → The app header and the startup screen show the application icon | Header shows the logo | test/ui/shell_test.dart | header shows the 32x32 app logo and no hub icon | green |
-| app-icon → The app header and the startup screen show the application icon | Startup screen shows the logo | test/ui/app_test.dart | app-icon: Startup screen shows the logo | red |
+| app-icon → The app header and the startup screen show the application icon | Startup screen shows the logo | test/ui/app_test.dart | app-icon: Startup screen shows the logo | green |
 | app-icon → The app header and the startup screen show the application icon | Logo is not announced | test/ui/app_logo_test.dart | the logo adds no semantics node | green |
 | app-icon → The app header and the startup screen show the application icon | Vector fails to load | test/ui/app_logo_test.dart | a failed load leaves an empty box of the same size with no error | green |
 | settings-diagnostics → Diagnostics shows map data detail | Fallback map data | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Fallback map data | red |
 | settings-diagnostics → Diagnostics shows map data detail | Never checked | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Never checked | red |
-| legacy-import → The import preview keeps technical detail under Details | Preview read | test/ui/import_dialog_test.dart | legacy-import: Preview read | red |
-| legacy-import → The import preview keeps technical detail under Details | Details opened | test/ui/import_dialog_test.dart | legacy-import: Details opened | red |
-| legacy-import → The import preview keeps technical detail under Details | New preview resets Details | test/ui/import_dialog_test.dart | legacy-import: New preview resets Details | red |
-| legacy-import → The import preview keeps technical detail under Details | Already imported | test/ui/import_dialog_test.dart | legacy-import: Already imported | red |
-| interface-theme → Dialogs, sheets and the startup screen in Ember | Stats dialog | test/ui/ember_surfaces_test.dart | interface-theme: Stats dialog | red |
-| interface-theme → Dialogs, sheets and the startup screen in Ember | Confirm dialog | test/ui/ember_surfaces_test.dart | interface-theme: Confirm dialog | red |
-| interface-theme → Dialogs, sheets and the startup screen in Ember | Marker list sheet | test/ui/ember_surfaces_test.dart | interface-theme: Marker list sheet | red |
-| interface-theme → Dialogs, sheets and the startup screen in Ember | Map help closes | test/ui/map_help_test.dart | interface-theme: Map help closes | red |
-| interface-theme → Dialogs, sheets and the startup screen in Ember | Startup error | test/ui/app_test.dart | interface-theme: Startup error | red |
+| legacy-import → The import preview keeps technical detail under Details | Preview read | test/ui/import_dialog_test.dart | legacy-import: Preview read | green |
+| legacy-import → The import preview keeps technical detail under Details | Details opened | test/ui/import_dialog_test.dart | legacy-import: Details opened | green |
+| legacy-import → The import preview keeps technical detail under Details | New preview resets Details | test/ui/import_dialog_test.dart | legacy-import: New preview resets Details | green |
+| legacy-import → The import preview keeps technical detail under Details | Already imported | test/ui/import_dialog_test.dart | legacy-import: Already imported | green |
+| interface-theme → Dialogs, sheets and the startup screen in Ember | Stats dialog | test/ui/ember_surfaces_test.dart | interface-theme: Stats dialog | green |
+| interface-theme → Dialogs, sheets and the startup screen in Ember | Confirm dialog | test/ui/ember_surfaces_test.dart | interface-theme: Confirm dialog | green |
+| interface-theme → Dialogs, sheets and the startup screen in Ember | Marker list sheet | test/ui/ember_surfaces_test.dart | interface-theme: Marker list sheet | green |
+| interface-theme → Dialogs, sheets and the startup screen in Ember | Map help closes | test/ui/map_help_test.dart | interface-theme: Map help closes | green |
+| interface-theme → Dialogs, sheets and the startup screen in Ember | Startup error | test/ui/app_test.dart | interface-theme: Startup error | green |
 
 ## 1. Shared Ember building blocks
 
@@ -102,10 +102,10 @@ Skills: `flutter-add-widget-test`, `dart-run-static-analysis`.
 
 Skills: `flutter-add-widget-test`, `dart-run-static-analysis`.
 
-- [ ] 4.1 Write failing tests for Stats dialog and Confirm dialog in `ember_surfaces_test.dart` (both rooms), then restyle `lib/ui/stats_dialog.dart` (dense rows, Literata title, Close primary, Clear stats quiet) and the remove-pin and clear-stats confirms (`map_workspace.dart:242`, `map_inspector.dart:228`, `stats_dialog.dart:129`). Verify both rows turn green and `test/ui/stats_dialog_test.dart` passes.
-- [ ] 4.2 Write the four failing legacy-import tests, then restyle `lib/ui/import_dialog.dart` with the collapsed Details toggle reset on each preview read (S3, D10) and an Ember switch row for Replace. Verify the rows turn green and the existing `import_dialog_test.dart` cases pass.
-- [ ] 4.3 Write the failing Map help closes and Marker list sheet tests, then restyle Map help, the marker browser sheet (`map_workspace.dart:299`) and the pin editor (`lib/ui/pin_editor.dart`) with Ember rows and buttons; content and keys unchanged. Verify both rows turn green and `test/ui/map_help_test.dart` and `test/ui/map_workspace_controls_test.dart` pass.
-- [ ] 4.4 Write the failing app-icon Startup screen shows the logo and interface-theme Startup error tests, then rebuild the startup screen in `lib/ui/app.dart` with `BrandLockup` on the Canvas, Ember loading indicator and Retry; messages word for word. Verify both rows turn green and the two existing `app_test.dart` cases pass.
+- [x] 4.1 Write failing tests for Stats dialog and Confirm dialog in `ember_surfaces_test.dart` (both rooms), then restyle `lib/ui/stats_dialog.dart` (dense rows, Literata title, Close primary, Clear stats quiet) and the remove-pin and clear-stats confirms (`map_workspace.dart:242`, `map_inspector.dart:228`, `stats_dialog.dart:129`). Verify both rows turn green and `test/ui/stats_dialog_test.dart` passes.
+- [x] 4.2 Write the four failing legacy-import tests, then restyle `lib/ui/import_dialog.dart` with the collapsed Details toggle reset on each preview read (S3, D10) and an Ember switch row for Replace. Verify the rows turn green and the existing `import_dialog_test.dart` cases pass.
+- [x] 4.3 Write the failing Map help closes and Marker list sheet tests, then restyle Map help, the marker browser sheet (`map_workspace.dart:299`) and the pin editor (`lib/ui/pin_editor.dart`) with Ember rows and buttons; content and keys unchanged. Verify both rows turn green and `test/ui/map_help_test.dart` and `test/ui/map_workspace_controls_test.dart` pass.
+- [x] 4.4 Write the failing app-icon Startup screen shows the logo and interface-theme Startup error tests, then rebuild the startup screen in `lib/ui/app.dart` with `BrandLockup` on the Canvas, Ember loading indicator and Retry; messages word for word. Verify both rows turn green and the two existing `app_test.dart` cases pass.
 
 ## 5. Integration
 

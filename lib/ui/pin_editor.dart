@@ -4,6 +4,7 @@ import '../application/app_services.dart';
 import '../domain/map_coordinates.dart';
 import '../domain/settings.dart';
 import 'labels.dart';
+import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 
 Future<void> showPinEditor(
@@ -117,7 +118,9 @@ class _PinEditorState extends State<PinEditor> {
             const SizedBox(height: 8),
             Text(
               'Positions run from 0 to 1 across the whole map. Points outside the map are allowed.',
-              style: TextStyle(color: context.ember.inkSecondary),
+              style: EmberType.label.copyWith(
+                color: context.ember.inkSecondary,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -142,7 +145,7 @@ class _PinEditorState extends State<PinEditor> {
               const SizedBox(height: 12),
               Text(
                 error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                style: EmberType.body.copyWith(color: context.ember.errInk),
               ),
             ],
           ],
