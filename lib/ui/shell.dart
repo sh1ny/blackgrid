@@ -14,6 +14,7 @@ import 'map_inspector.dart';
 import 'map_screen.dart';
 import 'raid_timer_strip.dart';
 import 'scanner_screen.dart';
+import 'settings/settings_section.dart';
 import 'settings_dialog.dart';
 import 'stats_dialog.dart';
 import 'top_item_search.dart';

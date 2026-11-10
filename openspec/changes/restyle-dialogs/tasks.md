@@ -15,33 +15,33 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 | settings-page → Settings opens as a page | Escape with a valid edit | test/ui/settings_page_shell_test.dart | settings-page: Escape with a valid edit | red |
 | settings-page → Settings opens as a page | Scan while Settings is open | test/ui/settings_page_shell_test.dart | settings-page: Scan while Settings is open | red |
 | settings-page → Settings opens as a page | Settings action while open | test/ui/settings_page_shell_test.dart | settings-page: Settings action while open | red |
-| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | settings-page: Sidebar order | red |
-| settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | settings-page: Jump to a section | red |
-| settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | settings-page: Jump to Diagnostics | red |
+| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | settings-page: Sidebar order | green |
+| settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | settings-page: Jump to a section | green |
+| settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | settings-page: Jump to Diagnostics | green |
 | settings-page → Settings opens at a requested section | Status bar Tracker | test/ui/settings_page_shell_test.dart | settings-page: Status bar Tracker | red |
 | settings-page → Settings opens at a requested section | Already open | test/ui/settings_page_shell_test.dart | settings-page: Already open | red |
 | settings-page → Diagnostics starts collapsed each time | Reopen | test/ui/settings_page_shell_test.dart | settings-page: Reopen | red |
 | settings-page → Diagnostics starts collapsed each time | Open at a section | test/ui/settings_page_shell_test.dart | settings-page: Open at a section | red |
-| settings-page → Settings rows | Toggle by row | test/ui/settings_page_test.dart | settings-page: Toggle by row | red |
-| settings-page → Settings rows | Wide window | test/ui/settings_page_test.dart | settings-page: Wide window | red |
-| settings-page → Settings rows | Setting disabled while saving | test/ui/settings_page_test.dart | settings-page: Setting disabled while saving | red |
-| settings-page → General, Live scan and Map sections | Game mode | test/ui/settings_page_test.dart | settings-page: Game mode | red |
-| settings-page → General, Live scan and Map sections | Scan key refused | test/ui/settings_page_test.dart | settings-page: Scan key refused | red |
-| settings-page → General, Live scan and Map sections | Live scan unavailable | test/ui/settings_page_test.dart | settings-page: Live scan unavailable | red |
-| settings-page → Item and map data section | Refresh map data | test/ui/settings_page_test.dart | settings-page: Refresh map data | red |
-| settings-page → Item and map data section | Unknown mode | test/ui/settings_page_test.dart | settings-page: Unknown mode | red |
-| settings-page → Item and map data section | No map data available | test/ui/settings_page_test.dart | settings-page: No map data available | red |
-| settings-page → Item and map data section | Map data refresh fails | test/ui/settings_page_test.dart | settings-page: Map data refresh fails | red |
-| settings-page → Tracker progress section | Save token | test/ui/settings_page_test.dart | settings-page: Save token | red |
-| settings-page → Tracker progress section | Token action fails | test/ui/settings_page_test.dart | settings-page: Token action fails | red |
-| settings-page → Tracker progress section | No mode | test/ui/settings_page_test.dart | settings-page: No mode | red |
-| settings-page → Game files section | Save a folder on Enter | test/ui/settings_page_test.dart | settings-page: Save a folder on Enter | red |
-| settings-page → Game files section | Save on leaving | test/ui/settings_page_test.dart | settings-page: Save on leaving | red |
-| settings-page → Game files section | Save fails | test/ui/settings_page_test.dart | settings-page: Save fails | red |
-| settings-page → Changes save as they are made | Switch saves at once | test/ui/settings_page_test.dart | settings-page: Switch saves at once | red |
-| settings-page → Changes save as they are made | Settings could not be read | test/ui/settings_page_test.dart | settings-page: Settings could not be read | red |
-| settings-page → Every setting stays reachable | All controls present | test/ui/settings_page_test.dart | settings-page: All controls present | red |
-| settings-page → Every setting stays reachable | Disabled rule kept | test/ui/settings_page_test.dart | settings-page: Disabled rule kept | red |
+| settings-page → Settings rows | Toggle by row | test/ui/settings_page_test.dart | settings-page: Toggle by row | green |
+| settings-page → Settings rows | Wide window | test/ui/settings_page_test.dart | settings-page: Wide window | green |
+| settings-page → Settings rows | Setting disabled while saving | test/ui/settings_page_test.dart | settings-page: Setting disabled while saving | green |
+| settings-page → General, Live scan and Map sections | Game mode | test/ui/settings_page_test.dart | settings-page: Game mode | green |
+| settings-page → General, Live scan and Map sections | Scan key refused | test/ui/settings_page_test.dart | settings-page: Scan key refused | green |
+| settings-page → General, Live scan and Map sections | Live scan unavailable | test/ui/settings_page_test.dart | settings-page: Live scan unavailable | green |
+| settings-page → Item and map data section | Refresh map data | test/ui/settings_page_test.dart | settings-page: Refresh map data | green |
+| settings-page → Item and map data section | Unknown mode | test/ui/settings_page_test.dart | settings-page: Unknown mode | green |
+| settings-page → Item and map data section | No map data available | test/ui/settings_page_test.dart | settings-page: No map data available | green |
+| settings-page → Item and map data section | Map data refresh fails | test/ui/settings_page_test.dart | settings-page: Map data refresh fails | green |
+| settings-page → Tracker progress section | Save token | test/ui/settings_page_test.dart | settings-page: Save token | green |
+| settings-page → Tracker progress section | Token action fails | test/ui/settings_page_test.dart | settings-page: Token action fails | green |
+| settings-page → Tracker progress section | No mode | test/ui/settings_page_test.dart | settings-page: No mode | green |
+| settings-page → Game files section | Save a folder on Enter | test/ui/settings_page_test.dart | settings-page: Save a folder on Enter | green |
+| settings-page → Game files section | Save on leaving | test/ui/settings_page_test.dart | settings-page: Save on leaving | green |
+| settings-page → Game files section | Save fails | test/ui/settings_page_test.dart | settings-page: Save fails | green |
+| settings-page → Changes save as they are made | Switch saves at once | test/ui/settings_page_test.dart | settings-page: Switch saves at once | green |
+| settings-page → Changes save as they are made | Settings could not be read | test/ui/settings_page_test.dart | settings-page: Settings could not be read | green |
+| settings-page → Every setting stays reachable | All controls present | test/ui/settings_page_test.dart | settings-page: All controls present | green |
+| settings-page → Every setting stays reachable | Disabled rule kept | test/ui/settings_page_test.dart | settings-page: Disabled rule kept | green |
 | workspace-shell → Status actions lead to their controls | Settings targets | test/ui/shell_test.dart | workspace-shell: Settings targets | red |
 | workspace-shell → Status actions lead to their controls | Settings target while the page is open | test/ui/shell_test.dart | workspace-shell: Settings target while the page is open | red |
 | workspace-shell → Status actions lead to their controls | Failed live scan save | test/ui/shell_test.dart | workspace-shell: Failed live scan save | green |
@@ -51,14 +51,14 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 | raid-timers → Timer settings live on the Settings page | Fence reputation out of range | test/ui/settings_page_raid_timers_test.dart | out-of-range reputation is refused | green |
 | raid-timers → Timer settings live on the Settings page | Reputation for the detected mode | test/ui/settings_page_raid_timers_test.dart | reputation edits the active mode's value | green |
 | raid-timers → Timer settings live on the Settings page | No mode known | test/ui/settings_page_raid_timers_test.dart | reputation field disabled without a mode | green |
-| release-versioning → The running app reports its version | Release build shows its version | test/ui/settings_page_test.dart | release-versioning: Release build shows its version | red |
-| release-versioning → The running app reports its version | Development build | test/ui/settings_page_test.dart | release-versioning: Development build | red |
+| release-versioning → The running app reports its version | Release build shows its version | test/ui/settings_page_test.dart | release-versioning: Release build shows its version | green |
+| release-versioning → The running app reports its version | Development build | test/ui/settings_page_test.dart | release-versioning: Development build | green |
 | app-icon → The app header and the startup screen show the application icon | Header shows the logo | test/ui/shell_test.dart | header shows the 32x32 app logo and no hub icon | green |
 | app-icon → The app header and the startup screen show the application icon | Startup screen shows the logo | test/ui/app_test.dart | app-icon: Startup screen shows the logo | green |
 | app-icon → The app header and the startup screen show the application icon | Logo is not announced | test/ui/app_logo_test.dart | the logo adds no semantics node | green |
 | app-icon → The app header and the startup screen show the application icon | Vector fails to load | test/ui/app_logo_test.dart | a failed load leaves an empty box of the same size with no error | green |
-| settings-diagnostics → Diagnostics shows map data detail | Fallback map data | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Fallback map data | red |
-| settings-diagnostics → Diagnostics shows map data detail | Never checked | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Never checked | red |
+| settings-diagnostics → Diagnostics shows map data detail | Fallback map data | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Fallback map data | green |
+| settings-diagnostics → Diagnostics shows map data detail | Never checked | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Never checked | green |
 | legacy-import → The import preview keeps technical detail under Details | Preview read | test/ui/import_dialog_test.dart | legacy-import: Preview read | green |
 | legacy-import → The import preview keeps technical detail under Details | Details opened | test/ui/import_dialog_test.dart | legacy-import: Details opened | green |
 | legacy-import → The import preview keeps technical detail under Details | New preview resets Details | test/ui/import_dialog_test.dart | legacy-import: New preview resets Details | green |
@@ -83,11 +83,11 @@ Skills: `dart-write-documentation`, `flutter-add-widget-test`, `dart-run-static-
 
 Skills: `dart-use-pattern-matching`, `dart-write-documentation`, `flutter-add-widget-test`, `dart-run-static-analysis`.
 
-- [ ] 2.1 Write the failing `settings_page_test.dart` tests for the sections, rows, saving and reachability rows of the test map (Sidebar order through Disabled rule kept, and both release-versioning rows), pumping the page alone with fake services. Verify each fails for the missing page, not for setup.
-- [ ] 2.2 Build `SettingsPage` (`lib/ui/settings/settings_page.dart`): sidebar with the eight sections, a column at most 720px wide with Literata Display and Title roles, `SettingsSection` with the eight values, `GlobalKey`/`FocusNode` targeting with a request number (D4), and Diagnostics collapsed on each mount. Fill General (theme, game mode, version), Live scan (rows from `LiveScanPanel`'s controls and status lines, keys kept), Tracker progress, Raid timers and Map with `SettingsRow` and `EmberToggleSwitch`. Verify the matching rows turn green.
-- [ ] 2.3 Game files: two commit fields that each call `setMapInputs` with only their folder, plus Follow logs; remove "Save map files" (S2, D5). Verify Save a folder on Enter, Save on leaving and Save fails turn green.
-- [ ] 2.4 Split `LiveMapStatus` (D6): an Item and map data section with both refresh actions and one plain line each, Refresh map data disabled while refreshing, with no mode, or with no map data; add the map data part to `DataSourceDiagnostics` (`lib/ui/evidence_panels.dart:363`). Write the two settings-diagnostics tests first. Verify Refresh map data, Unknown mode, No map data available, Map data refresh fails, Fallback map data and Never checked turn green, and port `test/ui/live_map_settings_test.dart` to the new rows.
-- [ ] 2.5 Rename `settings_dialog_raid_timers_test.dart` to `settings_page_raid_timers_test.dart`, point it at the page, and re-run it; the five raid-timers rows stay green.
+- [x] 2.1 Write the failing `settings_page_test.dart` tests for the sections, rows, saving and reachability rows of the test map (Sidebar order through Disabled rule kept, and both release-versioning rows), pumping the page alone with fake services. Verify each fails for the missing page, not for setup.
+- [x] 2.2 Build `SettingsPage` (`lib/ui/settings/settings_page.dart`): sidebar with the eight sections, a column at most 720px wide with Literata Display and Title roles, `SettingsSection` with the eight values, `GlobalKey`/`FocusNode` targeting with a request number (D4), and Diagnostics collapsed on each mount. Fill General (theme, game mode, version), Live scan (rows from `LiveScanPanel`'s controls and status lines, keys kept), Tracker progress, Raid timers and Map with `SettingsRow` and `EmberToggleSwitch`. Verify the matching rows turn green.
+- [x] 2.3 Game files: two commit fields that each call `setMapInputs` with only their folder, plus Follow logs; remove "Save map files" (S2, D5). Verify Save a folder on Enter, Save on leaving and Save fails turn green.
+- [x] 2.4 Split `LiveMapStatus` (D6): an Item and map data section with both refresh actions and one plain line each, Refresh map data disabled while refreshing, with no mode, or with no map data; add the map data part to `DataSourceDiagnostics` (`lib/ui/evidence_panels.dart:363`). Write the two settings-diagnostics tests first. Verify Refresh map data, Unknown mode, No map data available, Map data refresh fails, Fallback map data and Never checked turn green, and port `test/ui/live_map_settings_test.dart` to the new rows.
+- [x] 2.5 Rename `settings_dialog_raid_timers_test.dart` to `settings_page_raid_timers_test.dart`, point it at the page, and re-run it; the five raid-timers rows stay green.
 
 ## 3. Shell integration
 

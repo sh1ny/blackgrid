@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/app.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:blackgrid/ui/settings/commit_field.dart';
+import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,6 +46,42 @@ Future<M1Harness> pumpTimerApp(
   }))!;
   addTearDown(h.dispose);
   await tester.pumpWidget(BlackgridApp(services: h.services));
+  await tester.pumpAndSettle();
+  return h;
+}
+
+/// Pumps the Settings page alone on [timerNow] with scav cooldown data in the
+/// catalog, the way [pumpTimerApp] does for the whole app.
+///
+/// [mode] is the saved mode the app starts in; pass `GameMode.unknown` to let
+/// the logs decide the active mode.
+Future<M1Harness> pumpTimerSettingsPage(
+  WidgetTester tester, {
+  GameMode mode = GameMode.pvp,
+}) async {
+  tester.view.physicalSize = const Size(1672, 941);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  final h = (await tester.runAsync(() async {
+    final result = M1Harness(clock: () => timerNow, shapeWire: addScavCooldown);
+    await result.initialize(mode: mode);
+    return result;
+  }))!;
+  addTearDown(h.dispose);
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: blackgridTheme(Brightness.dark),
+      home: Scaffold(
+        body: SettingsPage(
+          services: h.services,
+          backLabel: 'Back to Map',
+          onBack: () {},
+          flush: SettingsFlushController(),
+        ),
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
   return h;
 }

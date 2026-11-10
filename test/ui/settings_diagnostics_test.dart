@@ -1,10 +1,17 @@
+import 'dart:async';
+
+import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
+import 'package:blackgrid/ui/settings/commit_field.dart';
+import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
+import 'support/live_map_settings_rig.dart';
 import 'support/scan_ui_support.dart';
 
 Finder get _toggle => find.byKey(const Key('settings-diagnostics-toggle'));
@@ -134,5 +141,78 @@ void main() {
     expect(find.byKey(const Key('scan-recent-2')), findsOneWidget);
     expect(find.byKey(const Key('scan-recent-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  group('map data detail', () {
+    /// A page over services whose map data is the bundled PvP data while PvE
+    /// is selected, because the one refresh made failed.
+    Future<SettingsRig> pumpPage(
+      WidgetTester tester, {
+      bool selectMode = true,
+    }) async {
+      tester.view.physicalSize = const Size(1672, 941);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final rig = (await tester.runAsync(() async {
+        final rig = await SettingsRig.create(client: ControlledMapClient());
+        if (selectMode) {
+          final failed = rig.whenState(
+            (state) => !state.refreshing && state.failure != null,
+          );
+          unawaited(
+            rig.controller.selectMode(mode: GameMode.pve, pack: settingsPack),
+          );
+          await failed.future;
+        }
+        return rig;
+      }))!;
+      addTearDown(rig.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: blackgridTheme(Brightness.dark),
+          home: Scaffold(
+            body: SettingsPage(
+              services: rig.services,
+              backLabel: 'Back to Map',
+              onBack: () {},
+              flush: SettingsFlushController(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_toggle);
+      await tester.pumpAndSettle();
+      await _expand(tester);
+      return rig;
+    }
+
+    testWidgets('settings-diagnostics: Fallback map data', (tester) async {
+      final rig = await pumpPage(tester);
+      expect(rig.controller.state.mode, GameMode.pve);
+      expect(rig.controller.state.dataMode, GameMode.pvp);
+
+      expect(find.text('Data sources'), findsOneWidget);
+      expect(find.text('Selected mode: PvE'), findsOneWidget);
+      expect(find.text('Map data mode: PvP'), findsOneWidget);
+      expect(find.text('Map data source: bundled'), findsOneWidget);
+    });
+
+    testWidgets('settings-diagnostics: Never checked', (tester) async {
+      final rig = await pumpPage(tester);
+      expect(rig.controller.state.checkedAt, isNull);
+
+      expect(find.text('Map data has not been checked.'), findsOneWidget);
+      // The visible Item and map data section shows no source or mode line.
+      final section = find.byKey(const Key('settings-item-data'));
+      for (final line in ['bundled', 'Selected mode', 'Map data mode', 'PvP']) {
+        expect(
+          find.descendant(of: section, matching: find.textContaining(line)),
+          findsNothing,
+          reason: line,
+        );
+      }
+    });
   });
 }

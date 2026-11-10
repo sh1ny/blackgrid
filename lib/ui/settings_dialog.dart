@@ -11,12 +11,12 @@ import '../domain/settings.dart';
 import 'labels.dart';
 import 'live_map_status.dart';
 import 'live_scan_panel.dart';
-import 'evidence_panels.dart';
-import 'map_diagnostics.dart';
 import 'panels.dart';
-import 'scan_evidence_panel.dart';
 import 'ember/theme_access.dart';
 import 'settings/commit_field.dart';
+import 'settings/raid_timer_input.dart';
+import 'settings/settings_diagnostics_body.dart';
+import 'settings/settings_section.dart';
 
 /// Opens Settings and optionally brings one section into view and focus.
 Future<void> showSettings(
@@ -27,9 +27,6 @@ Future<void> showSettings(
   context: context,
   builder: (context) => SettingsDialog(services: services, section: section),
 );
-
-/// A Settings section that can be targeted from the status bar.
-enum SettingsSection { gameMode, itemData, tracker, liveScan }
 
 /// Existing Settings dialog, optionally opened at [section].
 class SettingsDialog extends StatefulWidget {
@@ -172,12 +169,12 @@ class _SettingsDialogState extends State<SettingsDialog> {
         helper: 'From 1:00 to 30:00.',
         value: formatTimerSeconds(timers.runThroughSeconds),
         onCommit: (text) async {
-          final seconds = _parseRunThrough(text);
-          if (seconds == null) return _runThroughMessage;
+          final seconds = parseRunThrough(text);
+          if (seconds == null) return runThroughMessage;
           final saved = await services.settings.setRaidTimers(
             services.settings.raidTimers.copyWith(runThroughSeconds: seconds),
           );
-          return saved ? null : _notSavedMessage;
+          return saved ? null : notSavedMessage;
         },
       ),
       const SizedBox(height: 12),
@@ -189,10 +186,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
         value: timers.fenceReputationFor(mode).toStringAsFixed(2),
         enabled: mode != GameMode.unknown,
         onCommit: (text) async {
-          final value = _parseReputation(text);
-          if (value == null) return _reputationMessage;
+          final value = parseReputation(text);
+          if (value == null) return reputationMessage;
           final saved = await services.settings.setFenceReputation(mode, value);
-          return saved ? null : _notSavedMessage;
+          return saved ? null : notSavedMessage;
         },
       ),
       if (mode == GameMode.unknown)
@@ -269,8 +266,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ),
                 const SizedBox(height: 18),
                 Focus(
-                  key: _sectionKeys[SettingsSection.gameMode],
-                  focusNode: _sectionFocus[SettingsSection.gameMode],
+                  key: _sectionKeys[SettingsSection.general],
+                  focusNode: _sectionFocus[SettingsSection.general],
                   child: DropdownButtonFormField<GameMode>(
                     key: ValueKey(services.catalog.mode),
                     initialValue: services.catalog.mode,
@@ -537,7 +534,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   onExpandedChanged: (value) =>
                       setState(() => _diagnosticsExpanded = value),
                   toggleKey: const Key('settings-diagnostics-toggle'),
-                  child: _DiagnosticsBody(services: services),
+                  child: SettingsDiagnosticsBody(services: services),
                 ),
               ],
             ),
@@ -552,68 +549,4 @@ class _SettingsDialogState extends State<SettingsDialog> {
       );
     },
   );
-}
-
-/// The body of the Diagnostics section: Map inputs, Scans and Data sources,
-/// each under a small heading.
-///
-/// The section's own expansion decides whether this is built at all, so a
-/// collapsed Diagnostics does no scan or source work.
-class _DiagnosticsBody extends StatelessWidget {
-  const _DiagnosticsBody({required this.services});
-
-  final AppServices services;
-
-  Widget _heading(BuildContext context, String title) => Padding(
-    padding: const EdgeInsets.only(top: 14, bottom: 6),
-    child: Text(title, style: Theme.of(context).textTheme.titleSmall),
-  );
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _heading(context, 'Map inputs'),
-      MapDiagnostics(key: const Key('map-input-status'), services: services),
-      _heading(context, 'Scans'),
-      ScanDiagnostics(scanner: services.scanner, catalog: services.catalog),
-      _heading(context, 'Data sources'),
-      DataSourceDiagnostics(services: services),
-    ],
-  );
-}
-
-const _runThroughMessage =
-    'The run-through length must be between 1:00 and 30:00.';
-const _reputationMessage =
-    'The Fence reputation must be between −7.00 and 6.00.';
-
-/// Shown when a valid edit was not saved: another save was in flight, or the
-/// save failed (the dialog's settings error then says more).
-const _notSavedMessage = 'Not saved. Try again.';
-
-final _minutesSeconds = RegExp(r'^(\d{1,2}):([0-5]\d)$');
-
-/// Reads `m:ss` as seconds, or `null` when [text] is not `m:ss` or is outside
-/// the allowed run-through range.
-int? _parseRunThrough(String text) {
-  final match = _minutesSeconds.firstMatch(text.trim());
-  if (match == null) return null;
-  final seconds = int.parse(match[1]!) * 60 + int.parse(match[2]!);
-  return seconds >= RaidTimerSettings.minRunThroughSeconds &&
-          seconds <= RaidTimerSettings.maxRunThroughSeconds
-      ? seconds
-      : null;
-}
-
-/// Reads a Fence reputation, accepting a comma as the decimal mark, or `null`
-/// when [text] is not a number in the allowed range.
-double? _parseReputation(String text) {
-  final value = double.tryParse(text.trim().replaceAll(',', '.'));
-  if (value == null ||
-      !(value >= RaidTimerSettings.minFenceReputation &&
-          value <= RaidTimerSettings.maxFenceReputation)) {
-    return null;
-  }
-  return value;
 }

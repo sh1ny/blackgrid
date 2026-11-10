@@ -43,7 +43,7 @@ class LiveScanPanel extends StatelessWidget {
         final error = scanner.error;
         final warning = status.stopWarning;
         final recording = scanner.recordingStatus.value;
-        final recordingText = _recordingText(recording);
+        final recordingText = LiveScanPanel.recordingText(recording);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -63,7 +63,7 @@ class LiveScanPanel extends StatelessWidget {
                 ),
               ],
             ),
-            Text(_statusText(status), key: const Key('live-scan-status')),
+            Text(statusText(status), key: const Key('live-scan-status')),
             Row(
               children: [
                 const Expanded(child: Text('Record scan frames')),
@@ -92,7 +92,7 @@ class LiveScanPanel extends StatelessWidget {
                     ? errorStyle
                     : null,
               ),
-            Text(_hotkeyText(scanner), key: const Key('scan-hotkey-status')),
+            Text(hotkeyText(scanner), key: const Key('scan-hotkey-status')),
             DropdownButton<ScanHotkey>(
               key: const Key('scan-hotkey-picker'),
               isExpanded: true,
@@ -135,7 +135,7 @@ class LiveScanPanel extends StatelessWidget {
 
   /// The hotkey line: the state the pipeline published, or the saved binding
   /// while no hotkey is registered.
-  static String _hotkeyText(ScanCoordinator scanner) {
+  static String hotkeyText(ScanCoordinator scanner) {
     final saved = scanner.settings.settings.scanHotkey;
     return switch (scanner.hotkeyState) {
       ScanHotkeyRegistered(:final key) => '${key.label} scans at the cursor',
@@ -147,7 +147,8 @@ class LiveScanPanel extends StatelessWidget {
     };
   }
 
-  static String _statusText(LiveScanStatus status) => switch (status.state) {
+  /// The live scan status line for [status].
+  static String statusText(LiveScanStatus status) => switch (status.state) {
     LiveScanState.off => 'Live scan is off',
     LiveScanState.starting => 'Live scan is starting…',
     LiveScanState.ready => 'Live scan is ready',
@@ -156,8 +157,9 @@ class LiveScanPanel extends StatelessWidget {
       'Live scan unavailable: ${status.reason ?? 'unknown reason'}',
   };
 
-  /// The recording status line, or `null` before any session ran.
-  static String? _recordingText(ScanRecordingStatus status) {
+  /// The recording status line for [status], or `null` before any session
+  /// ran.
+  static String? recordingText(ScanRecordingStatus status) {
     final folder = status.folder;
     final counts = '${status.written} written, ${status.dropped} dropped';
     final where = folder == null ? '' : ' — $folder';

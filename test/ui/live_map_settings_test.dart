@@ -1,32 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/live_map_data_controller.dart';
-import 'package:blackgrid/application/map_controller.dart';
-import 'package:blackgrid/data/database.dart';
-import 'package:blackgrid/data/live_map_refresh.dart';
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/credential_store.dart';
-import 'package:blackgrid/maps/live_map_snapshot.dart';
-import 'package:blackgrid/maps/native_map_scene.dart';
-import 'package:blackgrid/maps/prepared_map.dart';
-import 'package:blackgrid/maps/prepared_map_loader.dart';
-import 'package:blackgrid/ui/live_map_status.dart';
-import 'package:blackgrid/ui/settings_dialog.dart';
-import 'package:drift/native.dart';
+import 'package:blackgrid/ui/ember/ember_theme.dart';
+import 'package:blackgrid/ui/settings/commit_field.dart';
+import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-final _checkedAt = DateTime.utc(2021, 4, 5, 6, 7);
-final _now = DateTime.utc(2026, 11, 6, 12);
-final _pack = PreparedMapPack(
-  version: 'settings-test',
-  assetRoot: 'test',
-  maps: [],
-);
+import 'support/live_map_settings_rig.dart';
 
 void main() {
   testWidgets(
@@ -34,12 +18,14 @@ void main() {
     (tester) async {
       late Completer<void> failed;
       final rig = (await tester.runAsync(() async {
-        final client = _ControlledMapClient()..holdMapRequests = true;
-        final rig = await _SettingsRig.create(client: client);
+        final client = ControlledMapClient()..holdMapRequests = true;
+        final rig = await SettingsRig.create(client: client);
         failed = rig.whenState(
           (state) => !state.refreshing && state.failure != null,
         );
-        unawaited(rig.controller.selectMode(mode: GameMode.pve, pack: _pack));
+        unawaited(
+          rig.controller.selectMode(mode: GameMode.pve, pack: settingsPack),
+        );
         await client.firstMapRequest.future;
         return rig;
       }))!;
@@ -49,23 +35,21 @@ void main() {
       expect(rig.controller.state.source, LiveMapDataSource.bundled);
       expect(rig.controller.state.refreshing, isTrue);
 
-      await _showSettings(tester, rig.services);
-      final mapStatus = find.byType(LiveMapStatus);
-      expect(tester.widget<LiveMapStatus>(mapStatus).refreshing, isTrue);
-      final mapRefreshButton = find.descendant(
-        of: mapStatus,
-        matching: find.byType(OutlinedButton),
+      var back = 0;
+      await _showSettings(tester, rig.services, onBack: () => back++);
+      final refreshing = find.widgetWithText(
+        OutlinedButton,
+        'Refreshing map data…',
       );
-      expect(tester.widget<OutlinedButton>(mapRefreshButton).onPressed, isNull);
-      expect(find.textContaining('PvE'), findsWidgets);
-      expect(_textContaining('bundled'), findsOneWidget);
-      final close = tester.widget<TextButton>(
-        find.widgetWithText(TextButton, 'Close'),
-      );
-      expect(close.onPressed, isNotNull);
-      await tester.tap(find.text('Close'));
-      await tester.pumpAndSettle();
-      expect(find.byType(SettingsDialog), findsNothing);
+      await tester.ensureVisible(refreshing);
+      expect(tester.widget<OutlinedButton>(refreshing).onPressed, isNull);
+      // The mode and the source are Diagnostics detail, not part of the row.
+      expect(_textContaining('bundled'), findsNothing);
+      expect(find.text('Selected mode: PvE'), findsNothing);
+      final backButton = find.widgetWithText(TextButton, 'Back to Map');
+      expect(tester.widget<TextButton>(backButton).onPressed, isNotNull);
+      await tester.tap(backButton);
+      expect(back, 1);
 
       await tester.runAsync(() async {
         client.release.complete(
@@ -79,35 +63,33 @@ void main() {
       expect(rig.controller.state.source, LiveMapDataSource.bundled);
       expect(rig.controller.state.failure, isNotNull);
 
-      await _showSettings(tester, rig.services);
-      expect(find.textContaining('PvE'), findsWidgets);
-      expect(find.textContaining('PvP'), findsWidgets);
-      expect(_textContaining('bundled'), findsOneWidget);
-      expect(
-        _textContainingAny(['fail', 'unavailable', 'could not']),
-        findsWidgets,
-      );
+      expect(find.textContaining('Map data refresh failed'), findsOneWidget);
       expect(
         tester
-            .widget<TextButton>(find.widgetWithText(TextButton, 'Close'))
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Back to Map'))
             .onPressed,
         isNotNull,
       );
-      await tester.tap(find.text('Close'));
-      await tester.pumpAndSettle();
+      // The detail is one expansion away.
+      await _expandDiagnostics(tester);
+      expect(find.text('Selected mode: PvE'), findsOneWidget);
+      expect(find.text('Map data mode: PvP'), findsOneWidget);
+      expect(find.text('Map data source: bundled'), findsOneWidget);
     },
   );
 
   testWidgets('manual map refresh does not refresh items', (tester) async {
     final rig = (await tester.runAsync(() async {
-      final client = _ControlledMapClient();
+      final client = ControlledMapClient();
       client.response = http.Response('synthetic map source unavailable', 503);
-      final store = _SettingsStore(snapshot: _cachedSnapshot());
-      final rig = await _SettingsRig.create(client: client, store: store);
+      final store = SettingsStore(snapshot: cachedSnapshot());
+      final rig = await SettingsRig.create(client: client, store: store);
       final failed = rig.whenState(
         (state) => !state.refreshing && state.failure != null,
       );
-      unawaited(rig.controller.selectMode(mode: GameMode.pve, pack: _pack));
+      unawaited(
+        rig.controller.selectMode(mode: GameMode.pve, pack: settingsPack),
+      );
       await failed.future;
       return rig;
     }))!;
@@ -116,15 +98,12 @@ void main() {
     await _showSettings(tester, rig.services);
 
     expect(rig.controller.state.source, LiveMapDataSource.cached);
-    expect(rig.controller.state.checkedAt, _checkedAt);
-    expect(_textContaining('cached'), findsOneWidget);
-    expect(find.textContaining('2021'), findsWidgets);
-    expect(
-      _textContainingAny(['fail', 'unavailable', 'could not']),
-      findsWidgets,
-    );
-    final itemStatusBefore = find.textContaining('Item data:');
-    expect(itemStatusBefore, findsOneWidget);
+    expect(rig.controller.state.checkedAt, settingsCheckedAt);
+    // The row names the check in local words, with the year of an old one.
+    expect(find.textContaining('2021'), findsOneWidget);
+    expect(find.textContaining('Map data refresh failed'), findsOneWidget);
+    final itemLine = find.text('Not downloaded yet');
+    expect(itemLine, findsOneWidget);
     final catalogSnapshot = rig.services.catalog.snapshot;
     final itemRequestsBefore = client.itemRequests;
     final mapRequestsBefore = client.mapRequests;
@@ -146,10 +125,11 @@ void main() {
     expect(client.itemRequests, itemRequestsBefore);
     expect(rig.services.catalog.snapshot, same(catalogSnapshot));
     expect(rig.controller.state.source, LiveMapDataSource.cached);
-    expect(rig.controller.state.checkedAt, _checkedAt);
-    expect(find.textContaining('Item data:'), findsOneWidget);
-    expect(_textContaining('cached'), findsOneWidget);
-    expect(find.textContaining('2021'), findsWidgets);
+    expect(rig.controller.state.checkedAt, settingsCheckedAt);
+    expect(itemLine, findsOneWidget);
+    expect(find.textContaining('2021'), findsOneWidget);
+    await _expandDiagnostics(tester);
+    expect(find.text('Map data source: cached'), findsOneWidget);
   });
 }
 
@@ -159,193 +139,36 @@ Finder _textContaining(String value) => find.byWidgetPredicate(
       widget.data?.toLowerCase().contains(value.toLowerCase()) == true,
 );
 
-Finder _textContainingAny(List<String> values) => find.byWidgetPredicate(
-  (widget) =>
-      widget is Text &&
-      values.any((value) => widget.data?.toLowerCase().contains(value) == true),
-);
-
-Future<void> _showSettings(WidgetTester tester, AppServices services) async {
+/// Shows the Settings page alone, scrolled to Item and map data.
+Future<void> _showSettings(
+  WidgetTester tester,
+  AppServices services, {
+  VoidCallback? onBack,
+}) async {
+  tester.view.physicalSize = const Size(1672, 941);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: TextButton(
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => SettingsDialog(services: services),
-            ),
-            child: const Text('Open settings'),
-          ),
+      theme: blackgridTheme(Brightness.dark),
+      home: Scaffold(
+        body: SettingsPage(
+          services: services,
+          backLabel: 'Back to Map',
+          onBack: onBack ?? () {},
+          flush: SettingsFlushController(),
         ),
       ),
     ),
   );
-  await tester.tap(find.text('Open settings'));
   await tester.pumpAndSettle();
 }
 
-class _SettingsRig {
-  _SettingsRig(this.services, this.controller, this.client);
-
-  static Future<_SettingsRig> create({
-    required _ControlledMapClient client,
-    _SettingsStore? store,
-  }) async {
-    final database = BlackgridDatabase(NativeDatabase.memory());
-    final snapshots = store ?? _SettingsStore();
-    final controller = LiveMapDataController(
-      store: snapshots,
-      fetcher: LiveMapFetcher(client: client, clock: () => _now),
-      publish: (_, {required changed}) {},
-      buildMarkers: (_, _) async => const {},
-    );
-    final credentials = _SettingsCredentials();
-    final loader = PreparedMapPackLoader(
-      loadBytes: (_) async =>
-          ByteData.sublistView(Uint8List.fromList(utf8.encode('{}'))),
-    );
-    final services = AppServices(
-      database: database,
-      credentials: credentials,
-      client: client,
-      clock: () => _now,
-      mapController: MapController(
-        loader: loader,
-        resources: NativeMapResourceOwner(loader),
-      ),
-      mapDataController: controller,
-    );
-    return _SettingsRig(services, controller, client);
-  }
-
-  final AppServices services;
-  final LiveMapDataController controller;
-  final _ControlledMapClient client;
-
-  Completer<void> whenState(bool Function(LiveMapDataState) predicate) {
-    final completer = Completer<void>();
-    void listener() {
-      if (predicate(controller.state)) {
-        controller.removeListener(listener);
-        completer.complete();
-      }
-    }
-
-    controller.addListener(listener);
-    listener();
-    return completer;
-  }
-
-  Completer<void> whenNextSettled() {
-    var refreshingObserved = false;
-    return whenState((state) {
-      refreshingObserved = refreshingObserved || state.refreshing;
-      return refreshingObserved && !state.refreshing && state.failure != null;
-    });
-  }
-
-  Future<void> close() async {
-    await services.dispose();
-    client.close();
-  }
+Future<void> _expandDiagnostics(WidgetTester tester) async {
+  final toggle = find.byKey(const Key('settings-diagnostics-toggle'));
+  await tester.ensureVisible(toggle);
+  await tester.pumpAndSettle();
+  await tester.tap(toggle);
+  await tester.pumpAndSettle();
 }
-
-class _SettingsCredentials implements CredentialStore {
-  @override
-  Future<String?> readCredential(GameMode mode) async => null;
-
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async {}
-
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
-}
-
-class _SettingsStore implements LiveMapStore {
-  _SettingsStore({this._snapshot});
-
-  final LiveMapSnapshot? _snapshot;
-
-  @override
-  Future<LiveMapSnapshot?> read(GameMode mode) async =>
-      _snapshot?.mode == mode ? _snapshot : null;
-
-  @override
-  Future<void> commit(LiveMapSnapshot snapshot) async {}
-}
-
-class _ControlledMapClient extends http.BaseClient {
-  final firstMapRequest = Completer<void>();
-  final release = Completer<http.Response>();
-  final mapRequestWaiters = <(int, Completer<void>)>[];
-  var mapRequests = 0;
-  var itemRequests = 0;
-  var holdMapRequests = false;
-  http.Response response = http.Response(
-    'synthetic map source unavailable',
-    503,
-  );
-
-  Completer<void> whenMapRequests(int target) {
-    final completer = Completer<void>();
-    if (mapRequests >= target) {
-      completer.complete();
-    } else {
-      mapRequestWaiters.add((target, completer));
-    }
-    return completer;
-  }
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final path = request.url.pathSegments;
-    final dataset = path.last == 'en' && path.length > 1
-        ? path[path.length - 2]
-        : path.last;
-    final isMapRequest =
-        request.url.host == 'json.tarkov.dev' &&
-        LiveMapSourceDataset.values.any((source) => source.path == dataset);
-    if (isMapRequest) {
-      mapRequests++;
-      if (!firstMapRequest.isCompleted) firstMapRequest.complete();
-      for (final (target, completer) in mapRequestWaiters) {
-        if (!completer.isCompleted && mapRequests >= target) {
-          completer.complete();
-        }
-      }
-      if (holdMapRequests) {
-        final response = await release.future;
-        return _streamed(response, request);
-      }
-    } else {
-      itemRequests++;
-    }
-    return _streamed(response, request);
-  }
-
-  http.StreamedResponse _streamed(
-    http.Response response,
-    http.BaseRequest request,
-  ) => http.StreamedResponse(
-    Stream<List<int>>.value(utf8.encode(response.body)),
-    response.statusCode,
-    request: request,
-    headers: response.headers,
-  );
-
-  @override
-  void close() {}
-}
-
-LiveMapSnapshot _cachedSnapshot() => LiveMapSnapshot(
-  mode: GameMode.pve,
-  checkedAt: _checkedAt,
-  sources: [
-    for (final dataset in LiveMapSourceDataset.values)
-      LiveMapSourceBody(
-        dataset: dataset,
-        bytes: Uint8List.fromList(utf8.encode('{}')),
-      ),
-  ],
-);
