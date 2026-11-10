@@ -1,5 +1,38 @@
 # Blackgrid Changelog
 
+## v0.8.5 - 2026-11-11
+
+Blackgrid moves to Ember, its new look, with a System, Dark and Light theme switch. Map and Scanner open on an answer strip: the verdict, its reason, Found in raid and prices sit right under the top bar. The Scanner shows why an item is needed, its Flea, per-slot and trader prices and the scan evidence at a glance, and Recent items is a flat list that is never cut off. Settings is a full page, and debug detail moves to its collapsed Diagnostics section.
+
+Added:
+- A System, Dark and Light theme switch in Settings. System follows Windows and is the default. (#97)
+- A one-line reason under every verdict, and a tag on the price that says when it was taken and warns once it is over an hour old. (#97)
+
+Changed:
+- New Ember look: near-black and warm paper surfaces, the Geist and Literata fonts, and one warm accent for what you are touching. (#97)
+- Each verdict has its own plate: solid green Keep, soft green Keep for later, warm Check / May Need, neutral Flea and Trader, and a dashed Price unavailable. (#97)
+- Map and Scanner share item advice, Found in raid and correction controls directly below the top bar. Raid timers and status actions keep Settings controls reachable, including live scan, hotkeys and recording status. (#98)
+- Top search shows its own results with keyboard selection. Typing alone leaves the current item and history unchanged. (#98)
+- The details inspector starts open on wide windows and closed on narrow windows, then preserves your choice. Scanner puts recent items first in the inspector and keeps evidence in the workspace; Map retains its interim rail controls. (#98)
+- Item advice includes available prices and freshness, with a stable strip height when the content fits. The status bar shows the active scan key and opens the relevant Settings controls. (#98)
+- Pictured history rows show the verdict recorded with each activity across restart and import. Older records show an unknown indicator; opening history still calculates current advice. (#98)
+- The map takes the full main column. The map picker, Read latest screenshot and the floor control sit on the map. (#102)
+- The Map inspector lists this raid's extracts, markers with their icons, counts and switches, and your pins. (#102)
+- A selected marker, extract or pin is drawn in amber. Quest markers are now lime, loot markers teal and Scav extract names rose. (#102)
+- Spawn chances show as whole percentages. (#102)
+- The Map no longer shows debug information. Saved-file status lines are in a collapsed Diagnostics section in Settings. (#102)
+- The Scanner and its inspector no longer show scan codes, OCR text, title crops, scores, stage timings, the recent scans list, source URLs, UTC times or record counts. They are in the collapsed Diagnostics section of Settings. (#103)
+- A corrected scan's subtitle and the correction offer no longer show the scan number, and the offer no longer shows match scores. (#103)
+- Settings opens as a page with sections for General, Live scan, Item and map data, Tracker progress, Game files, Raid timers, Map and Diagnostics. Changes save as you make them; the folder fields save on Enter or when you leave them. (#104)
+- Stats, Import, Map help, the marker list sheet, the pin editor and the confirm dialogs use the Ember look. Import's file fingerprint and per-record lines sit under a Details toggle. (#104)
+- The startup screen shows the full Blackgrid logo with its tagline. (#104)
+- Scanner: Found in raid beside the verdict, a full price block in the strip, and Why, Prices and Scan evidence in the main column instead of inspector accordions (#105).
+- The Check reason now says which need requires a found-in-raid item (#105).
+- Top bar: one Map/Scanner switch, a narrower search, and Stats, Import and Settings as quiet buttons (#105).
+
+Removed:
+- Scanner's data-sources panel and the item size line. Freshness is in Prices and the status bar, and the progress refresh is in Settings (#105).
+
 ## v0.8.0 - 2026-11-08
 
 The map now names its places and extracts, opens a bubble at each marker, and refreshes its marker data from tarkov.dev without a new release; missing Kollontay and Glukhar locations are restored.
