@@ -10,7 +10,7 @@ A scan published rejected `ambiguous` or `belowSimilarity`, with non-empty OCR t
 
 #### Scenario: Ambiguous scan with item A shown
 - **WHEN** item A is selected and a scan ends rejected `ambiguous` with OCR text `ANA M1 OD GREEN`
-- **THEN** a correction offer for that scan is shown, the decision card still shows item A and its decision, and no history entry is added
+- **THEN** a correction offer for that scan is shown, the answer strip still shows item A and its decision, and no history entry is added
 
 #### Scenario: Below-similarity scan with nothing shown
 - **WHEN** nothing is selected and a scan ends rejected `belowSimilarity` with OCR text `FILTRBY`
@@ -64,22 +64,22 @@ The offer SHALL include a text field pre-filled with the scan's OCR text. Its re
 
 #### Scenario: Edited text
 - **WHEN** the offer's text field holds `ANA M1` and the user changes it to `ANA M1 black`
-- **THEN** the offer's search results are only items containing all of `ana`, `m1` and `black`, at most 8, and the decision card still shows the item it showed before
+- **THEN** the offer's search results are only items containing all of `ana`, `m1` and `black`, at most 8, and the answer strip still shows the item it showed before
 
 #### Scenario: No results
 - **WHEN** the offer's text field holds text that matches no catalog item
 - **THEN** the offer shows that nothing matched, and the selection is unchanged
 
 ### Requirement: Picking a correction makes it the current selection
-Picking a candidate or a search result from a current offer SHALL make that item the current selection in the live mode, with its decision from the shared engine. It SHALL close an open history view, reset transient FIR to unknown and clear the offer. The card SHALL label the item as corrected from a scan, without the scan's id, and show how long ago it was corrected. A failed history write SHALL leave the correction shown with an error.
+Picking a candidate or a search result from a current offer SHALL make that item the current selection in the live mode, with its decision from the shared engine. It SHALL close an open history view, reset transient FIR to unknown and clear the offer. The strip's provenance line SHALL label the item as corrected from a scan, without the scan's id, and say how long ago it was corrected (workspace-shell). A failed history write SHALL leave the correction shown with an error.
 
 #### Scenario: Pick the runner-up
 - **WHEN** an offer for scan 7 lists candidates A and B and the user picks B
-- **THEN** the decision card shows B with the shared engine's decision, labelled "Corrected from a scan" with no `#7`, and the offer is gone
+- **THEN** the answer strip shows B with the shared engine's decision, labelled "Corrected from a scan" with no `#7`, and the offer is gone
 
 #### Scenario: Pick from search
 - **WHEN** the user edits the offer's text, and picks search result C
-- **THEN** the decision card shows C labelled as corrected from a scan
+- **THEN** the answer strip shows C labelled as corrected from a scan
 
 #### Scenario: FIR from the earlier item
 - **WHEN** item A is shown with FIR set to yes and the user picks candidate A from an offer
@@ -87,11 +87,11 @@ Picking a candidate or a search result from a current offer SHALL make that item
 
 #### Scenario: History view open
 - **WHEN** a history row is open and the user picks a candidate
-- **THEN** the history view closes and the decision card shows the picked item in the live mode
+- **THEN** the history view closes and the answer strip shows the picked item in the live mode
 
 #### Scenario: History write fails
 - **WHEN** the user picks candidate B and the history write fails
-- **THEN** the decision card shows B with an error saying the correction was not recorded
+- **THEN** the answer strip shows B with an error saying the correction was not recorded
 
 ### Requirement: A correction is recorded as manual activity
 A picked correction SHALL record activity for its item in the live mode with source `manual` and the time of the pick, one entry per item and mode, revised on each record. No OCR text, candidate list or correction record SHALL be stored.
@@ -109,11 +109,11 @@ After a mode or session change, the corrected item SHALL no longer be shown as c
 
 #### Scenario: Session change after a correction
 - **WHEN** the user picks B from an offer and the game session then changes
-- **THEN** the card no longer shows B as current advice, and FIR is unknown
+- **THEN** the strip no longer shows B as current advice, and FIR is unknown
 
 #### Scenario: Prices go stale after a correction
-- **WHEN** the user picks B from an offer, sets FIR to yes and the card shows Flea, and B's Flea quote then becomes older than one hour
-- **THEN** the card still shows B labelled as corrected, with decision Check
+- **WHEN** the user picks B from an offer, sets FIR to yes and the strip shows Flea, and B's Flea quote then becomes older than one hour
+- **THEN** the strip still shows B labelled as corrected, with decision Check
 
 ### Requirement: A correction is never a new accepted scan
 A correction SHALL NOT change the scanner's latest or last accepted scan. It SHALL NOT be counted as an accepted scan, and SHALL NOT record activity with source `scan`. It SHALL NOT be presented as an accepted scan anywhere an accepted scan is shown, including the session's latest accepted scan on Map. Its evidence panel SHALL still show the scan as not accepted.
@@ -124,7 +124,7 @@ A correction SHALL NOT change the scanner's latest or last accepted scan. It SHA
 
 #### Scenario: Refresh after a correction
 - **WHEN** the user picks B from an offer and the catalog and progress then refresh
-- **THEN** the card still shows B labelled as corrected, no new activity is recorded, and no accepted scan is added
+- **THEN** the strip still shows B labelled as corrected, no new activity is recorded, and no accepted scan is added
 
 ### Requirement: Only the newest offer is current
 Each unaccepted report SHALL be offered at most once. A newer offer SHALL replace an older one. The offer SHALL be cleared by a newer accepted scan, a manual or history selection, a picked correction, Dismiss, and a mode or session change. A newer scan with nothing to offer SHALL leave the current offer in place. Dismiss SHALL change nothing else.
@@ -135,7 +135,7 @@ Each unaccepted report SHALL be offered at most once. A newer offer SHALL replac
 
 #### Scenario: Accepted scan clears the offer
 - **WHEN** scan 2 offers a correction and scan 3 is then accepted for item D
-- **THEN** no offer is shown and the decision card shows D
+- **THEN** no offer is shown and the answer strip shows D
 
 #### Scenario: Failure keeps the offer
 - **WHEN** scan 2 offers a correction and scan 3 then fails at targeted capture
@@ -143,15 +143,15 @@ Each unaccepted report SHALL be offered at most once. A newer offer SHALL replac
 
 #### Scenario: Manual selection clears the offer
 - **WHEN** an offer is shown and the user selects item E from the main item search
-- **THEN** no offer is shown and the decision card shows E as a manual inspection
+- **THEN** no offer is shown and the answer strip shows E as a manual inspection
 
 #### Scenario: Closing a history view keeps the offer
 - **WHEN** a history row is open, a scan then offers a correction, and the user closes the history view
-- **THEN** the offer is still shown and the decision card shows the live selection
+- **THEN** the offer is still shown and the answer strip shows the live selection
 
 #### Scenario: Dismiss
 - **WHEN** item A is shown, an offer is shown, and the user dismisses it
-- **THEN** no offer is shown, the decision card still shows A with the same FIR value, and no history entry is added
+- **THEN** no offer is shown, the answer strip still shows A with the same FIR value, and no history entry is added
 
 #### Scenario: Session change
 - **WHEN** an offer is shown and the game session changes
@@ -166,7 +166,7 @@ A pick SHALL apply only while its offer is still the current one, the mode and s
 
 #### Scenario: Offer replaced before the pick
 - **WHEN** scan 2's offer is shown, scan 3 is accepted for item D, and a pick from scan 2's offer then arrives
-- **THEN** the decision card shows D and no history entry is added for the picked item
+- **THEN** the answer strip shows D and no history entry is added for the picked item
 
 #### Scenario: Item removed by a catalog refresh
 - **WHEN** an offer lists candidate B, a catalog refresh removes B, and the user then picks B
@@ -176,12 +176,12 @@ A pick SHALL apply only while its offer is still the current one, the mode and s
 - **WHEN** an offer is made in PvP, the live mode changes to PvE, and a pick from it then arrives
 - **THEN** the selection is unchanged and no history entry is added
 
-### Requirement: The offer appears with the decision card on Scanner and Map
-The offer SHALL be shown in the decision card on Scanner and on Map, next to the item the card shows, never in its place. It SHALL survive switching between Scanner and Map. Its candidates, search and Dismiss SHALL work in both places.
+### Requirement: The offer appears with the answer strip on Scanner and Map
+The offer SHALL be shown in the answer strip on Scanner and on Map, next to the item the strip shows, never in its place. It SHALL survive switching between Scanner and Map. Its candidates, search and Dismiss SHALL work in both places.
 
 #### Scenario: Offer on Map
-- **WHEN** Map is open with item A shown in its decision card and a scan offers a correction
-- **THEN** Map's decision card shows item A and the offer with its candidates, and picking one makes it the selection
+- **WHEN** Map is open with item A shown in its answer strip and a scan offers a correction
+- **THEN** Map's answer strip shows item A and the offer with its candidates, and picking one makes it the selection
 
 #### Scenario: Navigation keeps the offer
 - **WHEN** an offer is shown on Scanner and the user switches to Map and back

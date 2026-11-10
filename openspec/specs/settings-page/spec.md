@@ -20,6 +20,10 @@ The top bar's Settings action SHALL open Settings as a page in place of the answ
 - **WHEN** Settings was opened from the Map and the player chooses Scanner in the top bar
 - **THEN** Settings closes and the Scanner shows
 
+#### Scenario: Choose the area Settings was opened from
+- **WHEN** Settings was opened from the Scanner and the player chooses Scanner in the top bar's area switch
+- **THEN** Settings closes and the Scanner shows; while Settings is open, neither area is shown as selected in the switch
+
 #### Scenario: Item search from Settings
 - **WHEN** Settings was opened from the Scanner and the player picks an item in the top bar's item search
 - **THEN** Settings closes and the Scanner shows that item in the answer strip
