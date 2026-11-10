@@ -9,7 +9,9 @@ import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/map_diagnostics.dart';
-import 'package:blackgrid/ui/settings_dialog.dart';
+import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
+import 'package:blackgrid/ui/settings/settings_page.dart';
+import 'package:blackgrid/ui/settings/settings_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,10 +27,20 @@ final class _GatedOcr extends RaidPanelOcr {
 
 Finder get _toggle => find.byKey(const Key('settings-diagnostics-toggle'));
 Finder get _status => find.byType(MapDiagnostics);
-Finder get _follow => find.widgetWithText(SwitchListTile, 'Follow logs');
+Finder get _follow => find.ancestor(
+  of: find.text('Follow logs'),
+  matching: find.byType(SettingsRow),
+);
+
+/// Whether the Follow logs switch is on.
+bool _followOn(WidgetTester tester) => tester
+    .widget<EmberToggleSwitch>(
+      find.descendant(of: _follow, matching: find.byType(EmberToggleSwitch)),
+    )
+    .on;
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.text('Settings'));
+  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
   await tester.pumpAndSettle();
 }
 
@@ -49,7 +61,7 @@ Future<void> _expand(WidgetTester tester) async {
 }
 
 void _expectCollapsed() {
-  expect(find.text('Diagnostics'), findsOneWidget);
+  expect(find.byKey(const Key('settings-title-diagnostics')), findsOneWidget);
   expect(find.textContaining('Logs:'), findsNothing);
   expect(find.textContaining('Screenshots:'), findsNothing);
   expect(_status, findsNothing);
@@ -195,7 +207,7 @@ void main() {
       'Use Tracker progress',
     ]) {
       final other = find.descendant(
-        of: find.byType(SettingsDialog),
+        of: find.byType(SettingsPage),
         matching: find.text(text),
       );
       expect(other, findsOneWidget, reason: text);
@@ -284,7 +296,7 @@ void main() {
     ))!.settings;
     await _openSettings(tester);
     await _expand(tester);
-    expect(tester.widget<SwitchListTile>(_follow).value, isFalse);
+    expect(_followOn(tester), isFalse);
     await tester.tap(_toggle);
     await tester.pumpAndSettle();
     _expectCollapsed();
@@ -370,7 +382,7 @@ void main() {
     await _openSettings(tester);
     await _expand(tester);
     _expectExpanded();
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.widgetWithText(TextButton, 'Back to Map'));
     await tester.pumpAndSettle();
     await _openSettings(tester);
     await _showTitle(tester);

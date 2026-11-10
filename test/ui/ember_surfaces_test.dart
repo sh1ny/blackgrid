@@ -153,9 +153,9 @@ void main() {
     ]) {
       expect(find.text(old), findsNothing);
     }
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Live scan'), findsOneWidget);
+    expect(find.byKey(const Key('settings-title-liveScan')), findsOneWidget);
     expect(find.text('LIVE SCAN'), findsNothing);
     // Recent scans lives in Diagnostics, which starts collapsed.
     expect(find.text('Recent scans'), findsNothing);
@@ -166,7 +166,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Recent scans'), findsOneWidget);
     expect(find.text('RECENT SCANS'), findsNothing);
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.widgetWithText(TextButton, 'Back to Scanner'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('nav-map')));

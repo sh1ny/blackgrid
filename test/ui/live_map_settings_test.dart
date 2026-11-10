@@ -36,7 +36,7 @@ void main() {
       expect(rig.controller.state.refreshing, isTrue);
 
       var back = 0;
-      await _showSettings(tester, rig.services, onBack: () => back++);
+      await _pumpSettings(tester, rig.services, onBack: () => back++);
       final refreshing = find.widgetWithText(
         OutlinedButton,
         'Refreshing map data…',
@@ -95,7 +95,7 @@ void main() {
     }))!;
     final client = rig.client;
     addTearDown(rig.close);
-    await _showSettings(tester, rig.services);
+    await _pumpSettings(tester, rig.services);
 
     expect(rig.controller.state.source, LiveMapDataSource.cached);
     expect(rig.controller.state.checkedAt, settingsCheckedAt);
@@ -140,7 +140,7 @@ Finder _textContaining(String value) => find.byWidgetPredicate(
 );
 
 /// Shows the Settings page alone, scrolled to Item and map data.
-Future<void> _showSettings(
+Future<void> _pumpSettings(
   WidgetTester tester,
   AppServices services, {
   VoidCallback? onBack,

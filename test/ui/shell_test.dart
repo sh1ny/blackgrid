@@ -24,6 +24,7 @@ import 'package:blackgrid/ui/answer_strip.dart';
 import 'package:blackgrid/ui/item_icon.dart';
 import 'package:blackgrid/ui/item_decision_card.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
+import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/shell.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
@@ -983,7 +984,7 @@ void main() {
     });
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
     await tester.pumpAndSettle();
     final panel = find.byKey(const Key('settings-live-scan'));
     final toggle = find.descendant(
@@ -1012,11 +1013,11 @@ void main() {
       find.descendant(of: panel, matching: find.textContaining(folder)),
       findsOneWidget,
     );
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.widgetWithText(TextButton, 'Back to Scanner'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('recording-stop-note')), findsOneWidget);
     expect(find.textContaining('synthetic disk failure'), findsOneWidget);
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
     await tester.pumpAndSettle();
     expect(
       find.descendant(
@@ -1092,7 +1093,7 @@ void main() {
         find.descendant(of: panel, matching: find.textContaining(folder)),
         findsOneWidget,
       );
-      await tester.tap(find.text('Close'));
+      await tester.tap(find.widgetWithText(TextButton, 'Back to Scanner'));
       await tester.pumpAndSettle();
       final note = find.byKey(const Key('recording-stop-note'));
       expect(note, findsOneWidget);
@@ -1119,26 +1120,51 @@ void main() {
   }
   testWidgets('workspace-shell: Settings targets', (tester) async {
     await pumpM1(tester);
-    await tester.tap(find.byKey(const Key('status-item-data')));
+    Future<void> check(String key, String section) async {
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      final page = find.byType(SettingsPage);
+      expect(page, findsOneWidget);
+      final title = find.byKey(Key('settings-title-$section'));
+      final rect = tester.getRect(title);
+      expect(rect.top, greaterThanOrEqualTo(tester.getRect(page).top));
+      expect(rect.bottom, lessThanOrEqualTo(tester.getRect(page).bottom));
+      expect(Focus.of(tester.element(title)).hasPrimaryFocus, isTrue);
+      await tester.tap(find.widgetWithText(TextButton, 'Back to Map'));
+      await tester.pumpAndSettle();
+      expect(page, findsNothing);
+    }
+
+    await check('status-item-data', 'itemData');
+    await check('status-tracker', 'tracker');
+  });
+  testWidgets('workspace-shell: Settings target while the page is open', (
+    tester,
+  ) async {
+    await pumpM1(tester);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
     await tester.pumpAndSettle();
-    final itemTarget = find.byKey(const Key('settings-item-data'));
-    expect(itemTarget, findsOneWidget);
+    final page = find.byType(SettingsPage);
+    final tracker = find.byKey(const Key('settings-title-tracker'));
+    expect(page, findsOneWidget);
+    // Scroll past Tracker progress, so reaching it again is a real move.
+    await tester.tap(find.byKey(const Key('settings-nav-raidTimers')));
+    await tester.pumpAndSettle();
     expect(
-      tester.getTopLeft(itemTarget).dy,
-      greaterThanOrEqualTo(tester.getTopLeft(find.byType(AlertDialog)).dy),
+      tester.getRect(tracker).top,
+      lessThan(tester.getRect(page).top),
+      reason: 'Tracker progress is scrolled out of view',
     );
-    expect(FocusManager.instance.primaryFocus?.hasFocus, isTrue);
-    await tester.tap(find.text('Close'));
-    await tester.pumpAndSettle();
+
     await tester.tap(find.byKey(const Key('status-tracker')));
     await tester.pumpAndSettle();
-    final trackerTarget = find.byKey(const Key('settings-tracker'));
-    expect(trackerTarget, findsOneWidget);
+
+    expect(page, findsOneWidget);
     expect(
-      tester.getTopLeft(trackerTarget).dy,
-      lessThan(tester.getBottomLeft(find.byType(AlertDialog)).dy),
+      tester.getRect(tracker).bottom,
+      lessThanOrEqualTo(tester.getRect(page).bottom),
     );
-    expect(FocusManager.instance.primaryFocus?.hasFocus, isTrue);
+    expect(Focus.of(tester.element(tracker)).hasPrimaryFocus, isTrue);
   });
   for (final size in [
     const Size(1660, 870),

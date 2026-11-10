@@ -8,7 +8,7 @@ import '../../data/scan_timing_log.dart';
 import '../../domain/settings.dart';
 import '../ember/ember_tokens.dart';
 import '../ember/theme_access.dart';
-import '../live_scan_panel.dart';
+import '../live_scan_text.dart';
 import 'settings_row.dart';
 
 /// The rows of the Settings page's Live scan section: live scan on or off, the
@@ -16,7 +16,7 @@ import 'settings_row.dart';
 ///
 /// It listens to [scanner] and [timingLog] and holds no state of its own, so
 /// the switches always show the session's intent. Recording stays available
-/// only while live scan is ready (ADR-0015), as in [LiveScanPanel].
+/// only while live scan is ready (ADR-0015).
 class LiveScanSettings extends StatelessWidget {
   /// Creates the rows over [scanner] and [timingLog].
   const LiveScanSettings({
@@ -50,7 +50,7 @@ class LiveScanSettings extends StatelessWidget {
       builder: (context, _) {
         final status = scanner.status;
         final recording = scanner.recordingStatus.value;
-        final recordingText = LiveScanPanel.recordingText(recording);
+        final recordingText = LiveScanLines.recordingText(recording);
         final recordingFailed =
             recording.stopReason is ScanRecordingStartFailed ||
             recording.stopReason is ScanRecordingWriteFailed;
@@ -69,7 +69,7 @@ class LiveScanSettings extends StatelessWidget {
               onChanged: (on) => unawaited(scanner.setLiveScan(on)),
             ),
             note(
-              LiveScanPanel.statusText(status),
+              LiveScanLines.statusText(status),
               const Key('live-scan-status'),
             ),
             SettingsRow(
@@ -95,7 +95,7 @@ class LiveScanSettings extends StatelessWidget {
               ),
             ),
             note(
-              LiveScanPanel.hotkeyText(scanner),
+              LiveScanLines.hotkeyText(scanner),
               const Key('scan-hotkey-status'),
             ),
             if (scanner.hotkeyError case final hotkeyError?)

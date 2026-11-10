@@ -6,22 +6,22 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| settings-page → Settings opens as a page | Open and go back | test/ui/settings_page_shell_test.dart | settings-page: Open and go back | red |
-| settings-page → Settings opens as a page | Inspector hidden while open | test/ui/settings_page_shell_test.dart | settings-page: Inspector hidden while open | red |
-| settings-page → Settings opens as a page | Switch area from Settings | test/ui/settings_page_shell_test.dart | settings-page: Switch area from Settings | red |
-| settings-page → Settings opens as a page | Item search from Settings | test/ui/settings_page_shell_test.dart | settings-page: Item search from Settings | red |
-| settings-page → Settings opens as a page | Escape with an unsaved invalid edit | test/ui/settings_page_shell_test.dart | settings-page: Escape with an unsaved invalid edit | red |
-| settings-page → Settings opens as a page | Map keys while Settings is open | test/ui/settings_page_shell_test.dart | settings-page: Map keys while Settings is open | red |
-| settings-page → Settings opens as a page | Escape with a valid edit | test/ui/settings_page_shell_test.dart | settings-page: Escape with a valid edit | red |
-| settings-page → Settings opens as a page | Scan while Settings is open | test/ui/settings_page_shell_test.dart | settings-page: Scan while Settings is open | red |
-| settings-page → Settings opens as a page | Settings action while open | test/ui/settings_page_shell_test.dart | settings-page: Settings action while open | red |
+| settings-page → Settings opens as a page | Open and go back | test/ui/settings_page_shell_test.dart | settings-page: Open and go back | green |
+| settings-page → Settings opens as a page | Inspector hidden while open | test/ui/settings_page_shell_test.dart | settings-page: Inspector hidden while open | green |
+| settings-page → Settings opens as a page | Switch area from Settings | test/ui/settings_page_shell_test.dart | settings-page: Switch area from Settings | green |
+| settings-page → Settings opens as a page | Item search from Settings | test/ui/settings_page_shell_test.dart | settings-page: Item search from Settings | green |
+| settings-page → Settings opens as a page | Escape with an unsaved invalid edit | test/ui/settings_page_shell_test.dart | settings-page: Escape with an unsaved invalid edit | green |
+| settings-page → Settings opens as a page | Map keys while Settings is open | test/ui/settings_page_shell_test.dart | settings-page: Map keys while Settings is open | green |
+| settings-page → Settings opens as a page | Escape with a valid edit | test/ui/settings_page_shell_test.dart | settings-page: Escape with a valid edit | green |
+| settings-page → Settings opens as a page | Scan while Settings is open | test/ui/settings_page_shell_test.dart | settings-page: Scan while Settings is open | green |
+| settings-page → Settings opens as a page | Settings action while open | test/ui/settings_page_shell_test.dart | settings-page: Settings action while open | green |
 | settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | settings-page: Sidebar order | green |
 | settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | settings-page: Jump to a section | green |
 | settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | settings-page: Jump to Diagnostics | green |
-| settings-page → Settings opens at a requested section | Status bar Tracker | test/ui/settings_page_shell_test.dart | settings-page: Status bar Tracker | red |
-| settings-page → Settings opens at a requested section | Already open | test/ui/settings_page_shell_test.dart | settings-page: Already open | red |
-| settings-page → Diagnostics starts collapsed each time | Reopen | test/ui/settings_page_shell_test.dart | settings-page: Reopen | red |
-| settings-page → Diagnostics starts collapsed each time | Open at a section | test/ui/settings_page_shell_test.dart | settings-page: Open at a section | red |
+| settings-page → Settings opens at a requested section | Status bar Tracker | test/ui/settings_page_shell_test.dart | settings-page: Status bar Tracker | green |
+| settings-page → Settings opens at a requested section | Already open | test/ui/settings_page_shell_test.dart | settings-page: Already open | green |
+| settings-page → Diagnostics starts collapsed each time | Reopen | test/ui/settings_page_shell_test.dart | settings-page: Reopen | green |
+| settings-page → Diagnostics starts collapsed each time | Open at a section | test/ui/settings_page_shell_test.dart | settings-page: Open at a section | green |
 | settings-page → Settings rows | Toggle by row | test/ui/settings_page_test.dart | settings-page: Toggle by row | green |
 | settings-page → Settings rows | Wide window | test/ui/settings_page_test.dart | settings-page: Wide window | green |
 | settings-page → Settings rows | Setting disabled while saving | test/ui/settings_page_test.dart | settings-page: Setting disabled while saving | green |
@@ -42,8 +42,8 @@ Test names follow the repo's `<capability>: <Scenario>` convention. `settings_pa
 | settings-page → Changes save as they are made | Settings could not be read | test/ui/settings_page_test.dart | settings-page: Settings could not be read | green |
 | settings-page → Every setting stays reachable | All controls present | test/ui/settings_page_test.dart | settings-page: All controls present | green |
 | settings-page → Every setting stays reachable | Disabled rule kept | test/ui/settings_page_test.dart | settings-page: Disabled rule kept | green |
-| workspace-shell → Status actions lead to their controls | Settings targets | test/ui/shell_test.dart | workspace-shell: Settings targets | red |
-| workspace-shell → Status actions lead to their controls | Settings target while the page is open | test/ui/shell_test.dart | workspace-shell: Settings target while the page is open | red |
+| workspace-shell → Status actions lead to their controls | Settings targets | test/ui/shell_test.dart | workspace-shell: Settings targets | green |
+| workspace-shell → Status actions lead to their controls | Settings target while the page is open | test/ui/shell_test.dart | workspace-shell: Settings target while the page is open | green |
 | workspace-shell → Status actions lead to their controls | Failed live scan save | test/ui/shell_test.dart | workspace-shell: Failed live scan save | green |
 | workspace-shell → Status actions lead to their controls | Status bar presentation and binding | test/ui/shell_test.dart | workspace-shell: Status bar presentation and binding | green |
 | raid-timers → Timer settings live on the Settings page | Valid run-through length | test/ui/settings_page_raid_timers_test.dart | valid run-through length is saved | green |
@@ -93,10 +93,10 @@ Skills: `dart-use-pattern-matching`, `dart-write-documentation`, `flutter-add-wi
 
 Skills: `flutter-add-widget-test`, `dart-run-static-analysis`.
 
-- [ ] 3.1 Write the failing `settings_page_shell_test.dart` tests (Open and go back through Open at a section) and the two red workspace-shell rows in `shell_test.dart`, using the existing shell test fakes. Verify each fails for the missing behaviour.
-- [ ] 3.2 In `lib/ui/shell.dart`, add the Settings view state (D1): `_openSettings({section})` with the back area and inspector state, page shown in place of the strip and main column, areas and inspector under `Offstage` plus `ExcludeFocus` while open, focus moved into the page on open and back to the root `Focus` on close, inspector toggle disabled while open (D2). Route the top bar's Settings and the status bar's Item data and Tracker items through it.
-- [ ] 3.3 One close method used by Back, Escape (D3, after any open menu), choosing an area and an item pick: flush through `SettingsFlushScope`, then clear the view state. Add `onPicked` to `TopItemSearch` (`lib/ui/top_item_search.dart:97`) and close Settings only from it. Verify all `settings_page_shell_test.dart` rows and both workspace-shell red rows turn green, and `workspace-shell: Failed live scan save` and `workspace-shell: Status bar presentation and binding` still pass.
-- [ ] 3.4 Delete `lib/ui/settings_dialog.dart` and `showSettings` (S6); move what `settings_dialog_test.dart` and `settings_dialog_theme_test.dart` still cover onto the page (rename to `settings_page_*`), keeping their live scan and theme assertions. Verify `rg "SettingsDialog|showSettings" lib test` finds nothing and the suite passes.
+- [x] 3.1 Write the failing `settings_page_shell_test.dart` tests (Open and go back through Open at a section) and the two red workspace-shell rows in `shell_test.dart`, using the existing shell test fakes. Verify each fails for the missing behaviour.
+- [x] 3.2 In `lib/ui/shell.dart`, add the Settings view state (D1): `_openSettings({section})` with the back area and inspector state, page shown in place of the strip and main column, areas and inspector under `Offstage` plus `ExcludeFocus` while open, focus moved into the page on open and back to the root `Focus` on close, inspector toggle disabled while open (D2). Route the top bar's Settings and the status bar's Item data and Tracker items through it.
+- [x] 3.3 One close method used by Back, Escape (D3, after any open menu), choosing an area and an item pick: flush through `SettingsFlushScope`, then clear the view state. Add `onPicked` to `TopItemSearch` (`lib/ui/top_item_search.dart:97`) and close Settings only from it. Verify all `settings_page_shell_test.dart` rows and both workspace-shell red rows turn green, and `workspace-shell: Failed live scan save` and `workspace-shell: Status bar presentation and binding` still pass.
+- [x] 3.4 Delete `lib/ui/settings_dialog.dart` and `showSettings` (S6); move what `settings_dialog_test.dart` and `settings_dialog_theme_test.dart` still cover onto the page (rename to `settings_page_*`), keeping their live scan and theme assertions. Verify `rg "SettingsDialog|showSettings" lib test` finds nothing and the suite passes.
 
 ## 4. Dialogs, sheets and the startup screen
 

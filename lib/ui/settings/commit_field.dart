@@ -50,7 +50,8 @@ class SettingsFlushScope extends InheritedWidget {
 /// `null` when the text was saved. A refused or unsaved edit keeps the typed
 /// text, so the field never shows a value as saved when it was not. The field
 /// follows [value] when it changes, so an accepted edit shows in its saved
-/// form. An edit that equals [value] is not committed again.
+/// form. An edit that equals [value], or that is already being committed, is
+/// not committed again.
 ///
 /// Inside a [SettingsFlushScope] the field also commits when the scope's
 /// controller flushes.
@@ -90,6 +91,9 @@ class _CommitFieldState extends State<CommitField> {
   final focus = FocusNode();
   SettingsFlushController? _scope;
   String? error;
+
+  /// The text whose commit is in flight, or `null` when none is.
+  String? _saving;
 
   @override
   void initState() {
@@ -133,7 +137,15 @@ class _CommitFieldState extends State<CommitField> {
       return;
     }
     final text = controller.text;
-    final result = await widget.onCommit(text);
+    // Leaving the field and then a flush can both ask to commit the same text.
+    if (_saving == text) return;
+    _saving = text;
+    final String? result;
+    try {
+      result = await widget.onCommit(text);
+    } finally {
+      if (_saving == text) _saving = null;
+    }
     // A newer edit replaced the text this result belongs to.
     if (!mounted || controller.text != text) return;
     setState(() => error = result);

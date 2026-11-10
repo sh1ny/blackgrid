@@ -284,6 +284,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         if (settings.loadNotice case final notice?)
           Padding(
+            key: const ValueKey('settings-load-notice-row'),
             padding: const EdgeInsets.only(top: EmberSpace.md),
             child: Text(
               notice,
@@ -293,6 +294,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         if (settings.error case final error?)
           Padding(
+            key: const ValueKey('settings-error-row'),
             padding: const EdgeInsets.only(top: EmberSpace.md),
             child: Text(
               error,
@@ -345,7 +347,10 @@ class _SettingsPageState extends State<SettingsPage> {
     Key? contentKey,
   }) {
     final ember = context.ember;
+    // A key per section keeps its fields when a notice or an error above it
+    // appears or goes, which would otherwise shift every section by one.
     return Padding(
+      key: ValueKey('settings-section-${section.name}'),
       padding: const EdgeInsets.only(top: EmberSpace.xxl),
       child: Column(
         key: contentKey,

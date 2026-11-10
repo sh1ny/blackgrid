@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
-import 'live_scan_panel.dart';
+import 'live_scan_text.dart';
 import 'scan_evidence_panel.dart';
 
 /// Narrowest window width, in logical pixels, that gets the desktop layout.

@@ -5,7 +5,6 @@ import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
-import 'package:blackgrid/ui/settings_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,13 +15,13 @@ import 'support/scan_ui_support.dart';
 
 Finder get _toggle => find.byKey(const Key('settings-diagnostics-toggle'));
 
-/// Finds [text] inside the Settings dialog only, so the screen behind it
+/// Finds [text] inside the Settings page only, so the screen behind it
 /// cannot satisfy or break an expectation.
 Finder _inSettings(String text) =>
-    find.descendant(of: find.byType(SettingsDialog), matching: find.text(text));
+    find.descendant(of: find.byType(SettingsPage), matching: find.text(text));
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.text('Settings'));
+  await tester.tap(find.widgetWithText(OutlinedButton, 'Settings'));
   await tester.pumpAndSettle();
   // Fail rather than pass vacuously when the section is not there.
   expect(_toggle, findsOneWidget);
@@ -67,7 +66,7 @@ void main() {
 
     await _openSettings(tester);
 
-    expect(find.text('Diagnostics'), findsOneWidget);
+    expect(find.byKey(const Key('settings-title-diagnostics')), findsOneWidget);
     expect(find.byType(ScanDiagnostics), findsNothing);
     expect(find.byKey(const Key('scan-crop-image')), findsNothing);
     expect(find.byKey(const Key('scan-crop-placeholder')), findsNothing);

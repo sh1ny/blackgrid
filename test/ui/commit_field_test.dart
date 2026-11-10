@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:blackgrid/ui/settings/commit_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,5 +82,47 @@ void main() {
 
     await flush.flush();
     expect(commits, isEmpty);
+  });
+
+  testWidgets('a flush commits no second time while the same text is saving', (
+    tester,
+  ) async {
+    final commits = <String>[];
+    final saving = Completer<String?>();
+    final flush = SettingsFlushController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SettingsFlushScope(
+            controller: flush,
+            child: Column(
+              children: [
+                CommitField(
+                  label: 'Folder',
+                  value: 'saved',
+                  onCommit: (text) {
+                    commits.add(text);
+                    return saving.future;
+                  },
+                ),
+                const TextField(key: Key('other')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.enterText(find.widgetWithText(TextField, 'Folder'), 'typed');
+    // Leaving the field commits it, as pressing Back does just before it closes.
+    await tester.tap(find.byKey(const Key('other')));
+    await tester.pump();
+    expect(commits, ['typed']);
+
+    final done = flush.flush();
+    expect(commits, ['typed'], reason: 'the same text is already saving');
+
+    saving.complete(null);
+    await done;
+    await tester.pump();
   });
 }
