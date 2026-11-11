@@ -38,7 +38,9 @@ To see which extracts you have, press O in raid to open the list of your extract
 
 The map and the scanner work independently. Searching for an item by name needs no scanning.
 
-Live scan stays off until you turn it on in the Scanner area. While it is on, inspecting an item in game makes Blackgrid capture a small area of the screen around your mouse, read the item's name and show the advice. A scan starts in one of two ways. You release the mouse button over the game window, or you press the scan key. The scan key is F9 by default, and you can pick any key from F1 to F24, or none. When you turn live scan off, Blackgrid stops watching mouse clicks and releases the scan key.
+Live scan stays off until you turn it on in Settings or the status bar. While it is on, inspecting an item in game makes Blackgrid capture a centred band of the client, read the item's name and show the advice. A scan starts when you release the mouse button over the game window or press the scan key. The scan key is F9 by default; Settings lets you pick F1 to F24, or none. Turning live scan off stops watching mouse clicks and releases the scan key.
+
+Accepted scans also read **Found in raid** from that inspection's picture: Yes for a recognised check, No for a complete readable corner without one, and Unknown for a cut-off or unreadable corner. The shared control on Map and Scanner shows the source. Choosing Unknown, Yes or No—even the selected value—sets a manual override for this selection. A new scan clears it. **Back to latest scan** restores the original detection, not the old override. Manual, history and correction selections start Unknown; none of these FIR choices is saved.
 
 ### Blackgrid does not touch the game
 
@@ -241,7 +243,7 @@ The engine checks the rows from top to bottom and uses the first one that matche
 | Trader | A trader cash offer exists. When the Flea and trader prices are equal, the trader wins. When two traders offer the same price, the trader with the lower ID wins |
 | Price unavailable | None of the rows above match |
 
-Prices are gross RUB, before Flea fees. You set found-in-raid status for each inspection. It resets when the item, the mode or the progress data changes.
+Prices are gross RUB, before Flea fees. Accepted scans supply detected found-in-raid evidence; an explicit manual choice overrides it. Same-selection item-data, progress and age refreshes preserve both detection and override. A new selection or mode/session change clears the old context; returning to the latest scan restores its detection and clears the override.
 </details>
 
 <details>
