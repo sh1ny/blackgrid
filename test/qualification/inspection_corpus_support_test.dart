@@ -149,7 +149,7 @@ void main() {
 
   group('targetedRegion', () {
     test(
-      'is the centred band (cx - f(440), 0, f(440) + f(700), cy + f(60))',
+      'is the centred band (cx - f(440), 0, f(440) + f(700), cy + f(400))',
       () {
         expect(
           targetedRegion(
@@ -158,7 +158,7 @@ void main() {
             cursorX: 500,
             cursorY: 300,
           ),
-          const CaptureRect(520, 0, 1140, 600),
+          const CaptureRect(520, 0, 1140, 940),
         );
       },
     );
@@ -172,7 +172,7 @@ void main() {
             cursorX: x,
             cursorY: y,
           ),
-          const CaptureRect(520, 0, 1140, 600),
+          const CaptureRect(520, 0, 1140, 940),
           reason: '($x, $y)',
         );
       }
@@ -186,7 +186,7 @@ void main() {
           cursorX: 10,
           cursorY: 10,
         ),
-        const CaptureRect(1040, 0, 2280, 1200),
+        const CaptureRect(1040, 0, 2280, 1880),
       );
       expect(
         targetedRegion(
@@ -195,7 +195,7 @@ void main() {
           cursorX: 10,
           cursorY: 10,
         ),
-        const CaptureRect(1134, 0, 1519, 800),
+        const CaptureRect(1134, 0, 1519, 1253),
       );
     });
 

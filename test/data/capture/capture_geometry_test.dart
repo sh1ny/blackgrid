@@ -38,10 +38,10 @@ void main() {
     // client size -> the planned (left, top, width, height) for a click at
     // client point (900, 500).
     final cells = <(int, int, CaptureRect)>[
-      (1920, 1080, const CaptureRect(520, 0, 1140, 600)),
-      (2560, 1440, const CaptureRect(694, 0, 1519, 800)),
-      (3440, 1440, const CaptureRect(1134, 0, 1519, 800)),
-      (3840, 2160, const CaptureRect(1040, 0, 2280, 1200)),
+      (1920, 1080, const CaptureRect(520, 0, 1140, 940)),
+      (2560, 1440, const CaptureRect(694, 0, 1519, 1253)),
+      (3440, 1440, const CaptureRect(1134, 0, 1519, 1253)),
+      (3840, 2160, const CaptureRect(1040, 0, 2280, 1880)),
     ];
 
     test('targeted region for all 16 resolution and DPI cells', () {
@@ -70,7 +70,7 @@ void main() {
         final plan = planned(planTargeted(hd, x: x, y: y));
         expect(
           plan.requested,
-          const CaptureRect(520, 0, 1140, 600),
+          const CaptureRect(520, 0, 1140, 940),
           reason: '($x, $y)',
         );
         expect(plan.clipped, isFalse, reason: '($x, $y)');
@@ -85,7 +85,7 @@ void main() {
           y: 500,
         ),
       );
-      expect(plan.requested, const CaptureRect(520, 0, 1140, 660));
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 1000));
       expect(plan.clipped, isFalse);
     });
 
@@ -97,7 +97,7 @@ void main() {
           y: 300,
         ),
       );
-      expect(plan.requested, const CaptureRect(371, 0, 809, 426));
+      expect(plan.requested, const CaptureRect(371, 0, 809, 668));
       expect(plan.clipped, isFalse);
     });
 
@@ -113,10 +113,34 @@ void main() {
           y: 340,
         ),
       );
-      expect(plan.requested, const CaptureRect(694, 0, 1519, 800));
-      expect(plan.captured, const CaptureRect(694, 0, 1519, 800));
-      expect(plan.desktop, const CaptureRect(-1866, -360, 1519, 800));
+      expect(plan.requested, const CaptureRect(694, 0, 1519, 1253));
+      expect(plan.captured, const CaptureRect(694, 0, 1519, 1253));
+      expect(plan.desktop, const CaptureRect(-1866, -360, 1519, 1253));
       expect(plan.clipped, isFalse);
+    });
+
+    test('translated complete corner below former band is captured', () {
+      // At one tenth scale, the translated marker is still in the old band;
+      // its complete marker-relative corner (including guards) is below it.
+      const client = CaptureRect(0, 0, 192, 108);
+      const markerX = 90;
+      const markerY = 39;
+      const formerLeft = 52;
+      const formerRight = 166;
+      const formerBottom = 60;
+      const corner = CaptureRect(89, 66, 9, 6);
+      expect(markerX, inInclusiveRange(formerLeft, formerRight - 1));
+      expect(markerY, inInclusiveRange(client.top, formerBottom - 1));
+      expect(corner.left, greaterThanOrEqualTo(client.left));
+      expect(corner.top, greaterThanOrEqualTo(formerBottom));
+      expect(corner.right, lessThanOrEqualTo(client.right));
+      expect(corner.bottom, lessThanOrEqualTo(client.bottom));
+
+      final plan = planned(planTargeted(snapshot(client: client), x: 90, y: 50));
+      expect(plan.captured.left, lessThanOrEqualTo(corner.left));
+      expect(plan.captured.top, lessThanOrEqualTo(corner.top));
+      expect(plan.captured.right, greaterThanOrEqualTo(corner.right));
+      expect(plan.captured.bottom, greaterThanOrEqualTo(corner.bottom));
     });
 
     test('trigger outside client is roiOutsideClient', () {
@@ -170,7 +194,7 @@ void main() {
           y: 500,
         ),
       );
-      expect(plan.requested, const CaptureRect(520, 0, 1140, 600));
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 940));
       expect(plan.captured, plan.requested);
       expect(plan.clipped, isFalse);
     });
@@ -186,9 +210,9 @@ void main() {
           y: 500,
         ),
       );
-      expect(plan.requested, const CaptureRect(520, 0, 1140, 600));
-      expect(plan.captured, const CaptureRect(520, 0, 680, 600));
-      expect(plan.desktop, const CaptureRect(520, 0, 680, 600));
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 940));
+      expect(plan.captured, const CaptureRect(520, 0, 680, 940));
+      expect(plan.desktop, const CaptureRect(520, 0, 680, 940));
       expect(plan.clipped, isTrue);
     });
 
@@ -203,9 +227,9 @@ void main() {
           y: 300,
         ),
       );
-      expect(plan.requested, const CaptureRect(520, 0, 1140, 600));
-      expect(plan.captured, const CaptureRect(1000, 200, 660, 400));
-      expect(plan.desktop, const CaptureRect(0, 0, 660, 400));
+      expect(plan.requested, const CaptureRect(520, 0, 1140, 940));
+      expect(plan.captured, const CaptureRect(1000, 200, 660, 740));
+      expect(plan.desktop, const CaptureRect(0, 0, 660, 740));
       expect(plan.clipped, isTrue);
     });
 

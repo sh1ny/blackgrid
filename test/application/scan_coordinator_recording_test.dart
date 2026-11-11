@@ -568,11 +568,11 @@ void main() {
         final full = scan.full!;
         final strip = scan.strip!;
         expect((full.width, full.height), (1920, 1080));
-        expect((strip.width, strip.height), (1140, 600));
+        expect((strip.width, strip.height), (1140, 940));
         expect(full.stride, 1920 * 4);
         expect(strip.stride, 1140 * 4);
         final stripBytes = strip.pixels.materialize().asUint8List();
-        expect(stripBytes.length, 1140 * 4 * 600);
+        expect(stripBytes.length, 1140 * 4 * 940);
         expect(stripBytes[0], 1);
         expect(stripBytes[1], 2);
         expect(full.pixels.materialize().asUint8List()[0], 2);

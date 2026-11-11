@@ -6,17 +6,17 @@ All 57 delta scenarios are mapped below. `red` is new/changed coverage to prove 
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| `inspection-capture` — Targeted region is planned in physical client pixels | Sixteen resolution and scaling cells | `test/data/capture/capture_geometry_test.dart` | targeted region for all 16 resolution and DPI cells | red |
-| `inspection-capture` — Targeted region is planned in physical client pixels | Region does not follow the cursor | `test/data/capture/capture_geometry_test.dart` | targeted region is the same for any in-client point | red |
-| `inspection-capture` — Targeted region is planned in physical client pixels | Client taller than 16:9 | `test/data/capture/capture_geometry_test.dart` | targeted region on a 1920x1200 client starts at the top | red |
-| `inspection-capture` — Targeted region is planned in physical client pixels | Non-integral scale | `test/data/capture/capture_geometry_test.dart` | targeted region on a 1366x768 client floors each term | red |
-| `inspection-capture` — Targeted region is planned in physical client pixels | Click on a negative-origin monitor | `test/data/capture/capture_geometry_test.dart` | negative-origin monitor maps to client and back | red |
+| `inspection-capture` — Targeted region is planned in physical client pixels | Sixteen resolution and scaling cells | `test/data/capture/capture_geometry_test.dart` | targeted region for all 16 resolution and DPI cells | green |
+| `inspection-capture` — Targeted region is planned in physical client pixels | Region does not follow the cursor | `test/data/capture/capture_geometry_test.dart` | targeted region is the same for any in-client point | green |
+| `inspection-capture` — Targeted region is planned in physical client pixels | Client taller than 16:9 | `test/data/capture/capture_geometry_test.dart` | targeted region on a 1920x1200 client starts at the top | green |
+| `inspection-capture` — Targeted region is planned in physical client pixels | Non-integral scale | `test/data/capture/capture_geometry_test.dart` | targeted region on a 1366x768 client floors each term | green |
+| `inspection-capture` — Targeted region is planned in physical client pixels | Click on a negative-origin monitor | `test/data/capture/capture_geometry_test.dart` | negative-origin monitor maps to client and back | green |
 | `inspection-capture` — Targeted region is planned in physical client pixels | Trigger point outside the client | `test/data/capture/capture_geometry_test.dart` | trigger outside client is roiOutsideClient | green |
-| `inspection-capture` — Clipping is explicit, never padded | Region inside a fully visible client | `test/data/capture/capture_geometry_test.dart` | band inside a visible client is not clipped | red |
-| `inspection-capture` — Clipping is explicit, never padded | Region crosses the right edge | `test/data/capture/capture_geometry_test.dart` | right-edge region is clipped not padded | red |
-| `inspection-capture` — Clipping is explicit, never padded | Region crosses the top-left corner | `test/data/capture/capture_geometry_test.dart` | top-left region is clipped not padded | red |
+| `inspection-capture` — Clipping is explicit, never padded | Region inside a fully visible client | `test/data/capture/capture_geometry_test.dart` | band inside a visible client is not clipped | green |
+| `inspection-capture` — Clipping is explicit, never padded | Region crosses the right edge | `test/data/capture/capture_geometry_test.dart` | right-edge region is clipped not padded | green |
+| `inspection-capture` — Clipping is explicit, never padded | Region crosses the top-left corner | `test/data/capture/capture_geometry_test.dart` | top-left region is clipped not padded | green |
 | `inspection-capture` — Clipping is explicit, never padded | Region entirely off-screen | `test/data/capture/capture_geometry_test.dart` | off-desktop region is roiOutsideClient | green |
-| `inspection-capture` — Frames have an immutable pixel layout | Frame layout | `test/data/capture/capture_geometry_test.dart` + `test/data/capture/capture_frame_test.dart` | targeted region for all 16 resolution and DPI cells + a new frame attaches a finalizer and exposes its layout | red |
+| `inspection-capture` — Frames have an immutable pixel layout | Frame layout | `test/data/capture/capture_geometry_test.dart` + `test/data/capture/capture_frame_test.dart` | targeted region for all 16 resolution and DPI cells + a new frame attaches a finalizer and exposes its layout | green |
 | `inspection-capture` — Frames have an immutable pixel layout | Pixel access after release | `test/data/capture/capture_frame_test.dart` | pixels after release throw frameReleased | green |
 | `inspection-recognition` — Evidence is sendable and bounded | Evidence outlives the frame | `test/data/vision/inspection_job_test.dart` | FIR reading and title survive release and isolate transfer | red |
 | `inspection-recognition` — Evidence is sendable and bounded | Oversized crop | `test/data/vision/inspection_job_test.dart` | crop above 256 KiB is downscaled and flagged while OCR used full size | green |
@@ -70,8 +70,8 @@ All 57 delta scenarios are mapped below. `red` is new/changed coverage to prove 
 
 ## 2. Deeper targeted capture, unchanged safety
 
-- [ ] 2.1 Change the existing capture-geometry expectations to the delta's rectangles and demonstrate the changed resolution/DPI, taller-client, non-integral-scale, negative-origin and clipping cases fail against the old lower edge. Add a small translated-window boundary case whose complete corner is below the former band; verify it fails for coverage, not fixture construction. Preserve the existing out-of-client/off-desktop/size-bound cases.
-- [ ] 2.2 Change only the below-centre constant and its API comments in `capture_geometry.dart`; update affected capture/service/recording/replay fixtures and documentation that rely on the old region. Verify the capture rows in the test map and existing frame-layout/release tests pass, with unchanged physical-pixel scaling, clip-not-pad, frame ownership and size limits. No native capture safety check is weakened.
+- [x] 2.1 Change the existing capture-geometry expectations to the delta's rectangles and demonstrate the changed resolution/DPI, taller-client, non-integral-scale, negative-origin and clipping cases fail against the old lower edge. Add a small translated-window boundary case whose complete corner is below the former band; verify it fails for coverage, not fixture construction. Preserve the existing out-of-client/off-desktop/size-bound cases.
+- [x] 2.2 Change only the below-centre constant and its API comments in `capture_geometry.dart`; update affected capture/service/recording/replay fixtures and documentation that rely on the old region. Verify the capture rows in the test map and existing frame-layout/release tests pass, with unchanged physical-pixel scaling, clip-not-pad, frame ownership and size limits. No native capture safety check is weakened.
 
 ## 3. Bound check asset and cohesive template loading
 
