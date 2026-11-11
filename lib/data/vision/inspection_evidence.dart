@@ -7,7 +7,10 @@ library;
 
 import 'dart:typed_data';
 
+import 'inspection_fir.dart';
 import 'inspection_geometry.dart';
+
+export 'inspection_fir.dart';
 
 /// Largest crop copy an evidence entry carries, in bytes (256 KiB).
 const int inspectionCropByteLimit = 256 * 1024;
@@ -71,6 +74,7 @@ final class InspectionEvidence {
     required this.markerY,
     required this.titleRect,
     required this.titleStatus,
+    required this.fir,
     required this.text,
     required this.crop,
     required this.cropWidth,
@@ -101,6 +105,9 @@ final class InspectionEvidence {
 
   /// Whether the title was read.
   final InspectionTitleStatus titleStatus;
+
+  /// The found-in-raid observation belonging to this inspection's picture.
+  final InspectionFirReading fir;
 
   /// The trimmed OCR text; empty when no title was read or the crop held no
   /// foreground pixel.

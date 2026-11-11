@@ -10,9 +10,10 @@ import 'dart:typed_data';
 
 import '../../domain/title_matching.dart' show recognitionGates;
 import 'inspection_evidence.dart';
+import 'inspection_fir.dart';
 import 'inspection_geometry.dart';
 import 'inspection_title_crop.dart';
-import 'marker_template.dart' show markerTemplateName;
+import 'marker_template.dart' show markerTemplateName, firTemplateName;
 import 'vision_job.dart';
 import 'vision_primitives.dart'
     show TemplatePeak, visionInterArea, visionInterCubic;
@@ -42,8 +43,8 @@ inspectionRecognitionJobFactory() => InspectionRecognitionJob();
 
 /// Finds inspection markers and reads their titles.
 ///
-/// The job lives as long as its worker and keeps up to four scaled marker
-/// templates, evicting the oldest first.
+/// The job lives as long as its worker and keeps up to four scaled templates
+/// per asset, evicting the oldest first.
 final class InspectionRecognitionJob
     implements VisionJob<InspectionRequest, InspectionRecognition> {
   /// Creates a job. [cropByteLimit] caps the crop copy of each evidence entry;
@@ -55,6 +56,11 @@ final class InspectionRecognitionJob
 
   /// Scaled templates by side, in insertion order.
   final Map<int, VisionImage> _templates = {};
+
+  /// Scaled check templates, independent of the marker cache.
+  final Map<int, VisionImage?> _firTemplates = {};
+
+  VisionImage? _verifiedFirTemplate;
 
   @override
   InspectionRecognition run(
@@ -71,6 +77,17 @@ final class InspectionRecognitionJob
     final marker = context.templates[markerTemplateName];
     if (marker == null) {
       throw StateError('Vision template "$markerTemplateName" is missing.');
+    }
+    final firTemplate = context.templates[firTemplateName];
+    if (firTemplate == null) {
+      throw StateError('Vision template "$firTemplateName" is missing.');
+    }
+    if (!identical(_verifiedFirTemplate, firTemplate.image)) {
+      if (!_hasVariance(firTemplate.image)) {
+        throw StateError('Vision template "$firTemplateName" is constant or invalid.');
+      }
+      _firTemplates.clear();
+      _verifiedFirTemplate = firTemplate.image;
     }
     final scale = processingScale(request.clientWidth, request.clientHeight);
     final side = scaledTemplateSize(scale);
@@ -127,6 +144,8 @@ final class InspectionRecognitionJob
           _readTitle(
             context,
             frame,
+            gray,
+            firTemplate.image,
             peak,
             side: side,
             scale: scale,
@@ -152,14 +171,44 @@ final class InspectionRecognitionJob
     return scaled;
   }
 
+  // Caches unusable resized templates too, without ever submitting them to NCC.
+  VisionImage? _scaledFirTemplate(
+    VisionJobContext context,
+    VisionImage image,
+    int side,
+  ) {
+    if (_firTemplates.containsKey(side)) return _firTemplates[side];
+    final scaled = _rescale(context, image, side, side);
+    final usable = _hasVariance(scaled) ? scaled : null;
+    _firTemplates[side] = usable;
+    if (_firTemplates.length > _templateCacheSize) {
+      _firTemplates.remove(_firTemplates.keys.first);
+    }
+    return usable;
+  }
+
   InspectionEvidence _readTitle(
     VisionJobContext context,
     VisionImage frame,
+    VisionImage gray,
+    VisionImage firTemplate,
     PeakCandidate peak, {
     required int side,
     required double scale,
     required int qpcMarker,
   }) {
+    final fir = readInspectionFir(
+      frame: frame,
+      gray: gray,
+      markerX: peak.x,
+      markerY: peak.y,
+      scale: scale,
+      match: (region, firSide) {
+        final scaled = _scaledFirTemplate(context, firTemplate, firSide);
+        if (scaled == null) return null;
+        return _value(context.matchTemplate(_grayRegion(gray, region), scaled));
+      },
+    );
     final plan = planTitleRegion(
       markerX: peak.x,
       markerY: peak.y,
@@ -175,6 +224,7 @@ final class InspectionRecognitionJob
       markerY: peak.y,
       titleRect: region,
       titleStatus: InspectionTitleStatus.emptyTitleRegion,
+      fir: fir,
       text: '',
       crop: Uint8List(0),
       cropWidth: 0,
@@ -235,6 +285,7 @@ final class InspectionRecognitionJob
       markerY: peak.y,
       titleRect: region,
       titleStatus: InspectionTitleStatus.read,
+      fir: fir,
       text: text,
       crop: preview.image.bytes.sublist(
         0,
@@ -288,6 +339,34 @@ VisionImage _rescale(
       interp: shrinking ? visionInterArea : visionInterCubic,
     ),
   );
+}
+
+// A bottom-touching subview may lack the trailing padding required by the
+// descriptor contract. Copy only that bounded corner, never the whole frame.
+VisionImage _grayRegion(VisionImage gray, TitleRegion region) {
+  final offset = region.y * gray.stride + region.x;
+  final length = gray.stride * region.height;
+  if (offset + length > gray.bytes.length) return _copyRegion(gray, region);
+  return VisionImage(
+    Uint8List.sublistView(gray.bytes, offset, offset + length),
+    width: region.width,
+    height: region.height,
+    stride: gray.stride,
+    channels: 1,
+  );
+}
+
+// Checks logical grayscale pixels, ignoring any row padding.
+bool _hasVariance(VisionImage image) {
+  if (image.channels != 1 || image.validate() != null) return false;
+  final first = image.bytes[0];
+  for (var y = 0; y < image.height; y++) {
+    final offset = y * image.stride;
+    for (var x = 0; x < image.width; x++) {
+      if (image.bytes[offset + x] != first) return true;
+    }
+  }
+  return false;
 }
 
 /// A tight copy of [region] of [frame], keeping the frame's channels.

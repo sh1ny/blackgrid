@@ -51,7 +51,7 @@ Accepted item scans fill Found in raid from the inspection picture, with a manua
 
 ### Added
 
-- Automatic Yes/No/Unknown Found in raid evidence for accepted scans, including pictures with a mastery medal.
+- Automatic Yes/No/Unknown Found in raid evidence for each inspection, including pictures with a mastery medal, computed from the same captured pixels as its title.
 - Scan startup verifies the marker and found-in-raid templates together; missing, altered or invalid assets stop recognition explicitly.
 
 ### Changed

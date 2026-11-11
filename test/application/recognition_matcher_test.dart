@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:blackgrid/application/recognition_matcher.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
+import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:blackgrid/data/vision/inspection_geometry.dart';
@@ -31,6 +32,7 @@ CatalogSnapshot _snapshot() => CatalogSnapshot(
 
 InspectionEvidence _evidence(String text, {double score = 0.9}) =>
     InspectionEvidence(
+      fir: const InspectionFirReading(reason: InspectionFirReason.cornerUnreadable),
       markerScore: score,
       markerX: 1,
       markerY: 2,
@@ -79,6 +81,7 @@ void main() {
 
     test('flags an empty title region', () {
       final empty = InspectionEvidence(
+        fir: const InspectionFirReading(reason: InspectionFirReason.cornerUnreadable),
         markerScore: 0.9,
         markerX: 0,
         markerY: 0,
