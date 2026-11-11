@@ -66,7 +66,7 @@ All 57 delta scenarios are mapped below. `red` is new/changed coverage to prove 
 
 ## 1. Record the accepted architectural contract
 
-- [ ] 1.1 Write ADR-0040 `scan-found-in-raid-evidence` from the approved design, partly superseding only ADR-0016's lower-band formula; update the in-force index, recognition/evidence and transient FIR ownership/contract rows in `openspec/architecture.md`. Leave accepted ADR-0016 unchanged. Verify the ADR/index name the same boundaries and no data migration/native ABI change is introduced.
+- [x] 1.1 Write ADR-0040 `scan-found-in-raid-evidence` from the approved design, partly superseding only ADR-0016's lower-band formula; update the in-force index, recognition/evidence and transient FIR ownership/contract rows in `openspec/architecture.md`. Leave accepted ADR-0016 unchanged. Verify the ADR/index name the same boundaries and no data migration/native ABI change is introduced.
 
 ## 2. Deeper targeted capture, unchanged safety
 
