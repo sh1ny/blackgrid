@@ -249,6 +249,39 @@ void main() {
       },
     );
   }
+  test('failed refresh keeps the cached task catalog', () async {
+    final cached = fixtureCatalog(wire: progressCatalogWireFixture());
+    final block = cached.progressCatalog;
+    expect(block, isNotNull);
+    final blockJson = block!.toJson();
+    final store = MemoryCatalogStore()..catalogs[GameMode.pvp] = cached;
+    final client = ControlledCatalogClient(
+      (mode) async => throw const CatalogException(
+        'synthetic download error',
+        CatalogFailure.transport,
+      ),
+    );
+    final controller = CatalogController(
+      store: store,
+      client: client,
+      clock: () => fixtureNow,
+    );
+    addTearDown(controller.dispose);
+    await controller.setMode(GameMode.pvp);
+    expect(controller.status, CatalogStatus.stale);
+    expect(controller.snapshot, same(cached));
+
+    await controller.refresh();
+    expect(client.calls, 1);
+    expect(store.commits, 0);
+    expect(controller.status, CatalogStatus.stale);
+    expect(controller.error, isNotNull);
+    expect(controller.snapshot, same(cached));
+    expect(controller.snapshot!.progressCatalog, same(block));
+    expect(controller.snapshot!.progressCatalog!.toJson(), equals(blockJson));
+    expect(store.catalogs[GameMode.pvp], same(cached));
+    expect(store.catalogs[GameMode.pvp]!.progressCatalog, same(block));
+  });
   test('cold offline failure has no replacement data', () async {
     final c = CatalogController(
       store: MemoryCatalogStore(),

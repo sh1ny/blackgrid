@@ -1,3 +1,5 @@
+import 'package:blackgrid_progress/blackgrid_progress.dart';
+
 import 'title_matching.dart' show normaliseTitle;
 
 enum GameMode {
@@ -414,6 +416,7 @@ class CatalogSnapshot {
     Iterable<String> localizationErrors = const [],
     Map<String, int> datasetCounts = const {},
     this.scavCooldown,
+    this.progressCatalog,
   }) : items = Map.unmodifiable(items),
        traders = Map.unmodifiable(traders),
        requirements = List.unmodifiable(requirements),
@@ -466,6 +469,9 @@ class CatalogSnapshot {
   /// Inputs for the scav cooldown, or null when the datasets lacked or
   /// malformed any part of them.
   final ScavCooldownInputs? scavCooldown;
+
+  /// Task and hideout facts, or null when absent or unreadable in the cache.
+  final ProgressCatalog? progressCatalog;
   late final Map<String, List<ItemRequirement>> requirementIndex;
   late final List<(CatalogItem, String)> searchIndex;
 
@@ -528,10 +534,23 @@ class CatalogSnapshot {
     'localizationErrors': localizationErrors,
     'datasetCounts': datasetCounts,
     if (scavCooldown != null) 'scavCooldown': scavCooldown!.toJson(),
+    if (progressCatalog != null) 'progressCatalog': progressCatalog!.toJson(),
   };
   factory CatalogSnapshot.fromJson(Map<String, dynamic> j) {
     if (j['schemaVersion'] != 1 || j['normalizerVersion'] != 1) {
       throw const FormatException('Unsupported catalog schema');
+    }
+    ProgressCatalog? progressCatalog;
+    try {
+      final block = j['progressCatalog'];
+      if (block != null) {
+        progressCatalog = ProgressCatalog.fromJson(
+          Map<String, Object?>.from(block as Map),
+        );
+      }
+    } on Object {
+      // A damaged optional block must not discard otherwise usable item data.
+      progressCatalog = null;
     }
     return CatalogSnapshot(
       mode: GameMode.values.byName(j['mode'] as String),
@@ -558,6 +577,7 @@ class CatalogSnapshot {
       ),
       localizationErrors: (j['localizationErrors'] as List).cast<String>(),
       datasetCounts: (j['datasetCounts'] as Map).cast<String, int>(),
+      progressCatalog: progressCatalog,
       scavCooldown: j['scavCooldown'] == null
           ? null
           : ScavCooldownInputs.fromJson(

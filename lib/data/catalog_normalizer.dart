@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blackgrid_progress/blackgrid_progress.dart';
 import 'package:crypto/crypto.dart';
 
 import '../domain/catalog.dart';
@@ -465,6 +466,13 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       roots['items']!['data'],
       rawTraders,
       rawStations,
+    ),
+    progressCatalog: parseProgressCatalog(
+      roots['tasks']!['data'],
+      roots['hideout']!['data'],
+      traders.keys.toSet(),
+      dictionaries['tasks'],
+      dictionaries['hideout'],
     ),
   );
 }

@@ -66,6 +66,37 @@ CatalogSnapshot fixtureCatalog({
   );
 }
 
+/// Adds retained progress facts and nonempty timer inputs to the M1 wire.
+Map<String, dynamic> progressCatalogWireFixture() {
+  final wire = wireFixture();
+  final task = wire['tasks']['data']['tasks']['task-a'] as Map<String, dynamic>;
+  task.addAll({
+    'kappaRequired': true,
+    'lightkeeperRequired': false,
+    'restartable': false,
+    'map': 'map-a',
+    'failConditions': <Object?>[],
+  });
+  final objective = (task['objectives'] as List).first as Map;
+  objective['description'] = 'find-a description';
+  (wire['tasks_en']['data'] as Map)['find-a description'] = 'Find components';
+  (wire['items']['data'] as Map)['settings'] = {'scavCooldownSeconds': 1500};
+  (wire['traders']['data'] as Map)['trader-fence'] = {
+    'id': 'trader-fence',
+    'normalizedName': 'fence',
+    'reputationLevels': [
+      {'minimumReputation': 0, 'scavCooldownModifier': 1},
+    ],
+  };
+  final level =
+      (wire['hideout']['data']['station-a']['levels'] as List).first as Map;
+  level['constructionTime'] = 60;
+  level['bonuses'] = [
+    {'type': 'ScavCooldownTimer', 'value': -0.15},
+  ];
+  return jsonDecode(jsonEncode(wire)) as Map<String, dynamic>;
+}
+
 CatalogItem saleItem({
   bool? noFlea = false,
   int? minimum = 0,

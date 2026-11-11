@@ -13,13 +13,13 @@ Paths:
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| Task catalog comes with each item catalog refresh | Refresh carries the mode's tasks | N | `refresh builds the mode's task catalog from the existing datasets` | red |
-| Task catalog comes with each item catalog refresh | Failed refresh keeps the last-good task catalog | `test/application/catalog_controller_test.dart` | `failed refresh keeps the cached task catalog` | red |
-| Task catalog comes with each item catalog refresh | Other modes are untouched | D | `committing one mode leaves other modes' task catalogs unchanged` | red |
+| Task catalog comes with each item catalog refresh | Refresh carries the mode's tasks | N | `refresh builds the mode's task catalog from the existing datasets` | green |
+| Task catalog comes with each item catalog refresh | Failed refresh keeps the last-good task catalog | `test/application/catalog_controller_test.dart` | `failed refresh keeps the cached task catalog` | green |
+| Task catalog comes with each item catalog refresh | Other modes are untouched | D | `committing one mode leaves other modes' task catalogs unchanged` | green |
 | Task facts are retained | Kappa task kept with its flags | `P/parse_task_test.dart` | `keeps Kappa, Lightkeeper, faction and level` | green |
 | Task facts are retained | Missing flag stays unknown | `P/parse_task_test.dart` | `absent or odd new facts are unknown` | green |
-| Already-validated task fields keep today's strictness | Already-validated value rejects as today | N | `values the item parse rejects still reject the refresh` | red |
-| Already-validated task fields keep today's strictness | Valid values pass unchanged | N | `valid level, faction and found-in-raid pass into the task catalog` | red |
+| Already-validated task fields keep today's strictness | Already-validated value rejects as today | N | `values the item parse rejects still reject the refresh` | green |
+| Already-validated task fields keep today's strictness | Valid values pass unchanged | N | `valid level, faction and found-in-raid pass into the task catalog` | green |
 | Absent lists stay unknown | Task without fail conditions | `P/parse_task_test.dart` | `absent failConditions means alternatives unknown` | green |
 | Absent lists stay unknown | Empty list means none | `P/parse_task_test.dart` | `empty taskRequirements means no prerequisites` | green |
 | Prerequisites keep their accepted statuses | Must-be-failed prerequisite | `P/parse_task_test.dart` | `keeps must-be-failed prerequisite statuses in order` | green |
@@ -38,16 +38,16 @@ Paths:
 | Shared objective IDs are flagged | Repeat within a task | `P/parse_objective_test.dart` | `repeated objective ID within a task is an identity error` | green |
 | Hideout stations and levels are retained | Station with prerequisites | `P/parse_hideout_test.dart` | `station level keeps station, trader and skill requirements` | green |
 | Hideout stations and levels are retained | Invalid level number | `P/parse_hideout_test.dart` | `level number 0 or absent is an identity error` | green |
-| Identities and references are validated strictly | Unresolved prerequisite | N | `unresolved prerequisite rejects the refresh as invalid` | red |
+| Identities and references are validated strictly | Unresolved prerequisite | N | `unresolved prerequisite rejects the refresh as invalid` | green |
 | Identities and references are validated strictly | Unknown map ID is accepted | `P/parse_task_test.dart` | `unknown map ID is kept, not resolved` | green |
 | Display text falls back without failing | Translated objective | `P/parse_objective_test.dart` | `objective description comes from the dictionary` | green |
-| Display text falls back without failing | Missing tasks dictionary | N | `missing tasks dictionary falls back and is reported` | red |
-| Stored snapshots carry the task catalog optionally | Restart restores the task catalog | D | `stored task catalog survives reopen unchanged` | red |
-| Stored snapshots carry the task catalog optionally | Snapshot cached before this change | D | `snapshot stored without a block loads with items and no task catalog` | red |
-| Stored snapshots carry the task catalog optionally | Damaged stored task catalog | D | `damaged or other-version block loads as unavailable` | red |
+| Display text falls back without failing | Missing tasks dictionary | N | `missing tasks dictionary falls back and is reported` | green |
+| Stored snapshots carry the task catalog optionally | Restart restores the task catalog | D | `stored task catalog survives reopen unchanged` | green |
+| Stored snapshots carry the task catalog optionally | Snapshot cached before this change | D | `snapshot stored without a block loads with items and no task catalog` | green |
+| Stored snapshots carry the task catalog optionally | Damaged stored task catalog | D | `damaged or other-version block loads as unavailable` | green |
 | The task catalog model is usable without Flutter or Windows | Plain Dart test run | `mise run test` package step | n/a: mechanical check. `dart test` in `packages/blackgrid_progress` passes as part of `mise run test` (task 1.3) | green |
 | The task catalog model is usable without Flutter or Windows | Flutter dependency introduced | A | `package declares and imports nothing Flutter, Windows or IO` | green |
-| Existing advice and Tracker behaviour are unchanged | Same advice with and without the block | N | `item requirements, index and scav inputs are identical with and without the block` | red |
+| Existing advice and Tracker behaviour are unchanged | Same advice with and without the block | N | `item requirements, index and scav inputs are identical with and without the block` | green |
 | Existing advice and Tracker behaviour are unchanged | Task catalog unavailable | A | `no UI or application code reads the task catalog yet` | green |
 
 ## 1. ADR, architecture and package scaffolding
@@ -87,16 +87,16 @@ Paths:
 
 ## 4. Catalog integration and storage (app)
 
-- [ ] 4.1 Write failing tests in `N`, using the M1 fixture builder `test/fixtures/m1/catalog/fixture.dart` (extended with a few live-shaped task fields):
+- [x] 4.1 Write failing tests in `N`, using the M1 fixture builder `test/fixtures/m1/catalog/fixture.dart` (extended with a few live-shaped task fields):
   - the refresh carries the task catalog with the dataset counts and makes no new request (assert the client's request list is unchanged);
   - already-validated values still reject the refresh, and valid ones pass into the block;
   - an unresolved prerequisite or alternative rejects the refresh as `CatalogFailure.invalid`;
   - a missing tasks dictionary falls back and lists `tasks` in `localizationErrors`;
   - the item `requirements`, `requirementIndex` and `scavCooldown` are identical to a run with the progress parse disabled.
-- [ ] 4.2 Write failing tests:
+- [x] 4.2 Write failing tests:
   - in `D`, against a real in-memory `BlackgridDatabase`: reopen restores the block; a payload without the block (the existing fixture JSON) loads with `progressCatalog == null` and unchanged items; a block with `formatVersion: 2`, or with a wrong-typed field, loads as `null` with the items intact; committing regular leaves the stored PvE block unchanged;
   - in `test/application/catalog_controller_test.dart`: a failed refresh keeps the cached snapshot's task catalog.
-- [ ] 4.3 Implement the integration:
+- [x] 4.3 Implement the integration:
   - `CatalogSnapshot.progressCatalog` (optional). `toJson` writes it only when it is present. `fromJson` decodes it in its own `try`, and an absent block, another version or a decode error give `null`. Keep `schemaVersion` and `normalizerVersion` at 1.
   - `normalizeCatalog` calls `parseProgressCatalog` after the unchanged item parse, inside the existing `Isolate.run`.
 

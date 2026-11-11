@@ -1,0 +1,295 @@
+{
+  "requirements": [
+    {
+      "kind": "task",
+      "sourceId": "task-a",
+      "sourceName": "Synthetic task",
+      "id": "find-a",
+      "itemIds": [
+        "item-a",
+        "item-b"
+      ],
+      "progressIds": [
+        "find-a",
+        "give-a"
+      ],
+      "completionId": "give-a",
+      "ambiguousProgressIdentity": false,
+      "count": 3,
+      "foundInRaid": true,
+      "gate": {
+        "minPlayerLevel": 1,
+        "faction": "Any",
+        "editions": [],
+        "editionIds": [],
+        "taskStatuses": {},
+        "stations": {},
+        "unknownTraderOrSkill": false,
+        "incomplete": false
+      },
+      "optional": false,
+      "stationId": null,
+      "stationLevel": null
+    },
+    {
+      "kind": "hideout",
+      "sourceId": "station-a-1",
+      "sourceName": "Synthetic station",
+      "id": "part-a",
+      "itemIds": [
+        "item-a"
+      ],
+      "progressIds": [
+        "part-a"
+      ],
+      "completionId": null,
+      "ambiguousProgressIdentity": false,
+      "count": 2,
+      "foundInRaid": false,
+      "gate": {
+        "minPlayerLevel": null,
+        "faction": null,
+        "editions": null,
+        "editionIds": null,
+        "taskStatuses": {},
+        "stations": {},
+        "unknownTraderOrSkill": false,
+        "incomplete": false
+      },
+      "optional": false,
+      "stationId": "station-a",
+      "stationLevel": 1
+    },
+    {
+      "kind": "craft",
+      "sourceId": "craft-a",
+      "sourceName": "Alternative component",
+      "id": "craft-a:0",
+      "itemIds": [
+        "item-a"
+      ],
+      "progressIds": [],
+      "completionId": null,
+      "ambiguousProgressIdentity": false,
+      "count": 1.5,
+      "foundInRaid": null,
+      "gate": {
+        "minPlayerLevel": null,
+        "faction": null,
+        "editions": [],
+        "editionIds": [],
+        "taskStatuses": {},
+        "stations": {},
+        "unknownTraderOrSkill": false,
+        "incomplete": false
+      },
+      "optional": true,
+      "stationId": "station-a",
+      "stationLevel": 1,
+      "productItemId": "item-b",
+      "productCount": 1,
+      "stationName": "Synthetic station"
+    },
+    {
+      "kind": "barter",
+      "sourceId": "barter-a",
+      "sourceName": "Alternative component",
+      "id": "barter-a:0",
+      "itemIds": [
+        "item-a"
+      ],
+      "progressIds": [],
+      "completionId": null,
+      "ambiguousProgressIdentity": false,
+      "count": 2.5,
+      "foundInRaid": null,
+      "gate": {
+        "minPlayerLevel": null,
+        "faction": null,
+        "editions": null,
+        "editionIds": null,
+        "taskStatuses": {},
+        "stations": {},
+        "unknownTraderOrSkill": false,
+        "incomplete": false
+      },
+      "optional": true,
+      "stationId": null,
+      "stationLevel": null,
+      "productItemId": "item-b",
+      "productCount": 1,
+      "traderId": "trader-a",
+      "traderLevel": 1
+    }
+  ],
+  "requirementIndex": {
+    "item-a": [
+      {
+        "kind": "task",
+        "sourceId": "task-a",
+        "sourceName": "Synthetic task",
+        "id": "find-a",
+        "itemIds": [
+          "item-a",
+          "item-b"
+        ],
+        "progressIds": [
+          "find-a",
+          "give-a"
+        ],
+        "completionId": "give-a",
+        "ambiguousProgressIdentity": false,
+        "count": 3,
+        "foundInRaid": true,
+        "gate": {
+          "minPlayerLevel": 1,
+          "faction": "Any",
+          "editions": [],
+          "editionIds": [],
+          "taskStatuses": {},
+          "stations": {},
+          "unknownTraderOrSkill": false,
+          "incomplete": false
+        },
+        "optional": false,
+        "stationId": null,
+        "stationLevel": null
+      },
+      {
+        "kind": "hideout",
+        "sourceId": "station-a-1",
+        "sourceName": "Synthetic station",
+        "id": "part-a",
+        "itemIds": [
+          "item-a"
+        ],
+        "progressIds": [
+          "part-a"
+        ],
+        "completionId": null,
+        "ambiguousProgressIdentity": false,
+        "count": 2,
+        "foundInRaid": false,
+        "gate": {
+          "minPlayerLevel": null,
+          "faction": null,
+          "editions": null,
+          "editionIds": null,
+          "taskStatuses": {},
+          "stations": {},
+          "unknownTraderOrSkill": false,
+          "incomplete": false
+        },
+        "optional": false,
+        "stationId": "station-a",
+        "stationLevel": 1
+      },
+      {
+        "kind": "craft",
+        "sourceId": "craft-a",
+        "sourceName": "Alternative component",
+        "id": "craft-a:0",
+        "itemIds": [
+          "item-a"
+        ],
+        "progressIds": [],
+        "completionId": null,
+        "ambiguousProgressIdentity": false,
+        "count": 1.5,
+        "foundInRaid": null,
+        "gate": {
+          "minPlayerLevel": null,
+          "faction": null,
+          "editions": [],
+          "editionIds": [],
+          "taskStatuses": {},
+          "stations": {},
+          "unknownTraderOrSkill": false,
+          "incomplete": false
+        },
+        "optional": true,
+        "stationId": "station-a",
+        "stationLevel": 1,
+        "productItemId": "item-b",
+        "productCount": 1,
+        "stationName": "Synthetic station"
+      },
+      {
+        "kind": "barter",
+        "sourceId": "barter-a",
+        "sourceName": "Alternative component",
+        "id": "barter-a:0",
+        "itemIds": [
+          "item-a"
+        ],
+        "progressIds": [],
+        "completionId": null,
+        "ambiguousProgressIdentity": false,
+        "count": 2.5,
+        "foundInRaid": null,
+        "gate": {
+          "minPlayerLevel": null,
+          "faction": null,
+          "editions": null,
+          "editionIds": null,
+          "taskStatuses": {},
+          "stations": {},
+          "unknownTraderOrSkill": false,
+          "incomplete": false
+        },
+        "optional": true,
+        "stationId": null,
+        "stationLevel": null,
+        "productItemId": "item-b",
+        "productCount": 1,
+        "traderId": "trader-a",
+        "traderLevel": 1
+      }
+    ],
+    "item-b": [
+      {
+        "kind": "task",
+        "sourceId": "task-a",
+        "sourceName": "Synthetic task",
+        "id": "find-a",
+        "itemIds": [
+          "item-a",
+          "item-b"
+        ],
+        "progressIds": [
+          "find-a",
+          "give-a"
+        ],
+        "completionId": "give-a",
+        "ambiguousProgressIdentity": false,
+        "count": 3,
+        "foundInRaid": true,
+        "gate": {
+          "minPlayerLevel": 1,
+          "faction": "Any",
+          "editions": [],
+          "editionIds": [],
+          "taskStatuses": {},
+          "stations": {},
+          "unknownTraderOrSkill": false,
+          "incomplete": false
+        },
+        "optional": false,
+        "stationId": null,
+        "stationLevel": null
+      }
+    ]
+  },
+  "scavCooldown": {
+    "baseSeconds": 1500.0,
+    "fenceLevels": [
+      {
+        "min": 0.0,
+        "modifier": 1.0
+      }
+    ],
+    "bonuses": {
+      "station-a-1": -0.15
+    }
+  }
+}
