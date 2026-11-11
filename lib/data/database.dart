@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -11,9 +12,12 @@ import '../domain/decision.dart';
 import '../domain/settings.dart';
 import '../domain/import_preview.dart';
 import '../domain/local_stats.dart';
+import '../domain/local_progress.dart';
+import '../domain/local_progress_store.dart';
 import '../domain/raid_lifecycle.dart';
 
 part 'database.g.dart';
+part 'database_progress.dart';
 
 class Preferences extends Table {
   IntColumn get id => integer()();
@@ -144,6 +148,83 @@ class LiveMapSources extends Table {
   Set<Column> get primaryKey => {mode, dataset};
 }
 
+/// The locally generated identity used for progress events.
+@DataClassName('ProgressMetaRecord')
+class ProgressMeta extends Table {
+  IntColumn get id => integer()();
+  TextColumn get deviceId => text()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// An explicitly created, mode-scoped local progress cycle.
+@DataClassName('ProgressCycleRecord')
+class ProgressCycles extends Table {
+  TextColumn get cycleId => text()();
+  TextColumn get mode => text()();
+  IntColumn get createdAtMs => integer()();
+  IntColumn get revision => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {cycleId};
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {mode, cycleId},
+  ];
+}
+
+/// Immutable progress facts, with a private sequence for history paging.
+@DataClassName('ProgressEventRecord')
+@TableIndex(
+  name: 'progress_events_scope_sequence',
+  columns: {#mode, #cycleId, #sequence},
+)
+@TableIndex(
+  name: 'progress_events_register_order',
+  columns: {
+    #mode,
+    #cycleId,
+    #entityKind,
+    #entityId,
+    #field,
+    #occurredAtMs,
+    #sourceRank,
+    #deviceId,
+    #eventId,
+  },
+)
+class ProgressEvents extends Table {
+  IntColumn get sequence => integer().autoIncrement()();
+  TextColumn get eventId => text().unique()();
+  TextColumn get mode => text()();
+  TextColumn get cycleId => text()();
+  IntColumn get occurredAtMs => integer()();
+  IntColumn get sourceRank => integer()();
+  TextColumn get deviceId => text()();
+  TextColumn get entityKind => text()();
+  TextColumn get entityId => text()();
+  TextColumn get field => text()();
+  IntColumn get formatVersion => integer()();
+  TextColumn get canonicalPayload => text()();
+  TextColumn get undoOf => text().nullable()();
+  @override
+  List<String> get customConstraints => [
+    'FOREIGN KEY (mode, cycle_id) REFERENCES progress_cycles (mode, cycle_id)',
+  ];
+}
+
+/// The event currently winning each scoped progress register.
+@DataClassName('ProgressHeadRecord')
+class ProgressHeads extends Table {
+  TextColumn get mode => text()();
+  TextColumn get cycleId => text()();
+  TextColumn get entityKind => text()();
+  TextColumn get entityId => text()();
+  TextColumn get field => text()();
+  TextColumn get eventId => text().references(ProgressEvents, #eventId)();
+  @override
+  Set<Column> get primaryKey => {mode, cycleId, entityKind, entityId, field};
+}
+
 /// The settings read from the database and whether the stored record was
 /// unreadable.
 class StoredSettings {
@@ -192,21 +273,40 @@ class NewerDatabaseException implements Exception {
     StatsMeta,
     LiveMapSnapshots,
     LiveMapSources,
+    ProgressMeta,
+    ProgressCycles,
+    ProgressEvents,
+    ProgressHeads,
   ],
 )
 class BlackgridDatabase extends _$BlackgridDatabase
-    implements CatalogStore, LocalStatsStore {
-  BlackgridDatabase(super.executor);
+    with _LocalProgressOperations
+    implements CatalogStore, LocalStatsStore, LocalProgressStore {
+  /// Opens the shared database over [executor].
+  ///
+  /// Optional progress clocks and identity generators support deterministic
+  /// offline callers. Defaults use wall time and random UUID-v4 identities;
+  /// replayed events always retain their caller-supplied identities and times.
+  BlackgridDatabase(
+    super.executor, {
+    DateTime Function()? progressClock,
+    String Function()? progressIdGenerator,
+  }) {
+    if (progressClock != null) _progressClock = progressClock;
+    if (progressIdGenerator != null) {
+      _progressIdGenerator = progressIdGenerator;
+    }
+  }
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 7 || from >= to) {
+      if (from < 1 || to != 8 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
@@ -230,6 +330,14 @@ class BlackgridDatabase extends _$BlackgridDatabase
         }
         if (from < 7) {
           await m.addColumn(activityRecords, activityRecords.verdict);
+        }
+        if (from < 8) {
+          await m.createTable(progressMeta);
+          await m.createTable(progressCycles);
+          await m.createTable(progressEvents);
+          await m.createTable(progressHeads);
+          await m.createIndex(progressEventsScopeSequence);
+          await m.createIndex(progressEventsRegisterOrder);
         }
       });
     },
