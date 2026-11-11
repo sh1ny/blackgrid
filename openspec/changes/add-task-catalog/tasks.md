@@ -16,31 +16,31 @@ Paths:
 | Task catalog comes with each item catalog refresh | Refresh carries the mode's tasks | N | `refresh builds the mode's task catalog from the existing datasets` | red |
 | Task catalog comes with each item catalog refresh | Failed refresh keeps the last-good task catalog | `test/application/catalog_controller_test.dart` | `failed refresh keeps the cached task catalog` | red |
 | Task catalog comes with each item catalog refresh | Other modes are untouched | D | `committing one mode leaves other modes' task catalogs unchanged` | red |
-| Task facts are retained | Kappa task kept with its flags | `P/parse_task_test.dart` | `keeps Kappa, Lightkeeper, faction and level` | red |
-| Task facts are retained | Missing flag stays unknown | `P/parse_task_test.dart` | `absent or odd new facts are unknown` | red |
+| Task facts are retained | Kappa task kept with its flags | `P/parse_task_test.dart` | `keeps Kappa, Lightkeeper, faction and level` | green |
+| Task facts are retained | Missing flag stays unknown | `P/parse_task_test.dart` | `absent or odd new facts are unknown` | green |
 | Already-validated task fields keep today's strictness | Already-validated value rejects as today | N | `values the item parse rejects still reject the refresh` | red |
 | Already-validated task fields keep today's strictness | Valid values pass unchanged | N | `valid level, faction and found-in-raid pass into the task catalog` | red |
-| Absent lists stay unknown | Task without fail conditions | `P/parse_task_test.dart` | `absent failConditions means alternatives unknown` | red |
-| Absent lists stay unknown | Empty list means none | `P/parse_task_test.dart` | `empty taskRequirements means no prerequisites` | red |
-| Prerequisites keep their accepted statuses | Must-be-failed prerequisite | `P/parse_task_test.dart` | `keeps must-be-failed prerequisite statuses in order` | red |
-| Prerequisites keep their accepted statuses | Unknown status value | `P/parse_task_test.dart` | `unknown prerequisite status is kept as unknown` | red |
-| Alternatives come from task-status fail conditions | Completing another task fails this one | `P/parse_task_test.dart` | `taskStatus fail condition becomes an alternative` | red |
-| Alternatives come from task-status fail conditions | Non-task fail condition | `P/parse_task_test.dart` | `other fail conditions are kept but are not alternatives` | red |
-| Trader requirements keep their comparison | Loyalty level gate | `P/parse_task_test.dart` | `keeps trader level requirement with comparison` | red |
-| Trader requirements keep their comparison | Unknown comparison | `P/parse_task_test.dart` | `unknown comparison is kept as unknown` | red |
-| Objectives are retained with their checklist facts | Found-in-raid hand-over | `P/parse_objective_test.dart` | `giveItem keeps count, found in raid and items` | red |
-| Objectives are retained with their checklist facts | New objective type | `P/parse_objective_test.dart` | `unrecognized type keeps raw type string` | red |
-| Item-bearing objectives carry their items | Quest item objective | `P/parse_objective_test.dart` | `quest item objectives carry the quest item ID` | red |
-| Item-bearing objectives carry their items | Missing item fact | `P/parse_objective_test.dart` | `useItem without useAny has unknown items` | red |
-| Target objectives carry their targets | Trader standing objective | `P/parse_objective_test.dart` | `traderStanding carries trader, comparison and value` | red |
-| Target objectives carry their targets | Missing target fact | `P/parse_objective_test.dart` | `missing target fact is unknown; other types carry no facts` | red |
-| Shared objective IDs are flagged | Objective shared by task variants | `P/parse_objective_test.dart` | `objective ID under two tasks is marked shared on both` | red |
-| Shared objective IDs are flagged | Repeat within a task | `P/parse_objective_test.dart` | `repeated objective ID within a task is an identity error` | red |
-| Hideout stations and levels are retained | Station with prerequisites | `P/parse_hideout_test.dart` | `station level keeps station, trader and skill requirements` | red |
-| Hideout stations and levels are retained | Invalid level number | `P/parse_hideout_test.dart` | `level number 0 or absent is an identity error` | red |
+| Absent lists stay unknown | Task without fail conditions | `P/parse_task_test.dart` | `absent failConditions means alternatives unknown` | green |
+| Absent lists stay unknown | Empty list means none | `P/parse_task_test.dart` | `empty taskRequirements means no prerequisites` | green |
+| Prerequisites keep their accepted statuses | Must-be-failed prerequisite | `P/parse_task_test.dart` | `keeps must-be-failed prerequisite statuses in order` | green |
+| Prerequisites keep their accepted statuses | Unknown status value | `P/parse_task_test.dart` | `unknown prerequisite status is kept as unknown` | green |
+| Alternatives come from task-status fail conditions | Completing another task fails this one | `P/parse_task_test.dart` | `taskStatus fail condition becomes an alternative` | green |
+| Alternatives come from task-status fail conditions | Non-task fail condition | `P/parse_task_test.dart` | `other fail conditions are kept but are not alternatives` | green |
+| Trader requirements keep their comparison | Loyalty level gate | `P/parse_task_test.dart` | `keeps trader level requirement with comparison` | green |
+| Trader requirements keep their comparison | Unknown comparison | `P/parse_task_test.dart` | `unknown comparison is kept as unknown` | green |
+| Objectives are retained with their checklist facts | Found-in-raid hand-over | `P/parse_objective_test.dart` | `giveItem keeps count, found in raid and items` | green |
+| Objectives are retained with their checklist facts | New objective type | `P/parse_objective_test.dart` | `unrecognized type keeps raw type string` | green |
+| Item-bearing objectives carry their items | Quest item objective | `P/parse_objective_test.dart` | `quest item objectives carry the quest item ID` | green |
+| Item-bearing objectives carry their items | Missing item fact | `P/parse_objective_test.dart` | `useItem without useAny has unknown items` | green |
+| Target objectives carry their targets | Trader standing objective | `P/parse_objective_test.dart` | `traderStanding carries trader, comparison and value` | green |
+| Target objectives carry their targets | Missing target fact | `P/parse_objective_test.dart` | `missing target fact is unknown; other types carry no facts` | green |
+| Shared objective IDs are flagged | Objective shared by task variants | `P/parse_objective_test.dart` | `objective ID under two tasks is marked shared on both` | green |
+| Shared objective IDs are flagged | Repeat within a task | `P/parse_objective_test.dart` | `repeated objective ID within a task is an identity error` | green |
+| Hideout stations and levels are retained | Station with prerequisites | `P/parse_hideout_test.dart` | `station level keeps station, trader and skill requirements` | green |
+| Hideout stations and levels are retained | Invalid level number | `P/parse_hideout_test.dart` | `level number 0 or absent is an identity error` | green |
 | Identities and references are validated strictly | Unresolved prerequisite | N | `unresolved prerequisite rejects the refresh as invalid` | red |
-| Identities and references are validated strictly | Unknown map ID is accepted | `P/parse_task_test.dart` | `unknown map ID is kept, not resolved` | red |
-| Display text falls back without failing | Translated objective | `P/parse_objective_test.dart` | `objective description comes from the dictionary` | red |
+| Identities and references are validated strictly | Unknown map ID is accepted | `P/parse_task_test.dart` | `unknown map ID is kept, not resolved` | green |
+| Display text falls back without failing | Translated objective | `P/parse_objective_test.dart` | `objective description comes from the dictionary` | green |
 | Display text falls back without failing | Missing tasks dictionary | N | `missing tasks dictionary falls back and is reported` | red |
 | Stored snapshots carry the task catalog optionally | Restart restores the task catalog | D | `stored task catalog survives reopen unchanged` | red |
 | Stored snapshots carry the task catalog optionally | Snapshot cached before this change | D | `snapshot stored without a block loads with items and no task catalog` | red |
@@ -75,9 +75,9 @@ Paths:
 
 ## 3. Wire parsing (package)
 
-- [ ] 3.1 Write failing tests in `P/parse_task_test.dart` for every test map row that points there. Use small synthetic wire maps in the live shape (design Context), built in a shared `P/support/wire.dart`.
-- [ ] 3.2 Write failing tests in `P/parse_objective_test.dart` and `P/parse_hideout_test.dart` for their test map rows. These include the type-to-facts table (`findItem`, `giveItem`, `plantItem`, `sellItem`, `buildWeapon`, `useItem`, `mark`, the three `*QuestItem` types with string and object `questItem`, `taskStatus`, `traderLevel`, `traderStanding`, `skill`, and a `visit` with stray `items`), levels sorted by number, and shared and repeated objective IDs.
-- [ ] 3.3 Implement `parseProgressCatalog(tasksData, hideoutData, traderIds, taskDictionary, hideoutDictionary)` (D3, D5), using patterns over the wire maps:
+- [x] 3.1 Write failing tests in `P/parse_task_test.dart` for every test map row that points there. Use small synthetic wire maps in the live shape (design Context), built in a shared `P/support/wire.dart`.
+- [x] 3.2 Write failing tests in `P/parse_objective_test.dart` and `P/parse_hideout_test.dart` for their test map rows. These include the type-to-facts table (`findItem`, `giveItem`, `plantItem`, `sellItem`, `buildWeapon`, `useItem`, `mark`, the three `*QuestItem` types with string and object `questItem`, `taskStatus`, `traderLevel`, `traderStanding`, `skill`, and a `visit` with stray `items`), levels sorted by number, and shared and repeated objective IDs.
+- [x] 3.3 Implement `parseProgressCatalog(tasksData, hideoutData, traderIds, taskDictionary, hideoutDictionary)` (D3, D5), using patterns over the wire maps:
   - Strict: IDs, duplicates, level numbers, and references to tasks, traders and stations within the mode, throwing `FormatException`.
   - Lenient: every newly retained fact.
   - Absent lists are `null`.

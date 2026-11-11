@@ -2,3 +2,4 @@
 library;
 
 export 'src/progress_catalog.dart';
+export 'src/parse_progress_catalog.dart';
