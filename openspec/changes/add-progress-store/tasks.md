@@ -8,16 +8,16 @@ All rows start red: they await implementation or verification against schema 8. 
 |---|---|---|---|---|
 | Local cycles and device identity survive restart | Create and reopen cycles | `test/data/local_progress_store_test.dart` | `cycles and device identity survive reopen without replacing history` | red |
 | Local cycles and device identity survive restart | Wrong scope | `test/data/local_progress_store_test.dart` | `missing unknown and mismatched scopes reject atomically` | red |
-| Events have a portable versioned identity | Event round trip | `test/domain/local_progress_test.dart` | `named event codec round trips every envelope field` | red |
-| Events have a portable versioned identity | Unsupported or malformed envelope | `test/domain/local_progress_test.dart` | `invalid versions sources targets and values are rejected` | red |
+| Events have a portable versioned identity | Event round trip | `test/domain/local_progress_test.dart` | `named event codec round trips every envelope field` | green |
+| Events have a portable versioned identity | Unsupported or malformed envelope | `test/domain/local_progress_test.dart` | `invalid versions sources targets and values are rejected` | green |
 | Accepted values remain encodable in compensation | Largest edition survives repeated undo | `test/data/local_progress_store_test.dart` | `maximum encoded edition survives undo and undo of compensation` | red |
 | Accepted values remain encodable in compensation | Escaped token exceeds budget | `test/data/local_progress_store_test.dart` | `over-budget escaped tokens reject the entire batch` | red |
-| Progress values are independent typed registers | Independent objective fields | `test/domain/local_progress_test.dart` | `absolute objective counts do not replace completion` | red |
-| Progress values are independent typed registers | Unset and invalid counts | `test/domain/local_progress_test.dart` | `unset wins without resurrection and negative counts reject` | red |
+| Progress values are independent typed registers | Independent objective fields | `test/domain/local_progress_test.dart` | `absolute objective counts do not replace completion` | green |
+| Progress values are independent typed registers | Unset and invalid counts | `test/domain/local_progress_test.dart` | `unset wins without resurrection and negative counts reject` | green |
 | Replays are idempotent and batches are atomic | Duplicate batch | `test/data/local_progress_store_test.dart` | `identical replay and intra-batch duplicates store each event once` | red |
 | Replays are idempotent and batches are atomic | Conflicting identity or failed commit | `test/data/local_progress_store_test.dart` | `conflicting global identity and failed commit roll back batch and heads` | red |
-| Newest field value wins deterministically | Log and manual precedence | `test/domain/local_progress_test.dart` | `event permutations preserve time-first and equal-time log precedence` | red |
-| Newest field value wins deterministically | Equal-time deterministic ties | `test/domain/local_progress_test.dart` | `device and event identity ties converge in either arrival order` | red |
+| Newest field value wins deterministically | Log and manual precedence | `test/domain/local_progress_test.dart` | `event permutations preserve time-first and equal-time log precedence` | green |
+| Newest field value wins deterministically | Equal-time deterministic ties | `test/domain/local_progress_test.dart` | `device and event identity ties converge in either arrival order` | green |
 | Current values are reproducible and isolated | Rebuild after reopening | `test/data/local_progress_store_test.dart` | `rebuild matches incremental winners across modes and cycles after reopen` | red |
 | Current values are reproducible and isolated | Interrupted rebuild | `test/data/local_progress_store_test.dart` | `failed rebuild rolls back heads and preserves immutable event bytes` | red |
 | Current-value pages use one revision snapshot | Stable page continuation | `test/data/local_progress_store_test.dart` | `current-value continuation returns each register at one revision` | red |
@@ -38,9 +38,9 @@ All rows start red: they await implementation or verification against schema 8. 
 
 ## 2. Pure event model, encoding and projection
 
-- [ ] 2.1 Add failing `test/domain/local_progress_test.dart` cases named in the test map for envelope round trip, malformed inputs, independent fields, unset and ordering. Include all target/value families, same-time ties, late events and finite event permutations; verify failures identify missing behavior rather than a broken fixture.
-- [ ] 2.2 Implement `lib/domain/local_progress.dart` and `lib/domain/local_progress_store.dart`: typed field/value/event/cycle records, named version-1 canonical codec, pure comparator/fold, paged cursor/result types and sealed failures. Add public `///` documentation for scope, ordering, IDs, unset, retry and failure semantics. Verify the domain rows pass and turn them green; these libraries must import no Flutter, SQL or Windows APIs.
-- [ ] 2.3 Add codec boundary cases and enforce the reviewed identity/text token budgets, encoded event cap, exact integer range and supported timestamp width. Prove fixed-envelope headroom across valid target/value shapes, including JSON-escaped multibyte/control text and maximum-width timestamps/IDs; verify exact-boundary acceptance, one-byte-over rejection, no truncation, and compensation-shaped events below the event cap. Document these invariants beside the codec; do not add catalog/edition rules or new dependencies.
+- [x] 2.1 Add failing `test/domain/local_progress_test.dart` cases named in the test map for envelope round trip, malformed inputs, independent fields, unset and ordering. Include all target/value families, same-time ties, late events and finite event permutations; verify failures identify missing behavior rather than a broken fixture.
+- [x] 2.2 Implement `lib/domain/local_progress.dart` and `lib/domain/local_progress_store.dart`: typed field/value/event/cycle records, named version-1 canonical codec, pure comparator/fold, paged cursor/result types and sealed failures. Add public `///` documentation for scope, ordering, IDs, unset, retry and failure semantics. Verify the domain rows pass and turn them green; these libraries must import no Flutter, SQL or Windows APIs.
+- [x] 2.3 Add codec boundary cases and enforce the reviewed identity/text token budgets, encoded event cap, exact integer range and supported timestamp width. Prove fixed-envelope headroom across valid target/value shapes, including JSON-escaped multibyte/control text and maximum-width timestamps/IDs; verify exact-boundary acceptance, one-byte-over rejection, no truncation, and compensation-shaped events below the event cap. Document these invariants beside the codec; do not add catalog/edition rules or new dependencies.
 
 ## 3. Durable ledger, paged projection and undo
 

@@ -66,3 +66,4 @@ Adds local progress storage for the upcoming tracker. Existing Tracker-backed ad
 ### Added
 
 - Durable, mode-separated progress histories with local progress cycles, replay-safe event projection and an undo interface.
+- A strict versioned event format and typed store interface covering task, objective, hideout, player and trader progress, with deterministic conflict ordering and explicit failures.
