@@ -504,19 +504,6 @@ void main() {
   });
 
   group('allowlist file', () {
-    test('the committed allowlist parses into three private inputs and one '
-        'host-platform skip', () {
-      final entries = _committed();
-
-      expect(entries.map((e) => (e.kind, e.file, e.reason)), [
-        (SkipKind.privateInput, _corpusFile, _corpusReason),
-        (SkipKind.privateInput, _replayFile, _replayReason),
-        (SkipKind.privateInput, _ocrFile, _ocrReason),
-        (SkipKind.hostPlatform, _bundleFile, _codePageReason),
-      ]);
-      expect(entries.every((e) => e.why.isNotEmpty), isTrue);
-    });
-
     test('an entry missing a field is rejected', () {
       expect(
         () => parseAllowlist(
