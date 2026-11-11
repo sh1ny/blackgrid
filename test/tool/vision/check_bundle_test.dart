@@ -14,6 +14,8 @@ const _nupkgUrl = 'https://example.test/Tesseract/5.2.0';
 const _modelUrl = 'https://example.test/eng.traineddata';
 const _markerGray = 'data/vision/marker/inspection_marker.gray';
 const _markerJson = 'data/vision/marker/inspection_marker.json';
+const _firGray = 'data/vision/fir/inspection_fir.gray';
+const _firJson = 'data/vision/fir/inspection_fir.json';
 const _markerSetDir = 'assets/map_markers';
 const _bundledMarkerDir = 'data/flutter_assets/assets/map_markers';
 const _markerStep = 'map-marker-icons';
@@ -123,6 +125,16 @@ class _Fixture {
         }),
       ),
     );
+    write(_firGray, [for (var i = 0; i < 784; i++) (i * 3) % 251]);
+    write(_firJson, utf8.encode(jsonEncode({
+      'format': 1, 'width': 28, 'height': 28, 'stride': 28,
+      'sourceSha256': _screenshotSha,
+      'sourceWidth': 3440, 'sourceHeight': 1440,
+      'client': {'width': 3440, 'height': 1440},
+      'crop': {'x': 1199, 'y': 732, 'width': 28, 'height': 28},
+      'grayscale': 'opencv-bgr2gray-fixed-point',
+      'recipe': 'inspection-fir-v1',
+    })));
     write(
       'blackgrid_panel_ocr.dll.sha256',
       utf8.encode(_sha(read('blackgrid_panel_ocr.dll'))),
@@ -192,6 +204,8 @@ class _Fixture {
       'data/vision/tessdata/eng.traineddata',
       _markerGray,
       _markerJson,
+      _firGray,
+      _firJson,
     ];
     final manifest = {
       'format': 1,
@@ -310,6 +324,14 @@ class _Fixture {
 - **Files:** `$_markerGray` (SHA-256 `$grayEntrySha`), `$_markerJson` (SHA-256 `${_sha(read(_markerJson))}`)
 - **Source screenshot SHA-256:** `$_screenshotSha`
 - **Recipe:** inspection-marker-v1
+- **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence.
+
+<a id="inspection-fir-template"></a>
+### Inspection FIR check template
+
+- **Files:** `$_firGray` (SHA-256 `${_sha(read(_firGray))}`), `$_firJson` (SHA-256 `${_sha(read(_firJson))}`)
+- **Source screenshot SHA-256:** `$_screenshotSha`
+- **Recipe:** inspection-fir-v1
 - **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence.
 
 <a id="microsoft-visual-cpp-runtime"></a>
@@ -447,6 +469,36 @@ void main() {
     final text2 = _failures(r2.report!, 'inventory');
     expect(text2, contains(_markerJson));
     expect(text2, contains('missing'));
+  });
+
+  test('inventory fails naming missing FIR template or metadata', () async {
+    for (final path in [_firGray, _firJson]) {
+      final missing = _Fixture();
+      addTearDown(missing.dispose);
+      File('${missing.bundle.path}/$path').deleteSync();
+      final result = await missing.run();
+      expect(result.code, isNot(0));
+      expect(_failures(result.report!, 'inventory'), allOf(contains(path), contains('missing')));
+    }
+  });
+
+  test('FIR artwork notice rejects stale hashes and bad provenance', () async {
+    final notice = File(fx.noticesPath);
+    notice.writeAsStringSync(notice.readAsStringSync().replaceFirst(
+      _sha(fx.read(_firGray)), '0' * 64,
+    ));
+    var result = await fx.run();
+    expect(result.code, isNot(0));
+    expect(_failures(result.report!, 'notices'), contains(_firGray));
+
+    final metadata = jsonDecode(utf8.decode(fx.read(_firJson))) as Map<String, dynamic>;
+    metadata['crop'] = {'x': 3430, 'y': 732, 'width': 28, 'height': 28};
+    fx.write(_firJson, utf8.encode(jsonEncode(metadata)));
+    fx.writeManifest();
+    fx.writeLockAndNotices();
+    result = await fx.run();
+    expect(result.code, isNot(0));
+    expect(_failures(result.report!, 'notices'), allOf(contains(_firJson), contains('crop')));
   });
 
   test('hash step fails naming capture library and both hashes', () async {

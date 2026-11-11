@@ -388,6 +388,17 @@ Some `<use>` elements point to symbols that the map's publisher deleted, such as
 | 3 | A step did not finish within 60 s |
 
 `blackgrid.exe` is a GUI app, so the shell does not wait for it by default. Use `start /wait` in cmd or `Start-Process -Wait -PassThru` in PowerShell. To check a built bundle offline, run `mise run bundle:check -- build/windows/x64/runner/Release`.
+
+The FIR check template is reproducible offline from the private owner-supplied
+source `.qualification/found-in-raid/afak_fir_yes_no_medal_3440x1440.jpg`.
+Run `mise exec -- dart run tool/vision/make_fir_template.dart <source>` to
+recreate its raw grayscale and JSON metadata in `assets/vision/fir/`. The
+default recipe uses the unresampled 28×28 crop at (1199, 732) from the
+3440×1440 client. The twelve qualification images remain private; their
+frozen hashes, labels, and geometry are in
+`test/fixtures/vision/fir/manifest.json`. If the artwork is regenerated, update
+its hashes and provenance in `THIRD_PARTY_NOTICES.md`; the bundle check verifies
+the manifest, artwork notices, and metadata.
 </details>
 
 <details>

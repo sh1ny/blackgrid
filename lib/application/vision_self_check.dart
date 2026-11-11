@@ -7,6 +7,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import '../data/vision/marker_template.dart';
 import '../data/vision/vision_native.dart' show openVisionNative;
 import '../data/vision/vision_runtime.dart';
 import 'app_version.dart' as app_version;
@@ -415,7 +416,16 @@ void executeSelfCheckSteps(
   try {
     switch (runtime.status) {
       case VisionReady(:final identity):
-        pass('verify', 'manifest and file hashes verified');
+        final templates = loadInspectionTemplates(runtimeDirectory);
+        switch (templates) {
+          case InspectionTemplatesLoaded():
+            pass('verify', 'manifest, file hashes and inspection templates verified');
+          case InspectionTemplatesUnavailable(:final failure):
+            fail('verify', _failureKind(failure), failure.message);
+          case InspectionTemplatesInvalid(:final message):
+            fail('verify', 'invalidTemplate', message);
+        }
+        if (!healthy) break;
         pass('load', 'libraries opened, engine initialised');
         sink.sendIdentity({
           'files': [

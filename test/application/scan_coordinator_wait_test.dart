@@ -54,7 +54,7 @@ final class _Rig {
       closeTimeout: const Duration(milliseconds: 500),
       indexBuilder: builder.call,
       matcher: matcher.call,
-      markerLoader: ports.loader,
+      templatesLoader: ports.loader,
       captureFactory: ports.captureFactory,
       visionFactory: ports.visionFactory,
       platformFactory: ports.platformFactory,

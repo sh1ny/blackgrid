@@ -31,6 +31,8 @@ const List<String> visionCoreFiles = [
   'data/vision/tessdata/eng.traineddata',
   'data/vision/marker/inspection_marker.gray',
   'data/vision/marker/inspection_marker.json',
+  'data/vision/fir/inspection_fir.gray',
+  'data/vision/fir/inspection_fir.json',
 ];
 
 const String _tessdataRelative = 'data/vision/tessdata';

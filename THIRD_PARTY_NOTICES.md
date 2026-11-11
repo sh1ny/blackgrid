@@ -583,6 +583,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - **Recipe:** `inspection-marker-v1`, produced by `tool/vision/make_marker_template.dart`: OpenCV-rounded BGR luma, a 21x21 footprint (trunc(16 x 4/3)) at the origin, deterministic cubic resize to 28x28.
 - **Regeneration:** rerun the tool on the user's screenshot, then update both file hashes here in the same commit. `mise run bundle:check` fails on a stale entry.
 
+<a id="inspection-fir-template"></a>
+### Inspection found-in-raid check template
+
+- **Status:** game UI artwork captured by the user, not covered by Blackgrid's licence. Blackgrid claims no ownership or public redistribution right; inclusion follows the user's direction for this private implementation.
+- **Files:** `data/vision/fir/inspection_fir.gray` (SHA-256 `da803a9836846ede25ca471d693e66d7421397f8ae2517a2e38879f450ddb42a`); `data/vision/fir/inspection_fir.json` (SHA-256 `1d5666f0c966df1ea943ec72bf761fdcab57fead16e28db9d49a26bf1c8df23e`). Source copies are under `assets/vision/fir/`.
+- **Source screenshot SHA-256:** `0d5fbdccd97c07c5b9a82c97633059325c9142cbab27953c024c868c93e2169b` (3440x1440 image and client); the screenshot remains private.
+- **Recipe:** `inspection-fir-v1`, produced by `tool/vision/make_fir_template.dart`: crop (1199,732,28,28), without resampling, using OpenCV-rounded BGR luma.
+- **Regeneration:** rerun the tool on the private source, then update both file hashes here; `mise run bundle:check` detects stale entries.
+
 <a id="microsoft-visual-cpp-runtime"></a>
 ### Microsoft Visual C++ runtime (app-local)
 

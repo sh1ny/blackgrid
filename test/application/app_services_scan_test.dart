@@ -47,9 +47,11 @@ class _Rig {
       client: MockClient((_) async => http.Response('', 503)),
       scanLogDirectory: logs,
       scanRuntimeDirectory: runtimeDirectory,
-      scanMarkerLoader: (directory) async {
+      scanTemplatesLoader: (directory) async {
         events.add('template');
-        return MarkerTemplateLoaded(_marker);
+        return InspectionTemplatesLoaded([
+          _marker, VisionTemplate(firTemplateName, _marker.image),
+        ]);
       },
       scanCaptureFactory: () {
         events.add('capture.create');

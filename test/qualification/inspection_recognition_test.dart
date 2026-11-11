@@ -124,9 +124,9 @@ VisionImage _syntheticFrame({
 /// Runs the real job in a warm worker over the real bundle and returns the
 /// targeted result for the synthetic frame.
 Future<InspectionRecognition> _recognise(String bundle) async {
-  final loaded = loadMarkerTemplate(bundle);
-  if (loaded is! MarkerTemplateLoaded) fail('marker template: $loaded');
-  final template = loaded.template;
+  final loaded = loadInspectionTemplates(bundle);
+  if (loaded is! InspectionTemplatesLoaded) fail('marker template: $loaded');
+  final template = loaded.templates.singleWhere((item) => item.name == markerTemplateName);
   final scale = processingScale(_clientWidth, _clientHeight);
   final side = scaledTemplateSize(scale);
 
@@ -149,7 +149,7 @@ Future<InspectionRecognition> _recognise(String bundle) async {
   final service = VisionService<InspectionRequest, InspectionRecognition>(
     runtimeDirectory: bundle,
     jobFactory: inspectionRecognitionJobFactory,
-    templates: [template],
+    templates: loaded.templates,
     platformFactory: _bundleCapture,
     registryFactory: _bundleFrames,
   );

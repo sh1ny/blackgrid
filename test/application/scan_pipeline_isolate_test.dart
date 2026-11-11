@@ -106,7 +106,9 @@ final class _Rig {
       appendLogLine: logs.add,
       runtimeDirectory: runtimeDir.path,
       closeTimeout: closeTimeout,
-      markerLoader: (_) async => MarkerTemplateLoaded(marker),
+      templatesLoader: (_) async => InspectionTemplatesLoaded([
+        marker, VisionTemplate(firTemplateName, marker.image),
+      ]),
       captureFactory: () {
         final service = CaptureService(
           platformFactory: holdableFactory(
@@ -119,11 +121,11 @@ final class _Rig {
         captureServices.add(service);
         return scanCapturePort(service);
       },
-      visionFactory: (marker, directory) {
+      visionFactory: (templates, directory) {
         final service = VisionService<InspectionRequest, InspectionRecognition>(
           runtimeDirectory: directory,
           jobFactory: _heldJobFactory,
-          templates: [marker],
+          templates: templates,
           opener: holdableVisionOpener(vision.address),
           platformFactory: clockPlatformFactory(vision.address),
           registryFactory: sharedFrameRegistryFactory(frames.address),

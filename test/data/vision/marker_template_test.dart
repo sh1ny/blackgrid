@@ -13,8 +13,7 @@ const _jsonPath = 'data/vision/marker/inspection_marker.json';
 
 String _sha(List<int> bytes) => sha256.convert(bytes).toString();
 
-/// A runtime directory holding only the marker files and a manifest binding
-/// them with their current hashes.
+/// A runtime directory holding both templates and a manifest binding them.
 class _Runtime {
   _Runtime() : dir = Directory.systemTemp.createTempSync('bg_marker_load') {
     write(
@@ -27,6 +26,8 @@ class _Runtime {
         jsonEncode({'format': 1, 'width': 28, 'height': 28, 'stride': 28}),
       ),
     );
+    write(firGrayPath, File('assets/vision/fir/inspection_fir.gray').readAsBytesSync());
+    write(firMetadataPath, File('assets/vision/fir/inspection_fir.json').readAsBytesSync());
     writeManifest();
   }
 
@@ -41,7 +42,7 @@ class _Runtime {
   }
 
   /// Binds the files as they are now, listing only [only] when given.
-  void writeManifest({List<String> only = const [_grayPath, _jsonPath]}) {
+  void writeManifest({List<String> only = const [_grayPath, _jsonPath, firGrayPath, firMetadataPath]}) {
     write(
       'data/vision/runtime.manifest.json',
       utf8.encode(
@@ -71,9 +72,10 @@ void main() {
   tearDown(() => runtime.dispose());
 
   test('intact bundle yields a 28x28 template bound by the manifest', () {
-    final result = loadMarkerTemplate(runtime.root);
-    expect(result, isA<MarkerTemplateLoaded>());
-    final template = (result as MarkerTemplateLoaded).template;
+    final result = loadInspectionTemplates(runtime.root);
+    expect(result, isA<InspectionTemplatesLoaded>());
+    final template = (result as InspectionTemplatesLoaded).templates
+        .singleWhere((template) => template.name == markerTemplateName);
     expect(template, isA<VisionTemplate>());
     expect(template.name, 'inspectionMarker');
     final image = template.image;
@@ -94,47 +96,47 @@ void main() {
       ),
     );
     runtime.writeManifest();
-    final result = loadMarkerTemplate(runtime.root);
-    expect(result, isA<MarkerTemplateInvalid>());
-    expect((result as MarkerTemplateInvalid).path, endsWith(_grayPath));
+    final result = loadInspectionTemplates(runtime.root);
+    expect(result, isA<InspectionTemplatesInvalid>());
+    expect((result as InspectionTemplatesInvalid).path, endsWith(_grayPath));
   });
 
   test('pixel byte count other than 784 is invalidTemplate', () {
     runtime.write(_grayPath, List.filled(783, 7)..[0] = 1);
     runtime.writeManifest();
-    final result = loadMarkerTemplate(runtime.root);
-    expect(result, isA<MarkerTemplateInvalid>());
+    final result = loadInspectionTemplates(runtime.root);
+    expect(result, isA<InspectionTemplatesInvalid>());
   });
 
   test('flat template is invalidTemplate', () {
     runtime.write(_grayPath, List.filled(784, 9));
     runtime.writeManifest();
-    final result = loadMarkerTemplate(runtime.root);
-    expect(result, isA<MarkerTemplateInvalid>());
-    expect((result as MarkerTemplateInvalid).reason, contains('variance'));
+    final result = loadInspectionTemplates(runtime.root);
+    expect(result, isA<InspectionTemplatesInvalid>());
+    expect((result as InspectionTemplatesInvalid).reason, contains('variance'));
   });
 
   test('altered byte is hashMismatch naming the template', () {
     final bytes = File('${runtime.root}/$_grayPath').readAsBytesSync();
     runtime.write(_grayPath, [...bytes.take(783), bytes.last ^ 1]);
-    final result = loadMarkerTemplate(runtime.root);
-    final failure = (result as MarkerTemplateUnavailable).failure;
+    final result = loadInspectionTemplates(runtime.root);
+    final failure = (result as InspectionTemplatesUnavailable).failure;
     expect(failure, isA<VisionHashMismatch>());
     expect((failure as VisionHashMismatch).path, endsWith(_grayPath));
   });
 
   test('metadata absent from the manifest is missingFile', () {
     runtime.writeManifest(only: const [_grayPath]);
-    final result = loadMarkerTemplate(runtime.root);
-    final failure = (result as MarkerTemplateUnavailable).failure;
+    final result = loadInspectionTemplates(runtime.root);
+    final failure = (result as InspectionTemplatesUnavailable).failure;
     expect(failure, isA<VisionMissingFile>());
     expect((failure as VisionMissingFile).path, endsWith(_jsonPath));
   });
 
   test('deleted template file is missingFile', () {
     File('${runtime.root}/$_grayPath').deleteSync();
-    final result = loadMarkerTemplate(runtime.root);
-    final failure = (result as MarkerTemplateUnavailable).failure;
+    final result = loadInspectionTemplates(runtime.root);
+    final failure = (result as InspectionTemplatesUnavailable).failure;
     expect(failure, isA<VisionMissingFile>());
     expect((failure as VisionMissingFile).path, endsWith(_grayPath));
   });
