@@ -259,8 +259,25 @@ abstract final class ProgressEventCodec {
   /// Validates a nonempty identity's canonical JSON token size.
   ///
   /// The same budget applies to event, device, cycle, target and undo IDs.
+  /// Identities must be well-formed Unicode so UTF-8 persistence preserves
+  /// their exact content; unpaired UTF-16 surrogates are rejected, not replaced.
   static void validateIdentity(String value) {
     _validateToken(value, progressIdentityTokenLimit);
+    for (var i = 0; i < value.length; i++) {
+      final unit = value.codeUnitAt(i);
+      if (unit >= 0xD800 && unit <= 0xDBFF) {
+        i++;
+        if (i >= value.length) {
+          throw const FormatException('Unpaired surrogate in identity');
+        }
+        final next = value.codeUnitAt(i);
+        if (next < 0xDC00 || next > 0xDFFF) {
+          throw const FormatException('Unpaired surrogate in identity');
+        }
+      } else if (unit >= 0xDC00 && unit <= 0xDFFF) {
+        throw const FormatException('Unpaired surrogate in identity');
+      }
+    }
   }
 
   /// Encodes a validated event in fixed field order.

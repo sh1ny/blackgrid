@@ -463,4 +463,59 @@ void main() {
       unicode,
     );
   });
+
+  test(
+    'all identity fields reject unpaired surrogates without normalization',
+    () {
+      for (final invalid in [
+        String.fromCharCode(0xD800),
+        String.fromCharCode(0xDC00),
+        String.fromCharCodes([0xD800, 0x61]),
+      ]) {
+        for (final event in [
+          _event(eventId: invalid),
+          _event(deviceId: invalid),
+          _event(
+            scope: ProgressScope(mode: GameMode.pvp, cycleId: invalid),
+          ),
+          _event(
+            target: ProgressTarget(
+              kind: ProgressEntityKind.task,
+              id: invalid,
+              field: ProgressField.state,
+            ),
+          ),
+          _event(undoOf: invalid),
+        ]) {
+          expect(() => ProgressEventCodec.encode(event), throwsFormatException);
+        }
+        final raw = jsonDecode(
+          ProgressEventCodec.encode(_event()),
+        ) as Map<String, dynamic>;
+        raw['deviceId'] = invalid;
+        expect(
+          () => ProgressEventCodec.decode(jsonEncode(raw)),
+          throwsFormatException,
+        );
+      }
+      final valid = _event(
+        eventId: 'event-\u{1F600}',
+        deviceId: 'device-\u{1F600}',
+        scope: const ProgressScope(
+          mode: GameMode.pvp,
+          cycleId: 'cycle-\u{1F600}',
+        ),
+        target: const ProgressTarget(
+          kind: ProgressEntityKind.task,
+          id: 'task-\u{1F600}',
+          field: ProgressField.state,
+        ),
+        undoOf: 'undo-\u{1F600}',
+      );
+      expect(
+        ProgressEventCodec.decode(ProgressEventCodec.encode(valid)),
+        valid,
+      );
+    },
+  );
 }

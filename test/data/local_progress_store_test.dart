@@ -1017,4 +1017,70 @@ void main() {
       expect(undo.value, bmp.value);
     },
   );
+
+  test('malformed Unicode identities reject atomically and valid pairs survive reopen', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'progress-unicode-',
+    );
+    final file = File('${directory.path}/progress.sqlite');
+    var identity = 0;
+    var db = BlackgridDatabase(
+      NativeDatabase(file),
+      progressIdGenerator: () => 'local-\u{1F600}-${identity++}',
+    );
+    addTearDown(() async {
+      await db.close();
+      await directory.delete(recursive: true);
+    });
+    LocalProgressStore store = db;
+    final device = _success(await store.progressDeviceId());
+    final scope = _success(await store.createProgressCycle(GameMode.pvp)).scope;
+    final baseline = _event(scope, 'baseline');
+    _success(await store.appendProgressEvents(scope, [baseline]));
+    final before = await _snapshot(db);
+    for (final invalid in [
+      String.fromCharCode(0xD800),
+      String.fromCharCode(0xDC00),
+    ]) {
+      _failure<ProgressAppendResult, ProgressInvalidInput>(
+        await store.appendProgressEvents(scope, [
+          _event(scope, 'valid-new'),
+          _event(scope, 'invalid', device: invalid),
+        ]),
+      );
+      expect(await _snapshot(db), before);
+    }
+    final valid = _event(
+      scope,
+      'event-\u{1F600}',
+      device: 'origin-\u{1F600}',
+      target: 'objective-\u{1F600}',
+      time: 2,
+      value: 9,
+    );
+    _success(await store.appendProgressEvents(scope, [valid]));
+    final undo = _success(
+      await store.undoProgress(
+        scope,
+        targetEventId: valid.eventId,
+        requestEventId: 'undo-\u{1F600}',
+      ),
+    );
+    expect(undo.undoOf, valid.eventId);
+    expect(undo.value, const ProgressUnset());
+    await db.close();
+    db = BlackgridDatabase(NativeDatabase(file));
+    store = db;
+    expect(_success(await store.progressDeviceId()), device);
+    _success(await store.openProgressCycle(scope));
+    expect(_success(await store.readProgressHistory(scope)).events, [
+      baseline,
+      valid,
+      undo,
+    ]);
+    expect(_success(await store.readProgressCurrent(scope)).events.toSet(), {
+      baseline,
+      undo,
+    });
+  });
 }
