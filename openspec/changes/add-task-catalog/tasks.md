@@ -104,8 +104,8 @@ Paths:
 
 ## 5. Integration check
 
-- [ ] 5.1 Run `mise run analyze`, `mise run test` (root and package suites) and `mise run release-notes -- --check openspec/changes/add-task-catalog/proposal.md`. All must exit 0. Confirm every test map row is green or `n/a`.
-- [ ] 5.2 Re-run `openspec validate add-task-catalog --strict`. It must report the change valid.
+- [x] 5.1 Run `mise run analyze`, `mise run test` (root and package suites) and `mise run release-notes -- --check openspec/changes/add-task-catalog/proposal.md`. All must exit 0. Confirm every test map row is green or `n/a`.
+- [x] 5.2 Re-run `openspec validate add-task-catalog --strict`. It must report the change valid.
 
 ## Workflow follow-up
 
