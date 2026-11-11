@@ -64,8 +64,8 @@ Paths:
 
 ## 2. Task and hideout model with its stored form (package)
 
-- [ ] 2.1 Write failing round-trip tests in `P/progress_catalog_json_test.dart`. Cover every model class and every `ObjectiveFacts` subtype, including `null` versus `[]` lists and unknown enums with raw strings. Also cover `ProgressCatalog.fromJson` throwing `FormatException` for `formatVersion` other than 1 and for wrong-typed stored fields.
-- [ ] 2.2 Implement the immutable model (D2) in `packages/blackgrid_progress/lib/src/`:
+- [x] 2.1 Write failing round-trip tests in `P/progress_catalog_json_test.dart`. Cover every model class and every `ObjectiveFacts` subtype, including `null` versus `[]` lists and unknown enums with raw strings. Also cover `ProgressCatalog.fromJson` throwing `FormatException` for `formatVersion` other than 1 and for wrong-typed stored fields.
+- [x] 2.2 Implement the immutable model (D2) in `packages/blackgrid_progress/lib/src/`:
   - `ProgressCatalog`, with derived indexes (tasks by ID, stations by ID, shared objective IDs);
   - `CatalogTask`, `TaskPrerequisite`, `TaskAlternative`, `FailCondition`, `TraderRequirement`, `TaskObjective` and the `sealed ObjectiveFacts` (`ItemFacts`, `QuestItemFacts`, `TaskStatusFacts`, `TraderLevelFacts`, `TraderStandingFacts`, `SkillFacts`, `NoFacts`);
   - `HideoutStation`, `StationLevel`, `StationRequirement`, `SkillRequirement`;
