@@ -78,7 +78,8 @@ class _Rig {
     closeTimeout: const Duration(seconds: 5),
     waiter: immediateScanWaiter,
     templatesLoader: (_) async => InspectionTemplatesLoaded([
-      _marker, VisionTemplate(firTemplateName, _marker.image),
+      _marker,
+      VisionTemplate(firTemplateName, _marker.image),
     ]),
     captureFactory: () {
       final capture = FakeScanCapture(events);

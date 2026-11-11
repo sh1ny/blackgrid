@@ -419,7 +419,10 @@ void executeSelfCheckSteps(
         final templates = loadInspectionTemplates(runtimeDirectory);
         switch (templates) {
           case InspectionTemplatesLoaded():
-            pass('verify', 'manifest, file hashes and inspection templates verified');
+            pass(
+              'verify',
+              'manifest, file hashes and inspection templates verified',
+            );
           case InspectionTemplatesUnavailable(:final failure):
             fail('verify', _failureKind(failure), failure.message);
           case InspectionTemplatesInvalid(:final message):

@@ -406,18 +406,19 @@ ScanFailure scanFailureFromVisionStart(VisionStartFailure failure) {
 }
 
 /// Maps an inspection asset load to its failure, or null when it loaded.
-ScanFailure? scanFailureFromInspectionTemplates(InspectionTemplatesResult result) =>
-    switch (result) {
-      InspectionTemplatesLoaded() => null,
-      InspectionTemplatesUnavailable(:final failure) => ScanFailure(
-        ScanFailureCode.markerTemplateUnavailable,
-        failure.message,
-      ),
-      InspectionTemplatesInvalid(:final message) => ScanFailure(
-        ScanFailureCode.markerTemplateInvalid,
-        message,
-      ),
-    };
+ScanFailure? scanFailureFromInspectionTemplates(
+  InspectionTemplatesResult result,
+) => switch (result) {
+  InspectionTemplatesLoaded() => null,
+  InspectionTemplatesUnavailable(:final failure) => ScanFailure(
+    ScanFailureCode.markerTemplateUnavailable,
+    failure.message,
+  ),
+  InspectionTemplatesInvalid(:final message) => ScanFailure(
+    ScanFailureCode.markerTemplateInvalid,
+    message,
+  ),
+};
 
 /// QPC stamps of one pass, on the trigger and capture clock. A stage the pass
 /// did not reach is null, never zero.
@@ -1221,8 +1222,9 @@ typedef ScanMatcher = Future<RecognitionOutcome<InspectionEvidence>> Function(
 });
 
 /// Loads the inspection templates in one `Isolate.run`.
-Future<InspectionTemplatesResult> loadInspectionTemplatesOffUi(String runtimeDirectory) =>
-    Isolate.run(() => loadInspectionTemplates(runtimeDirectory));
+Future<InspectionTemplatesResult> loadInspectionTemplatesOffUi(
+  String runtimeDirectory,
+) => Isolate.run(() => loadInspectionTemplates(runtimeDirectory));
 
 /// The default [ScanIndexBuilder].
 Future<TitleMatchIndex> buildScanIndex(CatalogSnapshot snapshot) =>
@@ -2215,7 +2217,10 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     // 1. Both inspection templates, in one Isolate.run.
     final InspectionTemplatesResult? loaded;
     try {
-      loaded = (await _unlessCancelled(a, _templatesLoader(runtimeDirectory)))?.$1;
+      loaded = (await _unlessCancelled(
+        a,
+        _templatesLoader(runtimeDirectory),
+      ))?.$1;
     } on Object catch (error) {
       await _fail(
         a,

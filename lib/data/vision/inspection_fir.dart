@@ -48,8 +48,8 @@ final class InspectionFirReading {
   FirState get value => switch (reason) {
     InspectionFirReason.iconFound => FirState.yes,
     InspectionFirReason.iconAbsent => FirState.no,
-    InspectionFirReason.cornerCutOff || InspectionFirReason.cornerUnreadable =>
-      FirState.unknown,
+    InspectionFirReason.cornerCutOff ||
+    InspectionFirReason.cornerUnreadable => FirState.unknown,
   };
 }
 
@@ -69,7 +69,12 @@ TitleRegion planInspectionFirRegion({
   final top = markerY + (275 * scale).floor();
   final right = markerX + (80 * scale).floor();
   final bottom = markerY + (330 * scale).floor();
-  return TitleRegion(x: left, y: top, width: right - left, height: bottom - top);
+  return TitleRegion(
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  );
 }
 
 /// Reads one corner using BGR colour guards and the supplied NCC operation.
@@ -93,23 +98,34 @@ InspectionFirReading readInspectionFir({
     return const InspectionFirReading(reason: unreadable);
   }
   final region = planInspectionFirRegion(
-    markerX: markerX, markerY: markerY, scale: scale,
+    markerX: markerX,
+    markerY: markerY,
+    scale: scale,
   );
   InspectionFirReading unknown([double? score]) => InspectionFirReading(
-    reason: unreadable, searchedRegion: region, score: score,
+    reason: unreadable,
+    searchedRegion: region,
+    score: score,
   );
   final side = (21 * scale).truncate();
-  if (side < 2 || side > region.width || side > region.height ||
-      frame.validate() != null || gray.validate() != null ||
-      frame.channels < 3 || gray.channels != 1 ||
-      frame.width != gray.width || frame.height != gray.height) {
+  if (side < 2 ||
+      side > region.width ||
+      side > region.height ||
+      frame.validate() != null ||
+      gray.validate() != null ||
+      frame.channels < 3 ||
+      gray.channels != 1 ||
+      frame.width != gray.width ||
+      frame.height != gray.height) {
     return unknown();
   }
-  if (region.x < 0 || region.y < 0 ||
+  if (region.x < 0 ||
+      region.y < 0 ||
       region.x + region.width > frame.width ||
       region.y + region.height > frame.height) {
     return InspectionFirReading(
-      reason: InspectionFirReason.cornerCutOff, searchedRegion: region,
+      reason: InspectionFirReason.cornerCutOff,
+      searchedRegion: region,
     );
   }
 
@@ -124,6 +140,7 @@ InspectionFirReading readInspectionFir({
     }
     return true;
   }
+
   for (final x in const [60, 65, 70, 75]) {
     for (final y in const [318, 319, 320]) {
       if (!cue(px(x), py(y), 0, 12)) return unknown();
@@ -140,6 +157,7 @@ InspectionFirReading readInspectionFir({
     final r = frame.bytes[index + 2];
     return r > 110 && g > 90 && b < 0.8 * g && r > 1.4 * b;
   }
+
   final witnessThreshold = math.max(1, (2 * scale * scale).floor());
   var witness = 0;
   for (var y = py(280); y < py(318) && witness < witnessThreshold; y++) {
@@ -171,7 +189,9 @@ InspectionFirReading readInspectionFir({
   if (uniformlyDark) {
     if (hasResidualGold()) return unknown();
     return InspectionFirReading(
-      reason: InspectionFirReason.iconAbsent, searchedRegion: region, score: 0,
+      reason: InspectionFirReason.iconAbsent,
+      searchedRegion: region,
+      score: 0,
     );
   }
 
@@ -179,17 +199,23 @@ InspectionFirReading readInspectionFir({
   if (result == null) return unknown();
   final score = result.score;
   if (!score.isFinite) return unknown();
-  if (result.x < 0 || result.y < 0 ||
-      result.x + side > region.width || result.y + side > region.height) {
+  if (result.x < 0 ||
+      result.y < 0 ||
+      result.x + side > region.width ||
+      result.y + side > region.height) {
     return unknown(score);
   }
   if (score >= 0.82) {
     return InspectionFirReading(
-      reason: InspectionFirReason.iconFound, searchedRegion: region, score: score,
+      reason: InspectionFirReason.iconFound,
+      searchedRegion: region,
+      score: score,
     );
   }
   if (score > 0.60 || hasResidualGold()) return unknown(score);
   return InspectionFirReading(
-    reason: InspectionFirReason.iconAbsent, searchedRegion: region, score: score,
+    reason: InspectionFirReason.iconAbsent,
+    searchedRegion: region,
+    score: score,
   );
 }

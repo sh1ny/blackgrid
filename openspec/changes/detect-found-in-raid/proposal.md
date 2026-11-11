@@ -57,3 +57,4 @@ Accepted item scans fill Found in raid from the inspection picture, with a manua
 ### Changed
 
 - The targeted screen region includes more of the inspection picture. Returning to the latest scan restores its detected Found in raid value and clears the old manual override.
+- Accepted scans use only the winning inspection's Found in raid reading. Refreshing data preserves its detection and any manual override without changing the recorded acceptance verdict.

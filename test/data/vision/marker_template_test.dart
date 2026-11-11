@@ -26,8 +26,14 @@ class _Runtime {
         jsonEncode({'format': 1, 'width': 28, 'height': 28, 'stride': 28}),
       ),
     );
-    write(firGrayPath, File('assets/vision/fir/inspection_fir.gray').readAsBytesSync());
-    write(firMetadataPath, File('assets/vision/fir/inspection_fir.json').readAsBytesSync());
+    write(
+      firGrayPath,
+      File('assets/vision/fir/inspection_fir.gray').readAsBytesSync(),
+    );
+    write(
+      firMetadataPath,
+      File('assets/vision/fir/inspection_fir.json').readAsBytesSync(),
+    );
     writeManifest();
   }
 
@@ -42,7 +48,14 @@ class _Runtime {
   }
 
   /// Binds the files as they are now, listing only [only] when given.
-  void writeManifest({List<String> only = const [_grayPath, _jsonPath, firGrayPath, firMetadataPath]}) {
+  void writeManifest({
+    List<String> only = const [
+      _grayPath,
+      _jsonPath,
+      firGrayPath,
+      firMetadataPath,
+    ],
+  }) {
     write(
       'data/vision/runtime.manifest.json',
       utf8.encode(

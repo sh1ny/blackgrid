@@ -27,12 +27,18 @@ Uint8List cropFirTemplate(
   required int width,
   required int height,
 }) {
-  if (clientWidth <= 0 || clientHeight <= 0 ||
-      image.width != clientWidth || image.height != clientHeight) {
+  if (clientWidth <= 0 ||
+      clientHeight <= 0 ||
+      image.width != clientWidth ||
+      image.height != clientHeight) {
     throw ArgumentError('client geometry does not match the source image');
   }
-  if (width != 28 || height != 28 || x < 0 || y < 0 ||
-      x > image.width - width || y > image.height - height) {
+  if (width != 28 ||
+      height != 28 ||
+      x < 0 ||
+      y < 0 ||
+      x > image.width - width ||
+      y > image.height - height) {
     throw ArgumentError('crop must be a 28x28 rectangle inside the client');
   }
   final gray = Uint8List(width * height);
@@ -40,7 +46,9 @@ Uint8List cropFirTemplate(
     for (var column = 0; column < width; column++) {
       final pixel = image.getPixel(x + column, y + row);
       gray[row * width + column] = lumaOf(
-        pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt(),
+        pixel.r.toInt(),
+        pixel.g.toInt(),
+        pixel.b.toInt(),
       );
     }
   }
@@ -63,9 +71,12 @@ int run(List<String> args, {StringSink? out, StringSink? err}) {
         return 2;
       }
       switch (arg) {
-        case '--crop': crop = args[i];
-        case '--client': client = args[i];
-        case '--out': outDir = args[i];
+        case '--crop':
+          crop = args[i];
+        case '--client':
+          client = args[i];
+        case '--out':
+          outDir = args[i];
       }
     } else if (arg.startsWith('-') || source != null) {
       errors.writeln('error: unexpected argument $arg');
@@ -76,9 +87,14 @@ int run(List<String> args, {StringSink? out, StringSink? err}) {
   }
   final cropParts = crop.split(',').map(int.tryParse).toList();
   final clientParts = client.split(',').map(int.tryParse).toList();
-  if (source == null || cropParts.length != 4 || clientParts.length != 2 ||
-      cropParts.contains(null) || clientParts.contains(null)) {
-    errors.writeln('error: supply source, --crop x,y,width,height and --client width,height');
+  if (source == null ||
+      cropParts.length != 4 ||
+      clientParts.length != 2 ||
+      cropParts.contains(null) ||
+      clientParts.contains(null)) {
+    errors.writeln(
+      'error: supply source, --crop x,y,width,height and --client width,height',
+    );
     return 2;
   }
   final File file = File(source);
@@ -108,19 +124,31 @@ int run(List<String> args, {StringSink? out, StringSink? err}) {
   final clientHeight = clientParts[1]!;
   final Uint8List gray;
   try {
-    gray = cropFirTemplate(image, clientWidth: clientWidth,
-      clientHeight: clientHeight, x: x, y: y, width: width, height: height);
+    gray = cropFirTemplate(
+      image,
+      clientWidth: clientWidth,
+      clientHeight: clientHeight,
+      x: x,
+      y: y,
+      width: width,
+      height: height,
+    );
   } on ArgumentError catch (error) {
     errors.writeln('error: $error');
     return 1;
   }
   final metadata = <String, Object>{
-    'format': 1, 'width': width, 'height': height, 'stride': width,
-    'sourceWidth': image.width, 'sourceHeight': image.height,
+    'format': 1,
+    'width': width,
+    'height': height,
+    'stride': width,
+    'sourceWidth': image.width,
+    'sourceHeight': image.height,
     'client': {'width': clientWidth, 'height': clientHeight},
     'crop': {'x': x, 'y': y, 'width': width, 'height': height},
     'sourceSha256': sha256.convert(bytes).toString(),
-    'grayscale': 'opencv-bgr2gray-fixed-point', 'recipe': firRecipe,
+    'grayscale': 'opencv-bgr2gray-fixed-point',
+    'recipe': firRecipe,
   };
   final grayPath = '$outDir/inspection_fir.gray';
   final metadataPath = '$outDir/inspection_fir.json';
@@ -133,7 +161,10 @@ int run(List<String> args, {StringSink? out, StringSink? err}) {
   }
   Directory(outDir).createSync(recursive: true);
   writeBytesViaTemp(grayPath, gray);
-  writeViaTemp(metadataPath, '${const JsonEncoder.withIndent('  ').convert(metadata)}\n');
+  writeViaTemp(
+    metadataPath,
+    '${const JsonEncoder.withIndent('  ').convert(metadata)}\n',
+  );
   output.writeln('wrote 28x28 FIR template at ($x,$y) to $outDir');
   return 0;
 }

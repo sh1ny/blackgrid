@@ -17,18 +17,30 @@ class _Runtime {
     final pixels = [for (var i = 0; i < 784; i++) i % 251];
     write(markerGray, pixels);
     write(firGray, pixels.reversed.toList());
-    write(markerJson, utf8.encode(jsonEncode({
-      'format': 1, 'width': 28, 'height': 28, 'stride': 28,
-    })));
-    write(firJson, utf8.encode(jsonEncode({
-      'format': 1, 'width': 28, 'height': 28, 'stride': 28,
-      'sourceWidth': 3440, 'sourceHeight': 1440,
-      'client': {'width': 3440, 'height': 1440},
-      'crop': {'x': 1199, 'y': 732, 'width': 28, 'height': 28},
-      'sourceSha256': '0d5fbdccd97c07c5b9a82c97633059325c9142cbab27953c024c868c93e2169b',
-      'grayscale': 'opencv-bgr2gray-fixed-point',
-      'recipe': 'inspection-fir-v1',
-    })));
+    write(
+      markerJson,
+      utf8.encode(
+        jsonEncode({'format': 1, 'width': 28, 'height': 28, 'stride': 28}),
+      ),
+    );
+    write(
+      firJson,
+      utf8.encode(
+        jsonEncode({
+          'format': 1,
+          'width': 28,
+          'height': 28,
+          'stride': 28,
+          'sourceWidth': 3440,
+          'sourceHeight': 1440,
+          'client': {'width': 3440, 'height': 1440},
+          'crop': {'x': 1199, 'y': 732, 'width': 28, 'height': 28},
+          'sourceSha256': '0d5fbdccd97c07c5b9a82c97633059325c9142cbab27953c024c868c93e2169b',
+          'grayscale': 'opencv-bgr2gray-fixed-point',
+          'recipe': 'inspection-fir-v1',
+        }),
+      ),
+    );
     bind();
   }
 
@@ -39,15 +51,28 @@ class _Runtime {
     final target = file(path)..parent.createSync(recursive: true);
     target.writeAsBytesSync(bytes);
   }
+
   void bind({List<String> included = paths}) {
-    write('data/vision/runtime.manifest.json', utf8.encode(jsonEncode({
-      'format': 1, 'abi': 2, 'engineVersion': '5.0.0',
-      'files': [
-        for (final path in included)
-          if (file(path).existsSync())
-            {'path': path, 'sha256': sha256.convert(file(path).readAsBytesSync()).toString()},
-      ],
-    })));
+    write(
+      'data/vision/runtime.manifest.json',
+      utf8.encode(
+        jsonEncode({
+          'format': 1,
+          'abi': 2,
+          'engineVersion': '5.0.0',
+          'files': [
+            for (final path in included)
+              if (file(path).existsSync())
+                {
+                  'path': path,
+                  'sha256': sha256
+                      .convert(file(path).readAsBytesSync())
+                      .toString(),
+                },
+          ],
+        }),
+      ),
+    );
   }
 }
 
@@ -60,8 +85,10 @@ void main() {
     final result = loadInspectionTemplates(runtime.root);
     expect(result, isA<InspectionTemplatesLoaded>());
     final templates = (result as InspectionTemplatesLoaded).templates;
-    expect(templates.map((template) => template.name),
-        unorderedEquals(['inspectionMarker', 'inspectionFir']));
+    expect(
+      templates.map((template) => template.name),
+      unorderedEquals(['inspectionMarker', 'inspectionFir']),
+    );
     for (final template in templates) {
       expect(template.image.bytes, hasLength(784));
       expect(template.image.bytes.toSet().length, greaterThan(1));
@@ -73,36 +100,64 @@ void main() {
       final original = runtime.file(path).readAsBytesSync();
       runtime.file(path).deleteSync();
       var result = loadInspectionTemplates(runtime.root);
-      expect(result, isA<InspectionTemplatesUnavailable>(), reason: 'missing $path');
+      expect(
+        result,
+        isA<InspectionTemplatesUnavailable>(),
+        reason: 'missing $path',
+      );
       final missing = (result as InspectionTemplatesUnavailable).failure;
       expect(missing, isA<VisionMissingFile>());
       expect((missing as VisionMissingFile).path, endsWith(path));
       runtime.write(path, original);
-      runtime.write(path, [...original.take(original.length - 1), original.last ^ 1]);
+      runtime.write(path, [
+        ...original.take(original.length - 1),
+        original.last ^ 1,
+      ]);
       result = loadInspectionTemplates(runtime.root);
-      expect(result, isA<InspectionTemplatesUnavailable>(), reason: 'hash mismatch $path');
+      expect(
+        result,
+        isA<InspectionTemplatesUnavailable>(),
+        reason: 'hash mismatch $path',
+      );
       final altered = (result as InspectionTemplatesUnavailable).failure;
       expect(altered, isA<VisionHashMismatch>());
       expect((altered as VisionHashMismatch).path, endsWith(path));
       runtime.write(path, original);
       runtime.bind(included: paths.where((item) => item != path).toList());
       result = loadInspectionTemplates(runtime.root);
-      expect(result, isA<InspectionTemplatesUnavailable>(), reason: 'unbound $path');
+      expect(
+        result,
+        isA<InspectionTemplatesUnavailable>(),
+        reason: 'unbound $path',
+      );
       final unbound = (result as InspectionTemplatesUnavailable).failure;
       expect(unbound, isA<VisionMissingFile>());
       expect((unbound as VisionMissingFile).path, endsWith(path));
       runtime.bind();
     }
     final validMetadata = runtime.file(firJson).readAsBytesSync();
-    runtime.write(firJson, utf8.encode(jsonEncode({'format': 1, 'width': 29, 'height': 28, 'stride': 29})));
+    runtime.write(
+      firJson,
+      utf8.encode(
+        jsonEncode({'format': 1, 'width': 29, 'height': 28, 'stride': 29}),
+      ),
+    );
     runtime.bind();
     var result = loadInspectionTemplates(runtime.root);
-    expect(result, isA<InspectionTemplatesInvalid>(), reason: 'metadata disagrees with pixels');
+    expect(
+      result,
+      isA<InspectionTemplatesInvalid>(),
+      reason: 'metadata disagrees with pixels',
+    );
     runtime.write(firJson, validMetadata);
     runtime.write(firGray, List.filled(784, 7));
     runtime.bind();
     result = loadInspectionTemplates(runtime.root);
-    expect(result, isA<InspectionTemplatesInvalid>(), reason: 'flat check template');
+    expect(
+      result,
+      isA<InspectionTemplatesInvalid>(),
+      reason: 'flat check template',
+    );
     runtime.write(firGray, [for (var i = 0; i < 784; i++) (783 - i) % 251]);
     for (final (key, value) in [
       ('recipe', 'other'),
@@ -111,7 +166,8 @@ void main() {
       ('crop', {'x': 3430, 'y': 732, 'width': 28, 'height': 28}),
       ('grayscale', 'unknown'),
     ]) {
-      final meta = jsonDecode(utf8.decode(validMetadata)) as Map<String, dynamic>;
+      final meta =
+          jsonDecode(utf8.decode(validMetadata)) as Map<String, dynamic>;
       meta[key] = value;
       runtime.write(firJson, utf8.encode(jsonEncode(meta)));
       runtime.bind();

@@ -50,7 +50,8 @@ class _Rig {
       scanTemplatesLoader: (directory) async {
         events.add('template');
         return InspectionTemplatesLoaded([
-          _marker, VisionTemplate(firTemplateName, _marker.image),
+          _marker,
+          VisionTemplate(firTemplateName, _marker.image),
         ]);
       },
       scanCaptureFactory: () {

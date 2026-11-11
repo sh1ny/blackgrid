@@ -31,10 +31,11 @@ void main() {
     String client = '3440,1440',
   }) {
     final errors = StringBuffer();
-    final code = fir.run([
-      screenshot.path,
-      '--crop', crop, '--client', client, '--out', out.path,
-    ], out: StringBuffer(), err: errors);
+    final code = fir.run(
+      [screenshot.path, '--crop', crop, '--client', client, '--out', out.path],
+      out: StringBuffer(),
+      err: errors,
+    );
     return (exitCode: code, stderr: errors.toString());
   }
 
@@ -43,8 +44,13 @@ void main() {
     image.setPixelRgb(2, 3, 200, 100, 50);
     image.setPixelRgb(29, 30, 10, 20, 30);
     final pixels = fir.cropFirTemplate(
-      image, clientWidth: 32, clientHeight: 32,
-      x: 2, y: 3, width: 28, height: 28,
+      image,
+      clientWidth: 32,
+      clientHeight: 32,
+      x: 2,
+      y: 3,
+      width: 28,
+      height: 28,
     );
     expect(pixels.first, (200 * 4899 + 100 * 9617 + 50 * 1868 + 8192) >> 14);
     expect(pixels.last, (10 * 4899 + 20 * 9617 + 30 * 1868 + 8192) >> 14);
@@ -67,27 +73,39 @@ void main() {
     final b = Directory('${temp.path}/b');
     final first = generate(a);
     final second = generate(b);
-    expect(first.exitCode, 0, reason: '${first.stderr}');
-    expect(second.exitCode, 0, reason: '${second.stderr}');
+    expect(first.exitCode, 0, reason: first.stderr);
+    expect(second.exitCode, 0, reason: second.stderr);
     final gray = File('${a.path}/inspection_fir.gray').readAsBytesSync();
     expect(gray, File('${b.path}/inspection_fir.gray').readAsBytesSync());
     expect(gray, hasLength(28 * 28));
     for (var y = 0; y < 28; y++) {
       for (var x = 0; x < 28; x++) {
-        final expected = (x * 7 * 4899 + y * 8 * 9617 + (x + y) * 4 * 1868 + 8192) >> 14;
+        final expected =
+            (x * 7 * 4899 + y * 8 * 9617 + (x + y) * 4 * 1868 + 8192) >> 14;
         expect(gray[y * 28 + x], expected, reason: 'pixel $x,$y');
       }
     }
-    final metadataBytes = File('${a.path}/inspection_fir.json').readAsBytesSync();
-    expect(metadataBytes, File('${b.path}/inspection_fir.json').readAsBytesSync());
-    final metadata = jsonDecode(utf8.decode(metadataBytes)) as Map<String, dynamic>;
+    final metadataBytes = File('${a.path}/inspection_fir.json')
+        .readAsBytesSync();
+    expect(
+      metadataBytes,
+      File('${b.path}/inspection_fir.json').readAsBytesSync(),
+    );
+    final metadata =
+        jsonDecode(utf8.decode(metadataBytes)) as Map<String, dynamic>;
     expect(metadata['recipe'], 'inspection-fir-v1');
-    expect(metadata['sourceSha256'], sha256.convert(screenshot.readAsBytesSync()).toString());
+    expect(
+      metadata['sourceSha256'],
+      sha256.convert(screenshot.readAsBytesSync()).toString(),
+    );
     expect((metadata['sourceWidth'], metadata['sourceHeight']), (3440, 1440));
     expect(metadata['client'], {'width': 3440, 'height': 1440});
     expect(metadata['crop'], {'x': 1199, 'y': 732, 'width': 28, 'height': 28});
     expect(metadata['grayscale'], 'opencv-bgr2gray-fixed-point');
-    expect((metadata['width'], metadata['height'], metadata['stride']), (28, 28, 28));
+    expect(
+      (metadata['width'], metadata['height'], metadata['stride']),
+      (28, 28, 28),
+    );
   });
 
   test('incorrect crop or client geometry is rejected without outputs', () {
@@ -98,7 +116,7 @@ void main() {
       final out = Directory('${temp.path}/invalid');
       final result = generate(out, crop: invalid.crop, client: invalid.client);
       expect(result.exitCode, isNot(0));
-      expect('${result.stderr}', anyOf(contains('crop'), contains('client')));
+      expect(result.stderr, anyOf(contains('crop'), contains('client')));
       expect(out.existsSync() && out.listSync().isNotEmpty, isFalse);
     }
   });

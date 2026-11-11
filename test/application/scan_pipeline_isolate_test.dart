@@ -107,7 +107,8 @@ final class _Rig {
       runtimeDirectory: runtimeDir.path,
       closeTimeout: closeTimeout,
       templatesLoader: (_) async => InspectionTemplatesLoaded([
-        marker, VisionTemplate(firTemplateName, marker.image),
+        marker,
+        VisionTemplate(firTemplateName, marker.image),
       ]),
       captureFactory: () {
         final service = CaptureService(

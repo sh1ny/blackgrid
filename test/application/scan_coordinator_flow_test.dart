@@ -66,6 +66,9 @@ InspectionEvidence _ev({
   String text = 'Salewa First Aid Kit',
   double score = 0.93,
   int base = 0,
+  InspectionFirReading fir = const InspectionFirReading(
+    reason: InspectionFirReason.cornerUnreadable,
+  ),
 }) => InspectionEvidence(
   markerScore: score,
   markerX: 10 + base,
@@ -73,6 +76,7 @@ InspectionEvidence _ev({
   titleRect: const TitleRegion(x: 1, y: 2, width: 30, height: 8),
   titleStatus: InspectionTitleStatus.read,
   text: text,
+  fir: fir,
   crop: Uint8List.fromList(List<int>.filled(16, 7)),
   cropWidth: 4,
   cropHeight: 4,
@@ -136,7 +140,10 @@ final class _Rig {
       closeTimeout: const Duration(milliseconds: 500),
       indexBuilder: builder.call,
       matcher: matcher.call,
-      markerLoader: (_) async => MarkerTemplateLoaded(_marker),
+      templatesLoader: (_) async => InspectionTemplatesLoaded([
+        _marker,
+        VisionTemplate(firTemplateName, _marker.image),
+      ]),
       captureFactory: () {
         final created = FakeScanCapture(events);
         captures.add(created);
@@ -394,6 +401,34 @@ void main() {
       expect(rig.logs[0]['end'], 'accepted');
       expect(rig.logs[0]['item'], 'kit');
     });
+
+    test(
+      'accepted unreadable FIR neither rejects nor adds a fallback',
+      () async {
+        await readyRig();
+        rig.fire(1000);
+        (await rig.capture.calls.at(0)).succeed(rig.frames.frame());
+        final evidence = _ev();
+        (await rig.vision.calls.at(0))
+            .deliver(_recognised(InspectionFrameKind.targeted, [evidence]));
+        final match = await rig.matcher.calls.at(0);
+        final title = matchTitle(match.index, evidence.text, GameMode.pvp);
+        expect(title, isA<TitleAccepted>());
+        match.complete(
+          OutcomeAccepted<InspectionEvidence>(title as TitleAccepted, evidence),
+        );
+        final report = await rig.published.at(0);
+        final accepted = report.end as ScanAccepted;
+        expect(accepted.outcome.evidence.fir.value, FirState.unknown);
+        expect(
+          accepted.outcome.evidence.fir.reason,
+          InspectionFirReason.cornerUnreadable,
+        );
+        expect(report.fallback, isNull);
+        expect(rig.capture.calls.length, 1);
+        expect(rig.matcher.calls.length, 1);
+      },
+    );
 
     test('targetNotForeground ends failed without fallback', () async {
       await readyRig();
@@ -1117,6 +1152,9 @@ void main() {
         titleRect: const TitleRegion(x: 1, y: 2, width: 30, height: 8),
         titleStatus: InspectionTitleStatus.read,
         text: 'Salewa First Aid Kit',
+        fir: const InspectionFirReading(
+          reason: InspectionFirReason.cornerUnreadable,
+        ),
         crop: Uint8List.fromList([1, 2, 3, 4]),
         cropWidth: 2,
         cropHeight: 2,

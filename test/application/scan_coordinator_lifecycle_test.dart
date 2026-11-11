@@ -78,7 +78,8 @@ class _Rig {
 
   /// What the marker loader answers next; loaded by default.
   late InspectionTemplatesResult markerResult = InspectionTemplatesLoaded([
-    _marker, VisionTemplate(firTemplateName, _marker.image),
+    _marker,
+    VisionTemplate(firTemplateName, _marker.image),
   ]);
 
   /// Configures each vision service as it is created.
@@ -265,7 +266,10 @@ void main() {
 
   test('invalid marker template is unavailable before any worker', () async {
     rig = await _Rig.create();
-    rig.markerResult = const InspectionTemplatesInvalid('marker.gray', 'bad hash');
+    rig.markerResult = const InspectionTemplatesInvalid(
+      'marker.gray',
+      'bad hash',
+    );
 
     await rig.switchOn();
 
@@ -623,7 +627,8 @@ void main() {
           entered.complete();
           await loading.future;
           return InspectionTemplatesLoaded([
-            _marker, VisionTemplate(firTemplateName, _marker.image),
+            _marker,
+            VisionTemplate(firTemplateName, _marker.image),
           ]);
         },
         captureFactory: () => throw StateError('no worker expected'),

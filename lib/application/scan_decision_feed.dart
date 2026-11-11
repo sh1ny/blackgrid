@@ -110,7 +110,7 @@ class ScanDecisionFeed {
       return;
     }
     if (report case ScanReport(
-      end: ScanAccepted(:final itemId),
+      end: ScanAccepted(:final itemId, :final outcome),
       :final catalogRevision?,
       :final epoch?,
     )) {
@@ -128,6 +128,7 @@ class ScanDecisionFeed {
           mode: mode,
           catalogRevision: catalogRevision,
           epoch: epoch,
+          detectedFir: outcome.evidence.fir,
         ),
       );
       // selectScan sets the scan before its first await, so it is readable

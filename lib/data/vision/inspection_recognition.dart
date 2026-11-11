@@ -10,7 +10,6 @@ import 'dart:typed_data';
 
 import '../../domain/title_matching.dart' show recognitionGates;
 import 'inspection_evidence.dart';
-import 'inspection_fir.dart';
 import 'inspection_geometry.dart';
 import 'inspection_title_crop.dart';
 import 'marker_template.dart' show markerTemplateName, firTemplateName;
@@ -84,7 +83,9 @@ final class InspectionRecognitionJob
     }
     if (!identical(_verifiedFirTemplate, firTemplate.image)) {
       if (!_hasVariance(firTemplate.image)) {
-        throw StateError('Vision template "$firTemplateName" is constant or invalid.');
+        throw StateError(
+          'Vision template "$firTemplateName" is constant or invalid.',
+        );
       }
       _firTemplates.clear();
       _verifiedFirTemplate = firTemplate.image;

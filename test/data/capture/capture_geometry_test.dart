@@ -136,7 +136,9 @@ void main() {
       expect(corner.right, lessThanOrEqualTo(client.right));
       expect(corner.bottom, lessThanOrEqualTo(client.bottom));
 
-      final plan = planned(planTargeted(snapshot(client: client), x: 90, y: 50));
+      final plan = planned(
+        planTargeted(snapshot(client: client), x: 90, y: 50),
+      );
       expect(plan.captured.left, lessThanOrEqualTo(corner.left));
       expect(plan.captured.top, lessThanOrEqualTo(corner.top));
       expect(plan.captured.right, greaterThanOrEqualTo(corner.right));

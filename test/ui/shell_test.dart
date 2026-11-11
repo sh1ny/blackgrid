@@ -194,6 +194,9 @@ void main() {
         mode: GameMode.pvp,
         catalogRevision: revision,
         epoch: _stripEpoch,
+        detectedFir: const InspectionFirReading(
+          reason: InspectionFirReason.cornerUnreadable,
+        ),
       ),
     );
     now = now.add(const Duration(seconds: 12));
@@ -269,6 +272,9 @@ void main() {
         mode: GameMode.pvp,
         catalogRevision: h.services.catalog.snapshot!.revision,
         epoch: _stripEpoch,
+        detectedFir: const InspectionFirReading(
+          reason: InspectionFirReason.cornerUnreadable,
+        ),
       ),
     );
     // Mount the strip alone, with a short injected tick period.
@@ -2025,7 +2031,7 @@ void main() {
 
   testWidgets('footer says live scan is unavailable', (tester) async {
     final ports = ScanFakePorts()
-      ..markerOverride = const MarkerTemplateUnavailable(
+      ..markerOverride = const InspectionTemplatesUnavailable(
         VisionMissingFile('data/vision/inspection_marker.pgm'),
       );
     final h = await pumpM1(tester, scanPorts: ports);

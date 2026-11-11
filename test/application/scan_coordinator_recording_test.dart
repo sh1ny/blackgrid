@@ -18,7 +18,6 @@ import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
-import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/data/vision/inspection_geometry.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_image.dart';
@@ -68,7 +67,9 @@ final _marker = VisionTemplate(
 
 InspectionEvidence _ev({String text = 'Salewa First Aid Kit', double? score}) =>
     InspectionEvidence(
-      fir: const InspectionFirReading(reason: InspectionFirReason.cornerUnreadable),
+      fir: const InspectionFirReading(
+        reason: InspectionFirReason.cornerUnreadable,
+      ),
       markerScore: score ?? 0.93,
       markerX: 10,
       markerY: 20,
@@ -230,7 +231,8 @@ final class _Rig {
       indexBuilder: builder.call,
       matcher: matcher.call,
       templatesLoader: (_) async => InspectionTemplatesLoaded([
-        _marker, VisionTemplate(firTemplateName, _marker.image),
+        _marker,
+        VisionTemplate(firTemplateName, _marker.image),
       ]),
       captureFactory: () {
         final created = FakeScanCapture(events);

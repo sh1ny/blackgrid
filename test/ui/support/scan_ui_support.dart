@@ -12,7 +12,6 @@ import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/scan_timing_log.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
-import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/data/vision/inspection_geometry.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_image.dart';
@@ -191,29 +190,18 @@ final class ScanFakePorts {
   FakeScanPlatform? platform;
 
   /// The marker template loader.
-  Future<InspectionTemplatesResult> markerLoader(String directory) async =>
-      InspectionTemplatesLoaded([
-        VisionTemplate(
-          markerTemplateName,
-          VisionImage(
-            Uint8List(1),
-            width: 1,
-            height: 1,
-            stride: 1,
-            channels: 1,
-          ),
-        ),
-        VisionTemplate(
-          firTemplateName,
-          VisionImage(
-            Uint8List(1),
-            width: 1,
-            height: 1,
-            stride: 1,
-            channels: 1,
-          ),
-        ),
-      ]);
+  Future<InspectionTemplatesResult> markerLoader(
+    String directory,
+  ) async => InspectionTemplatesLoaded([
+    VisionTemplate(
+      markerTemplateName,
+      VisionImage(Uint8List(1), width: 1, height: 1, stride: 1, channels: 1),
+    ),
+    VisionTemplate(
+      firTemplateName,
+      VisionImage(Uint8List(1), width: 1, height: 1, stride: 1, channels: 1),
+    ),
+  ]);
 
   /// What the marker loader answers instead, when set.
   InspectionTemplatesResult? markerOverride;

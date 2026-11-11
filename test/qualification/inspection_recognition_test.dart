@@ -126,7 +126,9 @@ VisionImage _syntheticFrame({
 Future<InspectionRecognition> _recognise(String bundle) async {
   final loaded = loadInspectionTemplates(bundle);
   if (loaded is! InspectionTemplatesLoaded) fail('marker template: $loaded');
-  final template = loaded.templates.singleWhere((item) => item.name == markerTemplateName);
+  final template = loaded.templates.singleWhere(
+    (item) => item.name == markerTemplateName,
+  );
   final scale = processingScale(_clientWidth, _clientHeight);
   final side = scaledTemplateSize(scale);
 

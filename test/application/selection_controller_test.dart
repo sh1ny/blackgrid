@@ -4,6 +4,7 @@ import 'package:blackgrid/application/accepted_scan.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/scan_correction.dart';
 import 'package:blackgrid/application/selection_controller.dart';
+import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
@@ -11,11 +12,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:blackgrid/data/database.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/m1_harness.dart';
+
+const _found = InspectionFirReading(reason: InspectionFirReason.iconFound);
+const _absent = InspectionFirReading(reason: InspectionFirReason.iconAbsent);
+const _unreadable = InspectionFirReading(
+  reason: InspectionFirReason.cornerUnreadable,
+);
 
 class _HeldActivityDatabase extends BlackgridDatabase {
   _HeldActivityDatabase() : super(NativeDatabase.memory());
@@ -66,6 +74,7 @@ void main() {
       mode: GameMode.pvp,
       catalogRevision: s.catalog.snapshot!.revision,
       epoch: const ScanEpoch(0, 0),
+      detectedFir: _unreadable,
     );
     expect(
       h.services.history.rows.firstWhere((r) => r.itemId == 'item-b').verdict,
@@ -153,6 +162,60 @@ void main() {
   );
 
   test(
+    'acceptance freezes detected verdict before a held history write',
+    () async {
+      const token = 'PVP_synthetic-fixture-only';
+      final db = _HeldActivityDatabase();
+      final h = M1Harness(
+        database: db,
+        shapeWire: (wire) {
+          (wire['tasks']['data']['tasks'] as Map).clear();
+          (wire['hideout']['data'] as Map).clear();
+          wire['crafts']['data'] = [];
+          wire['barters']['data'] = [];
+          wire['token'] = {
+            'success': true,
+            'permissions': ['GP'],
+            'token': token,
+            'owner': 'synthetic-owner',
+            'note': 'Synthetic',
+            'calls': 0,
+            'gameMode': 'pvp',
+          };
+          wire['progress'] = progressWire();
+        },
+      );
+      addTearDown(h.dispose);
+      h.credentials.values[GameMode.pvp] = token;
+      await h.initialize();
+      await h.services.progress.refresh();
+      final s = h.services.selection;
+      final gate = db.gate = Completer<void>();
+      addTearDown(() {
+        if (!gate.isCompleted) gate.complete();
+      });
+      final pending = s.selectScan(
+        reportId: 1,
+        itemId: 'item-a',
+        mode: GameMode.pvp,
+        catalogRevision: s.catalog.snapshot!.revision,
+        epoch: const ScanEpoch(0, 0),
+        detectedFir: _found,
+      );
+      await db.entered.future;
+      final accepted = s.scan!;
+      expect(accepted.decisionAtAcceptance.recommendation, Recommendation.flea);
+      s.setFir(FirState.no);
+      expect(s.decision!.recommendation, Recommendation.trader);
+      gate.complete();
+      await pending;
+      expect(s.scan, same(accepted));
+      expect(accepted.decisionAtAcceptance.recommendation, Recommendation.flea);
+      expect(h.services.history.rows.single.verdict, Recommendation.flea);
+    },
+  );
+
+  test(
     'local-data-durability: No available decision or failed write',
     () async {
       final h = M1Harness();
@@ -183,6 +246,7 @@ void main() {
   );
   test('manual identity activity persists and FIR resets only on new context, never accepted scan', () async {
     final h = M1Harness();
+    addTearDown(h.dispose);
     await h.initialize();
     final s = h.services.selection;
     s.setQuery('item-a');
@@ -198,12 +262,11 @@ void main() {
     expect(s.fir, FirState.unknown);
     s.setFir(FirState.no);
     await h.services.catalog.refresh();
-    expect(s.fir, FirState.unknown);
+    expect(s.fir, FirState.no);
     s.setFir(FirState.yes);
     await h.services.setMode(GameMode.pve);
     expect(s.fir, FirState.unknown);
     expect(h.services.scans.hasAcceptedScan, isFalse);
-    await h.dispose();
   });
   test('stored PvE history is separate from live PvP and close returns live selection', () async {
     final h = M1Harness();
@@ -229,7 +292,7 @@ void main() {
     expect(h.services.scans.hasAcceptedScan, isFalse);
     await h.dispose();
   });
-  test('same-mode history follows refreshed authority and clears FIR without creating a scan', () async {
+  test('same-mode history follows refreshed authority and preserves FIR without creating a scan', () async {
     final h = M1Harness();
     addTearDown(h.dispose);
     await h.initialize();
@@ -238,7 +301,7 @@ void main() {
     await s.openHistory(h.services.history.rows.single);
     s.setFir(FirState.yes);
     await h.services.catalog.refresh();
-    expect(s.fir, FirState.unknown);
+    expect(s.fir, FirState.yes);
     expect(s.inspectionCatalog, same(h.services.catalog.snapshot));
     expect(s.inspectionMode, GameMode.pvp);
     expect(s.historyRow, isNotNull);
@@ -290,12 +353,17 @@ void main() {
   group('selectScan', () {
     const epoch = ScanEpoch(0, 0);
     var nextReportId = 0;
-    Future<void> scan(SelectionController s, String id) => s.selectScan(
+    Future<void> scan(
+      SelectionController s,
+      String id, {
+      InspectionFirReading detectedFir = _unreadable,
+    }) => s.selectScan(
       reportId: ++nextReportId,
       itemId: id,
       mode: GameMode.pvp,
       catalogRevision: s.catalog.snapshot!.revision,
       epoch: epoch,
+      detectedFir: detectedFir,
     );
 
     test('scan of an item missing from the catalog changes nothing', () async {
@@ -370,23 +438,142 @@ void main() {
       },
     );
 
-    test('FIR resets when the same item is scanned again', () async {
+    test('new same-item scan drops override and uses new detection', () async {
       final h = M1Harness();
       addTearDown(h.dispose);
       await h.initialize();
       final s = h.services.selection;
-      await scan(s, 'item-b');
+      await scan(s, 'item-b', detectedFir: _found);
       s.setFir(FirState.yes);
-      await scan(s, 'item-b');
-      expect(s.fir, FirState.unknown);
+      expect(s.firSource, FirSource.manual);
+      await scan(s, 'item-b', detectedFir: _absent);
+      expect(s.fir, FirState.no);
+      expect(s.detectedFir, same(_absent));
+      expect(s.firOverride, isNull);
+      expect(s.firSource, FirSource.scan);
       expect(
         s.decision!.recommendation,
         s.scan!.decisionAtAcceptance.recommendation,
       );
     });
 
+    test('correction to current item starts manual-only Unknown', () async {
+      final h = M1Harness();
+      addTearDown(h.dispose);
+      await h.initialize();
+      final s = SelectionController(
+        database: h.db,
+        catalog: h.services.catalog,
+        progress: h.services.progress,
+        history: h.services.history,
+        clock: () => fixtureNow,
+        epoch: () => epoch,
+      );
+      addTearDown(s.dispose);
+      await scan(s, 'item-b', detectedFir: _found);
+      s.setFir(FirState.yes);
+      s.offerCorrection(
+        ScanCorrectionOffer(
+          reportId: 99,
+          epoch: epoch,
+          mode: GameMode.pvp,
+          catalogRevision: s.catalog.snapshot!.revision,
+          ocrText: 'item-b',
+          candidates: const [],
+          query: 'item-b',
+        ),
+      );
+      await s.selectCorrection(99, 'item-b');
+      expect(s.fir, FirState.unknown);
+      expect(s.detectedFir, isNull);
+      expect(s.firOverride, isNull);
+      expect(s.firSource, FirSource.unset);
+    });
+
+    test('catalog progress and age refresh preserve FIR override', () async {
+      var now = fixtureNow;
+      final h = M1Harness(clock: () => now);
+      addTearDown(h.dispose);
+      await h.initialize();
+      final s = h.services.selection;
+      await scan(s, 'item-b', detectedFir: _found);
+      s.setFir(FirState.unknown);
+      expect(s.firSource, FirSource.manual);
+      expect(s.firOverride, FirState.unknown);
+      await h.services.catalog.refresh();
+      await h.services.progress.refresh();
+      now = now.add(const Duration(hours: 25));
+      h.services.catalog.updateAge();
+      h.services.progress.updateAge();
+      expect(s.fir, FirState.unknown);
+      expect(s.firOverride, FirState.unknown);
+      expect(s.detectedFir, same(_found));
+      expect(s.firSource, FirSource.manual);
+      s.setFir(FirState.no);
+      await h.services.catalog.refresh();
+      expect(s.fir, FirState.no);
+      expect(s.detectedFir, same(_found));
+      expect(s.firSource, FirSource.manual);
+    });
+
+    test('manual history and restart never inherit scan FIR', () async {
+      final h = M1Harness();
+      addTearDown(h.dispose);
+      await h.initialize();
+      final s = h.services.selection;
+      await scan(s, 'item-b', detectedFir: _found);
+      s.setFir(FirState.no);
+      await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+      expect(s.fir, FirState.unknown);
+      expect(s.firSource, FirSource.unset);
+      expect(s.detectedFir, isNull);
+      s.setFir(FirState.yes);
+      await s.openHistory(h.services.history.rows.first);
+      expect(s.fir, FirState.unknown);
+      expect(s.firSource, FirSource.unset);
+      final reopened = SelectionController(
+        database: h.db,
+        catalog: h.services.catalog,
+        progress: h.services.progress,
+        history: h.services.history,
+      );
+      addTearDown(reopened.dispose);
+      expect(reopened.fir, FirState.unknown);
+      expect(reopened.firSource, FirSource.unset);
+      expect(reopened.detectedFir, isNull);
+      expect(reopened.firOverride, isNull);
+    });
+
     test(
-      'stale Flea quote downgrades the scan to Check, acceptance unchanged',
+      'missing selected item provides no advice or FIR to another item',
+      () async {
+        late Map items;
+        final h = M1Harness(
+          shapeWire: (wire) {
+            items = wire['items']['data']['items'] as Map;
+            (wire['tasks']['data']['tasks'] as Map).clear();
+            (wire['hideout']['data'] as Map).clear();
+            wire['crafts']['data'] = [];
+            wire['barters']['data'] = [];
+          },
+        );
+        addTearDown(h.dispose);
+        await h.initialize();
+        final s = h.services.selection;
+        await scan(s, 'item-b', detectedFir: _found);
+        items.remove('item-b');
+        await h.services.catalog.refresh();
+        expect(s.item, isNull);
+        expect(s.decision, isNull);
+        await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+        expect(s.fir, FirState.unknown);
+        expect(s.detectedFir, isNull);
+        expect(s.firSource, FirSource.unset);
+      },
+    );
+
+    test(
+      'detected-Yes Flea snapshot and history survive price ageing to Check',
       () async {
         var now = fixtureNow;
         const token = 'PVP_synthetic-fixture-only';
@@ -415,21 +602,42 @@ void main() {
         await h.initialize();
         await h.services.progress.refresh();
         final s = h.services.selection;
-        await scan(s, 'item-a');
+        await scan(s, 'item-a', detectedFir: _found);
         final accepted = s.scan!;
         expect(accepted.acceptedAt, fixtureNow);
-        s.setFir(FirState.yes);
-        expect(s.decision!.recommendation, Recommendation.flea);
-        now = fixtureNow.add(const Duration(hours: 1, minutes: 1));
-        s.setFir(FirState.yes);
-        expect(s.decision!.recommendation, Recommendation.check);
-        expect(s.scan, same(accepted));
-        expect(s.scan!.acceptedAt, fixtureNow);
         expect(
-          s.scan!.decisionAtAcceptance.recommendation,
-          isNot(Recommendation.flea),
+          accepted.decisionAtAcceptance.recommendation,
+          Recommendation.flea,
         );
-        expect(s.fir, FirState.yes);
+        final recorded = h.services.history.rows.single;
+        expect(recorded.verdict, Recommendation.flea);
+        expect(s.decision!.recommendation, Recommendation.flea);
+        fakeAsync((async) {
+          final timed = SelectionController(
+            database: h.db,
+            catalog: h.services.catalog,
+            progress: h.services.progress,
+            history: h.services.history,
+            clock: () => now,
+          );
+          try {
+            timed.showScan(accepted);
+            now = fixtureNow.add(const Duration(hours: 1, minutes: 1));
+            async.elapse(const Duration(seconds: 30));
+            expect(timed.decision!.recommendation, Recommendation.check);
+            expect(timed.scan, same(accepted));
+            expect(timed.scan!.acceptedAt, fixtureNow);
+            expect(
+              timed.scan!.decisionAtAcceptance.recommendation,
+              Recommendation.flea,
+            );
+            expect(h.services.history.rows.single.verdict, Recommendation.flea);
+            expect(timed.firSource, FirSource.scan);
+            expect(timed.fir, FirState.yes);
+          } finally {
+            timed.dispose();
+          }
+        });
       },
     );
 
@@ -480,13 +688,17 @@ void main() {
       await h.dispose();
     });
 
-    Future<AcceptedScan> accept(String id) async {
+    Future<AcceptedScan> accept(
+      String id, {
+      InspectionFirReading fir = _unreadable,
+    }) async {
       await s.selectScan(
         reportId: 1,
         itemId: id,
         mode: GameMode.pvp,
         catalogRevision: s.catalog.snapshot!.revision,
         epoch: epoch,
+        detectedFir: fir,
       );
       return s.scan!;
     }
@@ -503,6 +715,7 @@ void main() {
       catalogRevision: of.catalogRevision,
       acceptedAt: of.acceptedAt,
       epoch: epoch ?? of.epoch,
+      detectedFir: of.detectedFir,
       decisionAtAcceptance: of.decisionAtAcceptance,
     );
 
@@ -529,18 +742,35 @@ void main() {
       expect(debugLines, isEmpty);
     });
 
-    test('showScan resets FIR', () async {
+    test(
+      'showScan restores detected FIR and drops previous overrides',
+      () async {
+        final accepted = await accept('item-b', fir: _absent);
+        s.setFir(FirState.yes);
+        await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+        s.setFir(FirState.yes);
+        s.showScan(accepted);
+        expect(s.fir, FirState.no);
+        expect(s.detectedFir, same(_absent));
+        expect(s.firOverride, isNull);
+        expect(s.firSource, FirSource.scan);
+        expect(
+          s.decision!.recommendation,
+          accepted.decisionAtAcceptance.recommendation,
+        );
+      },
+    );
+
+    test('showScan restores immutable unreadable evidence', () async {
       final accepted = await accept('item-b');
       await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
       s.setFir(FirState.yes);
-
       s.showScan(accepted);
-
       expect(s.fir, FirState.unknown);
-      expect(
-        s.decision!.recommendation,
-        accepted.decisionAtAcceptance.recommendation,
-      );
+      expect(s.detectedFir, same(_unreadable));
+      expect(s.detectedFir!.reason, InspectionFirReason.cornerUnreadable);
+      expect(s.firSource, FirSource.scan);
+      expect(s.firOverride, isNull);
     });
 
     test('showScan refuses a stale epoch, mode or missing item', () async {

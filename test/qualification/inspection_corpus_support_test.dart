@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:blackgrid/application/recognition_matcher.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
-import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/data/vision/inspection_geometry.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,7 +36,9 @@ CatalogSnapshot _snapshot() => CatalogSnapshot(
 
 InspectionEvidence _evidence(String text, {double score = 0.9}) =>
     InspectionEvidence(
-      fir: const InspectionFirReading(reason: InspectionFirReason.cornerUnreadable),
+      fir: const InspectionFirReading(
+        reason: InspectionFirReason.cornerUnreadable,
+      ),
       markerScore: score,
       markerX: 1,
       markerY: 2,

@@ -2,11 +2,14 @@ import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/history_controller.dart';
 import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/application/scan_correction.dart';
+import 'package:blackgrid/application/scan_decision_feed.dart';
+import 'package:blackgrid/application/session_scan_state.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/data/database.dart';
+import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/data/tracker_client.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
@@ -21,6 +24,8 @@ import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/m1_harness.dart';
+import 'support/fake_accepted_scan_source.dart';
+import 'support/history_wait.dart';
 
 class _NoStore implements CatalogStore {
   @override
@@ -128,13 +133,35 @@ CatalogSnapshot _catalogSnapshot() => CatalogSnapshot(
   mode: GameMode.pvp,
   revision: 'precedence-revision',
   observedAt: fixtureNow,
-  items: {for (final f in _fixtures) f.id: _item(f)},
+  items: {
+    for (final f in _fixtures) f.id: _item(f),
+    'fir-only': CatalogItem(
+      id: 'fir-only',
+      name: 'FIR only',
+      normalizedName: 'fir only',
+      noFlea: true,
+      sellOffers: const [
+        CashOffer(traderId: 'trader-a', currency: 'RUB', price: 120),
+      ],
+    ),
+  },
   traders: const {
     'trader-a': CatalogTrader(id: 'trader-a', name: 'Synthetic Alpha'),
   },
   requirements: [
     for (final f in _fixtures)
       if (f.needed) _need(f),
+    ItemRequirement(
+      kind: RequirementKind.task,
+      sourceId: 'task-fir-only',
+      sourceName: 'FIR task',
+      id: 'objective-fir-only',
+      itemIds: const ['fir-only'],
+      progressIds: const ['objective-fir-only'],
+      count: 3,
+      foundInRaid: true,
+      gate: _openGate(),
+    ),
   ],
   sourceTimestamps: {for (final key in catalogDatasets) key: fixtureNow},
 );
@@ -143,10 +170,12 @@ ProgressSnapshot _progressSnapshot() => decisionProgress(
   tasks: {
     for (final f in _fixtures)
       if (f.needed) 'task-${f.id}': _activeTask,
+    'task-fir-only': _activeTask,
   },
   objectives: {
     for (final f in _fixtures)
       if (f.needed) 'objective-${f.id}': _remainingObjective,
+    'objective-fir-only': _remainingObjective,
   },
 );
 
@@ -157,6 +186,10 @@ void main() {
   late ProgressController progress;
   late SelectionController selection;
   late CatalogSnapshot snapshot;
+  late HistoryController history;
+  late FakeAcceptedScanSource source;
+  late SessionScanState scans;
+  late ScanDecisionFeed feed;
 
   setUp(() {
     database = BlackgridDatabase(NativeDatabase.memory());
@@ -181,28 +214,46 @@ void main() {
           ..mode = GameMode.pvp
           ..snapshot = _progressSnapshot()
           ..status = ProgressStatus.current;
+    history = HistoryController(database);
     selection = SelectionController(
       database: database,
       catalog: catalog,
       progress: progress,
-      history: HistoryController(database),
+      history: history,
       clock: () => fixtureNow,
+    );
+    source = FakeAcceptedScanSource();
+    scans = SessionScanState();
+    feed = ScanDecisionFeed(
+      source: source,
+      scans: scans,
+      selection: selection,
+      catalog: catalog,
+      epoch: () => epoch,
     );
   });
 
   tearDown(() async {
+    feed.dispose();
+    scans.dispose();
     selection.dispose();
+    history.dispose();
     catalog.dispose();
     progress.dispose();
     await database.close();
   });
 
-  Future<void> scan(String id) => selection.selectScan(
+  Future<void> scan(String id, {bool firYes = false}) => selection.selectScan(
     reportId: 1,
     itemId: id,
     mode: GameMode.pvp,
     catalogRevision: snapshot.revision,
     epoch: epoch,
+    detectedFir: InspectionFirReading(
+      reason: firYes
+          ? InspectionFirReason.iconFound
+          : InspectionFirReason.cornerUnreadable,
+    ),
   );
 
   (Recommendation, List<(String, NeedState, num?, String)>) outcome() {
@@ -237,11 +288,64 @@ void main() {
     expect(d.recommendation, isNot(Recommendation.trader));
   });
 
+  test(
+    'FIR-only quest advice and recorded verdict follow detected Yes No Unknown',
+    () async {
+      final cases = [
+        (
+          InspectionFirReason.iconFound,
+          Recommendation.keep,
+          NeedState.actionable,
+        ),
+        (
+          InspectionFirReason.iconAbsent,
+          Recommendation.trader,
+          NeedState.irrelevant,
+        ),
+        (
+          InspectionFirReason.cornerUnreadable,
+          Recommendation.check,
+          NeedState.unresolved,
+        ),
+      ];
+      var id = 0;
+      for (final (reason, verdict, need) in cases) {
+        source.accept(
+          acceptedScanReport(
+            id: ++id,
+            itemId: 'fir-only',
+            epoch: epoch,
+            fir: InspectionFirReading(reason: reason),
+          ),
+        );
+        final accepted = selection.scan!;
+        expect(
+          selection.decision!.recommendation,
+          verdict,
+          reason: reason.name,
+        );
+        expect(
+          selection.decision!.reasons.single.state,
+          need,
+          reason: reason.name,
+        );
+        expect(
+          accepted.decisionAtAcceptance.recommendation,
+          verdict,
+          reason: reason.name,
+        );
+        await untilRow(
+          history,
+          (row) => row.itemId == 'fir-only' && row.verdict == verdict,
+        );
+        expect(history.rows.single.verdict, verdict, reason: reason.name);
+      }
+    },
+  );
   test('every precedence rule matches the hand-selected decision', () async {
     for (final f in _fixtures) {
-      await scan(f.id);
+      await scan(f.id, firYes: f.firYes);
       expect(selection.scan, isNotNull, reason: f.id);
-      if (f.firYes) selection.setFir(FirState.yes);
       final scanned = outcome();
 
       await selection.selectManual(snapshot.items[f.id]!);

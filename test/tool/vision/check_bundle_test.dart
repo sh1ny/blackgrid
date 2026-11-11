@@ -126,15 +126,24 @@ class _Fixture {
       ),
     );
     write(_firGray, [for (var i = 0; i < 784; i++) (i * 3) % 251]);
-    write(_firJson, utf8.encode(jsonEncode({
-      'format': 1, 'width': 28, 'height': 28, 'stride': 28,
-      'sourceSha256': _screenshotSha,
-      'sourceWidth': 3440, 'sourceHeight': 1440,
-      'client': {'width': 3440, 'height': 1440},
-      'crop': {'x': 1199, 'y': 732, 'width': 28, 'height': 28},
-      'grayscale': 'opencv-bgr2gray-fixed-point',
-      'recipe': 'inspection-fir-v1',
-    })));
+    write(
+      _firJson,
+      utf8.encode(
+        jsonEncode({
+          'format': 1,
+          'width': 28,
+          'height': 28,
+          'stride': 28,
+          'sourceSha256': _screenshotSha,
+          'sourceWidth': 3440,
+          'sourceHeight': 1440,
+          'client': {'width': 3440, 'height': 1440},
+          'crop': {'x': 1199, 'y': 732, 'width': 28, 'height': 28},
+          'grayscale': 'opencv-bgr2gray-fixed-point',
+          'recipe': 'inspection-fir-v1',
+        }),
+      ),
+    );
     write(
       'blackgrid_panel_ocr.dll.sha256',
       utf8.encode(_sha(read('blackgrid_panel_ocr.dll'))),
@@ -478,27 +487,34 @@ void main() {
       File('${missing.bundle.path}/$path').deleteSync();
       final result = await missing.run();
       expect(result.code, isNot(0));
-      expect(_failures(result.report!, 'inventory'), allOf(contains(path), contains('missing')));
+      expect(
+        _failures(result.report!, 'inventory'),
+        allOf(contains(path), contains('missing')),
+      );
     }
   });
 
   test('FIR artwork notice rejects stale hashes and bad provenance', () async {
     final notice = File(fx.noticesPath);
-    notice.writeAsStringSync(notice.readAsStringSync().replaceFirst(
-      _sha(fx.read(_firGray)), '0' * 64,
-    ));
+    notice.writeAsStringSync(
+      notice.readAsStringSync().replaceFirst(_sha(fx.read(_firGray)), '0' * 64),
+    );
     var result = await fx.run();
     expect(result.code, isNot(0));
     expect(_failures(result.report!, 'notices'), contains(_firGray));
 
-    final metadata = jsonDecode(utf8.decode(fx.read(_firJson))) as Map<String, dynamic>;
+    final metadata =
+        jsonDecode(utf8.decode(fx.read(_firJson))) as Map<String, dynamic>;
     metadata['crop'] = {'x': 3430, 'y': 732, 'width': 28, 'height': 28};
     fx.write(_firJson, utf8.encode(jsonEncode(metadata)));
     fx.writeManifest();
     fx.writeLockAndNotices();
     result = await fx.run();
     expect(result.code, isNot(0));
-    expect(_failures(result.report!, 'notices'), allOf(contains(_firJson), contains('crop')));
+    expect(
+      _failures(result.report!, 'notices'),
+      allOf(contains(_firJson), contains('crop')),
+    );
   });
 
   test('hash step fails naming capture library and both hashes', () async {

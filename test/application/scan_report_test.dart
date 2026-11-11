@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/data/capture/capture_snapshot.dart';
 import 'package:blackgrid/data/vision/inspection_evidence.dart';
-import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/data/vision/inspection_geometry.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/title_matching.dart';

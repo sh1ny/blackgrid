@@ -1,5 +1,6 @@
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
+import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -253,6 +254,9 @@ void main() {
         mode: GameMode.pvp,
         catalogRevision: h.services.catalog.snapshot!.revision,
         epoch: const ScanEpoch(0, 0),
+        detectedFir: const InspectionFirReading(
+          reason: InspectionFirReason.cornerUnreadable,
+        ),
       ),
     );
     await tester.pumpAndSettle();

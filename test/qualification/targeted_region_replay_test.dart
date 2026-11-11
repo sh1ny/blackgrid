@@ -105,7 +105,9 @@ void main() {
       final index = await buildTitleMatchIndexOffUi(snapshot);
 
       final loaded = loadInspectionTemplates(bundle);
-      if (loaded is! InspectionTemplatesLoaded) fail('marker template: $loaded');
+      if (loaded is! InspectionTemplatesLoaded) {
+        fail('marker template: $loaded');
+      }
       final service = VisionService<InspectionRequest, InspectionRecognition>(
         runtimeDirectory: bundle,
         jobFactory: inspectionRecognitionJobFactory,

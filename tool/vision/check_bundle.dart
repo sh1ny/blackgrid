@@ -765,8 +765,10 @@ List<String> firProvenanceFailures(Uint8List bytes) {
   if (decoded is! Map) return ['$where: metadata is not an object'];
   final failures = <String>[];
   final sha = decoded['sourceSha256'];
-  if (decoded['format'] != 1 || decoded['width'] != 28 ||
-      decoded['height'] != 28 || decoded['stride'] != 28) {
+  if (decoded['format'] != 1 ||
+      decoded['width'] != 28 ||
+      decoded['height'] != 28 ||
+      decoded['stride'] != 28) {
     failures.add('$where: invalid FIR template format or dimensions');
   }
   if (sha is! String || !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(sha)) {
@@ -780,17 +782,27 @@ List<String> firProvenanceFailures(Uint8List bytes) {
   final height = decoded['sourceHeight'];
   final client = decoded['client'];
   final crop = decoded['crop'];
-  if (width is! int || height is! int || width <= 0 || height <= 0 ||
-      client is! Map || client['width'] != width || client['height'] != height ||
+  if (width is! int ||
+      height is! int ||
+      width <= 0 ||
+      height <= 0 ||
+      client is! Map ||
+      client['width'] != width ||
+      client['height'] != height ||
       crop is! Map) {
     failures.add('$where: invalid source image or client geometry');
     return failures;
   }
   final x = crop['x'];
   final y = crop['y'];
-  if (x is! int || y is! int || x < 0 || y < 0 ||
-      crop['width'] != 28 || crop['height'] != 28 ||
-      x > width - 28 || y > height - 28) {
+  if (x is! int ||
+      y is! int ||
+      x < 0 ||
+      y < 0 ||
+      crop['width'] != 28 ||
+      crop['height'] != 28 ||
+      x > width - 28 ||
+      y > height - 28) {
     failures.add('$where: crop must be 28x28 inside the source client');
   }
   return failures;

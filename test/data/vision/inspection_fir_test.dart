@@ -13,10 +13,21 @@ const int width = 88;
 const int height = 55;
 
 final class Corner {
-  Corner() : frame = VisionImage(Uint8List(width * height * 4),
-      width: width, height: height, stride: width * 4, channels: 4),
-    gray = VisionImage(Uint8List(width * height),
-      width: width, height: height, stride: width, channels: 1) {
+  Corner()
+    : frame = VisionImage(
+        Uint8List(width * height * 4),
+        width: width,
+        height: height,
+        stride: width * 4,
+        channels: 4,
+      ),
+      gray = VisionImage(
+        Uint8List(width * height),
+        width: width,
+        height: height,
+        stride: width,
+        channels: 1,
+      ) {
     for (final x in [60, 65, 70, 75]) {
       for (final y in [323, 324, 325]) {
         pixel(x, y, 26, 26, 26);
@@ -34,29 +45,39 @@ final class Corner {
     frame.bytes.setRange(i, i + 4, [b, g, r, alpha]);
   }
 
-  InspectionFirReading read({double score = 0.5, int x = 0, int y = 0,
-    double scale = 1, VisionImage? image, VisionImage? grayImage,
-    void Function(TitleRegion, int)? onMatch}) => readInspectionFir(
-      frame: image ?? frame,
-      gray: grayImage ?? gray,
-      markerX: markerX,
-      markerY: markerY,
-      scale: scale,
-      match: (region, side) {
-        onMatch?.call(region, side);
-        return TemplateMatch(score, x, y);
-      },
-    );
+  InspectionFirReading read({
+    double score = 0.5,
+    int x = 0,
+    int y = 0,
+    double scale = 1,
+    VisionImage? image,
+    VisionImage? grayImage,
+    void Function(TitleRegion, int)? onMatch,
+  }) => readInspectionFir(
+    frame: image ?? frame,
+    gray: grayImage ?? gray,
+    markerX: markerX,
+    markerY: markerY,
+    scale: scale,
+    match: (region, side) {
+      onMatch?.call(region, side);
+      return TemplateMatch(score, x, y);
+    },
+  );
 }
 
 void main() {
   test('check without a medal yields Yes', () {
     final corner = Corner();
-    final reading = corner.read(score: 0.82, x: 10, y: 3,
+    final reading = corner.read(
+      score: 0.82,
+      x: 10,
+      y: 3,
       onMatch: (region, side) {
         expect(region, const TitleRegion(x: 0, y: 0, width: 88, height: 55));
         expect(side, 21);
-      });
+      },
+    );
     expect(reading.value, FirState.yes);
     expect(reading.reason, InspectionFirReason.iconFound);
     expect(reading.score, 0.82);
@@ -90,23 +111,40 @@ void main() {
       (markerX, markerY - 1, width, height),
       (markerX, markerY + 1, width, height),
     ]) {
-      final reading = readInspectionFir(frame: corner.frame, gray: corner.gray,
-        markerX: x, markerY: y, scale: 1,
-        match: (_, _) => throw StateError('clipped corner was matched'));
+      final reading = readInspectionFir(
+        frame: corner.frame,
+        gray: corner.gray,
+        markerX: x,
+        markerY: y,
+        scale: 1,
+        match: (_, _) => throw StateError('clipped corner was matched'),
+      );
       expect(reading.value, FirState.unknown, reason: '$x $y $w $h');
       expect(reading.reason, InspectionFirReason.cornerCutOff);
     }
   });
 
   test('broken boundary and score gap yield Unknown', () {
-    for (final (x, y, value) in [(60, 318, 13), (75, 320, 13),
-      (65, 323, 17), (70, 325, 46)]) {
+    for (final (x, y, value) in [
+      (60, 318, 13),
+      (75, 320, 13),
+      (65, 323, 17),
+      (70, 325, 46),
+    ]) {
       final corner = Corner()..pixel(x, y, value, value, value, 255);
-      expect(corner.read(score: 0.5).reason,
-        InspectionFirReason.cornerUnreadable, reason: '$x $y $value');
+      expect(
+        corner.read(score: 0.5).reason,
+        InspectionFirReason.cornerUnreadable,
+        reason: '$x $y $value',
+      );
     }
-    for (final score in [0.60001, 0.81999, double.nan,
-      double.infinity, double.negativeInfinity]) {
+    for (final score in [
+      0.60001,
+      0.81999,
+      double.nan,
+      double.infinity,
+      double.negativeInfinity,
+    ]) {
       final reading = Corner().read(score: score);
       expect(reading.value, FirState.unknown, reason: '$score');
       expect(reading.reason, InspectionFirReason.cornerUnreadable);
@@ -126,8 +164,11 @@ void main() {
   test('partial check below positive gate never yields No', () {
     final corner = Corner()..pixel(40, 290, 20, 120, 180);
     for (final score in [0.0, 0.5034, 0.6, 0.7]) {
-      expect(corner.read(score: score).reason,
-        InspectionFirReason.cornerUnreadable, reason: '$score');
+      expect(
+        corner.read(score: score).reason,
+        InspectionFirReason.cornerUnreadable,
+        reason: '$score',
+      );
     }
     expect(corner.read(score: 0.82).value, FirState.yes);
   });
@@ -151,21 +192,36 @@ void main() {
     const h = 110;
     const mx = 16;
     const my = -550;
-    final frame = VisionImage(Uint8List(w * h * 4),
-      width: w, height: h, stride: w * 4, channels: 4);
-    final gray = VisionImage(Uint8List(w * h)..[0] = 1,
-      width: w, height: h, stride: w, channels: 1);
+    final frame = VisionImage(
+      Uint8List(w * h * 4),
+      width: w,
+      height: h,
+      stride: w * 4,
+      channels: 4,
+    );
+    final gray = VisionImage(
+      Uint8List(w * h)..[0] = 1,
+      width: w,
+      height: h,
+      stride: w,
+      channels: 1,
+    );
     void pixel(int x, int y, int b, int g, int r) {
       final i = ((my + y) * w + mx + x) * 4;
       frame.bytes.setRange(i, i + 4, [b, g, r, 255]);
     }
+
     for (final x in [60, 65, 70, 75]) {
       for (final y in [323, 324, 325]) {
         pixel(x * 2, y * 2, 26, 26, 26);
       }
     }
     InspectionFirReading read() => readInspectionFir(
-      frame: frame, gray: gray, markerX: mx, markerY: my, scale: scale,
+      frame: frame,
+      gray: gray,
+      markerX: mx,
+      markerY: my,
+      scale: scale,
       match: (_, side) {
         expect(side, 42);
         return const TemplateMatch(0.5, 0, 0);
@@ -186,44 +242,68 @@ void main() {
 
   test('gold channel comparisons are strict and ignore X', () {
     for (final (b, g, r, gold) in [
-      (20, 120, 180, true), (20, 120, 110, false),
-      (20, 90, 180, false), (80, 100, 180, false),
+      (20, 120, 180, true),
+      (20, 120, 110, false),
+      (20, 90, 180, false),
+      (80, 100, 180, false),
       (100, 130, 140, false),
     ]) {
       final corner = Corner()..pixel(40, 290, b, g, r, 255);
-      expect(corner.read().value, gold ? FirState.unknown : FirState.no,
-        reason: '$b $g $r');
+      expect(
+        corner.read().value,
+        gold ? FirState.unknown : FirState.no,
+        reason: '$b $g $r',
+      );
     }
   });
 
   test('invalid scale and candidate are unreadable', () {
     for (final scale in [0.0, -1.0, double.nan, double.infinity, 0.01]) {
-      expect(Corner().read(scale: scale).reason,
-        InspectionFirReason.cornerUnreadable, reason: '$scale');
+      expect(
+        Corner().read(scale: scale).reason,
+        InspectionFirReason.cornerUnreadable,
+        reason: '$scale',
+      );
     }
     for (final (x, y) in [(-1, 0), (0, -1), (68, 0), (0, 35)]) {
-      expect(Corner().read(score: 0.9, x: x, y: y).reason,
-        InspectionFirReason.cornerUnreadable, reason: '$x $y');
+      expect(
+        Corner().read(score: 0.9, x: x, y: y).reason,
+        InspectionFirReason.cornerUnreadable,
+        reason: '$x $y',
+      );
     }
   });
 
-  test('uniformly dark search is negative only after guards and residual gold', () {
-    final corner = Corner();
-    corner.gray.bytes.fillRange(0, corner.gray.bytes.length, 0);
-    expect(corner.read(onMatch: (_, _) => fail('constant image matched')).value,
-      FirState.no);
-    corner.pixel(40, 290, 20, 120, 180);
-    expect(corner.read(onMatch: (_, _) => fail('constant image matched')).reason,
-      InspectionFirReason.cornerUnreadable);
-    corner.pixel(60, 318, 13, 13, 13);
-    expect(corner.read(onMatch: (_, _) => fail('constant image matched')).reason,
-      InspectionFirReason.cornerUnreadable);
-  });
+  test(
+    'uniformly dark search is negative only after guards and residual gold',
+    () {
+      final corner = Corner();
+      corner.gray.bytes.fillRange(0, corner.gray.bytes.length, 0);
+      expect(
+        corner.read(onMatch: (_, _) => fail('constant image matched')).value,
+        FirState.no,
+      );
+      corner.pixel(40, 290, 20, 120, 180);
+      expect(
+        corner.read(onMatch: (_, _) => fail('constant image matched')).reason,
+        InspectionFirReason.cornerUnreadable,
+      );
+      corner.pixel(60, 318, 13, 13, 13);
+      expect(
+        corner.read(onMatch: (_, _) => fail('constant image matched')).reason,
+        InspectionFirReason.cornerUnreadable,
+      );
+    },
+  );
 
   test('scaled coordinates floor negative offsets and fit independently', () {
-    expect(planInspectionFirRegion(markerX: 10, markerY: 20, scale: 1.25),
-      const TitleRegion(x: 0, y: 363, width: 110, height: 69));
-    expect(planInspectionFirRegion(markerX: 10, markerY: 20, scale: 1.1),
-      const TitleRegion(x: 1, y: 322, width: 97, height: 61));
+    expect(
+      planInspectionFirRegion(markerX: 10, markerY: 20, scale: 1.25),
+      const TitleRegion(x: 0, y: 363, width: 110, height: 69),
+    );
+    expect(
+      planInspectionFirRegion(markerX: 10, markerY: 20, scale: 1.1),
+      const TitleRegion(x: 1, y: 322, width: 97, height: 61),
+    );
   });
 }
