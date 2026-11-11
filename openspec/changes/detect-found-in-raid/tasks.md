@@ -103,7 +103,7 @@ All 57 delta scenarios are mapped below. `red` is new/changed coverage to prove 
 
 ## 8. Final offline integration gates
 
-- [ ] 8.1 Run `mise run analyze` and `mise run test` with the pinned Flutter SDK after the implementation groups, plus `openspec validate detect-found-in-raid --strict` and `mise run release-notes -- --check openspec/changes/detect-found-in-raid/proposal.md`. Verify the test-map's carried-green cases were rerun and each changed row is green only from its named passing check; a skipped private/native/user check is not a pass. This task adds no deferred unit/widget tests that earlier groups owed.
+- [x] 8.1 Run `mise run analyze` and `mise run test` with the pinned Flutter SDK after the implementation groups, plus `openspec validate detect-found-in-raid --strict` and `mise run release-notes -- --check openspec/changes/detect-found-in-raid/proposal.md`. Verify the test-map's carried-green cases were rerun and each changed row is green only from its named passing check; a skipped private/native/user check is not a pass. This task adds no deferred unit/widget tests that earlier groups owed.
 
 ## Apply constraints
 
