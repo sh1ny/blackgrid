@@ -20,6 +20,7 @@ InspectionEvidence _entry({
   double score = 0.93,
   String text = 'Salewa First Aid Kit',
 }) => InspectionEvidence(
+  fir: const InspectionFirReading(reason: InspectionFirReason.cornerUnreadable),
   markerScore: score,
   markerX: 10,
   markerY: 20,

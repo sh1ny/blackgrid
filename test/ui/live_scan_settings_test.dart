@@ -111,7 +111,7 @@ void main() {
 
   testWidgets('unavailable status names the missing file', (tester) async {
     final rig = await _pump(tester);
-    rig.ports.markerOverride = const MarkerTemplateUnavailable(
+    rig.ports.markerOverride = const InspectionTemplatesUnavailable(
       VisionMissingFile('data/vision/inspection_marker.pgm'),
     );
 
@@ -241,7 +241,7 @@ void main() {
 
     testWidgets('live scan starting', (tester) async {
       final rig = await _pump(tester);
-      final gate = Completer<MarkerTemplateResult>();
+      final gate = Completer<InspectionTemplatesResult>();
       final loader = rig.ports.markerLoader;
       rig.ports.markerGate = gate.future;
       await tester.tap(find.byKey(_switchKey));
@@ -321,7 +321,7 @@ void main() {
     expect(_rowTap(tester, _recordKey), isNull);
 
     // Starting: the marker loader never answers.
-    final gate = Completer<MarkerTemplateResult>();
+    final gate = Completer<InspectionTemplatesResult>();
     final loader = rig.ports.markerLoader;
     rig.ports.markerGate = gate.future;
     await tester.tap(find.byKey(_switchKey));
@@ -348,7 +348,7 @@ void main() {
       () => rig.coordinator.status.state == LiveScanState.off,
     );
     rig.ports.markerGate = null;
-    rig.ports.markerOverride = const MarkerTemplateUnavailable(
+    rig.ports.markerOverride = const InspectionTemplatesUnavailable(
       VisionMissingFile('data/vision/inspection_marker.pgm'),
     );
     await tester.tap(find.byKey(_switchKey));

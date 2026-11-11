@@ -81,7 +81,11 @@ InspectionEvidence scanEvidence({
   double score = 0.93,
   int base = 0,
   bool withCrop = true,
+  InspectionFirReading fir = const InspectionFirReading(
+    reason: InspectionFirReason.cornerUnreadable,
+  ),
 }) => InspectionEvidence(
+  fir: fir,
   markerScore: score,
   markerX: 10 + base,
   markerY: 20,
@@ -186,25 +190,24 @@ final class ScanFakePorts {
   FakeScanPlatform? platform;
 
   /// The marker template loader.
-  Future<MarkerTemplateResult> markerLoader(String directory) async =>
-      MarkerTemplateLoaded(
-        VisionTemplate(
-          'inspectionMarker',
-          VisionImage(
-            Uint8List(1),
-            width: 1,
-            height: 1,
-            stride: 1,
-            channels: 1,
-          ),
-        ),
-      );
+  Future<InspectionTemplatesResult> markerLoader(
+    String directory,
+  ) async => InspectionTemplatesLoaded([
+    VisionTemplate(
+      markerTemplateName,
+      VisionImage(Uint8List(1), width: 1, height: 1, stride: 1, channels: 1),
+    ),
+    VisionTemplate(
+      firTemplateName,
+      VisionImage(Uint8List(1), width: 1, height: 1, stride: 1, channels: 1),
+    ),
+  ]);
 
   /// What the marker loader answers instead, when set.
-  MarkerTemplateResult? markerOverride;
+  InspectionTemplatesResult? markerOverride;
 
   /// When set, the loader waits for it before answering.
-  Future<MarkerTemplateResult>? markerGate;
+  Future<InspectionTemplatesResult>? markerGate;
 
   /// The capture factory.
   ScanCaptureFactory get captureFactory => () {
@@ -235,7 +238,7 @@ final class ScanFakePorts {
   ScanWaiter get waiter => immediateScanWaiter;
 
   /// The loader to hand to the coordinator, honouring [markerOverride].
-  ScanMarkerLoader get loader =>
+  ScanTemplatesLoader get loader =>
       (directory) async =>
           await markerGate ?? markerOverride ?? await markerLoader(directory);
 
@@ -351,7 +354,7 @@ final class ScanUiRig {
       closeTimeout: const Duration(milliseconds: 500),
       indexBuilder: builder.call,
       matcher: matcher.call,
-      markerLoader: ports.loader,
+      templatesLoader: ports.loader,
       captureFactory: ports.captureFactory,
       visionFactory: ports.visionFactory,
       platformFactory: ports.platformFactory,

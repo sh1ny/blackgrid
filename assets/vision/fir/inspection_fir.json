@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "width": 28,
+  "height": 28,
+  "stride": 28,
+  "sourceWidth": 3440,
+  "sourceHeight": 1440,
+  "client": {
+    "width": 3440,
+    "height": 1440
+  },
+  "crop": {
+    "x": 1199,
+    "y": 732,
+    "width": 28,
+    "height": 28
+  },
+  "sourceSha256": "0d5fbdccd97c07c5b9a82c97633059325c9142cbab27953c024c868c93e2169b",
+  "grayscale": "opencv-bgr2gray-fixed-point",
+  "recipe": "inspection-fir-v1"
+}

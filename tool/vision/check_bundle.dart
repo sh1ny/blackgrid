@@ -12,7 +12,7 @@ import 'package:crypto/crypto.dart';
 
 import 'package:blackgrid/application/output_path_guard.dart';
 import 'package:blackgrid/data/vision/marker_template.dart'
-    show markerMetadataPath;
+    show markerMetadataPath, firMetadataPath;
 
 import '../markers/icon_set.dart';
 import '../app_icon/ico.dart';
@@ -412,6 +412,10 @@ BundleReport checkBundle({
   if (markerMeta != null) {
     noteFailures.addAll(markerProvenanceFailures(markerMeta));
   }
+  final firMeta = bytesOf(firMetadataPath);
+  if (firMeta != null) {
+    noteFailures.addAll(firProvenanceFailures(firMeta));
+  }
   steps.add(StepResult('notices', noteFailures));
 
   // Step 7: bundled map marker icons (design D5).
@@ -745,6 +749,61 @@ List<String> markerProvenanceFailures(Uint8List bytes) {
       '$where: origin must place the ${expected}px footprint inside '
       '${width}x$height',
     );
+  }
+  return failures;
+}
+
+/// Validates the FIR template's source geometry and grayscale recipe metadata.
+List<String> firProvenanceFailures(Uint8List bytes) {
+  const where = firMetadataPath;
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(utf8.decode(bytes));
+  } on FormatException {
+    return ['$where: metadata is not valid JSON'];
+  }
+  if (decoded is! Map) return ['$where: metadata is not an object'];
+  final failures = <String>[];
+  final sha = decoded['sourceSha256'];
+  if (decoded['format'] != 1 ||
+      decoded['width'] != 28 ||
+      decoded['height'] != 28 ||
+      decoded['stride'] != 28) {
+    failures.add('$where: invalid FIR template format or dimensions');
+  }
+  if (sha is! String || !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(sha)) {
+    failures.add('$where: sourceSha256 is not a 64-digit hex SHA-256');
+  }
+  if (decoded['recipe'] != 'inspection-fir-v1' ||
+      decoded['grayscale'] != 'opencv-bgr2gray-fixed-point') {
+    failures.add('$where: invalid FIR recipe or grayscale conversion');
+  }
+  final width = decoded['sourceWidth'];
+  final height = decoded['sourceHeight'];
+  final client = decoded['client'];
+  final crop = decoded['crop'];
+  if (width is! int ||
+      height is! int ||
+      width <= 0 ||
+      height <= 0 ||
+      client is! Map ||
+      client['width'] != width ||
+      client['height'] != height ||
+      crop is! Map) {
+    failures.add('$where: invalid source image or client geometry');
+    return failures;
+  }
+  final x = crop['x'];
+  final y = crop['y'];
+  if (x is! int ||
+      y is! int ||
+      x < 0 ||
+      y < 0 ||
+      crop['width'] != 28 ||
+      crop['height'] != 28 ||
+      x > width - 28 ||
+      y > height - 28) {
+    failures.add('$where: crop must be 28x28 inside the source client');
   }
   return failures;
 }

@@ -60,7 +60,7 @@ The latest accepted scan SHALL exist only in memory for the running app. It SHAL
 - **THEN** there is no latest accepted scan
 
 ### Requirement: The answer strip can return to the latest scan
-When there is a latest accepted scan that the answer strip is not showing as its accepted scan, the strip SHALL offer a "Back to latest scan" action, on Map and on Scanner. The action SHALL make that scan the current selection again, shown as an accepted scan whose provenance line gives the age of its original acceptance time. It SHALL record no history, SHALL NOT change the latest accepted scan, SHALL close an open history view, and SHALL reset FIR to unknown.
+When a latest accepted scan exists but is not the strip's current accepted scan, Map and Scanner SHALL offer "Back to latest scan". It SHALL restore that scan with its original acceptance age and detected FIR, discard any manual override, close history, record no activity and leave the latest-scan record unchanged. A stale mode/session or missing catalog item SHALL refuse the return without changing selection, FIR or history.
 
 #### Scenario: Return after a manual selection
 - **WHEN** a scan was accepted for item B, the user selects item A by hand and then uses Back to latest scan
@@ -71,8 +71,12 @@ When there is a latest accepted scan that the answer strip is not showing as its
 - **THEN** the strip offers Back to latest scan, and using it closes the history view and shows item B in the live mode
 
 #### Scenario: Return resets FIR
-- **WHEN** a scan was accepted for item B, the user selects item A by hand, sets FIR to yes and then uses Back to latest scan
-- **THEN** FIR is unknown and the decision for item B is computed with FIR unknown
+- **WHEN** B's scan detected No, the player overrides it to Yes, selects A and then uses Back to latest scan
+- **THEN** FIR is No from B's original scan, the old override is gone and B's decision is recomputed with No
+
+#### Scenario: Return restores unknown evidence
+- **WHEN** the latest scan had unreadable FIR and the player leaves it, sets another selection's FIR to Yes and returns
+- **THEN** the restored scan has FIR Unknown with its original unreadable reason, not the other selection's Yes
 
 #### Scenario: No action while the latest scan is shown
 - **WHEN** the strip shows the latest accepted scan

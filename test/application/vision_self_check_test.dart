@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/application/vision_self_check.dart';
+import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_runtime.dart'
     show visionManifestPath;
 import 'package:flutter_test/flutter_test.dart';
@@ -285,6 +286,38 @@ void main() {
       expect(progress, ['verify', 'load', 'dispose']);
     },
   );
+
+  test('self-check rejects hash-bound invalid FIR templates', () {
+    for (final corrupt in ['flat', 'metadata']) {
+      final fixture = Fixture();
+      addTearDown(fixture.dispose);
+      for (final (path, source) in [
+        (markerGrayPath, 'assets/vision/marker/inspection_marker.gray'),
+        (markerMetadataPath, 'assets/vision/marker/inspection_marker.json'),
+        (firGrayPath, 'assets/vision/fir/inspection_fir.gray'),
+        (firMetadataPath, 'assets/vision/fir/inspection_fir.json'),
+      ]) {
+        fixture.write(path, File(source).readAsBytesSync());
+      }
+      if (corrupt == 'flat') {
+        fixture.write(firGrayPath, List.filled(784, 7));
+      } else {
+        fixture.write(firMetadataPath, utf8.encode('{}'));
+      }
+      fixture.writeManifest();
+      final steps = <SelfCheckStepResult>[];
+      executeSelfCheckSteps(
+        _RecordingSink(steps, []),
+        runtimeDirectory: fixture.root,
+        opener: (a, b, c) => fixture.native,
+        loadedModulePaths: () => const [],
+      );
+      expect(steps.map((step) => step.name), ['verify', 'dispose']);
+      expect(steps.first.ok, isFalse);
+      expect(steps.first.failure!['kind'], 'invalidTemplate');
+      expect(steps.first.failure!['message'], contains('inspection_fir'));
+    }
+  });
 }
 
 class _RecordingSink implements SelfCheckSink {

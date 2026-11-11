@@ -32,7 +32,7 @@ void main() {
     await h.services.catalog.refresh();
     expect(h.services.catalog.status, CatalogStatus.stale);
     expect(h.services.catalog.snapshot!.revision, revision);
-    expect(h.services.selection.fir, FirState.unknown);
+    expect(h.services.selection.fir, FirState.yes);
     await h.services.setMode(GameMode.pvp);
     await h.services.selection.openHistory(history);
     expect(h.services.selection.inspectionMode, GameMode.pve);

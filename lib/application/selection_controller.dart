@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../data/database.dart';
+import '../data/vision/inspection_fir.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
 import '../domain/decision_engine.dart';
@@ -15,6 +16,18 @@ import 'history_controller.dart';
 import 'scan_correction.dart';
 import 'scan_epoch.dart';
 
+/// The origin of the current found-in-raid value.
+enum FirSource {
+  /// No detected value or explicit override is selected.
+  unset,
+
+  /// The value comes from the current accepted scan.
+  scan,
+
+  /// The player explicitly chose the value.
+  manual,
+}
+
 class SelectionController extends ChangeNotifier {
   SelectionController({
     required this.database,
@@ -24,6 +37,7 @@ class SelectionController extends ChangeNotifier {
     DateTime Function()? clock,
     this._epoch,
   }) : clock = clock ?? DateTime.now {
+    _authorityMode = catalog.mode;
     catalog.addListener(_onAuthority);
     progress.addListener(_onAuthority);
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -50,8 +64,24 @@ class SelectionController extends ChangeNotifier {
   ScanCorrectionOffer? _offer;
   ItemActivity? _historyRow;
   CatalogSnapshot? _historyCatalog;
-  FirState _fir = FirState.unknown;
-  FirState get fir => _fir;
+  InspectionFirReading? _detectedFir;
+  FirState? _firOverride;
+
+  /// The current scan's immutable FIR observation, if any.
+  InspectionFirReading? get detectedFir => _detectedFir;
+
+  /// The explicitly selected FIR value, including an explicit Unknown.
+  FirState? get firOverride => _firOverride;
+
+  /// The origin of the effective FIR value.
+  FirSource get firSource => _firOverride != null
+      ? FirSource.manual
+      : _detectedFir != null
+      ? FirSource.scan
+      : FirSource.unset;
+
+  /// The effective FIR value, preferring an explicit override over the scan.
+  FirState get fir => _firOverride ?? _detectedFir?.value ?? FirState.unknown;
   ItemActivity? get historyRow => _historyRow;
   bool get isHistory => _historyRow != null;
   GameMode get inspectionMode => _historyRow?.mode ?? catalog.mode;
@@ -111,7 +141,7 @@ class SelectionController extends ChangeNotifier {
   String? error;
   bool loadingHistory = false;
   int _generation = 0;
-  String? _authority;
+  late GameMode _authorityMode;
   bool _disposed = false;
 
   void setQuery(String value) {
@@ -119,8 +149,9 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Applies an explicit manual FIR choice to the current selection.
   void setFir(FirState value) {
-    _fir = value;
+    _firOverride = value;
     _project();
     notifyListeners();
   }
@@ -135,9 +166,8 @@ class SelectionController extends ChangeNotifier {
     _historyRow = null;
     _historyCatalog = null;
     loadingHistory = false;
-    _fir = FirState.unknown;
+    _resetFir();
     error = null;
-    _authority = _fingerprint();
     _project();
     final verdict = _decision?.recommendation;
     final mode = catalog.mode;
@@ -158,12 +188,14 @@ class SelectionController extends ChangeNotifier {
   /// The acceptance time comes from [clock] when this is called, never from the
   /// scan report. It times the record, the history write and the card's age.
   /// An item missing from the current catalog changes and records nothing.
+  /// [detectedFir] is projected before the acceptance decision is recorded.
   Future<void> selectScan({
     required int reportId,
     required String itemId,
     required GameMode mode,
     required String catalogRevision,
     required ScanEpoch epoch,
+    required InspectionFirReading detectedFir,
   }) async {
     if (catalog.snapshot?.items[itemId] == null) return;
     final generation = ++_generation;
@@ -177,9 +209,9 @@ class SelectionController extends ChangeNotifier {
     _historyRow = null;
     _historyCatalog = null;
     loadingHistory = false;
-    _fir = FirState.unknown;
+    _detectedFir = detectedFir;
+    _firOverride = null;
     error = null;
-    _authority = _fingerprint();
     _project();
     // Capture the projected decision before listeners can change selection.
     final decision = _decision;
@@ -192,6 +224,7 @@ class SelectionController extends ChangeNotifier {
         acceptedAt: acceptedAt,
         epoch: epoch,
         decisionAtAcceptance: decision,
+        detectedFir: detectedFir,
       );
     }
     notifyListeners();
@@ -214,7 +247,7 @@ class SelectionController extends ChangeNotifier {
   /// while the record's epoch is the current one, its mode is the live mode and
   /// the live catalog holds its item. Otherwise nothing changes and one line is
   /// logged. On success it closes an open history view, clears the manual
-  /// source, correction, offer and retired flag, and resets FIR to unknown.
+  /// source, correction, offer and retired flag, and restores detected FIR.
   void showScan(AcceptedScan scan) {
     final read = _epoch;
     if (read != null && read() != scan.epoch) {
@@ -239,9 +272,9 @@ class SelectionController extends ChangeNotifier {
     _historyRow = null;
     _historyCatalog = null;
     loadingHistory = false;
-    _fir = FirState.unknown;
+    _detectedFir = scan.detectedFir;
+    _firOverride = null;
     error = null;
-    _authority = _fingerprint();
     _project();
     notifyListeners();
   }
@@ -254,7 +287,7 @@ class SelectionController extends ChangeNotifier {
   /// load in flight keeps running.
   void retireScan() {
     final wasScan = _scanItemId != null || _correction != null;
-    _fir = FirState.unknown;
+    _resetFir();
     _offer = null;
     if (wasScan) {
       ++_generation;
@@ -263,7 +296,6 @@ class SelectionController extends ChangeNotifier {
       _scanRetired = true;
       error = null;
     }
-    _authority = _fingerprint();
     _project();
     notifyListeners();
   }
@@ -339,9 +371,8 @@ class SelectionController extends ChangeNotifier {
     _historyRow = null;
     _historyCatalog = null;
     loadingHistory = false;
-    _fir = FirState.unknown;
+    _resetFir();
     error = null;
-    _authority = _fingerprint();
     _project();
     final verdict = _decision?.recommendation;
     notifyListeners();
@@ -363,6 +394,11 @@ class SelectionController extends ChangeNotifier {
     _scan = null;
   }
 
+  void _resetFir() {
+    _detectedFir = null;
+    _firOverride = null;
+  }
+
   Future<void> openHistory(ItemActivity row) async {
     final generation = ++_generation;
     _clearScan();
@@ -371,7 +407,7 @@ class SelectionController extends ChangeNotifier {
     _scanRetired = false;
     _historyRow = row;
     _historyCatalog = null;
-    _fir = FirState.unknown;
+    _resetFir();
     loadingHistory = true;
     error = null;
     _project();
@@ -388,7 +424,6 @@ class SelectionController extends ChangeNotifier {
     }
     if (_disposed || generation != _generation) return;
     loadingHistory = false;
-    _authority = _fingerprint();
     _project();
     notifyListeners();
   }
@@ -401,28 +436,17 @@ class SelectionController extends ChangeNotifier {
     _historyRow = null;
     _historyCatalog = null;
     loadingHistory = false;
-    _fir = FirState.unknown;
+    _resetFir();
     error = null;
-    _authority = _fingerprint();
     _project();
     notifyListeners();
   }
 
-  String _fingerprint() {
-    final snapshot = inspectionCatalog;
-    final now = clock().toUtc();
-    final relevantProgress = progress.mode == inspectionMode ? progress : null;
-    return '${catalog.mode.name}:${inspectionMode.name}:${snapshot?.revision}:${snapshot?.authoritativeAt(now)}:'
-        '${_usesLiveCatalog ? catalog.status.name : ''}:${relevantProgress?.authorityVersion}:'
-        '${relevantProgress?.snapshot?.authoritativeAt(now)}';
-  }
-
   void _onAuthority() {
     if (_disposed) return;
-    final fingerprint = _fingerprint();
-    if (fingerprint != _authority) {
-      _fir = FirState.unknown;
-      _authority = fingerprint;
+    if (catalog.mode != _authorityMode) {
+      _resetFir();
+      _authorityMode = catalog.mode;
     }
     _project();
     notifyListeners();
@@ -442,7 +466,7 @@ class SelectionController extends ChangeNotifier {
         now: clock().toUtc(),
         catalog: inspectionCatalog,
         progress: progressMatches ? progress.snapshot : null,
-        fir: _fir,
+        fir: fir,
         catalogStale:
             _usesLiveCatalog && catalog.status != CatalogStatus.current,
         progressStale:

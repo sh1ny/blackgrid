@@ -2,6 +2,7 @@ import 'package:blackgrid/application/scan_decision_feed.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/application/session_scan_state.dart';
+import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -66,6 +67,73 @@ void main() {
     h.services.history,
     (row) => row.itemId == itemId && row.source == ActivitySource.scan,
   );
+
+  const found = InspectionFirReading(reason: InspectionFirReason.iconFound);
+  const absent = InspectionFirReading(reason: InspectionFirReason.iconAbsent);
+
+  test('winning inspection supplies FIR rather than first peak', () async {
+    for (final fallback in [false, true]) {
+      now = now.add(const Duration(seconds: 1));
+      source.accept(
+        acceptedScanReport(
+          id: fallback ? 2 : 1,
+          itemId: 'item-b',
+          epoch: e0,
+          fir: absent,
+          firstFir: found,
+          fallbackWinner: fallback,
+        ),
+      );
+      expect(h.services.selection.fir, FirState.no);
+      expect(h.services.selection.scan!.detectedFir, same(absent));
+      expect(h.services.selection.firSource, FirSource.scan);
+      await untilRow(
+        h.services.history,
+        (row) => row.itemId == 'item-b' && row.observedAt == now,
+      );
+    }
+  });
+
+  test('crop-free winning inspection still drives its FIR advice', () async {
+    final report = acceptedScanReport(
+      id: 1,
+      itemId: 'item-b',
+      epoch: e0,
+      fir: found,
+      withCrop: true,
+    );
+    expect(report.hasCrops, isTrue);
+    final stripped = report.withoutCrops();
+    expect(stripped.hasCrops, isFalse);
+    source.accept(stripped);
+    expect(h.services.selection.fir, FirState.yes);
+    expect(
+      h.services.selection.scan!.detectedFir.reason,
+      InspectionFirReason.iconFound,
+    );
+    await scanLanded('item-b');
+  });
+
+  test('duplicate accepted report preserves the manual override', () async {
+    final report = acceptedScanReport(
+      id: 1,
+      itemId: 'item-b',
+      epoch: e0,
+      fir: found,
+    );
+    source.accept(report);
+    await scanLanded('item-b');
+    final accepted = scans.latest!;
+    final rows = h.services.history.rows.length;
+    h.services.selection.setFir(FirState.no);
+    now = now.add(const Duration(minutes: 5));
+    source.accept(report);
+    expect(h.services.selection.fir, FirState.no);
+    expect(h.services.selection.firSource, FirSource.manual);
+    expect(scans.latest, same(accepted));
+    expect(scans.latest!.acceptedAt, accepted.acceptedAt);
+    expect(h.services.history.rows, hasLength(rows));
+  });
 
   test('accepted scan replaces a manual selection', () async {
     final selection = h.services.selection;
@@ -229,6 +297,9 @@ void main() {
     expect(selection.scan, isNull);
     expect(selection.scanRetired, isTrue);
     expect(selection.fir, FirState.unknown);
+    expect(selection.detectedFir, isNull);
+    expect(selection.firOverride, isNull);
+    expect(selection.firSource, FirSource.unset);
   });
 
   test('mode change retires the scan and records nothing', () async {

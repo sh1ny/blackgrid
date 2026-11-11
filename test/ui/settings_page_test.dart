@@ -484,7 +484,7 @@ void main() {
 
     testWidgets('settings-page: Live scan unavailable', (tester) async {
       final ports = ScanFakePorts()
-        ..markerOverride = const MarkerTemplateUnavailable(
+        ..markerOverride = const InspectionTemplatesUnavailable(
           VisionMissingFile('synthetic-missing.pgm'),
         );
       final h = await _harness(tester, ports: ports);

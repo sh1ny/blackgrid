@@ -77,7 +77,10 @@ class _Rig {
   Object? platformError;
 
   /// What the marker loader answers next; loaded by default.
-  late MarkerTemplateResult markerResult = MarkerTemplateLoaded(_marker);
+  late InspectionTemplatesResult markerResult = InspectionTemplatesLoaded([
+    _marker,
+    VisionTemplate(firTemplateName, _marker.image),
+  ]);
 
   /// Configures each vision service as it is created.
   void Function(FakeScanVision vision)? configureVision;
@@ -93,7 +96,7 @@ class _Rig {
     appendLogLine: (_) {},
     runtimeDirectory: r'C:\fake\bundle',
     closeTimeout: closeTimeout,
-    markerLoader: (directory) async {
+    templatesLoader: (directory) async {
       events.add('template');
       templateSawSavedSetting.add(settings.settings.liveScan);
       return markerResult;
@@ -263,7 +266,10 @@ void main() {
 
   test('invalid marker template is unavailable before any worker', () async {
     rig = await _Rig.create();
-    rig.markerResult = const MarkerTemplateInvalid('marker.gray', 'bad hash');
+    rig.markerResult = const InspectionTemplatesInvalid(
+      'marker.gray',
+      'bad hash',
+    );
 
     await rig.switchOn();
 
@@ -280,7 +286,7 @@ void main() {
 
   test('missing marker template names the file', () async {
     rig = await _Rig.create();
-    rig.markerResult = const MarkerTemplateUnavailable(
+    rig.markerResult = const InspectionTemplatesUnavailable(
       VisionMissingFile(r'C:\bundle\data\vision\marker\inspection_marker.gray'),
     );
 
@@ -617,10 +623,13 @@ void main() {
         catalog: rig.catalog,
         appendLogLine: (_) {},
         runtimeDirectory: r'C:\fake',
-        markerLoader: (_) async {
+        templatesLoader: (_) async {
           entered.complete();
           await loading.future;
-          return MarkerTemplateLoaded(_marker);
+          return InspectionTemplatesLoaded([
+            _marker,
+            VisionTemplate(firTemplateName, _marker.image),
+          ]);
         },
         captureFactory: () => throw StateError('no worker expected'),
         visionFactory: (_, _) => throw StateError('no worker expected'),

@@ -145,7 +145,7 @@ void main() {
     );
   });
   testWidgets('scanner-evidence: Live scan starting', (tester) async {
-    final gate = Completer<MarkerTemplateResult>();
+    final gate = Completer<InspectionTemplatesResult>();
     final ports = ScanFakePorts()..markerGate = gate.future;
     final h = await pumpM1(tester, scanPorts: ports);
     await _openSettings(tester);
@@ -246,7 +246,7 @@ void main() {
   });
   testWidgets('scanner-evidence: Unavailable runtime', (tester) async {
     final ports = ScanFakePorts()
-      ..markerOverride = const MarkerTemplateUnavailable(
+      ..markerOverride = const InspectionTemplatesUnavailable(
         VisionMissingFile('synthetic-missing.pgm'),
       );
     final h = await pumpM1(tester, scanPorts: ports);
@@ -294,7 +294,7 @@ void main() {
     expect(find.textContaining('while live scan is on'), findsOneWidget);
   });
   testWidgets('scanner-evidence: Live scan not ready', (tester) async {
-    final gate = Completer<MarkerTemplateResult>();
+    final gate = Completer<InspectionTemplatesResult>();
     final ports = ScanFakePorts()..markerGate = gate.future;
     final h = await pumpM1(tester, scanPorts: ports);
     await _openSettings(tester);
@@ -321,7 +321,7 @@ void main() {
     expect(_on(tester, record), isFalse);
     expect(_tap(tester, record), isNull);
     gate.complete(
-      const MarkerTemplateUnavailable(
+      const InspectionTemplatesUnavailable(
         VisionMissingFile('synthetic-missing.pgm'),
       ),
     );

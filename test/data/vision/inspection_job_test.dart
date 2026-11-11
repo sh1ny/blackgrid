@@ -8,10 +8,11 @@ import 'package:blackgrid/data/vision/inspection_geometry.dart';
 import 'package:blackgrid/data/vision/inspection_recognition.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
-import 'package:blackgrid/data/vision/vision_primitives.dart'
-    show TemplatePeak, visionInterArea, visionInterCubic;
+import 'package:blackgrid/data/vision/vision_native.dart';
+import 'package:blackgrid/data/vision/vision_primitives.dart';
 import 'package:blackgrid/data/vision/vision_runtime.dart';
 import 'package:blackgrid/data/vision/vision_service.dart';
+import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../capture/support/fake_capture_platform.dart';
@@ -53,6 +54,21 @@ VisionTemplate markerTemplate() => VisionTemplate(
   ),
 );
 
+VisionTemplate firTemplate({bool constant = false}) => VisionTemplate(
+  firTemplateName,
+  VisionImage(
+    constant
+        ? Uint8List(28 * 28)
+        : Uint8List.fromList([
+            for (var i = 0; i < 28 * 28; i++) (i * 19) & 255,
+          ]),
+    width: 28,
+    height: 28,
+    stride: 28,
+    channels: 1,
+  ),
+);
+
 VisionImage frameImage({int width = frameWidth, int height = frameHeight}) =>
     VisionImage(
       Uint8List(width * height * 4),
@@ -62,15 +78,25 @@ VisionImage frameImage({int width = frameWidth, int height = frameHeight}) =>
       channels: 4,
     );
 
-CaptureFrameMetadata frameMetadata() => CaptureFrameMetadata(
-  width: frameWidth,
-  height: frameHeight,
-  stride: frameWidth * 4,
-  desktopLeft: 0,
-  desktopTop: 0,
-  requested: CaptureRect(0, 0, frameWidth, frameHeight),
-  captured: CaptureRect(0, 0, frameWidth, frameHeight),
-  clipped: false,
+CaptureFrameMetadata frameMetadata({
+  int width = frameWidth,
+  int height = frameHeight,
+  int originX = 0,
+  int originY = 0,
+  bool clipped = false,
+}) => CaptureFrameMetadata(
+  width: width,
+  height: height,
+  stride: width * 4,
+  desktopLeft: originX,
+  desktopTop: originY,
+  requested: clipped
+      ? CaptureRect(0, 0, width + 10, height)
+      : CaptureRect(0, 0, width, height),
+  captured: clipped
+      ? CaptureRect(10, 0, width, height)
+      : CaptureRect(0, 0, width, height),
+  clipped: clipped,
   clientWidth: 1920,
   clientHeight: 1080,
   dpi: 96,
@@ -93,6 +119,11 @@ final class Rig {
     VisionScript script = const VisionScript(),
     VisionJobFactory<InspectionRequest, InspectionRecognition> jobFactory =
         inspectionRecognitionJobFactory,
+    VisionNativeOpener? opener,
+    bool firFake = false,
+    bool constantFirResize = false,
+    bool constantFirTemplate = false,
+    bool withFirTemplate = true,
     bool withTemplate = true,
   }) : control = VisionControlBlock(),
        directory = createFakeRuntimeDirectory(),
@@ -100,8 +131,16 @@ final class Rig {
     service = VisionService<InspectionRequest, InspectionRecognition>(
       runtimeDirectory: directory.path,
       jobFactory: jobFactory,
-      templates: [if (withTemplate) markerTemplate()],
-      opener: holdableVisionOpener(control.address, script),
+      templates: [
+        if (withTemplate) markerTemplate(),
+        if (withTemplate && withFirTemplate)
+          firTemplate(constant: constantFirTemplate),
+      ],
+      opener:
+          opener ??
+          (firFake
+              ? firVisionOpener(control.address, script, constantFirResize)
+              : holdableVisionOpener(control.address, script)),
       platformFactory: clockPlatformFactory(control.address),
       registryFactory: sharedFrameRegistryFactory(frames.address),
       qpcNow: control.clock.now,
@@ -117,7 +156,11 @@ final class Rig {
     InspectionRequest request, {
     int width = frameWidth,
     int height = frameHeight,
-  }) => service.submit(frameImage(width: width, height: height), request);
+    VisionImage? image,
+  }) => service.submit(
+    image ?? frameImage(width: width, height: height),
+    request,
+  );
 
   /// The recognition of a delivered answer; fails the test otherwise.
   Future<InspectionRecognition> recognition(
@@ -142,12 +185,20 @@ Rig newRig({
   VisionScript script = const VisionScript(),
   VisionJobFactory<InspectionRequest, InspectionRecognition> jobFactory =
       inspectionRecognitionJobFactory,
+  bool firFake = false,
+  bool constantFirResize = false,
+  bool constantFirTemplate = false,
+  bool withFirTemplate = true,
   bool withTemplate = true,
 }) {
   final rig = Rig(
     script: script,
     jobFactory: jobFactory,
     withTemplate: withTemplate,
+    firFake: firFake,
+    constantFirResize: constantFirResize,
+    constantFirTemplate: constantFirTemplate,
+    withFirTemplate: withFirTemplate,
   );
   addTearDown(rig.dispose);
   return rig;
@@ -161,7 +212,427 @@ InspectionRecognised recognised(InspectionRecognition result) {
 /// `b | g << 8 | r << 16`, how the fake logs the colour bounds.
 int packed(List<int> bounds) => bounds[0] | bounds[1] << 8 | bounds[2] << 16;
 
+// Preserve corner pixels and script NCC independently per search region.
+VisionNativeOpener firVisionOpener(
+  int address,
+  VisionScript script,
+  bool constantFirResize,
+) {
+  final open = holdableVisionOpener(address, script);
+  return (a, b, c) => FirNative(open(a, b, c), constantFirResize);
+}
+
+final class FirNative implements VisionNative {
+  FirNative(this.inner, bool constantFirResize)
+    : primitives = FirPrimitives(inner.primitives, constantFirResize);
+  final VisionNative inner;
+  @override
+  final VisionPrimitives primitives;
+  @override
+  int get visionAbi => inner.visionAbi;
+  @override
+  String get tessVersion => inner.tessVersion;
+  @override
+  VisionEngine? createEngine() => inner.createEngine();
+  @override
+  void close() => inner.close();
+}
+
+final class FirPrimitives implements VisionPrimitives {
+  FirPrimitives(this.inner, this.constantFirResize);
+  final VisionPrimitives inner;
+  final bool constantFirResize;
+  @override
+  Uint8List toGray(VisionImage src, {required bool rgbOrder}) {
+    inner.toGray(src, rgbOrder: rgbOrder);
+    return Uint8List.fromList([
+      for (var y = 0; y < src.height; y++)
+        for (var x = 0; x < src.width; x++)
+          src.bytes[y * src.stride + x * src.channels],
+    ]);
+  }
+
+  @override
+  Uint8List resize(VisionImage src, int dw, int dh, int interp) {
+    final result = inner.resize(src, dw, dh, interp);
+    if (src.channels == 1 &&
+        result.length > 1 &&
+        !(constantFirResize && src.width == 28 && dw == 21)) {
+      result[0] = 1;
+    }
+    return result;
+  }
+
+  @override
+  Uint8List thresholdBinaryInv(VisionImage src, int thresh, int maxval) =>
+      inner.thresholdBinaryInv(src, thresh, maxval);
+  @override
+  TemplateMatch matchTemplateBest(VisionImage image, VisionImage template) {
+    inner.matchTemplateBest(image, template);
+    return TemplateMatch(image.bytes[0] == 7 ? 0.9 : 0.5, 1, 2);
+  }
+
+  @override
+  List<TemplatePeak> matchTemplatePeaks(
+    VisionImage image,
+    VisionImage template,
+    double threshold,
+    int cap,
+  ) => inner.matchTemplatePeaks(image, template, threshold, cap);
+  @override
+  int? findInRangeRow(
+    VisionImage src,
+    int row,
+    int startX,
+    List<int> lo,
+    List<int> hi,
+  ) => inner.findInRangeRow(src, row, startX, lo, hi);
+}
+
+VisionImage firFrame(
+  List<(int, int, bool)> windows, {
+  int width = 260,
+  int height = 350,
+}) {
+  final image = frameImage(width: width, height: height);
+  for (final (mx, my, positive) in windows) {
+    void pixel(int x, int y, int b, int g, int r) {
+      final i = ((my + y) * width + mx + x) * 4;
+      image.bytes.setRange(i, i + 4, [b, g, r, 255]);
+    }
+
+    pixel(-8, 275, positive ? 7 : 1, 0, 0);
+    for (final x in [60, 65, 70, 75]) {
+      for (final y in [323, 324, 325]) {
+        pixel(x, y, 26, 26, 26);
+      }
+    }
+  }
+  return image;
+}
+
+VisionImage scaledFirFrame(double scale) {
+  const mx = 20;
+  const my = 10;
+  final width = mx + (80 * scale).floor() + 1;
+  final height = my + (330 * scale).floor() + 1;
+  final image = frameImage(width: width, height: height);
+  void pixel(int x, int y, int value) {
+    final i =
+        ((my + (y * scale).floor()) * width + mx + (x * scale).floor()) * 4;
+    image.bytes.setRange(i, i + 4, [value, value, value, 255]);
+  }
+
+  pixel(-8, 275, 7);
+  for (final x in [60, 65, 70, 75]) {
+    for (final y in [323, 324, 325]) {
+      pixel(x, y, 26);
+    }
+  }
+  return image;
+}
+
 void main() {
+  test('opposite-state windows keep independent FIR evidence', () async {
+    final rig = newRig(
+      firFake: true,
+      script: const VisionScript(
+        peaks: [TemplatePeak(20, 10, 0.95), TemplatePeak(150, 10, 0.9)],
+      ),
+    );
+    final answer = await rig.run(
+      targeted,
+      image: firFrame([(20, 10, true), (150, 10, false)]),
+    );
+    final evidence = recognised(
+      (answer as VisionDelivered<InspectionRecognition>).result,
+    ).evidence;
+    expect(evidence.map((e) => e.fir.value), [FirState.yes, FirState.no]);
+    expect(evidence.map((e) => e.fir.reason), [
+      InspectionFirReason.iconFound,
+      InspectionFirReason.iconAbsent,
+    ]);
+    expect(evidence.map((e) => e.fir.searchedRegion), [
+      const TitleRegion(x: 12, y: 285, width: 88, height: 55),
+      const TitleRegion(x: 142, y: 285, width: 88, height: 55),
+    ]);
+    expect(rig.control.callsOf(VisionOp.matchBest), hasLength(2));
+  });
+
+  test(
+    'complete bottom-edge corner with nonzero x remains searchable',
+    () async {
+      final rig = newRig(
+        firFake: true,
+        script: const VisionScript(peaks: [TemplatePeak(20, 10, 0.9)]),
+      );
+      final answer = await rig.run(
+        targeted,
+        image: firFrame([(20, 10, true)], height: 340),
+      );
+      final fir = recognised(
+        (answer as VisionDelivered<InspectionRecognition>).result,
+      ).evidence.single.fir;
+      expect(fir.value, FirState.yes);
+      expect(
+        fir.searchedRegion,
+        const TitleRegion(x: 12, y: 285, width: 88, height: 55),
+      );
+      expect(rig.control.callsOf(VisionOp.matchBest).single.args.take(4), [
+        88,
+        55,
+        21,
+        21,
+      ]);
+    },
+  );
+
+  test('FIR cache is separate, bounded and uses existing resize modes', () async {
+    final rig = newRig(
+      firFake: true,
+      script: const VisionScript(
+        peaks: [TemplatePeak(20, 10, 0.9)],
+        // Keep the title empty: this test exercises template caching, not OCR,
+        // and eight full title pipelines overflow the fake's 64-entry call log.
+        findRowResults: [0],
+      ),
+    );
+    Future<void> scan(double scale) async {
+      final answer = await rig.run(
+        InspectionRequest(
+          kind: InspectionFrameKind.targeted,
+          clientWidth: (1920 * scale).round(),
+          clientHeight: (1080 * scale).round(),
+        ),
+        image: scaledFirFrame(scale),
+      );
+      final failure = switch (answer) {
+        VisionFailureAnswer<InspectionRecognition>(:final failure) =>
+          failure.message,
+        VisionJobFailed<InspectionRecognition>(:final description) =>
+          description,
+        VisionUnavailableAnswer<InspectionRecognition>(:final reason) => reason,
+        _ => '${answer.runtimeType}',
+      };
+      expect(
+        answer,
+        isA<VisionDelivered<InspectionRecognition>>(),
+        reason: 'scale $scale: $failure',
+      );
+      final result = recognised(
+        (answer as VisionDelivered<InspectionRecognition>).result,
+      );
+      expect(result.evidence.single.fir.value, FirState.yes, reason: '$scale');
+    }
+
+    int resizesTo(int side) => rig.control
+        .callsOf(VisionOp.resize)
+        .where(
+          (c) =>
+              c.args[0] == 28 &&
+              c.args[1] == 28 &&
+              c.args[2] == side &&
+              c.args[3] == side,
+        )
+        .length;
+
+    for (final scale in [1.0, 0.5, 0.75, 1.25, 1.5]) {
+      await scan(scale);
+    }
+    expect([10, 15, 21, 26, 31].map(resizesTo), [1, 1, 1, 1, 1]);
+    await scan(1.5);
+    expect(resizesTo(31), 1);
+    await scan(1.0);
+    expect(resizesTo(21), 2, reason: 'oldest FIR size was evicted');
+    // Marker size 21 must not reuse the check image of the same size.
+    await scan(1.3125);
+    expect(resizesTo(21), 3);
+    final firResizes = rig.control
+        .callsOf(VisionOp.resize)
+        .where((c) => c.args[0] == 28 && [10, 15, 26, 31].contains(c.args[2]));
+    expect(firResizes.map((c) => c.args[4]), [
+      visionInterArea,
+      visionInterArea,
+      visionInterArea,
+      visionInterCubic,
+    ]);
+  });
+
+  test(
+    'intact corner is invariant to frame kind and captured origin',
+    () async {
+      for (final request in [targeted, fullClient]) {
+        for (final origin in [(0, 0), (-80, -40)]) {
+          final rig = newRig(
+            firFake: true,
+            script: const VisionScript(peaks: [TemplatePeak(20, 10, 0.9)]),
+          );
+          final id = rig.frames.createFrame(260, 350, zeros: true);
+          final frame = CaptureFrame(
+            id,
+            frameMetadata(
+              width: 260,
+              height: 350,
+              originX: origin.$1,
+              originY: origin.$2,
+              clipped: origin.$1 != 0,
+            ),
+            rig.frames,
+          );
+          frame.withPixels(
+            (bytes) => bytes.setAll(0, firFrame([(20, 10, true)]).bytes),
+          );
+          final answer = await rig.service.submitFrame(frame, request);
+          expect(frame.isReleased, isTrue);
+          expect(rig.frames.liveCount, 0);
+          final fir = recognised(
+            (answer as VisionDelivered<InspectionRecognition>).result,
+          ).evidence.single.fir;
+          expect(fir.value, FirState.yes, reason: '${request.kind} $origin');
+          expect(
+            fir.searchedRegion,
+            const TitleRegion(x: 12, y: 285, width: 88, height: 55),
+          );
+        }
+      }
+    },
+  );
+
+  test('FIR reading and title survive release and isolate transfer', () async {
+    final rig = newRig(
+      firFake: true,
+      script: const VisionScript(
+        peaks: [TemplatePeak(20, 10, 0.9)],
+        ocrTexts: ['TITLE'],
+      ),
+    );
+    final id = rig.frames.createFrame(260, 350, zeros: true);
+    final frame = CaptureFrame(
+      id,
+      frameMetadata(width: 260, height: 350),
+      rig.frames,
+    );
+    frame.withPixels(
+      (bytes) => bytes.setAll(0, firFrame([(20, 10, true)]).bytes),
+    );
+    final answer = await rig.service.submitFrame(frame, targeted);
+    expect(frame.isReleased, isTrue);
+    expect(rig.frames.liveCount, 0);
+    final e = recognised(
+      (answer as VisionDelivered<InspectionRecognition>).result,
+    ).evidence.single;
+    expect(e.text, 'TITLE');
+    expect(e.crop, isNotEmpty);
+    expect(e.fir.value, FirState.yes);
+    expect(e.fir.reason, InspectionFirReason.iconFound);
+    expect(
+      e.fir.searchedRegion,
+      const TitleRegion(x: 12, y: 285, width: 88, height: 55),
+    );
+    expect(e.fir.score, 0.9);
+  });
+
+  test('native FIR failure propagates and releases frame', () async {
+    final rig = newRig(
+      firFake: true,
+      script: const VisionScript(
+        peaks: [TemplatePeak(20, 10, 0.9)],
+        failures: [(op: VisionOp.matchBest, call: 0, status: -4)],
+      ),
+    );
+    final id = rig.frames.createFrame(260, 350, zeros: true);
+    final frame = CaptureFrame(
+      id,
+      frameMetadata(width: 260, height: 350),
+      rig.frames,
+    );
+    frame.withPixels(
+      (bytes) => bytes.setAll(0, firFrame([(20, 10, true)]).bytes),
+    );
+    final answer = await rig.service.submitFrame(frame, targeted);
+    expect(
+      answer,
+      isA<VisionFailureAnswer<InspectionRecognition>>().having(
+        (a) => a.failure,
+        'failure',
+        isA<VisionNativeFailure>().having((f) => f.status, 'status', -4),
+      ),
+    );
+    expect(frame.isReleased, isTrue);
+    expect(rig.frames.liveCount, 0);
+  });
+
+  test('native FIR template resize failure propagates', () async {
+    final rig = newRig(
+      firFake: true,
+      script: const VisionScript(
+        peaks: [TemplatePeak(20, 10, 0.9)],
+        failures: [(op: VisionOp.resize, call: 1, status: -3)],
+      ),
+    );
+    final answer = await rig.run(targeted, image: firFrame([(20, 10, true)]));
+    expect(
+      answer,
+      isA<VisionFailureAnswer<InspectionRecognition>>().having(
+        (a) => a.failure,
+        'failure',
+        isA<VisionNativeFailure>().having((f) => f.status, 'status', -3),
+      ),
+    );
+    expect(rig.control.callsOf(VisionOp.matchBest), isEmpty);
+  });
+
+  test('constant resized check is unreadable and never reaches NCC', () async {
+    final rig = newRig(
+      firFake: true,
+      constantFirResize: true,
+      script: const VisionScript(peaks: [TemplatePeak(20, 10, 0.9)]),
+    );
+    final answer = await rig.run(targeted, image: firFrame([(20, 10, true)]));
+    final fir = recognised(
+      (answer as VisionDelivered<InspectionRecognition>).result,
+    ).evidence.single.fir;
+    expect(fir.reason, InspectionFirReason.cornerUnreadable);
+    expect(fir.value, FirState.unknown);
+    expect(rig.control.callsOf(VisionOp.matchBest), isEmpty);
+  });
+
+  test('missing FIR template fails rather than producing No', () async {
+    final rig = newRig(withFirTemplate: false);
+    final answer = await rig.run(targeted);
+    expect(
+      answer,
+      isA<VisionJobFailed<InspectionRecognition>>().having(
+        (a) => a.description,
+        'description',
+        contains(firTemplateName),
+      ),
+    );
+    expect(rig.control.operationCount, 0);
+  });
+
+  test('constant source check template fails worker startup', () async {
+    final rig = newRig(constantFirTemplate: true);
+    final answer = await rig.run(targeted);
+    expect(
+      answer,
+      isA<VisionUnavailableAnswer<InspectionRecognition>>()
+          .having((a) => a.reason, 'reason', contains(firTemplateName))
+          .having((a) => a.reason, 'reason', contains('zero variance')),
+    );
+    expect(
+      rig.service.unavailableReason,
+      isA<VisionInvalidTemplateStart>()
+          .having((failure) => failure.name, 'name', firTemplateName)
+          .having(
+            (failure) => failure.detail,
+            'detail',
+            contains('zero variance'),
+          ),
+    );
+    expect(rig.control.operationCount, 0);
+  });
+
   test('template under 2px or larger than frame rejects scaleOutOfRange '
       'without matching', () async {
     // A 192x108 client scales the 28 px template to 1 px; a 7680x4320 client

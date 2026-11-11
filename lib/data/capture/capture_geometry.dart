@@ -49,7 +49,7 @@ const int targetedLeftReference = 440;
 const int targetedRightReference = 700;
 
 /// Reference-resolution extent of the targeted band below the client centre.
-const int targetedBelowCentreReference = 60;
+const int targetedBelowCentreReference = 400;
 
 /// Reference client width and height (1920x1080) that define the scale.
 const int _referenceWidth = 1920;
@@ -60,7 +60,7 @@ const int _referenceHeight = 1080; // 2 * 540, the reference half height.
 ///
 /// With physical client size `w x h`, `cx = w div 2`, `cy = h div 2` and the
 /// exact rational scale `s = min(w / 1920, h / 1080)`, the band is
-/// `(cx - f(440), 0, f(440) + f(700), cy + f(60))` where `f(k) = floor(k * s)`.
+/// `(cx - f(440), 0, f(440) + f(700), cy + f(400))` where `f(k) = floor(k * s)`.
 /// The point ([x], [y]) no longer moves the region; it must still lie inside
 /// the client or the plan fails with [RoiOutsideClient]. DPI never changes
 /// the region, and only the virtual desktop can clip it.

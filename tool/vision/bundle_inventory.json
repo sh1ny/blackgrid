@@ -20,6 +20,8 @@
     { "path": "data/vision/self_check/title.json", "role": "sample" },
     { "path": "data/vision/marker/inspection_marker.gray", "role": "game-artwork", "noticeAnchor": "inspection-marker-template" },
     { "path": "data/vision/marker/inspection_marker.json", "role": "game-artwork", "noticeAnchor": "inspection-marker-template" },
+    { "path": "data/vision/fir/inspection_fir.gray", "role": "game-artwork", "noticeAnchor": "inspection-fir-template" },
+    { "path": "data/vision/fir/inspection_fir.json", "role": "game-artwork", "noticeAnchor": "inspection-fir-template" },
     { "path": "data/vision/runtime.manifest.json", "role": "vision-binding" },
     { "path": "msvcp140.dll", "role": "vcruntime", "minVersion": "14.33.0.0" },
     { "path": "vcruntime140.dll", "role": "vcruntime", "minVersion": "14.33.0.0" },

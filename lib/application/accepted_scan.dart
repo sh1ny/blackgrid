@@ -1,5 +1,6 @@
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
+import '../data/vision/inspection_fir.dart';
 import 'scan_epoch.dart';
 
 /// An immutable record of one scan the app accepted.
@@ -15,6 +16,7 @@ class AcceptedScan {
     required this.catalogRevision,
     required this.acceptedAt,
     required this.epoch,
+    required this.detectedFir,
     required this.decisionAtAcceptance,
   });
 
@@ -36,6 +38,9 @@ class AcceptedScan {
   /// The epoch the scan began in.
   final ScanEpoch epoch;
 
-  /// The decision computed at acceptance, with FIR unknown.
+  /// The FIR observation attached to the winning inspection.
+  final InspectionFirReading detectedFir;
+
+  /// The decision computed at acceptance using [detectedFir].
   final ItemDecision decisionAtAcceptance;
 }

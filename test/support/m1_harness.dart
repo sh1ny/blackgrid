@@ -61,7 +61,7 @@ class M1Harness {
       scanFrameRecorder: scanFrameRecorder,
       scanLogDirectory: scanLogs,
       scanRuntimeDirectory: scanPorts == null ? null : r'C:\fake\bundle',
-      scanMarkerLoader: scanPorts?.loader,
+      scanTemplatesLoader: scanPorts?.loader,
       scanCaptureFactory: scanPorts?.captureFactory,
       scanVisionFactory: scanPorts?.visionFactory,
       scanPlatformFactory: scanPorts?.platformFactory,

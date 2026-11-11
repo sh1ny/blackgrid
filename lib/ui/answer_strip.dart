@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../application/app_services.dart';
 import '../application/selection_controller.dart';
+import '../data/vision/inspection_fir.dart';
 import '../domain/catalog.dart';
 import '../domain/decision.dart';
 import '../domain/inspection_context.dart';
@@ -325,21 +326,33 @@ class _PriceBlock extends StatelessWidget {
 class FirControls extends StatelessWidget {
   /// Creates a selector bound to [services]' selection controller.
   ///
-  /// A non-null [caption] shows after the control on the same row, for a note
-  /// on where the value came from. Null shows nothing.
+  /// A non-null [caption] replaces the derived scan/manual source note.
   const FirControls({super.key, required this.services, this.caption});
 
   /// The owner of the current item's FIR state.
   final AppServices services;
 
-  /// An optional note shown inline after the control.
+  /// An optional replacement for the derived source note.
   final String? caption;
 
   @override
   Widget build(BuildContext context) {
     final ember = context.ember;
     final selection = services.selection;
-    final note = caption;
+    final effective = selection.fir;
+    final note =
+        caption ??
+        switch (selection.firSource) {
+          FirSource.unset => null,
+          FirSource.manual => 'Manual override',
+          FirSource.scan => switch (selection.detectedFir!.reason) {
+            InspectionFirReason.iconFound ||
+            InspectionFirReason.iconAbsent => 'From scan',
+            InspectionFirReason.cornerCutOff => 'From scan · corner cut off',
+            InspectionFirReason.cornerUnreadable =>
+              'From scan · corner unreadable',
+          },
+        };
     return Wrap(
       spacing: 8,
       runSpacing: 4,
@@ -351,6 +364,7 @@ class FirControls extends StatelessWidget {
         ),
         SegmentedButton<FirState>(
           showSelectedIcon: false,
+          emptySelectionAllowed: true,
           style: SegmentedButton.styleFrom(
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -366,13 +380,19 @@ class FirControls extends StatelessWidget {
                 }),
               ),
           ],
-          selected: {selection.fir},
+          selected: {effective},
           onSelectionChanged: selection.item == null
               ? null
-              : (chosen) => selection.setFir(chosen.first),
+              : (chosen) => selection.setFir(
+                  chosen.isEmpty ? effective : chosen.single,
+                ),
         ),
         if (note != null)
-          Text(note, style: EmberType.label.copyWith(color: ember.inkTertiary)),
+          Text(
+            note,
+            key: const Key('fir-source'),
+            style: EmberType.label.copyWith(color: ember.inkTertiary),
+          ),
       ],
     );
   }

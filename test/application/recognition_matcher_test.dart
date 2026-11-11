@@ -31,6 +31,9 @@ CatalogSnapshot _snapshot() => CatalogSnapshot(
 
 InspectionEvidence _evidence(String text, {double score = 0.9}) =>
     InspectionEvidence(
+      fir: const InspectionFirReading(
+        reason: InspectionFirReason.cornerUnreadable,
+      ),
       markerScore: score,
       markerX: 1,
       markerY: 2,
@@ -79,6 +82,9 @@ void main() {
 
     test('flags an empty title region', () {
       final empty = InspectionEvidence(
+        fir: const InspectionFirReading(
+          reason: InspectionFirReason.cornerUnreadable,
+        ),
         markerScore: 0.9,
         markerX: 0,
         markerY: 0,

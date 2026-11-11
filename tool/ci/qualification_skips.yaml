@@ -12,6 +12,10 @@
 # like), a capture-guard reason or a game-running reason: those must fail the
 # audit, and bundle-based tests must run, never skip.
 - kind: private_input
+  file: test/qualification/inspection_fir_test.dart
+  reason: Requires the twelve private found-in-raid JPGs and their expected hashes.
+  why: Needs the owner's private, hash-bound inspection pictures.
+- kind: private_input
   file: test/qualification/inspection_corpus_test.dart
   reason: >-
     Requires BLACKGRID_CORPUS_DIR (a corpus directory, see

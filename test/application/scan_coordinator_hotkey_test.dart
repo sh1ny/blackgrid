@@ -77,7 +77,10 @@ class _Rig {
     runtimeDirectory: r'C:\fake\bundle',
     closeTimeout: const Duration(seconds: 5),
     waiter: immediateScanWaiter,
-    markerLoader: (_) async => MarkerTemplateLoaded(_marker),
+    templatesLoader: (_) async => InspectionTemplatesLoaded([
+      _marker,
+      VisionTemplate(firTemplateName, _marker.image),
+    ]),
     captureFactory: () {
       final capture = FakeScanCapture(events);
       captures.add(capture);

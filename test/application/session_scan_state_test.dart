@@ -1,6 +1,7 @@
 import 'package:blackgrid/application/accepted_scan.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/application/session_scan_state.dart';
+import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,9 @@ AcceptedScan scan(int reportId, {String itemId = 'b'}) => AcceptedScan(
   catalogRevision: 'r1',
   acceptedAt: DateTime.utc(2026, 10, 20, 12, reportId),
   epoch: const ScanEpoch(1, 1),
+  detectedFir: const InspectionFirReading(
+    reason: InspectionFirReason.cornerUnreadable,
+  ),
   decisionAtAcceptance: ItemDecision(
     recommendation: Recommendation.keep,
     reasons: const [],

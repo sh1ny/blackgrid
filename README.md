@@ -38,7 +38,9 @@ To see which extracts you have, press O in raid to open the list of your extract
 
 The map and the scanner work independently. Searching for an item by name needs no scanning.
 
-Live scan stays off until you turn it on in the Scanner area. While it is on, inspecting an item in game makes Blackgrid capture a small area of the screen around your mouse, read the item's name and show the advice. A scan starts in one of two ways. You release the mouse button over the game window, or you press the scan key. The scan key is F9 by default, and you can pick any key from F1 to F24, or none. When you turn live scan off, Blackgrid stops watching mouse clicks and releases the scan key.
+Live scan stays off until you turn it on in Settings or the status bar. While it is on, inspecting an item in game makes Blackgrid capture a centred band of the client, read the item's name and show the advice. A scan starts when you release the mouse button over the game window or press the scan key. The scan key is F9 by default; Settings lets you pick F1 to F24, or none. Turning live scan off stops watching mouse clicks and releases the scan key.
+
+Accepted scans also read **Found in raid** from that inspection's picture: Yes for a recognised check, No for a complete readable corner without one, and Unknown for a cut-off or unreadable corner. The shared control on Map and Scanner shows the source. Choosing Unknown, Yes or No—even the selected value—sets a manual override for this selection. A new scan clears it. **Back to latest scan** restores the original detection, not the old override. Manual, history and correction selections start Unknown; none of these FIR choices is saved.
 
 ### Blackgrid does not touch the game
 
@@ -241,7 +243,7 @@ The engine checks the rows from top to bottom and uses the first one that matche
 | Trader | A trader cash offer exists. When the Flea and trader prices are equal, the trader wins. When two traders offer the same price, the trader with the lower ID wins |
 | Price unavailable | None of the rows above match |
 
-Prices are gross RUB, before Flea fees. You set found-in-raid status for each inspection. It resets when the item, the mode or the progress data changes.
+Prices are gross RUB, before Flea fees. Accepted scans supply detected found-in-raid evidence; an explicit manual choice overrides it. Same-selection item-data, progress and age refreshes preserve both detection and override. A new selection or mode/session change clears the old context; returning to the latest scan restores its detection and clears the override.
 </details>
 
 <details>
@@ -388,6 +390,17 @@ Some `<use>` elements point to symbols that the map's publisher deleted, such as
 | 3 | A step did not finish within 60 s |
 
 `blackgrid.exe` is a GUI app, so the shell does not wait for it by default. Use `start /wait` in cmd or `Start-Process -Wait -PassThru` in PowerShell. To check a built bundle offline, run `mise run bundle:check -- build/windows/x64/runner/Release`.
+
+The FIR check template is reproducible offline from the private owner-supplied
+source `.qualification/found-in-raid/afak_fir_yes_no_medal_3440x1440.jpg`.
+Run `mise exec -- dart run tool/vision/make_fir_template.dart <source>` to
+recreate its raw grayscale and JSON metadata in `assets/vision/fir/`. The
+default recipe uses the unresampled 28×28 crop at (1199, 732) from the
+3440×1440 client. The twelve qualification images remain private; their
+frozen hashes, labels, and geometry are in
+`test/fixtures/vision/fir/manifest.json`. If the artwork is regenerated, update
+its hashes and provenance in `THIRD_PARTY_NOTICES.md`; the bundle check verifies
+the manifest, artwork notices, and metadata.
 </details>
 
 <details>

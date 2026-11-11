@@ -74,22 +74,41 @@ ScanReport acceptedScanReport({
   required ScanEpoch? epoch,
   GameMode? mode = GameMode.pvp,
   String revision = 'r1',
+  InspectionFirReading fir = const InspectionFirReading(
+    reason: InspectionFirReason.cornerUnreadable,
+  ),
+  InspectionFirReading? firstFir,
+  bool fallbackWinner = false,
+  bool withCrop = false,
 }) {
-  final evidence = InspectionEvidence(
-    markerScore: 0.9,
-    markerX: 1,
-    markerY: 2,
-    titleRect: const TitleRegion(x: 1, y: 2, width: 3, height: 4),
-    titleStatus: InspectionTitleStatus.read,
-    text: itemId,
-    crop: Uint8List(0),
-    cropWidth: 0,
-    cropHeight: 0,
-    cropDownscaled: false,
-    qpcMarker: 1,
-    qpcTitle: 2,
-    qpcPreprocess: 3,
-    qpcOcr: 4,
+  InspectionEvidence entry(InspectionFirReading reading, int x) =>
+      InspectionEvidence(
+        markerScore: x == 1 ? 0.95 : 0.9,
+        markerX: x,
+        markerY: 2,
+        titleRect: const TitleRegion(x: 1, y: 2, width: 3, height: 4),
+        titleStatus: InspectionTitleStatus.read,
+        text: itemId,
+        fir: reading,
+        crop: withCrop ? Uint8List.fromList([1]) : Uint8List(0),
+        cropWidth: withCrop ? 1 : 0,
+        cropHeight: withCrop ? 1 : 0,
+        cropDownscaled: false,
+        qpcMarker: 1,
+        qpcTitle: 2,
+        qpcPreprocess: 3,
+        qpcOcr: 4,
+      );
+  final evidence = entry(fir, 2);
+  final first = firstFir == null ? null : entry(firstFir, 1);
+  InspectionRecognised recognition(
+    InspectionFrameKind kind,
+    List<InspectionEvidence> entries,
+  ) => InspectionRecognised(
+    kind: kind,
+    scale: 1,
+    bestMarkerScore: entries.first.markerScore,
+    evidence: entries,
   );
   return ScanReport(
     id: id,
@@ -111,6 +130,20 @@ ScanReport acceptedScanReport({
         evidence,
       ),
     ),
+    winningPass: fallbackWinner ? ScanPass.fallback : ScanPass.targeted,
+    targeted: PassReport(
+      recognition: recognition(
+        InspectionFrameKind.targeted,
+        fallbackWinner ? [first!] : [?first, evidence],
+      ),
+    ),
+    fallback: fallbackWinner
+        ? PassReport(
+            recognition: recognition(InspectionFrameKind.fullClient, [
+              evidence,
+            ]),
+          )
+        : null,
     timeline: const ScanTimeline(trigger: 0),
     droppedTriggers: 0,
     supersededTriggers: 0,
@@ -144,6 +177,9 @@ ScanReport rejectedScanReport({
           titleRect: const TitleRegion(x: 1, y: 2, width: 3, height: 4),
           titleStatus: InspectionTitleStatus.read,
           text: text,
+          fir: const InspectionFirReading(
+            reason: InspectionFirReason.cornerUnreadable,
+          ),
           crop: Uint8List(0),
           cropWidth: 0,
           cropHeight: 0,

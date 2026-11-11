@@ -405,19 +405,20 @@ ScanFailure scanFailureFromVisionStart(VisionStartFailure failure) {
   return ScanFailure(code, failure.message);
 }
 
-/// Maps a marker template load to its failure, or null when it loaded.
-ScanFailure? scanFailureFromMarkerTemplate(MarkerTemplateResult result) =>
-    switch (result) {
-      MarkerTemplateLoaded() => null,
-      MarkerTemplateUnavailable(:final failure) => ScanFailure(
-        ScanFailureCode.markerTemplateUnavailable,
-        failure.message,
-      ),
-      MarkerTemplateInvalid(:final message) => ScanFailure(
-        ScanFailureCode.markerTemplateInvalid,
-        message,
-      ),
-    };
+/// Maps an inspection asset load to its failure, or null when it loaded.
+ScanFailure? scanFailureFromInspectionTemplates(
+  InspectionTemplatesResult result,
+) => switch (result) {
+  InspectionTemplatesLoaded() => null,
+  InspectionTemplatesUnavailable(:final failure) => ScanFailure(
+    ScanFailureCode.markerTemplateUnavailable,
+    failure.message,
+  ),
+  InspectionTemplatesInvalid(:final message) => ScanFailure(
+    ScanFailureCode.markerTemplateInvalid,
+    message,
+  ),
+};
 
 /// QPC stamps of one pass, on the trigger and capture clock. A stage the pass
 /// did not reach is null, never zero.
@@ -1062,6 +1063,7 @@ PassReport? _stripPass(PassReport? pass) => pass == null
       );
 
 InspectionEvidence _stripEntry(InspectionEvidence e) => InspectionEvidence(
+  fir: e.fir,
   markerScore: e.markerScore,
   markerX: e.markerX,
   markerY: e.markerY,
@@ -1191,17 +1193,17 @@ abstract interface class ScanPlatform {
   ScanClock get clock;
 }
 
-/// Loads the marker template from a runtime directory.
-typedef ScanMarkerLoader = Future<MarkerTemplateResult> Function(
+/// Loads the complete inspection template set from a runtime directory.
+typedef ScanTemplatesLoader = Future<InspectionTemplatesResult> Function(
   String runtimeDirectory,
 );
 
 /// Builds the capture service of one activation.
 typedef ScanCaptureFactory = ScanCapturePort Function();
 
-/// Builds the vision service of one activation over a loaded marker template.
+/// Builds the vision service over the complete verified inspection templates.
 typedef ScanVisionFactory = ScanVisionPort Function(
-  VisionTemplate marker,
+  List<VisionTemplate> templates,
   String runtimeDirectory,
 );
 
@@ -1219,9 +1221,10 @@ typedef ScanMatcher = Future<RecognitionOutcome<InspectionEvidence>> Function(
   required GameMode mode,
 });
 
-/// Loads the marker template in one `Isolate.run`.
-Future<MarkerTemplateResult> loadMarkerTemplateOffUi(String runtimeDirectory) =>
-    Isolate.run(() => loadMarkerTemplate(runtimeDirectory));
+/// Loads the inspection templates in one `Isolate.run`.
+Future<InspectionTemplatesResult> loadInspectionTemplatesOffUi(
+  String runtimeDirectory,
+) => Isolate.run(() => loadInspectionTemplates(runtimeDirectory));
 
 /// The default [ScanIndexBuilder].
 Future<TitleMatchIndex> buildScanIndex(CatalogSnapshot snapshot) =>
@@ -1253,15 +1256,15 @@ ScanVisionPort scanVisionPort(
 ) => _VisionServicePort(service);
 
 /// The default [ScanVisionFactory]: a real vision service running the
-/// inspection recognition job over [marker].
+/// inspection recognition job over [templates].
 ScanVisionPort openDefaultScanVision(
-  VisionTemplate marker,
+  List<VisionTemplate> templates,
   String runtimeDirectory,
 ) => _VisionServicePort(
   VisionService<InspectionRequest, InspectionRecognition>(
     runtimeDirectory: runtimeDirectory,
     jobFactory: inspectionRecognitionJobFactory,
-    templates: [marker],
+    templates: templates,
   ),
 );
 
@@ -1591,7 +1594,7 @@ Future<void> _timerWaiter(Duration duration) {
 }
 
 /// Owns live scanning for the app: the switch, the activation life of the
-/// marker template, vision worker and mouse hook, and the status the Scanner
+/// inspection templates, vision worker and mouse hook, and the status the Scanner
 /// shows (ADR-0013).
 ///
 /// A coordinator is the only writer of the session intent [switchOn]. It reads
@@ -1611,7 +1614,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     required this.settings,
     required this.catalog,
     required this.appendLogLine,
-    this._markerLoader = loadMarkerTemplateOffUi,
+    this._templatesLoader = loadInspectionTemplatesOffUi,
     this._captureFactory = openDefaultScanCapture,
     this._visionFactory = openDefaultScanVision,
     this._platformFactory = openDefaultScanPlatform,
@@ -1663,7 +1666,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
   /// How many published scans [recent] keeps.
   static const int recentLimit = 10;
 
-  final ScanMarkerLoader _markerLoader;
+  final ScanTemplatesLoader _templatesLoader;
   final ScanCaptureFactory _captureFactory;
   final ScanVisionFactory _visionFactory;
   final ScanPlatformFactory _platformFactory;
@@ -2211,27 +2214,30 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
       _hookWarning = null;
     }
 
-    // 1. The marker template, in one Isolate.run.
-    final MarkerTemplateResult? loaded;
+    // 1. Both inspection templates, in one Isolate.run.
+    final InspectionTemplatesResult? loaded;
     try {
-      loaded = (await _unlessCancelled(a, _markerLoader(runtimeDirectory)))?.$1;
+      loaded = (await _unlessCancelled(
+        a,
+        _templatesLoader(runtimeDirectory),
+      ))?.$1;
     } on Object catch (error) {
       await _fail(
         a,
         ScanFailure(
           ScanFailureCode.markerTemplateUnavailable,
-          'The marker template could not be loaded: $error',
+          'The inspection templates could not be loaded: $error',
         ),
       );
       return;
     }
     if (loaded == null || _stale(a)) return;
-    final MarkerTemplateLoaded marker;
+    final InspectionTemplatesLoaded marker;
     switch (loaded) {
-      case MarkerTemplateLoaded():
+      case InspectionTemplatesLoaded():
         marker = loaded;
-      case MarkerTemplateUnavailable() || MarkerTemplateInvalid():
-        await _fail(a, scanFailureFromMarkerTemplate(loaded)!);
+      case InspectionTemplatesUnavailable() || InspectionTemplatesInvalid():
+        await _fail(a, scanFailureFromInspectionTemplates(loaded)!);
         return;
     }
 
@@ -2239,7 +2245,7 @@ class ScanCoordinator extends ChangeNotifier implements AcceptedScanSource {
     final ScanVisionPort vision;
     try {
       a.capture = _captureFactory();
-      vision = a.vision = _visionFactory(marker.template, runtimeDirectory);
+      vision = a.vision = _visionFactory(marker.templates, runtimeDirectory);
     } on Object catch (error) {
       await _fail(
         a,

@@ -43,7 +43,7 @@ ReplayFrameResult _result({
 }) => ReplayFrameResult(
   frameId: id,
   session: 'sess',
-  band: const CaptureRect(520, 0, 1140, 600),
+  band: const CaptureRect(520, 0, 1140, 940),
   targetedAccepted: targeted,
   fullClientAccepted: full,
   targetedRejectReason: targeted == null ? 'belowSimilarity' : null,
@@ -157,7 +157,7 @@ void main() {
       )!;
       expect(
         (band.left, band.top, band.width, band.height),
-        (520, 0, 1140, 600),
+        (520, 0, 1140, 940),
       );
     });
 
@@ -174,12 +174,12 @@ void main() {
     });
 
     test('contains a marker by its top-left point', () {
-      const band = CaptureRect(520, 0, 1140, 600);
+      const band = CaptureRect(520, 0, 1140, 940);
       expect(markerInsideBand(band, 520, 0), isTrue);
-      expect(markerInsideBand(band, 1659, 599), isTrue);
+      expect(markerInsideBand(band, 1659, 939), isTrue);
       expect(markerInsideBand(band, 1660, 10), isFalse);
       expect(markerInsideBand(band, 519, 10), isFalse);
-      expect(markerInsideBand(band, 700, 600), isFalse);
+      expect(markerInsideBand(band, 700, 940), isFalse);
     });
   });
 
@@ -218,7 +218,7 @@ void main() {
         'left': 520,
         'top': 0,
         'width': 1140,
-        'height': 600,
+        'height': 940,
       });
       expect(json['targetedAccepted'], isNull);
       expect(json['fullClientAccepted'], 'y');
