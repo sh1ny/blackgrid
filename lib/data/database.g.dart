@@ -4031,6 +4031,1707 @@ class LiveMapSourcesCompanion extends UpdateCompanion<LiveMapSource> {
   }
 }
 
+class $ProgressMetaTable extends ProgressMeta
+    with TableInfo<$ProgressMetaTable, ProgressMetaRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProgressMetaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, deviceId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'progress_meta';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProgressMetaRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProgressMetaRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProgressMetaRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ProgressMetaTable createAlias(String alias) {
+    return $ProgressMetaTable(attachedDatabase, alias);
+  }
+}
+
+class ProgressMetaRecord extends DataClass
+    implements Insertable<ProgressMetaRecord> {
+  final int id;
+  final String deviceId;
+  const ProgressMetaRecord({required this.id, required this.deviceId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['device_id'] = Variable<String>(deviceId);
+    return map;
+  }
+
+  ProgressMetaCompanion toCompanion(bool nullToAbsent) {
+    return ProgressMetaCompanion(id: Value(id), deviceId: Value(deviceId));
+  }
+
+  factory ProgressMetaRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProgressMetaRecord(
+      id: serializer.fromJson<int>(json['id']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'deviceId': serializer.toJson<String>(deviceId),
+    };
+  }
+
+  ProgressMetaRecord copyWith({int? id, String? deviceId}) =>
+      ProgressMetaRecord(
+        id: id ?? this.id,
+        deviceId: deviceId ?? this.deviceId,
+      );
+  ProgressMetaRecord copyWithCompanion(ProgressMetaCompanion data) {
+    return ProgressMetaRecord(
+      id: data.id.present ? data.id.value : this.id,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressMetaRecord(')
+          ..write('id: $id, ')
+          ..write('deviceId: $deviceId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, deviceId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProgressMetaRecord &&
+          other.id == this.id &&
+          other.deviceId == this.deviceId);
+}
+
+class ProgressMetaCompanion extends UpdateCompanion<ProgressMetaRecord> {
+  final Value<int> id;
+  final Value<String> deviceId;
+  const ProgressMetaCompanion({
+    this.id = const Value.absent(),
+    this.deviceId = const Value.absent(),
+  });
+  ProgressMetaCompanion.insert({
+    this.id = const Value.absent(),
+    required String deviceId,
+  }) : deviceId = Value(deviceId);
+  static Insertable<ProgressMetaRecord> custom({
+    Expression<int>? id,
+    Expression<String>? deviceId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (deviceId != null) 'device_id': deviceId,
+    });
+  }
+
+  ProgressMetaCompanion copyWith({Value<int>? id, Value<String>? deviceId}) {
+    return ProgressMetaCompanion(
+      id: id ?? this.id,
+      deviceId: deviceId ?? this.deviceId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressMetaCompanion(')
+          ..write('id: $id, ')
+          ..write('deviceId: $deviceId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProgressCyclesTable extends ProgressCycles
+    with TableInfo<$ProgressCyclesTable, ProgressCycleRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProgressCyclesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _cycleIdMeta = const VerificationMeta(
+    'cycleId',
+  );
+  @override
+  late final GeneratedColumn<String> cycleId = GeneratedColumn<String>(
+    'cycle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMsMeta = const VerificationMeta(
+    'createdAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> createdAtMs = GeneratedColumn<int>(
+    'created_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [cycleId, mode, createdAtMs, revision];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'progress_cycles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProgressCycleRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cycle_id')) {
+      context.handle(
+        _cycleIdMeta,
+        cycleId.isAcceptableOrUnknown(data['cycle_id']!, _cycleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cycleIdMeta);
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('created_at_ms')) {
+      context.handle(
+        _createdAtMsMeta,
+        createdAtMs.isAcceptableOrUnknown(
+          data['created_at_ms']!,
+          _createdAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMsMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {cycleId};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {mode, cycleId},
+  ];
+  @override
+  ProgressCycleRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProgressCycleRecord(
+      cycleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_id'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      createdAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_ms'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+    );
+  }
+
+  @override
+  $ProgressCyclesTable createAlias(String alias) {
+    return $ProgressCyclesTable(attachedDatabase, alias);
+  }
+}
+
+class ProgressCycleRecord extends DataClass
+    implements Insertable<ProgressCycleRecord> {
+  final String cycleId;
+  final String mode;
+  final int createdAtMs;
+  final int revision;
+  const ProgressCycleRecord({
+    required this.cycleId,
+    required this.mode,
+    required this.createdAtMs,
+    required this.revision,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cycle_id'] = Variable<String>(cycleId);
+    map['mode'] = Variable<String>(mode);
+    map['created_at_ms'] = Variable<int>(createdAtMs);
+    map['revision'] = Variable<int>(revision);
+    return map;
+  }
+
+  ProgressCyclesCompanion toCompanion(bool nullToAbsent) {
+    return ProgressCyclesCompanion(
+      cycleId: Value(cycleId),
+      mode: Value(mode),
+      createdAtMs: Value(createdAtMs),
+      revision: Value(revision),
+    );
+  }
+
+  factory ProgressCycleRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProgressCycleRecord(
+      cycleId: serializer.fromJson<String>(json['cycleId']),
+      mode: serializer.fromJson<String>(json['mode']),
+      createdAtMs: serializer.fromJson<int>(json['createdAtMs']),
+      revision: serializer.fromJson<int>(json['revision']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'cycleId': serializer.toJson<String>(cycleId),
+      'mode': serializer.toJson<String>(mode),
+      'createdAtMs': serializer.toJson<int>(createdAtMs),
+      'revision': serializer.toJson<int>(revision),
+    };
+  }
+
+  ProgressCycleRecord copyWith({
+    String? cycleId,
+    String? mode,
+    int? createdAtMs,
+    int? revision,
+  }) => ProgressCycleRecord(
+    cycleId: cycleId ?? this.cycleId,
+    mode: mode ?? this.mode,
+    createdAtMs: createdAtMs ?? this.createdAtMs,
+    revision: revision ?? this.revision,
+  );
+  ProgressCycleRecord copyWithCompanion(ProgressCyclesCompanion data) {
+    return ProgressCycleRecord(
+      cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      createdAtMs: data.createdAtMs.present
+          ? data.createdAtMs.value
+          : this.createdAtMs,
+      revision: data.revision.present ? data.revision.value : this.revision,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressCycleRecord(')
+          ..write('cycleId: $cycleId, ')
+          ..write('mode: $mode, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('revision: $revision')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(cycleId, mode, createdAtMs, revision);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProgressCycleRecord &&
+          other.cycleId == this.cycleId &&
+          other.mode == this.mode &&
+          other.createdAtMs == this.createdAtMs &&
+          other.revision == this.revision);
+}
+
+class ProgressCyclesCompanion extends UpdateCompanion<ProgressCycleRecord> {
+  final Value<String> cycleId;
+  final Value<String> mode;
+  final Value<int> createdAtMs;
+  final Value<int> revision;
+  final Value<int> rowid;
+  const ProgressCyclesCompanion({
+    this.cycleId = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.createdAtMs = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProgressCyclesCompanion.insert({
+    required String cycleId,
+    required String mode,
+    required int createdAtMs,
+    this.revision = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : cycleId = Value(cycleId),
+       mode = Value(mode),
+       createdAtMs = Value(createdAtMs);
+  static Insertable<ProgressCycleRecord> custom({
+    Expression<String>? cycleId,
+    Expression<String>? mode,
+    Expression<int>? createdAtMs,
+    Expression<int>? revision,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (cycleId != null) 'cycle_id': cycleId,
+      if (mode != null) 'mode': mode,
+      if (createdAtMs != null) 'created_at_ms': createdAtMs,
+      if (revision != null) 'revision': revision,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProgressCyclesCompanion copyWith({
+    Value<String>? cycleId,
+    Value<String>? mode,
+    Value<int>? createdAtMs,
+    Value<int>? revision,
+    Value<int>? rowid,
+  }) {
+    return ProgressCyclesCompanion(
+      cycleId: cycleId ?? this.cycleId,
+      mode: mode ?? this.mode,
+      createdAtMs: createdAtMs ?? this.createdAtMs,
+      revision: revision ?? this.revision,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (cycleId.present) {
+      map['cycle_id'] = Variable<String>(cycleId.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (createdAtMs.present) {
+      map['created_at_ms'] = Variable<int>(createdAtMs.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressCyclesCompanion(')
+          ..write('cycleId: $cycleId, ')
+          ..write('mode: $mode, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('revision: $revision, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProgressEventsTable extends ProgressEvents
+    with TableInfo<$ProgressEventsTable, ProgressEventRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProgressEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sequenceMeta = const VerificationMeta(
+    'sequence',
+  );
+  @override
+  late final GeneratedColumn<int> sequence = GeneratedColumn<int>(
+    'sequence',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<String> eventId = GeneratedColumn<String>(
+    'event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cycleIdMeta = const VerificationMeta(
+    'cycleId',
+  );
+  @override
+  late final GeneratedColumn<String> cycleId = GeneratedColumn<String>(
+    'cycle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _occurredAtMsMeta = const VerificationMeta(
+    'occurredAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> occurredAtMs = GeneratedColumn<int>(
+    'occurred_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceRankMeta = const VerificationMeta(
+    'sourceRank',
+  );
+  @override
+  late final GeneratedColumn<int> sourceRank = GeneratedColumn<int>(
+    'source_rank',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityKindMeta = const VerificationMeta(
+    'entityKind',
+  );
+  @override
+  late final GeneratedColumn<String> entityKind = GeneratedColumn<String>(
+    'entity_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldMeta = const VerificationMeta('field');
+  @override
+  late final GeneratedColumn<String> field = GeneratedColumn<String>(
+    'field',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formatVersionMeta = const VerificationMeta(
+    'formatVersion',
+  );
+  @override
+  late final GeneratedColumn<int> formatVersion = GeneratedColumn<int>(
+    'format_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _canonicalPayloadMeta = const VerificationMeta(
+    'canonicalPayload',
+  );
+  @override
+  late final GeneratedColumn<String> canonicalPayload = GeneratedColumn<String>(
+    'canonical_payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _undoOfMeta = const VerificationMeta('undoOf');
+  @override
+  late final GeneratedColumn<String> undoOf = GeneratedColumn<String>(
+    'undo_of',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    sequence,
+    eventId,
+    mode,
+    cycleId,
+    occurredAtMs,
+    sourceRank,
+    deviceId,
+    entityKind,
+    entityId,
+    field,
+    formatVersion,
+    canonicalPayload,
+    undoOf,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'progress_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProgressEventRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sequence')) {
+      context.handle(
+        _sequenceMeta,
+        sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta),
+      );
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('cycle_id')) {
+      context.handle(
+        _cycleIdMeta,
+        cycleId.isAcceptableOrUnknown(data['cycle_id']!, _cycleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cycleIdMeta);
+    }
+    if (data.containsKey('occurred_at_ms')) {
+      context.handle(
+        _occurredAtMsMeta,
+        occurredAtMs.isAcceptableOrUnknown(
+          data['occurred_at_ms']!,
+          _occurredAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_occurredAtMsMeta);
+    }
+    if (data.containsKey('source_rank')) {
+      context.handle(
+        _sourceRankMeta,
+        sourceRank.isAcceptableOrUnknown(data['source_rank']!, _sourceRankMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceRankMeta);
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    if (data.containsKey('entity_kind')) {
+      context.handle(
+        _entityKindMeta,
+        entityKind.isAcceptableOrUnknown(data['entity_kind']!, _entityKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityKindMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('field')) {
+      context.handle(
+        _fieldMeta,
+        field.isAcceptableOrUnknown(data['field']!, _fieldMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldMeta);
+    }
+    if (data.containsKey('format_version')) {
+      context.handle(
+        _formatVersionMeta,
+        formatVersion.isAcceptableOrUnknown(
+          data['format_version']!,
+          _formatVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_formatVersionMeta);
+    }
+    if (data.containsKey('canonical_payload')) {
+      context.handle(
+        _canonicalPayloadMeta,
+        canonicalPayload.isAcceptableOrUnknown(
+          data['canonical_payload']!,
+          _canonicalPayloadMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_canonicalPayloadMeta);
+    }
+    if (data.containsKey('undo_of')) {
+      context.handle(
+        _undoOfMeta,
+        undoOf.isAcceptableOrUnknown(data['undo_of']!, _undoOfMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sequence};
+  @override
+  ProgressEventRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProgressEventRecord(
+      sequence: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence'],
+      )!,
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_id'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      cycleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_id'],
+      )!,
+      occurredAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}occurred_at_ms'],
+      )!,
+      sourceRank: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_rank'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      entityKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_kind'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      field: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field'],
+      )!,
+      formatVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}format_version'],
+      )!,
+      canonicalPayload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}canonical_payload'],
+      )!,
+      undoOf: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}undo_of'],
+      ),
+    );
+  }
+
+  @override
+  $ProgressEventsTable createAlias(String alias) {
+    return $ProgressEventsTable(attachedDatabase, alias);
+  }
+}
+
+class ProgressEventRecord extends DataClass
+    implements Insertable<ProgressEventRecord> {
+  final int sequence;
+  final String eventId;
+  final String mode;
+  final String cycleId;
+  final int occurredAtMs;
+  final int sourceRank;
+  final String deviceId;
+  final String entityKind;
+  final String entityId;
+  final String field;
+  final int formatVersion;
+  final String canonicalPayload;
+  final String? undoOf;
+  const ProgressEventRecord({
+    required this.sequence,
+    required this.eventId,
+    required this.mode,
+    required this.cycleId,
+    required this.occurredAtMs,
+    required this.sourceRank,
+    required this.deviceId,
+    required this.entityKind,
+    required this.entityId,
+    required this.field,
+    required this.formatVersion,
+    required this.canonicalPayload,
+    this.undoOf,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sequence'] = Variable<int>(sequence);
+    map['event_id'] = Variable<String>(eventId);
+    map['mode'] = Variable<String>(mode);
+    map['cycle_id'] = Variable<String>(cycleId);
+    map['occurred_at_ms'] = Variable<int>(occurredAtMs);
+    map['source_rank'] = Variable<int>(sourceRank);
+    map['device_id'] = Variable<String>(deviceId);
+    map['entity_kind'] = Variable<String>(entityKind);
+    map['entity_id'] = Variable<String>(entityId);
+    map['field'] = Variable<String>(field);
+    map['format_version'] = Variable<int>(formatVersion);
+    map['canonical_payload'] = Variable<String>(canonicalPayload);
+    if (!nullToAbsent || undoOf != null) {
+      map['undo_of'] = Variable<String>(undoOf);
+    }
+    return map;
+  }
+
+  ProgressEventsCompanion toCompanion(bool nullToAbsent) {
+    return ProgressEventsCompanion(
+      sequence: Value(sequence),
+      eventId: Value(eventId),
+      mode: Value(mode),
+      cycleId: Value(cycleId),
+      occurredAtMs: Value(occurredAtMs),
+      sourceRank: Value(sourceRank),
+      deviceId: Value(deviceId),
+      entityKind: Value(entityKind),
+      entityId: Value(entityId),
+      field: Value(field),
+      formatVersion: Value(formatVersion),
+      canonicalPayload: Value(canonicalPayload),
+      undoOf: undoOf == null && nullToAbsent
+          ? const Value.absent()
+          : Value(undoOf),
+    );
+  }
+
+  factory ProgressEventRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProgressEventRecord(
+      sequence: serializer.fromJson<int>(json['sequence']),
+      eventId: serializer.fromJson<String>(json['eventId']),
+      mode: serializer.fromJson<String>(json['mode']),
+      cycleId: serializer.fromJson<String>(json['cycleId']),
+      occurredAtMs: serializer.fromJson<int>(json['occurredAtMs']),
+      sourceRank: serializer.fromJson<int>(json['sourceRank']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+      entityKind: serializer.fromJson<String>(json['entityKind']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      field: serializer.fromJson<String>(json['field']),
+      formatVersion: serializer.fromJson<int>(json['formatVersion']),
+      canonicalPayload: serializer.fromJson<String>(json['canonicalPayload']),
+      undoOf: serializer.fromJson<String?>(json['undoOf']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sequence': serializer.toJson<int>(sequence),
+      'eventId': serializer.toJson<String>(eventId),
+      'mode': serializer.toJson<String>(mode),
+      'cycleId': serializer.toJson<String>(cycleId),
+      'occurredAtMs': serializer.toJson<int>(occurredAtMs),
+      'sourceRank': serializer.toJson<int>(sourceRank),
+      'deviceId': serializer.toJson<String>(deviceId),
+      'entityKind': serializer.toJson<String>(entityKind),
+      'entityId': serializer.toJson<String>(entityId),
+      'field': serializer.toJson<String>(field),
+      'formatVersion': serializer.toJson<int>(formatVersion),
+      'canonicalPayload': serializer.toJson<String>(canonicalPayload),
+      'undoOf': serializer.toJson<String?>(undoOf),
+    };
+  }
+
+  ProgressEventRecord copyWith({
+    int? sequence,
+    String? eventId,
+    String? mode,
+    String? cycleId,
+    int? occurredAtMs,
+    int? sourceRank,
+    String? deviceId,
+    String? entityKind,
+    String? entityId,
+    String? field,
+    int? formatVersion,
+    String? canonicalPayload,
+    Value<String?> undoOf = const Value.absent(),
+  }) => ProgressEventRecord(
+    sequence: sequence ?? this.sequence,
+    eventId: eventId ?? this.eventId,
+    mode: mode ?? this.mode,
+    cycleId: cycleId ?? this.cycleId,
+    occurredAtMs: occurredAtMs ?? this.occurredAtMs,
+    sourceRank: sourceRank ?? this.sourceRank,
+    deviceId: deviceId ?? this.deviceId,
+    entityKind: entityKind ?? this.entityKind,
+    entityId: entityId ?? this.entityId,
+    field: field ?? this.field,
+    formatVersion: formatVersion ?? this.formatVersion,
+    canonicalPayload: canonicalPayload ?? this.canonicalPayload,
+    undoOf: undoOf.present ? undoOf.value : this.undoOf,
+  );
+  ProgressEventRecord copyWithCompanion(ProgressEventsCompanion data) {
+    return ProgressEventRecord(
+      sequence: data.sequence.present ? data.sequence.value : this.sequence,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
+      occurredAtMs: data.occurredAtMs.present
+          ? data.occurredAtMs.value
+          : this.occurredAtMs,
+      sourceRank: data.sourceRank.present
+          ? data.sourceRank.value
+          : this.sourceRank,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      entityKind: data.entityKind.present
+          ? data.entityKind.value
+          : this.entityKind,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      field: data.field.present ? data.field.value : this.field,
+      formatVersion: data.formatVersion.present
+          ? data.formatVersion.value
+          : this.formatVersion,
+      canonicalPayload: data.canonicalPayload.present
+          ? data.canonicalPayload.value
+          : this.canonicalPayload,
+      undoOf: data.undoOf.present ? data.undoOf.value : this.undoOf,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressEventRecord(')
+          ..write('sequence: $sequence, ')
+          ..write('eventId: $eventId, ')
+          ..write('mode: $mode, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('occurredAtMs: $occurredAtMs, ')
+          ..write('sourceRank: $sourceRank, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('entityKind: $entityKind, ')
+          ..write('entityId: $entityId, ')
+          ..write('field: $field, ')
+          ..write('formatVersion: $formatVersion, ')
+          ..write('canonicalPayload: $canonicalPayload, ')
+          ..write('undoOf: $undoOf')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    sequence,
+    eventId,
+    mode,
+    cycleId,
+    occurredAtMs,
+    sourceRank,
+    deviceId,
+    entityKind,
+    entityId,
+    field,
+    formatVersion,
+    canonicalPayload,
+    undoOf,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProgressEventRecord &&
+          other.sequence == this.sequence &&
+          other.eventId == this.eventId &&
+          other.mode == this.mode &&
+          other.cycleId == this.cycleId &&
+          other.occurredAtMs == this.occurredAtMs &&
+          other.sourceRank == this.sourceRank &&
+          other.deviceId == this.deviceId &&
+          other.entityKind == this.entityKind &&
+          other.entityId == this.entityId &&
+          other.field == this.field &&
+          other.formatVersion == this.formatVersion &&
+          other.canonicalPayload == this.canonicalPayload &&
+          other.undoOf == this.undoOf);
+}
+
+class ProgressEventsCompanion extends UpdateCompanion<ProgressEventRecord> {
+  final Value<int> sequence;
+  final Value<String> eventId;
+  final Value<String> mode;
+  final Value<String> cycleId;
+  final Value<int> occurredAtMs;
+  final Value<int> sourceRank;
+  final Value<String> deviceId;
+  final Value<String> entityKind;
+  final Value<String> entityId;
+  final Value<String> field;
+  final Value<int> formatVersion;
+  final Value<String> canonicalPayload;
+  final Value<String?> undoOf;
+  const ProgressEventsCompanion({
+    this.sequence = const Value.absent(),
+    this.eventId = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.cycleId = const Value.absent(),
+    this.occurredAtMs = const Value.absent(),
+    this.sourceRank = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.entityKind = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.field = const Value.absent(),
+    this.formatVersion = const Value.absent(),
+    this.canonicalPayload = const Value.absent(),
+    this.undoOf = const Value.absent(),
+  });
+  ProgressEventsCompanion.insert({
+    this.sequence = const Value.absent(),
+    required String eventId,
+    required String mode,
+    required String cycleId,
+    required int occurredAtMs,
+    required int sourceRank,
+    required String deviceId,
+    required String entityKind,
+    required String entityId,
+    required String field,
+    required int formatVersion,
+    required String canonicalPayload,
+    this.undoOf = const Value.absent(),
+  }) : eventId = Value(eventId),
+       mode = Value(mode),
+       cycleId = Value(cycleId),
+       occurredAtMs = Value(occurredAtMs),
+       sourceRank = Value(sourceRank),
+       deviceId = Value(deviceId),
+       entityKind = Value(entityKind),
+       entityId = Value(entityId),
+       field = Value(field),
+       formatVersion = Value(formatVersion),
+       canonicalPayload = Value(canonicalPayload);
+  static Insertable<ProgressEventRecord> custom({
+    Expression<int>? sequence,
+    Expression<String>? eventId,
+    Expression<String>? mode,
+    Expression<String>? cycleId,
+    Expression<int>? occurredAtMs,
+    Expression<int>? sourceRank,
+    Expression<String>? deviceId,
+    Expression<String>? entityKind,
+    Expression<String>? entityId,
+    Expression<String>? field,
+    Expression<int>? formatVersion,
+    Expression<String>? canonicalPayload,
+    Expression<String>? undoOf,
+  }) {
+    return RawValuesInsertable({
+      if (sequence != null) 'sequence': sequence,
+      if (eventId != null) 'event_id': eventId,
+      if (mode != null) 'mode': mode,
+      if (cycleId != null) 'cycle_id': cycleId,
+      if (occurredAtMs != null) 'occurred_at_ms': occurredAtMs,
+      if (sourceRank != null) 'source_rank': sourceRank,
+      if (deviceId != null) 'device_id': deviceId,
+      if (entityKind != null) 'entity_kind': entityKind,
+      if (entityId != null) 'entity_id': entityId,
+      if (field != null) 'field': field,
+      if (formatVersion != null) 'format_version': formatVersion,
+      if (canonicalPayload != null) 'canonical_payload': canonicalPayload,
+      if (undoOf != null) 'undo_of': undoOf,
+    });
+  }
+
+  ProgressEventsCompanion copyWith({
+    Value<int>? sequence,
+    Value<String>? eventId,
+    Value<String>? mode,
+    Value<String>? cycleId,
+    Value<int>? occurredAtMs,
+    Value<int>? sourceRank,
+    Value<String>? deviceId,
+    Value<String>? entityKind,
+    Value<String>? entityId,
+    Value<String>? field,
+    Value<int>? formatVersion,
+    Value<String>? canonicalPayload,
+    Value<String?>? undoOf,
+  }) {
+    return ProgressEventsCompanion(
+      sequence: sequence ?? this.sequence,
+      eventId: eventId ?? this.eventId,
+      mode: mode ?? this.mode,
+      cycleId: cycleId ?? this.cycleId,
+      occurredAtMs: occurredAtMs ?? this.occurredAtMs,
+      sourceRank: sourceRank ?? this.sourceRank,
+      deviceId: deviceId ?? this.deviceId,
+      entityKind: entityKind ?? this.entityKind,
+      entityId: entityId ?? this.entityId,
+      field: field ?? this.field,
+      formatVersion: formatVersion ?? this.formatVersion,
+      canonicalPayload: canonicalPayload ?? this.canonicalPayload,
+      undoOf: undoOf ?? this.undoOf,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sequence.present) {
+      map['sequence'] = Variable<int>(sequence.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<String>(eventId.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (cycleId.present) {
+      map['cycle_id'] = Variable<String>(cycleId.value);
+    }
+    if (occurredAtMs.present) {
+      map['occurred_at_ms'] = Variable<int>(occurredAtMs.value);
+    }
+    if (sourceRank.present) {
+      map['source_rank'] = Variable<int>(sourceRank.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (entityKind.present) {
+      map['entity_kind'] = Variable<String>(entityKind.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (field.present) {
+      map['field'] = Variable<String>(field.value);
+    }
+    if (formatVersion.present) {
+      map['format_version'] = Variable<int>(formatVersion.value);
+    }
+    if (canonicalPayload.present) {
+      map['canonical_payload'] = Variable<String>(canonicalPayload.value);
+    }
+    if (undoOf.present) {
+      map['undo_of'] = Variable<String>(undoOf.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressEventsCompanion(')
+          ..write('sequence: $sequence, ')
+          ..write('eventId: $eventId, ')
+          ..write('mode: $mode, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('occurredAtMs: $occurredAtMs, ')
+          ..write('sourceRank: $sourceRank, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('entityKind: $entityKind, ')
+          ..write('entityId: $entityId, ')
+          ..write('field: $field, ')
+          ..write('formatVersion: $formatVersion, ')
+          ..write('canonicalPayload: $canonicalPayload, ')
+          ..write('undoOf: $undoOf')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProgressHeadsTable extends ProgressHeads
+    with TableInfo<$ProgressHeadsTable, ProgressHeadRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProgressHeadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cycleIdMeta = const VerificationMeta(
+    'cycleId',
+  );
+  @override
+  late final GeneratedColumn<String> cycleId = GeneratedColumn<String>(
+    'cycle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityKindMeta = const VerificationMeta(
+    'entityKind',
+  );
+  @override
+  late final GeneratedColumn<String> entityKind = GeneratedColumn<String>(
+    'entity_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldMeta = const VerificationMeta('field');
+  @override
+  late final GeneratedColumn<String> field = GeneratedColumn<String>(
+    'field',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<String> eventId = GeneratedColumn<String>(
+    'event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES progress_events (event_id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    mode,
+    cycleId,
+    entityKind,
+    entityId,
+    field,
+    eventId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'progress_heads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProgressHeadRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('cycle_id')) {
+      context.handle(
+        _cycleIdMeta,
+        cycleId.isAcceptableOrUnknown(data['cycle_id']!, _cycleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cycleIdMeta);
+    }
+    if (data.containsKey('entity_kind')) {
+      context.handle(
+        _entityKindMeta,
+        entityKind.isAcceptableOrUnknown(data['entity_kind']!, _entityKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityKindMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('field')) {
+      context.handle(
+        _fieldMeta,
+        field.isAcceptableOrUnknown(data['field']!, _fieldMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldMeta);
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {
+    mode,
+    cycleId,
+    entityKind,
+    entityId,
+    field,
+  };
+  @override
+  ProgressHeadRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProgressHeadRecord(
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      cycleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_id'],
+      )!,
+      entityKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_kind'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      field: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field'],
+      )!,
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ProgressHeadsTable createAlias(String alias) {
+    return $ProgressHeadsTable(attachedDatabase, alias);
+  }
+}
+
+class ProgressHeadRecord extends DataClass
+    implements Insertable<ProgressHeadRecord> {
+  final String mode;
+  final String cycleId;
+  final String entityKind;
+  final String entityId;
+  final String field;
+  final String eventId;
+  const ProgressHeadRecord({
+    required this.mode,
+    required this.cycleId,
+    required this.entityKind,
+    required this.entityId,
+    required this.field,
+    required this.eventId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['mode'] = Variable<String>(mode);
+    map['cycle_id'] = Variable<String>(cycleId);
+    map['entity_kind'] = Variable<String>(entityKind);
+    map['entity_id'] = Variable<String>(entityId);
+    map['field'] = Variable<String>(field);
+    map['event_id'] = Variable<String>(eventId);
+    return map;
+  }
+
+  ProgressHeadsCompanion toCompanion(bool nullToAbsent) {
+    return ProgressHeadsCompanion(
+      mode: Value(mode),
+      cycleId: Value(cycleId),
+      entityKind: Value(entityKind),
+      entityId: Value(entityId),
+      field: Value(field),
+      eventId: Value(eventId),
+    );
+  }
+
+  factory ProgressHeadRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProgressHeadRecord(
+      mode: serializer.fromJson<String>(json['mode']),
+      cycleId: serializer.fromJson<String>(json['cycleId']),
+      entityKind: serializer.fromJson<String>(json['entityKind']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      field: serializer.fromJson<String>(json['field']),
+      eventId: serializer.fromJson<String>(json['eventId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mode': serializer.toJson<String>(mode),
+      'cycleId': serializer.toJson<String>(cycleId),
+      'entityKind': serializer.toJson<String>(entityKind),
+      'entityId': serializer.toJson<String>(entityId),
+      'field': serializer.toJson<String>(field),
+      'eventId': serializer.toJson<String>(eventId),
+    };
+  }
+
+  ProgressHeadRecord copyWith({
+    String? mode,
+    String? cycleId,
+    String? entityKind,
+    String? entityId,
+    String? field,
+    String? eventId,
+  }) => ProgressHeadRecord(
+    mode: mode ?? this.mode,
+    cycleId: cycleId ?? this.cycleId,
+    entityKind: entityKind ?? this.entityKind,
+    entityId: entityId ?? this.entityId,
+    field: field ?? this.field,
+    eventId: eventId ?? this.eventId,
+  );
+  ProgressHeadRecord copyWithCompanion(ProgressHeadsCompanion data) {
+    return ProgressHeadRecord(
+      mode: data.mode.present ? data.mode.value : this.mode,
+      cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
+      entityKind: data.entityKind.present
+          ? data.entityKind.value
+          : this.entityKind,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      field: data.field.present ? data.field.value : this.field,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressHeadRecord(')
+          ..write('mode: $mode, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('entityKind: $entityKind, ')
+          ..write('entityId: $entityId, ')
+          ..write('field: $field, ')
+          ..write('eventId: $eventId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(mode, cycleId, entityKind, entityId, field, eventId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProgressHeadRecord &&
+          other.mode == this.mode &&
+          other.cycleId == this.cycleId &&
+          other.entityKind == this.entityKind &&
+          other.entityId == this.entityId &&
+          other.field == this.field &&
+          other.eventId == this.eventId);
+}
+
+class ProgressHeadsCompanion extends UpdateCompanion<ProgressHeadRecord> {
+  final Value<String> mode;
+  final Value<String> cycleId;
+  final Value<String> entityKind;
+  final Value<String> entityId;
+  final Value<String> field;
+  final Value<String> eventId;
+  final Value<int> rowid;
+  const ProgressHeadsCompanion({
+    this.mode = const Value.absent(),
+    this.cycleId = const Value.absent(),
+    this.entityKind = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.field = const Value.absent(),
+    this.eventId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProgressHeadsCompanion.insert({
+    required String mode,
+    required String cycleId,
+    required String entityKind,
+    required String entityId,
+    required String field,
+    required String eventId,
+    this.rowid = const Value.absent(),
+  }) : mode = Value(mode),
+       cycleId = Value(cycleId),
+       entityKind = Value(entityKind),
+       entityId = Value(entityId),
+       field = Value(field),
+       eventId = Value(eventId);
+  static Insertable<ProgressHeadRecord> custom({
+    Expression<String>? mode,
+    Expression<String>? cycleId,
+    Expression<String>? entityKind,
+    Expression<String>? entityId,
+    Expression<String>? field,
+    Expression<String>? eventId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (mode != null) 'mode': mode,
+      if (cycleId != null) 'cycle_id': cycleId,
+      if (entityKind != null) 'entity_kind': entityKind,
+      if (entityId != null) 'entity_id': entityId,
+      if (field != null) 'field': field,
+      if (eventId != null) 'event_id': eventId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProgressHeadsCompanion copyWith({
+    Value<String>? mode,
+    Value<String>? cycleId,
+    Value<String>? entityKind,
+    Value<String>? entityId,
+    Value<String>? field,
+    Value<String>? eventId,
+    Value<int>? rowid,
+  }) {
+    return ProgressHeadsCompanion(
+      mode: mode ?? this.mode,
+      cycleId: cycleId ?? this.cycleId,
+      entityKind: entityKind ?? this.entityKind,
+      entityId: entityId ?? this.entityId,
+      field: field ?? this.field,
+      eventId: eventId ?? this.eventId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (cycleId.present) {
+      map['cycle_id'] = Variable<String>(cycleId.value);
+    }
+    if (entityKind.present) {
+      map['entity_kind'] = Variable<String>(entityKind.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (field.present) {
+      map['field'] = Variable<String>(field.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<String>(eventId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressHeadsCompanion(')
+          ..write('mode: $mode, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('entityKind: $entityKind, ')
+          ..write('entityId: $entityId, ')
+          ..write('field: $field, ')
+          ..write('eventId: $eventId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$BlackgridDatabase extends GeneratedDatabase {
   _$BlackgridDatabase(QueryExecutor e) : super(e);
   $BlackgridDatabaseManager get managers => $BlackgridDatabaseManager(this);
@@ -4056,6 +5757,10 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     this,
   );
   late final $LiveMapSourcesTable liveMapSources = $LiveMapSourcesTable(this);
+  late final $ProgressMetaTable progressMeta = $ProgressMetaTable(this);
+  late final $ProgressCyclesTable progressCycles = $ProgressCyclesTable(this);
+  late final $ProgressEventsTable progressEvents = $ProgressEventsTable(this);
+  late final $ProgressHeadsTable progressHeads = $ProgressHeadsTable(this);
   late final Index raidStatRecordsModeStart = Index(
     'raid_stat_records_mode_start',
     'CREATE INDEX raid_stat_records_mode_start ON raid_stat_records (mode, start_ms)',
@@ -4063,6 +5768,14 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
   late final Index fleaSaleRecordsMode = Index(
     'flea_sale_records_mode',
     'CREATE INDEX flea_sale_records_mode ON flea_sale_records (mode)',
+  );
+  late final Index progressEventsScopeSequence = Index(
+    'progress_events_scope_sequence',
+    'CREATE INDEX progress_events_scope_sequence ON progress_events (mode, cycle_id, sequence)',
+  );
+  late final Index progressEventsRegisterOrder = Index(
+    'progress_events_register_order',
+    'CREATE INDEX progress_events_register_order ON progress_events (mode, cycle_id, entity_kind, entity_id, field, occurred_at_ms, source_rank, device_id, event_id)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -4081,8 +5794,14 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     statsMeta,
     liveMapSnapshots,
     liveMapSources,
+    progressMeta,
+    progressCycles,
+    progressEvents,
+    progressHeads,
     raidStatRecordsModeStart,
     fleaSaleRecordsMode,
+    progressEventsScopeSequence,
+    progressEventsRegisterOrder,
   ];
 }
 
@@ -6943,6 +8662,1170 @@ typedef $$LiveMapSourcesTableProcessedTableManager =
       LiveMapSource,
       PrefetchHooks Function({bool mode})
     >;
+typedef $$ProgressMetaTableCreateCompanionBuilder =
+    ProgressMetaCompanion Function({Value<int> id, required String deviceId});
+typedef $$ProgressMetaTableUpdateCompanionBuilder =
+    ProgressMetaCompanion Function({Value<int> id, Value<String> deviceId});
+
+class $$ProgressMetaTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ProgressMetaTable> {
+  $$ProgressMetaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProgressMetaTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ProgressMetaTable> {
+  $$ProgressMetaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProgressMetaTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ProgressMetaTable> {
+  $$ProgressMetaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+}
+
+class $$ProgressMetaTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ProgressMetaTable,
+          ProgressMetaRecord,
+          $$ProgressMetaTableFilterComposer,
+          $$ProgressMetaTableOrderingComposer,
+          $$ProgressMetaTableAnnotationComposer,
+          $$ProgressMetaTableCreateCompanionBuilder,
+          $$ProgressMetaTableUpdateCompanionBuilder,
+          (
+            ProgressMetaRecord,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $ProgressMetaTable,
+              ProgressMetaRecord
+            >,
+          ),
+          ProgressMetaRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProgressMetaTableTableManager(
+    _$BlackgridDatabase db,
+    $ProgressMetaTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProgressMetaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProgressMetaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProgressMetaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> deviceId = const Value.absent(),
+          }) => ProgressMetaCompanion(id: id, deviceId: deviceId),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String deviceId,
+          }) => ProgressMetaCompanion.insert(id: id, deviceId: deviceId),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProgressMetaTable, ProgressMetaRecord>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $ProgressMetaTable,
+                    ProgressMetaRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProgressMetaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ProgressMetaTable,
+      ProgressMetaRecord,
+      $$ProgressMetaTableFilterComposer,
+      $$ProgressMetaTableOrderingComposer,
+      $$ProgressMetaTableAnnotationComposer,
+      $$ProgressMetaTableCreateCompanionBuilder,
+      $$ProgressMetaTableUpdateCompanionBuilder,
+      (
+        ProgressMetaRecord,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ProgressMetaTable,
+          ProgressMetaRecord
+        >,
+      ),
+      ProgressMetaRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$ProgressCyclesTableCreateCompanionBuilder =
+    ProgressCyclesCompanion Function({
+      required String cycleId,
+      required String mode,
+      required int createdAtMs,
+      Value<int> revision,
+      Value<int> rowid,
+    });
+typedef $$ProgressCyclesTableUpdateCompanionBuilder =
+    ProgressCyclesCompanion Function({
+      Value<String> cycleId,
+      Value<String> mode,
+      Value<int> createdAtMs,
+      Value<int> revision,
+      Value<int> rowid,
+    });
+
+class $$ProgressCyclesTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ProgressCyclesTable> {
+  $$ProgressCyclesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProgressCyclesTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ProgressCyclesTable> {
+  $$ProgressCyclesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProgressCyclesTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ProgressCyclesTable> {
+  $$ProgressCyclesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get cycleId =>
+      $composableBuilder(column: $table.cycleId, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+}
+
+class $$ProgressCyclesTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ProgressCyclesTable,
+          ProgressCycleRecord,
+          $$ProgressCyclesTableFilterComposer,
+          $$ProgressCyclesTableOrderingComposer,
+          $$ProgressCyclesTableAnnotationComposer,
+          $$ProgressCyclesTableCreateCompanionBuilder,
+          $$ProgressCyclesTableUpdateCompanionBuilder,
+          (
+            ProgressCycleRecord,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $ProgressCyclesTable,
+              ProgressCycleRecord
+            >,
+          ),
+          ProgressCycleRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProgressCyclesTableTableManager(
+    _$BlackgridDatabase db,
+    $ProgressCyclesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProgressCyclesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProgressCyclesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProgressCyclesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> cycleId = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<int> createdAtMs = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProgressCyclesCompanion(
+                cycleId: cycleId,
+                mode: mode,
+                createdAtMs: createdAtMs,
+                revision: revision,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String cycleId,
+                required String mode,
+                required int createdAtMs,
+                Value<int> revision = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProgressCyclesCompanion.insert(
+                cycleId: cycleId,
+                mode: mode,
+                createdAtMs: createdAtMs,
+                revision: revision,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProgressCyclesTable, ProgressCycleRecord>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $ProgressCyclesTable,
+                    ProgressCycleRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProgressCyclesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ProgressCyclesTable,
+      ProgressCycleRecord,
+      $$ProgressCyclesTableFilterComposer,
+      $$ProgressCyclesTableOrderingComposer,
+      $$ProgressCyclesTableAnnotationComposer,
+      $$ProgressCyclesTableCreateCompanionBuilder,
+      $$ProgressCyclesTableUpdateCompanionBuilder,
+      (
+        ProgressCycleRecord,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ProgressCyclesTable,
+          ProgressCycleRecord
+        >,
+      ),
+      ProgressCycleRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$ProgressEventsTableCreateCompanionBuilder =
+    ProgressEventsCompanion Function({
+      Value<int> sequence,
+      required String eventId,
+      required String mode,
+      required String cycleId,
+      required int occurredAtMs,
+      required int sourceRank,
+      required String deviceId,
+      required String entityKind,
+      required String entityId,
+      required String field,
+      required int formatVersion,
+      required String canonicalPayload,
+      Value<String?> undoOf,
+    });
+typedef $$ProgressEventsTableUpdateCompanionBuilder =
+    ProgressEventsCompanion Function({
+      Value<int> sequence,
+      Value<String> eventId,
+      Value<String> mode,
+      Value<String> cycleId,
+      Value<int> occurredAtMs,
+      Value<int> sourceRank,
+      Value<String> deviceId,
+      Value<String> entityKind,
+      Value<String> entityId,
+      Value<String> field,
+      Value<int> formatVersion,
+      Value<String> canonicalPayload,
+      Value<String?> undoOf,
+    });
+
+final class $$ProgressEventsTableReferences
+    extends
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ProgressEventsTable,
+          ProgressEventRecord
+        > {
+  $$ProgressEventsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$ProgressHeadsTable, List<ProgressHeadRecord>>
+  _progressHeadsRefsTable(_$BlackgridDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.progressHeads,
+        aliasName: 'progress_events__event_id__progress_heads__event_id',
+      );
+
+  $$ProgressHeadsTableProcessedTableManager get progressHeadsRefs {
+    final manager = $$ProgressHeadsTableTableManager($_db, $_db.progressHeads)
+        .filter(
+          (f) => f.eventId.eventId.sqlEquals($_itemColumn<String>('event_id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_progressHeadsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ProgressEventsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ProgressEventsTable> {
+  $$ProgressEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get sequence => $composableBuilder(
+    column: $table.sequence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get occurredAtMs => $composableBuilder(
+    column: $table.occurredAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourceRank => $composableBuilder(
+    column: $table.sourceRank,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get formatVersion => $composableBuilder(
+    column: $table.formatVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get canonicalPayload => $composableBuilder(
+    column: $table.canonicalPayload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get undoOf => $composableBuilder(
+    column: $table.undoOf,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> progressHeadsRefs(
+    Expression<bool> Function($$ProgressHeadsTableFilterComposer f) f,
+  ) {
+    final $$ProgressHeadsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.progressHeads,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProgressHeadsTableFilterComposer(
+            $db: $db,
+            $table: $db.progressHeads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ProgressEventsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ProgressEventsTable> {
+  $$ProgressEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get sequence => $composableBuilder(
+    column: $table.sequence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get occurredAtMs => $composableBuilder(
+    column: $table.occurredAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sourceRank => $composableBuilder(
+    column: $table.sourceRank,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get formatVersion => $composableBuilder(
+    column: $table.formatVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get canonicalPayload => $composableBuilder(
+    column: $table.canonicalPayload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get undoOf => $composableBuilder(
+    column: $table.undoOf,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProgressEventsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ProgressEventsTable> {
+  $$ProgressEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get sequence =>
+      $composableBuilder(column: $table.sequence, builder: (column) => column);
+
+  GeneratedColumn<String> get eventId =>
+      $composableBuilder(column: $table.eventId, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<String> get cycleId =>
+      $composableBuilder(column: $table.cycleId, builder: (column) => column);
+
+  GeneratedColumn<int> get occurredAtMs => $composableBuilder(
+    column: $table.occurredAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sourceRank => $composableBuilder(
+    column: $table.sourceRank,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get field =>
+      $composableBuilder(column: $table.field, builder: (column) => column);
+
+  GeneratedColumn<int> get formatVersion => $composableBuilder(
+    column: $table.formatVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get canonicalPayload => $composableBuilder(
+    column: $table.canonicalPayload,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get undoOf =>
+      $composableBuilder(column: $table.undoOf, builder: (column) => column);
+
+  Expression<T> progressHeadsRefs<T extends Object>(
+    Expression<T> Function($$ProgressHeadsTableAnnotationComposer a) f,
+  ) {
+    final $$ProgressHeadsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.progressHeads,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProgressHeadsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.progressHeads,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ProgressEventsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ProgressEventsTable,
+          ProgressEventRecord,
+          $$ProgressEventsTableFilterComposer,
+          $$ProgressEventsTableOrderingComposer,
+          $$ProgressEventsTableAnnotationComposer,
+          $$ProgressEventsTableCreateCompanionBuilder,
+          $$ProgressEventsTableUpdateCompanionBuilder,
+          (ProgressEventRecord, $$ProgressEventsTableReferences),
+          ProgressEventRecord,
+          PrefetchHooks Function({bool progressHeadsRefs})
+        > {
+  $$ProgressEventsTableTableManager(
+    _$BlackgridDatabase db,
+    $ProgressEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProgressEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProgressEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProgressEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> sequence = const Value.absent(),
+                Value<String> eventId = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<String> cycleId = const Value.absent(),
+                Value<int> occurredAtMs = const Value.absent(),
+                Value<int> sourceRank = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> entityKind = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<String> field = const Value.absent(),
+                Value<int> formatVersion = const Value.absent(),
+                Value<String> canonicalPayload = const Value.absent(),
+                Value<String?> undoOf = const Value.absent(),
+              }) => ProgressEventsCompanion(
+                sequence: sequence,
+                eventId: eventId,
+                mode: mode,
+                cycleId: cycleId,
+                occurredAtMs: occurredAtMs,
+                sourceRank: sourceRank,
+                deviceId: deviceId,
+                entityKind: entityKind,
+                entityId: entityId,
+                field: field,
+                formatVersion: formatVersion,
+                canonicalPayload: canonicalPayload,
+                undoOf: undoOf,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> sequence = const Value.absent(),
+                required String eventId,
+                required String mode,
+                required String cycleId,
+                required int occurredAtMs,
+                required int sourceRank,
+                required String deviceId,
+                required String entityKind,
+                required String entityId,
+                required String field,
+                required int formatVersion,
+                required String canonicalPayload,
+                Value<String?> undoOf = const Value.absent(),
+              }) => ProgressEventsCompanion.insert(
+                sequence: sequence,
+                eventId: eventId,
+                mode: mode,
+                cycleId: cycleId,
+                occurredAtMs: occurredAtMs,
+                sourceRank: sourceRank,
+                deviceId: deviceId,
+                entityKind: entityKind,
+                entityId: entityId,
+                field: field,
+                formatVersion: formatVersion,
+                canonicalPayload: canonicalPayload,
+                undoOf: undoOf,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProgressEventsTable, ProgressEventRecord>(table),
+                  $$ProgressEventsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({progressHeadsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (progressHeadsRefs) db.progressHeads,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (progressHeadsRefs)
+                    await $_getPrefetchedDataByColumns<
+                      ProgressEventRecord,
+                      $ProgressEventsTable,
+                      ProgressHeadRecord,
+                      $ProgressHeadsTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ProgressEventsTableReferences
+                          ._progressHeadsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$ProgressEventsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).progressHeadsRefs,
+                      currentColumn: 'event_id',
+                      referencedColumn: 'event_id',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ProgressEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ProgressEventsTable,
+      ProgressEventRecord,
+      $$ProgressEventsTableFilterComposer,
+      $$ProgressEventsTableOrderingComposer,
+      $$ProgressEventsTableAnnotationComposer,
+      $$ProgressEventsTableCreateCompanionBuilder,
+      $$ProgressEventsTableUpdateCompanionBuilder,
+      (ProgressEventRecord, $$ProgressEventsTableReferences),
+      ProgressEventRecord,
+      PrefetchHooks Function({bool progressHeadsRefs})
+    >;
+typedef $$ProgressHeadsTableCreateCompanionBuilder =
+    ProgressHeadsCompanion Function({
+      required String mode,
+      required String cycleId,
+      required String entityKind,
+      required String entityId,
+      required String field,
+      required String eventId,
+      Value<int> rowid,
+    });
+typedef $$ProgressHeadsTableUpdateCompanionBuilder =
+    ProgressHeadsCompanion Function({
+      Value<String> mode,
+      Value<String> cycleId,
+      Value<String> entityKind,
+      Value<String> entityId,
+      Value<String> field,
+      Value<String> eventId,
+      Value<int> rowid,
+    });
+
+final class $$ProgressHeadsTableReferences
+    extends
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ProgressHeadsTable,
+          ProgressHeadRecord
+        > {
+  $$ProgressHeadsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ProgressEventsTable _eventIdTable(_$BlackgridDatabase db) => db
+      .progressEvents
+      .createAlias('progress_heads__event_id__progress_events__event_id');
+
+  $$ProgressEventsTableProcessedTableManager get eventId {
+    final $_column = $_itemColumn<String>('event_id')!;
+
+    final manager = $$ProgressEventsTableTableManager(
+      $_db,
+      $_db.progressEvents,
+    ).filter((f) => f.eventId.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_eventIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ProgressHeadsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ProgressHeadsTable> {
+  $$ProgressHeadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ProgressEventsTableFilterComposer get eventId {
+    final $$ProgressEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.progressEvents,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProgressEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.progressEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ProgressHeadsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ProgressHeadsTable> {
+  $$ProgressHeadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ProgressEventsTableOrderingComposer get eventId {
+    final $$ProgressEventsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.progressEvents,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProgressEventsTableOrderingComposer(
+            $db: $db,
+            $table: $db.progressEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ProgressHeadsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ProgressHeadsTable> {
+  $$ProgressHeadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<String> get cycleId =>
+      $composableBuilder(column: $table.cycleId, builder: (column) => column);
+
+  GeneratedColumn<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get field =>
+      $composableBuilder(column: $table.field, builder: (column) => column);
+
+  $$ProgressEventsTableAnnotationComposer get eventId {
+    final $$ProgressEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.progressEvents,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProgressEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.progressEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ProgressHeadsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ProgressHeadsTable,
+          ProgressHeadRecord,
+          $$ProgressHeadsTableFilterComposer,
+          $$ProgressHeadsTableOrderingComposer,
+          $$ProgressHeadsTableAnnotationComposer,
+          $$ProgressHeadsTableCreateCompanionBuilder,
+          $$ProgressHeadsTableUpdateCompanionBuilder,
+          (ProgressHeadRecord, $$ProgressHeadsTableReferences),
+          ProgressHeadRecord,
+          PrefetchHooks Function({bool eventId})
+        > {
+  $$ProgressHeadsTableTableManager(
+    _$BlackgridDatabase db,
+    $ProgressHeadsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProgressHeadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProgressHeadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProgressHeadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> mode = const Value.absent(),
+                Value<String> cycleId = const Value.absent(),
+                Value<String> entityKind = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<String> field = const Value.absent(),
+                Value<String> eventId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProgressHeadsCompanion(
+                mode: mode,
+                cycleId: cycleId,
+                entityKind: entityKind,
+                entityId: entityId,
+                field: field,
+                eventId: eventId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String mode,
+                required String cycleId,
+                required String entityKind,
+                required String entityId,
+                required String field,
+                required String eventId,
+                Value<int> rowid = const Value.absent(),
+              }) => ProgressHeadsCompanion.insert(
+                mode: mode,
+                cycleId: cycleId,
+                entityKind: entityKind,
+                entityId: entityId,
+                field: field,
+                eventId: eventId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProgressHeadsTable, ProgressHeadRecord>(table),
+                  $$ProgressHeadsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({eventId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (eventId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.eventId,
+                        referencedTable: $$ProgressHeadsTableReferences
+                            ._eventIdTable(db),
+                        referencedColumn: $$ProgressHeadsTableReferences
+                            ._eventIdTable(db)
+                            .eventId,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ProgressHeadsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ProgressHeadsTable,
+      ProgressHeadRecord,
+      $$ProgressHeadsTableFilterComposer,
+      $$ProgressHeadsTableOrderingComposer,
+      $$ProgressHeadsTableAnnotationComposer,
+      $$ProgressHeadsTableCreateCompanionBuilder,
+      $$ProgressHeadsTableUpdateCompanionBuilder,
+      (ProgressHeadRecord, $$ProgressHeadsTableReferences),
+      ProgressHeadRecord,
+      PrefetchHooks Function({bool eventId})
+    >;
 
 class $BlackgridDatabaseManager {
   final _$BlackgridDatabase _db;
@@ -6971,4 +9854,12 @@ class $BlackgridDatabaseManager {
       $$LiveMapSnapshotsTableTableManager(_db, _db.liveMapSnapshots);
   $$LiveMapSourcesTableTableManager get liveMapSources =>
       $$LiveMapSourcesTableTableManager(_db, _db.liveMapSources);
+  $$ProgressMetaTableTableManager get progressMeta =>
+      $$ProgressMetaTableTableManager(_db, _db.progressMeta);
+  $$ProgressCyclesTableTableManager get progressCycles =>
+      $$ProgressCyclesTableTableManager(_db, _db.progressCycles);
+  $$ProgressEventsTableTableManager get progressEvents =>
+      $$ProgressEventsTableTableManager(_db, _db.progressEvents);
+  $$ProgressHeadsTableTableManager get progressHeads =>
+      $$ProgressHeadsTableTableManager(_db, _db.progressHeads);
 }

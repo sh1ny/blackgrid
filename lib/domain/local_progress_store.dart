@@ -134,7 +134,7 @@ final class ProgressCyclePage {
   /// Creates a cycle page and its optional continuation.
   const ProgressCyclePage({required this.cycles, required this.nextCursor});
 
-  /// The cycles in ascending ordinal cycle-ID order.
+  /// The cycles in ascending binary text cycle-ID order.
   final List<ProgressCycle> cycles;
 
   /// The cycle ID to pass as the next page's `afterCycleId`, or `null`.
@@ -162,7 +162,7 @@ final class ProgressCurrentPage {
     required this.nextCursor,
   });
 
-  /// The winning events in ascending target order, including unset winners.
+  /// The winners in binary text kind/ID/field order, including unset winners.
   final List<ProgressEvent> events;
 
   /// The cycle revision represented by every event in this page.
@@ -214,7 +214,7 @@ abstract interface class LocalProgressStore {
   /// creates a new cycle, so retrying an ambiguous creation can create another.
   Future<ProgressResult<ProgressCycle>> createProgressCycle(GameMode mode);
 
-  /// Lists explicitly created cycles for [mode] in ordinal cycle-ID order.
+  /// Lists explicitly created cycles for [mode] in binary text cycle-ID order.
   ///
   /// [limit] must be between 1 and [progressPageLimit], inclusive. A non-null
   /// [afterCycleId] resumes strictly after that ID; use the returned cursor to
@@ -267,8 +267,10 @@ abstract interface class LocalProgressStore {
 
   /// Reads a bounded page of winning events for [scope].
   ///
-  /// [limit] must be between 1 and [progressPageLimit], inclusive. Results are
-  /// ordered by target and include explicit unset winners. A continuation must
+  /// [limit] must be between 1 and [progressPageLimit], inclusive. Results use
+  /// binary text kind/ID/field order and include explicit unset winners.
+  /// This keyset order is separate from the event conflict comparator.
+  /// A continuation must
   /// name [scope] and the same committed revision; a changed revision returns
   /// [ProgressStaleCursor]. Each page's revision check, validation or rebuild,
   /// and row reads share one storage transaction and snapshot, including the

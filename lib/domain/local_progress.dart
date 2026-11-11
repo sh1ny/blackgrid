@@ -54,9 +54,7 @@ final class ProgressScope {
 }
 
 /// An independently resolved field of a progress entity.
-///
-/// Ordering is ordinal by kind name, entity ID and field name.
-final class ProgressTarget implements Comparable<ProgressTarget> {
+final class ProgressTarget {
   /// Creates a register key.
   const ProgressTarget({
     required this.kind,
@@ -72,15 +70,6 @@ final class ProgressTarget implements Comparable<ProgressTarget> {
 
   /// The independently resolved field.
   final ProgressField field;
-
-  @override
-  int compareTo(ProgressTarget other) {
-    final kindOrder = kind.name.compareTo(other.kind.name);
-    if (kindOrder != 0) return kindOrder;
-    final idOrder = id.compareTo(other.id);
-    if (idOrder != 0) return idOrder;
-    return field.name.compareTo(other.field.name);
-  }
 
   @override
   bool operator ==(Object other) =>
