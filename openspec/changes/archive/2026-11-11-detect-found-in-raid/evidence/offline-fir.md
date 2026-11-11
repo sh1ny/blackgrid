@@ -2,7 +2,7 @@
 
 ## Boundary and build
 
-All agent checks use saved images, synthetic buffers or offline fixtures. No game was launched, driven, captured or inspected. Process-name-only checks confirmed that EscapeFromTarkov, EscapeFromTarkov_BE and BEService were absent before native build work. Task 7.3 remains owner-only and unticked; this record does not establish live-game acceptance.
+All agent checks use saved images, synthetic buffers or offline fixtures. No game was launched, driven, captured or inspected. Process-name-only checks confirmed that EscapeFromTarkov, EscapeFromTarkov_BE and BEService were absent before native build work. Offline checks do not establish live-game acceptance; the owner's subsequent acceptance is recorded below.
 
 The existing running Blackgrid instance was left untouched. The standard build was blocked by its locked executable; Flutter's flavor migration also encountered the old output. A disposable, process-local Flutter configuration selects `build/fir-qualification` instead. No user Flutter setting was changed.
 
@@ -97,9 +97,11 @@ All 70 frames were evaluated: **37 full-client accepts, all 37 also accepted by 
 
 The historical report was produced by 0.1.0+321, not this branch's immediate base. Different application versions and run conditions prevent attributing its acceptance-count or latency differences to FIR. This gate proves current targeted/full-client agreement and records the requested timing comparison; it does not establish cross-release recognition parity.
 
-## Remaining owner acceptance
+## Owner acceptance
 
-Task 7.3 is unverified and remains unticked. The owner must perform its live-game scenarios and record their observed version/results. No archive or live-game acceptance is implied by the offline passes above.
+The owner reported: “From the testing i did, everything works as expected. I will report any additional bugs if i encounter them, but overall - works. accepted.” This acceptance is also recorded in [PR #109](https://github.com/sh1ny/blackgrid/pull/109#issuecomment-6799310214).
+
+The owner then explicitly authorized recording task 7.3 as complete on their behalf. The latest Release offered for testing was 0.8.5+440; the confirmation did not independently restate a version or per-scenario results. This is owner-reported acceptance, not agent-run live verification. No additional live testing was performed by the agent.
 
 ## PR review round 1
 
@@ -107,4 +109,4 @@ The scale regression first failed in both detection and geometry planning with `
 
 The bordered-source sentence above was also corrected to distinguish its 1922×1082 image from its declared 1920×1080 physical client, matching the frozen manifest and the already-qualified normalization path. No source labels, thresholds, native scores or client geometry were changed.
 
-After the review fix, `mise run analyze` reported no issues and `mise run test` passed all **3,082** fast tests. Owner-only task 7.3 remains unverified.
+After the review fix, `mise run analyze` reported no issues and `mise run test` passed all **3,082** fast tests. Owner-only task 7.3 was subsequently accepted by the owner as recorded above.
