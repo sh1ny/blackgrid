@@ -274,7 +274,10 @@ void main() {
       time: 3,
     );
     for (final order in _permutations([a, b, c])) {
-      expect(foldProgressEvents(order), {_count: c, _complete: b});
+      expect(foldProgressEvents(order), {
+        (_scope, _count): c,
+        (_scope, _complete): b,
+      });
     }
   });
 
@@ -292,7 +295,7 @@ void main() {
       time: 2,
     );
     for (final order in _permutations([old, unset])) {
-      expect(foldProgressEvents(order)[_count], unset);
+      expect(foldProgressEvents(order)[(_scope, _count)], unset);
     }
     expect(
       () => ProgressEventCodec.encode(
@@ -318,7 +321,7 @@ void main() {
         equalManual,
         correction,
       ])) {
-        expect(foldProgressEvents(order)[_task], correction);
+        expect(foldProgressEvents(order)[(_scope, _task)], correction);
       }
     },
   );
@@ -331,7 +334,7 @@ void main() {
     expect(compareProgressEvents(c, b), greaterThan(0));
     expect(compareProgressEvents(c, c), 0);
     for (final order in _permutations([a, b, c])) {
-      expect(foldProgressEvents(order)[_task], c);
+      expect(foldProgressEvents(order)[(_scope, _task)], c);
     }
     expect(const ProgressScope(mode: GameMode.pvp, cycleId: 'cycle'), _scope);
     expect(
@@ -518,4 +521,42 @@ void main() {
       );
     },
   );
+
+  test('mixed modes and cycles retain independent field winners', () {
+    const anotherCycle = ProgressScope(mode: GameMode.pvp, cycleId: 'cycle-2');
+    const anotherMode = ProgressScope(mode: GameMode.pve, cycleId: 'pve-cycle');
+    final old = _event(
+      eventId: 'old',
+      target: _count,
+      time: 1,
+      value: const ProgressInteger(1),
+    );
+    final current = _event(
+      eventId: 'current',
+      target: _count,
+      time: 4,
+      value: const ProgressInteger(4),
+    );
+    final cycleEvent = _event(
+      eventId: 'other-cycle',
+      scope: anotherCycle,
+      target: _count,
+      time: 3,
+      value: const ProgressInteger(2),
+    );
+    final modeEvent = _event(
+      eventId: 'other-mode',
+      scope: anotherMode,
+      target: _count,
+      time: 5,
+      value: const ProgressInteger(3),
+    );
+    for (final order in _permutations([old, current, cycleEvent, modeEvent])) {
+      expect(foldProgressEvents(order), {
+        (_scope, _count): current,
+        (anotherCycle, _count): cycleEvent,
+        (anotherMode, _count): modeEvent,
+      });
+    }
+  });
 }

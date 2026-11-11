@@ -495,18 +495,20 @@ int compareProgressEvents(ProgressEvent a, ProgressEvent b) {
   return a.eventId.compareTo(b.eventId);
 }
 
-/// Folds a finite set of events into its latest event per independent target.
+/// Folds finite events into the latest fact per scope and independent target.
 ///
-/// The caller supplies events from a single scope. Unset is retained as a
-/// winning event rather than removed or replaced by an older value.
-Map<ProgressTarget, ProgressEvent> foldProgressEvents(
+/// Mode and cycle remain part of each register's identity even when [events]
+/// combines histories. Unset is retained as a winning event rather than removed
+/// or replaced by an older value.
+Map<(ProgressScope, ProgressTarget), ProgressEvent> foldProgressEvents(
   Iterable<ProgressEvent> events,
 ) {
-  final winners = <ProgressTarget, ProgressEvent>{};
+  final winners = <(ProgressScope, ProgressTarget), ProgressEvent>{};
   for (final event in events) {
-    final previous = winners[event.target];
+    final key = (event.scope, event.target);
+    final previous = winners[key];
     if (previous == null || compareProgressEvents(event, previous) > 0) {
-      winners[event.target] = event;
+      winners[key] = event;
     }
   }
   return winners;
