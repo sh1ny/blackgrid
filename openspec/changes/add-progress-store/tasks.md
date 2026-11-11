@@ -56,8 +56,20 @@ Rows record exercised offline checks against schema 8. Existing newer-database r
 
 ## 4. Offline integration verification
 
-- [ ] 4.1 Exercise the real store interface with a temporary offline smoke script: create cycles in two modes, append out of order, replay, page, close/reopen, rebuild and undo, asserting projected values and winner IDs. Also measure bounded-memory page/rebuild behavior on synthetic 10x/100x histories using streamed batches, recording observed timings without imposing an unevidenced threshold. Keep a long-running variant outside the fast loop or tag a retained expensive test `qualification`; remove the throwaway script afterward. No app or game launch is required.
-- [ ] 4.2 Run `dart format` through the pinned environment, `mise run analyze` and `mise run test`; use focused mapped checks during implementation and the full required offline checks here. Verify the existing Tracker/advice/timer tests still pass without modifying their authority contracts. Run `openspec validate add-progress-store --strict` and the release-notes check, and confirm all 25 scenario rows are green with exercised evidence. Do not add a version bump: Specwright releases are disabled for this change.
+- [x] 4.1 Exercise the real store interface with a temporary offline smoke script: create cycles in two modes, append out of order, replay, page, close/reopen, rebuild and undo, asserting projected values and winner IDs. Also measure bounded-memory page/rebuild behavior on synthetic 10x/100x histories using streamed batches, recording observed timings without imposing an unevidenced threshold. Keep a long-running variant outside the fast loop or tag a retained expensive test `qualification`; remove the throwaway script afterward. No app or game launch is required.
+- [x] 4.2 Run `dart format` through the pinned environment, `mise run analyze` and `mise run test`; use focused mapped checks during implementation and the full required offline checks here. Verify the existing Tracker/advice/timer tests still pass without modifying their authority contracts. Run `openspec validate add-progress-store --strict` and the release-notes check, and confirm all 25 scenario rows are green with exercised evidence. Do not add a version bump: Specwright releases are disabled for this change.
+
+### Exercised offline evidence
+
+- Focused domain/migration/store suites: 44 tests passed; all 25 scenario rows above are green. Real WAL/deferred-reader barriers exercised commits between revision checks and rows on intermediate and final pages; no returned SQL rows were mocked.
+- Throwaway `mise exec -- dart run .tmp/progress_smoke.dart <events>` passed at both scales on the pinned Dart 3.13.7 toolchain. It exercised two modes, out-of-order append, exact replay, history/current paging, close/reopen, scoped rebuild and guarded undo/retry through `LocalProgressStore`. The script and temporary file databases were removed afterward.
+- Scale histories were streamed in batches/pages of at most 256, with 64 current registers. RSS observations include the Dart VM and native caches, not a heap cap; no unevidenced time or memory threshold was imposed. No app or game was launched.
+- Final pinned `dart format` reported no changes; `mise run analyze` reported no issues; `mise run test` passed 3117 tests with qualification excluded. Existing Tracker/advice/timer consumers and authority contracts were not changed. `openspec validate add-progress-store --strict` and the release-notes check both passed. Initial analyzer infos were resolved with Dart LSP mechanical code actions before the successful full run; no warning was suppressed.
+
+| Events | Append ms | History ms | Rebuild ms | Baseline RSS bytes | Observed RSS bytes | Process max RSS bytes |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100000 | 18640 | 1375 | 5702 | 313593856 | 321089536 | 370049024 |
+| 1000000 | 205635 | 18436 | 56556 | 310374400 | 321036288 | 371326976 |
 
 ## Workflow follow-up
 

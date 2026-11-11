@@ -380,8 +380,9 @@ void _validateEvent(ProgressEvent event) {
   ProgressEventCodec.validateIdentity(event.deviceId);
   ProgressEventCodec.validateIdentity(event.scope.cycleId);
   ProgressEventCodec.validateIdentity(event.target.id);
-  if (event.undoOf case final undoOf?)
+  if (event.undoOf case final undoOf?) {
     ProgressEventCodec.validateIdentity(undoOf);
+  }
   final target = event.target;
   if (target.kind == ProgressEntityKind.player && target.id != 'self') {
     throw const FormatException('Invalid player identity');
@@ -422,8 +423,9 @@ void _validateEvent(ProgressEvent event) {
 }
 
 Map<String, dynamic> _object(Object? value) {
-  if (value is! Map<String, dynamic>)
+  if (value is! Map<String, dynamic>) {
     throw const FormatException('Expected object');
+  }
   return value;
 }
 

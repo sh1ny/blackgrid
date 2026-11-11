@@ -444,7 +444,7 @@ void main() {
       ('UPDATE progress_events SET canonical_payload = ?', ['{broken']),
       (
         'UPDATE progress_events SET format_version = 2, canonical_payload = replace(canonical_payload, ?, ?)',
-        ['\"formatVersion\":1', '\"formatVersion\":2'],
+        ['"formatVersion":1', '"formatVersion":2'],
       ),
       ('UPDATE progress_events SET format_version = ?', [2]),
       ('UPDATE progress_events SET device_id = ?', ['wrong-device']),
@@ -845,8 +845,9 @@ void main() {
         progressClock: () =>
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         progressIdGenerator: () {
-          if (!generated.moveNext())
+          if (!generated.moveNext()) {
             throw StateError('unexpected ID generation');
+          }
           return generated.current;
         },
       );

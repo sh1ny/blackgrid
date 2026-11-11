@@ -26,8 +26,9 @@ mixin _LocalProgressOperations on _$BlackgridDatabase
   ProgressScope? _validatedProgressScope;
   int? _validatedProgressRevision;
   Future<ProgressResult<T>> _progressOperation<T>(Future<T> Function() action) {
-    if (_progressBusy)
+    if (_progressBusy) {
       return Future.value(ProgressFailure<T>(const ProgressBusy()));
+    }
     _progressBusy = true;
     return _finishProgressOperation(action);
   }
@@ -168,8 +169,9 @@ mixin _LocalProgressOperations on _$BlackgridDatabase
   ProgressEvent _decodeProgressRow(QueryRow row, ProgressScope affectedScope) {
     try {
       final payload = row.readNullable<String>('canonical_payload');
-      if (payload == null)
+      if (payload == null) {
         throw const FormatException('Oversized event payload');
+      }
       final event = ProgressEventCodec.decode(payload);
       if (row.read<String>('event_id') != event.eventId ||
           row.read<String>('mode') != event.scope.mode.name ||
@@ -351,8 +353,9 @@ mixin _LocalProgressOperations on _$BlackgridDatabase
       }
       batch[event.eventId] = (event, encoded);
     }
-    if (count == 0)
+    if (count == 0) {
       throw const _ProgressAbort(ProgressInvalidInput('Batch is empty'));
+    }
     final result = await transaction(
       () => _appendProgressInTransaction(scope, batch),
     );
@@ -453,7 +456,7 @@ mixin _LocalProgressOperations on _$BlackgridDatabase
       'SELECT cycle_id, created_at_ms, revision FROM progress_cycles '
       'WHERE mode = ? ${afterCycleId == null ? '' : 'AND cycle_id > ?'} '
       'ORDER BY cycle_id COLLATE BINARY LIMIT ?',
-      [mode.name, if (afterCycleId != null) afterCycleId, limit + 1],
+      [mode.name, ?afterCycleId, limit + 1],
     );
     final cycles = <ProgressCycle>[];
     for (final row in rows.take(limit)) {
