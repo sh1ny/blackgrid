@@ -97,3 +97,4 @@ Groundwork for the local progress tracker: item data downloads now keep tarkov.d
 ### Added
 
 - Item data now keeps each mode's tasks (prerequisites, alternatives, trader and level requirements, faction, Kappa and Lightkeeper flags, objectives) and hideout station levels, ready for the upcoming tracker. The data comes from the same tarkov.dev downloads, with no new requests.
+- Unexpected values in newly retained task facts stay unknown rather than blocking item updates. Existing validation and strict identity checks still reject invalid refreshes and keep the last good catalog.

@@ -187,12 +187,7 @@ ProgressCatalog parseProgressCatalog(
               ),
           traderRequirements: _optionalRows(level['traderRequirements'])
               ?.map(traderRequirement),
-          skillRequirements: _optionalRows(level['skillRequirements'])?.map(
-            (r) => SkillRequirement(
-              skillId: _text(r['skill']),
-              level: _number(r['level']),
-            ),
-          ),
+          skillRequirements: _skillRequirements(level['skillRequirements']),
         ),
       );
     }
@@ -238,6 +233,19 @@ Iterable<Map<String, dynamic>> _requiredRows(Object? value) => switch (value) {
 
 Iterable<Map<String, dynamic>>? _optionalRows(Object? value) =>
     value is List<Object?> ? value.map(_wireMap) : null;
+
+Iterable<SkillRequirement>? _skillRequirements(Object? value) =>
+    value is List<Object?>
+    ? value.map(
+        (row) => switch (row) {
+          final Map<String, dynamic> wire => SkillRequirement(
+            skillId: _text(wire['skill']),
+            level: _number(wire['level']),
+          ),
+          _ => const SkillRequirement(),
+        },
+      )
+    : null;
 
 String _id(Object? value) =>
     _text(value) ?? (throw const FormatException('Missing wire identity'));

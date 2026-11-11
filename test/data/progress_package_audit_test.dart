@@ -143,30 +143,36 @@ List<File> _filesUnder(Directory directory, {bool dartOnly = false}) {
   return files;
 }
 
+List<String> _forbiddenDependencies(YamlMap document) {
+  final offenders = <String>[];
+  for (final section in [
+    'dependencies',
+    'dev_dependencies',
+    'dependency_overrides',
+  ]) {
+    final dependencies = document[section];
+    if (dependencies is! YamlMap) continue;
+    for (final entry in dependencies.entries) {
+      final value = entry.value;
+      if (const {'flutter', 'win32'}.contains(entry.key) ||
+          (value is YamlMap && value['sdk'] == 'flutter')) {
+        offenders.add('$section: ${entry.key}');
+      }
+    }
+  }
+  return offenders;
+}
+
 void main() {
   test('package declares and imports nothing Flutter, Windows or IO', () {
     final pubspec = File('packages/blackgrid_progress/pubspec.yaml');
     expect(pubspec.existsSync(), isTrue);
     final document = loadYaml(pubspec.readAsStringSync()) as YamlMap;
-    final sdkDependencies = <String>[];
-    for (final section in [
-      'dependencies',
-      'dev_dependencies',
-      'dependency_overrides',
-    ]) {
-      final dependencies = document[section];
-      if (dependencies is! YamlMap) continue;
-      for (final entry in dependencies.entries) {
-        final value = entry.value;
-        if (value is YamlMap && value['sdk'] == 'flutter') {
-          sdkDependencies.add('$section: ${entry.key}');
-        }
-      }
-    }
+    final sdkDependencies = _forbiddenDependencies(document);
     expect(
       sdkDependencies,
       isEmpty,
-      reason: 'Flutter SDK dependencies are forbidden',
+      reason: 'Flutter and Windows dependencies are forbidden',
     );
 
     final offenders = <String>[];
@@ -227,4 +233,20 @@ export 'package:win32/win32.dart';
       ]);
     },
   );
+  test('dependency audit rejects platform packages without source imports', () {
+    final document = loadYaml('''
+dependencies:
+  win32: 6.0.0
+dev_dependencies:
+  flutter:
+    sdk: flutter
+dependency_overrides:
+  win32: 6.0.0
+''') as YamlMap;
+    expect(_forbiddenDependencies(document), [
+      'dependencies: win32',
+      'dev_dependencies: flutter',
+      'dependency_overrides: win32',
+    ]);
+  });
 }

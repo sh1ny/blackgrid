@@ -232,4 +232,23 @@ void main() {
       );
     }
   });
+  test('malformed skill rows remain explicit unknowns beside known skills', () {
+    final station = parseWire(
+      stations: [
+        stationWire('station', {
+          'levels': [
+            levelWire('level', 1, {
+              'skillRequirements': [
+                42,
+                {'skill': 'Attention', 'level': 8},
+              ],
+            }),
+          ],
+        }),
+      ],
+    ).stations.single;
+    final skills = station.levels.single.skillRequirements!;
+    expect(skills.map((skill) => skill.skillId), [null, 'Attention']);
+    expect(skills.map((skill) => skill.level), [null, 8]);
+  });
 }

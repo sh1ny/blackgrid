@@ -332,4 +332,37 @@ void main() {
     expect(withTimer.inputsText, withoutTimer.inputsText);
     expect(withTimer.hasProgress, withoutTimer.hasProgress);
   });
+  test(
+    'malformed newly retained skill rows do not block item refreshes',
+    () async {
+      final wire = progressCatalogWireFixture();
+      final level =
+          (wire['hideout']['data']['station-a']['levels'] as List).first as Map;
+      level['skillRequirements'] = [
+        {'skill': 'Attention', 'level': 8},
+      ];
+      final baseline = fixtureCatalog(wire: wire);
+      level['skillRequirements'] = [42];
+      final snapshot = await _client(wire).fetch(GameMode.pve);
+      final skill = snapshot
+          .progressCatalog!
+          .stations
+          .single
+          .levels
+          .single
+          .skillRequirements!
+          .single;
+      expect(skill.skillId, isNull);
+      expect(skill.level, isNull);
+      expect(
+        snapshot.items['item-a']!.toJson(),
+        baseline.items['item-a']!.toJson(),
+      );
+      expect(
+        snapshot.requirements.map((requirement) => requirement.toJson()),
+        baseline.requirements.map((requirement) => requirement.toJson()),
+      );
+      expect(snapshot.scavCooldown!.toJson(), baseline.scavCooldown!.toJson());
+    },
+  );
 }
