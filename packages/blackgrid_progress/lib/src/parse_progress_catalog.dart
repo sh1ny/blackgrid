@@ -106,25 +106,41 @@ ProgressCatalog parseProgressCatalog(
         ),
       );
     }
-    final failRows = _optionalRows(wire['failConditions']);
-    final failConditions = failRows == null ? null : <FailCondition>[];
-    final alternatives = failRows == null ? null : <TaskAlternative>[];
-    if (failRows != null) {
-      for (final condition in failRows) {
-        final type = _objectiveType(condition['type']);
-        failConditions!.add(
+    final failRows = wire['failConditions'];
+    var failConditions = failRows is List<Object?> ? <FailCondition>[] : null;
+    var alternatives = failRows is List<Object?> ? <TaskAlternative>[] : null;
+    if (failRows is List<Object?>) {
+      for (final row in failRows) {
+        if (row is! Map<String, dynamic>) {
+          failConditions = null;
+          alternatives = null;
+          continue;
+        }
+        final type = _objectiveType(row['type']);
+        final conditionId = _text(row['id']);
+        // Validate real references even after another row made the list unknown.
+        final target = type == ObjectiveType.taskStatus
+            ? _optionalReference(row['task'], taskIds)
+            : null;
+        if (conditionId == null ||
+            (type == ObjectiveType.taskStatus && target == null)) {
+          failConditions = null;
+          alternatives = null;
+          continue;
+        }
+        failConditions?.add(
           FailCondition(
-            id: _id(condition['id']),
+            id: conditionId,
             type: type,
-            rawType: _text(condition['type']),
+            rawType: _text(row['type']),
           ),
         );
         if (type == ObjectiveType.taskStatus) {
-          alternatives!.add(
+          alternatives?.add(
             TaskAlternative(
-              taskId: _reference(condition['task'], taskIds),
-              statuses: _statuses(condition['status']),
-              rawStatuses: _stringList(condition['status']),
+              taskId: target!,
+              statuses: _statuses(row['status']),
+              rawStatuses: _stringList(row['status']),
             ),
           );
         }

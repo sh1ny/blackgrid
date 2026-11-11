@@ -569,4 +569,60 @@ void main() {
       throwsFormatException,
     );
   });
+  test(
+    'malformed fail-condition facts leave conditions and alternatives unknown',
+    () {
+      for (final conditions in <List<Object?>>[
+        [42],
+        [null],
+        [[]],
+        [
+          {'type': 'extract'},
+        ],
+        [
+          {'id': 42, 'type': 'taskStatus', 'task': 'task-a'},
+        ],
+        [
+          {'id': 'condition', 'type': 'taskStatus'},
+        ],
+        [
+          {'id': 'known', 'type': 'extract'},
+          42,
+        ],
+      ]) {
+        final task = parseWire(
+          tasks: [
+            taskWire('task-a', {'failConditions': conditions}),
+          ],
+        ).tasks.single;
+        expect(task.failConditions, isNull, reason: '$conditions');
+        expect(task.alternatives, isNull, reason: '$conditions');
+      }
+    },
+  );
+
+  test(
+    'malformed conditions never mask real unresolved alternative references',
+    () {
+      final unresolved = {
+        'id': 'condition',
+        'type': 'taskStatus',
+        'task': 'missing-task',
+        'status': ['complete'],
+      };
+      for (final conditions in <List<Object?>>[
+        [42, unresolved],
+        [unresolved, 42],
+      ]) {
+        expect(
+          () => parseWire(
+            tasks: [
+              taskWire('task-a', {'failConditions': conditions}),
+            ],
+          ),
+          throwsFormatException,
+        );
+      }
+    },
+  );
 }

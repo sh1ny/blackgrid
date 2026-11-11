@@ -365,4 +365,34 @@ void main() {
       expect(snapshot.scavCooldown!.toJson(), baseline.scavCooldown!.toJson());
     },
   );
+  test(
+    'malformed newly retained fail conditions do not block item refreshes',
+    () async {
+      for (final conditions in <List<Object?>>[
+        [42],
+        [
+          {'type': 'extract'},
+        ],
+        [
+          {'id': 'condition', 'type': 'taskStatus'},
+        ],
+      ]) {
+        final wire = progressCatalogWireFixture();
+        final baseline = fixtureCatalog(wire: wire);
+        _task(wire)['failConditions'] = conditions;
+        final snapshot = await _client(wire).fetch(GameMode.pve);
+        final task = snapshot.progressCatalog!.tasks.single;
+        expect(task.failConditions, isNull);
+        expect(task.alternatives, isNull);
+        expect(
+          snapshot.items['item-a']!.toJson(),
+          baseline.items['item-a']!.toJson(),
+        );
+        expect(
+          snapshot.requirements.map((requirement) => requirement.toJson()),
+          baseline.requirements.map((requirement) => requirement.toJson()),
+        );
+      }
+    },
+  );
 }
