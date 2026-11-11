@@ -34,7 +34,7 @@ All rows start red: they await implementation or verification against schema 8. 
 
 ## 1. Record the local-progress architecture decision
 
-- [ ] 1.1 Write ADR-0041 `docs/adr/0041-local-progress-event-ledger.md` from the reviewed decisions, and update `openspec/architecture.md` with its accepted index row, local-progress ownership/interface and planned schema-8 storage contract without changing accepted ADRs. Verify that the ADR agrees with the approved design and that the index, cycle identity, event format, conflict order, compensation, derived winners and Tracker coexistence are consistent.
+- [x] 1.1 Write ADR-0041 `docs/adr/0041-local-progress-event-ledger.md` from the reviewed decisions, and update `openspec/architecture.md` with its accepted index row, local-progress ownership/interface and planned schema-8 storage contract without changing accepted ADRs. Verify that the ADR agrees with the approved design and that the index, cycle identity, event format, conflict order, compensation, derived winners and Tracker coexistence are consistent.
 
 ## 2. Pure event model, encoding and projection
 
