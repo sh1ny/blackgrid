@@ -258,7 +258,15 @@ void main() {
   });
 
   test('invalid scale and candidate are unreadable', () {
-    for (final scale in [0.0, -1.0, double.nan, double.infinity, 0.01]) {
+    for (final scale in [
+      0.0,
+      -1.0,
+      double.nan,
+      double.infinity,
+      double.maxFinite,
+      1e154,
+      0.01,
+    ]) {
       expect(
         Corner().read(scale: scale).reason,
         InspectionFirReason.cornerUnreadable,
@@ -305,5 +313,15 @@ void main() {
       planInspectionFirRegion(markerX: 10, markerY: 20, scale: 1.1),
       const TitleRegion(x: 1, y: 322, width: 97, height: 61),
     );
+  });
+
+  test('overflowing offsets are rejected as invalid scale', () {
+    for (final scale in [double.maxFinite, 1e307]) {
+      expect(
+        () => planInspectionFirRegion(markerX: 0, markerY: 0, scale: scale),
+        throwsArgumentError,
+        reason: '$scale',
+      );
+    }
   });
 }

@@ -56,19 +56,26 @@ final class InspectionFirReading {
 /// Plans the unclamped half-open search rectangle in frame coordinates.
 ///
 /// Each reference offset is independently multiplied by [scale] and floored,
-/// including the negative left offset. [scale] must be finite and positive.
+/// including the negative left offset. Throws [ArgumentError] unless [scale] and
+/// its scaled offsets are finite and [scale] is positive.
 TitleRegion planInspectionFirRegion({
   required int markerX,
   required int markerY,
   required double scale,
 }) {
-  if (!scale.isFinite || scale <= 0) {
-    throw ArgumentError.value(scale, 'scale', 'must be finite and positive');
+  // 330 is the largest reference-offset magnitude.
+  final scaledBottom = 330 * scale;
+  if (!scale.isFinite || scale <= 0 || !scaledBottom.isFinite) {
+    throw ArgumentError.value(
+      scale,
+      'scale',
+      'must be positive with finite scaled offsets',
+    );
   }
   final left = markerX + (-8 * scale).floor();
   final top = markerY + (275 * scale).floor();
   final right = markerX + (80 * scale).floor();
-  final bottom = markerY + (330 * scale).floor();
+  final bottom = markerY + scaledBottom.floor();
   return TitleRegion(
     x: left,
     y: top,
@@ -85,6 +92,8 @@ TitleRegion planInspectionFirRegion({
 /// It is not called for incomplete, unreadable, or uniformly dark corners.
 /// It may return `null` when the resized template is unusable.
 /// Native failures from [match] propagate to the caller unchanged.
+///
+/// Non-finite scale arithmetic returns unreadable evidence.
 InspectionFirReading readInspectionFir({
   required VisionImage frame,
   required VisionImage gray,
@@ -95,6 +104,10 @@ InspectionFirReading readInspectionFir({
 }) {
   const unreadable = InspectionFirReason.cornerUnreadable;
   if (!scale.isFinite || scale <= 0) {
+    return const InspectionFirReading(reason: unreadable);
+  }
+  final scaledWitness = 2 * scale * scale;
+  if (!scaledWitness.isFinite) {
     return const InspectionFirReading(reason: unreadable);
   }
   final region = planInspectionFirRegion(
@@ -158,7 +171,7 @@ InspectionFirReading readInspectionFir({
     return r > 110 && g > 90 && b < 0.8 * g && r > 1.4 * b;
   }
 
-  final witnessThreshold = math.max(1, (2 * scale * scale).floor());
+  final witnessThreshold = math.max(1, scaledWitness.floor());
   var witness = 0;
   for (var y = py(280); y < py(318) && witness < witnessThreshold; y++) {
     for (var x = px(-4); x < px(0) && witness < witnessThreshold; x++) {

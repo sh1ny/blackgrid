@@ -74,7 +74,7 @@ Both tagged tests passed, including all nineteen native cases. Source identities
 
 The four independent left/top/right/bottom clips of the AFAK 3440 positive each returned `Unknown / cornerCutOff`, with no NCC score and no negative admission. The two partial-check blackouts returned `Unknown / cornerUnreadable`: width 12 scored 0.506396 and width 16 scored 0.365481. Both scores are below 0.60, but neither became No.
 
-The translated 1080 M4A1 cascade placed its marker at (562, 400), with its complete D2 corner below the former 600-pixel targeted-band bottom. The widened 940-pixel band returned `Yes / iconFound`, NCC 0.897820. The 3440×1392 saved captures retained their 3440×1440 client geometry; border-cropped 1080 sources retained their 1922×1082 client geometry.
+The translated 1080 M4A1 cascade placed its marker at (562, 400), with its complete D2 corner below the former 600-pixel targeted-band bottom. The widened 940-pixel band returned `Yes / iconFound`, NCC 0.897820. The 3440×1392 saved captures retained their 3440×1440 client geometry; the 1922×1082 bordered source was border-cropped while retaining 1920×1080 physical client geometry.
 
 ## Saved targeted-region replay result
 
@@ -100,3 +100,11 @@ The historical report was produced by 0.1.0+321, not this branch's immediate bas
 ## Remaining owner acceptance
 
 Task 7.3 is unverified and remains unticked. The owner must perform its live-game scenarios and record their observed version/results. No archive or live-game acceptance is implied by the offline passes above.
+
+## PR review round 1
+
+The scale regression first failed in both detection and geometry planning with `UnsupportedError: Infinity or NaN toInt`. The fix rejects non-finite scaled offsets as `ArgumentError` in the planner and returns unreadable evidence when the squared witness scale overflows, before any matching. Finite products are reused rather than recomputed. All **47 focused detector/worker tests passed**, including `double.maxFinite` offset overflow and finite-scale witness-area overflow.
+
+The bordered-source sentence above was also corrected to distinguish its 1922×1082 image from its declared 1920×1080 physical client, matching the frozen manifest and the already-qualified normalization path. No source labels, thresholds, native scores or client geometry were changed.
+
+After the review fix, `mise run analyze` reported no issues and `mise run test` passed all **3,082** fast tests. Owner-only task 7.3 remains unverified.
