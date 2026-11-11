@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "privateInputRoot": ".qualification/found-in-raid",
+  "measurement": "Planning-only Pillow grayscale NCC experiment; not production/native verification. Marker positions are client-space after removing an annotated image border. Client dimensions confirmed by owner.",
+  "frames": [
+    {
+      "file": "afak_fir_yes_no_medal_3440x1440.jpg",
+      "clientWidth": 3440,
+      "clientHeight": 1440,
+      "markerX": 1198,
+      "markerY": 344,
+      "markerScore": 0.9561,
+      "fir": "yes",
+      "firScore": 1.0,
+      "firMatchX": 1199,
+      "firMatchY": 732,
+      "sha256": "0d5fbdccd97c07c5b9a82c97633059325c9142cbab27953c024c868c93e2169b",
+      "imageWidth": 3440,
+      "imageHeight": 1440,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 3440,
+        "height": 1440
+      }
+    },
+    {
+      "file": "afak_fir_no_no_medal_3440x1440.jpg",
+      "clientWidth": 3440,
+      "clientHeight": 1440,
+      "markerX": 1198,
+      "markerY": 344,
+      "markerScore": 0.9272,
+      "fir": "no",
+      "firScore": 0,
+      "firMatchX": 1192,
+      "firMatchY": 710,
+      "sha256": "ba7249f3e5e710dd9f18b5be1b1f0d4b3a7fc07d0070f560c726162c46679b5a",
+      "imageWidth": 3440,
+      "imageHeight": 1392,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 3440,
+        "height": 1392
+      }
+    },
+    {
+      "file": "hk416_fir_yes_with_medal_3440x1440.jpg",
+      "clientWidth": 3440,
+      "clientHeight": 1440,
+      "markerX": 1198,
+      "markerY": 40,
+      "markerScore": 0.9404,
+      "fir": "yes",
+      "firScore": 0.9312,
+      "firMatchX": 1243,
+      "firMatchY": 429,
+      "sha256": "f04da3b9ad345b4edbaf2722c8caa4744207941809196485c41266356449abaa",
+      "imageWidth": 3440,
+      "imageHeight": 1440,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 3440,
+        "height": 1440
+      }
+    },
+    {
+      "file": "hk416_fir_no_with_medal_3440x1440.jpg",
+      "clientWidth": 3440,
+      "clientHeight": 1440,
+      "markerX": 1198,
+      "markerY": 56,
+      "markerScore": 0.9503,
+      "fir": "no",
+      "firScore": 0.4796,
+      "firMatchX": 1212,
+      "firMatchY": 450,
+      "sha256": "52bfe89110d8d2b24375424a33ec363c9ba5cca5890a01ab4fd413300bed9c4f",
+      "imageWidth": 3440,
+      "imageHeight": 1392,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 3440,
+        "height": 1392
+      }
+    },
+    {
+      "file": "hk416_fir_no_with_medal_1920x1080.jpg",
+      "clientWidth": 1920,
+      "clientHeight": 1080,
+      "markerX": 568,
+      "markerY": 42,
+      "markerScore": 0.905,
+      "fir": "no",
+      "firScore": 0.4968,
+      "firMatchX": 579,
+      "firMatchY": 338,
+      "sha256": "b51d3a90752f7ff9d704f9f5ac19b12699d3f64c0388d0d1e65cf85bc79366c5",
+      "imageWidth": 1920,
+      "imageHeight": 1080,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "hk416_fir_yes_with_medal_1920x1080.jpg",
+      "clientWidth": 1920,
+      "clientHeight": 1080,
+      "markerX": 569,
+      "markerY": 31,
+      "markerScore": 0.9139,
+      "fir": "yes",
+      "firScore": 0.9003,
+      "firMatchX": 604,
+      "firMatchY": 323,
+      "sha256": "9a65d8618ca01b3af14950d41de7c3220db034780462d902782d695f838b7995",
+      "imageWidth": 1922,
+      "imageHeight": 1082,
+      "imageClientOrigin": {
+        "x": 1,
+        "y": 1
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "afak_fir_yes_no_medal_1920x1080.jpg",
+      "clientWidth": 1920,
+      "clientHeight": 1080,
+      "markerX": 568,
+      "markerY": 258,
+      "markerScore": 0.9052,
+      "fir": "yes",
+      "firScore": 0.9639,
+      "firMatchX": 569,
+      "firMatchY": 549,
+      "sha256": "7ba89f520d0c59bf8874166df79f9b31062e479f82297a58bb2ae3c942bdf66e",
+      "imageWidth": 1920,
+      "imageHeight": 1080,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "afak_fir_no_no_medal_1920x1080.jpg",
+      "clientWidth": 1920,
+      "clientHeight": 1080,
+      "markerX": 568,
+      "markerY": 258,
+      "markerScore": 0.9052,
+      "fir": "no",
+      "firScore": 0,
+      "firMatchX": 560,
+      "firMatchY": 533,
+      "sha256": "cc4c535dbf51a5ba9525f97761e89931c3d3851e13fe1cca2c5ae2d0215722f5",
+      "imageWidth": 1920,
+      "imageHeight": 1080,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "m4a1_fir_yes_with_medal_cascade_1920x1080.jpg",
+      "clientWidth": 1920,
+      "clientHeight": 1080,
+      "markerX": 562,
+      "markerY": 57,
+      "markerScore": 0.912,
+      "fir": "yes",
+      "firScore": 0.9002,
+      "firMatchX": 597,
+      "firMatchY": 349,
+      "sha256": "719dbc13307751367ec6e696819bf0bd518bb77f81b52217a58ecf65a2cf90dd",
+      "imageWidth": 1920,
+      "imageHeight": 1080,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "ak308_fir_no_with_medal_cascade_1920x1080.jpg",
+      "clientWidth": 1920,
+      "clientHeight": 1080,
+      "markerX": 562,
+      "markerY": 124,
+      "markerScore": 0.9137,
+      "fir": "no",
+      "firScore": 0.4824,
+      "firMatchX": 573,
+      "firMatchY": 420,
+      "sha256": "09fb40d1e5442e654a0e9c5be11bdbfa822e9d2c323c1c0cb8d8de2866db6053",
+      "imageWidth": 1920,
+      "imageHeight": 1080,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "m4a1_fir_yes_with_medal_cascade_3440x1440.jpg",
+      "clientWidth": 3440,
+      "clientHeight": 1440,
+      "markerX": 1190,
+      "markerY": 76,
+      "markerScore": 0.9265,
+      "fir": "yes",
+      "firScore": 0.9759,
+      "firMatchX": 1236,
+      "firMatchY": 465,
+      "sha256": "2ac633dbbd4ccf898b10cf892286c1c94d54233e22272134a2f12b19f5a200c1",
+      "imageWidth": 3440,
+      "imageHeight": 1440,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 3440,
+        "height": 1440
+      }
+    },
+    {
+      "file": "ak308_fir_no_with_medal_cascade_3440x1440.jpg",
+      "clientWidth": 3440,
+      "clientHeight": 1440,
+      "markerX": 1190,
+      "markerY": 165,
+      "markerScore": 0.9292,
+      "fir": "no",
+      "firScore": 0.4982,
+      "firMatchX": 1204,
+      "firMatchY": 561,
+      "sha256": "036cde104dfdb59ce22a8152ce569a64d49ca7819c299755359e725485ea90c4",
+      "imageWidth": 3440,
+      "imageHeight": 1440,
+      "imageClientOrigin": {
+        "x": 0,
+        "y": 0
+      },
+      "capturedClientRect": {
+        "left": 0,
+        "top": 0,
+        "width": 3440,
+        "height": 1440
+      }
+    }
+  ]
+}
