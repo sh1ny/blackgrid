@@ -45,22 +45,22 @@ Paths:
 | Stored snapshots carry the task catalog optionally | Restart restores the task catalog | D | `stored task catalog survives reopen unchanged` | red |
 | Stored snapshots carry the task catalog optionally | Snapshot cached before this change | D | `snapshot stored without a block loads with items and no task catalog` | red |
 | Stored snapshots carry the task catalog optionally | Damaged stored task catalog | D | `damaged or other-version block loads as unavailable` | red |
-| The task catalog model is usable without Flutter or Windows | Plain Dart test run | `mise run test` package step | n/a: mechanical check. `dart test` in `packages/blackgrid_progress` passes as part of `mise run test` (task 1.3) | red |
-| The task catalog model is usable without Flutter or Windows | Flutter dependency introduced | A | `package declares and imports nothing Flutter, Windows or IO` | red |
+| The task catalog model is usable without Flutter or Windows | Plain Dart test run | `mise run test` package step | n/a: mechanical check. `dart test` in `packages/blackgrid_progress` passes as part of `mise run test` (task 1.3) | green |
+| The task catalog model is usable without Flutter or Windows | Flutter dependency introduced | A | `package declares and imports nothing Flutter, Windows or IO` | green |
 | Existing advice and Tracker behaviour are unchanged | Same advice with and without the block | N | `item requirements, index and scav inputs are identical with and without the block` | red |
-| Existing advice and Tracker behaviour are unchanged | Task catalog unavailable | A | `no UI or application code reads the task catalog yet` | red |
+| Existing advice and Tracker behaviour are unchanged | Task catalog unavailable | A | `no UI or application code reads the task catalog yet` | green |
 
 ## 1. ADR, architecture and package scaffolding
 
-- [ ] 1.1 Write `docs/adr/0042-progress-catalog-package.md` (MADR short form, `Status: accepted`, date, source change `add-task-catalog`). It records D1, D2, D4 and D5 (with S3 as narrowed): the plain-Dart workspace package, the optional versioned `progressCatalog` block in the per-mode snapshot, and strict identities with lenient new facts. Index it in `openspec/architecture.md` In-force ADRs. Add the package component row, and add the block to the "Catalog snapshot" state row. Verify the link check passes (the ADR file exists and the index row resolves) by reading the rendered table.
-- [ ] 1.2 Create `packages/blackgrid_progress/`:
+- [x] 1.1 Write `docs/adr/0042-progress-catalog-package.md` (MADR short form, `Status: accepted`, date, source change `add-task-catalog`). It records D1, D2, D4 and D5 (with S3 as narrowed): the plain-Dart workspace package, the optional versioned `progressCatalog` block in the per-mode snapshot, and strict identities with lenient new facts. Index it in `openspec/architecture.md` In-force ADRs. Add the package component row, and add the block to the "Catalog snapshot" state row. Verify the link check passes (the ADR file exists and the index row resolves) by reading the rendered table.
+- [x] 1.2 Create `packages/blackgrid_progress/`:
   - `pubspec.yaml` with `resolution: workspace`, the SDK constraint of the root, and dev dependencies `test` and `lints` at the versions in the root lock;
   - `analysis_options.yaml` with `include: package:lints/recommended.yaml` and strict casts, inference and raw types;
   - `lib/blackgrid_progress.dart`, exporting nothing yet.
 
   Add `workspace: [packages/blackgrid_progress]` and the path dependency to the root `pubspec.yaml`. Verify `flutter pub get` succeeds with one root `pubspec.lock` and no `packages/blackgrid_progress/pubspec.lock`.
-- [ ] 1.3 Add a step to the `test` and `test:all` tasks in `mise.toml` that runs `dart test` in `packages/blackgrid_progress`. Add one trivial package test so the step runs. Verify `mise run test` runs both suites and fails when that package test is made to fail, then restore the test. Test map row "Plain Dart test run" turns green.
-- [ ] 1.4 Write the audit tests in `A` (red first). One fails if the package `pubspec.yaml` depends on the Flutter SDK, or if any `packages/blackgrid_progress/lib/**.dart` imports `package:flutter`, `dart:ui`, `dart:ffi`, `dart:io`, `dart:isolate` or `package:win32`. The other fails if any file under `lib/ui/` or `lib/application/` references `progressCatalog` or `package:blackgrid_progress`. Prove each fails on a temporary bad import, then remove it. Verify `mise run analyze` is clean, and flip both A rows green.
+- [x] 1.3 Add a step to the `test` and `test:all` tasks in `mise.toml` that runs `dart test` in `packages/blackgrid_progress`. Add one trivial package test so the step runs. Verify `mise run test` runs both suites and fails when that package test is made to fail, then restore the test. Test map row "Plain Dart test run" turns green.
+- [x] 1.4 Write the audit tests in `A` (red first). One fails if the package `pubspec.yaml` depends on the Flutter SDK, or if any `packages/blackgrid_progress/lib/**.dart` imports `package:flutter`, `dart:ui`, `dart:ffi`, `dart:io`, `dart:isolate` or `package:win32`. The other fails if any file under `lib/ui/` or `lib/application/` references `progressCatalog` or `package:blackgrid_progress`. Prove each fails on a temporary bad import, then remove it. Verify `mise run analyze` is clean, and flip both A rows green.
 
 ## 2. Task and hideout model with its stored form (package)
 

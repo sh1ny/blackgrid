@@ -1,0 +1,11 @@
+name: blackgrid_progress
+description: Pure Dart task and hideout progress catalog models.
+publish_to: 'none'
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+
+dev_dependencies:
+  lints: 6.1.0
+  test: 1.31.1
