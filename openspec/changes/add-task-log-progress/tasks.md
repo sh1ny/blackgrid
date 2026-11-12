@@ -18,13 +18,13 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | game-log-input → Older session folders can be read once on request | Folder cannot be opened | test/data/game_log/session_folder_read_test.dart | unreadable folder is reported and yields no events | green |
 | game-log-input → Older session folders can be read once on request | Malformed record in an older folder | test/data/game_log/session_folder_read_test.dart | malformed push record is counted and others are read | green |
 | game-log-input → One-shot folder reads never touch the game process | Offline audit covers the one-shot reader | test/data/game_log/log_input_audit_test.dart | audit scans the session folder sources | green |
-| task-log-progress → Each game mode has at most one active wipe | Wipe survives restart | test/data/progress_wipe_store_test.dart | wipe row survives reopening the database | red |
+| task-log-progress → Each game mode has at most one active wipe | Wipe survives restart | test/data/progress_wipe_store_test.dart | wipe row survives reopening the database | green |
 | task-log-progress → Each game mode has at most one active wipe | Modes are separate | test/application/task_log_progress_controller_test.dart | modes record into separate cycles | red |
 | task-log-progress → Each game mode has at most one active wipe | Damaged wipe stays visible | test/application/task_log_progress_controller_test.dart | unavailable cycle marks wipe unavailable and creates none | red |
 | task-log-progress → The first task event of a mode creates its wipe | First PvP task | test/application/task_log_progress_controller_test.dart | first task event creates wipe at its folder date | red |
 | task-log-progress → The first task event of a mode creates its wipe | Creation fails | test/application/task_log_progress_controller_test.dart | failed cycle creation records nothing and reports | red |
-| task-log-progress → Task messages become log-sourced task-state events | Task finished | test/domain/task_log_events_test.dart | task finished maps to log-sourced finished event with UTC time | red |
-| task-log-progress → Task messages become log-sourced task-state events | Unknown task ID | test/domain/task_log_events_test.dart | task ID is kept without catalog lookup | red |
+| task-log-progress → Task messages become log-sourced task-state events | Task finished | test/domain/task_log_events_test.dart | task finished maps to log-sourced finished event with UTC time | green |
+| task-log-progress → Task messages become log-sourced task-state events | Unknown task ID | test/domain/task_log_events_test.dart | task ID is kept without catalog lookup | green |
 | task-log-progress → Task messages become log-sourced task-state events | Identity over budget | test/application/task_log_progress_controller_test.dart | over-budget identity is skipped and the rest recorded | red |
 | task-log-progress → Reading the same record again changes nothing | Restart replays the live folder | test/application/task_log_progress_controller_test.dart | re-published live transitions leave revision unchanged | red |
 | task-log-progress → Reading the same record again changes nothing | Replay overlaps catch-up | test/application/task_log_progress_controller_test.dart | replay over caught-up folder adds nothing | red |
@@ -79,8 +79,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 4. Wipe table and log event mapping (schema 9)
 
-- [ ] 4.1 Write failing tests: `test/data/progress_wipe_store_test.dart` (insert or replace a mode, survive reopening, monotonic `lastFolder` in folder order, start moves only earlier, foreign key to `ProgressCycles`) and `test/domain/task_log_events_test.dart` (mapping a `TaskTransition` to a `ProgressEvent`: log source, task target, state value, local-to-UTC time, unknown task ID kept, one fully pinned event ID string, over-budget identity reported). Extend `test/data/migration_test.dart` for 8→9 with existing rows kept. Verify the failures.
-- [ ] 4.2 Add the `ProgressWipeStore` domain interface and the `ProgressWipes` table in `database_progress.dart`, bump `schemaVersion` to 9 with a `from < 9` additive step, and generate `drift_schemas/drift_schema_v9.json` and `database.g.dart` with build_runner. Add the pure event-mapping function next to the store contract in `lib/domain/`. Verify that the group 4 rows and `migration_test.dart` pass.
+- [x] 4.1 Write failing tests: `test/data/progress_wipe_store_test.dart` (insert or replace a mode, survive reopening, monotonic `lastFolder` in folder order, start moves only earlier, foreign key to `ProgressCycles`) and `test/domain/task_log_events_test.dart` (mapping a `TaskTransition` to a `ProgressEvent`: log source, task target, state value, local-to-UTC time, unknown task ID kept, one fully pinned event ID string, over-budget identity reported). Extend `test/data/migration_test.dart` for 8→9 with existing rows kept. Verify the failures.
+- [x] 4.2 Add the `ProgressWipeStore` domain interface and the `ProgressWipes` table in `database_progress.dart`, bump `schemaVersion` to 9 with a `from < 9` additive step, and generate `drift_schemas/drift_schema_v9.json` and `database.g.dart` with build_runner. Add the pure event-mapping function next to the store contract in `lib/domain/`. Verify that the group 4 rows and `migration_test.dart` pass.
 
 ## 5. TaskLogProgressController
 

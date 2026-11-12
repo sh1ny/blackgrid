@@ -15,6 +15,8 @@ import '../domain/local_stats.dart';
 import '../domain/local_progress.dart';
 import '../domain/local_progress_store.dart';
 import '../domain/raid_lifecycle.dart';
+import '../domain/progress_wipe_store.dart';
+import 'game_log/session_folders.dart';
 
 part 'database.g.dart';
 part 'database_progress.dart';
@@ -277,11 +279,16 @@ class NewerDatabaseException implements Exception {
     ProgressCycles,
     ProgressEvents,
     ProgressHeads,
+    ProgressWipes,
   ],
 )
 class BlackgridDatabase extends _$BlackgridDatabase
-    with _LocalProgressOperations
-    implements CatalogStore, LocalStatsStore, LocalProgressStore {
+    with _LocalProgressOperations, _ProgressWipeOperations
+    implements
+        CatalogStore,
+        LocalStatsStore,
+        LocalProgressStore,
+        ProgressWipeStore {
   /// Opens the shared database over [executor].
   ///
   /// Optional progress clocks and identity generators support deterministic
@@ -300,13 +307,13 @@ class BlackgridDatabase extends _$BlackgridDatabase
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 8 || from >= to) {
+      if (from < 1 || to != 9 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
@@ -339,6 +346,7 @@ class BlackgridDatabase extends _$BlackgridDatabase
           await m.createIndex(progressEventsScopeSequence);
           await m.createIndex(progressEventsRegisterOrder);
         }
+        if (from < 9) await m.createTable(progressWipes);
       });
     },
     beforeOpen: (details) async {
