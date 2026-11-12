@@ -15,7 +15,7 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 | task-catalog → Stored catalogs without the new facts still load | Round trip | pkg/test/progress_catalog_json_test.dart | `dialogue requirement and delay round-trip` | green |
 | task-availability → Every catalog task gets one result | Results follow the catalog | pkg/test/task_rules_test.dart | `one result per task in catalog order` | green |
 | task-availability → Every catalog task gets one result | Progress for an unknown task | pkg/test/task_rules_test.dart | `progress for a task outside the catalog is ignored` | green |
-| task-availability → Results are deterministic and side-effect free | Repeated evaluation | pkg/test/task_rules_fixture_test.dart | `repeated evaluation over the excerpt is equal` | red |
+| task-availability → Results are deterministic and side-effect free | Repeated evaluation | pkg/test/task_rules_fixture_test.dart | `repeated evaluation over the excerpt is equal` | green |
 | task-availability → Results are deterministic and side-effect free | Progress changes between runs | pkg/test/task_rules_test.dart | `a new snapshot does not change earlier results` | green |
 | task-availability → Recorded task state decides done and started | Finished task | pkg/test/task_rules_test.dart | `finished task is done without gate reasons` | green |
 | task-availability → Recorded task state decides done and started | Failed restartable task | pkg/test/task_rules_test.dart | `failed restartable task is evaluated as not started` | green |
@@ -43,8 +43,8 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 | task-availability → Edition gate from a reviewed table | Unrecognised edition | pkg/test/task_rules_gates_test.dart | `unrecognised edition is unchecked` | green |
 | task-availability → Undecidable gates are listed, never locking | Global-variable gate | pkg/test/task_rules_gates_test.dart | `global-variable gate is unchecked and available` | green |
 | task-availability → Undecidable gates are listed, never locking | Catalog stored before other requirements were kept | pkg/test/task_rules_gates_test.dart | `unknown other requirements and delay are unchecked` | green |
-| task-availability → Rules are proved on frozen tarkov.dev data | Excerpt covers each gate | pkg/test/task_rules_fixture_test.dart | `every gate kind is hit by an excerpt task` | red |
-| task-availability → Rules are proved on frozen tarkov.dev data | Excerpt edited out of shape | pkg/test/task_rules_fixture_test.dart | `excerpt manifest records source URLs and fetch date` | red |
+| task-availability → Rules are proved on frozen tarkov.dev data | Excerpt covers each gate | pkg/test/task_rules_fixture_test.dart | `every gate kind is hit by an excerpt task` | green |
+| task-availability → Rules are proved on frozen tarkov.dev data | Excerpt edited out of shape | pkg/test/task_rules_fixture_test.dart | `excerpt manifest records source URLs and fetch date` | green |
 | task-availability → Rules run without Flutter or Windows | Plain Dart run | pkg/test (all) | `mise run test` runs `cd packages/blackgrid_progress && dart test` (`mise.toml:12`) | green |
 | task-availability → Rules run without Flutter or Windows | Flutter dependency introduced | test/data/progress_package_audit_test.dart | existing package audit (pubspec deps and `lib/` imports) | green |
 
@@ -89,13 +89,13 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 
 ## 4. Frozen tarkov.dev excerpt
 
-- [ ] 4.1 Build `pkg/test/fixtures/tarkov_dev/`:
+- [x] 4.1 Build `pkg/test/fixtures/tarkov_dev/`:
   - `regular_tasks.json` and `pve_tasks.json`: real wire `data.tasks` objects for 30-50 tasks picked per gate, plus the transitive closure of the tasks they reference (prerequisites, alternatives and `taskStatus` objectives), with `zones`, `position` and `outline` removed and translations dropped;
   - `traders.json`: the trader IDs used;
   - `SOURCE.md`: URLs, fetch date and the selection by gate.
 
   Download into the session scratchpad, not the repo, and delete the download afterwards. Each mode file stays under 150 KB. Verify both files parse with `parseProgressCatalog`.
-- [ ] 4.2 Write `pkg/test/task_rules_fixture_test.dart`:
+- [x] 4.2 Write `pkg/test/task_rules_fixture_test.dart`:
   - repeated evaluation is equal;
   - each gate kind (level, loyalty, prerequisite complete, failed and active, alternative, faction, game mode, edition, global variable, dialogue, delay, prestige and reputation) is hit by at least one excerpt task under a progress snapshot built to provoke it;
   - `SOURCE.md` has its URLs and fetch date;
