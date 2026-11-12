@@ -50,8 +50,8 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 
 ## 1. Contract ADR and architecture
 
-- [ ] 1.1 Write `docs/adr/0043-task-availability-rules.md` (MADR-short, `Status: accepted`, the date, extends ADR-0042). It records the contract from design D2: a pure `evaluateTasks` over package-owned `PlayerProgress` and `ProgressMode`; state precedence; failing checked gates lock and unchecked gates never lock; the sealed, additive reason vocabulary; the edition table as reviewed const data whose IDs every progress writer must use for the player's edition. Verify the file exists and `openspec validate add-task-rules --strict` passes.
-- [ ] 1.2 Update `openspec/architecture.md`: the `blackgrid_progress` component row gains the availability rules and edition table, the ADR-0043 index row is added, and the catalog state row notes the two new lenient task fields. Verify with `mise run test` (it includes the planning-document checks).
+- [x] 1.1 Write `docs/adr/0043-task-availability-rules.md` (MADR-short, `Status: accepted`, the date, extends ADR-0042). It records the contract from design D2: a pure `evaluateTasks` over package-owned `PlayerProgress` and `ProgressMode`; state precedence; failing checked gates lock and unchecked gates never lock; the sealed, additive reason vocabulary; the edition table as reviewed const data whose IDs every progress writer must use for the player's edition. Verify the file exists and `openspec validate add-task-rules --strict` passes.
+- [x] 1.2 Update `openspec/architecture.md`: the `blackgrid_progress` component row gains the availability rules and edition table, the ADR-0043 index row is added, and the catalog state row notes the two new lenient task fields. Verify with `mise run test` (it includes the planning-document checks).
 
 ## 2. Catalog keeps other requirements and delays
 
