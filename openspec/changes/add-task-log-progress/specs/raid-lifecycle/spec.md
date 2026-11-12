@@ -24,3 +24,7 @@ Each task-started, task-failed and task-finished event read from the push-notifi
 #### Scenario: Replay after an app restart
 - **WHEN** the same session folder is read again from the start after Blackgrid restarts
 - **THEN** each task message is published again with the same record identity, task ID and state as before
+
+#### Scenario: Push records recover after a mode change
+- **WHEN** one scan reads PvP at 10:00 and PvE at 10:02, then a later scan recovers a task message logged at 10:01 in the same folder
+- **THEN** the task transition carries PvP, matching a one-shot read of that folder rather than the latest delivered mode

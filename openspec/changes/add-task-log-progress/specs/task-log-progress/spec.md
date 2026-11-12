@@ -134,6 +134,10 @@ Replay SHALL read, for one mode, every log folder dated on or after the chosen d
 - **WHEN** a replay reads the live folder after three older folders
 - **THEN** the live folder's PvE task messages are recorded, and the wipe's last folder read is at most the newest of the three older folders
 
+#### Scenario: Replay sees a folder newer than the live reader
+- **WHEN** a replay admitted with live folder A lists a newer folder B before the live reader has bound it
+- **THEN** B's available records may be replayed but B is not marked fully read, and catch-up from a later live folder still reads B's subsequently written records
+
 ### Requirement: Starting a new wipe creates a fresh cycle and replays into it
 Starting a new wipe for a mode SHALL ask for its start date, create a new cycle for the mode, make it the mode's active wipe with that start date and no folder read, and then replay that mode from the start date into it. The previous wipe's cycle and events SHALL be kept unchanged. A failed creation SHALL leave the previous wipe active.
 
@@ -144,6 +148,10 @@ Starting a new wipe for a mode SHALL ask for its start date, create a new cycle 
 #### Scenario: Creation fails
 - **WHEN** creating the new cycle fails
 - **THEN** the previous wipe stays active and unchanged, and the section shows that the new wipe could not be started
+
+#### Scenario: Live replay predates a newly selected wipe
+- **WHEN** a new wipe starts November 12 while the latest log folder is dated November 10, and restart or rebind republishes that folder's task messages
+- **THEN** those messages are not recorded in the new wipe, and its selected start date is unchanged
 
 ### Requirement: Replay, catch-up and new wipe are refused during a raid
 Replay, catch-up and starting a new wipe SHALL be refused while the raid lifecycle's phase is in queue, match found, raid starting or in raid, with that reason. Replay and new wipe SHALL be refused while another catch-up, replay or new wipe is running. A refused run SHALL change no wipe and record nothing.
@@ -170,3 +178,7 @@ Every catch-up, replay and new-wipe run SHALL produce one result naming its kind
 #### Scenario: Unreadable folder
 - **WHEN** one of the folders cannot be opened for reading
 - **THEN** that folder is counted as unreadable, the other folders are read, and a replay from its date reads it again
+
+#### Scenario: Older replay fails below an existing watermark
+- **WHEN** the wipe's last folder is November 11, a replay from October 20 stores that date and fails before October 21
+- **THEN** the November 11 watermark stays unchanged and the failed result instructs replaying again from October 20, without promising startup catch-up will resume the older replay

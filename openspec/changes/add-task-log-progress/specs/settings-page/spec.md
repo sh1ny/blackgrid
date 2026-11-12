@@ -34,6 +34,13 @@ Local progress SHALL hold one row per game mode (PvP, PvE, seasonal) showing its
 - **WHEN** a PvE replay has finished reading 12 folders, recording 9 task events and skipping 1 message for no mode
 - **THEN** the section shows that result with the mode and the time it finished
 
+### Requirement: Replay recovery is explicit
+The section SHALL warn that closing Blackgrid stops replay and that the player must replay again from the same date to finish it. An interrupted or failed replay result SHALL show its original selected retry date.
+
+#### Scenario: Replay recovery guidance
+- **WHEN** a replay selected from October 20 fails or is interrupted
+- **THEN** its result identifies October 20 as the retry date, and the section explains that closing Blackgrid stops replay and requires replaying again from the same date
+
 ### Requirement: Local progress actions are disabled with a reason
 Replay game logs and Start a new wipe SHALL be disabled while the player is queued, loading or in a raid, while another catch-up, replay or new wipe is running, and while no game log folder is found, each with its reason beside the actions. Start a new wipe SHALL ask the player to confirm, naming the mode and the new start date.
 

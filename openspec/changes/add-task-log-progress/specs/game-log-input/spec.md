@@ -35,3 +35,18 @@ A one-shot folder read SHALL only open log files for reading. It SHALL NOT write
 #### Scenario: Offline audit covers the one-shot reader
 - **WHEN** the offline audit test scans the log-input code
 - **THEN** the one-shot folder reader's source is in the scanned set, and it holds no process call and no file write, rename or delete call
+
+### Requirement: Task attribution uses a complete application snapshot
+Both the live reader and one-shot reads SHALL snapshot the push-notifications file before the application file and fully consume the latter snapshot before releasing task messages. Failed, short or partial-line application reads SHALL defer live push consumption, or make a one-shot read unreadable without partial tasks. A missing application file retains the specified no-mode behavior.
+
+#### Scenario: Live task arrives between file snapshots
+- **WHEN** PvP is previously known and the game appends PvE followed by a task while the live reader takes its file snapshots
+- **THEN** the task is published only after the corresponding application evidence is consumed, carries PvE, and matches a later one-shot replay
+
+#### Scenario: Active-folder one-shot snapshot
+- **WHEN** the application mode and its task are appended while a one-shot read snapshots an actively growing folder
+- **THEN** any task included by the push snapshot is attributed using the later application snapshot, matching a subsequent replay
+
+#### Scenario: Application snapshot cannot be consumed
+- **WHEN** the application read fails, ends before its snapshotted size or retains a partial line
+- **THEN** live task delivery waits for a complete application read, and a one-shot read returns unreadable without partial task output

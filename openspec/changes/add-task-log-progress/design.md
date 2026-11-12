@@ -46,11 +46,13 @@ See proposal.md for the why and scope decisions S1–S7.
 
 ### D3: Task transitions carry the mode logged in the same folder
 
-- **Choice:** `RaidLifecycleState` gains `folderMode`, set by `SessionModeChanged` and cleared by `SessionFolderChanged` and `LogInputReset`. A `SessionModeChanged` carrying `GameMode.unknown` (an unrecognised `Session mode:` value, `lib/data/game_log/game_locations.dart:57-62`) sets `folderMode` to null, so its task messages are skipped for no mode (S6) and never reach the store, which rejects unknown modes (ADR-0041). A new `TaskTransition(id, time, taskId, ProgressTaskStatus status, GameMode? mode)` uses `folderMode`. `sessionMode` and flea sales keep today's carry-over.
-- **Rejected:** Using `sessionMode`, because a live read and a one-shot read of the same folder could then disagree on the mode, putting the same record into two wipes.
+- **Choice:** `RaidLifecycleState` keeps `folderMode` and immutable timestamped mode evidence for the current folder, cleared by `SessionFolderChanged` and `LogInputReset`. Each `SessionModeChanged` contributes its time, application-record offset and recognised mode (`GameMode.unknown` contributes null). `TaskTransition(id, time, taskId, ProgressTaskStatus status, GameMode? mode)` resolves the greatest mode-evidence `(time, offset)` whose time is at or before the task's log time. Application records precede push records at equal times. This also handles a push file recovering after a read failure: live scans only sort their own batches, so processing order is not log-time order across scans. No preceding recognised evidence, or a latest applicable unknown mode, yields null. `sessionMode`, `folderMode` as the latest processed mode, and flea sales retain their existing behavior. Mode history changes only on mode events; task lookup does not copy it.
+- Attribution also requires complete input evidence: both readers snapshot the push file first and the application file last, then consume application bytes through that later snapshot before releasing any tasks from the push snapshot. Live input defers push consumption if the application read fails, ends short or leaves a partial line; completed application records may still be published, and the unchanged push position is recovered on a later scan. A one-shot read returns unreadable with no partial tasks in those cases. A missing application file remains the specified no-mode case, not a fallback to carried mode. A shared snapshot helper and injected stat callback expose this ordering seam to deterministic offline tests (design review C1).
+- **Rejected:** Using carried `sessionMode` or only the latest processed `folderMode`, because delayed push records would disagree with one-shot replay and could permanently contaminate another mode's immutable ledger.
 - **Reversal cost:** low. It is an internal reducer field.
 - **Important:** yes. It changes which mode progress lands in, as players see it.
 - **Chosen by:** user.
+- **Pre-ship correction:** The user approved timestamped same-folder evidence on 2026-11-12 after review F1 demonstrated delayed push recovery across a mode change.
 
 ### D4: Dates are picked with the Flutter date picker
 
@@ -63,6 +65,7 @@ See proposal.md for the why and scope decisions S1–S7.
 ### D5: One `TaskLogProgressController` owns recording, runs and the wipe table
 
 - **Choice:** An app-scoped `ChangeNotifier` built in `AppServices` before the first bind, beside `LocalStatsController`. It subscribes to `raidLifecycle.transitions` (`TaskTransition` only), listens to the lifecycle for phase and current folder, and owns the `ProgressWipes` rows and every `LocalProgressStore` write for log progress, through one FIFO write queue. Append failures are split in two kinds. Transient failures (`ProgressStorageFailure`, `ProgressBusy`, `ProgressUnavailable`) stop a run with `lastFolder` kept, and are shown for a live batch. Per-record failures (`ProgressIdentityConflict`, `ProgressInvalidInput`) reject the whole batch, so the controller retries that chunk one event at a time. Each rejected record is counted as skipped for a conflicting record, and the rest are stored. A run then continues and advances `lastFolder` as usual, so one bad record (for example a re-read after a Windows time-zone change, which gives the same ID a different time) can never block catch-up. It exposes the wipes per mode, the run state, the last result and the error messages to Settings.
+- Live writes resolve the active wipe inside the FIFO operation and skip records whose folder date precedes that wipe's start. This applies to restart/rebind replay as well as newly appended log bytes; explicit earlier-date replay is the separate path that may move the start earlier (pre-ship F2).
 - **Rejected:** Recording inside `RaidLifecycleController` or in a store-side writer, because that mixes the pure lifecycle with storage, and the queue is needed anyway since the store rejects concurrent operations.
 - **Reversal cost:** medium. `add-manual-progress` will also write to the store and must share this queue or one above it (see Risks).
 - **Important:** yes. It binds future changes, being the writer boundary for the ledger.
@@ -71,6 +74,7 @@ See proposal.md for the why and scope decisions S1–S7.
 ### D6: Older folders are read in `Isolate.run`, one folder per call
 
 - **Choice:** `lib/data/game_log/session_folders.dart` exposes the shared folder regex, file patterns and `listSessionFolders(root)`; the live reader then uses the same helpers. `readSessionFolderTasks(folderPath)` runs in `Isolate.run`. It reads `application_000.log` and `push-notifications_000.log` with `LogFileTail` to their current sizes, parses with `parseGameLogRecord`, sorts as the live reader does, and folds `SessionFolderChanged` plus the events through `reduce` from the initial state. It returns a compact `FolderTaskRead(folder, tasks: List<TaskTransition>, skippedNoMode, rejected, unreadable)`. The backend log is not read: it holds no mode or task lines.
+- Both live and one-shot readers use push-first/application-last size snapshots. The application completeness barrier precedes task attribution even when replay reads a growing live folder; timestamped mode history alone cannot compensate for a preceding mode line omitted by an earlier snapshot.
 - **Rejected:** Reading on the UI isolate, because application logs can be tens of megabytes per session (unverified, judged from log volume) and regex parsing of a month of them would jank the UI. A long-lived worker isolate was also rejected: there is no state to keep between folders.
 - **Reversal cost:** low.
 - **Important:** no.
@@ -79,6 +83,7 @@ See proposal.md for the why and scope decisions S1–S7.
 ### D7: Catch-up and runs exclude or include the live folder by kind
 
 - **Choice:** Folder order is always (parsed folder date-time, then name), from the shared `session_folders.dart` helper. Raw name order is wrong for one-digit hours (`_9-00-00` sorts after `_10-00-00`), and the folder regex accepts those (`session_log_reader.dart:614-617`). Catch-up reads the union, over the existing wipes, of folders with `date >= startDate`, later than `lastFolder` in that order, and older than the live folder, which the live reader owns. Each folder's messages go to each mode's wipe only when the folder is within that wipe's range. A mode with no wipe gets one from its first message, with that folder's date as start (S4), and its later messages in the same run go to it. With no wipe at all (a fresh install) catch-up has no range and reads nothing; the first live message creates the wipe. Replay and new wipe also read the live folder to its current size, so a new wipe gets the messages already published into the old one. `lastFolder` only ever advances in that order, and never to the live folder.
+- Each run captures its live-folder frontier at admission. Replay may read a newly listed folder at or beyond that frontier, but only folders strictly older than the captured frontier can advance `lastFolder`. Equality alone does not prove a folder is closed: a newer folder may already exist before the live reader binds it (pre-ship F3).
 - **Rejected:** Excluding the live folder from replay too, because a new wipe would then miss the live session's earlier task messages.
 - **Reversal cost:** low.
 - **Important:** no. It is forced by correctness of S1 and is in the spec.
@@ -87,8 +92,8 @@ See proposal.md for the why and scope decisions S1–S7.
 ### D8: Raid guard and run admission
 
 - **Choice:** A run is admitted only when no run is active, a live folder is known (`state.currentFolder != null`) and the phase is `unknown`, `inMenus` or `raidEnded`. Catch-up is requested once per launch and whenever a refused catch-up's guard clears. A running replay or catch-up checks the phase before reading each folder and stops with "stopped by a raid" when it is in queue, match found, raid starting or in raid. The folder being stored is finished first.
-The "stopped by a raid" result names the last folder stored, because a replay below `lastFolder` is not continued by catch-up (catch-up only reads later folders). The player replays from that folder's date.
-- **Rejected:** Pausing and resuming a replay after the raid, because it keeps hidden state across raids. A stopped catch-up continues at the next launch. A stopped replay is continued by the player from the named folder.
+The "stopped by a raid" result may name the last folder stored as progress, but a replay also exposes its original selected date as `retryFrom`. The player replays again from that original date: catch-up cannot resume older work below an existing watermark.
+- **Rejected:** Pausing and resuming a replay after the raid, because it keeps hidden state across raids. A stopped catch-up continues at the next launch. A stopped replay is requested again by the player from its original selected date.
 - **Reversal cost:** low.
 - **Important:** no.
 - **Chosen by:** agent.
@@ -106,11 +111,11 @@ The "stopped by a raid" result names the last folder stored, because a replay be
 | S7 | Tracker and screens | Unchanged | Show recorded tasks now | low | no | agent |
 | D1 | Wipe storage | Drift schema 9 `ProgressWipes` | Preferences JSON | medium | yes | user |
 | D2 | Event IDs | `log1\|cycle\|folder\|file\|offset` (ADR-0044) | SHA-256 | high | yes | user |
-| D3 | Task mode | Mode logged in the same folder; unrecognised mode = no mode | Carried `sessionMode` | low | yes | user |
+| D3 | Task mode | Timestamped same-folder mode evidence at task log time, behind a complete application snapshot; unknown = no mode | Carried/latest processed mode; unseen preceding evidence | low | yes | user |
 | D4 | Date entry | Flutter date picker | Typed field | low | yes | user |
 | D5 | Writer | One controller and write queue; per-event fallback on per-record rejections | Lifecycle or store-side writer | medium | yes | agent |
-| D6 | Folder reads | `Isolate.run` per folder | UI isolate; long-lived worker | low | no | agent |
-| D7 | Folder range and order | Date-time order; catch-up excludes the live folder and creates missing wipes (S4); replay and new wipe include it | Always exclude; name order | low | no | agent |
+| D6 | Folder reads | `Isolate.run` per folder; both readers snapshot push first/application last and gate tasks on complete application consumption | UI isolate; long-lived worker; unordered/incomplete snapshots | low | no | agent |
+| D7 | Folder range and order | Date-time order; live appends respect wipe start; only folders older than captured live frontier advance the watermark; earlier replay failures expose original retry date | Any non-live folder watermark; implicit earlier-replay resumption | low | no | agent |
 | D8 | Raid guard | Admit in unknown/menus/ended; stop between folders | Pause and resume | low | no | agent |
 
 ## Diagrams (FULL)
@@ -172,7 +177,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | Active wipe per mode (cycle, start date, last folder read) | `TaskLogProgressController` via `ProgressWipeStore` | Durable | `lastFolder` only advances in (folder date-time, name) order; `startDate` only moves earlier, except a new wipe, which replaces the row with a new cycle | `ProgressWipes` row |
 | Task progress events | `LocalProgressStore` (written only by the controller in this change) | Durable, never deleted | Heads are rebuilt by the store (ADR-0041) | `ProgressEvents` |
-| Per-folder mode | Pure reducer | Memory, per read | Cleared at a folder change and at reset | Reducer state |
+| Per-folder mode evidence | Pure reducer | Memory, current folder | Cleared on folder change and reset; task lookup uses log time and mode-record offset, not delivery order | Reducer state |
 | Run state, last result, error messages | Controller | Memory, app run | Replaced by the next run; a write error clears on the next successful write | Controller fields |
 | Opened-cycle validity per mode | Controller (from `openProgressCycle` at start) | Memory, app run | Re-opened at launch and after a new wipe | Store's validation |
 
@@ -184,10 +189,12 @@ sequenceDiagram
 | Wipe creation | No wipe for the mode; message not stored | The next task message tries again | Yes (an orphan cycle is possible only if the row write fails after creation; it holds nothing and is harmless) | User: section message |
 | `openProgressCycle` unavailable | Mode's wipe shown unavailable; nothing recorded for it | The player starts a new wipe (old history kept) | Yes | User: row says the wipe is unavailable |
 | One-shot read of a folder | Counted unreadable; run continues | Replay from its date | Yes | User: run result |
-| Append during a run, transient failure | Run stops; `lastFolder` stays at the last stored folder | The next catch-up continues from there | Yes | User: run result shows the failure |
+| Catch-up append, transient failure | Run stops without advancing the failed folder | Next launch's catch-up resumes from the watermark | Yes | User: failure result |
+| Replay append, transient failure | Stored work remains; an older existing watermark may stay ahead of the interrupted replay | Player replays again from the original selected date, exposed as `retryFrom` in the failed result | Yes, deterministic IDs | User: failure and retry date in Local progress |
 | Append rejects a record (identity conflict, invalid input) | The chunk is retried one event at a time; the rejected record is skipped and counted; the run continues | None needed: the record can never be stored as is | Yes, deterministic | User: run result counts "conflicting record"; for live batches, the not-saved message |
 | Isolate error or crash in a folder read | Treated as unreadable for that folder | As above | Yes | User: run result |
-| App closed mid-run | Stored folders stay stored; `lastFolder` reflects them | Next launch's catch-up | Yes | Nobody needs to: the work resumes |
+| App closed during catch-up | Completed folders remain stored | Next launch catches up after the retained watermark | Yes | Existing watermark provides recovery |
+| App closed during replay | Completed work remains; unfinished work below an old watermark is not resumed | Player replays again from the same originally selected date | Yes, deterministic IDs | Standing Local progress note warns that closing Blackgrid stops replay; no hidden auto-resume state |
 | Schema 9 upgrade | Database open fails, as for any upgrade failure today | Existing durability rules | — | User: existing database error path |
 
 ## Resource Bounds (FULL)
@@ -196,19 +203,21 @@ sequenceDiagram
 |---|---|---|---|---|
 | Controller write queue | One running operation. Live transitions queue in order; runs add one folder's chunks at a time | Runs wait between folders, so live writes are never starved for more than one chunk | None (local SQLite) | Live messages are a few per session; fine |
 | Append batch | At most 256 events (`progressPageLimit`); a folder's events are chunked | Chunked | — | — |
+| Mode evidence | One compact entry per mode-change record in the current application log; no hard count cap | Retained until folder change/reset so arbitrarily delayed push records remain attributable | — | Linear in mode changes, not all log records; repeated tasks add no history entries |
 | One-shot read input | Existing tail limits: 8 KiB chunks, 64 KiB lines, push records of at most 1 MiB and 8 192 lines (ADR-0030); files read to their size at stat | Over-limit record rejected and counted | None | A 50 MB application log streams in 8 KiB chunks; memory stays flat |
 | `FolderTaskRead` transfer | Task messages of one folder (typically under 50) plus counters | No cap needed: bounded by the push file's size and the 1 MiB record cap | — | 100x is still small lists |
 | Folder listing | All `log_*` entries in the root, names and dates only | Linear scan | — | 10 000 folders is a list of 10 000 short records; acceptable |
-| Folders per run | Unbounded (all folders from the date) | Progress shown; stops on raid; a later catch-up continues | None | 100x means minutes of background reading; the UI stays responsive (D6) |
+| Folders per run | Unbounded (all folders from the date) | Progress shown; stops on raid; later catch-up continues catch-up only, while replay is requested again from its original selected date | None | 100x means minutes of background reading; the UI stays responsive (D6) |
 | Concurrent runs | 1 | Refused with "another log read is running" | — | — |
 
 ## Flow & State Gaps (FULL)
 
 - **Live write while a run appends.** Both go through the controller queue, never concurrently into the store, so no `ProgressBusy` arises from this controller. Another writer instance could still return busy; that is reported as a write failure.
 - **New wipe while live messages arrive.** The row is switched before the replay starts. Messages published before the switch went to the old cycle, and the replay re-reads the live folder into the new one. Messages after it go to the new cycle. The same record in both cycles has different IDs (D2), which is correct.
-- **Out-of-order arrival.** The ledger's winner is by occurrence time (ADR-0041), so catch-up storing older folders after newer live messages cannot override them wrongly.
+- **Out-of-order arrival.** Same-folder timestamped mode evidence resolves delayed live push records before storage. The ledger's winner is by occurrence time (ADR-0041), so catch-up storing older folders after newer live messages cannot override them wrongly.
+- **Writes between file snapshots.** Push is snapshotted before application. A mode line written before a task included in that push snapshot is therefore in the later application snapshot. Tasks wait until application consumption reaches that snapshot with no partial line. Failure or short reads never fall back to stale mode evidence.
 - **Folder deleted between listing and reading.** Counted unreadable.
-- **Live folder changes during a run.** The run keeps the folder list it started with. The old live folder becomes catch-up's on the next launch.
+- **Live folder changes during a run.** The run keeps its starting folder list and captured live frontier. A folder at or beyond that frontier is never marked fully read, even if listed before it becomes live. A later launch catches it up once it is older than the new live folder.
 - **Crash between append and the `lastFolder` update.** The folder is re-read next time and adds nothing.
 - **Phase `unknown` with a stale crashed-in-raid folder.** If the newest folder ends in a raid, runs are refused until the game is next played. The reason is shown.
 - **Clock and DST.** Log times are local; an ambiguous fall-back hour maps the same way on every read, so IDs and times stay stable.
@@ -223,8 +232,8 @@ sequenceDiagram
 | Monotonic `lastFolder` | Yes | A replay from an early date must not make catch-up re-read everything | — |
 | Per-folder mode | Yes | Without it the same record can land in two modes, which cannot be undone | — |
 | Isolate per folder | Yes | UI jank on big application logs | Measured application logs under 1 MB would allow the UI isolate |
-| Cancel button for a run | No | A raid stops a run, and it is resumable | The owner finds long replays annoying |
-| Automatic retry of failed writes | No | The next catch-up or a replay recovers, and failures are shown | — |
+| Cancel button for a run | No | A raid stops a run; replay can be requested again from the original selected date | The owner finds long replays annoying |
+| Automatic retry of failed writes | No | Catch-up recovers from its watermark; failed replay exposes its original retry date; failures are shown | — |
 | Detecting a new wipe automatically | No | ADR-0041 forbids automatic rollover; the player starts it | — |
 | Validating task IDs against the catalog | No | S5 | — |
 | Re-reading the backend log in one-shot reads | No | No mode or task lines there | A task line appears in the backend log |
@@ -241,6 +250,7 @@ sequenceDiagram
 
 - **In force, constraining this change:** ADR-0003 (local SQLite), ADR-0030 (game log input, record identity, push gap), ADR-0041 (event ledger, cycles, conflict order), ADR-0037 (Ember theme colours), ADR-0042/0043 (catalog and rules package, unaffected).
 - **To record during apply:** ADR-0044, "Log task progress records into one active wipe per mode". It covers the `ProgressWipes` table and its single writer, the controller queue that every later progress reader and writer must share, the `log1|cycle|folder|file|offset` event ID with its literal file token, per-folder mode, catch-up, replay and the new-wipe rules, and the live-folder rule. It extends ADR-0041 and supersedes nothing.
+- **Also recorded during the approved pre-ship correction:** ADR-0045 supersedes only ADR-0030's snapshot-order/completeness limit for task attribution and extends ADR-0044 with timestamped mode evidence, live wipe boundaries, captured-frontier watermarks and explicit replay recovery.
 
 ## Open Questions
 

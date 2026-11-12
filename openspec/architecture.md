@@ -224,5 +224,6 @@ flowchart TB
 | [0042](../docs/adr/0042-progress-catalog-package.md) | Portable plain-Dart progress catalog workspace package; immutable unknown-aware facts and sealed objective facts; optional versioned per-mode snapshot block; strict identities and existing item validation, lenient new facts | — (extends 0003, 0004 and 0041) |
 | [0043](../docs/adr/0043-task-availability-rules.md) | Pure task availability over package-owned progress and modes; state-first precedence, checked failures lock and unchecked gates never lock; additive sealed reasons and reviewed const edition vocabulary | — (extends 0042) |
 | [0044](../docs/adr/0044-log-task-progress-active-wipes.md) | One active log-progress wipe per mode in schema 9; controller-owned shared operation queue, deterministic log IDs, same-folder mode, guarded catch-up and replay | — (extends 0041) |
+| [0045](../docs/adr/0045-task-log-attribution-snapshots.md) | Push-first/application-last complete snapshots and timestamped mode evidence prevent wrong-mode task writes; live wipe-start and captured-frontier boundaries; earlier replay failures require the original retry date | 0030 (task-attribution snapshot ordering/completeness only; extends 0044) |
 
 Planned but not built features live in the [roadmap](roadmap.md), not here.

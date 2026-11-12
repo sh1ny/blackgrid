@@ -60,6 +60,15 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | settings-page → Local progress actions are disabled with a reason | In a raid | test/ui/settings_local_progress_test.dart | actions disabled in raid with reason | green |
 | settings-page → Local progress actions are disabled with a reason | Confirm a new wipe | test/ui/settings_local_progress_test.dart | new wipe asks confirmation naming mode and date | green |
 | settings-page → Local progress actions are disabled with a reason | Confirmation cancelled | test/ui/settings_local_progress_test.dart | cancelled confirmation changes nothing | green |
+| raid-lifecycle → Each task message is published once with its mode | Push records recover after a mode change | test/domain/raid_lifecycle_task_test.dart | late task uses the mode preceding its log time | red |
+| task-log-progress → Starting a new wipe creates a fresh cycle and replays into it | Live replay predates a newly selected wipe | test/application/task_log_progress_controller_test.dart | rebound live folder before wipe start stays excluded | red |
+| task-log-progress → Replay reads the log folders from a date into the active wipe | Replay sees a folder newer than the live reader | test/application/task_log_progress_controller_test.dart | replay never watermarks a newer not-yet-bound folder | red |
+| game-log-input → Task attribution uses a complete application snapshot | Live task arrives between file snapshots | test/data/game_log/session_log_reader_events_test.dart | live snapshot never publishes a task ahead of its mode evidence | red |
+| game-log-input → Task attribution uses a complete application snapshot | Active-folder one-shot snapshot | test/data/game_log/session_folder_read_test.dart | active folder snapshot includes all preceding mode evidence | red |
+| game-log-input → Task attribution uses a complete application snapshot | Application snapshot cannot be consumed | test/data/game_log/session_log_reader_events_test.dart | live tasks wait for complete application snapshot | red |
+| game-log-input → Task attribution uses a complete application snapshot | Application snapshot cannot be consumed | test/data/game_log/session_folder_read_test.dart | incomplete application snapshot yields no task output | red |
+| task-log-progress → Each run reports its result | Older replay fails below an existing watermark | test/application/task_log_progress_controller_test.dart | failed earlier replay retains watermark and exposes original retry date | red |
+| settings-page → Replay recovery is explicit | Replay recovery guidance | test/ui/settings_local_progress_test.dart | failed replay shows retry date and closing note | red |
 
 ## 1. ADR and architecture
 
