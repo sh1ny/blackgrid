@@ -189,6 +189,76 @@ void main() {
     expect(result.tasks.map((task) => task.taskId), [_taskA, _taskB]);
     expect(result.tasks.map((task) => task.mode), [GameMode.pve, GameMode.pve]);
   });
+
+  test('incomplete application snapshot yields no task output', () async {
+    await writeLog(
+      'application_000.log',
+      _mode('Pvp', '21:30:00.000') + _mode('Pve', '21:30:01.000').trimRight(),
+    );
+    await writeLog(
+      'push-notifications_000.log',
+      _push(_task(_taskA), '21:30:02.000'),
+    );
+    final result = await readSessionFolderTasks(folder.path);
+    expect(result.unreadable, isTrue);
+    expect(result.tasks, isEmpty);
+
+    await writeLog('application_000.log', _mode('Pve', '21:30:01.000'));
+    final short = await readSessionFolderTasks(
+      folder.path,
+      snapshotStat: (file) async {
+        final stat = await file.stat();
+        return file.path.endsWith('application_000.log')
+            ? _OversizedStat(stat)
+            : stat;
+      },
+    );
+    expect(short.unreadable, isTrue);
+    expect(short.tasks, isEmpty);
+
+    final failingApplication = _FailingOpenFile(
+      File('${folder.path}/application_000.log'),
+    );
+    final failed = await IOOverrides.runZoned(
+      () => readSessionFolderTasks(folder.path),
+      createDirectory: (_) => _FailingOpenDirectory(folder, failingApplication),
+    );
+    expect(failed.unreadable, isTrue);
+    expect(failed.tasks, isEmpty);
+  });
+
+  test('active folder snapshot includes all preceding mode evidence', () async {
+    await writeLog('application_000.log', _mode('Pvp', '21:30:00.000'));
+    await writeLog('push-notifications_000.log', '');
+    var appendAtSnapshot = true;
+    final application = File('${folder.path}/application_000.log');
+    final push = File('${folder.path}/push-notifications_000.log');
+    final result = await readSessionFolderTasks(
+      folder.path,
+      snapshotStat: (file) async {
+        final snapshot = await file.stat();
+        if (appendAtSnapshot) {
+          appendAtSnapshot = false;
+          await application.writeAsString(
+            _mode('Pve', '21:30:01.000'),
+            mode: FileMode.append,
+            flush: true,
+          );
+          await push.writeAsString(
+            _push(_task(_taskA), '21:30:02.000'),
+            mode: FileMode.append,
+            flush: true,
+          );
+        }
+        return snapshot;
+      },
+    );
+    expect(result.unreadable, isFalse);
+    expect(result.tasks.map((task) => task.mode), everyElement(GameMode.pve));
+    final replay = await readSessionFolderTasks(folder.path);
+    expect(replay.tasks.single.mode, GameMode.pve);
+    expect(replay.tasks.single.taskId, _taskA);
+  });
 }
 
 class _FailingOpenDirectory implements Directory {
@@ -248,5 +318,21 @@ class _FailingOpenFile implements File {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
     'Unexpected file operation: ${invocation.memberName}',
+  );
+}
+
+class _OversizedStat implements FileStat {
+  _OversizedStat(this._stat);
+  final FileStat _stat;
+
+  @override
+  int get size => _stat.size + 1;
+
+  @override
+  FileSystemEntityType get type => _stat.type;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'Unexpected snapshot stat: ${invocation.memberName}',
   );
 }

@@ -225,6 +225,39 @@ void main() {
     expect(find.textContaining('log_current_folder'), findsOneWidget);
   });
 
+  testWidgets('failed replay shows retry date and closing note', (
+    tester,
+  ) async {
+    final source = _ProgressSource()
+      ..lastResult = TaskLogRunResult(
+        kind: TaskLogRunKind.replay,
+        modes: {GameMode.pve},
+        finishedAt: _today,
+        failure: 'Could not save',
+        lastStoredFolder: 'log_2026.10.21_10-00-00_1.3.0.0.48484',
+        retryFrom: DateTime(2026, 10, 20),
+      );
+    await _pump(tester, source);
+    var text = _textWithin(find.byType(LocalProgressSettings), tester);
+    expect(text, contains('Closing Blackgrid stops replay'));
+    expect(text, contains('replay again from the same date'));
+    expect(text, contains('Replay again from 2026-10-20'));
+
+    source
+      ..lastResult = TaskLogRunResult(
+        kind: TaskLogRunKind.replay,
+        modes: {GameMode.pve},
+        finishedAt: _today,
+        stoppedByRaid: true,
+        retryFrom: DateTime(2026, 10, 20),
+      )
+      ..changed();
+    await tester.pump();
+    text = _textWithin(find.byType(LocalProgressSettings), tester);
+    expect(text, contains('Stopped by a raid'));
+    expect(text, contains('Replay again from 2026-10-20'));
+  });
+
   testWidgets('actions disabled in raid with reason', (tester) async {
     final source = _ProgressSource()
       ..wipes = {for (final mode in _modes) mode: _wipe(mode)};

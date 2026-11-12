@@ -113,3 +113,23 @@ Future<Map<LogFile, File>> selectSessionLogFiles(
   }
   return {for (final entry in selected.entries) entry.key: entry.value.$2};
 }
+
+/// Snapshots selected files with push first and application last.
+///
+/// Tasks in the push snapshot must wait for complete consumption of the later
+/// application snapshot. [stat] supplies a filesystem seam for offline tests.
+Future<Map<LogFile, FileStat>> statSessionLogSnapshot(
+  Map<LogFile, File?> files, {
+  Future<FileStat> Function(File file)? stat,
+}) async {
+  final snapshots = <LogFile, FileStat>{};
+  for (final kind in const [
+    LogFile.pushNotifications,
+    LogFile.backend,
+    LogFile.application,
+  ]) {
+    final file = files[kind];
+    if (file != null) snapshots[kind] = await (stat?.call(file) ?? file.stat());
+  }
+  return snapshots;
+}

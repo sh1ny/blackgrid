@@ -115,4 +115,4 @@ Blackgrid now records your quest progress from the game's own logs. Tasks you st
 
 - Task started, failed and finished messages from the game logs are recorded in local progress, per game mode and wipe.
 - Missed log folders are read at startup, outside a raid, so progress catches up after time away.
-- A new "Local progress" section in Settings shows each mode's wipe and can replay game logs from a date or start a new wipe. Both are refused during a raid.
+- A new "Local progress" section in Settings shows each mode's wipe and can replay game logs from a date or start a new wipe. Both are refused during a raid. Interrupted replays show the original retry date; closing Blackgrid stops replay and requires replaying again from the same date.

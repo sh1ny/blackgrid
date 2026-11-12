@@ -11,12 +11,10 @@ import 'game_log/session_folders.dart';
 
 /// Configured-root-only replay and tail of the three raid-lifecycle logs.
 ///
-/// Each scan picks the newest session folder once, stats the application,
-/// backend and push-notifications files, reads each to its stat size, and
-/// emits the scan's events as one batch on [events], sorted by log time, then
-/// file (application, backend, push), then byte offset. The bind-time replay is
-/// one such scan, so a replay and a live read yield the same events in the same
-/// order.
+/// Each scan snapshots push first and application last, reads to those sizes,
+/// and emits events sorted by log time, file (application, backend, push), then
+/// byte offset. Push consumption waits for complete application consumption;
+/// recovered push records may arrive in a later scan than their mode evidence.
 ///
 /// [states] describes the application log alone: status, incarnation, map and
 /// mode never depend on the backend or push files. Problems with those two go
@@ -32,6 +30,7 @@ class SessionLogReader {
     this.pollInterval = const Duration(milliseconds: 250),
     this.chunkBytes = 8192,
     this.maxLineBytes = 65536,
+    this.snapshotStat,
   });
 
   /// How often the session folder is rescanned.
@@ -42,6 +41,9 @@ class SessionLogReader {
 
   /// Longest accepted log line, in bytes.
   final int maxLineBytes;
+
+  /// Optional size-snapshot filesystem seam for deterministic offline tests.
+  final Future<FileStat> Function(File file)? snapshotStat;
   final _states = StreamController<SessionLogState>.broadcast(sync: true);
   final _events = StreamController<List<GameLogEvent>>.broadcast(sync: true);
 
@@ -339,18 +341,15 @@ class SessionLogReader {
       LogFile.backend: selected.backend,
       LogFile.pushNotifications: selected.push,
     };
-    // Stat every file before reading any, so each read stops at a size seen
-    // together.
-    final sizes = <LogFile, int>{};
+    final snapshots = await statSessionLogSnapshot(files, stat: snapshotStat);
     final missing = <LogFile, String>{};
-    for (final MapEntry(key: kind, value: file) in files.entries) {
-      final stat = file == null ? null : await file.stat();
+    for (final kind in files.keys) {
+      final stat = snapshots[kind];
       if (stat == null || stat.type == FileSystemEntityType.notFound) {
         missing[kind] = _missingText[kind]!;
         _problems.remove(kind);
         _unreadable.remove(kind);
-      } else {
-        sizes[kind] = stat.size;
+        snapshots.remove(kind);
       }
     }
     if (cancelled()) return false;
@@ -358,7 +357,7 @@ class SessionLogReader {
     final replaced =
         application.path != _path ||
         selected.session != _session ||
-        (sizes[LogFile.application] ?? 0) < _tail.offset;
+        (snapshots[LogFile.application]?.size ?? 0) < _tail.offset;
     if (replaced) {
       // A new folder only announces itself; a replaced or truncated
       // application log in the same folder also restarts the replay.
@@ -373,7 +372,7 @@ class SessionLogReader {
     // so an in-place rewrite restarts the file instead of adopting bytes.
     final batch = await _tail.read(
       application,
-      sizes[LogFile.application] ?? 0,
+      snapshots[LogFile.application]?.size ?? 0,
       isCancelled: cancelled,
     );
     if (batch.cancelled || cancelled()) return false;
@@ -413,16 +412,20 @@ class SessionLogReader {
     } finally {
       _batch = false;
     }
+    final applicationComplete =
+        _tail.offset == snapshots[LogFile.application]?.size &&
+        !_tail.hasPendingLine;
     for (final kind in _raidLogs) {
+      if (kind == LogFile.pushNotifications && !applicationComplete) continue;
       final file = files[kind];
-      if (file == null || !sizes.containsKey(kind)) {
+      if (file == null || !snapshots.containsKey(kind)) {
         _tails[kind]!.reset();
         continue;
       }
       if (!await _readRaidLog(
         kind,
         file,
-        sizes[kind]!,
+        snapshots[kind]!.size,
         selected.name,
         found,
         cancelled,
@@ -439,7 +442,12 @@ class SessionLogReader {
     _setRaidLogsMessage(problems.isEmpty ? null : problems.join('; '));
     // A rejected record stays visible until newer bytes read cleanly.
     if (_state.status != MapInputStatus.unavailable && !_recordRejected) {
-      _publish(MapInputStatus.watching);
+      _publish(
+        applicationComplete ? MapInputStatus.watching : MapInputStatus.reading,
+        message: applicationComplete
+            ? null
+            : 'Waiting for the application log to finish writing.',
+      );
     }
     _emit();
     return true;

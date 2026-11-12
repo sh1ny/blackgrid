@@ -113,6 +113,13 @@ class _LocalProgressSettingsState extends State<LocalProgressSettings> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final mode in _modes) _modeRow(context, mode, reason),
+          Padding(
+            padding: const EdgeInsets.only(top: EmberSpace.md),
+            child: Text(
+              'Closing Blackgrid stops replay. To finish, replay again from the same date.',
+              style: note,
+            ),
+          ),
           if (controller.running)
             Padding(
               padding: const EdgeInsets.only(top: EmberSpace.md),
@@ -242,5 +249,6 @@ String _resultText(TaskLogRunResult result) {
       '${result.unreadableFolders} unreadable folders'
       '${result.stoppedByRaid ? '\nStopped by a raid' : ''}'
       '${result.lastStoredFolder == null ? '' : '\nLast stored folder: ${result.lastStoredFolder}'}'
-      '${result.failure == null ? '' : '\nFailed: ${result.failure}'}';
+      '${result.failure == null ? '' : '\nFailed: ${result.failure}'}'
+      '${result.retryFrom == null ? '' : '\nReplay again from ${_date(result.retryFrom!)}'}';
 }

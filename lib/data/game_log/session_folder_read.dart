@@ -34,10 +34,14 @@ final class FolderTaskRead {
 
 /// Reads the application and push logs in [folderPath] without changing them.
 ///
-/// Files are read only to their sizes at stat. If the folder or a selected
-/// file cannot be read, the result is unreadable and contains no partial data.
-/// The function is safe to invoke from a separate isolate.
-Future<FolderTaskRead> readSessionFolderTasks(String folderPath) async {
+/// Push is snapshotted before application; tasks wait for complete application
+/// consumption. Unreadable or incomplete application input yields no partial
+/// data. [snapshotStat] supplies an offline filesystem seam.
+/// The default reader is safe to invoke from a separate isolate.
+Future<FolderTaskRead> readSessionFolderTasks(
+  String folderPath, {
+  Future<FileStat> Function(File file)? snapshotStat,
+}) async {
   final folder = sessionPathBasename(folderPath);
   FolderTaskRead unreadable() => FolderTaskRead(
     folder: folder,
@@ -52,13 +56,9 @@ Future<FolderTaskRead> readSessionFolderTasks(String folderPath) async {
     if (!await directory.exists()) return unreadable();
     const kinds = [LogFile.application, LogFile.pushNotifications];
     final files = await selectSessionLogFiles(directory, kinds);
-    final sizes = <LogFile, int>{};
-    for (final kind in kinds) {
-      final file = files[kind];
-      if (file == null) continue;
-      final stat = await file.stat();
+    final snapshots = await statSessionLogSnapshot(files, stat: snapshotStat);
+    for (final stat in snapshots.values) {
       if (stat.type != FileSystemEntityType.file) return unreadable();
-      sizes[kind] = stat.size;
     }
 
     final events = <RecordedGameLogEvent>[];
@@ -66,7 +66,7 @@ Future<FolderTaskRead> readSessionFolderTasks(String folderPath) async {
     for (final kind in kinds) {
       final file = files[kind];
       if (file == null) continue;
-      final size = sizes[kind]!;
+      final size = snapshots[kind]!.size;
       final tail = LogFileTail(kind: kind);
       // Bound each batch as well as the tail's own input chunks.
       do {
@@ -96,6 +96,9 @@ Future<FolderTaskRead> readSessionFolderTasks(String folderPath) async {
           }
         }
       } while (tail.offset < size);
+      if (kind == LogFile.application && tail.hasPendingLine) {
+        return unreadable();
+      }
     }
 
     events.sort((a, b) {

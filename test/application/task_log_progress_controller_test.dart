@@ -606,6 +606,105 @@ void main() {
     expect(h.store.history(wipe), hasLength(1));
   });
 
+  test('rebound live folder before wipe start stays excluded', () async {
+    final oldLive = _folder(10);
+    h.add(oldLive, [_task(oldLive, 1, _pvp)]);
+    await h.start();
+    await h.activate(oldLive);
+    final entered = Completer<void>(), release = Completer<void>();
+    final blocker = h.controller.enqueueProgress(() async {
+      entered.complete();
+      await release.future;
+    });
+    await entered.future;
+    final newWipe = h.controller.startNewWipe(_pvp, DateTime(2026, 11, 12));
+    h.lifecycle.publish(_task(oldLive, 1, _pvp));
+    release.complete();
+    await blocker;
+    await newWipe;
+    await h.controller.settled;
+    final wipe = h.wipes.rows[_pvp]!;
+    expect(h.store.history(wipe), isEmpty);
+
+    await h.controller.close();
+    await h.start();
+    await h.controller.settled;
+    h.lifecycle.setState(folder: oldLive.name);
+    h.lifecycle.publish(_task(oldLive, 1, _pvp));
+    await h.controller.settled;
+    expect(h.store.history(wipe), isEmpty);
+    expect(h.wipes.rows[_pvp]!.startDate, DateTime(2026, 11, 12));
+
+    await h.controller.replay(_pvp, DateTime(2026, 11, 10));
+    expect(h.store.history(wipe).single.target.id, 'task-1');
+    expect(h.wipes.rows[_pvp]!.startDate, DateTime(2026, 11, 10));
+  });
+
+  test('replay never watermarks a newer not-yet-bound folder', () async {
+    final wipe = h.seed(_pvp);
+    final live = _folder(10), growing = _folder(11), next = _folder(12);
+    h.add(live, []);
+    h.add(growing, [_task(growing, 1, _pvp)]);
+    await h.start();
+    await h.activate(live);
+    await h.controller.replay(_pvp, _date);
+    expect(h.wipes.rows[_pvp]!.lastFolder, isNull);
+
+    h.reads[growing.path] = _read(growing, [
+      _task(growing, 1, _pvp),
+      _task(growing, 2, _pvp),
+    ]);
+    h.add(next, []);
+    await h.controller.close();
+    h.lifecycle.setState(folder: next.name);
+    await h.start();
+    await h.controller.settled;
+    expect(h.readNames.where((path) => path == growing.path), hasLength(2));
+    expect(h.store.history(wipe).map((event) => event.target.id), [
+      'task-1',
+      'task-2',
+    ]);
+    expect(h.wipes.rows[_pvp]!.lastFolder, growing.name);
+  });
+
+  test('failed earlier replay retains watermark and exposes original retry date', () async {
+    final marker = _folder(11), live = _folder(12);
+    final wipe = h.seed(_pvp, start: DateTime(2026, 11, 1), last: marker);
+    SessionFolder october(int day) {
+      final name =
+          'log_2026.10.${day.toString().padLeft(2, '0')}_10-00-00_1.3.0.0.48484';
+      return SessionFolder(name, '/logs/$name', DateTime(2026, 10, day, 10));
+    }
+
+    final first = october(20), second = october(21);
+    h.add(first, [_task(first, 1, _pvp)]);
+    h.add(second, [_task(second, 2, _pvp)]);
+    h.add(live, []);
+    await h.start();
+    await h.activate(live);
+    h.readEntered[second.path] = Completer();
+    h.readRelease[second.path] = Completer();
+    final run = h.controller.replay(_pvp, DateTime(2026, 10, 20));
+    await h.readEntered[second.path]!.future;
+    h.store.nextAppendFailure = const ProgressStorageFailure('disk');
+    h.readRelease[second.path]!.complete();
+    await run;
+    expect(h.store.history(wipe).single.target.id, 'task-1');
+    expect(h.wipes.rows[_pvp]!.lastFolder, marker.name);
+    expect(h.controller.lastResult!.lastStoredFolder, first.name);
+    expect(h.controller.lastResult!.failure, isNotNull);
+    expect(h.controller.lastResult!.retryFrom, DateTime(2026, 10, 20));
+
+    h.readEntered.clear();
+    h.readRelease.clear();
+    await h.controller.close();
+    await h.start();
+    await h.controller.settled;
+    expect(h.readNames.where((path) => path == second.path), hasLength(1));
+    expect(h.store.history(wipe), hasLength(1));
+    expect(h.wipes.rows[_pvp]!.lastFolder, marker.name);
+  });
+
   test('replay records only its mode', () async {
     final pvp = h.seed(_pvp), pve = h.seed(_pve);
     final live = _folder(4);
@@ -667,6 +766,7 @@ void main() {
     await h.controller.startNewWipe(_pvp, _date);
     expect(h.wipes.rows[_pvp]!.cycleId, old.cycleId);
     expect(h.controller.lastResult!.failure, isNotNull);
+    expect(h.controller.lastResult!.retryFrom, isNull);
   });
 
   test('replay in raid is refused with reason', () async {
@@ -716,6 +816,7 @@ void main() {
     await h.controller.settled;
     expect(h.controller.lastResult!.stoppedByRaid, isTrue);
     expect(h.controller.lastResult!.lastStoredFolder, a.name);
+    expect(h.controller.lastResult!.retryFrom, _date);
     expect(h.wipes.rows[_pvp]!.lastFolder, b.name);
     expect(h.store.history(h.wipes.rows[_pvp]!).single.target.id, 'task-1');
   });

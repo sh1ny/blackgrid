@@ -33,6 +33,7 @@ final class TaskLogRunResult {
     this.stoppedByRaid = false,
     this.failure,
     this.lastStoredFolder,
+    this.retryFrom,
   });
 
   /// The operation performed.
@@ -73,6 +74,9 @@ final class TaskLogRunResult {
 
   /// The last folder stored in this operation, even if its watermark was newer.
   final String? lastStoredFolder;
+
+  /// The selected replay date to use again after a failure or raid stop.
+  final DateTime? retryFrom;
 }
 
 /// Observable local task progress and log-reading controls.
@@ -151,6 +155,7 @@ class _Run {
   bool stoppedByRaid = false;
   String? failure;
   String? lastStoredFolder;
+  DateTime? replayStart;
 
   TaskLogRunResult finish(DateTime time) => TaskLogRunResult(
     kind: kind,
@@ -166,6 +171,10 @@ class _Run {
     stoppedByRaid: stoppedByRaid,
     failure: failure,
     lastStoredFolder: lastStoredFolder,
+    retryFrom:
+        kind == TaskLogRunKind.replay && (failure != null || stoppedByRaid)
+        ? replayStart
+        : null,
   );
 }
 
@@ -337,14 +346,14 @@ class TaskLogProgressController extends ChangeNotifier
       enqueueProgress(() async {
         final run = _Run(TaskLogRunKind.catchUp, {mode});
         try {
-          await _recordChunk(
-            mode,
-            [transition],
-            _date(
-              parseSessionFolderTime(transition.id.folder) ?? transition.time,
-            ),
-            run,
+          final folderDate = _date(
+            parseSessionFolderTime(transition.id.folder) ?? transition.time,
           );
+          final wipe = _wipes[mode];
+          if (wipe != null && folderDate.isBefore(_date(wipe.startDate))) {
+            return;
+          }
+          await _recordChunk(mode, [transition], folderDate, run);
           if (run.identityOverBudget != 0) {
             _error = 'Some task progress could not be saved because a record identity is invalid.';
             _notify();
@@ -482,6 +491,7 @@ class TaskLogProgressController extends ChangeNotifier
           modes: {mode},
           finishedAt: _clock(),
           failure: _refusal,
+          retryFrom: start == null ? null : _date(start),
         );
         _error = _refusal;
         _refusal = null;
@@ -494,6 +504,9 @@ class TaskLogProgressController extends ChangeNotifier
     final root = _logRoot();
     final liveFolder = _lifecycle.state.currentFolder!;
     final run = _Run(kind, mode == null ? <GameMode>{} : {mode});
+    if (kind == TaskLogRunKind.replay && start != null) {
+      run.replayStart = _date(start);
+    }
     // Enqueue the switch immediately: already published live events precede it,
     // and later live events observe the newly selected cycle.
     Future<void>? prepare;
@@ -637,7 +650,7 @@ class TaskLogProgressController extends ChangeNotifier
               );
               newStart = _date(start);
             }
-            if (folder.name != liveFolder &&
+            if (compareSessionFolderNames(folder.name, liveFolder) < 0 &&
                 (last == null ||
                     compareSessionFolderNames(last, folder.name) < 0)) {
               await _wipeStore.advanceProgressWipeFolder(
