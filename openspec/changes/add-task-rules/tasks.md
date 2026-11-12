@@ -4,6 +4,8 @@
 
 Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/` below). Rules tests use `evaluateTasks` over small synthetic catalogs unless the row names the excerpt.
 
+Excerpt rows prove unchanged real cases for the data-backed gates enumerated in task 4.2, including opaque global-variable, dialogue, delay, prestige and reputation gates and the real edition task plus reviewed table. Unknown types, malformed/absent fields and input boundaries use small synthetic catalog/progress or wire-parse tests in the corresponding rows. Task 6.1 proves the null-versus-empty trader-list boundary; no unknown source facts are fabricated in the excerpt.
+
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
 | task-catalog → Other task requirements are retained leniently | Global-variable requirement kept | pkg/test/parse_task_test.dart | `otherRequirements keeps a globalVariable gate` | green |
@@ -27,6 +29,7 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 | task-availability → Trader loyalty gate | Loyalty met | pkg/test/task_rules_gates_test.dart | `loyalty at the required level passes` | green |
 | task-availability → Trader loyalty gate | Reputation requirement | pkg/test/task_rules_gates_test.dart | `reputation requirement is always unchecked` | green |
 | task-availability → Trader loyalty gate | Loyalty not entered | pkg/test/task_rules_gates_test.dart | `unset loyalty is unchecked for at least 2` | green |
+| task-availability → Unknown trader requirements remain unchecked | Unknown trader requirements remain uncertain | pkg/test/task_rules_gates_test.dart | `unknown trader requirements stay unchecked while an empty list passes` | red |
 | task-availability → Trader loyalty gate | Upper bound with loyalty not entered | pkg/test/task_rules_gates_test.dart | `unset loyalty is unchecked for at most 2` | green |
 | task-availability → Prerequisite gate | Prerequisite not done | pkg/test/task_rules_gates_test.dart | `missing completion prerequisite locks` | green |
 | task-availability → Prerequisite gate | Must-be-failed prerequisite | pkg/test/task_rules_gates_test.dart | `must-be-failed prerequisite finished locks` | green |
@@ -108,6 +111,12 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 - [x] 5.1 Re-run the green-at-start rows: `mise run test` (it includes the package `dart test` and `test/data/progress_package_audit_test.dart`) and `mise run analyze`. Both must be clean. Run `dart format` over the changed files.
 - [x] 5.2 Check that nothing in `lib/` imports the rules (design D9 and S6): `rg "evaluateTasks|editionTable" lib` returns nothing. Check `mise run release-notes -- --check openspec/changes/add-task-rules/proposal.md` exits 0. Update the proposal's `## Release Notes` if anything shipped differs.
 
+## 6. Preserve unknown trader-requirement lists (pre-ship F1)
+
+- [ ] 6.1 Write the regression `unknown trader requirements stay unchecked while an empty list passes` in `pkg/test/task_rules_gates_test.dart`: distinguish null from an empty trader list, retain the unchecked reason beside a checked failure, and omit it for started/done tasks. Verify it fails for the missing list-level reason before implementing.
+- [ ] 6.2 Add the documented sealed `TraderRequirementsUnknown` reason with structural equality/hash and emit it for an unknown trader-requirements list, never for an empty list. Verify the package tests, `mise run analyze`, `mise run test`, formatting, strict OpenSpec validation and release-note checks pass, then flip the new test-map row green.
+
 ## Workflow follow-up
 
 - Pre-ship review, then PR (finish: pr), then archive and the roadmap's next change (`add-task-log-progress`).
+- The pre-ship F1 fix commit carries `Preship-Round: 1`; repeat pre-ship review before opening the PR.

@@ -56,11 +56,13 @@ TIER: FULL
 - **Choice:** `evaluateTasks(ProgressCatalog, ProgressMode, PlayerProgress, {EditionTable table = editionTable}) → List<TaskAvailability>` in catalog order.
   - `TaskAvailability(taskId, status: AvailabilityStatus {done, available, locked}, started: bool, checked: List<CheckedReason>, unchecked: List<UncheckedReason>)`.
   - `CheckedReason` is sealed: `Finished`, `Failed`, `LevelTooLow(required, actual)`, `LoyaltyTooLow(traderId, comparison, required, actual)`, `PrerequisiteNotMet(taskId, needed: Set<TaskStatus>)`, `AlternativeTaken(taskId)`, `WrongFaction(required)`, `WrongGameMode(allowed)` and `EditionNotPermitted(edition)`.
-  - `UncheckedReason` is sealed: `LevelUnset(required)`, `LevelRequirementUnknown`, `LoyaltyUnset(traderId)`, `LoyaltyRequirementUnknown(traderId)`, `ReputationRequirement(traderId)`, `PrerequisitesUnknown`, `PrerequisiteStatusUnknown(taskId)`, `ActivePrerequisiteFinished(taskId)`, `AlternativesUnknown`, `FactionUnset(required)`, `FactionUnknown`, `EditionUnset`, `EditionUnrecognised(edition)`, `GlobalVariable(variableId)`, `TraderDialogue(traderIds)`, `OtherRequirementUnknownType(rawType)`, `OtherRequirementsUnknown`, `AvailabilityDelay(minSeconds, maxSeconds)`, `AvailabilityDelayUnknown` and `PrestigeRequired(prestigeId)`.
+  - `UncheckedReason` is sealed: `LevelUnset(required)`, `LevelRequirementUnknown`, `LoyaltyUnset(traderId)`, `LoyaltyRequirementUnknown(traderId)`, `TraderRequirementsUnknown`, `ReputationRequirement(traderId)`, `PrerequisitesUnknown`, `PrerequisiteStatusUnknown(taskId)`, `ActivePrerequisiteFinished(taskId)`, `AlternativesUnknown`, `FactionUnset(required)`, `FactionUnknown`, `EditionUnset`, `EditionUnrecognised(edition)`, `GlobalVariable(variableId)`, `TraderDialogue(traderIds)`, `OtherRequirementUnknownType(rawType)`, `OtherRequirementsUnknown`, `AvailabilityDelay(minSeconds, maxSeconds)`, `AvailabilityDelayUnknown` and `PrestigeRequired(prestigeId)`.
   - Display text is the consumer's job.
   - `ProgressMode` is a package enum `{regular, pve, seasonal}`, each carrying its tarkov.dev name (`regular`, `pve`, `pvp-season`), which the game-mode gate compares with a task's `gameModes`. It is deliberately not named `GameMode`: the app's `GameMode` (`lib/domain/catalog.dart:5`) is imported beside the package in `catalog_normalizer.dart`, and a second `GameMode` would make those imports ambiguous. The later reader maps the app's mode to it. (Review round 1, M1: the owner chose this enum on 2026-11-12.)
 
   ADR-0043 records the pure-function contract, that the edition table's IDs are the vocabulary every progress writer must use for the player's edition, the precedence (state first, then any failing checked gate locks, unchecked gates never lock), the reason vocabulary as an open, additive sealed set, and the edition table's ownership. A new gate adds a reason subtype. Consumers switch exhaustively and get a compile error, which is intended.
+
+  Pre-ship F1 amendment, owner-approved on 2026-11-12: a null `traderRequirements` list produces `TraderRequirementsUnknown`; a known empty list passes without that reason. A list-level reason is necessary because no trader ID is known. It is retained beside failing checked gates and omitted for started/done tasks, like every unchecked reason. This adds to ADR-0043's explicitly additive vocabulary without changing its accepted contract.
 - **Rejected:**
   - Reason enum codes with English text, which puts UI wording into a package shared with other apps.
   - An evaluator class with cached indexes, which needs no state because `ProgressCatalog` already indexes tasks.
@@ -140,7 +142,8 @@ TIER: FULL
     - `traders.json`: the trader IDs used;
     - `SOURCE.md`, recording the URLs, the fetch date and the selection by rule.
   - Tests parse the fixtures with the real `parseProgressCatalog`, so the excerpt also checks the parse.
-  - A test asserts the manifest fields exist and that each gate kind is hit by at least one excerpt task. The test runs the rules over the excerpt with a progress snapshot built to provoke that gate.
+  - A test asserts the manifest fields exist and that each data-backed gate kind from task 4.2 is hit by at least one unchanged excerpt task, using player progress built to provoke the gate. Edition uses the real task plus the reviewed edition table.
+  - Unknown types, malformed/absent catalog fields and input boundaries are proved by small synthetic catalog/progress or wire-parse tests, including task 6.1's null-versus-empty trader list. These cases are not fabricated in the real excerpts. The owner approved this S4 clarification on 2026-11-12 after design re-review M3.
   - Target size: under 150 KB per mode.
 - **Rejected:** A fixture-building tool that downloads and trims, which adds network tooling for a once-per-wipe manual step. The selection list in `SOURCE.md` is enough to redo it.
 - **Reversal cost:** low.
@@ -162,11 +165,11 @@ TIER: FULL
 | S1 | Undecidable gates | Available, listed as unchecked, never lock | Fourth `unknown` status; treat as locked | medium | yes | user |
 | S2 | Missing catalog gates | Retain `otherRequirements` and delays here | Ignore them | low | yes | user |
 | S3 | Edition rules source | Reviewed table seeded by owner | Empty table; drop edition | low | yes | user |
-| S4 | Fixtures | Real per-rule excerpt | Full snapshots | low | yes | user |
+| S4 | Fixtures | Real data-backed gate excerpt; synthetic unknown/malformed/absent-field and input-boundary tests (owner clarification 2026-11-12) | Full snapshots; fabricated unknown facts in real excerpts | low | yes | user |
 | S5 | Hideout build availability | Not in this change | Add now | low | no | agent |
 | S6 | App wiring | None; first consumer adds the reader | Store reader now | low | no | agent |
 | D1 | Rules input | Package-owned `PlayerProgress` | Move store types into package | medium | yes | user |
-| D2 | Result contract | Typed sealed reasons, pure function, `ProgressMode {regular, pve, seasonal}`, ADR-0043 | Codes + English text; stateful evaluator; package `GameMode` | medium | yes | user |
+| D2 | Result contract | Typed sealed reasons including list-level `TraderRequirementsUnknown`, pure function, `ProgressMode {regular, pve, seasonal}`, ADR-0043 | Codes + English text; stateful evaluator; package `GameMode`; treating unknown trader lists as empty | medium | yes | user |
 | D3 | Edition table form | Const Dart table with version and sources | JSON data file | low | yes | user |
 | D4 | Edition seed | One owner-confirmed entry (Good Times Part 1: EoD + Unheard) | Empty table; Small Business Part 3 exclusion | low | yes | user |
 | D5 | Precedence | State first; collect all failing gates; unchecked never lock | First-failure short-circuit | low | no | agent |

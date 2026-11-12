@@ -105,6 +105,15 @@ A trader requirement of type level SHALL be checked against the player's recorde
 - **WHEN** a task requires Ragman level at most 2 and the player's Ragman loyalty is unset
 - **THEN** the requirement is listed as unchecked and does not lock the task
 
+### Requirement: Unknown trader requirements remain unchecked
+
+An unknown trader-requirements list SHALL produce a list-level unchecked reason for a not-started task; a known empty list SHALL pass without that reason.
+
+#### Scenario: Unknown trader requirements remain uncertain
+
+- **WHEN** a not-started task's trader requirements are unknown, while its other gates are known and pass
+- **THEN** the task is available with a list-level unchecked trader-requirements reason, distinct from a known empty list which has no such reason
+
 ### Requirement: Prerequisite gate
 
 A prerequisite SHALL pass when the prerequisite task's recorded state is one of its accepted statuses: finished for complete, started for active, failed for failed. Otherwise it SHALL fail and name the statuses it needs, so must-be-failed and must-be-active prerequisites read differently from completion. Unknown accepted statuses SHALL be ignored, and a prerequisite with none known SHALL be unchecked, as SHALL an unknown prerequisite list.
@@ -210,12 +219,12 @@ The rules SHALL list as unchecked, and SHALL NOT lock on: each global-variable r
 
 ### Requirement: Rules are proved on frozen tarkov.dev data
 
-The rules SHALL be tested against a committed excerpt of real tarkov.dev task data from regular and PvE mode. The excerpt SHALL record its source URLs and fetch date. Each gate in this capability SHALL have at least one case drawn from it.
+The rules SHALL be tested against a committed, unchanged excerpt of real regular and PvE tarkov.dev task data with source URLs and fetch date. Each data-backed gate SHALL have a real excerpt case. Unknown, malformed, absent-field and input-boundary cases SHALL be proved with small synthetic catalog/progress tests, without fabricating source facts.
 
 #### Scenario: Excerpt covers each gate
 
 - **WHEN** the offline test suite runs
-- **THEN** each gate (level, loyalty, prerequisite including failed and active, alternative, faction, game mode, edition and each unchecked kind) is exercised by at least one task from the excerpt
+- **THEN** each data-backed gate (level, loyalty, prerequisite including failed and active, alternative, faction, game mode, edition, global variable, dialogue, delay, prestige and reputation) is exercised by at least one task from the excerpt; catalog uncertainty and input-boundary cases are exercised by synthetic tests
 
 #### Scenario: Excerpt edited out of shape
 

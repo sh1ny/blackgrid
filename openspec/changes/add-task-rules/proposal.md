@@ -27,7 +27,7 @@ The catalog drops the first three today. A rule set that ignored them would call
 - Gates the rules cannot decide never lock a task on their own. They are listed as unchecked reasons on the result, so a later screen can show the doubt. These are game global variables, trader dialogues, availability delays, prestige, trader reputation, and any progress value the player has not entered yet (an unset level, faction or edition).
 - Edition rules are written by us as a small, versioned table in the package that maps task IDs to the editions allowed or excluded. The owner seeds it during design, and each entry carries its source. An unset or unrecognised player edition is an unchecked gate, never a lock.
 - The task catalog now also keeps each task's `otherRequirements` (global-variable and dialogue gates, with any other type kept as unknown) and `availableDelaySecondsMin/Max`. Both are lenient. A malformed or unknown value stays unknown and never rejects a refresh. A catalog stored before this change loads with these gates unknown, which the rules report as unchecked.
-- Frozen fixtures: an excerpt of real tarkov.dev tasks from regular and PvE mode, with fields unchanged apart from removed zone geometry and translations. They are chosen so that every rule has at least one real case. The source URLs and fetch date are recorded with them.
+- Frozen fixtures: an excerpt of real tarkov.dev tasks from regular and PvE mode, with fields unchanged apart from removed zone geometry and translations. Every data-backed gate has a real case; unknown/malformed/absent-field and input-boundary cases use small synthetic tests. Source URLs and fetch date are recorded with the excerpt.
 - No UI, advice, timer, Tracker or progress-store change. Nothing in the app calls the rules yet.
 
 ## Capabilities
@@ -82,7 +82,7 @@ DECISION_MAKING: important
 
 ### S4: Frozen fixtures are a real per-rule excerpt
 
-- **Choice:** About 30-50 real regular and PvE tasks, unmodified apart from removed zone geometry and translations, picked so that every rule has a real case, with the source and date recorded.
+- **Choice:** About 30-50 real regular and PvE tasks, unmodified apart from removed zone geometry and translations, picked so that every data-backed gate has a real case, with source and date recorded. Unknown types, malformed/absent fields and input boundaries are proved with small synthetic catalog/progress tests, never fabricated fields in a real excerpt. The owner approved this proof-contract clarification on 2026-11-12 after design re-review M3; actual gate coverage is unchanged.
 - **Rejected:**
   - Adding a full frozen snapshot per mode for a qualification-tier test.
   - Using full snapshots only, both against the keep-fixtures-small rule.
@@ -112,7 +112,7 @@ Groundwork for the local progress tracker: Blackgrid can now work out, for each 
 
 ### Added
 
-- Task availability rules check player level, trader loyalty, prerequisites (including tasks that must be failed or active), alternative tasks, faction, game mode and edition. Gates that local progress cannot check yet are flagged rather than guessed.
+- Task availability rules check player level, trader loyalty, prerequisites (including tasks that must be failed or active), alternative tasks, faction, game mode and edition. Gates that local progress cannot check yet, including unknown trader-requirement lists, are flagged rather than guessed.
 
 ### Changed
 
