@@ -63,8 +63,11 @@ TaskAvailability _evaluateTask(
     }
   }
 
-  for (final requirement
-      in task.traderRequirements ?? const <TraderRequirement>[]) {
+  final traderRequirements = task.traderRequirements;
+  if (traderRequirements == null) {
+    unchecked.add(const TraderRequirementsUnknown());
+  }
+  for (final requirement in traderRequirements ?? const <TraderRequirement>[]) {
     final trader = requirement.traderId;
     if (requirement.type == TraderRequirementType.reputation) {
       unchecked.add(ReputationRequirement(traderId: trader));

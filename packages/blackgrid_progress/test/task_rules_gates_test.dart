@@ -4,6 +4,41 @@ import 'package:test/test.dart';
 import 'support/task_rules.dart';
 
 void main() {
+  test(
+    'unknown trader requirements stay unchecked while an empty list passes',
+    () {
+      final unknown = evaluateTestTask(testTask('a', traderRequirements: null));
+      final empty = evaluateTestTask(
+        testTask('a', traderRequirements: const <TraderRequirement>[]),
+      );
+      expect(unknown.status, AvailabilityStatus.available);
+      expect(unknown.checked, isEmpty);
+      expect(unknown.unchecked, [TraderRequirementsUnknown()]);
+      expect(
+        unknown.unchecked.single.hashCode,
+        TraderRequirementsUnknown().hashCode,
+      );
+      expect(empty.status, AvailabilityStatus.available);
+      expect(empty.unchecked, isEmpty);
+
+      final locked = evaluateTestTask(
+        testTask('a', minPlayerLevel: 20, traderRequirements: null),
+        progress: PlayerProgress(level: 1),
+      );
+      expect(locked.status, AvailabilityStatus.locked);
+      expect(locked.checked, [const LevelTooLow(required: 20, actual: 1)]);
+      expect(locked.unchecked, [TraderRequirementsUnknown()]);
+
+      for (final state in TaskProgressState.values) {
+        final recorded = evaluateTestTask(
+          testTask('a', traderRequirements: null),
+          progress: PlayerProgress(taskStates: {'a': state}),
+        );
+        expect(recorded.unchecked, isEmpty, reason: '$state');
+      }
+    },
+  );
+
   test('level below minimum locks', () {
     final result = evaluateTestTask(
       testTask('a', minPlayerLevel: 20),

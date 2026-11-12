@@ -322,6 +322,19 @@ final class LoyaltyRequirementUnknown extends UncheckedReason {
   int get hashCode => Object.hash(runtimeType, traderId);
 }
 
+/// The task's trader-requirements list is unknown.
+final class TraderRequirementsUnknown extends UncheckedReason {
+  /// Creates a list-level reason without inventing a trader identity.
+  const TraderRequirementsUnknown();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is TraderRequirementsUnknown;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
 /// A trader reputation requirement cannot be evaluated.
 final class ReputationRequirement extends UncheckedReason {
   /// Creates the reason with its source facts.

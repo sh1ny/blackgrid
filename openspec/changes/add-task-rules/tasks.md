@@ -29,7 +29,7 @@ Excerpt rows prove unchanged real cases for the data-backed gates enumerated in 
 | task-availability → Trader loyalty gate | Loyalty met | pkg/test/task_rules_gates_test.dart | `loyalty at the required level passes` | green |
 | task-availability → Trader loyalty gate | Reputation requirement | pkg/test/task_rules_gates_test.dart | `reputation requirement is always unchecked` | green |
 | task-availability → Trader loyalty gate | Loyalty not entered | pkg/test/task_rules_gates_test.dart | `unset loyalty is unchecked for at least 2` | green |
-| task-availability → Unknown trader requirements remain unchecked | Unknown trader requirements remain uncertain | pkg/test/task_rules_gates_test.dart | `unknown trader requirements stay unchecked while an empty list passes` | red |
+| task-availability → Unknown trader requirements remain unchecked | Unknown trader requirements remain uncertain | pkg/test/task_rules_gates_test.dart | `unknown trader requirements stay unchecked while an empty list passes` | green |
 | task-availability → Trader loyalty gate | Upper bound with loyalty not entered | pkg/test/task_rules_gates_test.dart | `unset loyalty is unchecked for at most 2` | green |
 | task-availability → Prerequisite gate | Prerequisite not done | pkg/test/task_rules_gates_test.dart | `missing completion prerequisite locks` | green |
 | task-availability → Prerequisite gate | Must-be-failed prerequisite | pkg/test/task_rules_gates_test.dart | `must-be-failed prerequisite finished locks` | green |
@@ -113,8 +113,8 @@ Excerpt rows prove unchanged real cases for the data-backed gates enumerated in 
 
 ## 6. Preserve unknown trader-requirement lists (pre-ship F1)
 
-- [ ] 6.1 Write the regression `unknown trader requirements stay unchecked while an empty list passes` in `pkg/test/task_rules_gates_test.dart`: distinguish null from an empty trader list, retain the unchecked reason beside a checked failure, and omit it for started/done tasks. Verify it fails for the missing list-level reason before implementing.
-- [ ] 6.2 Add the documented sealed `TraderRequirementsUnknown` reason with structural equality/hash and emit it for an unknown trader-requirements list, never for an empty list. Verify the package tests, `mise run analyze`, `mise run test`, formatting, strict OpenSpec validation and release-note checks pass, then flip the new test-map row green.
+- [x] 6.1 Write the regression `unknown trader requirements stay unchecked while an empty list passes` in `pkg/test/task_rules_gates_test.dart`: distinguish null from an empty trader list, retain the unchecked reason beside a checked failure, and omit it for started/done tasks. Verify it fails for the missing list-level reason before implementing.
+- [x] 6.2 Add the documented sealed `TraderRequirementsUnknown` reason with structural equality/hash and emit it for an unknown trader-requirements list, never for an empty list. Verify the package tests, `mise run analyze`, `mise run test`, formatting, strict OpenSpec validation and release-note checks pass, then flip the new test-map row green.
 
 ## Workflow follow-up
 
