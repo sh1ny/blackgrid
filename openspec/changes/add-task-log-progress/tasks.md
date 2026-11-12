@@ -105,8 +105,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 7. Integration checks
 
-- [ ] 7.1 Run `dart format .`, `mise run analyze` and `mise run test`. All must pass. Confirm every test-map row is green.
-- [ ] 7.2 Run `openspec validate add-task-log-progress --strict` and `mise run release-notes -- --check openspec/changes/add-task-log-progress/proposal.md`. Both exit 0. Update the proposal's Release Notes if apply changed what ships.
+- [x] 7.1 Run `dart format .`, `mise run analyze` and `mise run test`. All must pass. Confirm every test-map row is green.
+- [x] 7.2 Run `openspec validate add-task-log-progress --strict` and `mise run release-notes -- --check openspec/changes/add-task-log-progress/proposal.md`. Both exit 0. Update the proposal's Release Notes if apply changed what ships.
 
 ## Workflow follow-up
 
