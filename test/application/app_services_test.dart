@@ -6,6 +6,8 @@ import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/credential_store.dart';
+import 'package:blackgrid/domain/local_progress.dart';
+import 'package:blackgrid/domain/local_progress_store.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart' show FlutterError;
@@ -55,6 +57,61 @@ class DelayedCredentials implements CredentialStore {
 }
 
 void main() {
+  test(
+    'local progress subscribes before the first log bind and is disposed',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-task-progress-',
+      );
+      final folder = await Directory(
+        '${root.path}/log_2026.10.31_22-00-00_1.3.0.0.48484',
+      ).create();
+      await File('${folder.path}/application_000.log').writeAsString(
+        '2026-10-31 22:00:10.000|1.3.0.0.48484|Info|application|Session mode: Pve\n',
+      );
+      await File('${folder.path}/push-notifications_000.log').writeAsString(
+        '2026-10-31 22:01:00.000|1.3.0.0.48484|Info|push-notifications|'
+        'Got notification | ChatMessageReceived\n'
+        '${const JsonEncoder.withIndent('  ').convert({
+          'type': 'new_message',
+          'message': {'type': 10, 'templateId': 'first-task description'},
+        })}\n',
+      );
+      final database = BlackgridDatabase(NativeDatabase.memory());
+      final services = AppServices(
+        database: database,
+        credentials: _EmptyCredentials(),
+        client: MockClient((request) async => http.Response('', 503)),
+      );
+      var disposed = false;
+      addTearDown(() async {
+        if (!disposed) await services.dispose();
+        await root.delete(recursive: true);
+      });
+      await services.settings.save(AppSettings(gameLogDirectory: root.path));
+      await services.initialize();
+      await services.localProgress.settled;
+
+      final wipe = services.localProgress.wipes[GameMode.pve]!;
+      final history = await database.readProgressHistory(wipe.scope);
+      expect(history, isA<ProgressSuccess<ProgressHistoryPage>>());
+      final events =
+          (history as ProgressSuccess<ProgressHistoryPage>).value.events;
+      expect(events, hasLength(1));
+      expect(events.single.target.id, 'first-task');
+      expect(
+        events.single.value,
+        const ProgressTaskState(ProgressTaskStatus.started),
+      );
+
+      await services.dispose();
+      disposed = true;
+      expect(
+        () => services.localProgress.addListener(() {}),
+        throwsA(isA<FlutterError>()),
+      );
+    },
+  );
   test('a finished raid in the logs starts the active mode cooldown', () async {
     final root = await Directory.systemTemp.createTemp('blackgrid-timers-');
     final folder = await Directory(

@@ -19,38 +19,38 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | game-log-input → Older session folders can be read once on request | Malformed record in an older folder | test/data/game_log/session_folder_read_test.dart | malformed push record is counted and others are read | green |
 | game-log-input → One-shot folder reads never touch the game process | Offline audit covers the one-shot reader | test/data/game_log/log_input_audit_test.dart | audit scans the session folder sources | green |
 | task-log-progress → Each game mode has at most one active wipe | Wipe survives restart | test/data/progress_wipe_store_test.dart | wipe row survives reopening the database | green |
-| task-log-progress → Each game mode has at most one active wipe | Modes are separate | test/application/task_log_progress_controller_test.dart | modes record into separate cycles | red |
-| task-log-progress → Each game mode has at most one active wipe | Damaged wipe stays visible | test/application/task_log_progress_controller_test.dart | unavailable cycle marks wipe unavailable and creates none | red |
-| task-log-progress → The first task event of a mode creates its wipe | First PvP task | test/application/task_log_progress_controller_test.dart | first task event creates wipe at its folder date | red |
-| task-log-progress → The first task event of a mode creates its wipe | Creation fails | test/application/task_log_progress_controller_test.dart | failed cycle creation records nothing and reports | red |
+| task-log-progress → Each game mode has at most one active wipe | Modes are separate | test/application/task_log_progress_controller_test.dart | modes record into separate cycles | green |
+| task-log-progress → Each game mode has at most one active wipe | Damaged wipe stays visible | test/application/task_log_progress_controller_test.dart | unavailable cycle marks wipe unavailable and creates none | green |
+| task-log-progress → The first task event of a mode creates its wipe | First PvP task | test/application/task_log_progress_controller_test.dart | first task event creates wipe at its folder date | green |
+| task-log-progress → The first task event of a mode creates its wipe | Creation fails | test/application/task_log_progress_controller_test.dart | failed cycle creation records nothing and reports | green |
 | task-log-progress → Task messages become log-sourced task-state events | Task finished | test/domain/task_log_events_test.dart | task finished maps to log-sourced finished event with UTC time | green |
 | task-log-progress → Task messages become log-sourced task-state events | Unknown task ID | test/domain/task_log_events_test.dart | task ID is kept without catalog lookup | green |
-| task-log-progress → Task messages become log-sourced task-state events | Identity over budget | test/application/task_log_progress_controller_test.dart | over-budget identity is skipped and the rest recorded | red |
-| task-log-progress → Reading the same record again changes nothing | Restart replays the live folder | test/application/task_log_progress_controller_test.dart | re-published live transitions leave revision unchanged | red |
-| task-log-progress → Reading the same record again changes nothing | Replay overlaps catch-up | test/application/task_log_progress_controller_test.dart | replay over caught-up folder adds nothing | red |
-| task-log-progress → A message without a known mode is skipped | Message before the mode line | test/application/task_log_progress_controller_test.dart | message without mode is skipped and counted | red |
-| task-log-progress → A message without a known mode is skipped | Unrecognised session mode | test/application/task_log_progress_controller_test.dart | unrecognised mode is skipped, counted and creates no cycle | red |
-| task-log-progress → A message without a known mode is skipped | Mode changes within a folder | test/application/task_log_progress_controller_test.dart | mode change within a folder routes messages per mode | red |
-| task-log-progress → Live task messages are recorded as they are read | Live task start | test/application/task_log_progress_controller_test.dart | live task start becomes current state | red |
-| task-log-progress → Live task messages are recorded as they are read | Store busy or failing | test/application/task_log_progress_controller_test.dart | live write failure shown until next success | red |
-| task-log-progress → Live task messages are recorded as they are read | One conflicting record in a live batch | test/application/task_log_progress_controller_test.dart | conflicting live record falls back per event | red |
-| task-log-progress → Startup catch-up reads the folders missed since the last run | A month away | test/application/task_log_progress_controller_test.dart | catch-up reads missed folders and leaves the live folder | red |
-| task-log-progress → Startup catch-up reads the folders missed since the last run | Started during a raid | test/application/task_log_progress_controller_test.dart | catch-up waits for the raid to end and runs once | red |
-| task-log-progress → Startup catch-up reads the folders missed since the last run | Interrupted catch-up | test/application/task_log_progress_controller_test.dart | storage failure keeps last folder and resumes there | red |
-| task-log-progress → Startup catch-up reads the folders missed since the last run | A conflicting record does not block catch-up | test/application/task_log_progress_controller_test.dart | conflicting record is skipped and catch-up advances | red |
-| task-log-progress → Startup catch-up reads the folders missed since the last run | A mode without a wipe in a caught-up folder | test/application/task_log_progress_controller_test.dart | catch-up creates a missing mode's wipe and advances its last folder | red |
-| task-log-progress → Startup catch-up reads the folders missed since the last run | Folders ordered by date, not by name | test/application/task_log_progress_controller_test.dart | catch-up orders folders by date-time not name | red |
-| task-log-progress → Replay reads the log folders from a date into the active wipe | Installed mid-wipe | test/application/task_log_progress_controller_test.dart | earlier replay date fills same cycle and moves start back | red |
-| task-log-progress → Replay reads the log folders from a date into the active wipe | Other modes are left alone | test/application/task_log_progress_controller_test.dart | replay records only its mode | red |
-| task-log-progress → Replay reads the log folders from a date into the active wipe | No folder from that date | test/application/task_log_progress_controller_test.dart | replay with no folders keeps start date | red |
-| task-log-progress → Replay reads the log folders from a date into the active wipe | The live folder is never the last folder read | test/application/task_log_progress_controller_test.dart | replay reads live folder but never stores it as last folder | red |
-| task-log-progress → Starting a new wipe creates a fresh cycle and replays into it | New wipe | test/application/task_log_progress_controller_test.dart | new wipe creates cycle, replays and keeps old cycle | red |
-| task-log-progress → Starting a new wipe creates a fresh cycle and replays into it | Creation fails | test/application/task_log_progress_controller_test.dart | failed new wipe keeps previous wipe active | red |
-| task-log-progress → Replay, catch-up and new wipe are refused during a raid | Replay requested in a raid | test/application/task_log_progress_controller_test.dart | replay in raid is refused with reason | red |
-| task-log-progress → Replay, catch-up and new wipe are refused during a raid | Replay while catch-up runs | test/application/task_log_progress_controller_test.dart | second run is refused while one runs | red |
-| task-log-progress → Replay, catch-up and new wipe are refused during a raid | Raid starts during a replay | test/application/task_log_progress_controller_test.dart | raid stops replay after current folder and names it | red |
-| task-log-progress → Each run reports its result | Successful replay | test/application/task_log_progress_controller_test.dart | replay result counts folders, events and skips | red |
-| task-log-progress → Each run reports its result | Unreadable folder | test/application/task_log_progress_controller_test.dart | unreadable folder is counted and run continues | red |
+| task-log-progress → Task messages become log-sourced task-state events | Identity over budget | test/application/task_log_progress_controller_test.dart | over-budget identity is skipped and the rest recorded | green |
+| task-log-progress → Reading the same record again changes nothing | Restart replays the live folder | test/application/task_log_progress_controller_test.dart | re-published live transitions leave revision unchanged | green |
+| task-log-progress → Reading the same record again changes nothing | Replay overlaps catch-up | test/application/task_log_progress_controller_test.dart | replay over caught-up folder adds nothing | green |
+| task-log-progress → A message without a known mode is skipped | Message before the mode line | test/application/task_log_progress_controller_test.dart | message without mode is skipped and counted | green |
+| task-log-progress → A message without a known mode is skipped | Unrecognised session mode | test/application/task_log_progress_controller_test.dart | unrecognised mode is skipped, counted and creates no cycle | green |
+| task-log-progress → A message without a known mode is skipped | Mode changes within a folder | test/application/task_log_progress_controller_test.dart | mode change within a folder routes messages per mode | green |
+| task-log-progress → Live task messages are recorded as they are read | Live task start | test/application/task_log_progress_controller_test.dart | live task start becomes current state | green |
+| task-log-progress → Live task messages are recorded as they are read | Store busy or failing | test/application/task_log_progress_controller_test.dart | live write failure shown until next success | green |
+| task-log-progress → Live task messages are recorded as they are read | One conflicting record in a live batch | test/application/task_log_progress_controller_test.dart | conflicting live record falls back per event | green |
+| task-log-progress → Startup catch-up reads the folders missed since the last run | A month away | test/application/task_log_progress_controller_test.dart | catch-up reads missed folders and leaves the live folder | green |
+| task-log-progress → Startup catch-up reads the folders missed since the last run | Started during a raid | test/application/task_log_progress_controller_test.dart | catch-up waits for the raid to end and runs once | green |
+| task-log-progress → Startup catch-up reads the folders missed since the last run | Interrupted catch-up | test/application/task_log_progress_controller_test.dart | storage failure keeps last folder and resumes there | green |
+| task-log-progress → Startup catch-up reads the folders missed since the last run | A conflicting record does not block catch-up | test/application/task_log_progress_controller_test.dart | conflicting record is skipped and catch-up advances | green |
+| task-log-progress → Startup catch-up reads the folders missed since the last run | A mode without a wipe in a caught-up folder | test/application/task_log_progress_controller_test.dart | catch-up creates a missing mode's wipe and advances its last folder | green |
+| task-log-progress → Startup catch-up reads the folders missed since the last run | Folders ordered by date, not by name | test/application/task_log_progress_controller_test.dart | catch-up orders folders by date-time not name | green |
+| task-log-progress → Replay reads the log folders from a date into the active wipe | Installed mid-wipe | test/application/task_log_progress_controller_test.dart | earlier replay date fills same cycle and moves start back | green |
+| task-log-progress → Replay reads the log folders from a date into the active wipe | Other modes are left alone | test/application/task_log_progress_controller_test.dart | replay records only its mode | green |
+| task-log-progress → Replay reads the log folders from a date into the active wipe | No folder from that date | test/application/task_log_progress_controller_test.dart | replay with no folders keeps start date | green |
+| task-log-progress → Replay reads the log folders from a date into the active wipe | The live folder is never the last folder read | test/application/task_log_progress_controller_test.dart | replay reads live folder but never stores it as last folder | green |
+| task-log-progress → Starting a new wipe creates a fresh cycle and replays into it | New wipe | test/application/task_log_progress_controller_test.dart | new wipe creates cycle, replays and keeps old cycle | green |
+| task-log-progress → Starting a new wipe creates a fresh cycle and replays into it | Creation fails | test/application/task_log_progress_controller_test.dart | failed new wipe keeps previous wipe active | green |
+| task-log-progress → Replay, catch-up and new wipe are refused during a raid | Replay requested in a raid | test/application/task_log_progress_controller_test.dart | replay in raid is refused with reason | green |
+| task-log-progress → Replay, catch-up and new wipe are refused during a raid | Replay while catch-up runs | test/application/task_log_progress_controller_test.dart | second run is refused while one runs | green |
+| task-log-progress → Replay, catch-up and new wipe are refused during a raid | Raid starts during a replay | test/application/task_log_progress_controller_test.dart | raid stops replay after current folder and names it | green |
+| task-log-progress → Each run reports its result | Successful replay | test/application/task_log_progress_controller_test.dart | replay result counts folders, events and skips | green |
+| task-log-progress → Each run reports its result | Unreadable folder | test/application/task_log_progress_controller_test.dart | unreadable folder is counted and run continues | green |
 | settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sidebar lists nine sections in order | red |
 | settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | (existing) jump to a section | green |
 | settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | (existing) jump to Diagnostics expands it | green |
@@ -84,8 +84,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 5. TaskLogProgressController
 
-- [ ] 5.1 Write failing tests in `test/application/task_log_progress_controller_test.dart` with hand-written fakes: an in-memory `LocalProgressStore` that can inject storage failures, unavailable cycles, identity conflicts and busy; a `ProgressWipeStore` fake; a lifecycle source exposing phase, current folder and transitions; and an injected folder lister and reader (no isolate in these tests). Cover every task-log-progress row of the test map, plus two extra tests from the review: a wipe created mid-catch-up advances its own `lastFolder`; and the "stopped by a raid" result names the last folder stored. Verify the failures.
-- [ ] 5.2 Implement `lib/application/task_log_progress_controller.dart` per design D5, D7 and D8:
+- [x] 5.1 Write failing tests in `test/application/task_log_progress_controller_test.dart` with hand-written fakes: an in-memory `LocalProgressStore` that can inject storage failures, unavailable cycles, identity conflicts and busy; a `ProgressWipeStore` fake; a lifecycle source exposing phase, current folder and transitions; and an injected folder lister and reader (no isolate in these tests). Cover every task-log-progress row of the test map, plus two extra tests from the review: a wipe created mid-catch-up advances its own `lastFolder`; and the "stopped by a raid" result names the last folder stored. Verify the failures.
+- [x] 5.2 Implement `lib/application/task_log_progress_controller.dart` per design D5, D7 and D8:
   - one FIFO write queue;
   - wipe load and `openProgressCycle` at start, with unavailable shown;
   - live `TaskTransition` recording with automatic wipe creation (S4);
@@ -96,7 +96,7 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
   - the run result, the last result and error messages exposed for Settings.
 
   Use `Isolate.run` for folder reads through an injected runner. Verify that every controller row turns green.
-- [ ] 5.3 Wire the controller in `AppServices` before the first bind (beside `LocalStatsController`), with the log root from the bound reader, and dispose it with the services. Verify with an `AppServices` construction test (existing harness) that the controller subscribes before bind, and with `mise run test`.
+- [x] 5.3 Wire the controller in `AppServices` before the first bind (beside `LocalStatsController`), with the log root from the bound reader, and dispose it with the services. Verify with an `AppServices` construction test (existing harness) that the controller subscribes before bind, and with `mise run test`.
 
 ## 6. Settings "Local progress" section
 
