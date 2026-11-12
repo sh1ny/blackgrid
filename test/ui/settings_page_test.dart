@@ -207,7 +207,7 @@ class _ThrowingTokenServices extends AppServices {
 
 void main() {
   group('sections', () {
-    testWidgets('settings-page: Sidebar order', (tester) async {
+    testWidgets('sidebar lists nine sections in order', (tester) async {
       await _pumpHarness(tester);
       final texts = [
         for (final text in tester.widgetList<Text>(
@@ -224,6 +224,7 @@ void main() {
         'Live scan',
         'Item and map data',
         'Tracker progress',
+        'Local progress',
         'Game files',
         'Raid timers',
         'Map',
@@ -235,7 +236,7 @@ void main() {
           tester.getTopLeft(_title(section)).dy,
       ];
       expect(tops, orderedEquals([...tops]..sort()));
-      expect(SettingsSection.values, hasLength(8));
+      expect(SettingsSection.values, hasLength(9));
     });
 
     testWidgets('settings-page: Jump to a section', (tester) async {

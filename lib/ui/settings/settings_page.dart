@@ -14,6 +14,7 @@ import '../labels.dart';
 import '../panels.dart';
 import 'commit_field.dart';
 import 'live_scan_settings.dart';
+import 'local_progress_settings.dart';
 import 'raid_timer_input.dart';
 import 'settings_diagnostics_body.dart';
 import 'settings_row.dart';
@@ -321,6 +322,9 @@ class _SettingsPageState extends State<SettingsPage> {
           _tracker(context),
           contentKey: const Key('settings-tracker'),
         ),
+        _section(context, SettingsSection.localProgress, [
+          LocalProgressSettings(controller: _services.localProgress),
+        ], contentKey: const Key('settings-local-progress')),
         _section(context, SettingsSection.gameFiles, _gameFiles()),
         _section(context, SettingsSection.raidTimers, _raidTimers(context)),
         _section(context, SettingsSection.map, _map()),

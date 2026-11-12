@@ -51,15 +51,15 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 | task-log-progress → Replay, catch-up and new wipe are refused during a raid | Raid starts during a replay | test/application/task_log_progress_controller_test.dart | raid stops replay after current folder and names it | green |
 | task-log-progress → Each run reports its result | Successful replay | test/application/task_log_progress_controller_test.dart | replay result counts folders, events and skips | green |
 | task-log-progress → Each run reports its result | Unreadable folder | test/application/task_log_progress_controller_test.dart | unreadable folder is counted and run continues | green |
-| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sidebar lists nine sections in order | red |
+| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sidebar lists nine sections in order | green |
 | settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | (existing) jump to a section | green |
 | settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | (existing) jump to Diagnostics expands it | green |
-| settings-page → Local progress section | Wipe shown | test/ui/settings_local_progress_test.dart | wipe row shows start date, last folder and default replay date | red |
-| settings-page → Local progress section | No wipe yet | test/ui/settings_local_progress_test.dart | mode without wipe says No wipe yet | red |
-| settings-page → Local progress section | Last result shown | test/ui/settings_local_progress_test.dart | last run result is shown with mode and time | red |
-| settings-page → Local progress actions are disabled with a reason | In a raid | test/ui/settings_local_progress_test.dart | actions disabled in raid with reason | red |
-| settings-page → Local progress actions are disabled with a reason | Confirm a new wipe | test/ui/settings_local_progress_test.dart | new wipe asks confirmation naming mode and date | red |
-| settings-page → Local progress actions are disabled with a reason | Confirmation cancelled | test/ui/settings_local_progress_test.dart | cancelled confirmation changes nothing | red |
+| settings-page → Local progress section | Wipe shown | test/ui/settings_local_progress_test.dart | wipe row shows start date, last folder and default replay date | green |
+| settings-page → Local progress section | No wipe yet | test/ui/settings_local_progress_test.dart | mode without wipe says No wipe yet | green |
+| settings-page → Local progress section | Last result shown | test/ui/settings_local_progress_test.dart | last run result is shown with mode and time | green |
+| settings-page → Local progress actions are disabled with a reason | In a raid | test/ui/settings_local_progress_test.dart | actions disabled in raid with reason | green |
+| settings-page → Local progress actions are disabled with a reason | Confirm a new wipe | test/ui/settings_local_progress_test.dart | new wipe asks confirmation naming mode and date | green |
+| settings-page → Local progress actions are disabled with a reason | Confirmation cancelled | test/ui/settings_local_progress_test.dart | cancelled confirmation changes nothing | green |
 
 ## 1. ADR and architecture
 
@@ -100,8 +100,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 6. Settings "Local progress" section
 
-- [ ] 6.1 Write failing widget tests in `test/ui/settings_local_progress_test.dart` over a fake controller (rows per mode, No wipe yet, unavailable, last result, disabled reasons in raid, busy and no log folder, new-wipe confirmation and cancel). Update the sidebar-order test in `test/ui/settings_page_test.dart` to nine sections. Verify the failures.
-- [ ] 6.2 Add the Local progress section after Tracker progress in `lib/ui/settings/settings_page.dart` (new `local_progress_settings.dart`), with Ember theme styles only (ADR-0037). Date buttons open `showDatePicker` (range from the oldest folder date or 2017-01-01 to today; initial date the wipe start or today). Add the Start a new wipe confirmation dialog. Verify that the group 6 rows turn green, that the existing jump tests stay green (flip their rows after re-running), and that the `lib/ui` colour-literal source check passes.
+- [x] 6.1 Write failing widget tests in `test/ui/settings_local_progress_test.dart` over a fake controller (rows per mode, No wipe yet, unavailable, last result, disabled reasons in raid, busy and no log folder, new-wipe confirmation and cancel). Update the sidebar-order test in `test/ui/settings_page_test.dart` to nine sections. Verify the failures.
+- [x] 6.2 Add the Local progress section after Tracker progress in `lib/ui/settings/settings_page.dart` (new `local_progress_settings.dart`), with Ember theme styles only (ADR-0037). Date buttons open `showDatePicker` (range from the oldest folder date or 2017-01-01 to today; initial date the wipe start or today). Add the Start a new wipe confirmation dialog. Verify that the group 6 rows turn green, that the existing jump tests stay green (flip their rows after re-running), and that the `lib/ui` colour-literal source check passes.
 
 ## 7. Integration checks
 
