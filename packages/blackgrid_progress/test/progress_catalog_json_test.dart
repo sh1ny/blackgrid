@@ -155,6 +155,48 @@ Map<String, dynamic> _jsonCopy(Map<String, dynamic> value) =>
     jsonDecode(jsonEncode(value)) as Map<String, dynamic>;
 
 void main() {
+  test('catalog stored without other requirements and delays loads them as unknown', () {
+    final json = _jsonCopy(_catalog().toJson());
+    for (final task in json['tasks'] as List<dynamic>) {
+      (task as Map<String, dynamic>)
+        ..remove('otherRequirements')
+        ..remove('availableDelaySecondsMin')
+        ..remove('availableDelaySecondsMax');
+    }
+    final catalog = ProgressCatalog.fromJson(json);
+    expect(catalog.toJson()['formatVersion'], 1);
+    for (final task in catalog.tasks) {
+      expect(task.otherRequirements, isNull);
+      expect(task.availableDelaySecondsMin, isNull);
+      expect(task.availableDelaySecondsMax, isNull);
+    }
+  });
+
+  test('dialogue requirement and delay round-trip', () {
+    final catalog = ProgressCatalog(
+      tasks: [
+        CatalogTask(
+          id: 'dialogue',
+          name: 'Dialogue',
+          otherRequirements: [
+            DialogueRequirement(id: 'gate', traderIds: ['trader']),
+          ],
+          availableDelaySecondsMin: 1800,
+          availableDelaySecondsMax: 2100,
+        ),
+      ],
+      stations: [],
+    );
+    final decoded = ProgressCatalog.fromJson(_jsonCopy(catalog.toJson()));
+    final task = decoded.tasks.single;
+    final gate = task.otherRequirements!.single as DialogueRequirement;
+    expect(gate.id, 'gate');
+    expect(gate.traderIds, ['trader']);
+    expect(task.availableDelaySecondsMin, 1800);
+    expect(task.availableDelaySecondsMax, 2100);
+    expect(decoded.toJson(), catalog.toJson());
+  });
+
   group('progress catalog stored model', () {
     test(
       'retains independently asserted task, objective and station facts',

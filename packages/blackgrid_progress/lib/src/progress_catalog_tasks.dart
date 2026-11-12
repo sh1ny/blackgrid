@@ -16,6 +16,9 @@ final class CatalogTask {
     this.restartable,
     this.mapId,
     this.requiredPrestigeId,
+    this.availableDelaySecondsMin,
+    this.availableDelaySecondsMax,
+    Iterable<OtherRequirement>? otherRequirements,
     Iterable<String>? gameModes,
     Iterable<TaskPrerequisite>? prerequisites,
     Iterable<TraderRequirement>? traderRequirements,
@@ -23,6 +26,7 @@ final class CatalogTask {
     Iterable<TaskAlternative>? alternatives,
     Iterable<TaskObjective> objectives = const [],
   }) : gameModes = _freeze(gameModes),
+       otherRequirements = _freeze(otherRequirements),
        prerequisites = _freeze(prerequisites),
        traderRequirements = _freeze(traderRequirements),
        failConditions = _freeze(failConditions),
@@ -46,7 +50,10 @@ final class CatalogTask {
       prerequisites = task.prerequisites,
       traderRequirements = task.traderRequirements,
       failConditions = task.failConditions,
-      alternatives = task.alternatives;
+      alternatives = task.alternatives,
+      otherRequirements = task.otherRequirements,
+      availableDelaySecondsMin = task.availableDelaySecondsMin,
+      availableDelaySecondsMax = task.availableDelaySecondsMax;
 
   /// Restores a task from its stored JSON representation.
   factory CatalogTask.fromJson(Map<String, Object?> json) => CatalogTask(
@@ -62,6 +69,12 @@ final class CatalogTask {
     restartable: _optional(json['restartable']),
     mapId: _optional(json['mapId']),
     requiredPrestigeId: _optional(json['requiredPrestigeId']),
+    availableDelaySecondsMin: _optional(json['availableDelaySecondsMin']),
+    availableDelaySecondsMax: _optional(json['availableDelaySecondsMax']),
+    otherRequirements: _optionalList(
+      json['otherRequirements'],
+      (v) => OtherRequirement.fromJson(_object(v)),
+    ),
     gameModes: _strings(json['gameModes']),
     prerequisites: _optionalList(
       json['prerequisites'],
@@ -121,6 +134,15 @@ final class CatalogTask {
   /// The required prestige ID, if known.
   final String? requiredPrestigeId;
 
+  /// The extra game conditions, or `null` if unknown.
+  final List<OtherRequirement>? otherRequirements;
+
+  /// The minimum availability delay in seconds, or `null` if unknown.
+  final int? availableDelaySecondsMin;
+
+  /// The maximum availability delay in seconds, or `null` if unknown.
+  final int? availableDelaySecondsMax;
+
   /// The restricted game modes, or null if unknown.
   final List<String>? gameModes;
 
@@ -168,6 +190,9 @@ final class CatalogTask {
     'restartable': restartable,
     'mapId': mapId,
     'requiredPrestigeId': requiredPrestigeId,
+    'otherRequirements': otherRequirements?.map((v) => v.toJson()).toList(),
+    'availableDelaySecondsMin': availableDelaySecondsMin,
+    'availableDelaySecondsMax': availableDelaySecondsMax,
     'gameModes': gameModes,
     'prerequisites': prerequisites?.map((v) => v.toJson()).toList(),
     'traderRequirements': traderRequirements?.map((v) => v.toJson()).toList(),

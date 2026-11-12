@@ -166,6 +166,9 @@ ProgressCatalog parseProgressCatalog(
       restartable: _fact<bool>(wire['restartable']),
       mapId: _text(wire['map']),
       requiredPrestigeId: _text(wire['requiredPrestige']),
+      otherRequirements: _otherRequirements(wire['otherRequirements']),
+      availableDelaySecondsMin: _delay(wire['availableDelaySecondsMin']),
+      availableDelaySecondsMax: _delay(wire['availableDelaySecondsMax']),
       gameModes: _stringList(wire['gameMode']),
       prerequisites: _optionalRows(wire['taskRequirements'])?.map(
         (r) => TaskPrerequisite(
@@ -223,6 +226,36 @@ ProgressCatalog parseProgressCatalog(
     stations: stations.values.map(station),
   );
 }
+
+List<OtherRequirement>? _otherRequirements(Object? value) {
+  if (value is! List<Object?>) return null;
+  final requirements = <OtherRequirement>[];
+  for (final row in value) {
+    if (row is! Map<String, dynamic> ||
+        row['id'] is! String ||
+        row['type'] is! String) {
+      return null;
+    }
+    final id = row['id'] as String;
+    requirements.add(switch (row['type']) {
+      'globalVariable' => GlobalVariableRequirement(
+        id: id,
+        variableId: _text(row['variableId']),
+        comparison: _comparison(row['compareMethod']),
+        rawComparison: _text(row['compareMethod']),
+        value: _number(row['value']),
+      ),
+      'dialogue' => DialogueRequirement(
+        id: id,
+        traderIds: _stringList(row['traders']),
+      ),
+      _ => UnknownOtherRequirement(id: id, rawType: row['type'] as String),
+    });
+  }
+  return requirements;
+}
+
+int? _delay(Object? value) => value is int && value >= 0 ? value : null;
 
 Map<String, dynamic> _wireMap(Object? value) => switch (value) {
   final Map<String, dynamic> map => map,
