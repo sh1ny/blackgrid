@@ -7,7 +7,10 @@ run = "flutter analyze"
 
 [tasks.test]
 description = "Run fast development tests"
-run = "flutter test --exclude-tags qualification"
+run = [
+  "flutter test --exclude-tags qualification",
+  "cd packages/blackgrid_progress && dart test",
+]
 
 [tasks."test:qualification"]
 description = "Run expensive offline qualification tests"
@@ -19,7 +22,10 @@ run = "dart run tool/ci/qualification.dart"
 
 [tasks."test:all"]
 description = "Run the complete test suite"
-run = "flutter test"
+run = [
+  "flutter test",
+  "cd packages/blackgrid_progress && dart test",
+]
 
 [tasks.format]
 description = "Format Dart source"

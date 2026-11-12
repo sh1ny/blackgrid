@@ -6,7 +6,12 @@ version: 0.8.5
 environment:
   sdk: ^3.13.5
 
+workspace:
+  - packages/blackgrid_progress
+
 dependencies:
+  blackgrid_progress:
+    path: packages/blackgrid_progress
   flutter:
     sdk: flutter
   drift: 2.35.4
