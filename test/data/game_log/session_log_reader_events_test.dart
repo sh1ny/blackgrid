@@ -240,16 +240,20 @@ void main() {
     expect(reader.state.incarnation, state.incarnation);
   });
 
-  Future<void> rescanWithPushOpenFailing() => IOOverrides.runZoned(
-    reader.rescan,
-    createDirectory: (path) {
-      expect(path, root.path);
-      return _FailingOpenDirectory(
-        root,
+  Future<void> rescanWithPushOpenFailing() async {
+    final directories = {
+      root.path: root,
+      await for (final entry in root.list())
+        if (entry is Directory) entry.path: entry,
+    };
+    await IOOverrides.runZoned(
+      reader.rescan,
+      createDirectory: (path) => _FailingOpenDirectory(
+        directories[path]!,
         (file) => file.path.endsWith('push-notifications_000.log'),
-      );
-    },
-  );
+      ),
+    );
+  }
 
   test('a read failure clears on the next clean read', () async {
     await write(_newer, 'application_000.log', _app('GameStarted: x'));

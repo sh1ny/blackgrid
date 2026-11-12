@@ -45,12 +45,14 @@ List<String> findBannedCalls(Iterable<FileSystemEntity> roots) {
   return found;
 }
 
+List<FileSystemEntity> _logInputRoots([String root = '.']) => [
+  Directory('$root/lib/data/game_log'),
+  File('$root/lib/data/session_log_reader.dart'),
+];
+
 void main() {
   test('log input source has no process or write calls', () {
-    final roots = [
-      Directory('lib/data/game_log'),
-      File('lib/data/session_log_reader.dart'),
-    ];
+    final roots = _logInputRoots();
     for (final root in roots) {
       expect(
         root is Directory ? root.existsSync() : (root as File).existsSync(),
@@ -59,6 +61,38 @@ void main() {
       );
     }
     expect(findBannedCalls(roots), isEmpty);
+  });
+
+  test('audit scans the session folder sources', () {
+    final sources = [
+      File('lib/data/game_log/session_folders.dart'),
+      File('lib/data/game_log/session_folder_read.dart'),
+    ];
+    for (final source in sources) {
+      expect(source.existsSync(), isTrue, reason: '${source.path} must exist');
+      expect(findBannedCalls([source]), isEmpty);
+    }
+
+    final scratch = Directory.systemTemp.createTempSync(
+      'blackgrid-audit-roots-',
+    );
+    addTearDown(() => scratch.deleteSync(recursive: true));
+    final logDirectory = Directory('${scratch.path}/lib/data/game_log')
+      ..createSync(recursive: true);
+    File('${scratch.path}/lib/data/session_log_reader.dart')
+        .writeAsStringSync('void read() {}\n');
+    for (final source in sources) {
+      final name = source.uri.pathSegments.last;
+      File('${logDirectory.path}/$name').writeAsStringSync('Process.run();\n');
+    }
+    final found = findBannedCalls(_logInputRoots(scratch.path));
+    expect(found, hasLength(2));
+    for (final source in sources) {
+      expect(
+        found.any((entry) => entry.contains(source.uri.pathSegments.last)),
+        isTrue,
+      );
+    }
   });
 
   test('audit scan flags every banned call in a scratch file', () {

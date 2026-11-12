@@ -7,6 +7,7 @@ import '../domain/raid_lifecycle.dart';
 import 'game_log/game_locations.dart';
 import 'game_log/game_log_parsers.dart';
 import 'game_log/log_file_tail.dart';
+import 'game_log/session_folders.dart';
 
 /// Configured-root-only replay and tail of the three raid-lifecycle logs.
 ///
@@ -58,6 +59,9 @@ class SessionLogReader {
   /// The latest published state.
   SessionLogState get state => _state;
   String _root = '';
+
+  /// The log directory currently bound to this reader.
+  String get root => _root;
   String? _path;
   String? _session;
   int _generation = 0;
@@ -241,64 +245,25 @@ class SessionLogReader {
 
   Future<_Selection?> _select() async {
     _folderAwaitsApplicationLog = false;
-    final root = Directory(_root);
-    if (!await root.exists()) return null;
-    final sessions = <(DateTime, Directory)>[];
-    await for (final entry in root.list(followLinks: false)) {
-      if (entry is! Directory) continue;
-      final match = _folder.firstMatch(_basename(entry.path));
-      if (match == null) continue;
-      final time = DateTime.tryParse(
-        '${match[1]}-${match[2]}-${match[3]}T${match[4]!.padLeft(2, '0')}:${match[5]}:${match[6]}',
-      );
-      if (time != null &&
-          time.year == int.parse(match[1]!) &&
-          time.month == int.parse(match[2]!) &&
-          time.day == int.parse(match[3]!) &&
-          time.hour == int.parse(match[4]!) &&
-          time.minute == int.parse(match[5]!) &&
-          time.second == int.parse(match[6]!)) {
-        sessions.add((time, entry));
-      }
-    }
-    sessions.sort((a, b) {
-      final comparison = a.$1.compareTo(b.$1);
-      return comparison == 0 ? a.$2.path.compareTo(b.$2.path) : comparison;
-    });
+    final sessions = await listSessionFolders(_root);
     if (sessions.isEmpty) return null;
-    final (time, session) = sessions.last;
-    final candidates = <LogFile, List<(DateTime, File)>>{
-      for (final kind in LogFile.values) kind: [],
-    };
-    await for (final entry in session.list(followLinks: false)) {
-      if (entry is! File) continue;
-      for (final kind in LogFile.values) {
-        if (_patterns[kind]!.hasMatch(entry.path)) {
-          candidates[kind]!.add(((await entry.stat()).modified, entry));
-        }
-      }
-    }
-    File? newest(LogFile kind) {
-      final files = candidates[kind]!;
-      files.sort((a, b) {
-        final comparison = a.$1.compareTo(b.$1);
-        return comparison == 0 ? a.$2.path.compareTo(b.$2.path) : comparison;
-      });
-      return files.isEmpty ? null : files.last.$2;
-    }
-
-    final application = newest(LogFile.application);
+    final session = sessions.last;
+    final files = await selectSessionLogFiles(
+      Directory(session.path),
+      LogFile.values,
+    );
+    final application = files[LogFile.application];
     if (application == null) {
       _folderAwaitsApplicationLog = session.path != _session;
       return null;
     }
     return _Selection(
       session.path,
-      _basename(session.path),
-      time,
+      session.name,
+      session.time,
       application,
-      newest(LogFile.backend),
-      newest(LogFile.pushNotifications),
+      files[LogFile.backend],
+      files[LogFile.pushNotifications],
     );
   }
 
@@ -594,8 +559,6 @@ final class _Selection {
   final File? push;
 }
 
-String _basename(String path) => path.replaceAll('\\', '/').split('/').last;
-
 const _raidLogs = [LogFile.backend, LogFile.pushNotifications];
 
 const _fileNames = {
@@ -610,22 +573,6 @@ const _missingText = {
   LogFile.pushNotifications: 'notifications log not written yet',
 };
 
-// Real folders carry a game-version suffix: `log_2026.10.07_10-25-14_1.2.0.0.47888`.
-final _folder = RegExp(
-  r'^log_(\d{4})\.(\d{2})\.(\d{2})_(\d{1,2})-(\d{2})-(\d{2})(?:_[^\\/]*)?$',
-  caseSensitive: false,
-);
-final _patterns = {
-  LogFile.application: RegExp(
-    r'application(?:_000)?\.log$',
-    caseSensitive: false,
-  ),
-  LogFile.backend: RegExp(r'backend(?:_000)?\.log$', caseSensitive: false),
-  LogFile.pushNotifications: RegExp(
-    r'push-notifications(?:_000)?\.log$',
-    caseSensitive: false,
-  ),
-};
 final _mode = RegExp(r'Session mode\s*:\s*([^\s|]+)', caseSensitive: false);
 final _scene = RegExp(
   r'scene preset path:\s*maps/([a-zA-Z0-9_]+)\.bundle',
