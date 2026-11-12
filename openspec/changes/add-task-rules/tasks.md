@@ -6,13 +6,13 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| task-catalog → Other task requirements are retained leniently | Global-variable requirement kept | pkg/test/parse_task_test.dart | `otherRequirements keeps a globalVariable gate` | red |
-| task-catalog → Other task requirements are retained leniently | Malformed other requirements | pkg/test/parse_task_test.dart | `malformed otherRequirements become unknown` | red |
-| task-catalog → Other task requirements are retained leniently | Absent list | pkg/test/parse_task_test.dart | `absent otherRequirements is unknown, empty is none` | red |
-| task-catalog → Availability delays are retained leniently | Ten-hour delay | pkg/test/parse_task_test.dart | `availability delay is kept in seconds` | red |
-| task-catalog → Availability delays are retained leniently | Wrong-typed delay | pkg/test/parse_task_test.dart | `wrong-typed availability delay is unknown` | red |
-| task-catalog → Stored catalogs without the new facts still load | Older stored catalog | pkg/test/progress_catalog_json_test.dart | `catalog stored without other requirements and delays loads them as unknown` | red |
-| task-catalog → Stored catalogs without the new facts still load | Round trip | pkg/test/progress_catalog_json_test.dart | `dialogue requirement and delay round-trip` | red |
+| task-catalog → Other task requirements are retained leniently | Global-variable requirement kept | pkg/test/parse_task_test.dart | `otherRequirements keeps a globalVariable gate` | green |
+| task-catalog → Other task requirements are retained leniently | Malformed other requirements | pkg/test/parse_task_test.dart | `malformed otherRequirements become unknown` | green |
+| task-catalog → Other task requirements are retained leniently | Absent list | pkg/test/parse_task_test.dart | `absent otherRequirements is unknown, empty is none` | green |
+| task-catalog → Availability delays are retained leniently | Ten-hour delay | pkg/test/parse_task_test.dart | `availability delay is kept in seconds` | green |
+| task-catalog → Availability delays are retained leniently | Wrong-typed delay | pkg/test/parse_task_test.dart | `wrong-typed availability delay is unknown` | green |
+| task-catalog → Stored catalogs without the new facts still load | Older stored catalog | pkg/test/progress_catalog_json_test.dart | `catalog stored without other requirements and delays loads them as unknown` | green |
+| task-catalog → Stored catalogs without the new facts still load | Round trip | pkg/test/progress_catalog_json_test.dart | `dialogue requirement and delay round-trip` | green |
 | task-availability → Every catalog task gets one result | Results follow the catalog | pkg/test/task_rules_test.dart | `one result per task in catalog order` | red |
 | task-availability → Every catalog task gets one result | Progress for an unknown task | pkg/test/task_rules_test.dart | `progress for a task outside the catalog is ignored` | red |
 | task-availability → Results are deterministic and side-effect free | Repeated evaluation | pkg/test/task_rules_fixture_test.dart | `repeated evaluation over the excerpt is equal` | red |
@@ -55,9 +55,9 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 
 ## 2. Catalog keeps other requirements and delays
 
-- [ ] 2.1 Write the failing parse tests for the test-map rows "Global-variable requirement kept", "Malformed other requirements", "Absent list", "Ten-hour delay" and "Wrong-typed delay" in `pkg/test/parse_task_test.dart`, using the existing `support/wire.dart` builders. Verify they fail for the missing fields (`cd packages/blackgrid_progress && dart test test/parse_task_test.dart`).
-- [ ] 2.2 Write the failing JSON tests for "Older stored catalog" and "Round trip" in `pkg/test/progress_catalog_json_test.dart`. Verify they fail.
-- [ ] 2.3 Implement design D7 in the package:
+- [x] 2.1 Write the failing parse tests for the test-map rows "Global-variable requirement kept", "Malformed other requirements", "Absent list", "Ten-hour delay" and "Wrong-typed delay" in `pkg/test/parse_task_test.dart`, using the existing `support/wire.dart` builders. Verify they fail for the missing fields (`cd packages/blackgrid_progress && dart test test/parse_task_test.dart`).
+- [x] 2.2 Write the failing JSON tests for "Older stored catalog" and "Round trip" in `pkg/test/progress_catalog_json_test.dart`. Verify they fail.
+- [x] 2.3 Implement design D7 in the package:
   - the sealed `OtherRequirement` (`GlobalVariableRequirement`, `DialogueRequirement`, `UnknownOtherRequirement`) with a `kind` JSON discriminator;
   - `CatalogTask.otherRequirements` and `availableDelaySecondsMin/Max` in the constructor, `fromJson`, `toJson` and `_withObjectives`;
   - the lenient wire parse in `parse_progress_catalog.dart` (the whole list becomes null on a malformed row; a delay that is not a nonnegative int becomes null);

@@ -4,6 +4,7 @@ library;
 part 'progress_catalog_tasks.dart';
 part 'progress_catalog_facts.dart';
 part 'progress_catalog_hideout.dart';
+part 'progress_catalog_other_requirements.dart';
 
 /// The faction restriction on a task.
 enum TaskFaction {

@@ -4,6 +4,142 @@ import 'package:test/test.dart';
 import 'support/wire.dart';
 
 void main() {
+  test('other requirement order and unknown source facts survive storage', () {
+    final parsed = parseWire(
+      tasks: [
+        taskWire('task-a', {
+          'otherRequirements': [
+            {
+              'id': 'd',
+              'type': 'dialogue',
+              'traders': ['unresolved-trader'],
+            },
+            {'id': 'u', 'type': 'futureGate'},
+            {'id': 'g', 'type': 'globalVariable', 'compareMethod': 'future'},
+          ],
+        }),
+      ],
+    );
+    final stored = ProgressCatalog.fromJson(parsed.toJson());
+    final gates = stored.tasks.single.otherRequirements!;
+    expect(gates.map((g) => g.id), ['d', 'u', 'g']);
+    expect((gates[0] as DialogueRequirement).traderIds, ['unresolved-trader']);
+    expect((gates[1] as UnknownOtherRequirement).rawType, 'futureGate');
+    final global = gates[2] as GlobalVariableRequirement;
+    expect(global.variableId, isNull);
+    expect(global.comparison, Comparison.unknown);
+    expect(global.rawComparison, 'future');
+    expect(global.value, isNull);
+  });
+
+  test('shared objective copies preserve other requirements and delays', () {
+    final catalog = parseWire(
+      tasks: [
+        for (final id in ['a', 'b'])
+          taskWire(id, {
+            'otherRequirements': [
+              {'id': 'gate', 'type': 'dialogue', 'traders': <dynamic>[]},
+            ],
+            'availableDelaySecondsMin': 0,
+            'availableDelaySecondsMax': 10,
+            'objectives': [
+              {'id': 'shared', 'type': 'visit'},
+            ],
+          }),
+      ],
+    );
+    for (final task in catalog.tasks) {
+      expect(task.objectives.single.isShared, isTrue);
+      expect(task.otherRequirements!.single, isA<DialogueRequirement>());
+      expect(task.availableDelaySecondsMin, 0);
+      expect(task.availableDelaySecondsMax, 10);
+    }
+  });
+
+  test('otherRequirements keeps a globalVariable gate', () {
+    final task = parseWire(
+      tasks: [
+        taskWire('task-a', {
+          'otherRequirements': [
+            {
+              'id': 'gate',
+              'type': 'globalVariable',
+              'variableId': 'var-1',
+              'compareMethod': '>=',
+              'value': 5,
+            },
+          ],
+        }),
+      ],
+    ).tasks.single;
+    final gate = task.otherRequirements!.single as GlobalVariableRequirement;
+    expect(gate.id, 'gate');
+    expect(gate.variableId, 'var-1');
+    expect(gate.comparison, Comparison.atLeast);
+    expect(gate.rawComparison, '>=');
+    expect(gate.value, 5);
+  });
+
+  test('malformed otherRequirements become unknown', () {
+    for (final value in <Object?>[
+      'none',
+      [null],
+      [
+        {'id': 'no-type'},
+      ],
+      [
+        {'type': 'dialogue'},
+      ],
+      [
+        {'id': 'valid', 'type': 'dialogue'},
+        {'id': 'broken'},
+      ],
+    ]) {
+      final task = parseWire(
+        tasks: [
+          taskWire('task-a', {'otherRequirements': value}),
+        ],
+      ).tasks.single;
+      expect(task.otherRequirements, isNull, reason: '$value');
+    }
+  });
+
+  test('absent otherRequirements is unknown, empty is none', () {
+    final tasks = parseWire(
+      tasks: [
+        taskWire('absent'),
+        taskWire('empty', {'otherRequirements': <dynamic>[]}),
+      ],
+    ).tasks;
+    expect(tasks[0].otherRequirements, isNull);
+    expect(tasks[1].otherRequirements, isEmpty);
+  });
+
+  test('availability delay is kept in seconds', () {
+    final task = parseWire(
+      tasks: [
+        taskWire('task-a', {
+          'availableDelaySecondsMin': 36000,
+          'availableDelaySecondsMax': 36000,
+        }),
+      ],
+    ).tasks.single;
+    expect(task.availableDelaySecondsMin, 36000);
+    expect(task.availableDelaySecondsMax, 36000);
+  });
+
+  test('wrong-typed availability delay is unknown', () {
+    for (final value in <Object?>['soon', -1, 1.5, 1.0, true, null]) {
+      final task = parseWire(
+        tasks: [
+          taskWire('task-a', {'availableDelaySecondsMin': value}),
+        ],
+      ).tasks.single;
+      expect(task.availableDelaySecondsMin, isNull, reason: '$value');
+      expect(task.availableDelaySecondsMax, isNull);
+    }
+  });
+
   test('keeps Kappa, Lightkeeper, faction and level', () {
     final task = parseWire(
       tasks: [
