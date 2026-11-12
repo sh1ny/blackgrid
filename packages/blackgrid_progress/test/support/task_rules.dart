@@ -44,17 +44,27 @@ CatalogTask testTask(
 ProgressCatalog testCatalog(Iterable<CatalogTask> tasks) =>
     ProgressCatalog(tasks: tasks, stations: const []);
 
-/// Evaluates a single task using the synthetic edition table.
+/// Evaluates a task with catalog-owned prerequisite and alternative IDs.
 TaskAvailability evaluateTestTask(
   CatalogTask task, {
   PlayerProgress? progress,
   ProgressMode mode = ProgressMode.regular,
 }) => evaluateTasks(
-  testCatalog([task]),
+  testCatalog([
+    task,
+    for (final id in <String>{
+      for (final prerequisite
+          in task.prerequisites ?? const <TaskPrerequisite>[])
+        prerequisite.taskId,
+      for (final alternative in task.alternatives ?? const <TaskAlternative>[])
+        alternative.taskId,
+    })
+      if (id != task.id) testTask(id),
+  ]),
   mode,
   progress ?? PlayerProgress(),
   table: testEditionTable,
-).single;
+).singleWhere((result) => result.taskId == task.id);
 
 /// Creates a trader-level comparison.
 TraderRequirement loyalty(String traderId, Comparison comparison, num? value) =>

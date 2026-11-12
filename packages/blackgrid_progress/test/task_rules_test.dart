@@ -4,6 +4,38 @@ import 'package:test/test.dart';
 import 'support/task_rules.dart';
 
 void main() {
+  test('out-of-catalog progress cannot satisfy or close referenced tasks', () {
+    final catalog = testCatalog([
+      testTask(
+        'dependent',
+        prerequisites: [
+          TaskPrerequisite(taskId: 'gone', statuses: [TaskStatus.complete]),
+        ],
+      ),
+      testTask(
+        'alternative',
+        alternatives: [
+          TaskAlternative(taskId: 'gone', statuses: [TaskStatus.complete]),
+        ],
+      ),
+    ]);
+    final empty = evaluateTasks(
+      catalog,
+      ProgressMode.regular,
+      PlayerProgress(),
+    );
+    final extra = evaluateTasks(
+      catalog,
+      ProgressMode.regular,
+      PlayerProgress(taskStates: {'gone': TaskProgressState.finished}),
+    );
+    expect(extra, empty);
+    expect(extra.map((r) => r.status), [
+      AvailabilityStatus.locked,
+      AvailabilityStatus.available,
+    ]);
+  });
+
   test('one result per task in catalog order', () {
     final catalog = testCatalog([testTask('c'), testTask('a'), testTask('b')]);
     final results = evaluateTasks(

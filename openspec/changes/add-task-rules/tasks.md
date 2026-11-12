@@ -105,8 +105,8 @@ Package tests live under `packages/blackgrid_progress/test/` (written `pkg/test/
 
 ## 5. Integration checks
 
-- [ ] 5.1 Re-run the green-at-start rows: `mise run test` (it includes the package `dart test` and `test/data/progress_package_audit_test.dart`) and `mise run analyze`. Both must be clean. Run `dart format` over the changed files.
-- [ ] 5.2 Check that nothing in `lib/` imports the rules (design D9 and S6): `rg "evaluateTasks|editionTable" lib` returns nothing. Check `mise run release-notes -- --check openspec/changes/add-task-rules/proposal.md` exits 0. Update the proposal's `## Release Notes` if anything shipped differs.
+- [x] 5.1 Re-run the green-at-start rows: `mise run test` (it includes the package `dart test` and `test/data/progress_package_audit_test.dart`) and `mise run analyze`. Both must be clean. Run `dart format` over the changed files.
+- [x] 5.2 Check that nothing in `lib/` imports the rules (design D9 and S6): `rg "evaluateTasks|editionTable" lib` returns nothing. Check `mise run release-notes -- --check openspec/changes/add-task-rules/proposal.md` exits 0. Update the proposal's `## Release Notes` if anything shipped differs.
 
 ## Workflow follow-up
 

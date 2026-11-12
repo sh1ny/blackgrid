@@ -15,7 +15,9 @@ List<TaskAvailability> evaluateTasks(
   PlayerProgress progress, {
   EditionTable table = editionTable,
 }) => List<TaskAvailability>.unmodifiable(
-  catalog.tasks.map((task) => _evaluateTask(task, mode, progress, table)),
+  catalog.tasks.map(
+    (task) => _evaluateTask(task, mode, progress, table, catalog.tasksById),
+  ),
 );
 
 TaskAvailability _evaluateTask(
@@ -23,6 +25,7 @@ TaskAvailability _evaluateTask(
   ProgressMode mode,
   PlayerProgress progress,
   EditionTable table,
+  Map<String, CatalogTask> tasksById,
 ) {
   final state = progress.taskStates[task.id];
   if (state == TaskProgressState.finished) {
@@ -104,7 +107,11 @@ TaskAvailability _evaluateTask(
         unchecked.add(PrerequisiteStatusUnknown(taskId: prerequisite.taskId));
         continue;
       }
-      final recorded = _status(progress.taskStates[prerequisite.taskId]);
+      final recorded = _status(
+        tasksById.containsKey(prerequisite.taskId)
+            ? progress.taskStates[prerequisite.taskId]
+            : null,
+      );
       if (statuses.contains(recorded)) continue;
       if (recorded == TaskStatus.complete &&
           statuses.contains(TaskStatus.active) &&
@@ -128,7 +135,11 @@ TaskAvailability _evaluateTask(
     unchecked.add(const AlternativesUnknown());
   } else {
     for (final alternative in alternatives) {
-      final recorded = _status(progress.taskStates[alternative.taskId]);
+      final recorded = _status(
+        tasksById.containsKey(alternative.taskId)
+            ? progress.taskStates[alternative.taskId]
+            : null,
+      );
       if (recorded != null &&
           (alternative.statuses?.contains(recorded) ?? false)) {
         checked.add(AlternativeTaken(taskId: alternative.taskId));
