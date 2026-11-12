@@ -7,15 +7,14 @@ import '../domain/raid_lifecycle.dart';
 import 'game_log/game_locations.dart';
 import 'game_log/game_log_parsers.dart';
 import 'game_log/log_file_tail.dart';
+import 'game_log/session_folders.dart';
 
 /// Configured-root-only replay and tail of the three raid-lifecycle logs.
 ///
-/// Each scan picks the newest session folder once, stats the application,
-/// backend and push-notifications files, reads each to its stat size, and
-/// emits the scan's events as one batch on [events], sorted by log time, then
-/// file (application, backend, push), then byte offset. The bind-time replay is
-/// one such scan, so a replay and a live read yield the same events in the same
-/// order.
+/// Each scan snapshots push first and application last, reads to those sizes,
+/// and emits events sorted by log time, file (application, backend, push), then
+/// byte offset. Push consumption waits for complete application consumption;
+/// recovered push records may arrive in a later scan than their mode evidence.
 ///
 /// [states] describes the application log alone: status, incarnation, map and
 /// mode never depend on the backend or push files. Problems with those two go
@@ -31,6 +30,7 @@ class SessionLogReader {
     this.pollInterval = const Duration(milliseconds: 250),
     this.chunkBytes = 8192,
     this.maxLineBytes = 65536,
+    this.snapshotStat,
   });
 
   /// How often the session folder is rescanned.
@@ -41,6 +41,9 @@ class SessionLogReader {
 
   /// Longest accepted log line, in bytes.
   final int maxLineBytes;
+
+  /// Optional size-snapshot filesystem seam for deterministic offline tests.
+  final Future<FileStat> Function(File file)? snapshotStat;
   final _states = StreamController<SessionLogState>.broadcast(sync: true);
   final _events = StreamController<List<GameLogEvent>>.broadcast(sync: true);
 
@@ -58,6 +61,9 @@ class SessionLogReader {
   /// The latest published state.
   SessionLogState get state => _state;
   String _root = '';
+
+  /// The log directory currently bound to this reader.
+  String get root => _root;
   String? _path;
   String? _session;
   int _generation = 0;
@@ -241,64 +247,25 @@ class SessionLogReader {
 
   Future<_Selection?> _select() async {
     _folderAwaitsApplicationLog = false;
-    final root = Directory(_root);
-    if (!await root.exists()) return null;
-    final sessions = <(DateTime, Directory)>[];
-    await for (final entry in root.list(followLinks: false)) {
-      if (entry is! Directory) continue;
-      final match = _folder.firstMatch(_basename(entry.path));
-      if (match == null) continue;
-      final time = DateTime.tryParse(
-        '${match[1]}-${match[2]}-${match[3]}T${match[4]!.padLeft(2, '0')}:${match[5]}:${match[6]}',
-      );
-      if (time != null &&
-          time.year == int.parse(match[1]!) &&
-          time.month == int.parse(match[2]!) &&
-          time.day == int.parse(match[3]!) &&
-          time.hour == int.parse(match[4]!) &&
-          time.minute == int.parse(match[5]!) &&
-          time.second == int.parse(match[6]!)) {
-        sessions.add((time, entry));
-      }
-    }
-    sessions.sort((a, b) {
-      final comparison = a.$1.compareTo(b.$1);
-      return comparison == 0 ? a.$2.path.compareTo(b.$2.path) : comparison;
-    });
+    final sessions = await listSessionFolders(_root);
     if (sessions.isEmpty) return null;
-    final (time, session) = sessions.last;
-    final candidates = <LogFile, List<(DateTime, File)>>{
-      for (final kind in LogFile.values) kind: [],
-    };
-    await for (final entry in session.list(followLinks: false)) {
-      if (entry is! File) continue;
-      for (final kind in LogFile.values) {
-        if (_patterns[kind]!.hasMatch(entry.path)) {
-          candidates[kind]!.add(((await entry.stat()).modified, entry));
-        }
-      }
-    }
-    File? newest(LogFile kind) {
-      final files = candidates[kind]!;
-      files.sort((a, b) {
-        final comparison = a.$1.compareTo(b.$1);
-        return comparison == 0 ? a.$2.path.compareTo(b.$2.path) : comparison;
-      });
-      return files.isEmpty ? null : files.last.$2;
-    }
-
-    final application = newest(LogFile.application);
+    final session = sessions.last;
+    final files = await selectSessionLogFiles(
+      Directory(session.path),
+      LogFile.values,
+    );
+    final application = files[LogFile.application];
     if (application == null) {
       _folderAwaitsApplicationLog = session.path != _session;
       return null;
     }
     return _Selection(
       session.path,
-      _basename(session.path),
-      time,
+      session.name,
+      session.time,
       application,
-      newest(LogFile.backend),
-      newest(LogFile.pushNotifications),
+      files[LogFile.backend],
+      files[LogFile.pushNotifications],
     );
   }
 
@@ -374,18 +341,15 @@ class SessionLogReader {
       LogFile.backend: selected.backend,
       LogFile.pushNotifications: selected.push,
     };
-    // Stat every file before reading any, so each read stops at a size seen
-    // together.
-    final sizes = <LogFile, int>{};
+    final snapshots = await statSessionLogSnapshot(files, stat: snapshotStat);
     final missing = <LogFile, String>{};
-    for (final MapEntry(key: kind, value: file) in files.entries) {
-      final stat = file == null ? null : await file.stat();
+    for (final kind in files.keys) {
+      final stat = snapshots[kind];
       if (stat == null || stat.type == FileSystemEntityType.notFound) {
         missing[kind] = _missingText[kind]!;
         _problems.remove(kind);
         _unreadable.remove(kind);
-      } else {
-        sizes[kind] = stat.size;
+        snapshots.remove(kind);
       }
     }
     if (cancelled()) return false;
@@ -393,7 +357,7 @@ class SessionLogReader {
     final replaced =
         application.path != _path ||
         selected.session != _session ||
-        (sizes[LogFile.application] ?? 0) < _tail.offset;
+        (snapshots[LogFile.application]?.size ?? 0) < _tail.offset;
     if (replaced) {
       // A new folder only announces itself; a replaced or truncated
       // application log in the same folder also restarts the replay.
@@ -408,7 +372,7 @@ class SessionLogReader {
     // so an in-place rewrite restarts the file instead of adopting bytes.
     final batch = await _tail.read(
       application,
-      sizes[LogFile.application] ?? 0,
+      snapshots[LogFile.application]?.size ?? 0,
       isCancelled: cancelled,
     );
     if (batch.cancelled || cancelled()) return false;
@@ -448,16 +412,20 @@ class SessionLogReader {
     } finally {
       _batch = false;
     }
+    final applicationComplete =
+        _tail.offset == snapshots[LogFile.application]?.size &&
+        !_tail.hasPendingLine;
     for (final kind in _raidLogs) {
+      if (kind == LogFile.pushNotifications && !applicationComplete) continue;
       final file = files[kind];
-      if (file == null || !sizes.containsKey(kind)) {
+      if (file == null || !snapshots.containsKey(kind)) {
         _tails[kind]!.reset();
         continue;
       }
       if (!await _readRaidLog(
         kind,
         file,
-        sizes[kind]!,
+        snapshots[kind]!.size,
         selected.name,
         found,
         cancelled,
@@ -474,7 +442,12 @@ class SessionLogReader {
     _setRaidLogsMessage(problems.isEmpty ? null : problems.join('; '));
     // A rejected record stays visible until newer bytes read cleanly.
     if (_state.status != MapInputStatus.unavailable && !_recordRejected) {
-      _publish(MapInputStatus.watching);
+      _publish(
+        applicationComplete ? MapInputStatus.watching : MapInputStatus.reading,
+        message: applicationComplete
+            ? null
+            : 'Waiting for the application log to finish writing.',
+      );
     }
     _emit();
     return true;
@@ -594,8 +567,6 @@ final class _Selection {
   final File? push;
 }
 
-String _basename(String path) => path.replaceAll('\\', '/').split('/').last;
-
 const _raidLogs = [LogFile.backend, LogFile.pushNotifications];
 
 const _fileNames = {
@@ -610,22 +581,6 @@ const _missingText = {
   LogFile.pushNotifications: 'notifications log not written yet',
 };
 
-// Real folders carry a game-version suffix: `log_2026.10.07_10-25-14_1.2.0.0.47888`.
-final _folder = RegExp(
-  r'^log_(\d{4})\.(\d{2})\.(\d{2})_(\d{1,2})-(\d{2})-(\d{2})(?:_[^\\/]*)?$',
-  caseSensitive: false,
-);
-final _patterns = {
-  LogFile.application: RegExp(
-    r'application(?:_000)?\.log$',
-    caseSensitive: false,
-  ),
-  LogFile.backend: RegExp(r'backend(?:_000)?\.log$', caseSensitive: false),
-  LogFile.pushNotifications: RegExp(
-    r'push-notifications(?:_000)?\.log$',
-    caseSensitive: false,
-  ),
-};
 final _mode = RegExp(r'Session mode\s*:\s*([^\s|]+)', caseSensitive: false);
 final _scene = RegExp(
   r'scene preset path:\s*maps/([a-zA-Z0-9_]+)\.bundle',

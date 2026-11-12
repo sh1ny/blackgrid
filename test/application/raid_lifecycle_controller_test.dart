@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:blackgrid/application/raid_lifecycle_controller.dart';
 import 'package:blackgrid/data/game_log/game_log_parsers.dart';
 import 'package:blackgrid/data/session_log_reader.dart';
+import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/local_progress.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -90,6 +92,7 @@ _Key _key(RaidTransition t) => switch (t) {
   final RaidEndedTransition e => ('ended', e.id, e.time, e.cause),
   MatchingAbortedTransition() => ('aborted', t.id, t.time, null),
   FleaSoldTransition() => ('flea', t.id, t.time, null),
+  TaskTransition() => ('task', t.id, t.time, null),
 };
 
 /// A flea sale of 2 of one item paying 45 000 roubles, as the game logs it.
@@ -225,6 +228,77 @@ void main() {
       expect(sale.roubles, 45000);
     }
     expect(second.map(_key).toList(), first.map(_key).toList());
+  });
+
+  test('re-reading a folder republishes task transitions with the same identity', () async {
+    const taskId = '5936d90786f7742b1420ba5b';
+    String taskRecord(int type, String time) =>
+        '${_line('push-notifications', 'Got notification | ChatMessageReceived', time)}'
+        '${const JsonEncoder.withIndent('  ').convert({
+          'type': 'new_message',
+          'message': {'type': type, 'templateId': '$taskId description'},
+        })}\n';
+
+    final records = [
+      taskRecord(10, '22:01:00.000'),
+      taskRecord(11, '22:02:00.000'),
+      taskRecord(12, '22:03:00.000'),
+    ];
+    await write(LogFile.backend, '');
+    await write(
+      LogFile.application,
+      _line('application', 'Session mode: Regular', '22:00:00.000'),
+    );
+    await write(LogFile.pushNotifications, records.join());
+
+    final (firstController, firstReader, first) = open();
+    await firstReader.bind(root.path);
+    firstController.dispose();
+    await firstReader.close();
+    readers.remove(firstReader);
+    final second = await replay();
+
+    final expected = [
+      (
+        const LogRecordId(_folder, LogFile.pushNotifications, 0),
+        DateTime(2026, 10, 31, 22, 1),
+        taskId,
+        ProgressTaskStatus.started,
+        GameMode.pvp,
+      ),
+      (
+        LogRecordId(
+          _folder,
+          LogFile.pushNotifications,
+          utf8.encode(records[0]).length,
+        ),
+        DateTime(2026, 10, 31, 22, 2),
+        taskId,
+        ProgressTaskStatus.failed,
+        GameMode.pvp,
+      ),
+      (
+        LogRecordId(
+          _folder,
+          LogFile.pushNotifications,
+          utf8.encode(records[0] + records[1]).length,
+        ),
+        DateTime(2026, 10, 31, 22, 3),
+        taskId,
+        ProgressTaskStatus.finished,
+        GameMode.pvp,
+      ),
+    ];
+    for (final run in [first, second]) {
+      expect(run, hasLength(3));
+      expect(
+        run.map((transition) {
+          final task = transition as TaskTransition;
+          return (task.id, task.time, task.taskId, task.status, task.mode);
+        }).toList(),
+        expected,
+      );
+    }
   });
 
   test('a new folder without its application log yet keeps the raid', () async {

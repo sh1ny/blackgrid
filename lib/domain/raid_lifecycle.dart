@@ -1,4 +1,5 @@
 import 'catalog.dart';
+import 'local_progress.dart';
 
 /// The three EFT log files the raid lifecycle reads from a session folder.
 enum LogFile {
@@ -455,7 +456,37 @@ final class FleaSoldTransition extends RaidTransition {
   final GameMode? mode;
 }
 
+/// A task state observed in the push-notifications log.
+///
+/// Carries only the mode logged in the same folder and does not change a raid.
+final class TaskTransition extends RaidTransition {
+  /// Creates a task observation with its original record identity and time.
+  const TaskTransition(
+    super.id,
+    super.time,
+    this.taskId,
+    this.status,
+    this.mode,
+  );
+
+  /// The task identity as given by the game.
+  final String taskId;
+
+  /// The observed task state.
+  final ProgressTaskStatus status;
+
+  /// The latest applicable same-folder mode, or `null` if it is unknown.
+  final GameMode? mode;
+}
+
 const _keep = Object();
+
+final class _ModeEvidence {
+  const _ModeEvidence(this.event, this.previous);
+
+  final SessionModeChanged event;
+  final _ModeEvidence? previous;
+}
 
 /// The immutable state [reduce] folds log events into.
 final class RaidLifecycleState {
@@ -468,6 +499,7 @@ final class RaidLifecycleState {
     this.currentFolder,
     this.transitPossible = false,
     this.sessionMode,
+    this.folderMode,
     this.guardTime,
     this.queueEnteredTime,
     this.pendingCountdown,
@@ -475,6 +507,24 @@ final class RaidLifecycleState {
     this.pendingEntry,
     this.pendingStart,
     this.restartProfile,
+  }) : _modeHistory = null;
+
+  const RaidLifecycleState._({
+    required this.phase,
+    this.raid,
+    this.lastQueueAborted = false,
+    this.currentFolder,
+    this.transitPossible = false,
+    this.sessionMode,
+    this.folderMode,
+    this.guardTime,
+    this.queueEnteredTime,
+    this.pendingCountdown,
+    this.pendingMapId,
+    this.pendingEntry,
+    this.pendingStart,
+    this.restartProfile,
+    this._modeHistory,
   });
 
   /// The state before any event: phase unknown, no raid.
@@ -497,6 +547,11 @@ final class RaidLifecycleState {
 
   /// The last session mode logged, remembered for the next raid.
   final GameMode? sessionMode;
+
+  /// The recognised mode logged in this folder, cleared on folder change.
+  final GameMode? folderMode;
+
+  final _ModeEvidence? _modeHistory;
 
   /// The queue or rejoin time; a raid exit or profile selection logged
   /// before it ends nothing.
@@ -537,6 +592,7 @@ final class RaidLifecycleState {
     Object? currentFolder = _keep,
     bool? transitPossible,
     Object? sessionMode = _keep,
+    Object? folderMode = _keep,
     Object? guardTime = _keep,
     Object? queueEnteredTime = _keep,
     Object? pendingCountdown = _keep,
@@ -544,7 +600,40 @@ final class RaidLifecycleState {
     Object? pendingEntry = _keep,
     Object? pendingStart = _keep,
     Object? restartProfile = _keep,
-  }) => RaidLifecycleState(
+  }) => _copyWith(
+    phase: phase,
+    raid: raid,
+    lastQueueAborted: lastQueueAborted,
+    currentFolder: currentFolder,
+    transitPossible: transitPossible,
+    sessionMode: sessionMode,
+    folderMode: folderMode,
+    guardTime: guardTime,
+    queueEnteredTime: queueEnteredTime,
+    pendingCountdown: pendingCountdown,
+    pendingMapId: pendingMapId,
+    pendingEntry: pendingEntry,
+    pendingStart: pendingStart,
+    restartProfile: restartProfile,
+  );
+
+  RaidLifecycleState _copyWith({
+    RaidPhase? phase,
+    Object? raid = _keep,
+    bool? lastQueueAborted,
+    Object? currentFolder = _keep,
+    bool? transitPossible,
+    Object? sessionMode = _keep,
+    Object? folderMode = _keep,
+    Object? guardTime = _keep,
+    Object? queueEnteredTime = _keep,
+    Object? pendingCountdown = _keep,
+    Object? pendingMapId = _keep,
+    Object? pendingEntry = _keep,
+    Object? pendingStart = _keep,
+    Object? restartProfile = _keep,
+    Object? modeHistory = _keep,
+  }) => RaidLifecycleState._(
     phase: phase ?? this.phase,
     raid: identical(raid, _keep) ? this.raid : raid as Raid?,
     lastQueueAborted: lastQueueAborted ?? this.lastQueueAborted,
@@ -555,6 +644,9 @@ final class RaidLifecycleState {
     sessionMode: identical(sessionMode, _keep)
         ? this.sessionMode
         : sessionMode as GameMode?,
+    folderMode: identical(folderMode, _keep)
+        ? this.folderMode
+        : folderMode as GameMode?,
     guardTime: identical(guardTime, _keep)
         ? this.guardTime
         : guardTime as DateTime?,
@@ -576,6 +668,9 @@ final class RaidLifecycleState {
     restartProfile: identical(restartProfile, _keep)
         ? this.restartProfile
         : restartProfile as ({LogRecordId id, DateTime time})?,
+    modeHistory: identical(modeHistory, _keep)
+        ? _modeHistory
+        : modeHistory as _ModeEvidence?,
   );
 }
 
@@ -585,11 +680,13 @@ typedef RaidReduction = (RaidLifecycleState, List<RaidTransition>);
 /// Folds one [event] into [state].
 ///
 /// Pure. Returns the next state and the transitions the event published, each
-/// published once. Events must arrive in log-time order; a raid exit or
-/// profile selection logged before the current queue or rejoin time ends
-/// nothing, and the first ending of a raid wins. A new folder's first profile
-/// selection is the exception that does not end an interrupted raid: it waits
-/// for the next queue, which ends the raid by client restart.
+/// published once. Raid lifecycle events must arrive in log-time order; a raid
+/// exit or profile selection logged before the current queue or rejoin time
+/// ends nothing, and the first ending of a raid wins. A new folder's first
+/// profile selection is the exception that does not end an interrupted raid:
+/// it waits for the next queue, which ends the raid by client restart.
+/// Task events use the latest same-folder mode evidence no later than their log
+/// time, even when processed after later mode events.
 ///
 /// A raid entered by a rejoin (transit or reconnect) is published with the
 /// raid-rejoined record's identity and time, not the raid-started record's.
@@ -598,7 +695,11 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
       LogInputReset() => (RaidLifecycleState.initial, const []),
       final SessionFolderChanged e => _folderChanged(state, e),
       final SessionModeChanged e => (
-        state.copyWith(sessionMode: e.mode),
+        state._copyWith(
+          sessionMode: e.mode,
+          folderMode: e.mode == GameMode.unknown ? null : e.mode,
+          modeHistory: _ModeEvidence(e, state._modeHistory),
+        ),
         const [],
       ),
       final ProfileSelected e => _profileSelected(state, e),
@@ -626,8 +727,59 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
           ),
         ],
       ),
-      TaskStarted() || TaskFailed() || TaskFinished() => (state, const []),
+      final TaskStarted e => (
+        state,
+        [
+          TaskTransition(
+            e.id,
+            e.time,
+            e.taskId,
+            ProgressTaskStatus.started,
+            _taskMode(state, e.time),
+          ),
+        ],
+      ),
+      final TaskFailed e => (
+        state,
+        [
+          TaskTransition(
+            e.id,
+            e.time,
+            e.taskId,
+            ProgressTaskStatus.failed,
+            _taskMode(state, e.time),
+          ),
+        ],
+      ),
+      final TaskFinished e => (
+        state,
+        [
+          TaskTransition(
+            e.id,
+            e.time,
+            e.taskId,
+            ProgressTaskStatus.finished,
+            _taskMode(state, e.time),
+          ),
+        ],
+      ),
     };
+
+GameMode? _taskMode(RaidLifecycleState state, DateTime time) {
+  SessionModeChanged? latest;
+  for (var node = state._modeHistory; node != null; node = node.previous) {
+    final event = node.event;
+    if (event.time.isAfter(time)) continue;
+    if (latest == null ||
+        event.time.isAfter(latest.time) ||
+        (event.time.isAtSameMomentAs(latest.time) &&
+            event.id.offset > latest.id.offset)) {
+      latest = event;
+    }
+  }
+  final mode = latest?.mode;
+  return mode == GameMode.unknown ? null : mode;
+}
 
 bool _isLoading(RaidPhase phase) => switch (phase) {
   RaidPhase.inQueue || RaidPhase.matchFound || RaidPhase.raidStarting => true,
@@ -643,8 +795,10 @@ bool _beforeGuard(RaidLifecycleState state, DateTime time) =>
 RaidReduction _folderChanged(RaidLifecycleState state, SessionFolderChanged e) {
   final raid = state.currentRaid;
   return (
-    state.copyWith(
+    state._copyWith(
       currentFolder: e.folder,
+      folderMode: null,
+      modeHistory: null,
       transitPossible: false,
       restartProfile: null,
       raid: raid == null ? state.raid : raid.withInterrupted(value: true),

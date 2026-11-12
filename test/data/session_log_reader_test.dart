@@ -190,23 +190,32 @@ void main() {
     expect(reader.state.detectedMapId, 'thelab');
     final incarnation = reader.state.incarnation;
     final sessionUri = file.parent.uri;
+    final sessionDirectory = await root
+        .list()
+        .where((entry) => entry is Directory && entry.uri == sessionUri)
+        .cast<Directory>()
+        .single;
     var rewrites = 0;
 
     await IOOverrides.runZoned(
       reader.rescan,
       createDirectory: (path) {
-        expect(path, root.path);
-        return _ReplayDirectory(root, file, sessionUri, () async {
-          if (rewrites != 0) return;
-          ++rewrites;
-          // The old reader's separate path fingerprint has already completed
-          // when open is called. Replace all records before returning its real
-          // handle, so hashing skipped bytes must not adopt the new prefix.
-          await file.writeAsString(
-            'Session mode: Pve\napplication|scene preset path:maps/not_supported.bundle\n',
-            flush: true,
-          );
-        });
+        return _ReplayDirectory(
+          path == root.path ? root : sessionDirectory,
+          file,
+          sessionUri,
+          () async {
+            if (rewrites != 0) return;
+            ++rewrites;
+            // The old reader's separate path fingerprint has already completed
+            // when open is called. Replace all records before returning its real
+            // handle, so hashing skipped bytes must not adopt the new prefix.
+            await file.writeAsString(
+              'Session mode: Pve\napplication|scene preset path:maps/not_supported.bundle\n',
+              flush: true,
+            );
+          },
+        );
       },
     );
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blackgrid/data/game_log/session_folder_read.dart';
 import 'package:blackgrid/data/session_log_reader.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/map_session.dart';
@@ -41,10 +42,13 @@ void main() {
   late SessionLogReader reader;
   late List<List<GameLogEvent>> batches;
 
-  SessionLogReader newReader() => SessionLogReader(
+  SessionLogReader newReader({
+    Future<FileStat> Function(File file)? snapshotStat,
+  }) => SessionLogReader(
     pollInterval: const Duration(days: 1),
     chunkBytes: 64,
     maxLineBytes: 4096,
+    snapshotStat: snapshotStat,
   );
 
   Future<File> write(
@@ -75,6 +79,35 @@ void main() {
     await reader.close();
     await root.delete(recursive: true);
   });
+
+  Future<T> withoutWatcher<T>(
+    Future<T> Function() body, {
+    bool Function(File file)? fails,
+  }) async {
+    final directories = {
+      root.path.replaceAll('\\', '/'): root,
+      await for (final entry in root.list())
+        if (entry is Directory) entry.path.replaceAll('\\', '/'): entry,
+    };
+    return IOOverrides.runZoned(
+      body,
+      createDirectory: (path) => _FailingOpenDirectory(
+        directories[path.replaceAll('\\', '/')]!,
+        fails ?? (_) => false,
+      ),
+    );
+  }
+
+  List<TaskTransition> taskTransitions() {
+    var state = RaidLifecycleState.initial;
+    final tasks = <TaskTransition>[];
+    for (final event in batches.expand((batch) => batch)) {
+      final (next, transitions) = reduce(state, event);
+      state = next;
+      tasks.addAll(transitions.whereType<TaskTransition>());
+    }
+    return tasks;
+  }
 
   test('reads the three files of the newest folder only', () async {
     for (final folder in [_older, _newer]) {
@@ -240,16 +273,20 @@ void main() {
     expect(reader.state.incarnation, state.incarnation);
   });
 
-  Future<void> rescanWithPushOpenFailing() => IOOverrides.runZoned(
-    reader.rescan,
-    createDirectory: (path) {
-      expect(path, root.path);
-      return _FailingOpenDirectory(
-        root,
+  Future<void> rescanWithPushOpenFailing() async {
+    final directories = {
+      root.path: root,
+      await for (final entry in root.list())
+        if (entry is Directory) entry.path: entry,
+    };
+    await IOOverrides.runZoned(
+      reader.rescan,
+      createDirectory: (path) => _FailingOpenDirectory(
+        directories[path]!,
         (file) => file.path.endsWith('push-notifications_000.log'),
-      );
-    },
-  );
+      ),
+    );
+  }
 
   test('a read failure clears on the next clean read', () async {
     await write(_newer, 'application_000.log', _app('GameStarted: x'));
@@ -372,6 +409,152 @@ void main() {
     await reader.bind(root.path);
     expect(records(), [isA<ProfileSelected>(), isA<RaidExit>()]);
   });
+
+  test('live tasks wait for complete application snapshot', () async {
+    final application = await write(
+      _newer,
+      'application_000.log',
+      _app('Session mode: Pvp'),
+    );
+    final push = await write(_newer, 'push-notifications_000.log', '');
+    await withoutWatcher(() async {
+      await reader.bind(root.path);
+      await application.writeAsString(
+        _app('Session mode: Pve', '21:30:01.000').trimRight(),
+        mode: FileMode.append,
+        flush: true,
+      );
+      await push.writeAsString(
+        _push(_taskStarted('aaaa'), '21:30:02.000'),
+        mode: FileMode.append,
+        flush: true,
+      );
+      await reader.rescan();
+      expect(taskTransitions(), isEmpty);
+      await application.writeAsString('\n', mode: FileMode.append, flush: true);
+      await reader.rescan();
+      expect(taskTransitions().single.mode, GameMode.pve);
+    });
+  });
+
+  test(
+    'live snapshot never publishes a task ahead of its mode evidence',
+    () async {
+      final application = await write(
+        _newer,
+        'application_000.log',
+        _app('Session mode: Pvp'),
+      );
+      final push = await write(_newer, 'push-notifications_000.log', '');
+      var appendAtSnapshot = true;
+      await reader.close();
+      reader = newReader(
+        snapshotStat: (file) async {
+          final snapshot = await file.stat();
+          if (appendAtSnapshot) {
+            appendAtSnapshot = false;
+            await application.writeAsString(
+              _app('Session mode: Pve', '21:30:01.000'),
+              mode: FileMode.append,
+              flush: true,
+            );
+            await push.writeAsString(
+              _push(_taskStarted('aaaa'), '21:30:02.000'),
+              mode: FileMode.append,
+              flush: true,
+            );
+          }
+          return snapshot;
+        },
+      );
+      reader.events.listen(batches.add);
+      await withoutWatcher(() async {
+        await reader.bind(root.path);
+        expect(
+          taskTransitions().map((task) => task.mode),
+          everyElement(GameMode.pve),
+        );
+        await reader.rescan();
+        final live = taskTransitions();
+        expect(live.single.mode, GameMode.pve);
+        final replay = await readSessionFolderTasks('${root.path}/$_newer');
+        expect(
+          live.map((task) => (task.id, task.time, task.mode)),
+          replay.tasks.map((task) => (task.id, task.time, task.mode)),
+        );
+      });
+    },
+  );
+
+  test('short application snapshot defers pending tasks', () async {
+    final application = await write(
+      _newer,
+      'application_000.log',
+      _app('Session mode: Pvp'),
+    );
+    final push = await write(_newer, 'push-notifications_000.log', '');
+    var shortRead = false;
+    await reader.close();
+    reader = newReader(
+      snapshotStat: (file) async {
+        final snapshot = await file.stat();
+        return shortRead && file.path.endsWith('application_000.log')
+            ? _OversizedStat(snapshot)
+            : snapshot;
+      },
+    );
+    reader.events.listen(batches.add);
+    await withoutWatcher(() async {
+      await reader.bind(root.path);
+      await application.writeAsString(
+        _app('Session mode: Pve', '21:30:01.000'),
+        mode: FileMode.append,
+        flush: true,
+      );
+      await push.writeAsString(
+        _push(_taskStarted('aaaa'), '21:30:02.000'),
+        mode: FileMode.append,
+        flush: true,
+      );
+      shortRead = true;
+      await reader.rescan();
+      expect(taskTransitions(), isEmpty);
+      shortRead = false;
+      await reader.rescan();
+      expect(taskTransitions().single.mode, GameMode.pve);
+      await reader.rescan();
+      expect(taskTransitions(), hasLength(1));
+    });
+  });
+
+  test('application read failure preserves pending tasks', () async {
+    final application = await write(
+      _newer,
+      'application_000.log',
+      _app('Session mode: Pvp'),
+    );
+    final push = await write(_newer, 'push-notifications_000.log', '');
+    var fail = false;
+    await withoutWatcher(() async {
+      await reader.bind(root.path);
+      await application.writeAsString(
+        _app('Session mode: Pve', '21:30:01.000'),
+        mode: FileMode.append,
+        flush: true,
+      );
+      await push.writeAsString(
+        _push(_taskStarted('aaaa'), '21:30:02.000'),
+        mode: FileMode.append,
+        flush: true,
+      );
+      fail = true;
+      await reader.rescan();
+      expect(taskTransitions(), isEmpty);
+      fail = false;
+      await reader.rescan();
+      expect(taskTransitions().single.mode, GameMode.pve);
+    }, fails: (file) => fail && file.path.endsWith('application_000.log'));
+  });
 }
 
 /// Wraps a real directory so that opening a matching listed file fails.
@@ -407,6 +590,12 @@ class _FailingOpenDirectory implements Directory {
   }
 
   @override
+  Stream<FileSystemEvent> watch({
+    int events = FileSystemEvent.all,
+    bool recursive = false,
+  }) => const Stream.empty();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
     'Unexpected directory operation: ${invocation.memberName}',
   );
@@ -431,5 +620,21 @@ class _FailingOpenFile implements File {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
     'Unexpected file operation: ${invocation.memberName}',
+  );
+}
+
+class _OversizedStat implements FileStat {
+  _OversizedStat(this._stat);
+  final FileStat _stat;
+
+  @override
+  int get size => _stat.size + 1;
+
+  @override
+  FileSystemEntityType get type => _stat.type;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'Unexpected snapshot stat: ${invocation.memberName}',
   );
 }

@@ -15,6 +15,9 @@ enum SettingsSection {
   /// Tracker progress and the Tracker token.
   tracker('Tracker progress'),
 
+  /// Local log-derived progress and its active wipes.
+  localProgress('Local progress'),
+
   /// The game log and screenshot folders, and Follow logs.
   gameFiles('Game files'),
 

@@ -18,6 +18,120 @@ import '../fixtures/m1/catalog/fixture.dart';
 import 'generated/schema.dart';
 
 void main() {
+  test(
+    'schema 8 upgrades to 9 preserving progress ledger and user records',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'blackgrid-v8-wipes-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final file = File('${directory.path}/data.sqlite');
+      final schema = await SchemaVerifier(GeneratedHelper()).schemaAt(8);
+      var schemaOpen = true;
+      addTearDown(() {
+        if (schemaOpen) schema.close();
+      });
+      final raw = schema.rawDatabase;
+      raw.execute('INSERT INTO preferences VALUES (?, ?)', [
+        1,
+        jsonEncode(
+          AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson(),
+        ),
+      ]);
+      raw.execute('INSERT INTO progress_meta (id, device_id) VALUES (?, ?)', [
+        0,
+        'device-8',
+      ]);
+      raw.execute(
+        'INSERT INTO progress_cycles (cycle_id, mode, created_at_ms, revision) '
+        'VALUES (?, ?, ?, ?)',
+        ['cycle-8', 'pve', 123, 1],
+      );
+      const event = ProgressEvent(
+        eventId: 'event-8',
+        deviceId: 'device-8',
+        occurredAtMs: 456,
+        scope: ProgressScope(mode: GameMode.pve, cycleId: 'cycle-8'),
+        source: ProgressSource.log,
+        target: ProgressTarget(
+          kind: ProgressEntityKind.task,
+          id: 'task-8',
+          field: ProgressField.state,
+        ),
+        value: ProgressTaskState(ProgressTaskStatus.finished),
+      );
+      raw.execute(
+        'INSERT INTO progress_events '
+        '(event_id, mode, cycle_id, occurred_at_ms, source_rank, device_id, '
+        'entity_kind, entity_id, field, format_version, canonical_payload) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          event.eventId,
+          'pve',
+          'cycle-8',
+          event.occurredAtMs,
+          1,
+          event.deviceId,
+          'task',
+          'task-8',
+          'state',
+          1,
+          ProgressEventCodec.encode(event),
+        ],
+      );
+      raw.execute(
+        'INSERT INTO progress_heads '
+        '(mode, cycle_id, entity_kind, entity_id, field, event_id) '
+        'VALUES (?, ?, ?, ?, ?, ?)',
+        ['pve', 'cycle-8', 'task', 'task-8', 'state', 'event-8'],
+      );
+      const retainedTables = [
+        'preferences',
+        'progress_meta',
+        'progress_cycles',
+        'progress_events',
+        'progress_heads',
+      ];
+      final retained = {
+        for (final table in retainedTables)
+          table: raw
+              .select('SELECT * FROM $table')
+              .map(Map<String, Object?>.from)
+              .toList(),
+      };
+      raw.execute('PRAGMA user_version = 8');
+      raw.execute('VACUUM INTO ?', [file.path]);
+      schema.close();
+      schemaOpen = false;
+
+      var db = BlackgridDatabase(NativeDatabase(file));
+      addTearDown(() => db.close());
+      Future<void> expectRetained() async {
+        for (final table in retainedTables) {
+          final rows = await db.customSelect('SELECT * FROM $table').get();
+          expect(
+            rows.map((row) => row.data).toList(),
+            retained[table],
+            reason: table,
+          );
+        }
+        expect(
+          await db.customSelect('SELECT * FROM progress_wipes').get(),
+          isEmpty,
+        );
+        final version = await db
+            .customSelect('PRAGMA user_version')
+            .getSingle();
+        expect(version.data.values.single, 9);
+      }
+
+      await expectRetained();
+      await db.close();
+      db = BlackgridDatabase(NativeDatabase(file));
+      await expectRetained();
+    },
+  );
+
   test('schema 7 upgrades to 8 preserving existing records and permitting scoped progress writes', () async {
     final directory = await Directory.systemTemp.createTemp(
       'blackgrid-v7-progress-',

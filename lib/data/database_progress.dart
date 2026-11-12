@@ -1,5 +1,143 @@
 part of 'database.dart';
 
+/// The active progress cycle and log-reading position for one game mode.
+@DataClassName('ProgressWipeRecord')
+class ProgressWipes extends Table {
+  TextColumn get mode => text()();
+  TextColumn get cycleId => text()();
+  TextColumn get startDate => text()();
+  TextColumn get lastFolder => text().nullable()();
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column> get primaryKey => {mode};
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (mode IN ('pvp', 'pve', 'seasonal'))",
+    'FOREIGN KEY (mode, cycle_id) REFERENCES progress_cycles (mode, cycle_id)',
+  ];
+}
+
+String _wipeDate(DateTime date) {
+  if (date.year < 0 || date.year > 9999) {
+    throw ArgumentError.value(date, 'date', 'Year must fit YYYY-MM-DD');
+  }
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}
+
+DateTime _parseWipeDate(String value) {
+  if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
+    throw FormatException('Invalid wipe start date', value);
+  }
+  final date = DateTime(
+    int.parse(value.substring(0, 4)),
+    int.parse(value.substring(5, 7)),
+    int.parse(value.substring(8, 10)),
+  );
+  if (_wipeDate(date) != value) {
+    throw FormatException('Invalid wipe start date', value);
+  }
+  return date;
+}
+
+void _checkWipeMode(GameMode mode) {
+  if (mode == GameMode.unknown) {
+    throw ArgumentError.value(mode, 'mode', 'Unknown game mode');
+  }
+}
+
+mixin _ProgressWipeOperations on _$BlackgridDatabase
+    implements ProgressWipeStore {
+  @override
+  Future<List<ProgressWipe>> readProgressWipes() async {
+    final rows = await customSelect(
+      'SELECT mode, cycle_id, start_date, last_folder, updated_at_ms '
+      'FROM progress_wipes',
+    ).get();
+    return [
+      for (final row in rows)
+        ProgressWipe(
+          mode: GameMode.values.byName(row.read<String>('mode')),
+          cycleId: row.read<String>('cycle_id'),
+          startDate: _parseWipeDate(row.read<String>('start_date')),
+          lastFolder: row.readNullable<String>('last_folder'),
+          updatedAtMs: row.read<int>('updated_at_ms'),
+        ),
+    ];
+  }
+
+  @override
+  Future<void> replaceProgressWipe(ProgressWipe wipe) async {
+    _checkWipeMode(wipe.mode);
+    await customStatement(
+      'INSERT INTO progress_wipes '
+      '(mode, cycle_id, start_date, last_folder, updated_at_ms) '
+      'VALUES (?, ?, ?, ?, ?) '
+      'ON CONFLICT(mode) DO UPDATE SET cycle_id = excluded.cycle_id, '
+      'start_date = excluded.start_date, last_folder = excluded.last_folder, '
+      'updated_at_ms = excluded.updated_at_ms',
+      [
+        wipe.mode.name,
+        wipe.cycleId,
+        _wipeDate(wipe.startDate),
+        wipe.lastFolder,
+        wipe.updatedAtMs,
+      ],
+    );
+  }
+
+  @override
+  Future<void> advanceProgressWipeFolder(
+    GameMode mode,
+    String folder,
+    int updatedAtMs,
+  ) async {
+    _checkWipeMode(mode);
+    await transaction(() async {
+      final row = await customSelect(
+        'SELECT last_folder FROM progress_wipes WHERE mode = ?',
+        variables: [Variable.withString(mode.name)],
+      ).getSingle();
+      final current = row.readNullable<String>('last_folder');
+      if (current == null || compareSessionFolderNames(folder, current) > 0) {
+        await customStatement(
+          'UPDATE progress_wipes SET last_folder = ?, updated_at_ms = ? '
+          'WHERE mode = ?',
+          [folder, updatedAtMs, mode.name],
+        );
+      }
+    });
+  }
+
+  @override
+  Future<void> moveProgressWipeStartEarlier(
+    GameMode mode,
+    DateTime startDate,
+    int updatedAtMs,
+  ) async {
+    _checkWipeMode(mode);
+    final date = _wipeDate(startDate);
+    await transaction(() async {
+      final row = await customSelect(
+        'SELECT start_date FROM progress_wipes WHERE mode = ?',
+        variables: [Variable.withString(mode.name)],
+      ).getSingle();
+      final current = row.read<String>('start_date');
+      _parseWipeDate(current);
+      if (date.compareTo(current) < 0) {
+        await customStatement(
+          'UPDATE progress_wipes SET start_date = ?, updated_at_ms = ? '
+          'WHERE mode = ?',
+          [date, updatedAtMs, mode.name],
+        );
+      }
+    });
+  }
+}
+
 String _randomProgressId() {
   final random = Random.secure();
   final bytes = List<int>.generate(16, (_) => random.nextInt(256));

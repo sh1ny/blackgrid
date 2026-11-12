@@ -132,7 +132,9 @@ class LocalStatsController extends ChangeNotifier {
           roubles: roubles,
         );
         unawaited(_enqueueWrite(() => _store.recordSale(row)));
-      case RaidEndedTransition() || MatchingAbortedTransition():
+      case RaidEndedTransition() ||
+          MatchingAbortedTransition() ||
+          TaskTransition():
         break;
     }
   }

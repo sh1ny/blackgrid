@@ -5732,6 +5732,381 @@ class ProgressHeadsCompanion extends UpdateCompanion<ProgressHeadRecord> {
   }
 }
 
+class $ProgressWipesTable extends ProgressWipes
+    with TableInfo<$ProgressWipesTable, ProgressWipeRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProgressWipesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cycleIdMeta = const VerificationMeta(
+    'cycleId',
+  );
+  @override
+  late final GeneratedColumn<String> cycleId = GeneratedColumn<String>(
+    'cycle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<String> startDate = GeneratedColumn<String>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastFolderMeta = const VerificationMeta(
+    'lastFolder',
+  );
+  @override
+  late final GeneratedColumn<String> lastFolder = GeneratedColumn<String>(
+    'last_folder',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    mode,
+    cycleId,
+    startDate,
+    lastFolder,
+    updatedAtMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'progress_wipes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProgressWipeRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('cycle_id')) {
+      context.handle(
+        _cycleIdMeta,
+        cycleId.isAcceptableOrUnknown(data['cycle_id']!, _cycleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cycleIdMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('last_folder')) {
+      context.handle(
+        _lastFolderMeta,
+        lastFolder.isAcceptableOrUnknown(data['last_folder']!, _lastFolderMeta),
+      );
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {mode};
+  @override
+  ProgressWipeRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProgressWipeRecord(
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      cycleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cycle_id'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_date'],
+      )!,
+      lastFolder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_folder'],
+      ),
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ProgressWipesTable createAlias(String alias) {
+    return $ProgressWipesTable(attachedDatabase, alias);
+  }
+}
+
+class ProgressWipeRecord extends DataClass
+    implements Insertable<ProgressWipeRecord> {
+  final String mode;
+  final String cycleId;
+  final String startDate;
+  final String? lastFolder;
+  final int updatedAtMs;
+  const ProgressWipeRecord({
+    required this.mode,
+    required this.cycleId,
+    required this.startDate,
+    this.lastFolder,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['mode'] = Variable<String>(mode);
+    map['cycle_id'] = Variable<String>(cycleId);
+    map['start_date'] = Variable<String>(startDate);
+    if (!nullToAbsent || lastFolder != null) {
+      map['last_folder'] = Variable<String>(lastFolder);
+    }
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  ProgressWipesCompanion toCompanion(bool nullToAbsent) {
+    return ProgressWipesCompanion(
+      mode: Value(mode),
+      cycleId: Value(cycleId),
+      startDate: Value(startDate),
+      lastFolder: lastFolder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastFolder),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory ProgressWipeRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProgressWipeRecord(
+      mode: serializer.fromJson<String>(json['mode']),
+      cycleId: serializer.fromJson<String>(json['cycleId']),
+      startDate: serializer.fromJson<String>(json['startDate']),
+      lastFolder: serializer.fromJson<String?>(json['lastFolder']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mode': serializer.toJson<String>(mode),
+      'cycleId': serializer.toJson<String>(cycleId),
+      'startDate': serializer.toJson<String>(startDate),
+      'lastFolder': serializer.toJson<String?>(lastFolder),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  ProgressWipeRecord copyWith({
+    String? mode,
+    String? cycleId,
+    String? startDate,
+    Value<String?> lastFolder = const Value.absent(),
+    int? updatedAtMs,
+  }) => ProgressWipeRecord(
+    mode: mode ?? this.mode,
+    cycleId: cycleId ?? this.cycleId,
+    startDate: startDate ?? this.startDate,
+    lastFolder: lastFolder.present ? lastFolder.value : this.lastFolder,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  ProgressWipeRecord copyWithCompanion(ProgressWipesCompanion data) {
+    return ProgressWipeRecord(
+      mode: data.mode.present ? data.mode.value : this.mode,
+      cycleId: data.cycleId.present ? data.cycleId.value : this.cycleId,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      lastFolder: data.lastFolder.present
+          ? data.lastFolder.value
+          : this.lastFolder,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressWipeRecord(')
+          ..write('mode: $mode, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('startDate: $startDate, ')
+          ..write('lastFolder: $lastFolder, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(mode, cycleId, startDate, lastFolder, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProgressWipeRecord &&
+          other.mode == this.mode &&
+          other.cycleId == this.cycleId &&
+          other.startDate == this.startDate &&
+          other.lastFolder == this.lastFolder &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class ProgressWipesCompanion extends UpdateCompanion<ProgressWipeRecord> {
+  final Value<String> mode;
+  final Value<String> cycleId;
+  final Value<String> startDate;
+  final Value<String?> lastFolder;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const ProgressWipesCompanion({
+    this.mode = const Value.absent(),
+    this.cycleId = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.lastFolder = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProgressWipesCompanion.insert({
+    required String mode,
+    required String cycleId,
+    required String startDate,
+    this.lastFolder = const Value.absent(),
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : mode = Value(mode),
+       cycleId = Value(cycleId),
+       startDate = Value(startDate),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<ProgressWipeRecord> custom({
+    Expression<String>? mode,
+    Expression<String>? cycleId,
+    Expression<String>? startDate,
+    Expression<String>? lastFolder,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (mode != null) 'mode': mode,
+      if (cycleId != null) 'cycle_id': cycleId,
+      if (startDate != null) 'start_date': startDate,
+      if (lastFolder != null) 'last_folder': lastFolder,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProgressWipesCompanion copyWith({
+    Value<String>? mode,
+    Value<String>? cycleId,
+    Value<String>? startDate,
+    Value<String?>? lastFolder,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return ProgressWipesCompanion(
+      mode: mode ?? this.mode,
+      cycleId: cycleId ?? this.cycleId,
+      startDate: startDate ?? this.startDate,
+      lastFolder: lastFolder ?? this.lastFolder,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (cycleId.present) {
+      map['cycle_id'] = Variable<String>(cycleId.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<String>(startDate.value);
+    }
+    if (lastFolder.present) {
+      map['last_folder'] = Variable<String>(lastFolder.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgressWipesCompanion(')
+          ..write('mode: $mode, ')
+          ..write('cycleId: $cycleId, ')
+          ..write('startDate: $startDate, ')
+          ..write('lastFolder: $lastFolder, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$BlackgridDatabase extends GeneratedDatabase {
   _$BlackgridDatabase(QueryExecutor e) : super(e);
   $BlackgridDatabaseManager get managers => $BlackgridDatabaseManager(this);
@@ -5761,6 +6136,7 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
   late final $ProgressCyclesTable progressCycles = $ProgressCyclesTable(this);
   late final $ProgressEventsTable progressEvents = $ProgressEventsTable(this);
   late final $ProgressHeadsTable progressHeads = $ProgressHeadsTable(this);
+  late final $ProgressWipesTable progressWipes = $ProgressWipesTable(this);
   late final Index raidStatRecordsModeStart = Index(
     'raid_stat_records_mode_start',
     'CREATE INDEX raid_stat_records_mode_start ON raid_stat_records (mode, start_ms)',
@@ -5798,6 +6174,7 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     progressCycles,
     progressEvents,
     progressHeads,
+    progressWipes,
     raidStatRecordsModeStart,
     fleaSaleRecordsMode,
     progressEventsScopeSequence,
@@ -9826,6 +10203,229 @@ typedef $$ProgressHeadsTableProcessedTableManager =
       ProgressHeadRecord,
       PrefetchHooks Function({bool eventId})
     >;
+typedef $$ProgressWipesTableCreateCompanionBuilder =
+    ProgressWipesCompanion Function({
+      required String mode,
+      required String cycleId,
+      required String startDate,
+      Value<String?> lastFolder,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$ProgressWipesTableUpdateCompanionBuilder =
+    ProgressWipesCompanion Function({
+      Value<String> mode,
+      Value<String> cycleId,
+      Value<String> startDate,
+      Value<String?> lastFolder,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$ProgressWipesTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ProgressWipesTable> {
+  $$ProgressWipesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastFolder => $composableBuilder(
+    column: $table.lastFolder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProgressWipesTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ProgressWipesTable> {
+  $$ProgressWipesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cycleId => $composableBuilder(
+    column: $table.cycleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastFolder => $composableBuilder(
+    column: $table.lastFolder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProgressWipesTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ProgressWipesTable> {
+  $$ProgressWipesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<String> get cycleId =>
+      $composableBuilder(column: $table.cycleId, builder: (column) => column);
+
+  GeneratedColumn<String> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<String> get lastFolder => $composableBuilder(
+    column: $table.lastFolder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$ProgressWipesTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ProgressWipesTable,
+          ProgressWipeRecord,
+          $$ProgressWipesTableFilterComposer,
+          $$ProgressWipesTableOrderingComposer,
+          $$ProgressWipesTableAnnotationComposer,
+          $$ProgressWipesTableCreateCompanionBuilder,
+          $$ProgressWipesTableUpdateCompanionBuilder,
+          (
+            ProgressWipeRecord,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $ProgressWipesTable,
+              ProgressWipeRecord
+            >,
+          ),
+          ProgressWipeRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProgressWipesTableTableManager(
+    _$BlackgridDatabase db,
+    $ProgressWipesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProgressWipesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProgressWipesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProgressWipesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> mode = const Value.absent(),
+                Value<String> cycleId = const Value.absent(),
+                Value<String> startDate = const Value.absent(),
+                Value<String?> lastFolder = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProgressWipesCompanion(
+                mode: mode,
+                cycleId: cycleId,
+                startDate: startDate,
+                lastFolder: lastFolder,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String mode,
+                required String cycleId,
+                required String startDate,
+                Value<String?> lastFolder = const Value.absent(),
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => ProgressWipesCompanion.insert(
+                mode: mode,
+                cycleId: cycleId,
+                startDate: startDate,
+                lastFolder: lastFolder,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProgressWipesTable, ProgressWipeRecord>(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $ProgressWipesTable,
+                    ProgressWipeRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProgressWipesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ProgressWipesTable,
+      ProgressWipeRecord,
+      $$ProgressWipesTableFilterComposer,
+      $$ProgressWipesTableOrderingComposer,
+      $$ProgressWipesTableAnnotationComposer,
+      $$ProgressWipesTableCreateCompanionBuilder,
+      $$ProgressWipesTableUpdateCompanionBuilder,
+      (
+        ProgressWipeRecord,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ProgressWipesTable,
+          ProgressWipeRecord
+        >,
+      ),
+      ProgressWipeRecord,
+      PrefetchHooks Function()
+    >;
 
 class $BlackgridDatabaseManager {
   final _$BlackgridDatabase _db;
@@ -9862,4 +10462,6 @@ class $BlackgridDatabaseManager {
       $$ProgressEventsTableTableManager(_db, _db.progressEvents);
   $$ProgressHeadsTableTableManager get progressHeads =>
       $$ProgressHeadsTableTableManager(_db, _db.progressHeads);
+  $$ProgressWipesTableTableManager get progressWipes =>
+      $$ProgressWipesTableTableManager(_db, _db.progressWipes);
 }

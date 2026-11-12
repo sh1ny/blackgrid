@@ -33,6 +33,7 @@ import 'map_session_controller.dart';
 import 'progress_controller.dart';
 import 'raid_lifecycle_controller.dart';
 import 'raid_timers_controller.dart';
+import 'task_log_progress_controller.dart';
 import 'scan_coordinator.dart';
 import 'scan_decision_feed.dart';
 import 'scan_epoch.dart';
@@ -118,6 +119,13 @@ class AppServices {
       store: database,
       clock: clock ?? DateTime.now,
     );
+    localProgress = TaskLogProgressController(
+      store: database,
+      wipeStore: database,
+      lifecycle: raidLifecycle,
+      logRoot: () => logReader.root,
+      clock: clock,
+    );
     mapData =
         mapDataController ??
         LiveMapDataController(
@@ -197,6 +205,9 @@ class AppServices {
   /// Stores raids and flea sales as the lifecycle publishes them and serves
   /// the Stats dialog.
   late final LocalStatsController localStats;
+
+  /// Records log task transitions into active local progress wipes.
+  late final TaskLogProgressController localProgress;
 
   /// Owns live scanning: the switch, the worker, the hook and the scan flow.
   late final ScanCoordinator scanner;
@@ -453,6 +464,8 @@ class AppServices {
       }
       await mapSession.close();
     } finally {
+      await localProgress.close();
+      localProgress.dispose();
       // After mapSession.close() has closed the reader it listens to.
       raidTimers.dispose();
       localStats.dispose();

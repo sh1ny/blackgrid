@@ -131,6 +131,9 @@ class LogFileTail {
   /// Absolute offset of the next unread byte.
   int get offset => _offset;
 
+  /// Whether consumed bytes still await a newline, including an over-limit line.
+  bool get hasPendingLine => _line.isNotEmpty || _discardLine;
+
   /// Current size of [file], or -1 when it does not exist.
   Future<int> stat(File file) async => (await file.stat()).size;
 
