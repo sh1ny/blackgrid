@@ -107,7 +107,8 @@ class RaidTimersController extends ChangeNotifier {
         _recordStart(raid);
       case RaidStartedTransition() ||
           MatchingAbortedTransition() ||
-          FleaSoldTransition():
+          FleaSoldTransition() ||
+          TaskTransition():
         break;
     }
   }

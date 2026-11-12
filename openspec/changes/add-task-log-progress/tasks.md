@@ -6,11 +6,11 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| raid-lifecycle → Each task message is published once with its mode | Task finished in the menus | test/domain/raid_lifecycle_task_test.dart | task finished in the menus publishes one transition with folder mode | red |
-| raid-lifecycle → Each task message is published once with its mode | Task message before any mode is logged | test/domain/raid_lifecycle_task_test.dart | task before any mode has no mode | red |
-| raid-lifecycle → Each task message is published once with its mode | Mode from an earlier folder is not carried | test/domain/raid_lifecycle_task_test.dart | folder change clears the task mode | red |
-| raid-lifecycle → Each task message is published once with its mode | Unrecognised mode | test/domain/raid_lifecycle_task_test.dart | unrecognised session mode gives no task mode | red |
-| raid-lifecycle → Each task message is published once with its mode | Replay after an app restart | test/application/raid_lifecycle_controller_test.dart | re-reading a folder republishes task transitions with the same identity | red |
+| raid-lifecycle → Each task message is published once with its mode | Task finished in the menus | test/domain/raid_lifecycle_task_test.dart | task finished in the menus publishes one transition with folder mode | green |
+| raid-lifecycle → Each task message is published once with its mode | Task message before any mode is logged | test/domain/raid_lifecycle_task_test.dart | task before any mode has no mode | green |
+| raid-lifecycle → Each task message is published once with its mode | Mode from an earlier folder is not carried | test/domain/raid_lifecycle_task_test.dart | folder change clears the task mode | green |
+| raid-lifecycle → Each task message is published once with its mode | Unrecognised mode | test/domain/raid_lifecycle_task_test.dart | unrecognised session mode gives no task mode | green |
+| raid-lifecycle → Each task message is published once with its mode | Replay after an app restart | test/application/raid_lifecycle_controller_test.dart | re-reading a folder republishes task transitions with the same identity | green |
 | game-log-input → Older session folders can be read once on request | Same identities as a live read | test/data/game_log/session_folder_read_test.dart | one-shot read matches live read identities and times | red |
 | game-log-input → Older session folders can be read once on request | Folder-date order | test/data/game_log/session_folders_test.dart | lists session folders by date and ignores other entries | red |
 | game-log-input → Older session folders can be read once on request | One-digit hour | test/data/game_log/session_folders_test.dart | one-digit hour sorts before two-digit hour | red |
@@ -68,8 +68,8 @@ Skills for every Dart group (AGENTS.md "Dart and Flutter code"): `dart-use-patte
 
 ## 2. Task transitions and per-folder mode (raid-lifecycle)
 
-- [ ] 2.1 Write failing tests in `test/domain/raid_lifecycle_task_test.dart` for the four reducer rows of the test map, and add the restart re-publish test in `test/application/raid_lifecycle_controller_test.dart`. Verify that they fail because no task transition exists.
-- [ ] 2.2 Add `folderMode` to `RaidLifecycleState`: set by `SessionModeChanged` (null for `GameMode.unknown`), cleared by `SessionFolderChanged` and `LogInputReset`. Add `TaskTransition(id, time, taskId, ProgressTaskStatus status, GameMode? mode)` emitted for `TaskStarted/Failed/Finished`, with doc comments. Verify that the group 2 tests pass, flip their rows green, and confirm with `mise run test` that the flea, side and lifecycle tests stay green.
+- [x] 2.1 Write failing tests in `test/domain/raid_lifecycle_task_test.dart` for the four reducer rows of the test map, and add the restart re-publish test in `test/application/raid_lifecycle_controller_test.dart`. Verify that they fail because no task transition exists.
+- [x] 2.2 Add `folderMode` to `RaidLifecycleState`: set by `SessionModeChanged` (null for `GameMode.unknown`), cleared by `SessionFolderChanged` and `LogInputReset`. Add `TaskTransition(id, time, taskId, ProgressTaskStatus status, GameMode? mode)` emitted for `TaskStarted/Failed/Finished`, with doc comments. Verify that the group 2 tests pass, flip their rows green, and confirm with `mise run test` that the flea, side and lifecycle tests stay green.
 
 ## 3. Session folders and one-shot reads (game-log-input)
 

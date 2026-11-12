@@ -159,9 +159,8 @@ void main() {
         TaskFailed(id, log.t('19:31:00'), 'task'),
         TaskFinished(id, log.t('19:31:00'), 'task'),
       ]) {
-        final (state, published) = reduce(before, event);
+        final (state, _) = reduce(before, event);
         expect(state.phase, RaidPhase.inMenus);
-        expect(published, isEmpty);
       }
       final (moded, published) = reduce(
         before,

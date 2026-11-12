@@ -1,4 +1,5 @@
 import 'catalog.dart';
+import 'local_progress.dart';
 
 /// The three EFT log files the raid lifecycle reads from a session folder.
 enum LogFile {
@@ -455,6 +456,29 @@ final class FleaSoldTransition extends RaidTransition {
   final GameMode? mode;
 }
 
+/// A task state observed in the push-notifications log.
+///
+/// Carries only the mode logged in the same folder and does not change a raid.
+final class TaskTransition extends RaidTransition {
+  /// Creates a task observation with its original record identity and time.
+  const TaskTransition(
+    super.id,
+    super.time,
+    this.taskId,
+    this.status,
+    this.mode,
+  );
+
+  /// The task identity as given by the game.
+  final String taskId;
+
+  /// The observed task state.
+  final ProgressTaskStatus status;
+
+  /// The known same-folder mode, or `null` before a recognised mode.
+  final GameMode? mode;
+}
+
 const _keep = Object();
 
 /// The immutable state [reduce] folds log events into.
@@ -468,6 +492,7 @@ final class RaidLifecycleState {
     this.currentFolder,
     this.transitPossible = false,
     this.sessionMode,
+    this.folderMode,
     this.guardTime,
     this.queueEnteredTime,
     this.pendingCountdown,
@@ -497,6 +522,9 @@ final class RaidLifecycleState {
 
   /// The last session mode logged, remembered for the next raid.
   final GameMode? sessionMode;
+
+  /// The recognised mode logged in this folder, cleared on folder change.
+  final GameMode? folderMode;
 
   /// The queue or rejoin time; a raid exit or profile selection logged
   /// before it ends nothing.
@@ -537,6 +565,7 @@ final class RaidLifecycleState {
     Object? currentFolder = _keep,
     bool? transitPossible,
     Object? sessionMode = _keep,
+    Object? folderMode = _keep,
     Object? guardTime = _keep,
     Object? queueEnteredTime = _keep,
     Object? pendingCountdown = _keep,
@@ -555,6 +584,9 @@ final class RaidLifecycleState {
     sessionMode: identical(sessionMode, _keep)
         ? this.sessionMode
         : sessionMode as GameMode?,
+    folderMode: identical(folderMode, _keep)
+        ? this.folderMode
+        : folderMode as GameMode?,
     guardTime: identical(guardTime, _keep)
         ? this.guardTime
         : guardTime as DateTime?,
@@ -598,7 +630,10 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
       LogInputReset() => (RaidLifecycleState.initial, const []),
       final SessionFolderChanged e => _folderChanged(state, e),
       final SessionModeChanged e => (
-        state.copyWith(sessionMode: e.mode),
+        state.copyWith(
+          sessionMode: e.mode,
+          folderMode: e.mode == GameMode.unknown ? null : e.mode,
+        ),
         const [],
       ),
       final ProfileSelected e => _profileSelected(state, e),
@@ -626,7 +661,42 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
           ),
         ],
       ),
-      TaskStarted() || TaskFailed() || TaskFinished() => (state, const []),
+      final TaskStarted e => (
+        state,
+        [
+          TaskTransition(
+            e.id,
+            e.time,
+            e.taskId,
+            ProgressTaskStatus.started,
+            state.folderMode,
+          ),
+        ],
+      ),
+      final TaskFailed e => (
+        state,
+        [
+          TaskTransition(
+            e.id,
+            e.time,
+            e.taskId,
+            ProgressTaskStatus.failed,
+            state.folderMode,
+          ),
+        ],
+      ),
+      final TaskFinished e => (
+        state,
+        [
+          TaskTransition(
+            e.id,
+            e.time,
+            e.taskId,
+            ProgressTaskStatus.finished,
+            state.folderMode,
+          ),
+        ],
+      ),
     };
 
 bool _isLoading(RaidPhase phase) => switch (phase) {
@@ -645,6 +715,7 @@ RaidReduction _folderChanged(RaidLifecycleState state, SessionFolderChanged e) {
   return (
     state.copyWith(
       currentFolder: e.folder,
+      folderMode: null,
       transitPossible: false,
       restartProfile: null,
       raid: raid == null ? state.raid : raid.withInterrupted(value: true),
