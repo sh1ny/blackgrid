@@ -7,7 +7,7 @@ Lets the player enter their own progress for a game mode by hand (level, faction
 ## ADDED Requirements
 
 ### Requirement: Manual entries are manual events in the mode's active wipe
-Each manual entry SHALL append one manual-sourced event to the chosen mode's active wipe, with a new random event ID, the device ID and the current UTC time in milliseconds. It SHALL NOT write to another mode or wipe. The store's ordering SHALL decide between it and log events: newer log evidence beats it, and it beats older log evidence.
+Each manual entry SHALL append one manual-sourced event to the chosen mode's active wipe, with a new random event ID, the device ID and the current UTC time in milliseconds, except for Redo's ordering floor specified below. It SHALL NOT write to another mode or wipe. The store's ordering SHALL decide between it and log events: newer log evidence beats it, and it beats older log evidence.
 
 #### Scenario: Set level
 - **WHEN** the player sets PvE level 34 and PvE has an active wipe
@@ -100,7 +100,7 @@ Each player, trader and station value SHALL offer a clear action that records an
 - **THEN** its clear action is disabled and nothing is recorded
 
 ### Requirement: The last manual change of a value can be undone and redone
-When a value's winner is a manual edit that is not an undo, Undo SHALL restore the preceding value or unknown through the store's guarded undo. When the winner is an undo, the control SHALL read Redo and record a new manual edit with the value that undo removed, after which it reads Undo again. An undo SHALL never be undone. Neither SHALL be offered for a log winner or a value with no event. A stale undo SHALL report the conflict and change nothing.
+Manual non-undo winners SHALL offer guarded store Undo to the preceding value or unknown. Undo winners SHALL offer Redo: a new manual edit restoring the removed value, then offering Undo. Redo alone SHALL apply the floor `max(now, undo.occurredAtMs + 1)`, with `now` in UTC milliseconds and that undo verified as winner. An undo SHALL never be undone. Log winners and values without events SHALL offer neither. Stale Undo SHALL report conflict without recording an event.
 
 #### Scenario: Undo a level change
 - **WHEN** the level went from 30 to 34 by hand and the player undoes
@@ -113,6 +113,14 @@ When a value's winner is a manual edit that is not an undo, Undo SHALL restore t
 #### Scenario: Undo after redo
 - **WHEN** after that redo the player chooses Undo
 - **THEN** the current level is 30 and the control reads Redo
+
+#### Scenario: Redo after clock rollback
+- **WHEN** the level went from 30 to 34 by hand, the player undoes, the clock moves back before the edit's time and the player chooses Redo
+- **THEN** the current level is 34, the redo event sorts strictly after the verified undo winner, and Undo is offered again
+
+#### Scenario: Redo within the same millisecond
+- **WHEN** the player chooses Redo while the clock still reads the undo event's occurrence time
+- **THEN** the undone value becomes current regardless of random event-ID ordering, with a redo occurrence time strictly after that undo
 
 #### Scenario: Winner came from the logs
 - **WHEN** task T's current state was recorded from the game logs

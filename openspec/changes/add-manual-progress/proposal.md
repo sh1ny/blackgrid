@@ -16,7 +16,7 @@ It advances two M9 exit criteria:
   - the loyalty level of each trader that has more than one loyalty level, bounded by that trader's real levels;
   - the built level of each hideout station, from not built up to the station's highest level;
   - the state of any task of the mode (not started, started, failed or finished), found by searching task names, with each task showing its current state and whether it came from the game logs or by hand.
-- Every entry is appended as one manual event in the mode's active wipe. A value can be cleared back to unknown. The last manual change of a value can be undone, and an undo can be redone, using the store's guarded undo.
+- Every entry is appended as one manual event in the mode's active wipe. A value can be cleared back to unknown. The last manual change of a value can be undone, and an undo can be redone, using the store's guarded undo. Redo alone has a timestamp floor after the verified undo winner; ordinary manual entries retain wall-clock timestamps and existing log precedence.
 - When the mode has no active wipe, the first entry creates one, as the log path does, starting on the earlier of today and the current game-log session folder's date, then records the entry.
 - The task catalog keeps each trader's loyalty level numbers from tarkov.dev, so the loyalty picker lists real levels only.
 - Nothing that reads progress changes: keep/sell advice, raid timers and task state still come from the Tracker token until `retire-tracker-token`.
@@ -75,7 +75,7 @@ DECISION_MAKING: important
 
 ### S4: Task overrides are search, set and undo
 
-- **Choice:** search the mode's tasks by name, see each one's state and its source, set a state (not started records unknown), undo the last manual change and redo an undo. Redo amended after design review round 1 (user decision): the store's undo restores its target's predecessor, so a second undo re-applies the undone value.
+- **Choice:** search the mode's tasks by name, see each one's state and its source, set a state (not started records unknown), undo the last manual change and redo an undo. Redo amended after design review round 1 (user decision): the store's undo restores its target's predecessor, so a second undo re-applies the undone value. After PR review, the owner approved a Redo-only timestamp floor strictly after the verified undo winner, including when the clock does not advance or moves backward; ordinary manual/log ordering stays unchanged.
 - **Rejected:** also showing availability (overlaps the checklist); set only without undo (leaves the store's undo unused and mistakes harder to fix).
 - **Reversal cost:** low
 - **Important:** yes: changes what users see.
@@ -107,7 +107,7 @@ DECISION_MAKING: important
 
 ## Release Notes
 
-You can now enter your own progress for each game mode in Settings: level, faction, edition, trader loyalty, built hideout stations, and the state of any quest the game logs missed. The last change of each value can be undone, and an undo can be redone. Advice still uses Tracker progress for now.
+You can now enter your own progress for each game mode in Settings: level, faction, edition, trader loyalty, built hideout stations, and the state of any quest the game logs missed. The last change of each value can be undone, and an undo can be redone. Redo remains effective when the system clock moves backward. Advice still uses Tracker progress for now.
 
 ### Added
 

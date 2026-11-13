@@ -78,11 +78,11 @@ See proposal.md for scope (S1-S7). Current state the approach depends on:
 
 ### D7: Redo is a new manual edit, so undo chains never form
 
-- **Choice:** Undo is offered only when the winner is a manual event with no `undoOf`; it calls the store's guarded undo. When the winner is a compensation (`undoOf` set), the control reads Redo: inside one queued operation the access layer reads the compensation's target by ID through a new `LocalProgressStore.readProgressEvent(scope, eventId)` (one row by its unique ID, same validation as history reads), checks the compensation is still the register's winner, and appends a new ordinary manual edit with the target's value. The new edit is not an undo, so the control reads Undo again. The label follows from the winner alone: no `undoOf` → Undo, `undoOf` → Redo. Compensations are never undone, so a chain has depth 1.
+- **Choice:** Undo is offered only when the winner is a manual event with no `undoOf`; it calls the store's guarded undo. When the winner is a compensation (`undoOf` set), the control reads Redo: inside one queued operation the access layer reads the compensation's target by ID through a new `LocalProgressStore.readProgressEvent(scope, eventId)` (one row by its unique ID, same validation as history reads), checks the compensation is still the register's winner, and appends a new ordinary manual edit with the target's value. Redo alone uses `max(now, undo.occurredAtMs + 1)` for its occurrence time, where `now` is the clock's UTC milliseconds, so it sorts strictly after that verified compensation even if the clock is unchanged or moves backward. Ordinary manual entries retain the clock's UTC milliseconds and existing log precedence. The new edit is not an undo, so the control reads Undo again. The label follows from the winner alone: no `undoOf` → Undo, `undoOf` → Redo. Compensations are never undone, so a chain has depth 1.
 - **Rejected:** Redo as the store's undo of the compensation, because the result is an undo of an undo whose label would need the parity of the whole `undoOf` chain, which the projection does not hold; a session-memory label map, because it is lost on restart.
 - **Reversal cost:** low (one read-only store method; no stored-format change)
 - **Important:** no (the user-visible Undo/Redo behaviour is S4's; this is its mechanism)
-- **Chosen by:** agent
+- **Chosen by:** user (Redo-only timestamp floor approved after PR review; the original mechanism was agent-chosen)
 
 ### Decision summary
 
@@ -101,7 +101,7 @@ See proposal.md for scope (S1-S7). Current state the approach depends on:
 | D4 | Mode change while queued | Write goes to the submitting mode | Drop queued writes | low | no | agent |
 | D5 | Validation and pending state | Per value, before the queue | Global busy flag | low | no | agent |
 | D6 | Task search | In-memory, 50 shown | List every task | low | no | agent |
-| D7 | Redo mechanism | New manual edit with the undone value, via a by-ID event read | Store undo of the compensation; session label map | low | no | agent |
+| D7 | Redo mechanism | New manual edit with the undone value, via a by-ID event read, timestamped strictly after the verified undo winner | Store undo of the compensation; session label map; wall-clock-only Redo | low | no | user |
 
 ## Diagrams (FULL)
 
@@ -198,6 +198,7 @@ flowchart LR
 - **Catalog changes while open:** the rows are rebuilt from the new catalog; values for IDs no longer listed stay in the store and are not shown.
 - **Double click on Undo:** blocked by the per-value pending flag (D5). A later click on the same value is Redo (S4), which re-applies the undone value.
 - **Clock behind the newest log event:** a manual edit with an older time loses to the log event and the shown value does not change (see Mechanism ledger).
+- **Clock unchanged or moved backward during Redo:** after verifying the compensation is still the winner, only Redo applies an occurrence-time floor of that undo's timestamp plus 1 ms (D7); its value becomes current and a subsequent Undo restores the preceding value. Ordinary manual edits are not lifted.
 - **Restart mid-operation:** an append is atomic; the worst case is a missing entry.
 
 ## Mechanism Ledger (FULL)
@@ -208,7 +209,8 @@ flowchart LR
 | Per-value pending flag | yes | Double-clicks would create two events or a spurious undo conflict | none |
 | Coalesced projection re-read on a revision signal, only while shown | yes | The log controller notifies on every lifecycle batch and per folder during runs; reading on each would put a full `readCurrent` on the shared queue all session and slow catch-up and replay | none |
 | Optional traders in stored catalog (format 1) | yes | Stored format is expensive to change later | none |
-| Timestamp lift (write at max(now, current winner + 1 ms)) so manual always wins | no | Rare: log times come from the same machine's clock; when it happens the unchanged value is visible | Reports of edits that "don't stick" after clock changes |
+| Timestamp lift for ordinary manual entries so they always win | no | Rare: log times come from the same machine's clock; when it happens the unchanged value is visible | Reports of edits that "don't stick" after clock changes |
+| Redo-only ordering floor | yes | Undo may timestamp its compensation after the clock; Redo must sort after the verified undo winner even at an unchanged or backward clock, without changing ordinary manual/log precedence | none |
 | Automatic retry of failed writes | no | ADR-0041 forbids automatic retry; failures are shown | none |
 | Undo history list (multi-step undo) | no | The store's undo restores its target's greatest strict predecessor, so undoing a compensation would re-apply the value it undid (`database_progress.dart:854-922`, ADR-0041). Compensations are therefore never undone: Redo is a new edit (D7), and stepping further back means setting the value by hand. A compensation that restores a log value shows "Set by hand", since its winner is a manual event | Owner asks for multi-step undo or a history view |
 | Separate progress-catalog decode for non-effective modes | no | S6 chose the effective mode | S6 reversed |
