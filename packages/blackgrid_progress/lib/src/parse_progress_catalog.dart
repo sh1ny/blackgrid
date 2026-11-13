@@ -1,19 +1,22 @@
 import 'progress_catalog.dart';
 
-/// Parses a mode's task and hideout dataset `data` objects and dictionaries.
+/// Parses a mode's task, hideout and optional trader data and dictionaries.
 ///
-/// [tasksData] contains the keyed `tasks` collection; [hideoutData] is the
-/// keyed station collection. Dictionaries contain unwrapped English text.
-/// Throws [FormatException] for invalid identities, level numbers or required
-/// references. Newly retained malformed facts remain unknown. Existing item
-/// validation belongs to the caller and is not replaced by this parser.
+/// [tasksData] contains the keyed `tasks` collection; [hideoutData] and
+/// [rawTraders] contain keyed station and trader collections. Dictionaries
+/// contain unwrapped English text. Absent trader data leaves traders unknown;
+/// malformed trader levels leave only those levels unknown. Throws
+/// [FormatException] for invalid identities, station level numbers or required
+/// references. Existing item validation belongs to the caller.
 ProgressCatalog parseProgressCatalog(
   Object? tasksData,
   Object? hideoutData,
   Set<String> traderIds,
   Map<String, dynamic>? taskDictionary,
-  Map<String, dynamic>? hideoutDictionary,
-) {
+  Map<String, dynamic>? hideoutDictionary, {
+  Object? rawTraders,
+  Map<String, dynamic>? traderDictionary,
+}) {
   final tasks = _entities(_wireMap(tasksData)['tasks']);
   final stations = _entities(hideoutData);
   final taskIds = tasks.keys.toSet();
@@ -221,10 +224,35 @@ ProgressCatalog parseProgressCatalog(
     );
   }
 
+  CatalogTraderLevels trader(Map<String, dynamic> wire) {
+    final id = _id(wire['id']);
+    final normalized = _text(wire['normalizedName']);
+    return CatalogTraderLevels(
+      id: id,
+      name: _translation(traderDictionary, wire['name']) ?? normalized ?? id,
+      normalizedName: normalized,
+      levels: _traderLevels(wire['levels']),
+    );
+  }
+
   return ProgressCatalog(
     tasks: tasks.values.map(task),
     stations: stations.values.map(station),
+    traders: rawTraders == null
+        ? null
+        : _entities(rawTraders).values.map(trader),
   );
+}
+
+List<int>? _traderLevels(Object? value) {
+  if (value is! List<Object?> || value.isEmpty) return null;
+  final seen = <int>{};
+  for (final row in value) {
+    if (row is! Map<String, dynamic>) return null;
+    final level = _integer(row['level']);
+    if (level == null || level < 1 || !seen.add(level)) return null;
+  }
+  return seen.toList()..sort();
 }
 
 List<OtherRequirement>? _otherRequirements(Object? value) {

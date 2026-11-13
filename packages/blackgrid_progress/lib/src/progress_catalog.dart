@@ -1,4 +1,4 @@
-/// Immutable task and hideout catalog models and their stored JSON form.
+/// Immutable task, trader and hideout catalog models and their stored JSON.
 library;
 
 part 'progress_catalog_tasks.dart';
@@ -135,7 +135,47 @@ enum ObjectiveType {
   unknown,
 }
 
-/// A mode's immutable tasks and hideout stations.
+/// A trader and its available loyalty levels.
+final class CatalogTraderLevels {
+  /// Creates a trader, copying its loyalty levels when known.
+  CatalogTraderLevels({
+    required this.id,
+    required this.name,
+    this.normalizedName,
+    Iterable<int>? levels,
+  }) : levels = _freeze(levels);
+
+  /// Restores a trader from stored JSON.
+  factory CatalogTraderLevels.fromJson(Map<String, Object?> json) =>
+      CatalogTraderLevels(
+        id: _required(json['id']),
+        name: _required(json['name']),
+        normalizedName: _optional(json['normalizedName']),
+        levels: _optionalList(json['levels'], _required<int>),
+      );
+
+  /// The trader ID.
+  final String id;
+
+  /// The English display name.
+  final String name;
+
+  /// The normalized source name, if known.
+  final String? normalizedName;
+
+  /// The ascending loyalty level numbers, or null when unknown.
+  final List<int>? levels;
+
+  /// Encodes the trader and its loyalty levels.
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'name': name,
+    'normalizedName': normalizedName,
+    'levels': levels,
+  };
+}
+
+/// A mode's immutable tasks, hideout stations and optional traders.
 ///
 /// Indexes and shared objective flags are derived on construction and are not
 /// part of the stored representation.
@@ -144,6 +184,7 @@ final class ProgressCatalog {
   factory ProgressCatalog({
     required Iterable<CatalogTask> tasks,
     required Iterable<HideoutStation> stations,
+    Iterable<CatalogTraderLevels>? traders,
   }) {
     final inputTasks = List<CatalogTask>.unmodifiable(tasks);
     final owners = <String, String>{};
@@ -171,6 +212,7 @@ final class ProgressCatalog {
           ? inputTasks
           : List<CatalogTask>.unmodifiable(changedTasks),
       stationList,
+      _freeze(traders),
       Map<String, CatalogTask>.unmodifiable(taskIndex),
       Map<String, HideoutStation>.unmodifiable({
         for (final station in stationList) station.id: station,
@@ -182,6 +224,7 @@ final class ProgressCatalog {
   ProgressCatalog._(
     this.tasks,
     this.stations,
+    this.traders,
     this.tasksById,
     this.stationsById,
     this.sharedObjectiveIds,
@@ -204,6 +247,10 @@ final class ProgressCatalog {
         json['stations'],
         (v) => HideoutStation.fromJson(_object(v)),
       ),
+      traders: _optionalList(
+        json['traders'],
+        (v) => CatalogTraderLevels.fromJson(_object(v)),
+      ),
     );
   }
 
@@ -212,6 +259,9 @@ final class ProgressCatalog {
 
   /// The hideout stations in source order.
   final List<HideoutStation> stations;
+
+  /// The traders in source order, or null when not available.
+  final List<CatalogTraderLevels>? traders;
 
   /// Tasks indexed by their IDs.
   final Map<String, CatalogTask> tasksById;
@@ -227,6 +277,8 @@ final class ProgressCatalog {
     'formatVersion': 1,
     'tasks': tasks.map((task) => task.toJson()).toList(),
     'stations': stations.map((station) => station.toJson()).toList(),
+    if (traders != null)
+      'traders': traders!.map((trader) => trader.toJson()).toList(),
   };
 }
 

@@ -1,4 +1,4 @@
-/// Task and hideout progress catalog models and availability data.
+/// Task, trader and hideout progress catalog models and availability data.
 library;
 
 export 'src/progress_catalog.dart';

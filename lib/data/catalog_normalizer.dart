@@ -473,6 +473,8 @@ CatalogSnapshot normalizeCatalog(CatalogWireCandidate wire) {
       traders.keys.toSet(),
       dictionaries['tasks'],
       dictionaries['hideout'],
+      rawTraders: rawTraders,
+      traderDictionary: dictionaries['traders'],
     ),
   );
 }

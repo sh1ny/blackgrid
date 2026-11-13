@@ -6,12 +6,12 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| task-catalog → Traders and their loyalty levels are retained | Traders with levels | packages/blackgrid_progress/test/parse_traders_test.dart | keeps trader levels in ascending order | red |
-| task-catalog → Traders and their loyalty levels are retained | Traders with levels (no extra request) | test/data/catalog_normalizer_progress_test.dart | passes raw traders to the progress catalog without another request | red |
-| task-catalog → Traders and their loyalty levels are retained | Malformed levels | packages/blackgrid_progress/test/parse_traders_test.dart | missing or non-positive levels become unknown | red |
-| task-catalog → Traders and their loyalty levels are retained | Duplicate level numbers | packages/blackgrid_progress/test/parse_traders_test.dart | duplicate level numbers become unknown | red |
-| task-catalog → Stored catalogs without traders still load | Older stored catalog | packages/blackgrid_progress/test/progress_catalog_json_test.dart | catalog stored without traders loads with traders unknown | red |
-| task-catalog → Stored catalogs without traders still load | Round trip | packages/blackgrid_progress/test/progress_catalog_json_test.dart | traders round trip at format version 1 | red |
+| task-catalog → Traders and their loyalty levels are retained | Traders with levels | packages/blackgrid_progress/test/parse_traders_test.dart | keeps trader levels in ascending order | green |
+| task-catalog → Traders and their loyalty levels are retained | Traders with levels (no extra request) | test/data/catalog_normalizer_progress_test.dart | passes raw traders to the progress catalog without another request | green |
+| task-catalog → Traders and their loyalty levels are retained | Malformed levels | packages/blackgrid_progress/test/parse_traders_test.dart | missing or non-positive levels become unknown | green |
+| task-catalog → Traders and their loyalty levels are retained | Duplicate level numbers | packages/blackgrid_progress/test/parse_traders_test.dart | duplicate level numbers become unknown | green |
+| task-catalog → Stored catalogs without traders still load | Older stored catalog | packages/blackgrid_progress/test/progress_catalog_json_test.dart | catalog stored without traders loads with traders unknown | green |
+| task-catalog → Stored catalogs without traders still load | Round trip | packages/blackgrid_progress/test/progress_catalog_json_test.dart | traders round trip at format version 1 | green |
 | local-progress → One event can be read by its ID | Read an undo's target | test/data/local_progress_store_test.dart | readProgressEvent returns the event and keeps the revision | red |
 | local-progress → One event can be read by its ID | ID from another cycle | test/data/local_progress_store_test.dart | readProgressEvent does not find another cycle's event | red |
 | local-progress → One event can be read by its ID | Damaged event | test/data/local_progress_store_test.dart | readProgressEvent reports a damaged event as unavailable | red |
@@ -57,10 +57,10 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 1. Traders in the progress catalog
 
-- [ ] 1.1 Write failing package tests for trader levels (`parse_traders_test.dart`: levels kept ascending, malformed or missing levels unknown, duplicates unknown) and for the stored form (`progress_catalog_json_test.dart`: older catalog without `traders` loads with traders unknown; round trip at `formatVersion: 1`). Verify with `mise run test` that they fail for the missing API.
-- [ ] 1.2 Add `CatalogTraderLevels` and the optional `traders` list to `ProgressCatalog` (JSON at format version 1, absent = null) and parse traders in `parseProgressCatalog` from the raw `traders` data and its dictionary (D2). Document the public API. Verify the 1.1 tests pass and flip their rows green.
-- [ ] 1.3 Write a failing test in `test/data/catalog_normalizer_progress_test.dart` that the normalizer passes raw traders through and makes the same requests as before; then pass `rawTraders` and the `traders` dictionary to `parseProgressCatalog` in `lib/data/catalog_normalizer.dart`. Verify it passes, the package audit test still passes, and flip the row green.
-- [ ] 1.4 Update the `blackgrid_progress` row of `openspec/architecture.md` to name trader loyalty levels. Verify `mise run analyze` is clean.
+- [x] 1.1 Write failing package tests for trader levels (`parse_traders_test.dart`: levels kept ascending, malformed or missing levels unknown, duplicates unknown) and for the stored form (`progress_catalog_json_test.dart`: older catalog without `traders` loads with traders unknown; round trip at `formatVersion: 1`). Verify with `mise run test` that they fail for the missing API.
+- [x] 1.2 Add `CatalogTraderLevels` and the optional `traders` list to `ProgressCatalog` (JSON at format version 1, absent = null) and parse traders in `parseProgressCatalog` from the raw `traders` data and its dictionary (D2). Document the public API. Verify the 1.1 tests pass and flip their rows green.
+- [x] 1.3 Write a failing test in `test/data/catalog_normalizer_progress_test.dart` that the normalizer passes raw traders through and makes the same requests as before; then pass `rawTraders` and the `traders` dictionary to `parseProgressCatalog` in `lib/data/catalog_normalizer.dart`. Verify it passes, the package audit test still passes, and flip the row green.
+- [x] 1.4 Update the `blackgrid_progress` row of `openspec/architecture.md` to name trader loyalty levels. Verify `mise run analyze` is clean.
 
 ## 2. Single-event read in the progress store
 
