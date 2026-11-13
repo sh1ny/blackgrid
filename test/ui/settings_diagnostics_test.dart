@@ -24,8 +24,15 @@ Finder _inSettings(String text) =>
     find.descendant(of: find.byType(SettingsPage), matching: find.text(text));
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
-  await tester.pumpAndSettle();
+  await tester.runAsync(() async {
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+    await tester.pumpAndSettle();
+    await tester
+        .widget<SettingsPage>(find.byType(SettingsPage))
+        .services
+        .localProgress
+        .settled;
+  });
   // Fail rather than pass vacuously when the section is not there.
   expect(_toggle, findsOneWidget);
   await tester.ensureVisible(_toggle);
@@ -170,19 +177,22 @@ void main() {
         return rig;
       }))!;
       addTearDown(rig.close);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: blackgridTheme(Brightness.dark),
-          home: Scaffold(
-            body: SettingsPage(
-              services: rig.services,
-              backLabel: 'Back to Map',
-              onBack: () {},
-              flush: SettingsFlushController(),
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: blackgridTheme(Brightness.dark),
+            home: Scaffold(
+              body: SettingsPage(
+                services: rig.services,
+                backLabel: 'Back to Map',
+                onBack: () {},
+                flush: SettingsFlushController(),
+              ),
             ),
           ),
-        ),
-      );
+        );
+        await rig.services.localProgress.settled;
+      });
       await tester.pumpAndSettle();
       await tester.ensureVisible(_toggle);
       await tester.pumpAndSettle();

@@ -139,7 +139,7 @@ void main() {
   );
 
   testWidgets('section labels are sentence case', (tester) async {
-    await pumpM1(tester);
+    final h = await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
     expect(find.text('Scan evidence'), findsOneWidget);
@@ -153,8 +153,11 @@ void main() {
     ]) {
       expect(find.text(old), findsNothing);
     }
-    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
-    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+      await tester.pumpAndSettle();
+      await h.services.localProgress.settled;
+    });
     expect(find.byKey(const Key('settings-title-liveScan')), findsOneWidget);
     expect(find.text('LIVE SCAN'), findsNothing);
     // Recent scans lives in Diagnostics, which starts collapsed.

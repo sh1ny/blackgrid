@@ -45,15 +45,15 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | manual-progress → Entry failures are visible and change nothing | During a raid | test/application/local_progress_access_test.dart | manual entry is recorded during a raid | green |
 | manual-progress → Shown values follow the store | Log event arrives | test/application/manual_progress_controller_test.dart | a progress revision change re-reads while shown | green |
 | manual-progress → Shown values follow the store | New wipe | test/application/manual_progress_controller_test.dart | a new wipe shows every value unknown | green |
-| manual-progress → Consumers keep their current progress source | Advice unchanged | test/application/app_services_test.dart | manual level does not change advice progress | red |
-| manual-progress → Consumers keep their current progress source | No token | test/application/app_services_test.dart | manual values without a token leave advice without progress | red |
-| settings-page → Local progress holds a Your progress part | Shows the effective mode | test/ui/settings/settings_your_progress_test.dart | titled for the effective mode | red |
+| manual-progress → Consumers keep their current progress source | Advice unchanged | test/application/app_services_test.dart | manual level does not change advice progress | green |
+| manual-progress → Consumers keep their current progress source | No token | test/application/app_services_test.dart | manual values without a token leave advice without progress | green |
+| settings-page → Local progress holds a Your progress part | Shows the effective mode | test/ui/settings/settings_your_progress_test.dart | titled for the effective mode | green |
 | settings-page → Local progress holds a Your progress part | Effective mode changes while open | test/application/manual_progress_controller_test.dart | write submitted for PvE lands in PvE after a mode switch | green |
-| settings-page → Local progress holds a Your progress part | Unknown mode | test/ui/settings/settings_your_progress_test.dart | unknown mode asks to choose a game mode | red |
-| settings-page → Local progress holds a Your progress part | Mode without a wipe | test/ui/settings/settings_your_progress_test.dart | mode without a wipe explains the first entry | red |
-| settings-page → Your progress values show their source | Source shown | test/ui/settings/settings_your_progress_test.dart | values show From game logs or Set by hand | red |
-| settings-page → Your progress values show their source | Failure shown | test/ui/settings/settings_your_progress_test.dart | a failure shows beside its row with the previous value | red |
-| settings-page → (existing) Settings sections and their order | Sidebar order | test/ui/settings/settings_page_test.dart | existing sidebar order test | green |
+| settings-page → Local progress holds a Your progress part | Unknown mode | test/ui/settings/settings_your_progress_test.dart | unknown mode asks to choose a game mode | green |
+| settings-page → Local progress holds a Your progress part | Mode without a wipe | test/ui/settings/settings_your_progress_test.dart | mode without a wipe explains the first entry | green |
+| settings-page → Your progress values show their source | Source shown | test/ui/settings/settings_your_progress_test.dart | values show From game logs or Set by hand | green |
+| settings-page → Your progress values show their source | Failure shown | test/ui/settings/settings_your_progress_test.dart | a failure shows beside its row with the previous value | green |
+| settings-page → (existing) Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sections sidebar lists nine sections in order | green |
 
 ## 1. Traders in the progress catalog
 
@@ -82,10 +82,10 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 5. Your progress in Settings
 
-- [ ] 5.1 Write failing widget tests in `test/ui/settings/settings_your_progress_test.dart` for the rows mapped to that file (title for the effective mode, unknown mode, mode without a wipe, source labels, failure beside its row), using small synthetic catalogs. Verify they fail.
-- [ ] 5.2 Build the Your progress part (player values, trader loyalty, stations, task search, set/clear/Undo-or-Redo controls, edition display names for the five `editionTable` IDs with a test that every table edition has a name) after the wipe rows in `LocalProgressSettings`, attaching the controller while mounted. Verify the 5.1 tests pass, `settings_local_progress_test.dart` and `settings_page_test.dart` (sidebar order row) still pass, and flip the rows green.
-- [ ] 5.3 Build `ManualProgressController` in `AppServices` over `localProgress`, `catalog` and `mapSession.effectiveMode`, dispose it before the database closes, and pass it to Settings. Write the `app_services_test.dart` tests that a manual level leaves advice's progress unchanged with and without a Tracker token; verify they pass and flip their rows green.
-- [ ] 5.4 Update `openspec/architecture.md` with a `ManualProgressController` row. Verify `mise run analyze` and `mise run test` pass, and format with `dart format`.
+- [x] 5.1 Write failing widget tests in `test/ui/settings/settings_your_progress_test.dart` for the rows mapped to that file (title for the effective mode, unknown mode, mode without a wipe, source labels, failure beside its row), using small synthetic catalogs. Verify they fail.
+- [x] 5.2 Build the Your progress part (player values, trader loyalty, stations, task search, set/clear/Undo-or-Redo controls, edition display names for the five `editionTable` IDs with a test that every table edition has a name) after the wipe rows in `LocalProgressSettings`, attaching the controller while mounted. Verify the 5.1 tests pass, `settings_local_progress_test.dart` and `settings_page_test.dart` (sidebar order row) still pass, and flip the rows green.
+- [x] 5.3 Build `ManualProgressController` in `AppServices` over `localProgress`, `catalog` and `mapSession.effectiveMode`, dispose it before the database closes, and pass it to Settings. Write the `app_services_test.dart` tests that a manual level leaves advice's progress unchanged with and without a Tracker token; verify they pass and flip their rows green.
+- [x] 5.4 Update `openspec/architecture.md` with a `ManualProgressController` row. Verify `mise run analyze` and `mise run test` pass, and format with `dart format`.
 
 ## 6. Integration and user check
 

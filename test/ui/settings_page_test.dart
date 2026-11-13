@@ -69,31 +69,35 @@ Future<void> _pump(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final controller = flush ?? SettingsFlushController();
-  await tester.pumpWidget(
-    MaterialApp(
-      theme: blackgridTheme(Brightness.dark),
-      home: Scaffold(
-        body: version == null
-            ? SettingsPage(
-                services: services,
-                backLabel: 'Back to Map',
-                onBack: () {},
-                flush: controller,
-                section: section,
-                request: request,
-              )
-            : SettingsPage(
-                services: services,
-                backLabel: 'Back to Map',
-                onBack: () {},
-                flush: controller,
-                section: section,
-                request: request,
-                version: version,
-              ),
+  // Mount in the real zone: Your progress starts ledger reads in initState.
+  await tester.runAsync(() async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: blackgridTheme(Brightness.dark),
+        home: Scaffold(
+          body: version == null
+              ? SettingsPage(
+                  services: services,
+                  backLabel: 'Back to Map',
+                  onBack: () {},
+                  flush: controller,
+                  section: section,
+                  request: request,
+                )
+              : SettingsPage(
+                  services: services,
+                  backLabel: 'Back to Map',
+                  onBack: () {},
+                  flush: controller,
+                  section: section,
+                  request: request,
+                  version: version,
+                ),
+        ),
       ),
-    ),
-  );
+    );
+    await services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
 }
 

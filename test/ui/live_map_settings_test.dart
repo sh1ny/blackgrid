@@ -149,19 +149,22 @@ Future<void> _pumpSettings(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  await tester.pumpWidget(
-    MaterialApp(
-      theme: blackgridTheme(Brightness.dark),
-      home: Scaffold(
-        body: SettingsPage(
-          services: services,
-          backLabel: 'Back to Map',
-          onBack: onBack ?? () {},
-          flush: SettingsFlushController(),
+  await tester.runAsync(() async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: blackgridTheme(Brightness.dark),
+        home: Scaffold(
+          body: SettingsPage(
+            services: services,
+            backLabel: 'Back to Map',
+            onBack: onBack ?? () {},
+            flush: SettingsFlushController(),
+          ),
         ),
       ),
-    ),
-  );
+    );
+    await services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
 }
 

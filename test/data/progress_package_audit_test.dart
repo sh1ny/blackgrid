@@ -187,24 +187,6 @@ void main() {
     expect(offenders, isEmpty);
   });
 
-  test('no UI or application code reads the task catalog yet', () {
-    final offenders = <String>[];
-    for (final root in ['lib/ui', 'lib/application']) {
-      for (final file in _filesUnder(Directory(root))) {
-        final source = file.readAsStringSync();
-        for (final reference in [
-          'progressCatalog',
-          'package:blackgrid_progress',
-        ]) {
-          if (source.contains(reference)) {
-            offenders.add('${file.path}: $reference');
-          }
-        }
-      }
-    }
-    expect(offenders, isEmpty);
-  });
-
   test(
     'import audit recognizes directives without matching comments or strings',
     () {

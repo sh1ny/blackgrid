@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../application/manual_progress_controller.dart';
 import '../../application/task_log_progress_controller.dart';
 import '../../domain/catalog.dart';
 import '../../domain/progress_wipe_store.dart';
 import '../ember/ember_tokens.dart';
 import '../ember/theme_access.dart';
 import '../labels.dart';
+import 'your_progress_panel.dart';
 
 const _modes = [GameMode.pvp, GameMode.pve, GameMode.seasonal];
 
@@ -18,10 +20,14 @@ class LocalProgressSettings extends StatefulWidget {
     super.key,
     required this.controller,
     this.clock,
+    this.manualProgress,
   });
 
   /// The source of wipe and log-reading state and actions.
   final TaskLogProgressSource controller;
+
+  /// The effective mode's manual progress, when available.
+  final ManualProgressController? manualProgress;
 
   /// The current local time, or `null` to use the system clock.
   final DateTime Function()? clock;
@@ -140,6 +146,8 @@ class _LocalProgressSettingsState extends State<LocalProgressSettings> {
               padding: const EdgeInsets.only(top: EmberSpace.sm),
               child: Text(message, style: error),
             ),
+          if (widget.manualProgress case final manualProgress?)
+            YourProgressPanel(controller: manualProgress),
         ],
       );
     },

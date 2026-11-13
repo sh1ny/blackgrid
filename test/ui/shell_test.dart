@@ -1262,7 +1262,11 @@ void main() {
     });
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+      await tester.pumpAndSettle();
+      await h.services.localProgress.settled;
+    });
     await tester.pumpAndSettle();
     final panel = find.byKey(const Key('settings-live-scan'));
     final toggle = find.descendant(
@@ -1295,7 +1299,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('recording-stop-note')), findsOneWidget);
     expect(find.textContaining('synthetic disk failure'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+      await tester.pumpAndSettle();
+      await h.services.localProgress.settled;
+    });
     await tester.pumpAndSettle();
     expect(
       find.descendant(
@@ -1342,7 +1350,11 @@ void main() {
       });
       await tester.tap(find.byKey(const Key('nav-scanner')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Settings'));
+      await tester.runAsync(() async {
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        await h.services.localProgress.settled;
+      });
       await tester.pumpAndSettle();
       final panel = find.byKey(const Key('settings-live-scan'));
       final toggle = find.descendant(
@@ -1378,7 +1390,11 @@ void main() {
       expect(tester.getTopLeft(note).dy, greaterThanOrEqualTo(0));
       expect(tester.getBottomRight(note).dy, lessThanOrEqualTo(720));
       expect(find.textContaining('synthetic disk failure'), findsOneWidget);
-      await tester.tap(find.byTooltip('Settings'));
+      await tester.runAsync(() async {
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        await h.services.localProgress.settled;
+      });
       await tester.pumpAndSettle();
       expect(
         find.descendant(
@@ -1397,9 +1413,13 @@ void main() {
     });
   }
   testWidgets('workspace-shell: Settings targets', (tester) async {
-    await pumpM1(tester);
+    final h = await pumpM1(tester);
     Future<void> check(String key, String section) async {
-      await tester.tap(find.byKey(Key(key)));
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(Key(key)));
+        await tester.pumpAndSettle();
+        await h.services.localProgress.settled;
+      });
       await tester.pumpAndSettle();
       final page = find.byType(SettingsPage);
       expect(page, findsOneWidget);
@@ -1419,8 +1439,12 @@ void main() {
   testWidgets('workspace-shell: Settings target while the page is open', (
     tester,
   ) async {
-    await pumpM1(tester);
-    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+    final h = await pumpM1(tester);
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+      await tester.pumpAndSettle();
+      await h.services.localProgress.settled;
+    });
     await tester.pumpAndSettle();
     final page = find.byType(SettingsPage);
     final tracker = find.byKey(const Key('settings-title-tracker'));
@@ -2312,7 +2336,11 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.byKey(const Key('status-item-data')));
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('status-item-data')));
+        await tester.pumpAndSettle();
+        await h.services.localProgress.settled;
+      });
       await tester.pumpAndSettle();
 
       expect(find.byType(SettingsPage), findsOneWidget);

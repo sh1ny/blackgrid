@@ -1,4 +1,5 @@
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,7 +20,14 @@ import 'dart:io';
 
 /// Opens the Settings page from the top bar.
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+  final services = tester
+      .widget<BlackgridApp>(find.byType(BlackgridApp))
+      .services;
+  await tester.runAsync(() async {
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+    await tester.pumpAndSettle();
+    await services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
   expect(find.byType(SettingsPage), findsOneWidget);
 }

@@ -10,6 +10,7 @@ import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/map_diagnostics.dart';
 import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
+import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_row.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,14 @@ bool _followOn(WidgetTester tester) => tester
     .on;
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+  final services = tester
+      .widget<BlackgridApp>(find.byType(BlackgridApp))
+      .services;
+  await tester.runAsync(() async {
+    await tester.tap(find.widgetWithText(TextButton, 'Settings'));
+    await tester.pumpAndSettle();
+    await services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
 }
 

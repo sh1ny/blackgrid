@@ -102,9 +102,10 @@ void main() {
           'Fence';
 
       final requests = <http.Request>[];
-      final snapshot = await _client(wire, requests: requests).fetch(
-        GameMode.pve,
-      );
+      final snapshot = await _client(
+        wire,
+        requests: requests,
+      ).fetch(GameMode.pve);
       const paths = {
         'items',
         'traders',

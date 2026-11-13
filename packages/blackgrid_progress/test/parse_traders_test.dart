@@ -8,17 +8,12 @@ ProgressCatalog _parseTraders(Map<String, dynamic> traders) =>
       {
         'tasks': {'task-a': taskWire('task-a')},
       },
-      {
-        'station-a': stationWire('station-a'),
-      },
+      {'station-a': stationWire('station-a')},
       {'trader-a', 'trader-b'},
       null,
       null,
       rawTraders: traders,
-      traderDictionary: {
-        'prapor-name': 'Prapor',
-        'fence-name': 'Fence',
-      },
+      traderDictionary: {'prapor-name': 'Prapor', 'fence-name': 'Fence'},
     );
 
 Map<String, dynamic> _trader(
@@ -66,7 +61,9 @@ void main() {
       'missing': <String, dynamic>{},
       'null': {'levels': null},
       'not a list': {'levels': '1'},
-      'non-object row': {'levels': [1]},
+      'non-object row': {
+        'levels': [1],
+      },
       'missing number': {
         'levels': [<String, Object?>{}],
       },
@@ -111,7 +108,9 @@ void main() {
           {'level': 1},
         ]),
       });
-      final traders = {for (final trader in catalog.traders!) trader.id: trader};
+      final traders = {
+        for (final trader in catalog.traders!) trader.id: trader,
+      };
       expect(traders['trader-a']!.levels, isNull, reason: entry.key);
       expect(traders['trader-b']!.levels, [1, 2], reason: entry.key);
       expect(catalog.tasks.single.id, 'task-a', reason: entry.key);
