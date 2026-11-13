@@ -334,11 +334,19 @@ mixin _LocalProgressOperations on _$BlackgridDatabase
 
   Future<ProgressEvent?> _progressEventById(
     String id,
-    ProgressScope affectedScope,
-  ) async {
+    ProgressScope affectedScope, {
+    bool restrictToScope = false,
+  }) async {
     final rows = await _progressSelect(
-      'SELECT $_progressEventColumns FROM progress_events WHERE event_id = ?',
-      [id],
+      'SELECT $_progressEventColumns FROM progress_events WHERE event_id = ?'
+      '${restrictToScope ? ' AND mode = ? AND cycle_id = ?' : ''}',
+      [
+        id,
+        if (restrictToScope) ...[
+          affectedScope.mode.name,
+          affectedScope.cycleId,
+        ],
+      ],
     );
     return rows.isEmpty ? null : _decodeProgressRow(rows.single, affectedScope);
   }
@@ -651,6 +659,23 @@ mixin _LocalProgressOperations on _$BlackgridDatabase
         _rememberProgressValidation(cycle);
         return cycle;
       });
+
+  @override
+  Future<ProgressResult<ProgressEvent?>> readProgressEvent(
+    ProgressScope scope,
+    String eventId,
+  ) => _progressOperation(() async {
+    _checkProgressScope(scope);
+    ProgressEventCodec.validateIdentity(eventId);
+    return transaction(() async {
+      final cycle = await _progressCycle(scope);
+      if (_validatedProgressScope != scope ||
+          _validatedProgressRevision != cycle.revision) {
+        await _scanProgressHistory(scope, rebuild: false);
+      }
+      return _progressEventById(eventId, scope, restrictToScope: true);
+    });
+  });
 
   @override
   Future<ProgressResult<ProgressHistoryPage>> readProgressHistory(

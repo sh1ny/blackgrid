@@ -12,9 +12,9 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | task-catalog → Traders and their loyalty levels are retained | Duplicate level numbers | packages/blackgrid_progress/test/parse_traders_test.dart | duplicate level numbers become unknown | green |
 | task-catalog → Stored catalogs without traders still load | Older stored catalog | packages/blackgrid_progress/test/progress_catalog_json_test.dart | catalog stored without traders loads with traders unknown | green |
 | task-catalog → Stored catalogs without traders still load | Round trip | packages/blackgrid_progress/test/progress_catalog_json_test.dart | traders round trip at format version 1 | green |
-| local-progress → One event can be read by its ID | Read an undo's target | test/data/local_progress_store_test.dart | readProgressEvent returns the event and keeps the revision | red |
-| local-progress → One event can be read by its ID | ID from another cycle | test/data/local_progress_store_test.dart | readProgressEvent does not find another cycle's event | red |
-| local-progress → One event can be read by its ID | Damaged event | test/data/local_progress_store_test.dart | readProgressEvent reports a damaged event as unavailable | red |
+| local-progress → One event can be read by its ID | Read an undo's target | test/data/local_progress_store_test.dart | readProgressEvent returns the event and keeps the revision | green |
+| local-progress → One event can be read by its ID | ID from another cycle | test/data/local_progress_store_test.dart | readProgressEvent does not find another cycle's event | green |
+| local-progress → One event can be read by its ID | Damaged event | test/data/local_progress_store_test.dart | readProgressEvent reports a damaged event as unavailable | green |
 | manual-progress → Manual entries are manual events in the mode's active wipe | Set level | test/application/local_progress_access_test.dart | appendManual records one manual level event | red |
 | manual-progress → Manual entries are manual events in the mode's active wipe | Newer log event beats the edit | test/application/local_progress_access_test.dart | a newer log event beats an older manual edit | red |
 | manual-progress → Manual entries are manual events in the mode's active wipe | Edit beats older log evidence | test/application/local_progress_access_test.dart | a newer manual edit beats older log evidence | red |
@@ -64,9 +64,9 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 2. Single-event read in the progress store
 
-- [ ] 2.1 Write failing tests in `test/data/local_progress_store_test.dart` for `readProgressEvent(scope, eventId)`: returns the event with unchanged revision, not found for another cycle's ID, unavailable for a damaged event with bytes kept. Verify they fail.
-- [ ] 2.2 Add `readProgressEvent` to `LocalProgressStore` (with a not-found result) and implement it in the Drift adapter on the existing by-ID lookup, admitted like other operations. Update fakes implementing the interface. Verify the 2.1 tests pass and flip their rows green.
-- [ ] 2.3 Update the `LocalProgressStore` row of `openspec/architecture.md` to list the single-event read. Verify `mise run analyze` is clean.
+- [x] 2.1 Write failing tests in `test/data/local_progress_store_test.dart` for `readProgressEvent(scope, eventId)`: returns the event with unchanged revision, not found for another cycle's ID, unavailable for a damaged event with bytes kept. Verify they fail.
+- [x] 2.2 Add `readProgressEvent` to `LocalProgressStore` (with a not-found result) and implement it in the Drift adapter on the existing by-ID lookup, admitted like other operations. Update fakes implementing the interface. Verify the 2.1 tests pass and flip their rows green.
+- [x] 2.3 Update the `LocalProgressStore` row of `openspec/architecture.md` to list the single-event read. Verify `mise run analyze` is clean.
 
 ## 3. LocalProgressAccess on the shared queue
 

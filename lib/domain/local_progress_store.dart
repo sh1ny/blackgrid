@@ -252,6 +252,16 @@ abstract interface class LocalProgressStore {
     Iterable<ProgressEvent> events,
   );
 
+  /// Reads the event identified by [eventId] in [scope].
+  ///
+  /// Returns `null` when the ID is absent from this scope, including when it
+  /// belongs to another cycle or mode. Damaged or unsupported history returns
+  /// [ProgressUnavailable]. The read changes no event, winner or revision.
+  Future<ProgressResult<ProgressEvent?>> readProgressEvent(
+    ProgressScope scope,
+    String eventId,
+  );
+
   /// Reads a bounded insertion-ordered page of history for [scope].
   ///
   /// [limit] must be between 1 and [progressPageLimit], inclusive. The first
