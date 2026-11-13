@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -14,6 +13,7 @@ import '../domain/import_preview.dart';
 import '../domain/local_stats.dart';
 import '../domain/local_progress.dart';
 import '../domain/local_progress_store.dart';
+import '../domain/progress_id.dart';
 import '../domain/raid_lifecycle.dart';
 import '../domain/progress_wipe_store.dart';
 import 'game_log/session_folders.dart';

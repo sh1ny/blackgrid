@@ -15,13 +15,13 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | local-progress → One event can be read by its ID | Read an undo's target | test/data/local_progress_store_test.dart | readProgressEvent returns the event and keeps the revision | green |
 | local-progress → One event can be read by its ID | ID from another cycle | test/data/local_progress_store_test.dart | readProgressEvent does not find another cycle's event | green |
 | local-progress → One event can be read by its ID | Damaged event | test/data/local_progress_store_test.dart | readProgressEvent reports a damaged event as unavailable | green |
-| manual-progress → Manual entries are manual events in the mode's active wipe | Set level | test/application/local_progress_access_test.dart | appendManual records one manual level event | red |
-| manual-progress → Manual entries are manual events in the mode's active wipe | Newer log event beats the edit | test/application/local_progress_access_test.dart | a newer log event beats an older manual edit | red |
-| manual-progress → Manual entries are manual events in the mode's active wipe | Edit beats older log evidence | test/application/local_progress_access_test.dart | a newer manual edit beats older log evidence | red |
-| manual-progress → Manual entries are manual events in the mode's active wipe | Other mode unchanged | test/application/local_progress_access_test.dart | appendManual writes only the submitting mode | red |
-| manual-progress → The first entry creates a wipe when none is active | No wipe yet | test/application/local_progress_access_test.dart | first entry creates a wipe starting today without a folder | red |
-| manual-progress → The first entry creates a wipe when none is active | Session began before midnight | test/application/local_progress_access_test.dart | wipe starts on the earlier live folder date and keeps later live events | red |
-| manual-progress → The first entry creates a wipe when none is active | Creation fails | test/application/local_progress_access_test.dart | failed cycle creation records nothing and reports | red |
+| manual-progress → Manual entries are manual events in the mode's active wipe | Set level | test/application/local_progress_access_test.dart | appendManual records one manual level event | green |
+| manual-progress → Manual entries are manual events in the mode's active wipe | Newer log event beats the edit | test/application/local_progress_access_test.dart | a newer log event beats an older manual edit | green |
+| manual-progress → Manual entries are manual events in the mode's active wipe | Edit beats older log evidence | test/application/local_progress_access_test.dart | a newer manual edit beats older log evidence | green |
+| manual-progress → Manual entries are manual events in the mode's active wipe | Other mode unchanged | test/application/local_progress_access_test.dart | appendManual writes only the submitting mode | green |
+| manual-progress → The first entry creates a wipe when none is active | No wipe yet | test/application/local_progress_access_test.dart | first entry creates a wipe starting today without a folder | green |
+| manual-progress → The first entry creates a wipe when none is active | Session began before midnight | test/application/local_progress_access_test.dart | wipe starts on the earlier live folder date and keeps later live events | green |
+| manual-progress → The first entry creates a wipe when none is active | Creation fails | test/application/local_progress_access_test.dart | failed cycle creation records nothing and reports | green |
 | manual-progress → Player values are bounded | Edition chosen | test/application/manual_progress_controller_test.dart | edition choices come from the edition table | red |
 | manual-progress → Player values are bounded | Level out of range | test/application/manual_progress_controller_test.dart | level outside 1-79 is rejected before the queue | red |
 | manual-progress → Trader loyalty uses the trader's real levels | Fence bounded | test/application/manual_progress_controller_test.dart | loyalty choices follow the trader's catalog levels | red |
@@ -33,16 +33,16 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | manual-progress → Task states can be overridden by search | No match | test/application/manual_progress_controller_test.dart | search with no match lists nothing | red |
 | manual-progress → Any value can be cleared to unknown | Clear level | test/application/manual_progress_controller_test.dart | clear records unset and reads unknown | red |
 | manual-progress → Any value can be cleared to unknown | Clear unknown value | test/application/manual_progress_controller_test.dart | clear is disabled for an unknown value | red |
-| manual-progress → The last manual change of a value can be undone and redone | Undo a level change | test/application/local_progress_access_test.dart | undo restores the previous value and keeps history | red |
-| manual-progress → The last manual change of a value can be undone and redone | Redo after undo | test/application/local_progress_access_test.dart | redo appends a new manual edit with the undone value | red |
+| manual-progress → The last manual change of a value can be undone and redone | Undo a level change | test/application/local_progress_access_test.dart | undo restores the previous value and keeps history | green |
+| manual-progress → The last manual change of a value can be undone and redone | Redo after undo | test/application/local_progress_access_test.dart | redo appends a new manual edit with the undone value | green |
 | manual-progress → The last manual change of a value can be undone and redone | Undo after redo | test/application/manual_progress_controller_test.dart | undo after redo restores the earlier value and offers redo | red |
 | manual-progress → The last manual change of a value can be undone and redone | Winner came from the logs | test/application/manual_progress_controller_test.dart | no undo or redo for a log winner | red |
-| manual-progress → The last manual change of a value can be undone and redone | Stale undo | test/application/local_progress_access_test.dart | stale undo or redo reports a conflict and records nothing | red |
-| manual-progress → Entry failures are visible and change nothing | Entry during replay | test/application/local_progress_access_test.dart | manual entry queued during replay is recorded between chunks | red |
+| manual-progress → The last manual change of a value can be undone and redone | Stale undo | test/application/local_progress_access_test.dart | stale undo or redo reports a conflict and records nothing | green |
+| manual-progress → Entry failures are visible and change nothing | Entry during replay | test/application/local_progress_access_test.dart | manual entry queued during replay is recorded between chunks | green |
 | manual-progress → Entry failures are visible and change nothing | Storage failure | test/application/manual_progress_controller_test.dart | storage failure is shown beside the value and nothing changes | red |
 | manual-progress → Entry failures are visible and change nothing | Damaged wipe | test/application/manual_progress_controller_test.dart | unavailable wipe disables entry with its reason | red |
 | manual-progress → Entry failures are visible and change nothing | Local progress not loaded | test/application/manual_progress_controller_test.dart | failed initial load disables entry for every mode | red |
-| manual-progress → Entry failures are visible and change nothing | During a raid | test/application/local_progress_access_test.dart | manual entry is recorded during a raid | red |
+| manual-progress → Entry failures are visible and change nothing | During a raid | test/application/local_progress_access_test.dart | manual entry is recorded during a raid | green |
 | manual-progress → Shown values follow the store | Log event arrives | test/application/manual_progress_controller_test.dart | a progress revision change re-reads while shown | red |
 | manual-progress → Shown values follow the store | New wipe | test/application/manual_progress_controller_test.dart | a new wipe shows every value unknown | red |
 | manual-progress → Consumers keep their current progress source | Advice unchanged | test/application/app_services_test.dart | manual level does not change advice progress | red |
@@ -70,10 +70,10 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 3. LocalProgressAccess on the shared queue
 
-- [ ] 3.1 Move `_randomProgressId` into a public domain-level UUID v4 helper used by the data layer, and add an injectable ID generator to `TaskLogProgressController`. Verify existing `local_progress_store_test.dart` and `task_log_progress_controller_test.dart` still pass.
-- [ ] 3.2 Write failing tests in `test/application/local_progress_access_test.dart` (fake store, fake lifecycle, fake clock, fixed IDs) for every row mapped to that file: manual append, log/manual ordering both ways, mode isolation, wipe start on today or the earlier live folder date with later live events kept, failed creation, undo, redo as a new edit, stale undo and stale redo conflicts, entry queued during replay, entry during a raid, and `progressRevision` moving only on inserted events, undo, wipe creation/replacement and availability change. Verify they fail.
-- [ ] 3.3 Define `LocalProgressAccess` (`appendManual`, `undo`, `redo`, `readCurrent`, `progressRevision`, load state) with sealed results and implement it on `TaskLogProgressController`, each call one `enqueueProgress` operation (D1, D4, D7); raise `progressRevision` only on data changes (D3). Verify the 3.2 tests pass, all existing `task_log_progress_controller_test.dart` tests pass, and flip the rows green.
-- [ ] 3.4 Update the `TaskLogProgressController` row of `openspec/architecture.md` to name manual writes through `LocalProgressAccess`. Verify `mise run analyze` is clean.
+- [x] 3.1 Move `_randomProgressId` into a public domain-level UUID v4 helper used by the data layer, and add an injectable ID generator to `TaskLogProgressController`. Verify existing `local_progress_store_test.dart` and `task_log_progress_controller_test.dart` still pass.
+- [x] 3.2 Write failing tests in `test/application/local_progress_access_test.dart` (fake store, fake lifecycle, fake clock, fixed IDs) for every row mapped to that file: manual append, log/manual ordering both ways, mode isolation, wipe start on today or the earlier live folder date with later live events kept, failed creation, undo, redo as a new edit, stale undo and stale redo conflicts, entry queued during replay, entry during a raid, and `progressRevision` moving only on inserted events, undo, wipe creation/replacement and availability change. Verify they fail.
+- [x] 3.3 Define `LocalProgressAccess` (`appendManual`, `undo`, `redo`, `readCurrent`, `progressRevision`, load state) with sealed results and implement it on `TaskLogProgressController`, each call one `enqueueProgress` operation (D1, D4, D7); raise `progressRevision` only on data changes (D3). Verify the 3.2 tests pass, all existing `task_log_progress_controller_test.dart` tests pass, and flip the rows green.
+- [x] 3.4 Update the `TaskLogProgressController` row of `openspec/architecture.md` to name manual writes through `LocalProgressAccess`. Verify `mise run analyze` is clean.
 
 ## 4. ManualProgressController
 

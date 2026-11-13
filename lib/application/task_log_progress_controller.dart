@@ -8,9 +8,11 @@ import '../data/game_log/session_folders.dart';
 import '../domain/catalog.dart';
 import '../domain/local_progress.dart';
 import '../domain/local_progress_store.dart';
+import '../domain/progress_id.dart';
 import '../domain/progress_wipe_store.dart';
 import '../domain/raid_lifecycle.dart';
 import '../domain/task_log_events.dart';
+import 'local_progress_access.dart';
 import 'raid_timers_controller.dart';
 
 /// The operation that produced a log-reading result.
@@ -118,8 +120,9 @@ Future<FolderTaskRead> _readInIsolate(String path) =>
 DateTime _date(DateTime value) => DateTime(value.year, value.month, value.day);
 
 class _OperationFailure implements Exception {
-  _OperationFailure(this.message);
+  _OperationFailure(this.message, [this.failure]);
   final String message;
+  final ProgressStoreFailure? failure;
   @override
   String toString() => message;
 }
@@ -138,6 +141,7 @@ T _value<T>(ProgressResult<T> result) => switch (result) {
   ProgressSuccess<T>(:final value) => value,
   ProgressFailure<T>(:final failure) => throw _OperationFailure(
     _failureMessage(failure),
+    failure,
   ),
 };
 
@@ -180,7 +184,7 @@ class _Run {
 
 /// Owns active wipes and serializes all local progress operations.
 class TaskLogProgressController extends ChangeNotifier
-    implements TaskLogProgressSource {
+    implements TaskLogProgressSource, LocalProgressAccess {
   /// Subscribes immediately and loads the active wipes and their cycles.
   TaskLogProgressController({
     required this._store,
@@ -190,9 +194,11 @@ class TaskLogProgressController extends ChangeNotifier
     Future<List<SessionFolder>> Function(String)? folderLister,
     Future<FolderTaskRead> Function(String)? folderReader,
     DateTime Function()? clock,
+    String Function()? newId,
   }) : _folderLister = folderLister ?? listSessionFolders,
        _folderReader = folderReader ?? _readInIsolate,
-       _clock = clock ?? DateTime.now {
+       _clock = clock ?? DateTime.now,
+       _newId = newId ?? newProgressId {
     _subscription = _lifecycle.transitions.listen(_onTransition);
     _lifecycle.addListener(_onLifecycle);
     ready = enqueueProgress(_load);
@@ -206,6 +212,7 @@ class TaskLogProgressController extends ChangeNotifier
   final Future<List<SessionFolder>> Function(String) _folderLister;
   final Future<FolderTaskRead> Function(String) _folderReader;
   final DateTime Function() _clock;
+  final String Function() _newId;
   late final StreamSubscription<RaidTransition> _subscription;
   Future<void> _queue = Future.value();
   Future<void>? _runFuture;
@@ -215,6 +222,9 @@ class TaskLogProgressController extends ChangeNotifier
   bool _catchUpPending = true;
   String? _deviceId;
   bool _wipesLoaded = false;
+  bool _loaded = false;
+  String? _loadError;
+  int _progressRevision = 0;
   int _liveNoMode = 0;
   int _liveIdentityOverBudget = 0;
   int _liveConflicting = 0;
@@ -249,6 +259,13 @@ class TaskLogProgressController extends ChangeNotifier
     _queue = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
     return result;
   }
+
+  @override
+  bool get loaded => _loaded;
+  @override
+  String? get loadError => _loadError;
+  @override
+  int get progressRevision => _progressRevision;
 
   @override
   Map<GameMode, ProgressWipe> get wipes => Map.unmodifiable(_wipes);
@@ -298,28 +315,236 @@ class TaskLogProgressController extends ChangeNotifier
     if (!_closed && !_disposed) notifyListeners();
   }
 
+  void _progressChanged() {
+    _progressRevision++;
+    _notify();
+  }
+
+  void _markUnavailable(ProgressStoreFailure failure) {
+    if (failure is ProgressUnavailable &&
+        _wipes[failure.scope.mode]?.scope == failure.scope &&
+        _unavailable.add(failure.scope.mode)) {
+      _progressChanged();
+    }
+  }
+
+  Future<ProgressResult<T>> _access<T>(Future<T> Function() operation) {
+    if (_closed) {
+      return Future.value(
+        ProgressFailure<T>(
+          const ProgressStorageFailure('Local progress is closed.'),
+        ),
+      );
+    }
+    return enqueueProgress(() async {
+      try {
+        return ProgressSuccess<T>(await operation());
+      } on _OperationFailure catch (error) {
+        final failure = error.failure ?? ProgressStorageFailure(error.message);
+        _markUnavailable(failure);
+        return ProgressFailure<T>(failure);
+      } catch (error) {
+        return ProgressFailure<T>(ProgressStorageFailure(error.toString()));
+      }
+    });
+  }
+
+  void _checkAccess(GameMode mode) {
+    if (mode == GameMode.unknown) {
+      throw _OperationFailure(
+        'A game mode is required.',
+        const ProgressInvalidInput('A game mode is required.'),
+      );
+    }
+    if (!_loaded) {
+      throw _OperationFailure(
+        _loadError ?? 'Local progress is not loaded.',
+        ProgressStorageFailure(_loadError ?? 'Local progress is not loaded.'),
+      );
+    }
+    if (_unavailable.contains(mode)) {
+      final scope = _wipes[mode]!.scope;
+      throw _OperationFailure(
+        'The active wipe for ${mode.name} is unavailable.',
+        ProgressUnavailable(
+          scope: scope,
+          reason: 'The active wipe is unavailable.',
+        ),
+      );
+    }
+  }
+
+  ProgressWipe _matchingWipe(GameMode mode, String cycleId) {
+    _checkAccess(mode);
+    final wipe = _wipes[mode];
+    if (wipe == null || wipe.cycleId != cycleId) {
+      throw _OperationFailure(
+        'The active wipe has changed.',
+        const ProgressUndoConflict('The active wipe has changed.'),
+      );
+    }
+    return wipe;
+  }
+
+  Never _undoConflict() => throw _OperationFailure(
+    'The value has changed.',
+    const ProgressUndoConflict('The value has changed.'),
+  );
+
+  Future<Map<ProgressTarget, ProgressEvent>> _readWinners(
+    ProgressScope scope,
+  ) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final winners = <ProgressTarget, ProgressEvent>{};
+      ProgressCurrentCursor? cursor;
+      while (true) {
+        final result = await _store.readProgressCurrent(scope, cursor: cursor);
+        if (result is ProgressFailure<ProgressCurrentPage> &&
+            result.failure is ProgressStaleCursor &&
+            attempt == 0) {
+          break;
+        }
+        final page = _value(result);
+        for (final event in page.events) {
+          winners[event.target] = event;
+        }
+        cursor = page.nextCursor;
+        if (cursor == null) return winners;
+      }
+    }
+    throw StateError('Current progress traversal did not finish.');
+  }
+
+  Future<ProgressEvent> _appendManualEvent(
+    ProgressWipe wipe,
+    ProgressTarget target,
+    ProgressValue value,
+  ) async {
+    final event = ProgressEvent(
+      eventId: _newId(),
+      deviceId: _deviceId!,
+      occurredAtMs: _clock().toUtc().millisecondsSinceEpoch,
+      scope: wipe.scope,
+      source: ProgressSource.manual,
+      target: target,
+      value: value,
+    );
+    final result = _value(
+      await _store.appendProgressEvents(wipe.scope, [event]),
+    );
+    if (result.insertedCount > 0) _progressChanged();
+    return event;
+  }
+
+  @override
+  Future<ProgressResult<ProgressEvent>> appendManual(
+    GameMode mode,
+    ProgressTarget target,
+    ProgressValue value,
+  ) => _access(() async {
+    _checkAccess(mode);
+    final today = _date(_clock());
+    final folder = _lifecycle.state.currentFolder;
+    final folderTime = folder == null ? null : parseSessionFolderTime(folder);
+    final folderDate = folderTime == null ? null : _date(folderTime);
+    final start = folderDate != null && folderDate.isBefore(today)
+        ? folderDate
+        : today;
+    final wipe = await _ensureWipe(mode, start);
+    return _appendManualEvent(wipe, target, value);
+  });
+
+  @override
+  Future<ProgressResult<ProgressEvent>> undo(
+    GameMode mode,
+    String cycleId,
+    String targetEventId,
+  ) => _access(() async {
+    final wipe = _matchingWipe(mode, cycleId);
+    final target = _value(
+      await _store.readProgressEvent(wipe.scope, targetEventId),
+    );
+    if (target == null ||
+        target.source != ProgressSource.manual ||
+        target.undoOf != null) {
+      _undoConflict();
+    }
+    final event = _value(
+      await _store.undoProgress(
+        wipe.scope,
+        targetEventId: targetEventId,
+        requestEventId: _newId(),
+      ),
+    );
+    _progressChanged();
+    return event;
+  });
+
+  @override
+  Future<ProgressResult<ProgressEvent>> redo(
+    GameMode mode,
+    String cycleId,
+    String undoEventId,
+  ) => _access(() async {
+    final wipe = _matchingWipe(mode, cycleId);
+    final undo = _value(
+      await _store.readProgressEvent(wipe.scope, undoEventId),
+    );
+    if (undo == null ||
+        undo.source != ProgressSource.manual ||
+        undo.undoOf == null) {
+      _undoConflict();
+    }
+    final winners = await _readWinners(wipe.scope);
+    if (winners[undo.target]?.eventId != undo.eventId) _undoConflict();
+    final target = _value(
+      await _store.readProgressEvent(wipe.scope, undo.undoOf!),
+    );
+    if (target == null ||
+        target.source != ProgressSource.manual ||
+        target.undoOf != null ||
+        target.target != undo.target) {
+      _undoConflict();
+    }
+    return _appendManualEvent(wipe, target.target, target.value);
+  });
+
+  @override
+  Future<ProgressResult<LocalProgressSnapshot>> readCurrent(GameMode mode) =>
+      _access(() async {
+        _checkAccess(mode);
+        final wipe = _wipes[mode];
+        if (wipe == null) {
+          return LocalProgressSnapshot(scope: null, winners: const {});
+        }
+        return LocalProgressSnapshot(
+          scope: wipe.scope,
+          winners: await _readWinners(wipe.scope),
+        );
+      });
+
   Future<void> _load() async {
     try {
       final rows = await _wipeStore.readProgressWipes();
       for (final wipe in rows) {
         _wipes[wipe.mode] = wipe;
         _catchUpModes.add(wipe.mode);
-        _unavailable.add(wipe.mode);
+        // Availability is established by opening each active cycle below.
       }
       _wipesLoaded = true;
       for (final wipe in rows) {
         final result = await _store.openProgressCycle(wipe.scope);
         if (result is ProgressFailure<ProgressCycle>) {
-          _unavailable.add(wipe.mode);
+          if (_unavailable.add(wipe.mode)) _progressChanged();
           _error =
               'Some task progress could not be opened: ${_failureMessage(result.failure)}';
-        } else {
-          _unavailable.remove(wipe.mode);
         }
       }
       _deviceId = _value(await _store.progressDeviceId());
+      _loaded = true;
     } catch (error) {
-      _error = 'Some task progress could not be loaded: $error';
+      _loadError = 'Some task progress could not be loaded: $error';
+      _error = _loadError;
     }
     _notify();
   }
@@ -387,7 +612,7 @@ class TaskLogProgressController extends ChangeNotifier
     await _wipeStore.replaceProgressWipe(wipe);
     _wipes[mode] = wipe;
     _unavailable.remove(mode);
-    _notify();
+    _progressChanged();
     return wipe;
   }
 
@@ -428,11 +653,13 @@ class TaskLogProgressController extends ChangeNotifier
     final result = await _store.appendProgressEvents(wipe.scope, events);
     if (result is ProgressSuccess<ProgressAppendResult>) {
       run.eventsRecorded += result.value.insertedCount;
+      if (result.value.insertedCount > 0) _progressChanged();
       _error = null;
       _notify();
       return;
     }
     final failure = (result as ProgressFailure<ProgressAppendResult>).failure;
+    _markUnavailable(failure);
     if (failure is! ProgressIdentityConflict &&
         failure is! ProgressInvalidInput) {
       throw _OperationFailure(_failureMessage(failure));
@@ -449,9 +676,11 @@ class TaskLogProgressController extends ChangeNotifier
       final single = await _store.appendProgressEvents(wipe.scope, [event]);
       if (single is ProgressSuccess<ProgressAppendResult>) {
         run.eventsRecorded += single.value.insertedCount;
+        if (single.value.insertedCount > 0) _progressChanged();
       } else {
         final reason =
             (single as ProgressFailure<ProgressAppendResult>).failure;
+        _markUnavailable(reason);
         if (reason is! ProgressIdentityConflict &&
             reason is! ProgressInvalidInput) {
           throw _OperationFailure(_failureMessage(reason));
