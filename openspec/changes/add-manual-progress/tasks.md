@@ -22,33 +22,33 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | manual-progress → The first entry creates a wipe when none is active | No wipe yet | test/application/local_progress_access_test.dart | first entry creates a wipe starting today without a folder | green |
 | manual-progress → The first entry creates a wipe when none is active | Session began before midnight | test/application/local_progress_access_test.dart | wipe starts on the earlier live folder date and keeps later live events | green |
 | manual-progress → The first entry creates a wipe when none is active | Creation fails | test/application/local_progress_access_test.dart | failed cycle creation records nothing and reports | green |
-| manual-progress → Player values are bounded | Edition chosen | test/application/manual_progress_controller_test.dart | edition choices come from the edition table | red |
-| manual-progress → Player values are bounded | Level out of range | test/application/manual_progress_controller_test.dart | level outside 1-79 is rejected before the queue | red |
-| manual-progress → Trader loyalty uses the trader's real levels | Fence bounded | test/application/manual_progress_controller_test.dart | loyalty choices follow the trader's catalog levels | red |
-| manual-progress → Trader loyalty uses the trader's real levels | Single-level trader | test/application/manual_progress_controller_test.dart | single-level traders are not listed | red |
-| manual-progress → Trader loyalty uses the trader's real levels | No task catalog | test/application/manual_progress_controller_test.dart | without a task catalog only player values are editable | red |
-| manual-progress → Hideout station levels run from not built to the highest level | Station built | test/application/manual_progress_controller_test.dart | station level is bounded by catalog levels | red |
-| manual-progress → Hideout station levels run from not built to the highest level | Not built versus unknown | test/application/manual_progress_controller_test.dart | not built records 0, distinct from unknown | red |
-| manual-progress → Task states can be overridden by search | Override a missed task | test/application/manual_progress_controller_test.dart | search finds a task and sets it finished by hand | red |
-| manual-progress → Task states can be overridden by search | No match | test/application/manual_progress_controller_test.dart | search with no match lists nothing | red |
-| manual-progress → Any value can be cleared to unknown | Clear level | test/application/manual_progress_controller_test.dart | clear records unset and reads unknown | red |
-| manual-progress → Any value can be cleared to unknown | Clear unknown value | test/application/manual_progress_controller_test.dart | clear is disabled for an unknown value | red |
+| manual-progress → Player values are bounded | Edition chosen | test/application/manual_progress_controller_test.dart | edition choices come from the edition table | green |
+| manual-progress → Player values are bounded | Level out of range | test/application/manual_progress_controller_test.dart | level outside 1-79 is rejected before the queue | green |
+| manual-progress → Trader loyalty uses the trader's real levels | Fence bounded | test/application/manual_progress_controller_test.dart | loyalty choices follow the trader's catalog levels | green |
+| manual-progress → Trader loyalty uses the trader's real levels | Single-level trader | test/application/manual_progress_controller_test.dart | single-level traders are not listed | green |
+| manual-progress → Trader loyalty uses the trader's real levels | No task catalog | test/application/manual_progress_controller_test.dart | without a task catalog only player values are editable | green |
+| manual-progress → Hideout station levels run from not built to the highest level | Station built | test/application/manual_progress_controller_test.dart | station level is bounded by catalog levels | green |
+| manual-progress → Hideout station levels run from not built to the highest level | Not built versus unknown | test/application/manual_progress_controller_test.dart | not built records 0, distinct from unknown | green |
+| manual-progress → Task states can be overridden by search | Override a missed task | test/application/manual_progress_controller_test.dart | search finds a task and sets it finished by hand | green |
+| manual-progress → Task states can be overridden by search | No match | test/application/manual_progress_controller_test.dart | search with no match lists nothing | green |
+| manual-progress → Any value can be cleared to unknown | Clear level | test/application/manual_progress_controller_test.dart | clear records unset and reads unknown | green |
+| manual-progress → Any value can be cleared to unknown | Clear unknown value | test/application/manual_progress_controller_test.dart | clear is disabled for an unknown value | green |
 | manual-progress → The last manual change of a value can be undone and redone | Undo a level change | test/application/local_progress_access_test.dart | undo restores the previous value and keeps history | green |
 | manual-progress → The last manual change of a value can be undone and redone | Redo after undo | test/application/local_progress_access_test.dart | redo appends a new manual edit with the undone value | green |
-| manual-progress → The last manual change of a value can be undone and redone | Undo after redo | test/application/manual_progress_controller_test.dart | undo after redo restores the earlier value and offers redo | red |
-| manual-progress → The last manual change of a value can be undone and redone | Winner came from the logs | test/application/manual_progress_controller_test.dart | no undo or redo for a log winner | red |
+| manual-progress → The last manual change of a value can be undone and redone | Undo after redo | test/application/manual_progress_controller_test.dart | undo after redo restores the earlier value and offers redo | green |
+| manual-progress → The last manual change of a value can be undone and redone | Winner came from the logs | test/application/manual_progress_controller_test.dart | no undo or redo for a log winner | green |
 | manual-progress → The last manual change of a value can be undone and redone | Stale undo | test/application/local_progress_access_test.dart | stale undo or redo reports a conflict and records nothing | green |
 | manual-progress → Entry failures are visible and change nothing | Entry during replay | test/application/local_progress_access_test.dart | manual entry queued during replay is recorded between chunks | green |
-| manual-progress → Entry failures are visible and change nothing | Storage failure | test/application/manual_progress_controller_test.dart | storage failure is shown beside the value and nothing changes | red |
-| manual-progress → Entry failures are visible and change nothing | Damaged wipe | test/application/manual_progress_controller_test.dart | unavailable wipe disables entry with its reason | red |
-| manual-progress → Entry failures are visible and change nothing | Local progress not loaded | test/application/manual_progress_controller_test.dart | failed initial load disables entry for every mode | red |
+| manual-progress → Entry failures are visible and change nothing | Storage failure | test/application/manual_progress_controller_test.dart | storage failure is shown beside the value and nothing changes | green |
+| manual-progress → Entry failures are visible and change nothing | Damaged wipe | test/application/manual_progress_controller_test.dart | unavailable wipe disables entry with its reason | green |
+| manual-progress → Entry failures are visible and change nothing | Local progress not loaded | test/application/manual_progress_controller_test.dart | failed initial load disables entry for every mode | green |
 | manual-progress → Entry failures are visible and change nothing | During a raid | test/application/local_progress_access_test.dart | manual entry is recorded during a raid | green |
-| manual-progress → Shown values follow the store | Log event arrives | test/application/manual_progress_controller_test.dart | a progress revision change re-reads while shown | red |
-| manual-progress → Shown values follow the store | New wipe | test/application/manual_progress_controller_test.dart | a new wipe shows every value unknown | red |
+| manual-progress → Shown values follow the store | Log event arrives | test/application/manual_progress_controller_test.dart | a progress revision change re-reads while shown | green |
+| manual-progress → Shown values follow the store | New wipe | test/application/manual_progress_controller_test.dart | a new wipe shows every value unknown | green |
 | manual-progress → Consumers keep their current progress source | Advice unchanged | test/application/app_services_test.dart | manual level does not change advice progress | red |
 | manual-progress → Consumers keep their current progress source | No token | test/application/app_services_test.dart | manual values without a token leave advice without progress | red |
 | settings-page → Local progress holds a Your progress part | Shows the effective mode | test/ui/settings/settings_your_progress_test.dart | titled for the effective mode | red |
-| settings-page → Local progress holds a Your progress part | Effective mode changes while open | test/application/manual_progress_controller_test.dart | write submitted for PvE lands in PvE after a mode switch | red |
+| settings-page → Local progress holds a Your progress part | Effective mode changes while open | test/application/manual_progress_controller_test.dart | write submitted for PvE lands in PvE after a mode switch | green |
 | settings-page → Local progress holds a Your progress part | Unknown mode | test/ui/settings/settings_your_progress_test.dart | unknown mode asks to choose a game mode | red |
 | settings-page → Local progress holds a Your progress part | Mode without a wipe | test/ui/settings/settings_your_progress_test.dart | mode without a wipe explains the first entry | red |
 | settings-page → Your progress values show their source | Source shown | test/ui/settings/settings_your_progress_test.dart | values show From game logs or Set by hand | red |
@@ -77,8 +77,8 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 4. ManualProgressController
 
-- [ ] 4.1 Write failing tests in `test/application/manual_progress_controller_test.dart` (fake `LocalProgressAccess`, fake catalog and effective-mode sources) for every row mapped to that file: bounds and choices for level, edition, loyalty and stations; single-level traders hidden; missing task catalog or catalog of another mode; task search with the 50-row cap; clear; Undo/Redo labels from the winner; per-value pending and failure state; unavailable wipe and failed load disabling entry; reads only while attached and on revision changes, coalesced to one in flight plus one dirty re-read; a new wipe showing unknowns; a write submitted for PvE landing in PvE after a mode switch. Verify they fail.
-- [ ] 4.2 Implement `ManualProgressController` (D3, D5, D6) with documented public API. Verify the 4.1 tests pass and flip their rows green.
+- [x] 4.1 Write failing tests in `test/application/manual_progress_controller_test.dart` (fake `LocalProgressAccess`, fake catalog and effective-mode sources) for every row mapped to that file: bounds and choices for level, edition, loyalty and stations; single-level traders hidden; missing task catalog or catalog of another mode; task search with the 50-row cap; clear; Undo/Redo labels from the winner; per-value pending and failure state; unavailable wipe and failed load disabling entry; reads only while attached and on revision changes, coalesced to one in flight plus one dirty re-read; a new wipe showing unknowns; a write submitted for PvE landing in PvE after a mode switch. Verify they fail.
+- [x] 4.2 Implement `ManualProgressController` (D3, D5, D6) with documented public API. Verify the 4.1 tests pass and flip their rows green.
 
 ## 5. Your progress in Settings
 
