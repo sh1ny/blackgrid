@@ -30,6 +30,7 @@ import 'item_icon_cache.dart';
 import 'local_stats_controller.dart';
 import 'map_controller.dart';
 import 'map_session_controller.dart';
+import 'manual_progress_controller.dart';
 import 'progress_controller.dart';
 import 'raid_lifecycle_controller.dart';
 import 'raid_timers_controller.dart';
@@ -140,6 +141,12 @@ class AppServices {
       clock: clock,
       discovery: pathDiscovery,
     );
+    manualProgress = ManualProgressController(
+      access: localProgress,
+      catalog: catalog,
+      modeChanges: mapSession,
+      effectiveMode: () => mapSession.effectiveMode,
+    );
     scanTimingLog = ScanTimingLog(
       scanLogDirectory ??
           Directory('${Directory.systemTemp.path}/blackgrid-scan-logs'),
@@ -208,6 +215,9 @@ class AppServices {
 
   /// Records log task transitions into active local progress wipes.
   late final TaskLogProgressController localProgress;
+
+  /// Owns the mounted Settings projection and manual local-progress edits.
+  late final ManualProgressController manualProgress;
 
   /// Owns live scanning: the switch, the worker, the hook and the scan flow.
   late final ScanCoordinator scanner;
@@ -446,6 +456,7 @@ class AppServices {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    manualProgress.dispose();
     settings.removeListener(_syncMapSettings);
     maps.removeListener(_syncMapContext);
     mapSession.removeListener(_syncMapSession);

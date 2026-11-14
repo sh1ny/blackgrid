@@ -79,6 +79,67 @@ Map<String, Object?> _advice(ItemDecision decision) => {
 
 void main() {
   test(
+    'passes raw traders to the progress catalog without another request',
+    () async {
+      final wire = progressCatalogWireFixture();
+      final traders = wire['traders']['data'] as Map<String, dynamic>;
+      final prapor = traders['trader-a'] as Map<String, dynamic>;
+      prapor['normalizedName'] = 'prapor';
+      prapor['levels'] = [
+        {'level': 4},
+        {'level': 2},
+        {'level': 1},
+        {'level': 3},
+      ];
+      final fence = traders['trader-fence'] as Map<String, dynamic>;
+      fence['name'] = 'fence-name';
+      fence['levels'] = [
+        {'level': 3},
+        {'level': 1},
+        {'level': 2},
+      ];
+      (wire['traders_en']['data'] as Map<String, dynamic>)['fence-name'] =
+          'Fence';
+
+      final requests = <http.Request>[];
+      final snapshot = await _client(
+        wire,
+        requests: requests,
+      ).fetch(GameMode.pve);
+      const paths = {
+        'items',
+        'traders',
+        'tasks',
+        'hideout',
+        'crafts',
+        'barters',
+        'items_en',
+        'traders_en',
+        'tasks_en',
+        'hideout_en',
+      };
+      expect(requests, hasLength(paths.length));
+      expect(requests.map((request) => request.url.path).toSet(), {
+        for (final path in paths) '/pve/$path',
+      });
+      expect(requests.every((request) => request.method == 'GET'), isTrue);
+
+      final progress = _progressCatalog(snapshot);
+      final retained = {
+        for (final trader in progress.traders!) trader.id: trader,
+      };
+      expect(retained.keys, unorderedEquals(traders.keys));
+      expect(retained['trader-a']!.name, 'Synthetic Alpha');
+      expect(retained['trader-a']!.normalizedName, 'prapor');
+      expect(retained['trader-a']!.levels, [1, 2, 3, 4]);
+      expect(retained['trader-fence']!.name, 'Fence');
+      expect(retained['trader-fence']!.normalizedName, 'fence');
+      expect(retained['trader-fence']!.levels, [1, 2, 3]);
+      expect(retained['trader-b']!.levels, isNull);
+    },
+  );
+
+  test(
     "refresh builds the mode's task catalog from the existing datasets",
     () async {
       const paths = {

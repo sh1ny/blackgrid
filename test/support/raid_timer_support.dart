@@ -69,19 +69,22 @@ Future<M1Harness> pumpTimerSettingsPage(
     return result;
   }))!;
   addTearDown(h.dispose);
-  await tester.pumpWidget(
-    MaterialApp(
-      theme: blackgridTheme(Brightness.dark),
-      home: Scaffold(
-        body: SettingsPage(
-          services: h.services,
-          backLabel: 'Back to Map',
-          onBack: () {},
-          flush: SettingsFlushController(),
+  await tester.runAsync(() async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: blackgridTheme(Brightness.dark),
+        home: Scaffold(
+          body: SettingsPage(
+            services: h.services,
+            backLabel: 'Back to Map',
+            onBack: () {},
+            flush: SettingsFlushController(),
+          ),
         ),
       ),
-    ),
-  );
+    );
+    await h.services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
   return h;
 }

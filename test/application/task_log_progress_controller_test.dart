@@ -222,6 +222,28 @@ class _Ledger implements LocalProgressStore {
   }
 
   @override
+  Future<ProgressResult<ProgressEvent?>> readProgressEvent(
+    ProgressScope scope,
+    String eventId,
+  ) async {
+    if (unavailable.contains(scope)) {
+      return ProgressFailure(
+        ProgressUnavailable(scope: scope, reason: 'damaged'),
+      );
+    }
+    final history = histories[scope];
+    if (history == null) {
+      return const ProgressFailure(
+        ProgressInvalidInput('Progress cycle does not exist in this mode'),
+      );
+    }
+    for (final event in history) {
+      if (event.eventId == eventId) return ProgressSuccess(event);
+    }
+    return const ProgressSuccess<ProgressEvent?>(null);
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

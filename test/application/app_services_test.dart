@@ -16,6 +16,13 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../data/tracker_client_test.dart' show tokenWire;
+
+class _TokenCredentials extends _EmptyCredentials {
+  @override
+  Future<String?> readCredential(GameMode mode) async =>
+      mode == GameMode.pvp ? 'PVP_synthetic-fixture-only' : null;
+}
 
 class _EmptyCredentials implements CredentialStore {
   @override
@@ -57,6 +64,74 @@ class DelayedCredentials implements CredentialStore {
 }
 
 void main() {
+  for (final withToken in [true, false]) {
+    test(
+      withToken
+          ? 'manual level does not change advice progress'
+          : 'manual values without a token leave advice without progress',
+      () async {
+        final requests = <String>[];
+        final services = AppServices(
+          database: BlackgridDatabase(NativeDatabase.memory()),
+          credentials: withToken ? _TokenCredentials() : _EmptyCredentials(),
+          clock: () => fixtureNow,
+          client: MockClient((request) async {
+            requests.add(request.url.path);
+            return switch (request.url.path) {
+              '/token' => http.Response(
+                jsonEncode(tokenWire('PVP_synthetic-fixture-only')),
+                200,
+              ),
+              '/progress' => http.Response(jsonEncode(progressWire()), 200),
+              _ => http.Response('', 503),
+            };
+          }),
+        );
+        addTearDown(services.dispose);
+        await services.settings.save(AppSettings(mode: GameMode.pvp));
+        await services.mapSession.initialize();
+        await services.localProgress.ready;
+        await services.catalog.setMode(GameMode.pvp);
+        services.catalog.snapshot = fixtureCatalog();
+        await services.progress.setMode(GameMode.pvp);
+        if (withToken) await services.progress.refresh();
+        final before = services.progress.snapshot;
+        if (withToken) {
+          expect(before, isNotNull);
+        } else {
+          expect(before, isNull);
+        }
+        await services.selection.selectManual(
+          services.catalog.snapshot!.items['item-a']!,
+        );
+        final advice = services.selection.decision!;
+        final requestCount = requests.length;
+
+        await services.manualProgress.setLevel('79');
+        await services.localProgress.settled;
+        final wipe = services.localProgress.wipes[GameMode.pvp]!;
+        final current = await services.database.readProgressCurrent(wipe.scope);
+        expect(
+          (current as ProgressSuccess<ProgressCurrentPage>)
+              .value
+              .events
+              .single
+              .value,
+          const ProgressInteger(79),
+        );
+        expect(services.progress.snapshot, same(before));
+        expect(
+          services.selection.decision!.recommendation,
+          advice.recommendation,
+        );
+        expect(
+          services.selection.decision!.reasons.map((reason) => reason.message),
+          advice.reasons.map((reason) => reason.message),
+        );
+        expect(requests.length, requestCount);
+      },
+    );
+  }
   test(
     'local progress subscribes before the first log bind and is disposed',
     () async {

@@ -439,6 +439,129 @@ void main() {
     },
   );
 
+  test('readProgressEvent returns the event and keeps the revision', () async {
+    var nextId = 0;
+    final db = BlackgridDatabase(
+      NativeDatabase.memory(),
+      progressClock: () => DateTime.utc(2026),
+      progressIdGenerator: () => 'generated-${nextId++}',
+    );
+    addTearDown(db.close);
+    final store = db as LocalProgressStore;
+    final scope = _success(await store.createProgressCycle(GameMode.pve)).scope;
+    const target = ProgressTarget(
+      kind: ProgressEntityKind.player,
+      id: 'self',
+      field: ProgressField.level,
+    );
+    final event = ProgressEvent(
+      eventId: 'level-34',
+      deviceId: 'device',
+      occurredAtMs: 100,
+      scope: scope,
+      source: ProgressSource.manual,
+      target: target,
+      value: const ProgressInteger(34),
+    );
+    final undo = ProgressEvent(
+      eventId: 'undo-level-34',
+      deviceId: 'device',
+      occurredAtMs: 101,
+      scope: scope,
+      source: ProgressSource.manual,
+      target: target,
+      value: const ProgressUnset(),
+      undoOf: event.eventId,
+    );
+    final append = _success(
+      await store.appendProgressEvents(scope, [event, undo]),
+    );
+    final before = await _snapshot(db);
+
+    expect(
+      _success(await store.readProgressEvent(scope, event.eventId)),
+      event,
+    );
+    expect(_success(await store.readProgressEvent(scope, undo.eventId)), undo);
+    expect(
+      _success(await store.readProgressCurrent(scope)).revision,
+      append.revision,
+    );
+    expect(await _snapshot(db), before);
+  });
+
+  test("readProgressEvent does not find another cycle's event", () async {
+    var nextId = 0;
+    final db = BlackgridDatabase(
+      NativeDatabase.memory(),
+      progressClock: () => DateTime.utc(2026),
+      progressIdGenerator: () => 'generated-${nextId++}',
+    );
+    addTearDown(db.close);
+    final store = db as LocalProgressStore;
+    final scope = _success(await store.createProgressCycle(GameMode.pve)).scope;
+    final otherCycle = _success(await store.createProgressCycle(GameMode.pve))
+        .scope;
+    final otherMode = _success(await store.createProgressCycle(GameMode.pvp))
+        .scope;
+    for (final (foreignScope, id) in [
+      (otherCycle, 'other-cycle'),
+      (otherMode, 'other-mode'),
+    ]) {
+      _success(
+        await store.appendProgressEvents(foreignScope, [
+          _event(foreignScope, id),
+        ]),
+      );
+    }
+    await db.customStatement(
+      'UPDATE progress_events SET canonical_payload = ? WHERE event_id IN (?, ?)',
+      ['{broken', 'other-cycle', 'other-mode'],
+    );
+    final before = await _snapshot(db);
+
+    for (final id in ['other-cycle', 'other-mode', 'missing']) {
+      expect(_success(await store.readProgressEvent(scope, id)), isNull);
+    }
+    expect(await _snapshot(db), before);
+  });
+
+  test('readProgressEvent reports a damaged event as unavailable', () async {
+    for (final corruption in <(String, List<Object?>)>[
+      ('UPDATE progress_events SET canonical_payload = ?', ['{broken']),
+      ('UPDATE progress_events SET format_version = ?', [2]),
+      ('UPDATE progress_events SET device_id = ?', ['wrong-device']),
+    ]) {
+      var nextId = 0;
+      final db = BlackgridDatabase(
+        NativeDatabase.memory(),
+        progressClock: () => DateTime.utc(2026),
+        progressIdGenerator: () => 'generated-${nextId++}',
+      );
+      try {
+        final store = db as LocalProgressStore;
+        final scope = _success(await store.createProgressCycle(GameMode.pve))
+            .scope;
+        final event = _event(scope, 'damaged');
+        _success(await store.appendProgressEvents(scope, [event]));
+        await db.customStatement(corruption.$1, corruption.$2);
+        final before = await _snapshot(db);
+
+        final result = await store.readProgressEvent(scope, event.eventId);
+        _failure<ProgressEvent?, ProgressUnavailable>(result);
+        expect(
+          ((result as ProgressFailure<ProgressEvent?>).failure
+                  as ProgressUnavailable)
+              .scope,
+          scope,
+        );
+        expect(await _snapshot(db), before);
+      } finally {
+        await db.close();
+      }
+    }
+  });
+
   test('malformed future and envelope-mismatched stored events make the cycle unavailable', () async {
     for (final corruption in <(String, List<Object?>)>[
       ('UPDATE progress_events SET canonical_payload = ?', ['{broken']),

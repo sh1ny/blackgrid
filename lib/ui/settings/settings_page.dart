@@ -323,7 +323,10 @@ class _SettingsPageState extends State<SettingsPage> {
           contentKey: const Key('settings-tracker'),
         ),
         _section(context, SettingsSection.localProgress, [
-          LocalProgressSettings(controller: _services.localProgress),
+          LocalProgressSettings(
+            controller: _services.localProgress,
+            manualProgress: _services.manualProgress,
+          ),
         ], contentKey: const Key('settings-local-progress')),
         _section(context, SettingsSection.gameFiles, _gameFiles()),
         _section(context, SettingsSection.raidTimers, _raidTimers(context)),

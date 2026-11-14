@@ -155,6 +155,54 @@ Map<String, dynamic> _jsonCopy(Map<String, dynamic> value) =>
     jsonDecode(jsonEncode(value)) as Map<String, dynamic>;
 
 void main() {
+  test('catalog stored without traders loads with traders unknown', () {
+    final original = _catalog();
+    final stored = _jsonCopy(original.toJson())..remove('traders');
+    final restored = ProgressCatalog.fromJson(stored);
+
+    expect(restored.traders, isNull);
+    expect(restored.toJson()['formatVersion'], 1);
+    expect(restored.toJson()['tasks'], stored['tasks']);
+    expect(restored.toJson()['stations'], stored['stations']);
+    expect(restored.tasksById['bear']!.name, 'Bear task');
+    expect(restored.stationsById['library']!.levels.single.level, 1);
+  });
+
+  test('traders round trip at format version 1', () {
+    final original = _catalog();
+    final catalog = ProgressCatalog(
+      tasks: original.tasks,
+      stations: original.stations,
+      traders: [
+        CatalogTraderLevels(
+          id: 'fence',
+          name: 'Fence',
+          normalizedName: 'fence',
+          levels: [1, 2, 3],
+        ),
+        CatalogTraderLevels(
+          id: 'unknown',
+          name: 'Unknown levels',
+          normalizedName: 'unknown',
+          levels: null,
+        ),
+      ],
+    );
+    final stored = _jsonCopy(catalog.toJson());
+    expect(stored['formatVersion'], 1);
+
+    final restored = ProgressCatalog.fromJson(stored);
+    expect(restored.traders, hasLength(2));
+    final fence = restored.traders!.first;
+    expect(fence.id, 'fence');
+    expect(fence.name, 'Fence');
+    expect(fence.normalizedName, 'fence');
+    expect(fence.levels, [1, 2, 3]);
+    expect(restored.traders!.last.id, 'unknown');
+    expect(restored.traders!.last.levels, isNull);
+    expect(restored.toJson(), stored);
+  });
+
   test('catalog stored without other requirements and delays loads them as unknown', () {
     final json = _jsonCopy(_catalog().toJson());
     for (final task in json['tasks'] as List<dynamic>) {

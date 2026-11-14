@@ -1,4 +1,5 @@
 import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/scanner_screen.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
@@ -34,13 +35,27 @@ Finder get _statusBar => find.byKey(const Key('shell-status-bar'));
 Finder get _answerStrip => find.byKey(const Key('answer-strip'));
 
 Future<void> _open(WidgetTester tester) async {
-  await tester.tap(_settingsAction);
+  final services = tester
+      .widget<BlackgridApp>(find.byType(BlackgridApp))
+      .services;
+  await tester.runAsync(() async {
+    await tester.tap(_settingsAction);
+    await tester.pumpAndSettle();
+    await services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
   expect(_page, findsOneWidget, reason: 'the Settings action opens the page');
 }
 
 Future<void> _openFromStatus(WidgetTester tester, String key) async {
-  await tester.tap(find.byKey(Key(key)));
+  final services = tester
+      .widget<BlackgridApp>(find.byType(BlackgridApp))
+      .services;
+  await tester.runAsync(() async {
+    await tester.tap(find.byKey(Key(key)));
+    await tester.pumpAndSettle();
+    await services.localProgress.settled;
+  });
   await tester.pumpAndSettle();
   expect(_page, findsOneWidget, reason: 'the status item opens the page');
 }
