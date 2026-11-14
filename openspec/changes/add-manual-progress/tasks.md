@@ -37,6 +37,8 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | manual-progress → The last manual change of a value can be undone and redone | Redo after undo | test/application/local_progress_access_test.dart | redo appends a new manual edit with the undone value | green |
 | manual-progress → The last manual change of a value can be undone and redone | Undo after redo | test/application/manual_progress_controller_test.dart | undo after redo restores the earlier value and offers redo | green |
 | manual-progress → The last manual change of a value can be undone and redone | Winner came from the logs | test/application/manual_progress_controller_test.dart | no undo or redo for a log winner | green |
+| manual-progress → The last manual change of a value can be undone and redone | Redo after clock rollback | test/application/local_progress_access_test.dart | redo restores the value after the clock moves backward | green |
+| manual-progress → The last manual change of a value can be undone and redone | Redo within the same millisecond | test/application/local_progress_access_test.dart | redo restores the value when the clock does not advance | green |
 | manual-progress → The last manual change of a value can be undone and redone | Stale undo | test/application/local_progress_access_test.dart | stale undo or redo reports a conflict and records nothing | green |
 | manual-progress → Entry failures are visible and change nothing | Entry during replay | test/application/local_progress_access_test.dart | manual entry queued during replay is recorded between chunks | green |
 | manual-progress → Entry failures are visible and change nothing | Storage failure | test/application/manual_progress_controller_test.dart | storage failure is shown beside the value and nothing changes | green |
@@ -92,3 +94,9 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 - [x] 6.1 Run `mise run analyze`, `mise run test` and `openspec validate add-manual-progress --strict`; all pass and every test-map row is green except the user row.
 - [x] 6.2 Run `mise run release-notes -- --check openspec/changes/add-manual-progress/proposal.md`; it exits 0 and the section still describes what shipped.
 - [x] 6.3 [user] With a built app (Escape from Tarkov not driven by any agent), the owner opens Settings → Local progress → Your progress, sets level, faction, edition, a trader's loyalty, a station level and a missed quest's state, undoes and redoes one, and confirms the values and their sources look right in play (M9 exit criterion "manual progress entry works in play"; the checklist half is judged at the M9 close after `add-quest-checklist`).
+
+## 7. Redo timestamp amendment (PR review)
+
+- [x] 7.1 Reproduce the unchanged-clock and backward-clock Redo failures in `local_progress_access_test.dart`, with event IDs ordered against Redo, before changing the implementation.
+- [x] 7.2 Apply the owner-approved Redo-only timestamp floor after the verified undo winner; keep ordinary manual timestamps unchanged. Verify the local-progress access tests, including another Undo after Redo, pass.
+- [x] 7.3 Record the renewed FULL design review; run `mise run analyze`, `mise run test`, strict OpenSpec validation and the proposal release-notes check; mark the two new test-map rows green.

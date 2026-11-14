@@ -418,12 +418,17 @@ class TaskLogProgressController extends ChangeNotifier
   Future<ProgressEvent> _appendManualEvent(
     ProgressWipe wipe,
     ProgressTarget target,
-    ProgressValue value,
-  ) async {
+    ProgressValue value, {
+    int? afterOccurredAtMs,
+  }) async {
+    final occurredAtMs = _clock().toUtc().millisecondsSinceEpoch;
     final event = ProgressEvent(
       eventId: _newId(),
       deviceId: _deviceId!,
-      occurredAtMs: _clock().toUtc().millisecondsSinceEpoch,
+      occurredAtMs:
+          afterOccurredAtMs != null && occurredAtMs <= afterOccurredAtMs
+          ? afterOccurredAtMs + 1
+          : occurredAtMs,
       scope: wipe.scope,
       source: ProgressSource.manual,
       target: target,
@@ -506,7 +511,12 @@ class TaskLogProgressController extends ChangeNotifier
         target.target != undo.target) {
       _undoConflict();
     }
-    return _appendManualEvent(wipe, target.target, target.value);
+    return _appendManualEvent(
+      wipe,
+      target.target,
+      target.value,
+      afterOccurredAtMs: undo.occurredAtMs,
+    );
   });
 
   @override

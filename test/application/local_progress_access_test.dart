@@ -589,37 +589,68 @@ void main() {
     expect(h.controller.progressRevision, greaterThan(before));
   });
 
-  test('redo appends a new manual edit with the undone value', () async {
-    final wipe = h.seed(_pve);
-    await h.start();
-    final first = _success(
-      await h.controller.appendManual(_pve, _level, const ProgressInteger(30)),
-    );
-    h.now = h.now.add(const Duration(seconds: 1));
-    final second = _success(
-      await h.controller.appendManual(_pve, _level, const ProgressInteger(34)),
-    );
-    h.now = h.now.add(const Duration(seconds: 1));
-    final undo = _success(
-      await h.controller.undo(_pve, wipe.cycleId, second.eventId),
-    );
-    h.now = h.now.add(const Duration(seconds: 1));
-    final redo = _success(
-      await h.controller.redo(_pve, wipe.cycleId, undo.eventId),
-    );
-    expect(
-      redo.eventId,
-      isNot(anyOf(first.eventId, second.eventId, undo.eventId)),
-    );
-    expect(redo.undoOf, isNull);
-    expect(redo.source, ProgressSource.manual);
-    expect(redo.value, second.value);
-    expect(h.store.histories[wipe.scope], [first, second, undo, redo]);
-    expect(
-      _success(await h.controller.readCurrent(_pve)).winners[_level],
-      redo,
-    );
-  });
+  for (final (name, redoClockChange) in [
+    (
+      'redo appends a new manual edit with the undone value',
+      const Duration(seconds: 1),
+    ),
+    ('redo restores the value when the clock does not advance', Duration.zero),
+    (
+      'redo restores the value after the clock moves backward',
+      const Duration(minutes: -1),
+    ),
+  ]) {
+    test(name, () async {
+      final wipe = h.seed(_pve);
+      await h.start();
+      final first = _success(
+        await h.controller.appendManual(
+          _pve,
+          _level,
+          const ProgressInteger(30),
+        ),
+      );
+      h.now = h.now.add(const Duration(seconds: 1));
+      final second = _success(
+        await h.controller.appendManual(
+          _pve,
+          _level,
+          const ProgressInteger(34),
+        ),
+      );
+      h.now = h.now.add(const Duration(seconds: 1));
+      // Redo's manual-10 sorts before the undo's manual-9.
+      h.nextId = 8;
+      final undo = _success(
+        await h.controller.undo(_pve, wipe.cycleId, second.eventId),
+      );
+      h.now = h.now.add(redoClockChange);
+      final redo = _success(
+        await h.controller.redo(_pve, wipe.cycleId, undo.eventId),
+      );
+      expect(
+        redo.eventId,
+        isNot(anyOf(first.eventId, second.eventId, undo.eventId)),
+      );
+      expect(redo.undoOf, isNull);
+      expect(redo.source, ProgressSource.manual);
+      expect(redo.value, second.value);
+      expect(h.store.histories[wipe.scope], [first, second, undo, redo]);
+      expect(
+        _success(await h.controller.readCurrent(_pve)).winners[_level],
+        redo,
+      );
+      expect(redo.occurredAtMs, greaterThan(undo.occurredAtMs));
+      final undoneAgain = _success(
+        await h.controller.undo(_pve, wipe.cycleId, redo.eventId),
+      );
+      expect(undoneAgain.value, first.value);
+      expect(
+        _success(await h.controller.readCurrent(_pve)).winners[_level],
+        undoneAgain,
+      );
+    });
+  }
 
   test('stale undo or redo reports a conflict and records nothing', () async {
     final wipe = h.seed(_pve);
