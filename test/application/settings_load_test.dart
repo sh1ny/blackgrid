@@ -165,6 +165,23 @@ void main() {
     },
   );
 
+  test(
+    'showAllQuests resets on load when Save marker filters is off',
+    () async {
+      await store.db.saveSettings(AppSettings(showAllQuests: true));
+      await controller.load();
+      expect(controller.settings.showAllQuests, isFalse);
+    },
+  );
+
+  test('showAllQuests is restored when Save marker filters is on', () async {
+    await store.db.saveSettings(
+      AppSettings(saveMarkerFilters: true, showAllQuests: true),
+    );
+    await controller.load();
+    expect(controller.settings.showAllQuests, isTrue);
+  });
+
   test('readable pins load with no pin notice', () async {
     await store.db.savePin(CustomPin.fromJson(_pinJson('one')));
     await controller.load();

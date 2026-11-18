@@ -47,8 +47,8 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | marker-preferences → Bulk, search and quest controls keep working | Quest filter keeps tiles | test/ui/marker_preferences_test.dart | marker-preferences: Quest filter keeps tiles | green |
 | marker-preferences → Bulk, search and quest controls keep working | Active trader absent from the map | test/ui/marker_preferences_test.dart | marker-preferences: Active trader absent from the map | green |
 | marker-preferences → Show all quests switch | Turn the switch on | test/ui/marker_preferences_test.dart | marker-preferences: Show all quests turns on without changing rows | red |
-| marker-preferences → Show all quests switch | Not saved without Save marker filters | test/application/settings_load_test.dart | showAllQuests resets on load when Save marker filters is off | red |
-| marker-preferences → Show all quests switch | Saved with marker filters | test/application/settings_load_test.dart | showAllQuests is restored when Save marker filters is on | red |
+| marker-preferences → Show all quests switch | Not saved without Save marker filters | test/application/settings_load_test.dart | showAllQuests resets on load when Save marker filters is off | green |
+| marker-preferences → Show all quests switch | Saved with marker filters | test/application/settings_load_test.dart | showAllQuests is restored when Save marker filters is on | green |
 | marker-preferences → Show all quests switch | Hide all keeps the switch | test/ui/marker_preferences_test.dart | marker-preferences: Hide all and Show all keep Show all quests | red |
 | marker-preferences → Show all quests switch | Map without quest markers | test/ui/marker_preferences_test.dart | marker-preferences: no switch on a map without quest markers | red |
 
@@ -65,8 +65,8 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 3. showAllQuests setting
 
-- [ ] 3.1 Write failing tests: `test/domain/settings_test.dart` (`showAllQuests` round-trips, defaults to false when absent, and an older settings JSON without it decodes) and `test/application/settings_load_test.dart` (the two persistence rows). Verify they fail for the missing field.
-- [ ] 3.2 Add `AppSettings.showAllQuests` (design D6): `toJson` writes it, `fromJson` reads `as bool? ?? false`, `SettingsController.load` resets it to false when `saveMarkerFilters` is off, and a `setShowAllQuests` setter saves it. Verify 3.1 passes and flip the rows green.
+- [x] 3.1 Write failing tests: `test/domain/settings_test.dart` (`showAllQuests` round-trips, defaults to false when absent, and an older settings JSON without it decodes) and `test/application/settings_load_test.dart` (the two persistence rows). Verify they fail for the missing field.
+- [x] 3.2 Add `AppSettings.showAllQuests` (design D6): `toJson` writes it, `fromJson` reads `as bool? ?? false`, `SettingsController.load` resets it to false when `saveMarkerFilters` is off, and a `setShowAllQuests` setter saves it. Verify 3.1 passes and flip the rows green.
 
 ## 4. Quests section, Markers switch and wiring
 

@@ -240,6 +240,7 @@ class AppSettings {
     this.scanHotkey = ScanHotkey.f9,
     RaidTimerSettings? raidTimers,
     this.themeMode = ThemeChoice.system,
+    this.showAllQuests = false,
   }) : raidTimers = raidTimers ?? RaidTimerSettings.defaults,
        markerFilters = Map.unmodifiable(markerFilters);
   final GameMode mode;
@@ -263,6 +264,10 @@ class AppSettings {
   /// The chosen theme. [ThemeChoice.system] by default.
   final ThemeChoice themeMode;
 
+  /// Whether the map shows every quest's markers, not only the open
+  /// objectives of started quests. Kept only while [saveMarkerFilters] is on.
+  final bool showAllQuests;
+
   AppSettings copyWith({
     GameMode? mode,
     String? selectedMap,
@@ -276,6 +281,7 @@ class AppSettings {
     ScanHotkey? scanHotkey,
     RaidTimerSettings? raidTimers,
     ThemeChoice? themeMode,
+    bool? showAllQuests,
   }) => AppSettings(
     mode: mode ?? this.mode,
     selectedMap: selectedMap ?? this.selectedMap,
@@ -289,6 +295,7 @@ class AppSettings {
     scanHotkey: scanHotkey ?? this.scanHotkey,
     raidTimers: raidTimers ?? this.raidTimers,
     themeMode: themeMode ?? this.themeMode,
+    showAllQuests: showAllQuests ?? this.showAllQuests,
   );
   Map<String, Object?> toJson() => {
     'mode': mode.name,
@@ -303,6 +310,7 @@ class AppSettings {
     'scanHotkey': scanHotkey.stored,
     'raidTimers': raidTimers.toJson(),
     'themeMode': themeMode.name,
+    'showAllQuests': showAllQuests,
   };
   factory AppSettings.fromJson(Map<String, Object?> json) {
     final mode = GameMode.values.firstWhere((m) => m.name == json['mode']);
@@ -341,6 +349,7 @@ class AppSettings {
       scanHotkey: ScanHotkey.fromStored(json['scanHotkey']),
       raidTimers: timers,
       themeMode: theme,
+      showAllQuests: json['showAllQuests'] as bool? ?? false,
     );
   }
 }
