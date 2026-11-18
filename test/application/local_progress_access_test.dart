@@ -861,6 +861,53 @@ void main() {
     expect(h.store.histories[wipe.scope], contains(event));
   });
 
+  test(
+    'an objective entry queued during replay is recorded after it',
+    () async {
+      const count = ProgressTarget(
+        kind: ProgressEntityKind.objective,
+        id: 'objective',
+        field: ProgressField.count,
+      );
+      final wipe = h.seed(_pve);
+      final old = _folder(12), live = _folder(13);
+      h.add(old, [
+        for (var i = 0; i <= progressPageLimit; i++)
+          _task(old, i, id: 'task-$i'),
+      ]);
+      h.add(live, []);
+      await h.start();
+      await h.activate(live);
+      h.store.batches.clear();
+      final entered = Completer<void>(), release = Completer<void>();
+      h.store.appendEntered = entered;
+      h.store.appendRelease = release;
+      final replay = h.controller.replay(_pve, DateTime(2026, 11, 1));
+      await entered.future;
+      final tick = h.controller.appendManual(
+        _pve,
+        count,
+        const ProgressInteger(3),
+      );
+      var recorded = false;
+      unawaited(tick.then((_) => recorded = true));
+      expect(h.store.batches, hasLength(1));
+      expect(recorded, isFalse);
+      release.complete();
+      final event = _success(await tick);
+      await replay;
+      expect(h.store.batches[0], hasLength(progressPageLimit));
+      expect(h.store.batches[1], [event]);
+      expect(event.target, count);
+      expect(event.value, const ProgressInteger(3));
+      expect(
+        _success(await h.controller.readCurrent(_pve)).winners[count],
+        event,
+      );
+      expect(h.store.histories[wipe.scope], contains(event));
+    },
+  );
+
   test('manual entry is recorded during a raid', () async {
     final wipe = h.seed(_pve);
     final live = _folder(13);

@@ -7,6 +7,7 @@ import '../domain/catalog.dart';
 import '../domain/local_progress.dart';
 import '../domain/local_progress_store.dart';
 import 'local_progress_access.dart';
+import 'quest_checklist.dart';
 import 'raid_timers_controller.dart';
 
 /// The player level register.
@@ -87,6 +88,12 @@ class ManualProgressController extends ChangeNotifier {
   ProgressScope? _scope;
   Map<ProgressTarget, ProgressEvent> _winners = const {};
   final Set<(GameMode, ProgressTarget)> _pending = {};
+  // Objective registers whose append landed, with the first read sequence
+  // number that began after it; they stay pending until such a read lands.
+  final Map<(GameMode, ProgressTarget), int> _held = {};
+  int _readsStarted = 0;
+  ProgressCatalog? _indexedCatalog;
+  Map<String, TaskObjective> _objectiveIndex = const {};
   final Map<(GameMode, ProgressTarget), _RowFailure> _failures = {};
 
   /// The current effective game mode.
@@ -163,6 +170,7 @@ class ManualProgressController extends ChangeNotifier {
     _loading = false;
     _scope = null;
     _winners = const {};
+    _releaseHeld();
   }
 
   /// The winning value, or explicit unknown when no value has been recorded.
@@ -267,6 +275,131 @@ class ManualProgressController extends ChangeNotifier {
     await _append(target, ProgressInteger(level));
   }
 
+  /// The register an objective of the effective mode's catalog writes.
+  ///
+  /// This is the count register for a counter objective and the completion
+  /// register for any other, or `null` when the catalog does not list the
+  /// objective.
+  ProgressTarget? objectiveTarget(String objectiveId) {
+    final objective = _objective(objectiveId);
+    if (objective == null) return null;
+    return objectiveCounterTarget(objective) == null
+        ? objectiveCompleteRegister(objectiveId)
+        : objectiveCountRegister(objectiveId);
+  }
+
+  /// Whether a counter objective's count can move by [delta] now.
+  ///
+  /// This is `false` while entries are disabled, while the objective's last
+  /// entry is still being read back, when the objective is not a counter, and
+  /// when the new count would leave 0 to its target.
+  bool canStepObjective(String objectiveId, int delta) {
+    final objective = _objective(objectiveId);
+    final goal = objective == null ? null : objectiveCounterTarget(objective);
+    if (goal == null || disabledReason != null) return false;
+    if (pending(objectiveCountRegister(objectiveId))) return false;
+    final next = _recordedCount(objectiveId) + delta;
+    return delta != 0 && next >= 0 && next <= goal;
+  }
+
+  /// The quest checklist of the effective mode's started tasks.
+  ///
+  /// [markerTaskIds] and [markerObjectiveIds] are the task and objective IDs
+  /// carried by the current map's quest markers.
+  QuestChecklist questChecklist({
+    Set<String> markerTaskIds = const {},
+    Set<String> markerObjectiveIds = const {},
+  }) => buildQuestChecklist(
+    catalog: progressCatalog,
+    winners: _winners,
+    markerTaskIds: markerTaskIds,
+    markerObjectiveIds: markerObjectiveIds,
+  );
+
+  /// The filter for quest markers, or `null` to leave every marker eligible.
+  ///
+  /// It is `null` while progress is not loaded, is unavailable or unreadable,
+  /// or when no task is started.
+  QuestMarkerFilter? get questMarkerFilter {
+    if (disabledReason != null || _scope == null) return null;
+    return buildQuestMarkerFilter(catalog: progressCatalog, winners: _winners);
+  }
+
+  /// Records an objective as done or, for a non-counter, as not done.
+  ///
+  /// A counter objective records its target count when [complete] is `true`
+  /// and cannot be unticked; the request is then ignored. The entry is also
+  /// ignored while the objective's previous entry is still being read back.
+  Future<void> setObjectiveComplete(String objectiveId, bool complete) async {
+    final objective = _objective(objectiveId);
+    if (objective == null) {
+      _invalid(
+        objectiveCompleteRegister(objectiveId),
+        'Quest data is not loaded for this objective.',
+      );
+      return;
+    }
+    final goal = objectiveCounterTarget(objective);
+    if (goal == null) {
+      await _append(
+        objectiveCompleteRegister(objectiveId),
+        ProgressBoolean(complete),
+      );
+    } else if (complete) {
+      await _append(objectiveCountRegister(objectiveId), ProgressInteger(goal));
+    }
+  }
+
+  /// Moves a counter objective's count by [delta], within 0 and its target.
+  ///
+  /// The step is computed from the count last read, and is ignored while the
+  /// previous entry for the objective is still being read back, so each click
+  /// records exactly one new absolute count.
+  Future<void> stepObjectiveCount(String objectiveId, int delta) async {
+    if (!canStepObjective(objectiveId, delta)) return;
+    await _append(
+      objectiveCountRegister(objectiveId),
+      ProgressInteger(_recordedCount(objectiveId) + delta),
+    );
+  }
+
+  /// Records a counter objective's absolute [count], from 0 to its target.
+  ///
+  /// A count outside that range, or for an objective that is not a counter,
+  /// is rejected with a reason on the objective's count register.
+  Future<void> setObjectiveCount(String objectiveId, int count) async {
+    final target = objectiveCountRegister(objectiveId);
+    final objective = _objective(objectiveId);
+    final goal = objective == null ? null : objectiveCounterTarget(objective);
+    if (goal == null || count < 0 || count > goal) {
+      _invalid(target, 'Count must be from 0 to its target.');
+      return;
+    }
+    await _append(target, ProgressInteger(count));
+  }
+
+  TaskObjective? _objective(String objectiveId) {
+    final catalog = progressCatalog;
+    if (catalog == null) return null;
+    if (!identical(catalog, _indexedCatalog)) {
+      final index = <String, TaskObjective>{};
+      for (final task in catalog.tasks) {
+        for (final objective in task.objectives) {
+          index.putIfAbsent(objective.id, () => objective);
+        }
+      }
+      _indexedCatalog = catalog;
+      _objectiveIndex = index;
+    }
+    return _objectiveIndex[objectiveId];
+  }
+
+  int _recordedCount(String objectiveId) =>
+      switch (_winners[objectiveCountRegister(objectiveId)]?.value) {
+        ProgressInteger(:final value) => value,
+        _ => 0,
+      };
+
   /// Sets a listed task's state, or clears it when [state] is `null`.
   Future<void> setTaskState(String taskId, ProgressTaskStatus? state) async {
     final target = ProgressTarget(
@@ -355,10 +488,16 @@ class ManualProgressController extends ChangeNotifier {
     _failures.remove(key);
     notifyListeners();
     final result = await action(submittingMode);
-    _pending.remove(key);
     if (_disposed) return;
     switch (result) {
       case ProgressSuccess<ProgressEvent>():
+        // Counts are absolute, so an objective register stays locked until a
+        // read that began after this append has landed.
+        if (target.kind == ProgressEntityKind.objective &&
+            _mode == submittingMode &&
+            _attachments > 0) {
+          _held[key] = _readsStarted + 1;
+        }
         if (_mode == submittingMode) _requestRead();
       case ProgressFailure<ProgressEvent>(:final failure):
         final rowFailure = _RowFailure(_failureMessage(failure));
@@ -371,7 +510,16 @@ class ManualProgressController extends ChangeNotifier {
         }
         _failures[key] = rowFailure;
     }
+    if (!_held.containsKey(key)) _pending.remove(key);
     notifyListeners();
+  }
+
+  void _releaseHeld([int? readSequence]) {
+    _held.removeWhere((key, after) {
+      final release = readSequence == null || after <= readSequence;
+      if (release) _pending.remove(key);
+      return release;
+    });
   }
 
   void _onAccess() {
@@ -431,6 +579,7 @@ class ManualProgressController extends ChangeNotifier {
         _access.unavailableModes.contains(_mode)) {
       _dirty = false;
       _loading = false;
+      _releaseHeld();
       return;
     }
     if (_reading) {
@@ -440,23 +589,26 @@ class ManualProgressController extends ChangeNotifier {
     _reading = true;
     _dirty = false;
     _loading = true;
+    final sequence = ++_readsStarted;
     final readMode = _mode;
     final generation = _generation;
     final oldFailures = <(GameMode, ProgressTarget), _RowFailure>{
       for (final entry in _failures.entries)
         if (entry.key.$1 == readMode) entry.key: entry.value,
     };
-    unawaited(_read(readMode, generation, oldFailures));
+    unawaited(_read(readMode, generation, sequence, oldFailures));
   }
 
   Future<void> _read(
     GameMode readMode,
     int generation,
+    int sequence,
     Map<(GameMode, ProgressTarget), _RowFailure> oldFailures,
   ) async {
     final result = await _access.readCurrent(readMode);
     _reading = false;
     if (_disposed) return;
+    final heldBefore = _held.length;
     final current =
         _attachments > 0 && generation == _generation && readMode == _mode;
     if (current) {
@@ -480,8 +632,9 @@ class ManualProgressController extends ChangeNotifier {
       }
       _loading = false;
     }
+    _releaseHeld(sequence);
     if (_dirty) _requestRead();
-    if (current) notifyListeners();
+    if (current || _held.length != heldBefore) notifyListeners();
   }
 
   @override
