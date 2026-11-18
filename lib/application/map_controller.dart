@@ -12,6 +12,7 @@ import '../domain/settings.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map.dart';
 import '../maps/prepared_map_loader.dart';
+import 'quest_checklist.dart' show QuestMarkerFilter;
 
 /// App-scope map state with explicit local-resource ownership and no DB writes.
 ///
@@ -53,6 +54,7 @@ class MapController extends ChangeNotifier {
   List<String> _searchTerms = const [];
   String _questName = '';
   String _questTrader = '';
+  QuestMarkerFilter? _questProgress;
   String? _selectedMarkerId;
   Set<String> _raidHighlights = const {};
   GamePoint? _playerPosition;
@@ -254,6 +256,17 @@ class MapController extends ChangeNotifier {
     if (nextName == _questName && nextTrader == _questTrader) return;
     _questName = nextName;
     _questTrader = nextTrader;
+    _clearSelectionIfIneligible();
+    _invalidateMarkers();
+    notifyListeners();
+  }
+
+  /// Hides quest markers of tasks that are not started and of done objectives.
+  ///
+  /// `null` keeps every quest marker eligible.
+  void setQuestProgressFilter(QuestMarkerFilter? filter) {
+    if (_disposed || filter == _questProgress) return;
+    _questProgress = filter;
     _clearSelectionIfIneligible();
     _invalidateMarkers();
     notifyListeners();
@@ -778,11 +791,24 @@ class MapController extends ChangeNotifier {
       _categoryVisibility[position.marker.filterKey] != false &&
       _categoryVisibility[position.marker.category] != false &&
       position.metadata.matchesQuest(name: _questName, trader: _questTrader) &&
+      _questProgressAllows(position.metadata) &&
       floors.isVisible(
         floorId: position.marker.floorId,
         height: position.marker.position.height,
         unknownHeight: unknownHeightVisibility,
       );
+
+  /// Whether the quest progress filter lets [metadata] through.
+  ///
+  /// A quest marker without a task or objective ID cannot be judged and stays.
+  bool _questProgressAllows(MapMarkerMetadata metadata) {
+    final filter = _questProgress;
+    if (filter == null || !metadata.isQuest) return true;
+    final taskId = metadata.questTaskId, objectiveId = metadata.sourceId;
+    if (taskId == null || objectiveId == null) return true;
+    return filter.startedTaskIds.contains(taskId) &&
+        !filter.doneObjectiveIds.contains(objectiveId);
+  }
 
   /// Selects a visible marker with a fixed logical-pixel hit radius.
   ///

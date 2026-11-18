@@ -28,9 +28,9 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 | quest-checklist → Quests follows the effective mode and fresh values | Mode switch | test/application/manual_progress_controller_test.dart | a mode switch re-reads quest progress for the new mode | green |
 | quest-checklist → Quests follows the effective mode and fresh values | Catalog unavailable | test/ui/map_quests_section_test.dart | without a task catalog Quests shows the reason and no controls | red |
 | quest-checklist → Quests follows the effective mode and fresh values | Unavailable wipe | test/ui/map_quests_section_test.dart | an unavailable wipe shows its reason and no controls | red |
-| quest-checklist → Quest markers follow active quests | Ticked objective leaves the map | test/application/map_controller_test.dart | quest filter hides a done objective and keeps the task's open ones | red |
-| quest-checklist → Quest markers follow active quests | Not-started task hidden | test/application/map_controller_test.dart | quest filter hides markers of tasks that are not started | red |
-| quest-checklist → Quest markers follow active quests | Nothing started | test/application/map_controller_test.dart | a null quest filter keeps every quest marker eligible | red |
+| quest-checklist → Quest markers follow active quests | Ticked objective leaves the map | test/application/map_controller_test.dart | quest filter hides a done objective and keeps the task's open ones | green |
+| quest-checklist → Quest markers follow active quests | Not-started task hidden | test/application/map_controller_test.dart | quest filter hides markers of tasks that are not started | green |
+| quest-checklist → Quest markers follow active quests | Nothing started | test/application/map_controller_test.dart | a null quest filter keeps every quest marker eligible | green |
 | quest-checklist → Quest markers follow active quests | Show all quests | test/ui/map_workspace_controls_test.dart | Show all quests pushes a null filter and the name and trader filters still apply | red |
 | quest-checklist → Advice stays on the Tracker token | Ticking does not change advice | test/application/app_services_test.dart | an objective tick does not change advice progress | red |
 | quest-checklist → Advice stays on the Tracker token | Token removed | test/application/app_services_test.dart | quest progress and the marker filter work without a token | red |
@@ -60,8 +60,8 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 2. Quest-marker filter on the map
 
-- [ ] 2.1 Write failing tests in `test/application/map_controller_test.dart` for the three marker-filter rows (done objective hidden, not-started task hidden, null filter keeps all) and for D7 (a quest marker without task or objective ID stays eligible), plus a `test/maps/quest_marker_identity_test.dart` fixture test that quest-objective and quest-item markers from a small frozen tasks body carry `details.quest.id` and `details.id` equal to the progress catalog's task and objective IDs parsed from the same body. Verify they fail for the missing filter.
-- [ ] 2.2 Add `questTaskId` to `MapMarkerMetadata` (from `details.quest.id`) and `MapController.setQuestProgressFilter(QuestMarkerFilter?)`, applied in `_markerEligible` beside the category, quest name and trader checks (design D2, D7). Verify 2.1 passes, the existing map controller and map marker query tests still pass, and flip the rows green.
+- [x] 2.1 Write failing tests in `test/application/map_controller_test.dart` for the three marker-filter rows (done objective hidden, not-started task hidden, null filter keeps all) and for D7 (a quest marker without task or objective ID stays eligible), plus a `test/maps/quest_marker_identity_test.dart` fixture test that quest-objective and quest-item markers from a small frozen tasks body carry `details.quest.id` and `details.id` equal to the progress catalog's task and objective IDs parsed from the same body. Verify they fail for the missing filter.
+- [x] 2.2 Add `questTaskId` to `MapMarkerMetadata` (from `details.quest.id`) and `MapController.setQuestProgressFilter(QuestMarkerFilter?)`, applied in `_markerEligible` beside the category, quest name and trader checks (design D2, D7). Verify 2.1 passes, the existing map controller and map marker query tests still pass, and flip the rows green.
 
 ## 3. showAllQuests setting
 

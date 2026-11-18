@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'dart:ui' show Size;
 
 import 'package:blackgrid/application/map_controller.dart';
+import 'package:blackgrid/application/quest_checklist.dart'
+    show QuestMarkerFilter;
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map_loader.dart';
@@ -142,6 +144,100 @@ void main() {
       expect(controller.transform.translationY, before.translationY);
     });
   });
+
+  group('quest-checklist: Quest markers follow active quests', () {
+    List<String> questIds() => [
+      for (final marker in controller.visibleMarkers())
+        if (marker.marker.id.startsWith('q-')) marker.marker.id,
+    ]..sort();
+
+    test(
+      "quest filter hides a done objective and keeps the task's open ones",
+      () {
+        controller.setQuestProgressFilter(
+          QuestMarkerFilter(
+            startedTaskIds: {'task-1', 'task-2'},
+            doneObjectiveIds: {'obj-done'},
+          ),
+        );
+        expect(
+          questIds(),
+          ['q-noobj', 'q-notask', 'q-open', 'q-other-open']..sort(),
+        );
+        expect(questIds(), isNot(contains('q-done')));
+      },
+    );
+
+    test('quest filter hides markers of tasks that are not started', () {
+      controller.setQuestProgressFilter(
+        QuestMarkerFilter(
+          startedTaskIds: {'task-1'},
+          doneObjectiveIds: const {},
+        ),
+      );
+      expect(questIds(), contains('q-open'));
+      expect(questIds(), contains('q-done'));
+      expect(questIds(), isNot(contains('q-other-open')));
+    });
+
+    test('a null quest filter keeps every quest marker eligible', () {
+      controller.setQuestProgressFilter(
+        QuestMarkerFilter(
+          startedTaskIds: {'task-1'},
+          doneObjectiveIds: {'obj-done'},
+        ),
+      );
+      expect(questIds(), isNot(contains('q-done')));
+
+      controller.setQuestProgressFilter(null);
+
+      expect(questIds(), [
+        'q-done',
+        'q-noobj',
+        'q-notask',
+        'q-open',
+        'q-other-open',
+      ]);
+    });
+
+    test('a quest marker without a task or objective ID stays eligible', () {
+      controller.setQuestProgressFilter(
+        QuestMarkerFilter(
+          startedTaskIds: {'task-1'},
+          doneObjectiveIds: {'obj-done'},
+        ),
+      );
+      // q-notask has no task ID; q-noobj has an unstarted task but no
+      // objective ID. Neither can be judged, so both stay.
+      expect(questIds(), containsAll(['q-notask', 'q-noobj']));
+    });
+
+    test('non-quest markers are unaffected by the quest filter', () {
+      controller.setQuestProgressFilter(
+        QuestMarkerFilter(startedTaskIds: {'x'}, doneObjectiveIds: const {}),
+      );
+      expect(
+        controller.visibleMarkers().map((marker) => marker.marker.id),
+        containsAll(['west', 'east', 'gate']),
+      );
+    });
+
+    test('an equal filter does not notify listeners', () {
+      QuestMarkerFilter filter() => QuestMarkerFilter(
+        startedTaskIds: {'task-1'},
+        doneObjectiveIds: const {},
+      );
+      controller.setQuestProgressFilter(filter());
+      var notified = 0;
+      controller.addListener(() => notified++);
+
+      controller.setQuestProgressFilter(filter());
+      expect(notified, 0);
+
+      controller.setQuestProgressFilter(null);
+      expect(notified, 1);
+    });
+  });
 }
 
 MapController _controller() {
@@ -164,17 +260,38 @@ Map<String, dynamic> _marker(
   double z, {
   String? floorId,
   double? height,
+  String category = 'extracts',
+  Map<String, dynamic> details = const {},
 }) => {
   'id': id,
-  'category': 'extracts',
+  'category': category,
   'filterKey': filterKey,
   'name': id,
   'floorId': ?floorId,
   'position': {'x': x, 'z': z, 'height': height},
-  'details': <String, dynamic>{},
+  'details': details,
   'outline': const <Object>[],
   'source': {'url': 'fixture'},
 };
+
+/// A quest-objective marker; [task] and [objective] may be left out.
+Map<String, dynamic> _quest(
+  String id,
+  double x,
+  double z, {
+  String? task,
+  String? objective,
+}) => _marker(
+  id,
+  'QuestObjectives',
+  x,
+  z,
+  category: 'questObjectives',
+  details: {
+    'id': ?objective,
+    if (task != null) 'quest': {'id': task},
+  },
+);
 
 Map<String, dynamic> _map(String id) => {
   'id': id,
@@ -224,6 +341,11 @@ Map<String, dynamic> _map(String id) => {
     _marker('east', 'PmcExtracts', 24, 24),
     _marker('gate', 'SharedExtracts', 16, 8),
     _marker('upper', 'PmcExtracts', 24, 8, floorId: 'Upper', height: 4),
+    _quest('q-open', 4, 4, task: 'task-1', objective: 'obj-open'),
+    _quest('q-done', 6, 4, task: 'task-1', objective: 'obj-done'),
+    _quest('q-other-open', 8, 4, task: 'task-2', objective: 'obj-other'),
+    _quest('q-notask', 10, 4, objective: 'obj-orphan'),
+    _quest('q-noobj', 12, 4, task: 'task-3'),
   ],
   'labels': <Object>[],
   'attribution': {'author': 'Independent fixture'},
