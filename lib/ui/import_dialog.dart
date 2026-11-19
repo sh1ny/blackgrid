@@ -180,7 +180,7 @@ class _ImportDialogState extends State<ImportDialog> {
         (_) => const SizedBox(height: EmberSpace.sm),
         if (candidate.settings != null)
           (_) => Text(
-            'Settings: ${modeLabel(candidate.settings!.mode)} • ${mapLabel(candidate.settings!.selectedMap)} • remember marker filters: ${candidate.settings!.saveMarkerFilters ? 'yes' : 'no'} • use Tracker progress: ${candidate.settings!.trackerEnabled ? 'yes' : 'no'}',
+            'Settings: ${modeLabel(candidate.settings!.mode)} • ${mapLabel(candidate.settings!.selectedMap)} • remember marker filters: ${candidate.settings!.saveMarkerFilters ? 'yes' : 'no'}',
           ),
         for (final p in candidate.pins)
           (_) => Text('Pin ${p.mapId}/${p.id} at (${p.x}, ${p.y})'),

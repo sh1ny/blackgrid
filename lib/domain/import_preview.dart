@@ -25,7 +25,6 @@ class ImportedPreferences {
     required this.selectedMap,
     required this.saveMarkerFilters,
     required Map<String, bool> markerFilters,
-    required this.trackerEnabled,
   }) : markerFilters = Map.unmodifiable(markerFilters);
 
   /// The imported game mode.
@@ -40,16 +39,12 @@ class ImportedPreferences {
   /// The imported marker filter switches by category.
   final Map<String, bool> markerFilters;
 
-  /// Whether Tracker progress is used.
-  final bool trackerEnabled;
-
   /// Returns [base] with these preferences applied and every other field kept.
   AppSettings applyTo(AppSettings base) => base.copyWith(
     mode: mode,
     selectedMap: selectedMap,
     saveMarkerFilters: saveMarkerFilters,
     markerFilters: markerFilters,
-    trackerEnabled: trackerEnabled,
   );
 }
 

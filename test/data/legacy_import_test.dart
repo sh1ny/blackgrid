@@ -176,7 +176,25 @@ void main() {
       expect(stored.mode, GameMode.pve);
       expect(stored.selectedMap, 'customs');
       expect(stored.markerFilters['CustomPins'], isTrue);
-      expect(stored.trackerEnabled, isTrue);
+    });
+
+    test('legacy-import: Imported Tracker switch is ignored', () async {
+      final importer = LegacyImport(db);
+      final preview = await importer.previewFiles(settingsPath: file.path);
+      for (final row in preview.accounting) {
+        expect(
+          '${row.key} ${row.reason}',
+          isNot(contains(RegExp('tracker', caseSensitive: false))),
+        );
+      }
+      expect(
+        preview.exclusions,
+        isNot(contains('Scanner.TrackerProgressEnabled')),
+      );
+      await importer.commit(preview, replaceExisting: false);
+      final stored = (await db.readSettings()).settings;
+      expect(stored.toJson().containsKey('trackerEnabled'), isFalse);
+      expect(stored.mode, GameMode.pve);
     });
 
     test(
@@ -227,7 +245,6 @@ void main() {
           expect(p.settings!.mode, GameMode.pve);
           expect(p.settings!.selectedMap, 'customs');
           expect(p.settings!.markerFilters['CustomPins'], isTrue);
-          expect(p.settings!.trackerEnabled, isTrue);
           expect(p.pins.single.x, 1.2);
           expect(p.exclusions, contains('ProtectedToken'));
           expect(p.exclusions, contains('Scanner.ScanHotkey'));
@@ -253,7 +270,6 @@ void main() {
           final preview = parseLegacySources(legacyBytes(settings: settings));
           expect(preview.settings!.selectedMap, 'shoreline');
           expect(preview.settings!.mode, GameMode.pve);
-          expect(preview.settings!.trackerEnabled, isTrue);
           expect(preview.settings!.markerFilters['CustomPins'], isTrue);
           expect(preview.pins.single.mapId, 'customs');
           expect(preview.pins.single.x, 1.2);

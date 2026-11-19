@@ -3,11 +3,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, Object?> _record({Object? raidTimers = _absent}) {
-  final json = AppSettings(
-    mode: GameMode.pve,
-    selectedMap: 'woods',
-    trackerEnabled: true,
-  ).toJson();
+  final json = AppSettings(mode: GameMode.pve, selectedMap: 'woods').toJson();
   json.remove('raidTimers');
   if (raidTimers != _absent) json['raidTimers'] = raidTimers;
   return json;
@@ -56,7 +52,6 @@ void main() {
       final settings = AppSettings.fromJson(_record(raidTimers: bad));
       expect(settings.mode, GameMode.pve, reason: '$bad');
       expect(settings.selectedMap, 'woods', reason: '$bad');
-      expect(settings.trackerEnabled, isTrue, reason: '$bad');
       expect(
         settings.raidTimers.toJson(),
         RaidTimerSettings.defaults.toJson(),

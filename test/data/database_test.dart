@@ -88,11 +88,7 @@ void main() {
     expect(defaults.mode, GameMode.unknown);
     expect((await db.readActivity()).rows, isEmpty);
     await db.saveSettings(
-      AppSettings(
-        mode: GameMode.pve,
-        selectedMap: 'customs',
-        trackerEnabled: true,
-      ),
+      AppSettings(mode: GameMode.pve, selectedMap: 'customs'),
     );
     final pin = CustomPin(
       id: 'synthetic-pin',

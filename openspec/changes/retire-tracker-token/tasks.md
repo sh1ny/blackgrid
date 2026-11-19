@@ -90,10 +90,10 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 | scanner-evidence → Scanner workspace omits configuration rail | Scanner functions remain reachable without the old rail | test/ui/scanner_screen_test.dart | scanner-evidence: Scanner functions remain reachable without the old rail | red |
 | scan-frame-recording → Recordings stay local and carry no credentials or progress | Recording with local progress recorded | test/application/scan_coordinator_recording_test.dart | scan-frame-recording: Recording with local progress recorded | red |
 | scan-frame-recording → Recordings stay local and carry no credentials or progress | Timing log while recording | test/application/scan_coordinator_recording_test.dart | timing log line keys are the same with recording on | green |
-| legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | red |
+| legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | green |
 | legacy-import → An import never changes this computer's own inputs | Replace keeps input folders | test/data/legacy_import_test.dart | (locate) | green |
 | legacy-import → An import never changes this computer's own inputs | Import with no stored settings | test/data/legacy_import_test.dart | (locate) | green |
-| legacy-import → An import never changes this computer's own inputs | Imported Tracker switch is ignored | test/data/legacy_import_test.dart | legacy-import: Imported Tracker switch is ignored | red |
+| legacy-import → An import never changes this computer's own inputs | Imported Tracker switch is ignored | test/data/legacy_import_test.dart | legacy-import: Imported Tracker switch is ignored | green |
 | task-catalog → The task catalog does not change advice | Same advice with and without the block | test/domain/decision_engine_test.dart | (locate) | green |
 | task-catalog → The task catalog does not change advice | Task catalog unavailable | test/domain/decision_engine_test.dart | task-catalog: Task catalog unavailable | green |
 
@@ -124,8 +124,8 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 
 ## 5. Settings key and legacy import
 
-- [ ] 5.1 Write failing tests: `settings_test.dart` checks that a `settings.json` holding `trackerEnabled` loads and that `toJson` no longer writes it. `legacy_import_test.dart` adds legacy-import: Imported Tracker switch is ignored, and updates the Replace test so it no longer expects the Tracker switch. Verify they fail.
-- [ ] 5.2 Remove `trackerEnabled` from `Settings` (constructor, `copyWith`, `toJson`; `fromJson` ignores the key), from `ImportPreview` and `import_dialog.dart`, and from the `LegacyImport` mapping, keeping `TrackerProgressEnabled` in the allowed-key list. Verify the 5.1 tests pass, flip the legacy-import rows green, and `mise run analyze` is clean.
+- [x] 5.1 Write failing tests: `settings_test.dart` checks that a `settings.json` holding `trackerEnabled` loads and that `toJson` no longer writes it. `legacy_import_test.dart` adds legacy-import: Imported Tracker switch is ignored, and updates the Replace test so it no longer expects the Tracker switch. Verify they fail.
+- [x] 5.2 Remove `trackerEnabled` from `Settings` (constructor, `copyWith`, `toJson`; `fromJson` ignores the key), from `ImportPreview` and `import_dialog.dart`, and from the `LegacyImport` mapping, keeping `TrackerProgressEnabled` in the allowed-key list. Verify the 5.1 tests pass, flip the legacy-import rows green, and `mise run analyze` is clean.
 
 ## 6. Token clean-up and the runner channel
 
