@@ -1,6 +1,6 @@
 import '../application/catalog_controller.dart';
 import '../application/live_map_data_controller.dart';
-import '../application/progress_controller.dart';
+import '../application/progress_authority.dart';
 import '../application/scan_coordinator.dart';
 import '../domain/decision.dart';
 import '../domain/inspection_context.dart';
@@ -32,13 +32,10 @@ String liveMapDataSourceLabel(LiveMapDataSource source) => switch (source) {
 };
 
 /// Reads as "Progress: <label>".
-String progressStatusLabel(ProgressStatus status) => switch (status) {
-  ProgressStatus.missing => 'not connected',
-  ProgressStatus.loading => 'refreshing',
-  ProgressStatus.current => 'up to date',
-  ProgressStatus.stale => 'out of date',
-  ProgressStatus.failed => 'refresh failed',
-  ProgressStatus.cooldown => 'refresh cooling down',
+String progressStatusLabel(ProgressAuthorityStatus status) => switch (status) {
+  ProgressAuthorityStatus.loading => 'loading',
+  ProgressAuthorityStatus.local => 'local',
+  ProgressAuthorityStatus.unavailable => 'unavailable',
 };
 
 /// Reads as "Logs: <label>" or "Screenshots: <label>".

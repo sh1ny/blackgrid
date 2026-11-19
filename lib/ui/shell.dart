@@ -341,7 +341,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                                 section: SettingsSection.tracker,
                               ),
                               child: Text(
-                                'Tracker ${progressStatusLabel(widget.services.progress.status)}',
+                                'Progress ${progressStatusLabel(widget.services.progress.status)}',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ),

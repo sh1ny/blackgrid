@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:blackgrid/application/raid_timers_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/progress_facts.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/domain/raid_timers.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -115,7 +115,7 @@ class _FakeProgress extends ChangeNotifier implements RaidTimerProgressSource {
   @override
   GameMode mode = GameMode.unknown;
   @override
-  ProgressSnapshot? snapshot;
+  ProgressFacts? facts;
 
   void changed() => notifyListeners();
 }

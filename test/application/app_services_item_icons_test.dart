@@ -8,7 +8,6 @@ import 'package:blackgrid/application/item_icon_cache.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/item_icon_client.dart';
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,15 +17,6 @@ import '../fixtures/m1/catalog/fixture.dart';
 
 const _iconHost = 'assets.tarkov.dev';
 const _iconLink = 'https://assets.tarkov.dev/item-a-icon.webp';
-
-class _NoCredentials implements CredentialStore {
-  @override
-  Future<String?> readCredential(GameMode mode) async => null;
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async {}
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
-}
 
 /// Serves the catalog fixture and records every request.
 class _RecordingClient extends http.BaseClient {
@@ -93,7 +83,6 @@ void main() {
     final database = BlackgridDatabase(NativeDatabase.memory());
     final services = AppServices(
       database: database,
-      credentials: _NoCredentials(),
       clock: () => fixtureNow,
       client: client,
       itemIcons: ItemIconCache(
@@ -120,7 +109,6 @@ void main() {
     final client = _RecordingClient();
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
-      credentials: _NoCredentials(),
       clock: () => fixtureNow,
       client: client,
     );
@@ -141,7 +129,6 @@ void main() {
     final blocked = File('${root.path}/item-icons')..writeAsStringSync('');
     final services = AppServices(
       database: database,
-      credentials: _NoCredentials(),
       clock: () => fixtureNow,
       client: client,
       itemIcons: ItemIconCache(
@@ -167,7 +154,6 @@ void main() {
       final database = BlackgridDatabase(NativeDatabase.memory());
       final services = AppServices(
         database: database,
-        credentials: _NoCredentials(),
         clock: () => fixtureNow,
         client: client,
         itemIcons: ItemIconCache(

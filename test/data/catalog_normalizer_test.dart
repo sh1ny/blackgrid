@@ -6,7 +6,6 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/decision_engine.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
-import 'package:blackgrid/domain/progress.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 
@@ -37,21 +36,7 @@ void main() {
               mode: GameMode.pvp,
               now: fixtureNow,
               catalog: c,
-              progress: decisionProgress(
-                modules: const {
-                  'station-a-1': EntityProgress(
-                    complete: false,
-                    invalid: false,
-                  ),
-                },
-                parts: const {
-                  'part-a': EntityProgress(
-                    complete: false,
-                    count: 0,
-                    invalid: false,
-                  ),
-                },
-              ),
+              progress: decisionFacts(),
               fir: FirState.yes,
             ),
           );

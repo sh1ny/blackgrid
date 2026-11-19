@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/local_progress.dart';
 import 'package:blackgrid/domain/local_progress_store.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -16,22 +15,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
-import '../data/tracker_client_test.dart' show tokenWire;
-
-class _TokenCredentials extends _EmptyCredentials {
-  @override
-  Future<String?> readCredential(GameMode mode) async =>
-      mode == GameMode.pvp ? 'PVP_synthetic-fixture-only' : null;
-}
-
-class _EmptyCredentials implements CredentialStore {
-  @override
-  Future<String?> readCredential(GameMode mode) async => null;
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async {}
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
-}
 
 Future<void> _whenMapSession(
   AppServices services,
@@ -52,108 +35,37 @@ Future<void> _whenMapSession(
   }
 }
 
-class DelayedCredentials implements CredentialStore {
-  final reads = <GameMode, Completer<String?>>{};
+/// A database whose stored-catalog reads can be held per mode.
+class _DelayedCatalogDatabase extends BlackgridDatabase {
+  _DelayedCatalogDatabase() : super(NativeDatabase.memory());
+
+  /// Whether stored-catalog reads wait for the test.
+  bool hold = false;
+  final reads = <GameMode, Completer<CatalogSnapshot?>>{};
+  final _entered = <GameMode, Completer<void>>{};
+
+  /// Completes when a held read for [mode] starts waiting.
+  Future<void> entered(GameMode mode) =>
+      (_entered[mode] ??= Completer<void>()).future;
+
   @override
-  Future<String?> readCredential(GameMode mode) =>
-      (reads[mode] = Completer<String?>()).future;
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async {}
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
+  Future<CatalogSnapshot?> loadCatalog(GameMode mode) {
+    if (!hold) return super.loadCatalog(mode);
+    final gate = reads[mode] = Completer<CatalogSnapshot?>();
+    final signal = _entered[mode] ??= Completer<void>();
+    if (!signal.isCompleted) signal.complete();
+    return gate.future;
+  }
 }
 
 void main() {
-  for (final withToken in [true, false]) {
-    test(
-      withToken
-          ? 'manual level does not change advice progress'
-          : 'manual values without a token leave advice without progress',
-      () async {
-        final requests = <String>[];
-        final services = AppServices(
-          database: BlackgridDatabase(NativeDatabase.memory()),
-          credentials: withToken ? _TokenCredentials() : _EmptyCredentials(),
-          clock: () => fixtureNow,
-          client: MockClient((request) async {
-            requests.add(request.url.path);
-            return switch (request.url.path) {
-              '/token' => http.Response(
-                jsonEncode(tokenWire('PVP_synthetic-fixture-only')),
-                200,
-              ),
-              '/progress' => http.Response(jsonEncode(progressWire()), 200),
-              _ => http.Response('', 503),
-            };
-          }),
-        );
-        addTearDown(services.dispose);
-        await services.settings.save(AppSettings(mode: GameMode.pvp));
-        await services.mapSession.initialize();
-        await services.localProgress.ready;
-        await services.catalog.setMode(GameMode.pvp);
-        services.catalog.snapshot = fixtureCatalog();
-        await services.progress.setMode(GameMode.pvp);
-        if (withToken) await services.progress.refresh();
-        final before = services.progress.snapshot;
-        if (withToken) {
-          expect(before, isNotNull);
-        } else {
-          expect(before, isNull);
-        }
-        await services.selection.selectManual(
-          services.catalog.snapshot!.items['item-a']!,
-        );
-        final advice = services.selection.decision!;
-        final requestCount = requests.length;
-
-        await services.manualProgress.setLevel('79');
-        await services.localProgress.settled;
-        final wipe = services.localProgress.wipes[GameMode.pvp]!;
-        final current = await services.database.readProgressCurrent(wipe.scope);
-        expect(
-          (current as ProgressSuccess<ProgressCurrentPage>)
-              .value
-              .events
-              .single
-              .value,
-          const ProgressInteger(79),
-        );
-        expect(services.progress.snapshot, same(before));
-        expect(
-          services.selection.decision!.recommendation,
-          advice.recommendation,
-        );
-        expect(
-          services.selection.decision!.reasons.map((reason) => reason.message),
-          advice.reasons.map((reason) => reason.message),
-        );
-        expect(requests.length, requestCount);
-      },
-    );
-  }
-
   /// Services in PvP with the fixture catalog, whose `task-a` has the counter
   /// objective `find-a`, and the manual projection attached.
-  Future<(AppServices, List<String>)> questServices({
-    required bool withToken,
-  }) async {
-    final requests = <String>[];
+  Future<AppServices> questServices() async {
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
-      credentials: withToken ? _TokenCredentials() : _EmptyCredentials(),
       clock: () => fixtureNow,
-      client: MockClient((request) async {
-        requests.add(request.url.path);
-        return switch (request.url.path) {
-          '/token' => http.Response(
-            jsonEncode(tokenWire('PVP_synthetic-fixture-only')),
-            200,
-          ),
-          '/progress' => http.Response(jsonEncode(progressWire()), 200),
-          _ => http.Response('', 503),
-        };
-      }),
+      client: MockClient((request) async => http.Response('', 503)),
     );
     addTearDown(services.dispose);
     await services.settings.save(AppSettings(mode: GameMode.pvp));
@@ -161,11 +73,9 @@ void main() {
     await services.localProgress.ready;
     await services.catalog.setMode(GameMode.pvp);
     services.catalog.snapshot = fixtureCatalog();
-    await services.progress.setMode(GameMode.pvp);
-    if (withToken) await services.progress.refresh();
     services.manualProgress.attach();
     addTearDown(services.manualProgress.detach);
-    return (services, requests);
+    return services;
   }
 
   /// Completes once [ready] holds for the manual projection.
@@ -187,43 +97,8 @@ void main() {
     }
   }
 
-  test('an objective tick does not change advice progress', () async {
-    final (services, requests) = await questServices(withToken: true);
-    final before = services.progress.snapshot;
-    expect(before, isNotNull);
-    await services.selection.selectManual(
-      services.catalog.snapshot!.items['item-a']!,
-    );
-    final advice = services.selection.decision!;
-    final requestCount = requests.length;
-
-    await services.manualProgress.setTaskState(
-      'task-a',
-      ProgressTaskStatus.started,
-    );
-    await services.manualProgress.setObjectiveComplete('find-a', true);
-    await services.localProgress.settled;
-    await whenProjected(
-      services,
-      () =>
-          services.manualProgress.questMarkerFilter?.doneObjectiveIds.contains(
-            'find-a',
-          ) ??
-          false,
-    );
-
-    expect(services.progress.snapshot, same(before));
-    expect(services.selection.decision!.recommendation, advice.recommendation);
-    expect(
-      services.selection.decision!.reasons.map((reason) => reason.message),
-      advice.reasons.map((reason) => reason.message),
-    );
-    expect(requests.length, requestCount);
-  });
-
-  test('quest progress and the marker filter work without a token', () async {
-    final (services, requests) = await questServices(withToken: false);
-    expect(services.progress.snapshot, isNull);
+  test('quest progress and the marker filter work offline', () async {
+    final services = await questServices();
 
     await services.manualProgress.setTaskState(
       'task-a',
@@ -249,8 +124,6 @@ void main() {
       task.objectives.firstWhere((objective) => objective.id == 'find-a').done,
       isTrue,
     );
-    expect(services.progress.snapshot, isNull);
-    expect(requests, isNot(contains('/progress')));
   });
 
   test(
@@ -276,7 +149,6 @@ void main() {
       final database = BlackgridDatabase(NativeDatabase.memory());
       final services = AppServices(
         database: database,
-        credentials: _EmptyCredentials(),
         client: MockClient((request) async => http.Response('', 503)),
       );
       var disposed = false;
@@ -335,7 +207,6 @@ void main() {
     );
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
-      credentials: _EmptyCredentials(),
       client: MockClient((request) async => http.Response('', 503)),
     );
     addTearDown(() async {
@@ -354,7 +225,6 @@ void main() {
   test('the local stats controller is built and disposed with the services', () async {
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
-      credentials: _EmptyCredentials(),
       client: MockClient((request) async => http.Response('', 503)),
     );
     // Built: a live controller accepts listeners and follows the catalog mode.
@@ -383,12 +253,11 @@ void main() {
         'application|scene preset path:maps/laboratory.bundle\r\n',
       );
       // Records every request. Catalog datasets are answered, so the automatic
-      // refresh runs. No credential is saved, so the tracker must stay silent.
+      // refresh runs.
       final wire = wireFixture();
       final requests = <http.Request>[];
       final services = AppServices(
         database: BlackgridDatabase(NativeDatabase.memory()),
-        credentials: _EmptyCredentials(),
         clock: () => fixtureNow,
         client: MockClient((request) async {
           requests.add(request);
@@ -448,64 +317,53 @@ void main() {
       expect(services.progress.mode, GameMode.seasonal);
       expect(services.settings.settings.selectedMap, 'shoreline');
       expect(services.scans.hasAcceptedScan, isFalse);
-      // Saved Map inputs must not reach the tracker. Which catalog routes were
-      // fetched depends on whether the cached load or the log read finishes
-      // first, so only the hosts are asserted.
+      // Which catalog routes were fetched depends on whether the cached load
+      // or the log read finishes first, so only the hosts are asserted.
       await services.automaticRefreshes;
       expect(requests, isNotEmpty);
       expect(requests.map((r) => r.url.host), everyElement('json.tarkov.dev'));
-      expect(
-        requests.where((r) => r.url.host == 'api.tarkovtracker.org'),
-        isEmpty,
-      );
     },
   );
   test(
     'review 1 rejected busy preference cannot cancel a durable mode transition',
     () async {
-      final credentials = DelayedCredentials();
+      final database = _DelayedCatalogDatabase();
       final services = AppServices(
-        database: BlackgridDatabase(NativeDatabase.memory()),
-        credentials: credentials,
+        database: database,
         client: MockClient((r) async => http.Response('', 503)),
       );
       addTearDown(services.dispose);
       await services.initialize();
+      database.hold = true;
       final first = services.setMode(GameMode.pve);
       expect(await services.setMode(GameMode.pvp), isFalse);
-      while (!credentials.reads.containsKey(GameMode.pve)) {
-        await Future<void>.delayed(Duration.zero);
-      }
+      await database.entered(GameMode.pve);
       expect(services.catalog.mode, GameMode.pve);
       expect(services.progress.mode, GameMode.pve);
-      credentials.reads[GameMode.pve]!.complete(null);
+      database.reads[GameMode.pve]!.complete(null);
       expect(await first, isTrue);
       expect(services.settings.settings.mode, GameMode.pve);
       expect(services.catalog.mode, GameMode.pve);
     },
   );
   test(
-    'review 1 obsolete credential read cannot restore catalog activity mode',
+    'review 1 obsolete catalog read cannot restore catalog activity mode',
     () async {
-      final credentials = DelayedCredentials();
+      final database = _DelayedCatalogDatabase();
       final services = AppServices(
-        database: BlackgridDatabase(NativeDatabase.memory()),
-        credentials: credentials,
+        database: database,
         client: MockClient((r) async => http.Response('', 503)),
       );
       addTearDown(services.dispose);
       await services.initialize();
+      database.hold = true;
       final first = services.setMode(GameMode.pve);
-      while (!credentials.reads.containsKey(GameMode.pve)) {
-        await Future<void>.delayed(Duration.zero);
-      }
+      await database.entered(GameMode.pve);
       final second = services.setMode(GameMode.pvp);
-      while (!credentials.reads.containsKey(GameMode.pvp)) {
-        await Future<void>.delayed(Duration.zero);
-      }
-      credentials.reads[GameMode.pvp]!.complete(null);
+      await database.entered(GameMode.pvp);
+      database.reads[GameMode.pvp]!.complete(null);
       await second;
-      credentials.reads[GameMode.pve]!.complete(null);
+      database.reads[GameMode.pve]!.complete(null);
       await first;
       expect(services.settings.settings.mode, GameMode.pvp);
       expect(services.progress.mode, GameMode.pvp);

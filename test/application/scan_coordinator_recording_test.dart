@@ -24,7 +24,6 @@ import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
-import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,24 +174,6 @@ final class _Writer implements ScanFrameWriter {
   void kill() => kills++;
 
   void ack(RecordedScan scan) => onAnswer(ScanFrameAck(token, scan.id));
-}
-
-/// A Tracker token saved on this machine, which no recorded file may hold.
-const String _token = 'PVP_synthetic-fixture-only';
-
-/// A credential store with one Tracker token, in memory.
-final class _MemoryCredentials implements CredentialStore {
-  final Map<GameMode, String> tokens = {GameMode.pvp: _token};
-
-  @override
-  Future<String?> readCredential(GameMode mode) async => tokens[mode];
-
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async =>
-      tokens[mode] = token;
-
-  @override
-  Future<void> removeCredential(GameMode mode) async => tokens.remove(mode);
 }
 
 /// The key structure of a log line, without its values.
@@ -924,25 +905,6 @@ void main() {
       expect(second.mode, CaptureMode.targeted);
       expect(second.trigger.qpc, 2000);
       expect(rig.frames.released, contains(full.frameId));
-    });
-
-    test('recorded files never contain the saved Tracker token', () async {
-      rig = await _Rig.create(persist: true);
-      final credentials = _MemoryCredentials();
-      expect(await credentials.readCredential(GameMode.pvp), _token);
-      await rig.startRecording();
-      await rig.fallbackScan(evidence: _ev(), outcome: _accepted(_ev()));
-      final scan = await rig.recorded.at(0);
-
-      expect(encodeScanFrameLine(scan), isNot(contains(_token)));
-      final files = Directory(rig.root)
-          .listSync(recursive: true)
-          .whereType<File>()
-          .toList();
-      expect(files, hasLength(1), reason: 'the persisted case line');
-      for (final file in files) {
-        expect(latin1.decode(file.readAsBytesSync()), isNot(contains(_token)));
-      }
     });
 
     test('recording on at scan start marks the line', () async {

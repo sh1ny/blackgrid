@@ -1,9 +1,7 @@
 import 'dart:async';
 
-import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
-import 'package:blackgrid/ui/labels.dart' show localTimeLabel;
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
@@ -299,20 +297,6 @@ void main() {
       expect(find.text('No complete item data download.'), findsOneWidget);
       expect(find.textContaining('records'), findsNothing);
       expect(find.textContaining('Source:'), findsNothing);
-    });
-
-    testWidgets('Diagnostics shows when progress refresh is available again', (
-      tester,
-    ) async {
-      final h = await harness(tester);
-      final until = DateTime.now().add(const Duration(minutes: 3));
-      h.services.progress
-        ..status = ProgressStatus.cooldown
-        ..cooldownUntil = until;
-      await show(tester, h);
-
-      final time = localTimeLabel(until, now: DateTime.now());
-      expect(find.text('Refresh available again at $time'), findsOneWidget);
     });
   });
 }

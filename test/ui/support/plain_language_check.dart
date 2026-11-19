@@ -61,9 +61,10 @@ List<PlainLanguageHit> findEnumNameHits(String path, String source) {
 /// interpolation are matched on their own. Adjacent literals on a line are
 /// joined before matching. Comments, literals passed to `Key(`, `ValueKey(`
 /// and `PageStorageKey(`, and `debugLabel:` literals are ignored. `M1`
-/// matches as a whole word only.
+/// matches as a whole word only. Import, export and part directives are
+/// ignored.
 List<PlainLanguageHit> findBannedTermHits(String path, String source) {
-  final code = _blankComments(source);
+  final code = _blankDirectives(_blankComments(source));
   final literals = <_Literal>[];
   _scan(code, literals);
   final lines = <int>{};
@@ -92,6 +93,15 @@ List<PlainLanguageHit> findBannedTermHits(String path, String source) {
   flush();
   return _hitsAt(path, source, lines.toList()..sort());
 }
+
+/// Blanks `import`, `export` and `part` directives with spaces.
+///
+/// A file path is never shown to the player, so a path such as
+/// `progress_authority.dart` must not count as a literal.
+String _blankDirectives(String code) => code.replaceAllMapped(
+  RegExp(r'^(?:import|export|part)\b[^;]*;', multiLine: true),
+  (m) => m[0]!.replaceAll(RegExp(r'[^\n]'), ' '),
+);
 
 /// Keeps only the text of [source] that `legacy_import.dart` shows the player.
 ///

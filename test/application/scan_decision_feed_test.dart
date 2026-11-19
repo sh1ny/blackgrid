@@ -188,7 +188,7 @@ void main() {
 
     now = now.add(const Duration(minutes: 5));
     await h.services.catalog.refresh();
-    await h.services.progress.refresh();
+    await h.progressReady();
 
     final rows = h.services.history.rows;
     expect(rows, hasLength(1));
@@ -394,9 +394,8 @@ void main() {
 
       now = now.add(const Duration(minutes: 5));
       await h.services.catalog.refresh();
-      await h.services.progress.refresh();
+      await h.progressReady();
       h.services.catalog.updateAge();
-      h.services.progress.updateAge();
 
       expect(scans.latest, same(latest));
       expect(notified, 0);

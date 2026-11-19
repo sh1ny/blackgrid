@@ -1,9 +1,6 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:blackgrid/application/app_services.dart';
-import 'package:blackgrid/data/credential_store.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/local_paths.dart';
 import 'package:blackgrid/domain/catalog.dart';
@@ -14,18 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
-
-class MissingReplacementSource implements CredentialProtector {
-  const MissingReplacementSource();
-  final native = const WindowsCredentialProtector();
-  @override
-  Future<Uint8List> protect(Uint8List value) => native.protect(value);
-  @override
-  Future<Uint8List> unprotect(Uint8List value) => native.unprotect(value);
-  @override
-  Future<void> replace(File source, File target) =>
-      native.replace(File('${source.path}.missing'), target);
-}
 
 Future<void> requireGameClosed() async {
   // Query only process identity. No game window, pixels, hooks or memory.
@@ -62,7 +47,7 @@ Future<void> awaitNativeCompletion(bool Function() completed) async {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets(
-    'Windows native DPAPI real catalog UI and close reopen preserve only durable records',
+    'Windows native real catalog UI and close reopen preserve only durable records',
     (tester) async {
       await requireGameClosed();
       final paths = await LocalPaths.resolve();
@@ -74,32 +59,9 @@ void main() {
         await active?.dispose();
         if (await run.exists()) await run.delete(recursive: true);
       });
-      final credentialsDirectory = await Directory('${run.path}/credentials')
-          .create();
-      final credentials = DpapiCredentialStore(credentialsDirectory);
-      const synthetic = 'PVP_SYNTHETIC_DPAPI_ROUNDTRIP_NOT_A_REAL_TOKEN';
-      await credentials.writeCredential(GameMode.pvp, synthetic);
-      expect(await credentials.readCredential(GameMode.pvp), synthetic);
-      final file = File('${credentialsDirectory.path}/pvp.dpapi');
-      final before = await file.readAsBytes();
-      expect(
-        utf8.decode(before, allowMalformed: true),
-        isNot(contains(synthetic)),
-      );
-      final failureStore = DpapiCredentialStore(
-        credentialsDirectory,
-        protector: const MissingReplacementSource(),
-      );
-      await expectLater(
-        failureStore.writeCredential(GameMode.pvp, 'PVP_SYNTHETIC_REPLACEMENT'),
-        throwsA(isA<CredentialUnavailable>()),
-      );
-      expect(await file.readAsBytes(), orderedEquals(before));
-      await credentials.removeCredential(GameMode.pvp);
       final databaseFile = File('${run.path}/blackgrid.sqlite');
       var services = AppServices(
         database: BlackgridDatabase.open(databaseFile),
-        credentials: credentials,
         client: http.Client(),
       );
       active = services;
@@ -153,7 +115,6 @@ void main() {
       await requireGameClosed();
       services = AppServices(
         database: BlackgridDatabase.open(databaseFile),
-        credentials: credentials,
         client: http.Client(),
       );
       active = services;
@@ -163,7 +124,6 @@ void main() {
       expect(services.settings.pins.single.id, 'native-synthetic-pin');
       expect(services.selection.fir, FirState.unknown);
       expect(services.selection.selectedId, isNull);
-      expect(services.progress.snapshot, isNull);
       expect(services.scans.hasAcceptedScan, isFalse);
       await requireGameClosed();
       await tester.pumpWidget(BlackgridApp(services: services));

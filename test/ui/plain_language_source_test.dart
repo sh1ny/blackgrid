@@ -194,14 +194,7 @@ final after = 'normalized';
   });
 }
 
-const _controllers = [
-  'selection',
-  'settings',
-  'progress',
-  'catalog',
-  'map',
-  'history',
-];
+const _controllers = ['selection', 'settings', 'catalog', 'map', 'history'];
 
 List<File> _dartFiles(String directory) =>
     Directory(directory)

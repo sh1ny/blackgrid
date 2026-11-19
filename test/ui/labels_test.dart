@@ -1,5 +1,5 @@
 import 'package:blackgrid/application/catalog_controller.dart';
-import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/map_session.dart';
@@ -23,7 +23,7 @@ void _expectPlain<T extends Enum>(List<T> values, String Function(T) label) {
 void main() {
   test('every value of every shown kind has a plain label', () {
     _expectPlain(CatalogStatus.values, catalogStatusLabel);
-    _expectPlain(ProgressStatus.values, progressStatusLabel);
+    _expectPlain(ProgressAuthorityStatus.values, progressStatusLabel);
     _expectPlain(MapInputStatus.values, mapInputStatusLabel);
     _expectPlain(RaidPanelState.values, raidPanelStateLabel);
     _expectPlain(ScanRejectReason.values, scanRejectReasonLabel);

@@ -1,6 +1,6 @@
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/history_controller.dart';
-import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
 import 'package:blackgrid/application/scan_decision_feed.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
@@ -9,7 +9,6 @@ import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/data/database.dart';
-import 'package:blackgrid/data/tracker_client.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
 import 'package:blackgrid/domain/decision.dart';
@@ -24,6 +23,7 @@ import 'package:http/testing.dart';
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/m1_harness.dart';
 import 'support/fake_accepted_scan_source.dart';
+import 'support/fake_progress_access.dart';
 import 'support/history_wait.dart';
 
 class _NoStore implements CatalogStore {
@@ -84,7 +84,7 @@ void main() {
   const e0 = ScanEpoch(1, 1);
   late BlackgridDatabase database;
   late CatalogController catalog;
-  late ProgressController progress;
+  late ProgressAuthority progress;
   late HistoryController history;
   late SelectionController selection;
   late FakeAcceptedScanSource source;
@@ -93,7 +93,7 @@ void main() {
   late ScanDecisionFeed feed;
   late DateTime now;
 
-  setUp(() {
+  setUp(() async {
     now = fixtureNow;
     database = BlackgridDatabase(NativeDatabase.memory());
     catalog =
@@ -106,16 +106,12 @@ void main() {
           ..mode = GameMode.pvp
           ..snapshot = _snapshot()
           ..status = CatalogStatus.current;
-    progress =
-        ProgressController(
-            store: MemoryCredentials(),
-            client: TrackerClient(
-              client: MockClient((_) async => http.Response('', 500)),
-            ),
-          )
-          ..mode = GameMode.pvp
-          ..snapshot = decisionProgress()
-          ..status = ProgressStatus.current;
+    progress = ProgressAuthority(
+      access: FakeProgressAccess(winners: localWinners()),
+      modeChanges: catalog,
+      mode: () => catalog.mode,
+    );
+    await progressPublished(progress);
     history = HistoryController(database);
     epoch = FakeScanEpochReader(e0);
     selection = SelectionController(
@@ -559,7 +555,7 @@ void main() {
 
       now = now.add(const Duration(minutes: 5));
       await h.services.catalog.refresh();
-      await h.services.progress.refresh();
+      await h.progressReady();
 
       expect(s.correction?.itemId, 'item-b');
       expect(s.selectedId, 'item-b');

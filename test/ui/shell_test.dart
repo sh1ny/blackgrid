@@ -9,7 +9,7 @@ import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/app_logo.dart';
 
 import '../support/m1_harness.dart';
-import '../fixtures/m1/catalog/fixture.dart' show fixtureNow, progressWire;
+import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
 
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
@@ -1056,7 +1056,6 @@ void main() {
   testWidgets('long catalog reason wraps fully inside the shared strip', (
     tester,
   ) async {
-    const token = 'PVP_synthetic-fixture-only';
     final longName = '${'Long task name ' * 5}end'.padRight(80, 'x');
     tester.view.physicalSize = const Size(960, 720);
     tester.view.devicePixelRatio = 1;
@@ -1070,21 +1069,10 @@ void main() {
           wire['tasks_en'] = {
             'data': {'task-a name': longName},
           };
-          wire['token'] = {
-            'success': true,
-            'permissions': ['GP'],
-            'token': token,
-            'owner': 'synthetic-owner',
-            'note': 'Synthetic',
-            'calls': 0,
-            'gameMode': 'pvp',
-          };
-          wire['progress'] = progressWire();
         },
       );
-      result.credentials.values[GameMode.pvp] = token;
       await result.initialize();
-      await result.services.progress.refresh();
+      await result.progressReady();
       await result.services.selection.selectManual(
         result.services.catalog.snapshot!.items['item-a']!,
       );
@@ -2382,29 +2370,14 @@ void main() {
     });
 
     testWidgets('the Scanner inspector shows no UTC time', (tester) async {
-      const token = 'PVP_synthetic-fixture-only';
       tester.view.physicalSize = const Size(1660, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final h = (await tester.runAsync(() async {
-        final result = M1Harness(
-          shapeWire: (wire) {
-            wire['token'] = {
-              'success': true,
-              'permissions': ['GP'],
-              'token': token,
-              'owner': 'synthetic-owner',
-              'note': 'Synthetic',
-              'calls': 0,
-              'gameMode': 'pvp',
-            };
-            wire['progress'] = progressWire();
-          },
-        );
-        result.credentials.values[GameMode.pvp] = token;
+        final result = M1Harness(shapeWire: (wire) {});
         await result.initialize();
-        await result.services.progress.refresh();
+        await result.progressReady();
         await result.services.selection.selectManual(
           result.services.catalog.snapshot!.items['item-a']!,
         );
@@ -2413,10 +2386,10 @@ void main() {
       addPumpedTearDown(tester, h.dispose);
       await tester.pumpWidget(BlackgridApp(services: h.services));
       await tester.pumpAndSettle();
-      // Item data, a price time and Tracker progress are all known.
+      // Item data, a price time and local progress are all known.
       expect(h.services.catalog.snapshot, isNotNull);
       expect(h.services.selection.item?.quoteAt, isNotNull);
-      expect(h.services.progress.snapshot, isNotNull);
+      expect(h.services.progress.facts, isNotNull);
 
       await expandInspector(tester);
       final inspector = find.byKey(const Key('shell-inspector'));
