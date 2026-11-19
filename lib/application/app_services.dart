@@ -8,6 +8,7 @@ import '../data/catalog_client.dart';
 import '../data/database.dart';
 import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
+import '../data/retired_tokens.dart';
 import '../data/game_paths.dart';
 import '../data/item_icon_client.dart';
 import '../data/live_map_cache.dart';
@@ -265,6 +266,8 @@ class AppServices {
       ScanEpoch(_modeTransition, mapSession.state.sessionEpoch);
   static Future<AppServices> open() async {
     final paths = await LocalPaths.resolve();
+    // Start-up never waits on it; it swallows its own errors.
+    unawaited(deleteRetiredTokens(paths));
     final database = BlackgridDatabase.open(paths.database);
     final client = http.Client();
     final result = AppServices(

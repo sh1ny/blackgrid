@@ -24,6 +24,8 @@ import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
+import 'package:blackgrid/domain/local_progress.dart';
+import 'package:blackgrid/domain/local_progress_store.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1203,6 +1205,89 @@ void main() {
         expect(rig.frames.released, contains(lateFrame.frameId));
         expect(rig.recorded.length, 0);
         expect(rig.recorder.status.value.handedOff, 0);
+      },
+    );
+  });
+
+  group('local progress', () {
+    test(
+      'scan-frame-recording: Recording with local progress recorded',
+      () async {
+        rig = await _Rig.create();
+        final scope = switch (await rig.db.createProgressCycle(GameMode.pvp)) {
+          ProgressSuccess(:final value) => value.scope,
+          ProgressFailure(:final failure) => fail('no cycle: $failure'),
+        };
+        ProgressEvent fact(
+          String id,
+          ProgressEntityKind kind,
+          String entity,
+          ProgressField field,
+          ProgressValue value,
+        ) => ProgressEvent(
+          eventId: 'evt-$id',
+          deviceId: 'device',
+          occurredAtMs: 1,
+          scope: scope,
+          source: ProgressSource.manual,
+          target: ProgressTarget(kind: kind, id: entity, field: field),
+          value: value,
+        );
+        final appended = await rig.db.appendProgressEvents(scope, [
+          fact(
+            'task',
+            ProgressEntityKind.task,
+            'task-zq81',
+            ProgressField.state,
+            const ProgressTaskState(ProgressTaskStatus.finished),
+          ),
+          fact(
+            'objective',
+            ProgressEntityKind.objective,
+            'objective-zq82',
+            ProgressField.count,
+            const ProgressInteger(7),
+          ),
+          fact(
+            'station',
+            ProgressEntityKind.station,
+            'station-zq83',
+            ProgressField.level,
+            const ProgressInteger(3),
+          ),
+          fact(
+            'level',
+            ProgressEntityKind.player,
+            'self',
+            ProgressField.level,
+            const ProgressInteger(37),
+          ),
+        ]);
+        expect(appended, isA<ProgressSuccess<ProgressAppendResult>>());
+
+        await rig.startRecording();
+        await rig.busyScan();
+        final lines = [
+          for (final scan in [await rig.recorded.at(0)])
+            encodeScanFrameLine(scan),
+        ];
+
+        expect(lines, hasLength(1));
+        final decoded = jsonDecode(lines.single) as Map<String, Object?>;
+        for (final line in lines) {
+          for (final secret in ['zq81', 'zq82', 'zq83', 'finished']) {
+            expect(line, isNot(contains(secret)), reason: secret);
+          }
+        }
+        final forbidden = RegExp(
+          'task|objective|station|player|level|progress|loyalty',
+          caseSensitive: false,
+        );
+        expect(
+          decoded.keys.where(forbidden.hasMatch),
+          isEmpty,
+          reason: 'no case line key names progress',
+        );
       },
     );
   });
