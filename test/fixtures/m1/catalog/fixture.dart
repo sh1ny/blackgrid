@@ -3,7 +3,11 @@ import 'dart:io';
 
 import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/domain/catalog.dart';
+import 'package:blackgrid/domain/local_progress.dart' show ProgressTaskStatus;
 import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/progress_facts.dart';
+import 'package:blackgrid_progress/blackgrid_progress.dart'
+    show ProgressCatalog;
 
 final fixtureNow = DateTime.utc(2026, 10, 6);
 // Live wire shape (observed 2026-10-18): dataset envelopes carry only data and
@@ -124,7 +128,9 @@ CatalogSnapshot decisionCatalog({
   Iterable<ItemRequirement> requirements = const [],
   DateTime? observedAt,
   Map<String, DateTime?>? times,
+  ProgressCatalog? progressCatalog,
 }) => CatalogSnapshot(
+  progressCatalog: progressCatalog,
   mode: GameMode.pvp,
   revision: 'synthetic-revision',
   observedAt: observedAt ?? fixtureNow,
@@ -141,6 +147,27 @@ CatalogSnapshot decisionCatalog({
         for (final key in catalogDatasets)
           key: key == 'items' ? fixtureNow : null,
       },
+);
+
+/// Synthetic local progress facts; level 30 and faction USEC unless set.
+ProgressFacts decisionFacts({
+  Map<String, ProgressTaskStatus> tasks = const {},
+  Map<String, int> objectiveCounts = const {},
+  Set<String> objectivesComplete = const {},
+  Map<String, int> stations = const {},
+  int? level = 30,
+  String? edition,
+  String? faction = 'USEC',
+  GameMode mode = GameMode.pvp,
+}) => ProgressFacts(
+  mode: mode,
+  taskStates: tasks,
+  objectiveCounts: objectiveCounts,
+  objectivesComplete: objectivesComplete,
+  stationLevels: stations,
+  level: level,
+  edition: edition,
+  faction: faction,
 );
 ProgressSnapshot decisionProgress({
   Map<String, EntityProgress> tasks = const {},

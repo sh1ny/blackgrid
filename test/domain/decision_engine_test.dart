@@ -1,34 +1,80 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/decision_engine.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:blackgrid/domain/local_progress.dart' show ProgressTaskStatus;
 import 'package:blackgrid/domain/price_freshness.dart';
-import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/progress_facts.dart';
+import 'package:blackgrid_progress/blackgrid_progress.dart'
+    show CatalogTask, ProgressCatalog;
+import 'package:flutter_test/flutter_test.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 
 const engine = DecisionEngine();
-const activeTask = EntityProgress(
-  complete: false,
-  failed: false,
-  invalid: false,
+const _started = ProgressTaskStatus.started;
+const _finished = ProgressTaskStatus.finished;
+const _failed = ProgressTaskStatus.failed;
+
+ProgressCatalog _taskCatalog({bool? restartable}) => ProgressCatalog(
+  tasks: [CatalogTask(id: 'task-a', name: 'Task A', restartable: restartable)],
+  stations: const [],
 );
-const remainingObjective = EntityProgress(
-  complete: false,
-  count: 1,
-  invalid: false,
+
+/// A task need with an explicit gate, so a test can pick which gates apply.
+ItemRequirement _task({
+  String sourceId = 'task-a',
+  String objective = 'objective-a',
+  num count = 3,
+  int? minLevel = 1,
+  String faction = 'Any',
+  List<int> editions = const [],
+  List<String> editionIds = const [],
+  Map<String, List<String>> statuses = const {},
+  Map<String, int> stations = const {},
+}) => ItemRequirement(
+  kind: RequirementKind.task,
+  sourceId: sourceId,
+  sourceName: 'Synthetic $sourceId',
+  id: objective,
+  itemIds: const ['item-a'],
+  progressIds: [objective],
+  count: count,
+  foundInRaid: false,
+  gate: RequirementGate(
+    minPlayerLevel: minLevel,
+    faction: faction,
+    editions: editions,
+    editionIds: editionIds,
+    taskStatuses: statuses,
+    stations: stations,
+  ),
+);
+
+ItemRequirement _hideout({num count = 2, int level = 2}) => ItemRequirement(
+  kind: RequirementKind.hideout,
+  sourceId: 'station-a-$level',
+  sourceName: 'Station',
+  id: 'part',
+  itemIds: const ['item-a'],
+  progressIds: const ['part'],
+  count: count,
+  foundInRaid: false,
+  gate: RequirementGate(),
+  stationId: 'station-a',
+  stationLevel: level,
 );
 
 void main() {
   ItemDecision decide({
     CatalogItem? item,
     Iterable<ItemRequirement> needs = const [],
-    ProgressSnapshot? progress,
+    ProgressFacts? progress,
+    bool noProgress = false,
     FirState fir = FirState.yes,
     CatalogSnapshot? catalog,
+    ProgressCatalog? progressCatalog,
     bool catalogStale = false,
-    bool progressStale = false,
   }) {
     final i = item ?? saleItem();
     return engine.evaluate(
@@ -36,19 +82,270 @@ void main() {
       InspectionContext(
         mode: GameMode.pvp,
         now: fixtureNow,
-        catalog: catalog ?? decisionCatalog(item: i, requirements: needs),
-        progress: progress ?? decisionProgress(),
+        catalog:
+            catalog ??
+            decisionCatalog(
+              item: i,
+              requirements: needs,
+              progressCatalog: progressCatalog,
+            ),
+        progress: noProgress ? null : progress ?? decisionFacts(),
         fir: fir,
         catalogStale: catalogStale,
-        progressStale: progressStale,
       ),
     );
   }
 
-  ProgressSnapshot active({RequirementGate? gate}) => decisionProgress(
-    tasks: const {'task-a': activeTask},
-    objectives: const {'objective-a': remainingObjective},
+  NeedReason only(ItemDecision d) => d.reasons.single;
+
+  /// The task started with one of its three items counted.
+  ProgressFacts active() => decisionFacts(
+    tasks: const {'task-a': _started},
+    objectiveCounts: const {'objective-a': 1},
   );
+
+  /// The task not started, one of its three items counted.
+  ProgressFacts unstarted({int? level = 30}) =>
+      decisionFacts(objectiveCounts: const {'objective-a': 1}, level: level);
+
+  group('progress-authority', () {
+    test('progress-authority: Finished task from the logs', () {
+      final r = only(
+        decide(
+          needs: [_task()],
+          progress: decisionFacts(tasks: const {'task-a': _finished}),
+        ),
+      );
+      expect(r.state, NeedState.satisfied);
+      expect(r.detail, 'task completed');
+    });
+    test('progress-authority: Empty wipe with level set', () {
+      final r = only(
+        decide(
+          needs: [_task(count: 2, minLevel: 10)],
+          progress: decisionFacts(level: 20),
+        ),
+      );
+      expect(r.state, NeedState.actionable);
+      expect(r.detail, 'needed now');
+      expect(r.remaining, 2);
+    });
+    test('progress-authority: Level unset', () {
+      final d = decide(
+        needs: [
+          _task(minLevel: 10),
+          _task(sourceId: 'task-b', objective: 'objective-b', minLevel: 2),
+          _task(sourceId: 'task-c', objective: 'objective-c', minLevel: 1),
+        ],
+        progress: decisionFacts(level: null),
+      );
+      expect(d.reasons.map((r) => r.state), [
+        NeedState.unresolved,
+        NeedState.unresolved,
+        NeedState.actionable,
+      ]);
+      expect(
+        d.reasons.first.detail,
+        'not known yet whether you can do this (level, trader, skill or another requirement)',
+      );
+      expect(d.reasons.last.remaining, 3);
+    });
+    test('progress-authority: Counted objective', () {
+      final r = only(decide(needs: [_task()], progress: active()));
+      expect(r.state, NeedState.actionable);
+      expect(r.remaining, 2);
+    });
+    test('progress-authority: Started task skips its gates', () {
+      final r = only(
+        decide(
+          needs: [
+            _task(
+              count: 2,
+              minLevel: 40,
+              faction: 'BEAR',
+              statuses: const {
+                'prior': ['complete'],
+              },
+              stations: const {'station-a': 3},
+            ),
+          ],
+          progress: decisionFacts(
+            tasks: const {'task-a': _started},
+            level: null,
+            faction: null,
+          ),
+        ),
+      );
+      expect(r.state, NeedState.actionable);
+      expect(r.detail, 'needed now');
+      expect(r.remaining, 2);
+    });
+    test(
+      'progress-authority: Started task with an unrecorded prerequisite',
+      () {
+        final need = _task(
+          statuses: const {
+            'prior': ['complete'],
+          },
+        );
+        final started = only(
+          decide(
+            needs: [need],
+            progress: decisionFacts(tasks: const {'task-a': _started}),
+          ),
+        );
+        expect(started.state, NeedState.actionable);
+        expect(started.detail, 'needed now');
+        final unstartedTask = only(decide(needs: [need]));
+        expect(unstartedTask.state, NeedState.future);
+        expect(unstartedTask.detail, 'needed later');
+      },
+    );
+    test('progress-authority: Restartable failed task', () {
+      final r = only(
+        decide(
+          needs: [_task()],
+          progress: decisionFacts(tasks: const {'task-a': _failed}),
+          progressCatalog: _taskCatalog(restartable: true),
+        ),
+      );
+      expect(r.state, NeedState.actionable);
+      expect(r.remaining, 3);
+    });
+    test('progress-authority: Non-restartable failed task', () {
+      for (final catalog in [
+        _taskCatalog(restartable: false),
+        _taskCatalog(),
+        null,
+      ]) {
+        final r = only(
+          decide(
+            needs: [_task()],
+            progress: decisionFacts(tasks: const {'task-a': _failed}),
+            progressCatalog: catalog,
+          ),
+        );
+        expect(r.state, NeedState.satisfied);
+        expect(r.detail, 'task failed; no active obligation');
+      }
+    });
+    test('progress-authority: Level 1 minimum with no level', () {
+      final r = only(
+        decide(
+          needs: [_task(minLevel: 1)],
+          progress: decisionFacts(level: null),
+        ),
+      );
+      expect(r.state, NeedState.actionable);
+    });
+    test('progress-authority: Unset faction', () {
+      final r = only(
+        decide(
+          needs: [_task(faction: 'USEC')],
+          progress: decisionFacts(faction: null),
+        ),
+      );
+      expect(r.state, NeedState.unresolved);
+      final other = only(
+        decide(
+          needs: [_task(faction: 'USEC')],
+          progress: decisionFacts(faction: 'BEAR'),
+        ),
+      );
+      expect(other.state, NeedState.irrelevant);
+    });
+    test('progress-authority: Level built', () {
+      final r = only(
+        decide(
+          needs: [_hideout()],
+          progress: decisionFacts(stations: const {'station-a': 2}),
+        ),
+      );
+      expect(r.state, NeedState.satisfied);
+    });
+    test('progress-authority: Next level', () {
+      final r = only(
+        decide(
+          needs: [_hideout()],
+          progress: decisionFacts(stations: const {'station-a': 1}),
+        ),
+      );
+      expect(r.state, NeedState.actionable);
+      expect(r.detail, 'needed now');
+      expect(r.remaining, 2);
+    });
+    test('progress-authority: Later level', () {
+      final r = only(decide(needs: [_hideout()]));
+      expect(r.state, NeedState.future);
+      expect(r.detail, 'needed later');
+      expect(r.remaining, 2);
+    });
+    test('progress-authority: Edition-gated task', () {
+      for (final need in [
+        _task(editions: const [2]),
+        _task(editionIds: const ['edge_of_darkness']),
+      ]) {
+        final r = only(
+          decide(
+            needs: [need],
+            progress: decisionFacts(edition: 'edge_of_darkness'),
+          ),
+        );
+        expect(r.state, NeedState.unresolved);
+      }
+    });
+    test('progress-authority: No edition list', () {
+      final r = only(
+        decide(needs: [_task()], progress: decisionFacts(edition: null)),
+      );
+      expect(r.state, NeedState.actionable);
+    });
+  });
+
+  group('task-catalog', () {
+    test('task-catalog: Task catalog unavailable', () {
+      final needs = [_task(), _hideout()];
+      final scenarios = [
+        decisionFacts(),
+        active(),
+        unstarted(),
+        decisionFacts(tasks: const {'task-a': _finished}),
+        decisionFacts(tasks: const {'task-a': _failed}),
+        decisionFacts(stations: const {'station-a': 1}, level: null),
+      ];
+      List<Object?> view(ItemDecision d) => [
+        d.recommendation,
+        d.firNeed,
+        d.nonFirNeed,
+        d.unknownFirNeed,
+        d.openInputs,
+        for (final r in d.reasons)
+          (r.requirement.id, r.state, r.remaining, r.message),
+      ];
+      for (final facts in scenarios) {
+        expect(
+          view(
+            decide(
+              needs: needs,
+              progress: facts,
+              progressCatalog: _taskCatalog(restartable: false),
+            ),
+          ),
+          view(decide(needs: needs, progress: facts)),
+        );
+      }
+      final failed = decisionFacts(tasks: const {'task-a': _failed});
+      final restartable = decide(
+        needs: [_task()],
+        progress: failed,
+        progressCatalog: _taskCatalog(restartable: true),
+      );
+      final without = decide(needs: [_task()], progress: failed);
+      expect(restartable.reasons.single.state, NeedState.actionable);
+      expect(without.reasons.single.state, NeedState.satisfied);
+    });
+  });
+
   test('Keep outranks high price, future needs and unrelated uncertainty', () {
     final d = decide(
       needs: [taskNeed(fir: false)],
@@ -67,6 +364,8 @@ void main() {
       unknownRule.warnings,
       contains('Not known whether this item can be sold on the flea market'),
     );
+    final noProgress = decide(noProgress: true);
+    expect(noProgress.warnings, contains('Progress unavailable'));
   });
   test('FIR unknown is Check, Yes is Keep, No cannot satisfy FIR need', () {
     for (final fir in FirState.values) {
@@ -91,55 +390,78 @@ void main() {
           ),
         ),
       ],
-      progress: active(),
+      progress: unstarted(),
     );
     expect(d.recommendation, Recommendation.keepForLater);
   });
-  test(
-    'known unmet prerequisite gives later; absent prerequisite stays Check',
-    () {
-      final need = taskNeed(
-        gate: RequirementGate(
-          minPlayerLevel: 1,
-          faction: 'Any',
-          editions: const [],
-          taskStatuses: const {
-            'prior': ['complete'],
-          },
-        ),
-      );
+  test('an unmet complete-only prerequisite gives later, a met one now', () {
+    final need = taskNeed(
+      gate: RequirementGate(
+        minPlayerLevel: 1,
+        faction: 'Any',
+        editions: const [],
+        taskStatuses: const {
+          'prior': ['complete'],
+        },
+      ),
+    );
+    ProgressFacts withPrior(ProgressTaskStatus? prior) => decisionFacts(
+      tasks: {'prior': ?prior},
+      objectiveCounts: const {'objective-a': 1},
+    );
+    for (final prior in [null, _started]) {
       expect(
-        decide(
-          needs: [need],
-          progress: decisionProgress(
-            tasks: const {'task-a': activeTask, 'prior': activeTask},
-            objectives: const {'objective-a': remainingObjective},
-          ),
-        ).recommendation,
+        decide(needs: [need], progress: withPrior(prior)).recommendation,
         Recommendation.keepForLater,
       );
-      expect(
-        decide(needs: [need], progress: active()).recommendation,
-        Recommendation.check,
-      );
-    },
-  );
+    }
+    expect(
+      decide(needs: [need], progress: withPrior(_finished)).recommendation,
+      Recommendation.keep,
+    );
+    expect(
+      only(decide(needs: [need], progress: withPrior(_failed))).state,
+      NeedState.irrelevant,
+    );
+  });
   for (final gate in [
     RequirementGate(unknownTraderOrSkill: true),
     RequirementGate(incomplete: true),
-    RequirementGate(stations: const {'missing': 1}),
   ]) {
     test('unknown gate stays Check ${gate.toJson()}', () {
       expect(
         decide(
           needs: [taskNeed(gate: gate)],
-          progress: active(),
+          progress: unstarted(),
         ).recommendation,
         Recommendation.check,
       );
     });
   }
-  test('catalog string edition lacks documented Tracker numeric mapping', () {
+  test('a station gate is met at the level and later below it', () {
+    final need = taskNeed(
+      gate: RequirementGate(
+        minPlayerLevel: 1,
+        faction: 'Any',
+        editions: const [],
+        taskStatuses: const {},
+        stations: const {'station-a': 2},
+      ),
+    );
+    ProgressFacts at(int level) => decisionFacts(
+      stations: {'station-a': level},
+      objectiveCounts: const {'objective-a': 1},
+    );
+    expect(
+      decide(needs: [need], progress: at(2)).recommendation,
+      Recommendation.keep,
+    );
+    expect(
+      decide(needs: [need], progress: at(1)).recommendation,
+      Recommendation.keepForLater,
+    );
+  });
+  test('catalog string edition IDs always leave the gate unknown', () {
     expect(
       decide(
         needs: [
@@ -147,7 +469,7 @@ void main() {
             gate: RequirementGate(editionIds: const ['edge_of_darkness']),
           ),
         ],
-        progress: active(),
+        progress: unstarted(),
       ).recommendation,
       Recommendation.check,
     );
@@ -158,7 +480,7 @@ void main() {
       expect(
         decide(
           needs: [taskNeed(gate: RequirementGate())],
-          progress: active(),
+          progress: unstarted(),
         ).recommendation,
         Recommendation.check,
       );
@@ -175,62 +497,36 @@ void main() {
             ),
           ),
         ],
-        progress: active(),
+        progress: unstarted(),
       ).recommendation,
       Recommendation.check,
     );
   });
-  test('completed/failed tasks do not retain and invalid task stays Check', () {
-    for (final task in [
-      const EntityProgress(complete: true),
-      const EntityProgress(complete: false, failed: true),
-      const EntityProgress(complete: false, invalid: true),
-    ]) {
+  test('finished and failed tasks do not retain an obligation', () {
+    for (final task in [_finished, _failed]) {
       final d = decide(
         needs: [taskNeed()],
-        progress: decisionProgress(tasks: {'task-a': task}),
+        progress: decisionFacts(tasks: {'task-a': task}),
       );
-      expect(
-        d.recommendation,
-        task.invalid == true ? Recommendation.check : Recommendation.flea,
-      );
+      expect(d.recommendation, Recommendation.flea);
     }
   });
-  test('missing task and valid empty arrays mean unknown entity, not zero', () {
-    final d = decide(needs: [taskNeed()], progress: decisionProgress());
-    expect(d.recommendation, Recommendation.check);
-    expect(d.firNeed, isNull);
+  test('an empty wipe counts as not started with nothing handed in', () {
+    final d = decide(needs: [taskNeed()], progress: decisionFacts());
+    expect(d.recommendation, Recommendation.keep);
+    expect(d.firNeed, 3);
   });
-  test(
-    'missing counts, missing FIR and missing objective remain unresolved',
-    () {
-      expect(
-        decide(
-          needs: [taskNeed(count: null)],
-          progress: active(),
-        ).recommendation,
-        Recommendation.check,
-      );
-      final unknownFir = decide(
-        needs: [taskNeed(fir: null)],
-        progress: active(),
-      );
-      expect(unknownFir.recommendation, Recommendation.check);
-      expect(unknownFir.firNeed, isNull);
-      expect(unknownFir.nonFirNeed, isNull);
-      expect(unknownFir.unknownFirNeed, 2);
-      expect(
-        decide(
-          needs: [taskNeed()],
-          progress: decisionProgress(
-            tasks: const {'task-a': activeTask},
-            objectives: const {'objective-a': EntityProgress(complete: false)},
-          ),
-        ).recommendation,
-        Recommendation.check,
-      );
-    },
-  );
+  test('missing counts and missing FIR remain unresolved', () {
+    expect(
+      decide(needs: [taskNeed(count: null)], progress: active()).recommendation,
+      Recommendation.check,
+    );
+    final unknownFir = decide(needs: [taskNeed(fir: null)], progress: active());
+    expect(unknownFir.recommendation, Recommendation.check);
+    expect(unknownFir.firNeed, isNull);
+    expect(unknownFir.nonFirNeed, isNull);
+    expect(unknownFir.unknownFirNeed, 2);
+  });
   test('completed paired requirement satisfied once and alternatives quantity stays nullable', () {
     final need = taskNeed(
       items: const ['item-a', 'item-b'],
@@ -238,12 +534,9 @@ void main() {
     );
     final d = decide(
       needs: [need],
-      progress: decisionProgress(
-        tasks: const {'task-a': activeTask},
-        objectives: const {
-          'objective-a': remainingObjective,
-          'give-a': remainingObjective,
-        },
+      progress: decisionFacts(
+        tasks: const {'task-a': _started},
+        objectiveCounts: const {'objective-a': 1, 'give-a': 1},
       ),
     );
     expect(d.reasons.single.remaining, 2);
@@ -251,86 +544,60 @@ void main() {
     expect(d.recommendation, Recommendation.keep);
     final done = decide(
       needs: [need],
-      progress: decisionProgress(
-        tasks: const {'task-a': activeTask},
-        objectives: const {'give-a': EntityProgress(complete: true)},
+      progress: decisionFacts(
+        tasks: const {'task-a': _started},
+        objectivesComplete: const {'give-a'},
       ),
     );
     expect(done.recommendation, Recommendation.flea);
   });
-  test('hideout module/part completion and previous station level gates', () {
-    final need = ItemRequirement(
-      kind: RequirementKind.hideout,
-      sourceId: 'station-a-2',
-      sourceName: 'Station',
-      id: 'part',
-      itemIds: const ['item-a'],
-      progressIds: const ['part'],
-      count: 2,
-      foundInRaid: false,
-      gate: RequirementGate(),
-      stationId: 'station-a',
-      stationLevel: 2,
-    );
-    for (final completed in [true, false]) {
-      final p = decisionProgress(
-        modules: {
-          'station-a-2': const EntityProgress(complete: false),
-          'station-a-1': EntityProgress(complete: completed),
-        },
-        parts: const {'part': EntityProgress(complete: false, count: 1)},
-      );
+  test('hideout level built, next level and later level', () {
+    final need = _hideout();
+    for (final (level, expected) in [
+      (2, Recommendation.flea),
+      (3, Recommendation.flea),
+      (1, Recommendation.keep),
+      (0, Recommendation.keepForLater),
+    ]) {
       expect(
-        decide(needs: [need], progress: p).recommendation,
-        completed ? Recommendation.keep : Recommendation.keepForLater,
+        decide(
+          needs: [need],
+          progress: decisionFacts(stations: {'station-a': level}),
+        ).recommendation,
+        expected,
+        reason: 'station level $level',
       );
     }
-    expect(
+  });
+  test('hideout parts count zero whatever the objective ids hold', () {
+    final r = only(
       decide(
-        needs: [need],
-        progress: decisionProgress(
-          modules: const {'station-a-2': EntityProgress(complete: true)},
+        needs: [_hideout()],
+        progress: decisionFacts(
+          stations: const {'station-a': 1},
+          objectiveCounts: const {'part': 5},
+          objectivesComplete: const {'part'},
         ),
-      ).recommendation,
-      Recommendation.flea,
+      ),
     );
-    expect(
-      decide(
-        needs: [need],
-        progress: decisionProgress(
-          modules: const {'station-a-2': EntityProgress(complete: false)},
-          parts: const {'part': EntityProgress(complete: true)},
-        ),
-      ).recommendation,
-      Recommendation.flea,
-    );
+    expect(r.state, NeedState.actionable);
+    expect(r.remaining, 2);
   });
   test(
-    'faction/edition mismatch irrelevant; missing player gates unresolved',
+    'faction mismatch is irrelevant and a missing player level is unresolved',
     () {
       expect(
         decide(
-          needs: [taskNeed(gate: RequirementGate(faction: 'BEAR'))],
-          progress: active(),
+          needs: [_task(faction: 'BEAR')],
+          progress: unstarted(),
         ).recommendation,
         Recommendation.flea,
       );
       expect(
         decide(
-          needs: [
-            taskNeed(gate: RequirementGate(editions: const [2])),
-          ],
-          progress: active(),
+          needs: [_task(minLevel: 10)],
+          progress: unstarted(level: null),
         ).recommendation,
-        Recommendation.flea,
-      );
-      final p = decisionProgress(
-        playerLevel: null,
-        tasks: const {'task-a': activeTask},
-        objectives: const {'objective-a': remainingObjective},
-      );
-      expect(
-        decide(needs: [taskNeed()], progress: p).recommendation,
         Recommendation.check,
       );
     },
@@ -414,39 +681,28 @@ void main() {
       );
     },
   );
-  test(
-    'stale catalog/progress and mismatched mode block sale and confirmed need',
-    () {
-      expect(decide(catalogStale: true).recommendation, Recommendation.check);
-      expect(decide(progressStale: true).recommendation, Recommendation.check);
-      expect(
-        decide(progress: decisionProgress(mode: GameMode.pve)).recommendation,
-        Recommendation.check,
-      );
-      expect(
-        decide(
-          progress: decisionProgress(
-            observedAt: fixtureNow.subtract(const Duration(minutes: 15)),
-          ),
-        ).recommendation,
-        Recommendation.check,
-      );
-      expect(
-        decide(
-          catalog: decisionCatalog(
-            observedAt: fixtureNow.subtract(const Duration(hours: 25)),
-          ),
-        ).recommendation,
-        Recommendation.check,
-      );
-      // Source times are evidence only: a fresh download without them is
-      // not forced to Check by the catalog.
-      expect(
-        decide(catalog: decisionCatalog(times: const {})).recommendation,
-        Recommendation.flea,
-      );
-    },
-  );
+  test('stale catalog, no progress and mismatched mode block sale and confirmed need', () {
+    expect(decide(catalogStale: true).recommendation, Recommendation.check);
+    expect(decide(noProgress: true).recommendation, Recommendation.check);
+    expect(
+      decide(progress: decisionFacts(mode: GameMode.pve)).recommendation,
+      Recommendation.check,
+    );
+    expect(
+      decide(
+        catalog: decisionCatalog(
+          observedAt: fixtureNow.subtract(const Duration(hours: 25)),
+        ),
+      ).recommendation,
+      Recommendation.check,
+    );
+    // Source times are evidence only: a fresh download without them is
+    // not forced to Check by the catalog.
+    expect(
+      decide(catalog: decisionCatalog(times: const {})).recommendation,
+      Recommendation.flea,
+    );
+  });
   test('noFlea is independent of zero minimum and unknown restriction is not clearance', () {
     expect(
       decide(item: saleItem(noFlea: true, minimum: 0)).recommendation,
@@ -568,14 +824,14 @@ void main() {
         InspectionContext(
           mode: GameMode.pvp,
           now: fixtureNow,
-          progress: decisionProgress(),
+          progress: decisionFacts(),
           fir: FirState.yes,
         ),
         InspectionContext(
           mode: GameMode.unknown,
           now: fixtureNow,
           catalog: decisionCatalog(),
-          progress: decisionProgress(),
+          progress: decisionFacts(),
           fir: FirState.yes,
         ),
       ]) {
@@ -591,20 +847,17 @@ void main() {
         .requirements
         .where((r) => r.kind == RequirementKind.task)
         .toList();
-    for (final objective in [
-      const EntityProgress(complete: true, count: 1, invalid: false),
-      const EntityProgress(complete: false, count: 1, invalid: false),
-      const EntityProgress(complete: false, count: 0, invalid: false),
-    ]) {
+    for (final (count, complete) in [(1, true), (1, false), (0, false)]) {
       final d = decide(
         needs: needs,
-        progress: decisionProgress(
+        progress: decisionFacts(
           tasks: const {
-            'task-a': activeTask,
-            'task-b': activeTask,
-            'task-c': activeTask,
+            'task-a': _started,
+            'task-b': _started,
+            'task-c': _started,
           },
-          objectives: {'shared-find-item': objective},
+          objectiveCounts: {'shared-find-item': count},
+          objectivesComplete: {if (complete) 'shared-find-item'},
         ),
       );
       expect(d.recommendation, Recommendation.check);
@@ -621,23 +874,14 @@ void main() {
         .toList();
     final d = decide(
       needs: needs,
-      progress: decisionProgress(
+      progress: decisionFacts(
         tasks: const {
-          'task-a': EntityProgress(complete: true, invalid: false),
-          'task-b': EntityProgress(
-            complete: false,
-            failed: true,
-            invalid: false,
-          ),
-          'task-c': activeTask,
+          'task-a': _finished,
+          'task-b': _failed,
+          'task-c': _started,
         },
-        objectives: const {
-          'shared-find-item': EntityProgress(
-            complete: true,
-            count: 1,
-            invalid: false,
-          ),
-        },
+        objectiveCounts: const {'shared-find-item': 1},
+        objectivesComplete: const {'shared-find-item'},
       ),
     );
     expect(d.recommendation, Recommendation.check);
@@ -648,11 +892,11 @@ void main() {
     ]);
     final resolved = decide(
       needs: needs,
-      progress: decisionProgress(
+      progress: decisionFacts(
         tasks: const {
-          'task-a': EntityProgress(complete: true, invalid: false),
-          'task-b': EntityProgress(complete: true, invalid: false),
-          'task-c': EntityProgress(complete: true, invalid: false),
+          'task-a': _finished,
+          'task-b': _finished,
+          'task-c': _finished,
         },
       ),
     );
@@ -667,41 +911,14 @@ void main() {
     final need = c.requirements
         .where((r) => r.kind == RequirementKind.task)
         .single;
-    final p = decisionProgress(
-      tasks: const {'task-a': activeTask},
-      objectives: const {
-        'find-a': EntityProgress(complete: true, count: 3, invalid: false),
-        'give-a': EntityProgress(complete: false, count: 1, invalid: false),
-      },
+    final p = decisionFacts(
+      tasks: const {'task-a': _started},
+      objectiveCounts: const {'find-a': 3, 'give-a': 1},
+      objectivesComplete: const {'find-a'},
     );
     final d = decide(needs: [need], progress: p);
     expect(d.recommendation, Recommendation.keep);
     expect(d.reasons.single.remaining, 2);
-  });
-  test('invalid completion cannot erase unresolved task evidence', () {
-    expect(
-      decide(
-        needs: [taskNeed()],
-        progress: decisionProgress(
-          tasks: const {
-            'task-a': EntityProgress(complete: true, invalid: true),
-          },
-        ),
-      ).recommendation,
-      Recommendation.check,
-    );
-    expect(
-      decide(
-        needs: [taskNeed()],
-        progress: decisionProgress(
-          tasks: const {'task-a': activeTask},
-          objectives: const {
-            'objective-a': EntityProgress(complete: true, invalid: true),
-          },
-        ),
-      ).recommendation,
-      Recommendation.check,
-    );
   });
   test(
     'zero count satisfied and finite invalid requirement quantities unresolved',
@@ -756,12 +973,12 @@ void main() {
         item: saleItem(quoteAt: fixtureNow.subtract(const Duration(hours: 2))),
         needs: [taskNeed()],
         catalogStale: true,
-        progressStale: true,
+        noProgress: true,
         fir: FirState.unknown,
       );
       expect(d.openInputs, [
         OpenInput.itemData,
-        OpenInput.trackerProgress,
+        OpenInput.progress,
         OpenInput.foundInRaid,
         OpenInput.unresolvedNeed,
         OpenInput.fleaEligibility,

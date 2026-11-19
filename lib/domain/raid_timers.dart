@@ -1,5 +1,5 @@
 import 'catalog.dart';
-import 'progress.dart';
+import 'progress_facts.dart';
 import 'raid_lifecycle.dart';
 import 'settings.dart';
 
@@ -104,7 +104,7 @@ class ScavCooldownLength {
   /// One plus the sum of the built hideout bonuses.
   final double hideoutFactor;
 
-  /// Whether Tracker progress for the active mode was available.
+  /// Whether local progress for the active mode was available.
   final bool hasProgress;
 
   /// The inputs as text, for example `Base 25:00 × Fence 0.80 × hideout 0.65`.
@@ -119,8 +119,11 @@ class ScavCooldownLength {
 /// The length is the base times the modifier of the Fence level with the
 /// highest minimum at or below [reputation] (the lowest level when below all),
 /// times one plus the sum of the bonuses of the hideout levels [progress]
-/// marks complete, rounded to whole seconds and floored at zero. [progress]
-/// counts only when its mode is [activeMode]; it counts however old it is.
+/// records as built, rounded to whole seconds and floored at zero. A bonus key
+/// is `<stationId>-<level>`, split at its last dash; a level is built when the
+/// station's recorded level is at least that level, and a key whose suffix is
+/// not a positive integer gives no bonus. [progress] counts only when its mode
+/// is [activeMode].
 ///
 /// Returns `null` when [inputs] has no Fence levels, or when the base or the
 /// length is not finite or exceeds one day, so item data with absurd values
@@ -128,7 +131,7 @@ class ScavCooldownLength {
 ScavCooldownLength? scavCooldownLength(
   ScavCooldownInputs inputs,
   double reputation,
-  ProgressSnapshot? progress,
+  ProgressFacts? progress,
   GameMode activeMode,
 ) {
   final levels = inputs.fenceLevels;
@@ -143,7 +146,7 @@ ScavCooldownLength? scavCooldownLength(
   var bonus = 0.0;
   if (usable != null) {
     for (final MapEntry(:key, :value) in inputs.bonuses.entries) {
-      if (usable.modules[key]?.complete == true) bonus += value;
+      if (_built(usable, key)) bonus += value;
     }
   }
   final factor = 1 + bonus;
@@ -159,13 +162,21 @@ ScavCooldownLength? scavCooldownLength(
   );
 }
 
+bool _built(ProgressFacts progress, String key) {
+  final dash = key.lastIndexOf('-');
+  if (dash <= 0) return false;
+  final level = int.tryParse(key.substring(dash + 1));
+  if (level == null || level < 1) return false;
+  return progress.stationLevel(key.substring(0, dash)) >= level;
+}
+
 /// The longest scav cooldown the timer counts, one day; real ones are minutes.
 const _maxCooldownSeconds = 24 * 60 * 60;
 
 bool _countable(double seconds) =>
     seconds.isFinite && seconds <= _maxCooldownSeconds;
 
-const _noProgress = 'No Tracker progress for this mode: no hideout bonuses';
+const _noProgress = 'Progress unavailable: no hideout bonuses';
 
 /// Projects the timers at [now] from the log times and the settings.
 ///
@@ -185,7 +196,7 @@ RaidTimersView raidTimersView({
   required GameMode activeMode,
   required Map<GameMode, DateTime> cooldownStarts,
   required ScavCooldownInputs? inputs,
-  required ProgressSnapshot? progress,
+  required ProgressFacts? progress,
 }) {
   if (!settings.enabled) return RaidTimersView.empty;
   final entries = <RaidTimerEntry>[];
@@ -260,7 +271,7 @@ RaidTimersView raidTimersView({
   required GameMode activeMode,
   required Map<GameMode, DateTime> starts,
   required ScavCooldownInputs? inputs,
-  required ProgressSnapshot? progress,
+  required ProgressFacts? progress,
 }) {
   RaidTimerEntry unknown(String reason) => (RaidTimerEntry(
     kind: RaidTimerKind.scav,

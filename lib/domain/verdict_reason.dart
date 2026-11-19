@@ -41,7 +41,7 @@ String _check(ItemDecision decision) {
     if (!open.contains(input)) continue;
     return switch (input) {
       OpenInput.itemData => 'Item data missing or out of date',
-      OpenInput.trackerProgress => 'Tracker progress missing or out of date',
+      OpenInput.progress => 'Progress unavailable',
       OpenInput.foundInRaid => _foundInRaid(decision),
       OpenInput.unresolvedNeed => _unresolved(decision),
       OpenInput.fleaEligibility => 'Not known if it can be sold on the Flea',

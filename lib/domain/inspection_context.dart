@@ -1,5 +1,5 @@
 import 'catalog.dart';
-import 'progress.dart';
+import 'progress_facts.dart';
 
 enum FirState { unknown, yes, no }
 
@@ -11,12 +11,13 @@ class InspectionContext {
     this.progress,
     this.fir = FirState.unknown,
     this.catalogStale = false,
-    this.progressStale = false,
   });
   final GameMode mode;
   final DateTime now;
   final CatalogSnapshot? catalog;
-  final ProgressSnapshot? progress;
+
+  /// The effective mode's local progress, or `null` when it cannot be read.
+  final ProgressFacts? progress;
   final FirState fir;
-  final bool catalogStale, progressStale;
+  final bool catalogStale;
 }

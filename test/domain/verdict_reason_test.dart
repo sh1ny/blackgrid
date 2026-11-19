@@ -104,14 +104,14 @@ void main() {
       Recommendation.check,
       reasons: [need('Shortage', NeedState.unresolved)],
       open: const [
-        OpenInput.trackerProgress,
+        OpenInput.progress,
         OpenInput.foundInRaid,
         OpenInput.unresolvedNeed,
         OpenInput.fleaEligibility,
         OpenInput.priceTimeStale,
       ],
     );
-    expect(verdictReason(d), 'Tracker progress missing or out of date');
+    expect(verdictReason(d), 'Progress unavailable');
     final later = decision(
       Recommendation.check,
       open: const [OpenInput.fleaEligibility, OpenInput.priceTimeUnknown],
@@ -129,8 +129,8 @@ void main() {
     );
     expect(reasonFor(OpenInput.itemData), 'Item data missing or out of date');
     expect(
-      reasonFor(OpenInput.trackerProgress),
-      'Tracker progress missing or out of date',
+      reasonFor(OpenInput.progress),
+      'Progress unavailable',
     );
     expect(
       reasonFor(OpenInput.foundInRaid),

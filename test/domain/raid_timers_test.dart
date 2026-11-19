@@ -1,5 +1,5 @@
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/progress_facts.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/domain/raid_timers.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -51,22 +51,8 @@ ScavCooldownInputs _inputs({
   bonuses: bonuses ?? const {'ic-1': -0.15, 'ic-3': -0.2},
 );
 
-ProgressSnapshot _progress(
-  GameMode mode,
-  DateTime observedAt,
-  Iterable<String> complete,
-) => ProgressSnapshot(
-  mode: mode,
-  credentialSession: 1,
-  owner: 'owner',
-  observedAt: observedAt,
-  tasks: const {},
-  objectives: const {},
-  modules: {
-    for (final id in complete) id: const EntityProgress(complete: true),
-  },
-  parts: const {},
-);
+ProgressFacts _progress(GameMode mode, Map<String, int> stations) =>
+    ProgressFacts(mode: mode, stationLevels: stations);
 
 RaidTimersView _view({
   required DateTime now,
@@ -75,7 +61,7 @@ RaidTimersView _view({
   GameMode activeMode = GameMode.seasonal,
   Map<GameMode, DateTime> starts = const {},
   ScavCooldownInputs? inputs,
-  ProgressSnapshot? progress,
+  ProgressFacts? progress,
 }) => raidTimersView(
   now: now,
   lifecycle: _state(raid),
@@ -183,11 +169,10 @@ void main() {
     });
 
     test('reputation 2.50 and two bonuses give 780 s', () {
-      final now = DateTime(2026, 11, 1, 20);
       final length = scavCooldownLength(
         _inputs(),
         2.5,
-        _progress(GameMode.seasonal, now, ['ic-1', 'ic-3']),
+        _progress(GameMode.seasonal, {'ic': 3}),
         GameMode.seasonal,
       );
       expect(length?.seconds, 780);
@@ -264,20 +249,40 @@ void main() {
 
   group('hideout progress', () {
     final now = DateTime(2026, 11, 1, 20);
+    const noBonuses = 'Progress unavailable: no hideout bonuses';
 
-    test('complete module of the same mode adds its bonus', () {
+    test('raid-timers: Progress for the mode', () {
       final length = scavCooldownLength(
         _inputs(),
         0,
-        _progress(GameMode.pvp, now, ['ic-1']),
+        _progress(GameMode.pvp, {'ic': 1}),
         GameMode.pvp,
       );
       expect(length?.seconds, 1275);
       expect(length?.hideoutFactor, closeTo(0.85, 1e-9));
+      expect(length?.hasProgress, isTrue);
     });
 
-    test('progress of another mode adds no bonus and says so', () {
-      final progress = _progress(GameMode.pve, now, ['ic-1']);
+    test('raid-timers: Higher level counts lower bonuses', () {
+      final length = scavCooldownLength(
+        _inputs(),
+        0,
+        _progress(GameMode.pvp, {'ic': 3}),
+        GameMode.pvp,
+      );
+      expect(length?.hideoutFactor, closeTo(0.65, 1e-9));
+      expect(length?.seconds, 975);
+      final belowLevel = scavCooldownLength(
+        _inputs(),
+        0,
+        _progress(GameMode.pvp, {'ic': 2}),
+        GameMode.pvp,
+      );
+      expect(belowLevel?.seconds, 1275);
+    });
+
+    test('raid-timers: Progress for another mode', () {
+      final progress = _progress(GameMode.pve, {'ic': 1});
       final length = scavCooldownLength(_inputs(), 0, progress, GameMode.pvp);
       expect(length?.seconds, 1500);
       final v = _view(
@@ -286,21 +291,55 @@ void main() {
         inputs: _inputs(),
         progress: progress,
       );
-      expect(
-        _entry(v, RaidTimerKind.scav).tooltip,
-        contains('No Tracker progress for this mode: no hideout bonuses'),
-      );
+      expect(_entry(v, RaidTimerKind.scav).tooltip, contains(noBonuses));
     });
 
-    test('stale progress still counts', () {
-      final stale = _progress(
+    test('raid-timers: Progress unavailable', () {
+      final length = scavCooldownLength(_inputs(), 0, null, GameMode.pvp);
+      expect(length?.seconds, 1500);
+      expect(length?.hasProgress, isFalse);
+      final v = _view(now: now, activeMode: GameMode.pvp, inputs: _inputs());
+      expect(_entry(v, RaidTimerKind.scav).tooltip, contains(noBonuses));
+    });
+
+    test('raid-timers: Stale progress', () {
+      // Facts carry no age: a level recorded long ago counts like any other.
+      final length = scavCooldownLength(
+        _inputs(),
+        0,
+        _progress(GameMode.pvp, {'ic': 3}),
         GameMode.pvp,
-        now.subtract(const Duration(minutes: 20)),
-        ['ic-3'],
       );
-      expect(stale.authoritativeAt(now), isFalse);
-      final length = scavCooldownLength(_inputs(), 0, stale, GameMode.pvp);
-      expect(length?.seconds, 1200);
+      expect(length?.seconds, 975);
+      final v = _view(
+        now: now,
+        activeMode: GameMode.pvp,
+        inputs: _inputs(),
+        progress: _progress(GameMode.pvp, {'ic': 3}),
+      );
+      expect(_entry(v, RaidTimerKind.scav).tooltip, isNot(contains(noBonuses)));
+    });
+
+    test('a bonus key splits at the last dash and needs a positive level', () {
+      final progress = _progress(GameMode.pvp, {'water-collector': 2, 'ic': 9});
+      final length = scavCooldownLength(
+        _inputs(
+          bonuses: const {
+            'water-collector-1': -0.1,
+            'water-collector-2': -0.05,
+            'water-collector-3': -0.5,
+            'ic-0': -0.5,
+            'ic--1': -0.5,
+            'ic-x': -0.5,
+            'ic-': -0.5,
+            'nodash': -0.5,
+          },
+        ),
+        0,
+        progress,
+        GameMode.pvp,
+      );
+      expect(length?.hideoutFactor, closeTo(0.85, 1e-9));
     });
   });
 

@@ -1,8 +1,12 @@
+import 'package:blackgrid_progress/blackgrid_progress.dart'
+    show ProgressCatalog;
+
 import 'catalog.dart';
 import 'decision.dart';
 import 'inspection_context.dart';
 import 'price_freshness.dart';
-import 'progress.dart';
+import 'local_progress.dart' show ProgressTaskStatus;
+import 'progress_facts.dart';
 
 class DecisionEngine {
   const DecisionEngine();
@@ -20,9 +24,7 @@ class DecisionEngine {
     final progressKnown =
         progress != null &&
         progress.mode == context.mode &&
-        context.mode != GameMode.unknown &&
-        !context.progressStale &&
-        progress.authoritativeAt(context.now);
+        context.mode != GameMode.unknown;
     final warnings = <String>[];
     final open = <OpenInput>[];
     if (!catalogKnown) {
@@ -30,8 +32,8 @@ class DecisionEngine {
       open.add(OpenInput.itemData);
     }
     if (!progressKnown) {
-      warnings.add('Tracker progress missing or out of date');
-      open.add(OpenInput.trackerProgress);
+      warnings.add('Progress unavailable');
+      open.add(OpenInput.progress);
     }
     if (context.fir == FirState.unknown) {
       warnings.add(foundInRaidUnknownWarning);
@@ -42,7 +44,12 @@ class DecisionEngine {
     final reasons = <NeedReason>[];
     for (final r in requirements) {
       reasons.add(
-        _need(r, catalogKnown && progressKnown ? progress : null, context.fir),
+        _need(
+          r,
+          catalogKnown && progressKnown ? progress : null,
+          context.fir,
+          catalog?.progressCatalog,
+        ),
       );
     }
     num? total(bool? fir) {
@@ -158,7 +165,12 @@ class DecisionEngine {
     );
   }
 
-  NeedReason _need(ItemRequirement r, ProgressSnapshot? p, FirState fir) {
+  NeedReason _need(
+    ItemRequirement r,
+    ProgressFacts? p,
+    FirState fir,
+    ProgressCatalog? progressCatalog,
+  ) {
     NeedReason reason(NeedState state, String detail, [num? remaining]) =>
         NeedReason(
           requirement: r,
@@ -176,41 +188,40 @@ class DecisionEngine {
       );
     }
     if (p == null) {
-      return reason(
-        NeedState.unresolved,
-        'Tracker progress or item data unknown',
-      );
+      return reason(NeedState.unresolved, 'Progress or item data unknown');
     }
-    final gate = _gate(r, p);
-    if (gate == NeedState.irrelevant) {
-      return reason(gate, 'does not apply to you', 0);
-    }
-    EntityProgress? parent;
+    var started = false;
     if (r.kind == RequirementKind.task) {
-      parent = p.tasks[r.sourceId];
-      if (parent?.invalid == true) {
-        return reason(NeedState.unresolved, 'task status invalid');
-      }
-      if (parent?.complete == true || parent?.failed == true) {
-        return reason(
-          NeedState.satisfied,
-          parent!.complete
-              ? 'task completed'
-              : 'task failed; no active obligation',
-          0,
-        );
-      }
-      if (parent == null || parent.invalid != false || parent.failed == null) {
-        return reason(NeedState.unresolved, 'task status unknown or invalid');
+      // ADR-0043 order: a recorded finished, failed or started state decides
+      // before any gate does.
+      switch (p.taskState(r.sourceId)) {
+        case ProgressTaskStatus.finished:
+          return reason(NeedState.satisfied, 'task completed', 0);
+        case ProgressTaskStatus.failed
+            when progressCatalog?.tasksById[r.sourceId]?.restartable != true:
+          return reason(
+            NeedState.satisfied,
+            'task failed; no active obligation',
+            0,
+          );
+        case ProgressTaskStatus.started:
+          started = true;
+        case ProgressTaskStatus.failed || null:
+          break;
       }
     } else {
-      parent = p.modules[r.sourceId];
-      if (parent?.complete == true) {
-        return reason(NeedState.satisfied, 'station module completed', 0);
-      }
-      if (parent == null) {
+      final stationId = r.stationId;
+      final level = r.stationLevel;
+      if (stationId == null || level == null) {
         return reason(NeedState.unresolved, 'station module status unknown');
       }
+      if (p.stationLevel(stationId) >= level) {
+        return reason(NeedState.satisfied, 'station module completed', 0);
+      }
+    }
+    final gate = started ? NeedState.actionable : _gate(r, p);
+    if (gate == NeedState.irrelevant) {
+      return reason(gate, 'does not apply to you', 0);
     }
     if (r.ambiguousProgressIdentity) {
       return reason(
@@ -218,26 +229,17 @@ class DecisionEngine {
         'several tasks share this progress, so it cannot be told apart',
       );
     }
-    final entries = r.progressIds
-        .map(
-          (id) =>
-              r.kind == RequirementKind.task ? p.objectives[id] : p.parts[id],
-        )
-        .toList();
-    final completion = r.completionId == null
-        ? null
-        : (r.kind == RequirementKind.task
-              ? p.objectives[r.completionId]
-              : p.parts[r.completionId]);
-    if (r.completionId != null
-        ? completion?.complete == true && completion?.invalid != true
-        : entries.any((v) => v?.complete == true && v?.invalid != true)) {
+    final isTask = r.kind == RequirementKind.task;
+    // Hideout parts are never recorded: they count 0 until the level is built.
+    int count(String id) => isTask ? p.objectiveCount(id) : 0;
+    bool complete(String id) => isTask && p.objectiveComplete(id);
+    final completionId = r.completionId;
+    if (completionId != null
+        ? complete(completionId)
+        : r.progressIds.any(complete)) {
       return reason(NeedState.satisfied, 'requirement completed', 0);
     }
-    if (entries.any((v) => v == null || v.invalid == true) ||
-        r.count == null ||
-        !r.count!.isFinite ||
-        r.count! < 0) {
+    if (r.count == null || !r.count!.isFinite || r.count! < 0) {
       return reason(
         NeedState.unresolved,
         'progress or amount needed is unknown',
@@ -247,14 +249,8 @@ class DecisionEngine {
       return reason(NeedState.satisfied, 'no quantity required', 0);
     }
     num? remaining;
-    for (final e in entries) {
-      if (e!.count == null || !e.count!.isFinite || e.count! < 0) {
-        return reason(
-          NeedState.unresolved,
-          'how many you still need is unknown',
-        );
-      }
-      final value = (r.count! - e.count!).clamp(0, r.count!);
+    for (final id in r.progressIds) {
+      final value = (r.count! - count(id)).clamp(0, r.count!);
       if (remaining == null || value > remaining) remaining = value;
     }
     if (remaining == 0) {
@@ -295,7 +291,7 @@ class DecisionEngine {
     );
   }
 
-  NeedState _gate(ItemRequirement r, ProgressSnapshot p) {
+  NeedState _gate(ItemRequirement r, ProgressFacts p) {
     final g = r.gate;
     var future = false;
     var unknown = g.incomplete || g.unknownTraderOrSkill;
@@ -313,41 +309,33 @@ class DecisionEngine {
         return NeedState.irrelevant;
       }
     }
-    // The live catalog also uses edition string IDs. Tracker only documents
-    // a numeric edition; without an authoritative mapping this gate is unknown.
-    if (g.editionIds?.isNotEmpty == true) unknown = true;
-    if (g.editions?.isNotEmpty == true) {
-      if (p.gameEdition == null) {
-        unknown = true;
-      } else if (!g.editions!.contains(p.gameEdition) &&
-          g.editionIds?.isNotEmpty != true) {
-        return NeedState.irrelevant;
-      }
+    // The item data's edition values have no reviewed mapping to the recorded
+    // edition, so any listed edition leaves the gate unknown.
+    if (g.editionIds?.isNotEmpty == true || g.editions?.isNotEmpty == true) {
+      unknown = true;
     }
-    if (g.minPlayerLevel != null) {
-      if (p.playerLevel == null) {
+    final minLevel = g.minPlayerLevel;
+    if (minLevel != null && minLevel > 1) {
+      final level = p.level;
+      if (level == null) {
         unknown = true;
-      } else if (p.playerLevel! < g.minPlayerLevel!) {
+      } else if (level < minLevel) {
         future = true;
       }
     }
     for (final e
         in (g.taskStatuses ?? const <String, List<String>>{}).entries) {
-      final task = p.tasks[e.key];
-      if (task == null || task.invalid == true || e.value.isEmpty) {
+      if (e.value.isEmpty) {
         unknown = true;
         continue;
       }
-      final String? status = task.complete
-          ? 'complete'
-          : task.failed == true
-          ? 'failed'
-          : null;
+      final String? status = switch (p.taskState(e.key)) {
+        ProgressTaskStatus.finished => 'complete',
+        ProgressTaskStatus.failed => 'failed',
+        ProgressTaskStatus.started || null => null,
+      };
       if (status == null) {
-        if (e.value.length == 1 &&
-            e.value.single == 'complete' &&
-            task.failed == false &&
-            task.invalid == false) {
+        if (e.value.length == 1 && e.value.single == 'complete') {
           future = true;
         } else {
           unknown = true;
@@ -360,22 +348,16 @@ class DecisionEngine {
       }
     }
     for (final e in (g.stations ?? const <String, int>{}).entries) {
-      final module = p.modules['${e.key}-${e.value}'];
-      if (module == null) {
-        unknown = true;
-      } else if (!module.complete) {
-        future = true;
-      }
+      if (p.stationLevel(e.key) < e.value) future = true;
     }
+    final stationId = r.stationId;
+    final stationLevel = r.stationLevel;
     if (r.kind == RequirementKind.hideout &&
-        r.stationLevel != null &&
-        r.stationLevel! > 1) {
-      final prior = p.modules['${r.stationId}-${r.stationLevel! - 1}'];
-      if (prior == null) {
-        unknown = true;
-      } else if (!prior.complete) {
-        future = true;
-      }
+        stationId != null &&
+        stationLevel != null &&
+        stationLevel > 1 &&
+        p.stationLevel(stationId) < stationLevel - 1) {
+      future = true;
     }
     return unknown
         ? NeedState.unresolved
@@ -384,20 +366,16 @@ class DecisionEngine {
         : NeedState.actionable;
   }
 
-  bool? _fleaEligible(
-    CatalogItem item,
-    ProgressSnapshot? progress,
-    FirState fir,
-  ) {
+  bool? _fleaEligible(CatalogItem item, ProgressFacts? progress, FirState fir) {
     if (item.noFlea == true || fir == FirState.no) return false;
     if (item.noFlea == null ||
         item.minLevelForFlea == null ||
         item.minLevelForFlea! < 0 ||
-        progress?.playerLevel == null ||
+        progress?.level == null ||
         fir == FirState.unknown) {
       return null;
     }
-    return progress!.playerLevel! >= item.minLevelForFlea!;
+    return progress!.level! >= item.minLevelForFlea!;
   }
 }
 
