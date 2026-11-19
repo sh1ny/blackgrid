@@ -84,7 +84,7 @@ The top bar SHALL contain, from left to right, the brand, the Map/Scanner switch
 - **THEN** the selected segment is marked selected for assistive technology, the other is not, and the area shown changes each time
 
 ### Requirement: Inspector preserves the workspace
-On Scanner the inspector SHALL provide Recent items, which scrolls, and a Live scan note pinned below it, and no item details, requirements or data-sources panel; those details live in the Scanner's main column. On Map it SHALL provide This raid, Markers and Pins, and no item details. It SHALL start open above 1080px and closed otherwise, initialized once per shell session; later resizing SHALL preserve the user's open/closed state. At widths at most 1080px it SHALL float with a scrim. Closing or resizing SHALL retain the mounted workspace and return focus to the opener. Panel motion SHALL follow DESIGN.md and reduced-motion settings.
+On Scanner the inspector SHALL provide Recent items, which scrolls, and a Live scan note pinned below it, and no item details, requirements or data-sources panel; those details live in the Scanner's main column. On Map it SHALL provide This raid, Markers, Pins and Quests, and no item details. It SHALL start open above 1080px and closed otherwise, initialized once per shell session; later resizing SHALL preserve the user's open/closed state. At widths at most 1080px it SHALL float with a scrim. Closing or resizing SHALL retain the mounted workspace and return focus to the opener. Panel motion SHALL follow DESIGN.md and reduced-motion settings.
 
 #### Scenario: Docked details
 - **WHEN** the inspector is opened in a wide window on Scanner
@@ -104,7 +104,11 @@ On Scanner the inspector SHALL provide Recent items, which scrolls, and a Live s
 
 #### Scenario: Map inspector holds working lists
 - **WHEN** Map's inspector opens with an item selected
-- **THEN** it shows This raid, Markers and Pins in that order, and no requirements, sources or history panel
+- **THEN** it shows This raid, Markers, Pins and Quests in that order, and no requirements, sources or history panel
+
+#### Scenario: Quests without quest data
+- **WHEN** Map's inspector opens while the effective mode has no task catalog
+- **THEN** it still shows the Quests section, holding the reason, after Pins
 
 ### Requirement: History rows show item pictures
 The inspector SHALL use DESIGN.md X14 history rows with picture, name, recorded-verdict indicator and a relative age, in one line with no source subtitle. A row whose game mode differs from the current mode SHALL also show that mode's name as a Label-type tag, and a row recorded from an imported scan SHALL show an "Imported scan" Label-type tag. Pictures SHALL follow existing icon fallback rules. Dots SHALL use saved verdicts, never current advice. Missing verdicts SHALL show a distinct unknown indicator labelled "Verdict not recorded". Opening a row SHALL preserve existing history-inspection semantics and label its current advice separately from the recorded verdict.

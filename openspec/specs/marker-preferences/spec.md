@@ -22,11 +22,11 @@ Every saveable marker category key a prepared marker can carry, plus `CustomPins
 - **THEN** they are the same set, apart from `Labels`, which no marker carries and which has no label
 
 ### Requirement: Bulk, search and quest controls keep working
-Show all and Hide all SHALL set every row's category, and only those, to shown or hidden. They SHALL NOT write a key that is not a saveable marker preference. The marker search and the quest name filter SHALL behave as before this change. The quest trader filter SHALL be one chip per trader on this map plus All. An active trader not on this map SHALL stay shown as a selected chip. Save marker filters SHALL be in Settings. None of them SHALL change a row's shown or hidden state.
+Show all and Hide all SHALL set every row's category, and only those, to shown or hidden. They SHALL NOT write a key that is not a saveable marker preference. The marker search and the quest name filter SHALL behave as before this change, and the active-quest filter and Show all quests SHALL apply beside the quest name and trader filters. The quest trader filter SHALL be one chip per trader on this map plus All. An active trader not on this map SHALL stay shown as a selected chip. Save marker filters SHALL be in Settings. None of them SHALL change a row's shown or hidden state.
 
 #### Scenario: Hide all then Show all
 - **WHEN** the user clicks Hide all
-- **THEN** every row shows the hidden state and no marker or pin is drawn, and after Show all every row shows the shown state and every marker is drawn
+- **THEN** every row shows the hidden state and no marker or pin is drawn, and after Show all every row shows the shown state and every marker that the active-quest filter leaves eligible is drawn
 
 #### Scenario: Show all keeps other maps' choices
 - **WHEN** `ScavSpawns` was hidden on another map and the current map has no `ScavSpawns` markers, and the user clicks Show all
@@ -117,3 +117,26 @@ A row's badge SHALL look like the category's unselected, undimmed badge on the m
 #### Scenario: Icons still loading
 - **WHEN** the section is shown before the icons finish loading
 - **THEN** each row draws a fallback badge with a centre dot, clicking a row still toggles it, and once loading completes the rows redraw with their glyphs
+
+### Requirement: Show all quests switch
+The Markers section SHALL show a Show all quests switch in the Quests group, off by default, that turns the active-quest marker filter off. It SHALL be announced as a toggle with its label and state, use ink like the rows, and be restored on the next launch only when Save marker filters is on. Show all, Hide all and the category rows SHALL NOT change it, and it SHALL NOT change a row's shown or hidden state.
+
+#### Scenario: Turn the switch on
+- **WHEN** the player turns Show all quests on while task C is not started
+- **THEN** C's quest markers are drawn, and every category row keeps its state
+
+#### Scenario: Not saved without Save marker filters
+- **WHEN** Save marker filters is off, the player turns Show all quests on and starts the app again
+- **THEN** Show all quests is off
+
+#### Scenario: Saved with marker filters
+- **WHEN** Save marker filters is on, the player turns Show all quests on and starts the app again
+- **THEN** Show all quests is on
+
+#### Scenario: Hide all keeps the switch
+- **WHEN** Show all quests is on and the player clicks Hide all, then Show all
+- **THEN** Show all quests is still on
+
+#### Scenario: Map without quest markers
+- **WHEN** the current map has no quest objective or quest item markers
+- **THEN** the switch is not shown, and its saved value is unchanged
