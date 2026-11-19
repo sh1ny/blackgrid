@@ -15,6 +15,7 @@ import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
 import 'support/live_map_settings_rig.dart';
 import 'support/scan_ui_support.dart';
+import '../support/pump_async.dart';
 
 Finder get _toggle => find.byKey(const Key('settings-diagnostics-toggle'));
 
@@ -27,12 +28,11 @@ Future<void> _openSettings(WidgetTester tester) async {
   await tester.runAsync(() async {
     await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
-    await tester
-        .widget<SettingsPage>(find.byType(SettingsPage))
-        .services
-        .localProgress
-        .settled;
   });
+  final services = tester
+      .widget<SettingsPage>(find.byType(SettingsPage))
+      .services;
+  await pumpUntilComplete(tester, () => services.localProgress.settled);
   // Fail rather than pass vacuously when the section is not there.
   expect(_toggle, findsOneWidget);
   await tester.ensureVisible(_toggle);
@@ -242,7 +242,7 @@ void main() {
         );
         return result;
       }))!;
-      addTearDown(h.dispose);
+      addPumpedTearDown(tester, h.dispose);
       return h;
     }
 

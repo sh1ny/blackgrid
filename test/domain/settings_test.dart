@@ -4,6 +4,27 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('AppSettings.showAllQuests', () {
+    test('defaults to false and round-trips through JSON', () {
+      expect(AppSettings().showAllQuests, isFalse);
+      final json = AppSettings().copyWith(showAllQuests: true).toJson();
+      expect(json['showAllQuests'], isTrue);
+      expect(AppSettings.fromJson(json).showAllQuests, isTrue);
+      expect(
+        AppSettings.fromJson(AppSettings().toJson()).showAllQuests,
+        isFalse,
+      );
+    });
+
+    test('an older settings JSON without it decodes as false', () {
+      final older = AppSettings(mode: GameMode.pve).toJson()
+        ..remove('showAllQuests');
+      final read = AppSettings.fromJson(older);
+      expect(read.showAllQuests, isFalse);
+      expect(read.mode, GameMode.pve);
+    });
+  });
+
   group('AppSettings.themeMode', () {
     test('round-trips all three choices', () {
       expect(AppSettings().themeMode, ThemeChoice.system);

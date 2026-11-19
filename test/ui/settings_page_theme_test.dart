@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
+import '../support/pump_async.dart';
 
 Finder _segment(String label) => find.descendant(
   of: find.byType(SegmentedButton<ThemeChoice>),
@@ -25,8 +26,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(TextButton, 'Settings'));
       await tester.pumpAndSettle();
-      await h.services.localProgress.settled;
     });
+    await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     expect(_segment('System'), findsOneWidget);
     expect(_segment('Dark'), findsOneWidget);
     final selected = tester
@@ -58,8 +59,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(TextButton, 'Settings'));
       await tester.pumpAndSettle();
-      await h.services.localProgress.settled;
     });
+    await pumpUntilComplete(tester, () => h.services.localProgress.settled);
 
     final before = h.services.settings.settings;
     var notifications = 0;

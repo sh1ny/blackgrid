@@ -21,6 +21,10 @@ class MapMarkerMetadata {
              entry.key: entry.value,
        }) {
     sourceId = _text(details['id']);
+    questTaskId = switch (details['quest']) {
+      {'id': final Object? id} => _text(id),
+      _ => null,
+    };
     final quests = <Map<String, dynamic>>[];
     for (final key in ['quest', 'task', 'quests', 'tasks']) {
       final value = details[key];
@@ -61,6 +65,9 @@ class MapMarkerMetadata {
   final String category;
   final Map<String, dynamic> fields;
   late final String? sourceId;
+
+  /// The ID of the task the marker belongs to, or `null` when it carries none.
+  late final String? questTaskId;
   late final List<String> questNames;
   late final List<String> traders;
   late final List<String> questLinks;

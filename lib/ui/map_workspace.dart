@@ -70,6 +70,13 @@ final _overlaySurface = BoxDecoration(
 );
 
 /// Native artwork and screen-space targets share the controller's view geometry.
+///
+/// While mounted it also attaches `services.manualProgress` and pushes the
+/// quest marker filter to the map: the started tasks and done objectives of
+/// the effective mode's active wipe, or `null` while Show all quests is on or
+/// local progress is not usable. The Map stays mounted for the whole app
+/// session, so the projection is read for the session, with one read in flight
+/// and changes arriving meanwhile coalesced into one more read.
 class MapWorkspace extends StatefulWidget {
   /// Creates the map viewport and its session-connected selection controls.
   const MapWorkspace({super.key, required this.services});
@@ -97,14 +104,36 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     super.initState();
     maps.addListener(_rehover);
     maps.addListener(_dropPinForMarker);
+    final services = widget.services;
+    services.manualProgress.addListener(_syncQuestFilter);
+    services.settings.addListener(_syncQuestFilter);
+    services.manualProgress.attach();
+    // A filter left by an earlier mount is replaced after the first frame, so
+    // no listener is notified while the tree is being built.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncQuestFilter());
   }
 
   @override
   void dispose() {
     maps.removeListener(_rehover);
     maps.removeListener(_dropPinForMarker);
+    final services = widget.services;
+    services.manualProgress.removeListener(_syncQuestFilter);
+    services.settings.removeListener(_syncQuestFilter);
+    services.manualProgress.detach();
     _focus.dispose();
     super.dispose();
+  }
+
+  /// Pushes the quest marker filter that follows progress and Show all quests.
+  void _syncQuestFilter() {
+    if (!mounted) return;
+    final services = widget.services;
+    maps.setQuestProgressFilter(
+      services.settings.settings.showAllQuests
+          ? null
+          : services.manualProgress.questMarkerFilter,
+    );
   }
 
   List<CustomPin> get pins => widget.services.settings.pins

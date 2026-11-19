@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'm1_harness.dart';
+import 'pump_async.dart';
 
 /// The clock the raid timer widget tests run on, in the log's local time.
 final timerNow = DateTime(2026, 10, 31, 22, 15, 34);
@@ -44,8 +45,10 @@ Future<M1Harness> pumpTimerApp(
     await result.initialize(mode: mode);
     return result;
   }))!;
-  addTearDown(h.dispose);
+  addPumpedTearDown(tester, h.dispose);
   await tester.pumpWidget(BlackgridApp(services: h.services));
+  // Finish the mounted Map's first local progress read (see pumpM1).
+  await pumpUntilComplete(tester, () => h.services.localProgress.settled);
   await tester.pumpAndSettle();
   return h;
 }
@@ -68,7 +71,7 @@ Future<M1Harness> pumpTimerSettingsPage(
     await result.initialize(mode: mode);
     return result;
   }))!;
-  addTearDown(h.dispose);
+  addPumpedTearDown(tester, h.dispose);
   await tester.runAsync(() async {
     await tester.pumpWidget(
       MaterialApp(

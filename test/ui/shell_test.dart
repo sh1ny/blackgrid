@@ -50,6 +50,7 @@ import 'package:flutter/rendering.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
 import 'support/scan_ui_support.dart';
+import '../support/pump_async.dart';
 
 class _HeldCatalogDatabase extends BlackgridDatabase {
   _HeldCatalogDatabase() : super(NativeDatabase.memory());
@@ -861,6 +862,7 @@ void main() {
         .dy;
     expect(top('This raid'), lessThan(top('Markers')));
     expect(top('Markers'), lessThan(top('Pins')));
+    expect(top('Pins'), lessThan(top('Quests')));
     for (final type in [RequirementPanel, HistoryPanel]) {
       expect(
         find.descendant(of: inspector, matching: find.byType(type)),
@@ -874,6 +876,33 @@ void main() {
         findsNothing,
       );
     }
+  });
+
+  testWidgets('workspace-shell: Quests without quest data', (tester) async {
+    final h = await pumpMapFixture(tester, size: const Size(1660, 870));
+    h.services.catalog.snapshot = null;
+    // ignore: invalid_use_of_protected_member
+    h.services.catalog.notifyListeners();
+    await tester.pumpAndSettle();
+    if (find.byKey(const Key('shell-inspector')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('inspector-toggle')));
+      await tester.pumpAndSettle();
+    }
+    final inspector = find.byKey(const Key('shell-inspector'));
+    final quests = find.descendant(
+      of: inspector,
+      matching: find.text('Quests'),
+    );
+    final pins = find.descendant(of: inspector, matching: find.text('Pins'));
+    expect(quests, findsOneWidget);
+    expect(tester.getTopLeft(pins).dy, lessThan(tester.getTopLeft(quests).dy));
+    expect(
+      find.descendant(
+        of: inspector,
+        matching: find.textContaining('Quest data is not available'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('workspace-shell: Resize with open details', (tester) async {
@@ -1062,7 +1091,7 @@ void main() {
       result.services.selection.setFir(FirState.yes);
       return result;
     }))!;
-    addTearDown(h.dispose);
+    addPumpedTearDown(tester, h.dispose);
     await tester.pumpWidget(BlackgridApp(services: h.services));
     await tester.pumpAndSettle();
     final strip = find.byKey(const Key('answer-strip'));
@@ -1265,8 +1294,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(TextButton, 'Settings'));
       await tester.pumpAndSettle();
-      await h.services.localProgress.settled;
     });
+    await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     await tester.pumpAndSettle();
     final panel = find.byKey(const Key('settings-live-scan'));
     final toggle = find.descendant(
@@ -1302,8 +1331,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(TextButton, 'Settings'));
       await tester.pumpAndSettle();
-      await h.services.localProgress.settled;
     });
+    await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     await tester.pumpAndSettle();
     expect(
       find.descendant(
@@ -1353,8 +1382,8 @@ void main() {
       await tester.runAsync(() async {
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
-        await h.services.localProgress.settled;
       });
+      await pumpUntilComplete(tester, () => h.services.localProgress.settled);
       await tester.pumpAndSettle();
       final panel = find.byKey(const Key('settings-live-scan'));
       final toggle = find.descendant(
@@ -1393,8 +1422,8 @@ void main() {
       await tester.runAsync(() async {
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
-        await h.services.localProgress.settled;
       });
+      await pumpUntilComplete(tester, () => h.services.localProgress.settled);
       await tester.pumpAndSettle();
       expect(
         find.descendant(
@@ -1418,8 +1447,8 @@ void main() {
       await tester.runAsync(() async {
         await tester.tap(find.byKey(Key(key)));
         await tester.pumpAndSettle();
-        await h.services.localProgress.settled;
       });
+      await pumpUntilComplete(tester, () => h.services.localProgress.settled);
       await tester.pumpAndSettle();
       final page = find.byType(SettingsPage);
       expect(page, findsOneWidget);
@@ -1443,8 +1472,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(TextButton, 'Settings'));
       await tester.pumpAndSettle();
-      await h.services.localProgress.settled;
     });
+    await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     await tester.pumpAndSettle();
     final page = find.byType(SettingsPage);
     final tracker = find.byKey(const Key('settings-title-tracker'));
@@ -2081,7 +2110,7 @@ void main() {
         await result.initialize();
         return result;
       }))!;
-      addTearDown(h.dispose);
+      addPumpedTearDown(tester, h.dispose);
       now = fixtureNow.add(const Duration(days: 3));
       h.services.catalog.updateAge();
       expect(h.services.catalog.status, CatalogStatus.stale);
@@ -2339,8 +2368,8 @@ void main() {
       await tester.runAsync(() async {
         await tester.tap(find.byKey(const Key('status-item-data')));
         await tester.pumpAndSettle();
-        await h.services.localProgress.settled;
       });
+      await pumpUntilComplete(tester, () => h.services.localProgress.settled);
       await tester.pumpAndSettle();
 
       expect(find.byType(SettingsPage), findsOneWidget);
@@ -2381,7 +2410,7 @@ void main() {
         );
         return result;
       }))!;
-      addTearDown(h.dispose);
+      addPumpedTearDown(tester, h.dispose);
       await tester.pumpWidget(BlackgridApp(services: h.services));
       await tester.pumpAndSettle();
       // Item data, a price time and Tracker progress are all known.

@@ -21,6 +21,7 @@ import '../fixtures/m1/catalog/fixture.dart';
 import '../ui/support/scan_ui_support.dart';
 import 'm1_harness.dart';
 import 'prepared_pack_manifest.dart';
+import 'pump_async.dart';
 
 /// A small prepared pack decoded by the production loader and resource owner.
 /// Marker positions are independent game coordinates, not mocked projections.
@@ -270,7 +271,7 @@ Future<MapWidgetHarness> pumpMapFixture(
       credentials: credentials,
     ),
   ))!;
-  if (autoDispose) addTearDown(harness.dispose);
+  if (autoDispose) addPumpedTearDown(tester, harness.dispose);
   await tester.pumpWidget(BlackgridApp(services: harness.services));
   await settleMapFixture(tester, harness);
   return harness;
@@ -292,5 +293,17 @@ Future<void> settleMapFixture(
     );
     await tester.pump();
   }
+  await drainLocalProgress(tester, harness);
   await tester.pumpAndSettle();
 }
+
+/// Pumps frames until the local progress queue is empty.
+///
+/// The mounted Map reads local progress, and a read begun inside the test
+/// zone only finishes while frames are pumped and real time passes. A harness
+/// whose services are closed with such a read queued would wait on it for
+/// good.
+Future<void> drainLocalProgress(
+  WidgetTester tester,
+  MapWidgetHarness harness,
+) => pumpUntilComplete(tester, () => harness.services.localProgress.settled);

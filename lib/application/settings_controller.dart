@@ -49,7 +49,7 @@ class SettingsController extends ChangeNotifier
     final saved = stored.settings;
     _settings = saved.saveMarkerFilters
         ? saved
-        : saved.copyWith(markerFilters: const {});
+        : saved.copyWith(markerFilters: const {}, showAllQuests: false);
     _settingsUnreadable = stored.unreadable;
     _loaded = true;
     await _readPins();
@@ -196,6 +196,11 @@ class SettingsController extends ChangeNotifier
   Future<bool> setMarker(String key, bool value) => save(
     _settings.copyWith(markerFilters: {..._settings.markerFilters, key: value}),
   );
+
+  /// Saves whether the map shows every quest's markers through [save].
+  Future<bool> setShowAllQuests(bool value) =>
+      save(_settings.copyWith(showAllQuests: value));
+
   Future<bool> savePin(CustomPin pin) async {
     if (busy) return false;
     busy = true;

@@ -44,9 +44,30 @@ ProgressTarget _task(String id) => ProgressTarget(
   field: ProgressField.state,
 );
 
+ProgressTarget _objectiveCount(String id) => ProgressTarget(
+  kind: ProgressEntityKind.objective,
+  id: id,
+  field: ProgressField.count,
+);
+ProgressTarget _objectiveComplete(String id) => ProgressTarget(
+  kind: ProgressEntityKind.objective,
+  id: id,
+  field: ProgressField.complete,
+);
+
 ProgressCatalog _catalog({int extraTasks = 0}) => ProgressCatalog(
   tasks: [
     CatalogTask(id: 'debut', name: 'Debut'),
+    CatalogTask(
+      id: 'quest',
+      name: 'Quest',
+      objectives: [
+        TaskObjective(id: 'single'),
+        TaskObjective(id: 'counter', count: 5),
+        TaskObjective(id: 'one', count: 1),
+        TaskObjective(id: 'fraction', count: 2.5),
+      ],
+    ),
     for (var i = 0; i < extraTasks; i++)
       CatalogTask(id: 'task-$i', name: 'Shared task $i'),
   ],
@@ -829,5 +850,213 @@ void main() {
     expect(h.controller.value(_level), const ProgressInteger(20));
     h.mode.change(_pve);
     await h.shown(_level, const ProgressInteger(34));
+  });
+
+  group('objective entries', () {
+    test('ticking a single objective records completion true', () async {
+      await h.attach();
+      await h.controller.setObjectiveComplete('single', true);
+      expect(h.access.writes.single, (
+        _pve,
+        _objectiveComplete('single'),
+        const ProgressBoolean(true),
+      ));
+      await h.shown(_objectiveComplete('single'), const ProgressBoolean(true));
+      expect(
+        h.controller.objectiveTarget('single'),
+        _objectiveComplete('single'),
+      );
+      await h.controller.setObjectiveComplete('single', false);
+      expect(h.access.writes.last.$3, const ProgressBoolean(false));
+    });
+
+    test(
+      'an objective with count 1 or a fractional count is not a counter',
+      () async {
+        await h.attach();
+        expect(h.controller.objectiveTarget('one'), _objectiveComplete('one'));
+        expect(
+          h.controller.objectiveTarget('fraction'),
+          _objectiveComplete('fraction'),
+        );
+        await h.controller.stepObjectiveCount('one', 1);
+        await h.controller.setObjectiveCount('fraction', 1);
+        expect(h.access.writes, isEmpty);
+        await h.controller.setObjectiveComplete('one', true);
+        expect(h.access.writes.single.$2, _objectiveComplete('one'));
+      },
+    );
+
+    test(
+      'plus at target minus one records the target and disables plus',
+      () async {
+        h.access.seed(
+          _pve,
+          _objectiveCount('counter'),
+          const ProgressInteger(4),
+        );
+        await h.attach();
+        expect(h.controller.canStepObjective('counter', 1), isTrue);
+        await h.controller.stepObjectiveCount('counter', 1);
+        expect(h.access.writes.single, (
+          _pve,
+          _objectiveCount('counter'),
+          const ProgressInteger(5),
+        ));
+        await h.shown(_objectiveCount('counter'), const ProgressInteger(5));
+        expect(h.controller.canStepObjective('counter', 1), isFalse);
+        await h.controller.stepObjectiveCount('counter', 1);
+        expect(h.access.writes, hasLength(1));
+      },
+    );
+
+    test('ticking a counter objective records the target count', () async {
+      h.access.seed(_pve, _objectiveCount('counter'), const ProgressInteger(2));
+      await h.attach();
+      await h.controller.setObjectiveComplete('counter', true);
+      expect(h.access.writes.single, (
+        _pve,
+        _objectiveCount('counter'),
+        const ProgressInteger(5),
+      ));
+      await h.shown(_objectiveCount('counter'), const ProgressInteger(5));
+      await h.controller.setObjectiveComplete('counter', false);
+      expect(h.access.writes, hasLength(1));
+    });
+
+    test('a counter value is bounded by zero and its target', () async {
+      await h.attach();
+      await h.controller.setObjectiveCount('counter', 3);
+      expect(h.access.writes.single.$3, const ProgressInteger(3));
+      await h.shown(_objectiveCount('counter'), const ProgressInteger(3));
+      await h.controller.setObjectiveCount('counter', 6);
+      await h.controller.setObjectiveCount('counter', -1);
+      await h.controller.setObjectiveCount('single', 1);
+      await h.controller.setObjectiveCount('missing', 1);
+      expect(h.access.writes, hasLength(1));
+      expect(h.controller.failure(_objectiveCount('counter')), isNotNull);
+    });
+
+    test('minus at zero is disabled and records nothing', () async {
+      await h.attach();
+      expect(h.controller.canStepObjective('counter', -1), isFalse);
+      expect(h.controller.canStepObjective('counter', 1), isTrue);
+      await h.controller.stepObjectiveCount('counter', -1);
+      expect(h.access.writes, isEmpty);
+    });
+
+    test('ticking the last objective records no task-state event', () async {
+      h.access.seed(
+        _pve,
+        _task('quest'),
+        const ProgressTaskState(ProgressTaskStatus.started),
+        source: ProgressSource.log,
+      );
+      await h.attach();
+      await h.controller.setObjectiveComplete('single', true);
+      await h.shown(_objectiveComplete('single'), const ProgressBoolean(true));
+      await h.controller.setObjectiveComplete('counter', true);
+      await h.shown(_objectiveCount('counter'), const ProgressInteger(5));
+      expect(
+        h.access.writes.map((w) => w.$2.kind),
+        everyElement(ProgressEntityKind.objective),
+      );
+      expect(
+        h.controller.value(_task('quest')),
+        const ProgressTaskState(ProgressTaskStatus.started),
+      );
+    });
+
+    test('undo after a plus step restores the count and offers redo', () async {
+      h.access.seed(_pve, _objectiveCount('counter'), const ProgressInteger(2));
+      await h.attach();
+      await h.controller.stepObjectiveCount('counter', 1);
+      await h.shown(_objectiveCount('counter'), const ProgressInteger(3));
+      final target = h.controller.objectiveTarget('counter')!;
+      expect(h.controller.actionLabel(target), 'Undo');
+      await h.controller.undoOrRedo(target);
+      await h.shown(_objectiveCount('counter'), const ProgressInteger(2));
+      expect(h.access.controls.single.$1, 'undo');
+      expect(h.controller.actionLabel(target), 'Redo');
+    });
+
+    test('an objective storage failure keeps the previous value and shows the reason', () async {
+      h.access.seed(_pve, _objectiveCount('counter'), const ProgressInteger(2));
+      await h.attach();
+      h.access.nextWriteFailure = const ProgressStorageFailure('disk failed');
+      await h.controller.stepObjectiveCount('counter', 1);
+      final target = _objectiveCount('counter');
+      expect(h.controller.value(target), const ProgressInteger(2));
+      expect(h.controller.failure(target), contains('disk failed'));
+      expect(h.access.heads[_pve]![target]!.value, const ProgressInteger(2));
+    });
+
+    test('a mode switch re-reads quest progress for the new mode', () async {
+      h.access.seed(_pve, _objectiveCount('counter'), const ProgressInteger(2));
+      h.access.seed(_pvp, _objectiveCount('counter'), const ProgressInteger(4));
+      await h.attach();
+      expect(
+        h.controller.value(_objectiveCount('counter')),
+        const ProgressInteger(2),
+      );
+      h.mode.change(_pvp);
+      await h.shown(_objectiveCount('counter'), const ProgressInteger(4));
+      expect(h.access.reads.last, _pvp);
+    });
+
+    test('a second plus while the post-append read is pending is ignored and two plus clicks from 2 end at 4', () async {
+      final count = _objectiveCount('counter');
+      h.access.seed(_pve, count, const ProgressInteger(2));
+      await h.attach();
+      h.access.holdRead = Completer<void>();
+      await h.controller.stepObjectiveCount('counter', 1);
+      expect(h.access.writes, hasLength(1));
+      expect(h.controller.pending(count), isTrue);
+      expect(h.controller.canStepObjective('counter', 1), isFalse);
+      await h.controller.stepObjectiveCount('counter', 1);
+      expect(h.access.writes, hasLength(1));
+      final gate = h.access.holdRead!;
+      h.access.holdRead = null;
+      gate.complete();
+      await h.shown(count, const ProgressInteger(3));
+      expect(h.controller.pending(count), isFalse);
+      await h.controller.stepObjectiveCount('counter', 1);
+      expect(h.access.writes.map((w) => w.$3), [
+        const ProgressInteger(3),
+        const ProgressInteger(4),
+      ]);
+      await h.shown(count, const ProgressInteger(4));
+    });
+
+    test('a failed objective append releases the lock at once', () async {
+      final count = _objectiveCount('counter');
+      await h.attach();
+      h.access.holdRead = Completer<void>();
+      h.access.nextWriteFailure = const ProgressStorageFailure('disk failed');
+      await h.controller.stepObjectiveCount('counter', 1);
+      expect(h.controller.pending(count), isFalse);
+      await h.controller.stepObjectiveCount('counter', 1);
+      expect(h.access.writes, hasLength(2));
+      final gate = h.access.holdRead!;
+      h.access.holdRead = null;
+      gate.complete();
+    });
+
+    test(
+      'a read that started before the append does not release the lock',
+      () async {
+        final count = _objectiveCount('counter');
+        await h.attach();
+        h.access.holdRead = Completer<void>();
+        h.access.signal(revision: true);
+        final early = h.access.holdRead!;
+        h.access.holdRead = null;
+        await h.controller.stepObjectiveCount('counter', 1);
+        expect(h.controller.pending(count), isTrue);
+        early.complete();
+        await h.shown(count, const ProgressInteger(1));
+        expect(h.controller.pending(count), isFalse);
+      },
+    );
   });
 }

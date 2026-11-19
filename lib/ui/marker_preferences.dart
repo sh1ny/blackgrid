@@ -36,6 +36,9 @@ class MarkerFacts {
     required this.keys,
     required this.counts,
     required this.traders,
+    required this.hasQuestMarkers,
+    required this.questTaskIds,
+    required this.questObjectiveIds,
   });
 
   /// The facts of the selected map in [maps].
@@ -53,6 +56,8 @@ class MarkerFacts {
     }
     final counts = <String, int>{};
     final traders = <String>{};
+    final questTaskIds = <String>{};
+    final questObjectiveIds = <String>{};
     for (final marker in markers) {
       counts[marker.filterKey] = (counts[marker.filterKey] ?? 0) + 1;
       final metadata = MapMarkerMetadata(
@@ -62,7 +67,13 @@ class MarkerFacts {
         details: marker.details,
         source: marker.source,
       );
-      if (metadata.isQuest) traders.addAll(metadata.traders);
+      if (metadata.isQuest) {
+        traders.addAll(metadata.traders);
+        if (metadata.questTaskId case final taskId?) questTaskIds.add(taskId);
+        if (metadata.sourceId case final objectiveId?) {
+          questObjectiveIds.add(objectiveId);
+        }
+      }
     }
     return _cache[maps] = MarkerFacts._(
       generation: maps.contentGeneration,
@@ -71,6 +82,10 @@ class MarkerFacts {
       keys: List.unmodifiable(markerPreferenceKeys(maps.applicableCategories)),
       counts: Map.unmodifiable(counts),
       traders: List.unmodifiable(traders.toList()..sort()),
+      hasQuestMarkers:
+          (counts['QuestItems'] ?? 0) + (counts['QuestObjectives'] ?? 0) > 0,
+      questTaskIds: Set.unmodifiable(questTaskIds),
+      questObjectiveIds: Set.unmodifiable(questObjectiveIds),
     );
   }
 
@@ -93,6 +108,43 @@ class MarkerFacts {
 
   /// The traders of the map's quest markers, sorted.
   final List<String> traders;
+
+  /// Whether the map has quest objective or quest item markers.
+  final bool hasQuestMarkers;
+
+  /// The task IDs carried by the map's quest markers.
+  final Set<String> questTaskIds;
+
+  /// The objective IDs carried by the map's quest markers.
+  final Set<String> questObjectiveIds;
+}
+
+/// Builds [builder] with the [MarkerFacts] of the map [maps] shows.
+///
+/// It builds again only when the content generation, the marker inventory or
+/// the selected map changes, never for a pan or a zoom.
+class MarkerFactsBuilder extends StatelessWidget {
+  /// Creates a builder over the map `maps` shows.
+  const MarkerFactsBuilder({
+    super.key,
+    required this.maps,
+    required this.builder,
+  });
+
+  /// The controller whose current map the facts describe.
+  final MapController maps;
+
+  /// Builds the widget from the current map's facts.
+  final Widget Function(MarkerFacts facts) builder;
+
+  @override
+  Widget build(BuildContext context) =>
+      _Selector<(int, List<PreparedMarker>, String?)>(
+        listenable: maps,
+        select: () =>
+            (maps.contentGeneration, maps.activeMarkers, maps.selectedMapId),
+        builder: (context) => builder(MarkerFacts.of(maps)),
+      );
 }
 
 /// Draws the unselected map badge of one category on a 24 px canvas.
@@ -399,12 +451,70 @@ class MarkerRows extends StatelessWidget {
                                   settings.setMarker(key, !shown);
                                 },
                         ),
+                    if (title == 'Quests' && facts.hasQuestMarkers)
+                      _ShowAllQuestsRow(
+                        on: settings.settings.showAllQuests,
+                        onToggle: settings.busy
+                            ? null
+                            : () => settings.setShowAllQuests(
+                                !settings.settings.showAllQuests,
+                              ),
+                      ),
                   ],
               ],
             );
           },
         );
       },
+    );
+  }
+}
+
+/// The Show all quests switch, which sits last in the Quests group.
+///
+/// It reads as a row of the group, without a badge or count, and is announced
+/// as a toggle with its label and state.
+class _ShowAllQuestsRow extends StatelessWidget {
+  const _ShowAllQuestsRow({required this.on, required this.onToggle});
+
+  final bool on;
+  final VoidCallback? onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return Semantics(
+      toggled: on,
+      label: 'Show all quests',
+      enabled: onToggle != null,
+      onTap: onToggle,
+      excludeSemantics: true,
+      child: InkWell(
+        key: const ValueKey('show-all-quests'),
+        onTap: onToggle,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: EmberSize.row * scale),
+          child: Row(
+            children: [
+              // Aligns the label with the labels of the rows above.
+              const SizedBox(width: 34),
+              Expanded(
+                child: Text(
+                  'Show all quests',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: EmberType.body.copyWith(color: context.ember.ink),
+                ),
+              ),
+              const SizedBox(width: 10),
+              EmberToggleSwitch(
+                key: const ValueKey('show-all-quests-switch'),
+                on: on,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

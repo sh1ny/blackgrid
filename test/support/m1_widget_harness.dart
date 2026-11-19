@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../ui/support/scan_ui_support.dart';
 import 'm1_harness.dart';
+import 'pump_async.dart';
 
 Future<M1Harness> pumpM1(
   WidgetTester tester, {
@@ -36,8 +37,11 @@ Future<M1Harness> pumpM1(
     await result.initialize(mode: mode);
     return result;
   }))!;
-  addTearDown(h.dispose);
+  addPumpedTearDown(tester, h.dispose);
   await tester.pumpWidget(BlackgridApp(services: h.services));
+  // The mounted Map starts a local progress read in the test zone; finish it
+  // so later waits on the progress queue in the real zone are not stranded.
+  await pumpUntilComplete(tester, () => h.services.localProgress.settled);
   await tester.pumpAndSettle();
   return h;
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:blackgrid/data/raid_panel_ocr.dart';
+import 'package:blackgrid/domain/local_progress.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -698,4 +699,104 @@ void main() {
       }
     }
   });
+
+  testWidgets(
+    'Show all quests pushes a null filter and the name and trader filters '
+    'still apply',
+    (tester) async {
+      final h = await pumpMapFixture(
+        tester,
+        extraMarkers: [
+          _questMarker('q-find', 'find-a', 'task-a', 'Alpha quest', 'Prapor'),
+          _questMarker('q-give', 'give-a', 'task-a', 'Alpha quest', 'Prapor'),
+          _questMarker('q-other', 'other-1', 'task-b', 'Other quest', 'Skier'),
+        ],
+      );
+      final maps = h.services.maps;
+      final progress = h.services.manualProgress;
+      Set<String> drawn() => {
+        for (final marker in maps.visibleMarkers())
+          if (marker.marker.id.startsWith('q-')) marker.marker.id,
+      };
+      Future<void> whenProgress(bool Function() ready) async {
+        await tester.runAsync(() async {
+          if (ready()) return;
+          final done = Completer<void>();
+          void check() {
+            if (ready() && !done.isCompleted) done.complete();
+          }
+
+          progress.addListener(check);
+          try {
+            await done.future.timeout(const Duration(seconds: 10));
+          } finally {
+            progress.removeListener(check);
+          }
+        });
+        await tester.pump();
+      }
+
+      expect(drawn(), {'q-find', 'q-give', 'q-other'}, reason: 'none started');
+
+      await tester.runAsync(
+        () => progress.setTaskState('task-a', ProgressTaskStatus.started),
+      );
+      await whenProgress(() => progress.questMarkerFilter != null);
+      expect(drawn(), {'q-find', 'q-give'});
+
+      await tester.runAsync(
+        () => progress.setObjectiveComplete('give-a', true),
+      );
+      await whenProgress(
+        () =>
+            progress.questMarkerFilter?.doneObjectiveIds.contains('give-a') ??
+            false,
+      );
+      expect(drawn(), {'q-find'});
+
+      expect(
+        await tester.runAsync(() => h.services.settings.setShowAllQuests(true)),
+        isTrue,
+      );
+      await tester.pump();
+      expect(drawn(), {'q-find', 'q-give', 'q-other'});
+
+      maps.setQuestFilters(trader: 'Skier');
+      await tester.pump();
+      expect(drawn(), {'q-other'});
+      maps.setQuestFilters(trader: '', name: 'Alpha');
+      await tester.pump();
+      expect(drawn(), {'q-find', 'q-give'});
+
+      expect(
+        await tester.runAsync(
+          () => h.services.settings.setShowAllQuests(false),
+        ),
+        isTrue,
+      );
+      await tester.pump();
+      expect(drawn(), {'q-find'});
+    },
+  );
 }
+
+/// A quest-item marker whose task and objective IDs are the catalog's.
+Map<String, Object?> _questMarker(
+  String id,
+  String objectiveId,
+  String taskId,
+  String quest,
+  String trader,
+) => {
+  'id': id,
+  'name': id,
+  'floorId': 'ground',
+  'category': 'quests',
+  'filterKey': 'QuestItems',
+  'position': {'x': 96, 'z': 96},
+  'details': {
+    'id': objectiveId,
+    'quest': {'id': taskId, 'name': quest, 'trader': trader},
+  },
+  'source': {'fixture': true},
+};

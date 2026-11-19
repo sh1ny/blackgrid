@@ -132,6 +132,127 @@ void main() {
       },
     );
   }
+
+  /// Services in PvP with the fixture catalog, whose `task-a` has the counter
+  /// objective `find-a`, and the manual projection attached.
+  Future<(AppServices, List<String>)> questServices({
+    required bool withToken,
+  }) async {
+    final requests = <String>[];
+    final services = AppServices(
+      database: BlackgridDatabase(NativeDatabase.memory()),
+      credentials: withToken ? _TokenCredentials() : _EmptyCredentials(),
+      clock: () => fixtureNow,
+      client: MockClient((request) async {
+        requests.add(request.url.path);
+        return switch (request.url.path) {
+          '/token' => http.Response(
+            jsonEncode(tokenWire('PVP_synthetic-fixture-only')),
+            200,
+          ),
+          '/progress' => http.Response(jsonEncode(progressWire()), 200),
+          _ => http.Response('', 503),
+        };
+      }),
+    );
+    addTearDown(services.dispose);
+    await services.settings.save(AppSettings(mode: GameMode.pvp));
+    await services.mapSession.initialize();
+    await services.localProgress.ready;
+    await services.catalog.setMode(GameMode.pvp);
+    services.catalog.snapshot = fixtureCatalog();
+    await services.progress.setMode(GameMode.pvp);
+    if (withToken) await services.progress.refresh();
+    services.manualProgress.attach();
+    addTearDown(services.manualProgress.detach);
+    return (services, requests);
+  }
+
+  /// Completes once [ready] holds for the manual projection.
+  Future<void> whenProjected(
+    AppServices services,
+    bool Function() ready,
+  ) async {
+    if (ready()) return;
+    final done = Completer<void>();
+    void check() {
+      if (ready() && !done.isCompleted) done.complete();
+    }
+
+    services.manualProgress.addListener(check);
+    try {
+      await done.future.timeout(const Duration(seconds: 5));
+    } finally {
+      services.manualProgress.removeListener(check);
+    }
+  }
+
+  test('an objective tick does not change advice progress', () async {
+    final (services, requests) = await questServices(withToken: true);
+    final before = services.progress.snapshot;
+    expect(before, isNotNull);
+    await services.selection.selectManual(
+      services.catalog.snapshot!.items['item-a']!,
+    );
+    final advice = services.selection.decision!;
+    final requestCount = requests.length;
+
+    await services.manualProgress.setTaskState(
+      'task-a',
+      ProgressTaskStatus.started,
+    );
+    await services.manualProgress.setObjectiveComplete('find-a', true);
+    await services.localProgress.settled;
+    await whenProjected(
+      services,
+      () =>
+          services.manualProgress.questMarkerFilter?.doneObjectiveIds.contains(
+            'find-a',
+          ) ??
+          false,
+    );
+
+    expect(services.progress.snapshot, same(before));
+    expect(services.selection.decision!.recommendation, advice.recommendation);
+    expect(
+      services.selection.decision!.reasons.map((reason) => reason.message),
+      advice.reasons.map((reason) => reason.message),
+    );
+    expect(requests.length, requestCount);
+  });
+
+  test('quest progress and the marker filter work without a token', () async {
+    final (services, requests) = await questServices(withToken: false);
+    expect(services.progress.snapshot, isNull);
+
+    await services.manualProgress.setTaskState(
+      'task-a',
+      ProgressTaskStatus.started,
+    );
+    await services.manualProgress.setObjectiveComplete('find-a', true);
+    await services.localProgress.settled;
+    await whenProjected(
+      services,
+      () =>
+          services.manualProgress.questMarkerFilter?.doneObjectiveIds.contains(
+            'find-a',
+          ) ??
+          false,
+    );
+
+    final filter = services.manualProgress.questMarkerFilter!;
+    expect(filter.startedTaskIds, {'task-a'});
+    expect(filter.doneObjectiveIds, {'find-a'});
+    final task = services.manualProgress.questChecklist().tasks.single;
+    expect(task.id, 'task-a');
+    expect(
+      task.objectives.firstWhere((objective) => objective.id == 'find-a').done,
+      isTrue,
+    );
+    expect(services.progress.snapshot, isNull);
+    expect(requests, isNot(contains('/progress')));
+  });
+
   test(
     'local progress subscribes before the first log bind and is disposed',
     () async {
