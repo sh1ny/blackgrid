@@ -76,6 +76,6 @@ Every task group follows the "Dart and Flutter code" section of AGENTS.md. Befor
 
 ## 5. Verification
 
-- [ ] 5.1 Re-run the green carried rows (`test/ui/shell_test.dart`, `test/ui/marker_preferences_test.dart`) and the full `mise run test`; all pass. Run `mise run analyze` with no issues and `dart format` with no changes.
-- [ ] 5.2 Run `mise run release-notes -- --check openspec/changes/add-quest-checklist/proposal.md`; it exits 0 and the Release Notes still describe what ships.
+- [x] 5.1 Re-run the green carried rows (`test/ui/shell_test.dart`, `test/ui/marker_preferences_test.dart`) and the full `mise run test`; all pass. Run `mise run analyze` with no issues and `dart format` with no changes.
+- [x] 5.2 Run `mise run release-notes -- --check openspec/changes/add-quest-checklist/proposal.md`; it exits 0 and the Release Notes still describe what ships.
 - [ ] 5.3 [user] With a built app and the game running, the owner checks in play: Quests lists the started quests of the current mode with this map's first; ticking an objective and moving a counter to its target removes its markers from the map; Undo brings them back; Show all quests shows every quest; and a quest turned in leaves the list. This is the checklist half of M9's "the checklist and manual progress entry work in play"; the whole criterion is judged again at the milestone close.
