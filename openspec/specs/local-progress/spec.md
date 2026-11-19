@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines local progress history and its deterministic current values, isolated by game mode and locally created progress cycle, for later tracker writers and consumers.
+Defines local progress history and its deterministic current values, isolated by game mode and locally created progress cycle, for the progress authority, manual entry and other consumers.
 
 ## Requirements
 

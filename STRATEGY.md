@@ -23,7 +23,7 @@ Stash management is secondary.
 
 - Windows desktop releases only in this phase; no macOS or Linux parity. Web and mobile apps come late, after an optional sync service (roadmap M17–M19), and never get live map position or the scanner
 - Map and Scanner only as initial primary areas; configuration through supporting controls, no Database browsing yet. A local progress tracker (quests, objectives, hideout) arrives in M9
-- Blackgrid tracks quest and hideout progress itself, locally and offline, from the game's logs and the player's own input (user decision 2026-11-01; M9). The existing read-only tarkovtracker.org token integration stays until the local tracker replaces it, then is retired. Blackgrid never writes to tarkovtracker.org; the 2026-10-30 plan for task-state writes is withdrawn
+- Blackgrid tracks quest and hideout progress itself, locally and offline, from the game's logs and the player's own input (user decision 2026-11-01; M9). The read-only tarkovtracker.org token integration was retired in M9, once local progress fed the advice. Blackgrid never writes to tarkovtracker.org; the 2026-10-30 plan for task-state writes is withdrawn
 - No overlay: nothing is drawn over the game, so no transparent, borderless or click-through map and no global in-game hotkeys that only drive one. "Stay on top" for Blackgrid's own opaque, bordered window is allowed (user decision 2026-11-01)
 - No squad features (shared positions, squad item needs, squad raid planning) and no phone or tablet map with live position (user decision 2026-11-01)
 - No WebView/WebView2 map renderer, or runtime/architectural dependency on the old application

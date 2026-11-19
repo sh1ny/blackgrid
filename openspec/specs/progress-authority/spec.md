@@ -1,9 +1,7 @@
 # progress-authority Specification
 
 ## Purpose
-Decides when tracker progress for a mode is fetched without user action and which fetch results may be published, so that decisions do not stay degraded by missing progress while a credential is saved.
-
-Unless a scenario says otherwise, the scenarios in this capability assume the read-only Tracker integration is enabled.
+Gives the decision engine, requirement rows, Flea eligibility and raid timers one source of progress: the effective mode's local progress, from the game log replay and the player's manual entries, so that advice does not stay degraded by missing progress.
 
 ## Requirements
 

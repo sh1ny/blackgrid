@@ -136,8 +136,8 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 
 ## 7. Documentation and main spec Purposes
 
-- [ ] 7.1 Update README (the data sources table, privacy paragraph, contracts bullets, mermaid diagram, Progress row, first-run step 4, file table rows, settings sample, the "Never imported" row as needed and the TarkovTracker credit section, which now says the API is no longer used), THIRD_PARTY_NOTICES (remote data: json.tarkov.dev only) and STRATEGY (the token line says it was retired in M9). Verify with `grep -n -i "tarkovtracker\|tracker token" README.md STRATEGY.md THIRD_PARTY_NOTICES.md`, which shows only historical or credit wording.
-- [ ] 7.2 Rewrite the Purpose of `openspec/specs/progress-authority/spec.md` and drop its "assume the read-only Tracker integration is enabled" preamble. Rewrite the Purpose sentences of `openspec/specs/raid-timers/spec.md` and `openspec/specs/local-progress/spec.md` so they name local progress, not Tracker. Verify with `openspec validate --specs --strict` and `grep -n -i tracker` on those three Purpose sections.
+- [x] 7.1 Update README (the data sources table, privacy paragraph, contracts bullets, mermaid diagram, Progress row, first-run step 4, file table rows, settings sample, the "Never imported" row as needed and the TarkovTracker credit section, which now says the API is no longer used), THIRD_PARTY_NOTICES (remote data: json.tarkov.dev only) and STRATEGY (the token line says it was retired in M9). Verify with `grep -n -i "tarkovtracker\|tracker token" README.md STRATEGY.md THIRD_PARTY_NOTICES.md`, which shows only historical or credit wording.
+- [x] 7.2 Rewrite the Purpose of `openspec/specs/progress-authority/spec.md` and drop its "assume the read-only Tracker integration is enabled" preamble. Rewrite the Purpose sentences of `openspec/specs/raid-timers/spec.md` and `openspec/specs/local-progress/spec.md` so they name local progress, not Tracker. Verify with `openspec validate --specs --strict` and `grep -n -i tracker` on those three Purpose sections.
 
 ## 8. Integration
 

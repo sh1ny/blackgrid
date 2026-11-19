@@ -1,7 +1,7 @@
 # raid-timers Specification
 
 ## Purpose
-Shows the player's raid timers in Blackgrid's own window: time in raid, the run-through countdown and the scav cooldown, worked out from the game's log times, the item data, the player's Fence reputation and their Tracker hideout progress, never drawn on the game screen.
+Shows the player's raid timers in Blackgrid's own window: time in raid, the run-through countdown and the scav cooldown, worked out from the game's log times, the item data, the player's Fence reputation and their local hideout progress, never drawn on the game screen.
 
 ## Requirements
 
