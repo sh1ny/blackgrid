@@ -13,6 +13,7 @@ import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
 import '../support/raid_timer_support.dart';
 import 'support/scan_ui_support.dart';
+import '../support/pump_async.dart';
 
 /// The synthetic folder the commit tests save, which watchers can bind to
 /// without touching the machine.
@@ -41,8 +42,8 @@ Future<void> _open(WidgetTester tester) async {
   await tester.runAsync(() async {
     await tester.tap(_settingsAction);
     await tester.pumpAndSettle();
-    await services.localProgress.settled;
   });
+  await pumpUntilComplete(tester, () => services.localProgress.settled);
   await tester.pumpAndSettle();
   expect(_page, findsOneWidget, reason: 'the Settings action opens the page');
 }
@@ -54,8 +55,8 @@ Future<void> _openFromStatus(WidgetTester tester, String key) async {
   await tester.runAsync(() async {
     await tester.tap(find.byKey(Key(key)));
     await tester.pumpAndSettle();
-    await services.localProgress.settled;
   });
+  await pumpUntilComplete(tester, () => services.localProgress.settled);
   await tester.pumpAndSettle();
   expect(_page, findsOneWidget, reason: 'the status item opens the page');
 }

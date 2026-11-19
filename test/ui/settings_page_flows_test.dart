@@ -18,6 +18,8 @@ import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'dart:async';
 import 'dart:io';
 
+import '../support/pump_async.dart';
+
 /// Opens the Settings page from the top bar.
 Future<void> _openSettings(WidgetTester tester) async {
   final services = tester
@@ -26,8 +28,8 @@ Future<void> _openSettings(WidgetTester tester) async {
   await tester.runAsync(() async {
     await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
-    await services.localProgress.settled;
   });
+  await pumpUntilComplete(tester, () => services.localProgress.settled);
   await tester.pumpAndSettle();
   expect(find.byType(SettingsPage), findsOneWidget);
 }

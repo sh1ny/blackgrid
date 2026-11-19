@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/map_widget_harness.dart';
+import '../support/pump_async.dart';
 
 /// A 1 x 1 PNG; the fake OCR never decodes it.
 final _png = base64Decode(
@@ -139,7 +140,7 @@ Future<MapWidgetHarness> _pumpInspector(
       extraMarkers: _extraMarkers,
     ),
   ))!;
-  addTearDown(h.dispose);
+  addPumpedTearDown(tester, h.dispose);
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(

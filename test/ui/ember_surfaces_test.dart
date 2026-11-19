@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
+import '../support/pump_async.dart';
 
 Future<void> _pumpPanels(WidgetTester tester, Brightness brightness) =>
     tester.pumpWidget(
@@ -156,8 +157,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(TextButton, 'Settings'));
       await tester.pumpAndSettle();
-      await h.services.localProgress.settled;
     });
+    await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     expect(find.byKey(const Key('settings-title-liveScan')), findsOneWidget);
     expect(find.text('LIVE SCAN'), findsNothing);
     // Recent scans lives in Diagnostics, which starts collapsed.
@@ -290,7 +291,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final h = (await tester.runAsync(MapWidgetHarness.create))!;
-    addTearDown(h.dispose);
+    addPumpedTearDown(tester, h.dispose);
     final pin = CustomPin(
       id: 'pin-camp',
       mapId: 'shoreline',

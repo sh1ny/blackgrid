@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/map_widget_harness.dart';
+import '../support/pump_async.dart';
 
 /// An OCR whose recognition never finishes until [gate] is completed.
 final class _GatedOcr extends RaidPanelOcr {
@@ -47,8 +48,8 @@ Future<void> _openSettings(WidgetTester tester) async {
   await tester.runAsync(() async {
     await tester.tap(find.widgetWithText(TextButton, 'Settings'));
     await tester.pumpAndSettle();
-    await services.localProgress.settled;
   });
+  await pumpUntilComplete(tester, () => services.localProgress.settled);
   await tester.pumpAndSettle();
 }
 

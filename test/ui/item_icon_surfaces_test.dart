@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/fake_item_icon_cache.dart';
 import '../support/m1_harness.dart';
+import '../support/pump_async.dart';
 
 const _link = 'https://assets.tarkov.dev/item-a-icon.webp';
 const _noArtwork = 'Identity only • no artwork';
@@ -38,7 +39,7 @@ void main() {
       await result.initialize();
       return result;
     }))!;
-    addTearDown(h.dispose);
+    addPumpedTearDown(tester, h.dispose);
     return h;
   }
 

@@ -9,15 +9,16 @@ import '../maps/map_marker_icons.dart';
 import 'ember/ember_tokens.dart';
 import 'ember/theme_access.dart';
 import 'labels.dart';
+import 'map_quests_section.dart';
 import 'marker_preferences.dart';
 import 'panels.dart';
 import 'pin_editor.dart';
 
 /// The working lists of the Map area, shown in the inspector.
 ///
-/// Three sections stack: the extracts this raid's screenshot matched, the
-/// marker rows with their filters, and the pins of the current map. Item
-/// details stay on Scanner.
+/// Four sections stack: the extracts this raid's screenshot matched, the
+/// marker rows with their filters, the pins of the current map and the quests
+/// the player has started. Item details stay on Scanner.
 class MapInspector extends StatelessWidget {
   /// Creates the inspector for the map `services.maps` shows.
   ///
@@ -55,6 +56,13 @@ class MapInspector extends StatelessWidget {
         icon: Icons.push_pin_outlined,
         fitContent: true,
         child: _PinsSection(services: services),
+      ),
+      const SizedBox(height: EmberSpace.md),
+      GridPanel(
+        title: 'Quests',
+        icon: Icons.assignment_outlined,
+        fitContent: true,
+        child: _QuestsPanel(services: services),
       ),
     ],
   );
@@ -242,6 +250,27 @@ class _PinsSection extends StatelessWidget {
       ),
     );
     if (remove == true) await services.settings.removePin(pin);
+  }
+}
+
+/// The Quests section, fed with the task and objective IDs of the quest
+/// markers of the current map.
+class _QuestsPanel extends StatelessWidget {
+  const _QuestsPanel({required this.services});
+
+  final AppServices services;
+
+  @override
+  Widget build(BuildContext context) {
+    final maps = services.maps;
+    return MarkerFactsBuilder(
+      maps: maps,
+      builder: (facts) => QuestsSection(
+        controller: services.manualProgress,
+        markerTaskIds: facts.questTaskIds,
+        markerObjectiveIds: facts.questObjectiveIds,
+      ),
+    );
   }
 }
 

@@ -240,6 +240,17 @@ Finder _label(String key, String text) =>
 bool _switchOn(WidgetTester tester, String key) =>
     tester.widget<EmberToggleSwitch>(_switch(key)).on;
 
+Finder get _questSwitch => find.byKey(const ValueKey('show-all-quests'));
+
+bool _questSwitchOn(WidgetTester tester) => tester
+    .widget<EmberToggleSwitch>(
+      find.byKey(const ValueKey('show-all-quests-switch')),
+    )
+    .on;
+
+double _questSwitchTop(WidgetTester tester) =>
+    tester.getTopLeft(_questSwitch).dy;
+
 /// The `y` of the group heading [title].
 double _heading(WidgetTester tester, String title) =>
     tester.getTopLeft(find.byKey(ValueKey('marker-group-$title'))).dy;
@@ -618,9 +629,14 @@ void main() {
   });
 
   testWidgets('marker-preferences: Hide all then Show all', (tester) async {
-    final f = await _pump(tester, pins: [_pin('Camp')]);
+    final f = await _pump(
+      tester,
+      pins: [_pin('Camp')],
+      extra: [_quest('q-prapor', 'Prapor')],
+    );
     final keys = _rowKeys(tester);
     expect(find.text('Save marker filters'), findsNothing);
+    expect(_questSwitchOn(tester), isFalse);
 
     await _tap(tester, f, find.widgetWithText(TextButton, 'Hide all'));
 
@@ -637,6 +653,94 @@ void main() {
       expect(_shown(f, key), isTrue, reason: key);
       expect(f.h.services.maps.categoryVisibility[key], isNot(false));
     }
+    expect(_questSwitchOn(tester), isFalse);
+    expect(f.settings.settings.showAllQuests, isFalse);
+  });
+
+  testWidgets(
+    'marker-preferences: Show all quests turns on without changing rows',
+    (tester) async {
+      final f = await _pump(
+        tester,
+        hidden: {'Hazards'},
+        extra: [_quest('q-prapor', 'Prapor')],
+      );
+      final before = Map.of(f.settings.settings.markerFilters);
+      expect(_heading(tester, 'Quests'), lessThan(_questSwitchTop(tester)));
+
+      await _tap(tester, f, _questSwitch);
+
+      expect(f.settings.settings.showAllQuests, isTrue);
+      expect(_questSwitchOn(tester), isTrue);
+      expect(f.settings.settings.markerFilters, before);
+      expect(_switchOn(tester, 'QuestItems'), isTrue);
+      expect(_switchOn(tester, 'Hazards'), isFalse);
+    },
+  );
+
+  testWidgets(
+    'marker-preferences: Hide all and Show all keep Show all quests',
+    (tester) async {
+      final f = await _pump(tester, extra: [_quest('q-prapor', 'Prapor')]);
+      await _tap(tester, f, _questSwitch);
+      expect(_questSwitchOn(tester), isTrue);
+
+      await _tap(tester, f, find.widgetWithText(TextButton, 'Hide all'));
+      await _tap(tester, f, find.widgetWithText(TextButton, 'Show all'));
+
+      expect(f.settings.settings.showAllQuests, isTrue);
+      expect(_questSwitchOn(tester), isTrue);
+    },
+  );
+
+  testWidgets('marker-preferences: no switch on a map without quest markers', (
+    tester,
+  ) async {
+    final f = await _pump(tester);
+    await f.settings.setShowAllQuests(true);
+    await tester.pump();
+
+    expect(_questSwitch, findsNothing);
+    expect(find.text('Show all quests'), findsNothing);
+    expect(f.settings.settings.showAllQuests, isTrue);
+  });
+
+  testWidgets(
+    'marker-preferences: Show all quests ignores clicks while saving',
+    (tester) async {
+      final f = await _pump(tester, extra: [_quest('q-prapor', 'Prapor')]);
+      f.settings.busy = true;
+      // ignore: invalid_use_of_protected_member
+      f.settings.notifyListeners();
+      await tester.pump();
+
+      await tester.tap(_questSwitch);
+      await tester.pump();
+
+      expect(f.settings.settings.showAllQuests, isFalse);
+      expect(_questSwitchOn(tester), isFalse);
+      f.settings.busy = false;
+    },
+  );
+
+  testWidgets('marker-preferences: Show all quests is announced as a toggle', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await _pump(tester, extra: [_quest('q-prapor', 'Prapor')]);
+
+    expect(
+      tester.getSemantics(_questSwitch),
+      matchesSemantics(
+        label: 'Show all quests',
+        hasToggledState: true,
+        isToggled: false,
+        hasEnabledState: true,
+        isEnabled: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
   });
 
   testWidgets("marker-preferences: Show all keeps other maps' choices", (

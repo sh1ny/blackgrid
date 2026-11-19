@@ -13,6 +13,7 @@ import '../fixtures/m1/catalog/fixture.dart' show progressWire;
 import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/real_fonts.dart';
+import '../support/pump_async.dart';
 
 Finder _inStrip(Finder matching) => find.descendant(
   of: find.byKey(const Key('answer-strip')),
@@ -79,7 +80,7 @@ void main() {
       result.services.selection.setFir(FirState.yes);
       return result;
     }))!;
-    addTearDown(h.dispose);
+    addPumpedTearDown(tester, h.dispose);
     await tester.pumpWidget(BlackgridApp(services: h.services));
     await tester.pumpAndSettle();
     final reasonText = verdictReason(h.services.selection.decision!);

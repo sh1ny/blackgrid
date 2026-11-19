@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/map_widget_harness.dart';
+import '../support/pump_async.dart';
 
 const _mapFill = Color(0xFF253541);
 
@@ -97,7 +98,7 @@ Future<_Fixture> _pump(WidgetTester tester) async {
       extraLabels: _labels,
     ),
   ))!;
-  addTearDown(h.dispose);
+  addPumpedTearDown(tester, h.dispose);
   final fixture = _Fixture(h);
   await tester.pumpWidget(
     MaterialApp(

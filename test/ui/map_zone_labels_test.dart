@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../tool/markers/icon_set.dart';
 import '../support/map_widget_harness.dart';
+import '../support/pump_async.dart';
 
 const _manifestPath = 'assets/map_markers/manifest.json';
 const _background = Color(0xFF090F0D);
@@ -247,7 +248,7 @@ Future<_Fixture> _pump(WidgetTester tester, {bool hold = false}) async {
     );
     return _Fixture(h, icons, source);
   }))!;
-  addTearDown(fixture.h.dispose);
+  addPumpedTearDown(tester, fixture.h.dispose);
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
