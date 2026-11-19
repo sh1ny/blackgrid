@@ -124,7 +124,7 @@ class WhySection extends StatelessWidget {
             if (decision.reasons.isEmpty)
               Text(
                 'No catalog requirement references. '
-                'Tracker progress may still be unknown.',
+                'Your progress may still be unknown.',
                 style: EmberType.label.copyWith(color: ember.inkSecondary),
               )
             else

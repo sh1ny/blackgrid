@@ -336,9 +336,9 @@ class _BlackgridShellState extends State<BlackgridShell> {
                             ),
                             const SizedBox(width: 22),
                             InkWell(
-                              key: const Key('status-tracker'),
+                              key: const Key('status-progress'),
                               onTap: () => _openSettings(
-                                section: SettingsSection.tracker,
+                                section: SettingsSection.localProgress,
                               ),
                               child: Text(
                                 'Progress ${progressStatusLabel(widget.services.progress.status)}',

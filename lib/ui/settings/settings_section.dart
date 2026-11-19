@@ -12,9 +12,6 @@ enum SettingsSection {
   /// Refreshing item data and map data.
   itemData('Item and map data'),
 
-  /// Tracker progress and the Tracker token.
-  tracker('Tracker progress'),
-
   /// Local log-derived progress and its active wipes.
   localProgress('Local progress'),
 

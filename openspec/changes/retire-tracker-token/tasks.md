@@ -39,31 +39,31 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 | local-data-durability → Saved progress-site tokens are deleted at startup | Unexpected file in the folder | test/data/retired_tokens_test.dart | local-data-durability: Unexpected file in the folder | red |
 | local-progress → Database upgrade preserves existing application behavior | Upgrade and reopen | test/data/migration_test.dart | local-data-durability: Upgrade and reopen | green |
 | local-progress → Database upgrade preserves existing application behavior | Newer database | test/data/migration_test.dart | (locate) | green |
-| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sidebar lists eight sections in order | red |
+| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sidebar lists eight sections in order | green |
 | settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | settings-page: Jump to a section | green |
 | settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | settings-page: Jump to Diagnostics | green |
 | settings-page → Diagnostics starts collapsed each time | Reopen | test/ui/settings_page_shell_test.dart | settings-page: Reopen | green |
-| settings-page → Diagnostics starts collapsed each time | Open at a section | test/ui/settings_page_shell_test.dart | settings-page: Open at a section | red |
+| settings-page → Diagnostics starts collapsed each time | Open at a section | test/ui/settings_page_shell_test.dart | settings-page: Open at a section | green |
 | settings-page → Changes save as they are made | Switch saves at once | test/ui/settings_page_test.dart | settings-page: Switch saves at once | green |
 | settings-page → Changes save as they are made | Settings could not be read | test/ui/settings_page_test.dart | settings-page: Settings could not be read | green |
-| settings-page → Every setting stays reachable | All controls present | test/ui/settings_page_test.dart | settings-page: All controls present | red |
+| settings-page → Every setting stays reachable | All controls present | test/ui/settings_page_test.dart | settings-page: All controls present | green |
 | settings-page → Every setting stays reachable | Disabled rule kept | test/ui/settings_page_test.dart | settings-page: Disabled rule kept | green |
-| settings-page → Settings opens at the section a link names | Status bar Progress | test/ui/settings_page_shell_test.dart | settings-page: Status bar Progress | red |
+| settings-page → Settings opens at the section a link names | Status bar Progress | test/ui/settings_page_shell_test.dart | settings-page: Status bar Progress | green |
 | settings-page → Settings opens at the section a link names | Already open | test/ui/settings_page_shell_test.dart | settings-page: Already open | green |
-| workspace-shell → Status actions lead to their controls | Settings targets | test/ui/shell_test.dart | workspace-shell: Settings targets | red |
-| workspace-shell → Status actions lead to their controls | Settings target while the page is open | test/ui/shell_test.dart | workspace-shell: Settings target while the page is open | red |
-| workspace-shell → Status actions lead to their controls | Progress status words | test/ui/shell_test.dart | workspace-shell: Progress status words | red |
+| workspace-shell → Status actions lead to their controls | Settings targets | test/ui/shell_test.dart | workspace-shell: Settings targets | green |
+| workspace-shell → Status actions lead to their controls | Settings target while the page is open | test/ui/shell_test.dart | workspace-shell: Settings target while the page is open | green |
+| workspace-shell → Status actions lead to their controls | Progress status words | test/ui/shell_test.dart | workspace-shell: Progress status words | green |
 | workspace-shell → Status actions lead to their controls | Loading after a mode switch | test/application/progress_authority_test.dart | workspace-shell: Loading after a mode switch | green |
 | workspace-shell → Status actions lead to their controls | Edit keeps the label | test/application/progress_authority_test.dart | workspace-shell: Edit keeps the label | green |
-| workspace-shell → Status actions lead to their controls | Progress unavailable | test/ui/shell_test.dart | workspace-shell: Progress unavailable | red |
+| workspace-shell → Status actions lead to their controls | Progress unavailable | test/ui/shell_test.dart | workspace-shell: Progress unavailable | green |
 | workspace-shell → Status actions lead to their controls | Failed live scan save | test/ui/shell_test.dart | workspace-shell: Failed live scan save | green |
 | workspace-shell → Status actions lead to their controls | Status bar presentation and binding | test/ui/shell_test.dart | workspace-shell: Status bar presentation and binding | green |
 | settings-diagnostics → Problems the player must act on stay reachable from the main windows | Rejected scan still explains itself | test/ui/scan_diagnostics_test.dart | (locate) | green |
 | settings-diagnostics → Problems the player must act on stay reachable from the main windows | Errors the player must act on stay visible | test/ui/settings_page_shell_test.dart | (locate) | green |
-| settings-diagnostics → Problems the player must act on stay reachable from the main windows | Local progress error stays reachable | test/ui/settings_page_shell_test.dart | settings-diagnostics: Local progress error stays reachable | red |
+| settings-diagnostics → Problems the player must act on stay reachable from the main windows | Local progress error stays reachable | test/ui/settings_page_shell_test.dart | settings-diagnostics: Local progress error stays reachable | green |
 | settings-diagnostics → Diagnostics shows item data and progress source detail | Current catalog | test/ui/settings_diagnostics_test.dart | (locate) | green |
 | settings-diagnostics → Diagnostics shows item data and progress source detail | No catalog | test/ui/settings_diagnostics_test.dart | Diagnostics says there is no complete item data download | green |
-| settings-diagnostics → Diagnostics shows item data and progress source detail | Local progress unavailable | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Local progress unavailable | red |
+| settings-diagnostics → Diagnostics shows item data and progress source detail | Local progress unavailable | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Local progress unavailable | green |
 | verdict-presentation → One-line verdict reason | Keep names the need that decided it | test/domain/verdict_reason_test.dart | Keep names the first actionable need with its count | green |
 | verdict-presentation → One-line verdict reason | Keep with an unknown count | test/domain/verdict_reason_test.dart | Keep with an unknown count has no number | green |
 | verdict-presentation → One-line verdict reason | Keep for later names the future need | test/domain/verdict_reason_test.dart | Keep for later names the first future need | green |
@@ -81,13 +81,13 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 | verdict-presentation → One-line verdict reason | A long reason at the narrowest card | test/ui/shell_test.dart | long catalog reason wraps fully inside the shared strip | green |
 | player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | (locate) | green |
 | player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | (locate) | green |
-| player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | red |
+| player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | green |
 | player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/shell_test.dart | (locate) | green |
 | player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | (locate) | green |
 | player-facing-text → Times are shown in local time | Earlier day | test/ui/history_panel_test.dart | player-facing-text: Earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/scanner_workspace_test.dart | scanner-workspace: Missing prices | green |
 | player-facing-text → Times are shown in local time | No UTC time in the inspector | test/ui/scanner_workspace_test.dart | (locate) | green |
-| scanner-evidence → Scanner workspace omits configuration rail | Scanner functions remain reachable without the old rail | test/ui/scanner_screen_test.dart | scanner-evidence: Scanner functions remain reachable without the old rail | red |
+| scanner-evidence → Scanner workspace omits configuration rail | Scanner functions remain reachable without the old rail | test/ui/scanner_screen_test.dart | scanner-evidence: Scanner functions remain reachable without the old rail | green |
 | scan-frame-recording → Recordings stay local and carry no credentials or progress | Recording with local progress recorded | test/application/scan_coordinator_recording_test.dart | scan-frame-recording: Recording with local progress recorded | red |
 | scan-frame-recording → Recordings stay local and carry no credentials or progress | Timing log while recording | test/application/scan_coordinator_recording_test.dart | timing log line keys are the same with recording on | green |
 | legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | green |
@@ -119,8 +119,8 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 
 ## 4. Status bar, Settings and Diagnostics
 
-- [ ] 4.1 Read the `flutter-add-widget-test` skill. Write failing widget tests for these rows: workspace-shell Settings targets, Settings target while the page is open, Progress status words and Progress unavailable (`shell_test.dart`); settings-page Status bar Progress, Open at a section and settings-diagnostics Local progress error stays reachable (`settings_page_shell_test.dart`); Sidebar order and All controls present (`settings_page_test.dart`); settings-diagnostics Local progress unavailable (`settings_diagnostics_test.dart`); scanner-evidence Scanner functions remain reachable without the old rail (`scanner_screen_test.dart`); and player-facing-text Every value has a label (`labels_test.dart`, with the local progress status values). Delete the Save token, Token action fails and No mode tests, plus the Tracker cooldown Diagnostics test. Verify they fail.
-- [ ] 4.2 Replace the status bar's Tracker item with the Progress item (`Key('status-progress')`, "Progress loading/local/unavailable", opening `SettingsSection.localProgress`). Remove `SettingsSection.tracker`, the Tracker section and the token handling from `settings_page.dart`. Replace `progressStatusLabel` in `labels.dart` with labels for the `ProgressAuthority` status. Change the Diagnostics progress lines in `evidence_panels.dart` to local progress availability and drop "tracker progress 15m", and change the "Tracker progress may still be unknown" texts in `evidence_panels.dart` and `scanner_sections.dart` to name progress. Verify the 4.1 tests pass, flip their rows green, and check that `grep -rn -i "tracker" lib/ui` returns nothing.
+- [x] 4.1 Read the `flutter-add-widget-test` skill. Write failing widget tests for these rows: workspace-shell Settings targets, Settings target while the page is open, Progress status words and Progress unavailable (`shell_test.dart`); settings-page Status bar Progress, Open at a section and settings-diagnostics Local progress error stays reachable (`settings_page_shell_test.dart`); Sidebar order and All controls present (`settings_page_test.dart`); settings-diagnostics Local progress unavailable (`settings_diagnostics_test.dart`); scanner-evidence Scanner functions remain reachable without the old rail (`scanner_screen_test.dart`); and player-facing-text Every value has a label (`labels_test.dart`, with the local progress status values). Delete the Save token, Token action fails and No mode tests, plus the Tracker cooldown Diagnostics test. Verify they fail.
+- [x] 4.2 Replace the status bar's Tracker item with the Progress item (`Key('status-progress')`, "Progress loading/local/unavailable", opening `SettingsSection.localProgress`). Remove `SettingsSection.tracker`, the Tracker section and the token handling from `settings_page.dart`. Replace `progressStatusLabel` in `labels.dart` with labels for the `ProgressAuthority` status. Change the Diagnostics progress lines in `evidence_panels.dart` to local progress availability and drop "tracker progress 15m", and change the "Tracker progress may still be unknown" texts in `evidence_panels.dart` and `scanner_sections.dart` to name progress. Verify the 4.1 tests pass, flip their rows green, and check that `grep -rn -i "tracker" lib/ui` returns nothing.
 
 ## 5. Settings key and legacy import
 

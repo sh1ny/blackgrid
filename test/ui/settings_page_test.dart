@@ -194,7 +194,6 @@ void main() {
         'General',
         'Live scan',
         'Item and map data',
-        'Tracker progress',
         'Local progress',
         'Game files',
         'Raid timers',
@@ -207,7 +206,7 @@ void main() {
           tester.getTopLeft(_title(section)).dy,
       ];
       expect(tops, orderedEquals([...tops]..sort()));
-      expect(SettingsSection.values, hasLength(9));
+      expect(SettingsSection.values, hasLength(8));
     });
 
     testWidgets('settings-page: Jump to a section', (tester) async {
@@ -241,8 +240,12 @@ void main() {
     testWidgets('a requested section is shown and focused on mount', (
       tester,
     ) async {
-      await _pumpHarness(tester, section: SettingsSection.tracker, request: 1);
-      final title = _title(SettingsSection.tracker);
+      await _pumpHarness(
+        tester,
+        section: SettingsSection.localProgress,
+        request: 1,
+      );
+      final title = _title(SettingsSection.localProgress);
       expect(_inView(tester, title), isTrue);
       expect(_holdsFocus(tester, title), isTrue);
       expect(find.text('Map inputs'), findsNothing);
@@ -853,6 +856,10 @@ void main() {
         find.byKey(const Key('settings-diagnostics-toggle')),
         'diagnostics',
       );
+      // No control offers a token, Tracker progress or a progress refresh.
+      for (final gone in ['Tracker', 'Refresh progress', 'token']) {
+        expect(find.textContaining(gone), findsNothing, reason: gone);
+      }
       // The ink-only switch is the only switch on the page.
       expect(find.byType(Switch), findsNothing);
       expect(find.byType(SwitchListTile), findsNothing);
@@ -861,7 +868,7 @@ void main() {
       for (final key in [
         'settings-item-data',
         'settings-live-scan',
-        'settings-tracker',
+        'settings-local-progress',
       ]) {
         expect(find.byKey(Key(key)), findsOneWidget, reason: key);
       }

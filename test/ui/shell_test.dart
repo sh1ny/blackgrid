@@ -1,3 +1,4 @@
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/application/scan_correction.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
@@ -1451,7 +1452,34 @@ void main() {
     }
 
     await check('status-item-data', 'itemData');
-    await check('status-tracker', 'tracker');
+    await check('status-progress', 'localProgress');
+  });
+  testWidgets('workspace-shell: Progress status words', (tester) async {
+    final h = await pumpM1(tester);
+    expect(h.services.progress.status, ProgressAuthorityStatus.local);
+    final bar = find.byKey(const Key('shell-status-bar'));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('status-progress')),
+        matching: find.text('Progress local'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: find.textContaining('Tracker')),
+      findsNothing,
+    );
+  });
+  testWidgets('workspace-shell: Progress unavailable', (tester) async {
+    final h = await pumpM1(tester, mode: GameMode.unknown);
+    expect(h.services.progress.status, ProgressAuthorityStatus.unavailable);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('status-progress')),
+        matching: find.text('Progress unavailable'),
+      ),
+      findsOneWidget,
+    );
   });
   testWidgets('workspace-shell: Settings target while the page is open', (
     tester,
@@ -1464,26 +1492,26 @@ void main() {
     await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     await tester.pumpAndSettle();
     final page = find.byType(SettingsPage);
-    final tracker = find.byKey(const Key('settings-title-tracker'));
+    final target = find.byKey(const Key('settings-title-localProgress'));
     expect(page, findsOneWidget);
-    // Scroll past Tracker progress, so reaching it again is a real move.
+    // Scroll past Local progress, so reaching it again is a real move.
     await tester.tap(find.byKey(const Key('settings-nav-raidTimers')));
     await tester.pumpAndSettle();
     expect(
-      tester.getRect(tracker).top,
+      tester.getRect(target).top,
       lessThan(tester.getRect(page).top),
-      reason: 'Tracker progress is scrolled out of view',
+      reason: 'Local progress is scrolled out of view',
     );
 
-    await tester.tap(find.byKey(const Key('status-tracker')));
+    await tester.tap(find.byKey(const Key('status-progress')));
     await tester.pumpAndSettle();
 
     expect(page, findsOneWidget);
     expect(
-      tester.getRect(tracker).bottom,
+      tester.getRect(target).bottom,
       lessThanOrEqualTo(tester.getRect(page).bottom),
     );
-    expect(Focus.of(tester.element(tracker)).hasPrimaryFocus, isTrue);
+    expect(Focus.of(tester.element(target)).hasPrimaryFocus, isTrue);
   });
   for (final size in [
     const Size(1660, 870),

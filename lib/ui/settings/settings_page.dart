@@ -281,12 +281,6 @@ class _SettingsPageState extends State<SettingsPage> {
           _itemAndMapData(context),
           contentKey: const Key('settings-item-data'),
         ),
-        _section(
-          context,
-          SettingsSection.tracker,
-          _tracker(context),
-          contentKey: const Key('settings-tracker'),
-        ),
         _section(context, SettingsSection.localProgress, [
           LocalProgressSettings(
             controller: _services.localProgress,
@@ -450,16 +444,6 @@ class _SettingsPageState extends State<SettingsPage> {
             state.refreshing ? 'Refreshing map data…' : 'Refresh map data',
           ),
         ),
-      ),
-    ];
-  }
-
-  List<Widget> _tracker(BuildContext context) {
-    final progress = _services.progress;
-    return [
-      Text(
-        'Progress: ${progressStatusLabel(progress.status)}',
-        style: EmberType.label.copyWith(color: context.ember.inkTertiary),
       ),
     ];
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
@@ -297,6 +298,19 @@ void main() {
       expect(find.text('No complete item data download.'), findsOneWidget);
       expect(find.textContaining('records'), findsNothing);
       expect(find.textContaining('Source:'), findsNothing);
+    });
+
+    testWidgets('settings-diagnostics: Local progress unavailable', (
+      tester,
+    ) async {
+      final h = await harness(tester, noMode: true);
+      expect(h.services.progress.status, ProgressAuthorityStatus.unavailable);
+      await show(tester, h);
+
+      expect(find.text('Local progress: unavailable'), findsOneWidget);
+      expect(find.textContaining('Tracker'), findsNothing);
+      expect(find.textContaining('cooldown'), findsNothing);
+      expect(find.textContaining('Progress updated'), findsNothing);
     });
   });
 }

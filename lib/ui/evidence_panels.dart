@@ -130,7 +130,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
             : reasons.isEmpty
             ? const Center(
                 child: Text(
-                  'No catalog requirement references. Tracker progress may still be unknown.',
+                  'No catalog requirement references. Your progress may still be unknown.',
                 ),
               )
             : _rows(context, reasons, open),
@@ -287,7 +287,7 @@ class _RequirementRow extends StatelessWidget {
   }
 }
 
-/// The technical detail behind the item data, prices and tracker progress.
+/// The technical detail behind the item data, prices and local progress.
 ///
 /// It describes the item data behind the inspected item: for a history item
 /// from another game mode, that mode's saved item data, otherwise the live
@@ -339,7 +339,7 @@ class DataSourceDiagnostics extends StatelessWidget {
             style: small,
           ),
           Text(
-            'Progress: ${progressStatusLabel(services.progress.status)}',
+            'Local progress: ${progressStatusLabel(services.progress.status)}',
             style: small,
           ),
           Text(
