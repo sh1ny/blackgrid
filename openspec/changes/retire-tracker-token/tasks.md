@@ -38,7 +38,7 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 | local-data-durability → Saved progress-site tokens are deleted at startup | A file cannot be deleted | test/data/retired_tokens_test.dart | local-data-durability: A file cannot be deleted | green |
 | local-data-durability → Saved progress-site tokens are deleted at startup | Unexpected file in the folder | test/data/retired_tokens_test.dart | local-data-durability: Unexpected file in the folder | green |
 | local-progress → Database upgrade preserves existing application behavior | Upgrade and reopen | test/data/migration_test.dart | local-data-durability: Upgrade and reopen | green |
-| local-progress → Database upgrade preserves existing application behavior | Newer database | test/data/migration_test.dart | (locate) | green |
+| local-progress → Database upgrade preserves existing application behavior | Newer database | test/data/migration_test.dart | newer schema reaches the second query as NewerDatabaseException without byte mutation | green |
 | settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | sidebar lists eight sections in order | green |
 | settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | settings-page: Jump to a section | green |
 | settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | settings-page: Jump to Diagnostics | green |
@@ -58,10 +58,10 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 | workspace-shell → Status actions lead to their controls | Progress unavailable | test/ui/shell_test.dart | workspace-shell: Progress unavailable | green |
 | workspace-shell → Status actions lead to their controls | Failed live scan save | test/ui/shell_test.dart | workspace-shell: Failed live scan save | green |
 | workspace-shell → Status actions lead to their controls | Status bar presentation and binding | test/ui/shell_test.dart | workspace-shell: Status bar presentation and binding | green |
-| settings-diagnostics → Problems the player must act on stay reachable from the main windows | Rejected scan still explains itself | test/ui/scan_diagnostics_test.dart | (locate) | green |
-| settings-diagnostics → Problems the player must act on stay reachable from the main windows | Errors the player must act on stay visible | test/ui/settings_page_shell_test.dart | (locate) | green |
+| settings-diagnostics → Problems the player must act on stay reachable from the main windows | Rejected scan still explains itself | test/ui/scan_evidence_panel_test.dart | rejected report gives a plain reason with the best candidate not accepted | green |
+| settings-diagnostics → Problems the player must act on stay reachable from the main windows | Errors the player must act on stay visible | test/ui/shell_test.dart | main windows keep diagnostic detail out catalog error and recording stop note stay on the Scanner | green |
 | settings-diagnostics → Problems the player must act on stay reachable from the main windows | Local progress error stays reachable | test/ui/settings_page_shell_test.dart | settings-diagnostics: Local progress error stays reachable | green |
-| settings-diagnostics → Diagnostics shows item data and progress source detail | Current catalog | test/ui/settings_diagnostics_test.dart | (locate) | green |
+| settings-diagnostics → Diagnostics shows item data and progress source detail | Current catalog | test/ui/settings_diagnostics_test.dart | data source detail Diagnostics shows source, UTC download time and record counts | green |
 | settings-diagnostics → Diagnostics shows item data and progress source detail | No catalog | test/ui/settings_diagnostics_test.dart | Diagnostics says there is no complete item data download | green |
 | settings-diagnostics → Diagnostics shows item data and progress source detail | Local progress unavailable | test/ui/settings_diagnostics_test.dart | settings-diagnostics: Local progress unavailable | green |
 | verdict-presentation → One-line verdict reason | Keep names the need that decided it | test/domain/verdict_reason_test.dart | Keep names the first actionable need with its count | green |
@@ -79,22 +79,22 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 | verdict-presentation → One-line verdict reason | Flea with no trader offer | test/domain/verdict_reason_test.dart | Flea with no trader offer | green |
 | verdict-presentation → One-line verdict reason | Price unavailable | test/domain/verdict_reason_test.dart | Price unavailable wording | green |
 | verdict-presentation → One-line verdict reason | A long reason at the narrowest card | test/ui/shell_test.dart | long catalog reason wraps fully inside the shared strip | green |
-| player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | (locate) | green |
-| player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | (locate) | green |
+| player-facing-text → Shown states use plain-language labels | Stale catalog in the footer | test/ui/shell_test.dart | footer says item data is out of date when the catalog is stale | green |
+| player-facing-text → Shown states use plain-language labels | Imported scan in history | test/ui/history_panel_test.dart | an imported scan row says Imported scan | green |
 | player-facing-text → Shown states use plain-language labels | Every value has a label | test/ui/labels_test.dart | every value of every shown kind has a plain label | green |
-| player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/shell_test.dart | (locate) | green |
-| player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | (locate) | green |
+| player-facing-text → Shown states use plain-language labels | Unknown found-in-raid state | test/ui/decision_card_text_test.dart | unknown found in raid is said in words | green |
+| player-facing-text → Times are shown in local time | History row time | test/ui/history_panel_test.dart | a row observed today shows its local time without ISO | green |
 | player-facing-text → Times are shown in local time | Earlier day | test/ui/history_panel_test.dart | player-facing-text: Earlier day | green |
 | player-facing-text → Times are shown in local time | Missing flea quote time | test/ui/scanner_workspace_test.dart | scanner-workspace: Missing prices | green |
-| player-facing-text → Times are shown in local time | No UTC time in the inspector | test/ui/scanner_workspace_test.dart | (locate) | green |
+| player-facing-text → Times are shown in local time | No UTC time in the inspector | test/ui/shell_test.dart | main windows keep diagnostic detail out the Scanner inspector shows no UTC time | green |
 | scanner-evidence → Scanner workspace omits configuration rail | Scanner functions remain reachable without the old rail | test/ui/scanner_screen_test.dart | scanner-evidence: Scanner functions remain reachable without the old rail | green |
 | scan-frame-recording → Recordings stay local and carry no credentials or progress | Recording with local progress recorded | test/application/scan_coordinator_recording_test.dart | scan-frame-recording: Recording with local progress recorded | green |
 | scan-frame-recording → Recordings stay local and carry no credentials or progress | Timing log while recording | test/application/scan_coordinator_recording_test.dart | timing log line keys are the same with recording on | green |
 | legacy-import → An import never changes this computer's own inputs | Replace keeps live scan and hotkey | test/data/legacy_import_test.dart | a Replace import keeps live scan and the scan hotkey and applies imported preferences | green |
-| legacy-import → An import never changes this computer's own inputs | Replace keeps input folders | test/data/legacy_import_test.dart | (locate) | green |
-| legacy-import → An import never changes this computer's own inputs | Import with no stored settings | test/data/legacy_import_test.dart | (locate) | green |
+| legacy-import → An import never changes this computer's own inputs | Replace keeps input folders | test/data/legacy_import_test.dart | importing settings over stored local inputs a Replace import keeps both input folders and the follow switch | green |
+| legacy-import → An import never changes this computer's own inputs | Import with no stored settings | test/data/legacy_import_test.dart | importing settings over stored local inputs an import with no stored settings uses default local inputs | green |
 | legacy-import → An import never changes this computer's own inputs | Imported Tracker switch is ignored | test/data/legacy_import_test.dart | legacy-import: Imported Tracker switch is ignored | green |
-| task-catalog → The task catalog does not change advice | Same advice with and without the block | test/domain/decision_engine_test.dart | (locate) | green |
+| task-catalog → The task catalog does not change advice | Same advice with and without the block | test/data/catalog_normalizer_progress_test.dart | item requirements, index and scav inputs are identical with and without the block | green |
 | task-catalog → The task catalog does not change advice | Task catalog unavailable | test/domain/decision_engine_test.dart | task-catalog: Task catalog unavailable | green |
 
 ## 1. ADR and architecture
@@ -141,8 +141,8 @@ Rows marked green ride along unchanged inside a MODIFIED requirement. Task 8.2 r
 
 ## 8. Integration
 
-- [ ] 8.1 Check that no network path to the progress site is left: `grep -rn -i "tarkovtracker" lib windows test` is empty, and the HTTP client is used only by the catalog, map data and icon clients. Verify by command output.
-- [ ] 8.2 For every green row of the test map, find its test (replace each "(locate)" with the real test name, or add the test if none exists) and re-run those files. Then run `mise run analyze`, `mise run test` and `openspec validate retire-tracker-token --strict`. All must pass, and every test map row must be green.
+- [x] 8.1 Check that no network path to the progress site is left: `grep -rn -i "tarkovtracker" lib windows test` is empty, and the HTTP client is used only by the catalog, map data and icon clients. Verify by command output.
+- [x] 8.2 For every green row of the test map, find its test (replace each "(locate)" with the real test name, or add the test if none exists) and re-run those files. Then run `mise run analyze`, `mise run test` and `openspec validate retire-tracker-token --strict`. All must pass, and every test map row must be green.
 
 ## Workflow follow-up
 

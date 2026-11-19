@@ -128,10 +128,7 @@ void main() {
       ),
     );
     expect(reasonFor(OpenInput.itemData), 'Item data missing or out of date');
-    expect(
-      reasonFor(OpenInput.progress),
-      'Progress unavailable',
-    );
+    expect(reasonFor(OpenInput.progress), 'Progress unavailable');
     expect(
       reasonFor(OpenInput.foundInRaid),
       'Found in raid unknown for this item',
