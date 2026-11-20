@@ -10,7 +10,7 @@ An import SHALL NOT change the game log folder, screenshot folder, follow-game-l
 
 #### Scenario: Replace keeps live scan and hotkey
 - **WHEN** the stored settings have live scan on and scan hotkey F8, and the user imports a settings file with "Replace" chosen
-- **THEN** after the import live scan is still on and the scan hotkey is still F8, and the imported mode, map, marker filters and Tracker switch are in use
+- **THEN** after the import live scan is still on and the scan hotkey is still F8, and the imported mode, map and marker filters are in use
 
 #### Scenario: Replace keeps input folders
 - **WHEN** the stored settings name a game log folder and a screenshot folder and follow game logs is off, and the user imports with "Replace" chosen
@@ -19,6 +19,10 @@ An import SHALL NOT change the game log folder, screenshot folder, follow-game-l
 #### Scenario: Import with no stored settings
 - **WHEN** no settings were stored and the user imports a settings file
 - **THEN** live scan is off, the scan hotkey is the default and follow game logs is on
+
+#### Scenario: Imported Tracker switch is ignored
+- **WHEN** the imported settings file has `TrackerProgressEnabled` set to true
+- **THEN** the import succeeds, its preview does not mention Tracker progress, and no saved setting holds the Tracker switch
 
 ### Requirement: A failed import changes nothing, also after a restart
 An import SHALL write its settings, pins, history entries and import record in one step. When any write fails, the stored settings, pins, history and import records SHALL be exactly as before the import, also after the database is closed and reopened, and the same files SHALL still be importable.

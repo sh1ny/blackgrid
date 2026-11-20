@@ -139,14 +139,3 @@ Unless Show all quests is on, a quest objective or quest item marker SHALL be dr
 #### Scenario: Show all quests
 - **WHEN** the player turns Show all quests on
 - **THEN** every quest marker is eligible again, subject to the category rows and the quest name and trader filters
-
-### Requirement: Advice stays on the Tracker token
-This change SHALL NOT switch keep/sell advice, raid timers or task state away from the Tracker token, and SHALL NOT change the token's requests or credentials.
-
-#### Scenario: Ticking does not change advice
-- **WHEN** the player ticks an objective of a quest that needs the selected item
-- **THEN** the item's verdict and requirement rows are unchanged
-
-#### Scenario: Token removed
-- **WHEN** no Tracker token is configured
-- **THEN** Quests and the quest-marker filter still work from local progress

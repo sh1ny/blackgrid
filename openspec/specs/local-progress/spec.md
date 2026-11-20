@@ -39,7 +39,6 @@ Each identity string token, including an undo request or target ID, SHALL use at
 - **WHEN** an event identity or edition token exceeds its encoded budget, including because JSON escaping increases its size
 - **THEN** the whole batch is rejected and previously stored events and current values are unchanged
 
-
 ### Requirement: Progress values are independent typed registers
 The store SHALL support task state; objective absolute count and completion; hideout station level; player level, faction and edition; and trader loyalty. Each field SHALL resolve independently under its entity ID, mode and cycle. Catalog entities SHALL use tarkov.dev IDs. An explicit unset value SHALL mean unknown, not zero or an older value. Persistence SHALL NOT decide task availability or infer one field from another.
 
@@ -95,7 +94,6 @@ Each current-value page SHALL validate its cursor and cycle revision and return 
 - **WHEN** another database instance commits after a continuation checks its revision but before it reads its rows, including when that continuation is the final page
 - **THEN** the whole page comes from the checked snapshot or reports an explicit stale-cursor or storage failure, never successful rows from a newer revision under the old cursor
 
-
 ### Requirement: Undo appends a guarded compensating event
 Undo SHALL restore the target winner's preceding value, or unset when none exists, by appending a new manual event linked to that target. It SHALL NOT delete history. Undo SHALL check the target is still the current winner in the same transaction as its append, and choose a timestamp later than the target. A repeated undo request ID SHALL return its original result without another event.
 
@@ -134,11 +132,11 @@ Append batches and read pages SHALL contain at most 256 records; encoded events 
 - **THEN** it reports busy or invalid input, respectively, without accepting partial work
 
 ### Requirement: Database upgrade preserves existing application behavior
-Upgrading storage SHALL preserve settings, pins, activity, caches, statistics and their existing semantics while adding empty local-progress storage. A newer unsupported database SHALL still be refused without mutation. This change SHALL NOT switch advice, timers or task authority away from Tracker, change its credentials or requests, or initiate progress ingestion or synchronization.
+Upgrading storage SHALL preserve settings, pins, activity, caches, statistics and their existing semantics while adding empty local-progress storage. A newer unsupported database SHALL still be refused without mutation. Upgrading SHALL NOT initiate progress ingestion or synchronization.
 
 #### Scenario: Upgrade and reopen
 - **WHEN** an existing database with user records is upgraded and reopened
-- **THEN** existing records retain their values, local progress starts empty, and Tracker remains the existing progress source
+- **THEN** existing records retain their values, and local progress starts empty
 
 #### Scenario: Newer database
 - **WHEN** the database has a schema newer than the supported version

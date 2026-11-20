@@ -163,14 +163,3 @@ The shown values SHALL be the current values of the mode's active wipe, read aga
 #### Scenario: New wipe
 - **WHEN** the player starts a new PvE wipe
 - **THEN** every PvE value shows unknown until set again or replayed
-
-### Requirement: Consumers keep their current progress source
-This change SHALL NOT switch keep/sell advice, raid timers or task state away from the Tracker token, and SHALL NOT change the token's requests or credentials.
-
-#### Scenario: Advice unchanged
-- **WHEN** the player sets their level by hand with a Tracker token saved
-- **THEN** keep/sell advice uses the Tracker snapshot's level as before
-
-#### Scenario: No token
-- **WHEN** no Tracker token is saved and manual values exist
-- **THEN** advice behaves as it does today without progress
