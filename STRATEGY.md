@@ -85,9 +85,12 @@ Technical choices, migration classification, validation gates, and replacement c
 ## Decision summary
 
 - close M8.5 2026-11-10: important (source: setting)
+- close M9 2026-11-20: important (source: setting)
 
 | # | Run | Decision | Choice | Rejected | Reason | Important | Chosen by |
 |---|---|---|---|---|---|---|---|
 | R1 | close M8.5 | Where `detect-found-in-raid` goes once M9 is Now | First change of M9 | Its own M8.6 milestone; leave it as a standalone note | The owner decided on 2026-11-10 that it runs before M9's first change | yes | user |
 | R2 | close M8.5 | Is the listed M10 split agreed? | Yes, agreed 2026-11-10 | Decide the split at the M9 close | The three changes were planned with the owner on 2026-10-30 | no | user |
 | R3 | close M8.5 | The owner's follow-up fixes to the Ember interface | `polish-ember-ui` as the last change of M9 | Raise them later as their own change or as issues | The owner listed the first candidates at the close | no | user |
+| R4 | close M9 | Keep M10's split as agreed at the M8.5 close? | Yes, keep the three changes in order | Re-plan the split now | The owner kept the split agreed on 2026-11-10 | no | user |
+| R5 | close M9 | How M11 is written as the new Next | A paragraph, split at the M10 close | Agree a change split now | The owner chose to split it when it becomes Now | no | user |
