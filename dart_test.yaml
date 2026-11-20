@@ -1,3 +1,7 @@
+# Hosted Windows runners can be several times slower than a developer
+# machine, so the default limit is generous. A test that hangs still fails.
+timeout: 5m
+
 tags:
   qualification:
     timeout: 2m
