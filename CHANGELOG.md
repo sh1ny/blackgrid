@@ -1,5 +1,39 @@
 # Blackgrid Changelog
 
+## v0.9.0 - 2026-11-20
+
+Blackgrid now tracks your quest and hideout progress itself, on your own PC. It reads quest events from the game logs, catches up on raids you played while it was closed, and lets you enter or fix anything by hand. Keep/sell advice, the scav timer and the quest markers on the Map all use this local progress, so the progress-site token is gone. The Scanner also reads Found in raid from the item picture.
+
+Added:
+- Automatic Yes/No/Unknown Found in raid evidence for each inspection, including pictures with a mastery medal, computed from the same captured pixels as its title. (#109)
+- Scan startup verifies the marker and found-in-raid templates together; missing, altered or invalid assets stop recognition explicitly. (#109)
+- Blackgrid keeps its own history of your quest, hideout, level and trader progress for each game mode, so changes can be replayed safely and undone. (#110)
+- Item data now keeps each mode's tasks (prerequisites, alternatives, trader and level requirements, faction, Kappa and Lightkeeper flags, objectives) and hideout station levels, ready for the upcoming tracker. The data comes from the same tarkov.dev downloads, with no new requests. (#111)
+- Task availability rules check player level, trader loyalty, prerequisites (including tasks that must be failed or active), alternative tasks, faction, game mode and edition. Gates that local progress cannot check yet, including unknown trader-requirement lists, are flagged rather than guessed. (#112)
+- Task started, failed and finished messages from the game logs are recorded in local progress, per game mode and wipe. (#113)
+- Missed log folders are read at startup, outside a raid, so progress catches up after time away. (#113)
+- A new "Local progress" section in Settings shows each mode's wipe and can replay game logs from a date or start a new wipe. Both are refused during a raid. Interrupted replays show the original retry date; closing Blackgrid stops replay and requires replaying again from the same date. (#113)
+- Settings, Local progress: a Your progress part for entering level, faction, edition, trader loyalty, hideout station levels and quest states by hand, per game mode, with undo and redo of the last change. (#114)
+- Map inspector: a Quests panel with your started quests, tickable objectives and +/- counters, with undo. (#116)
+- Markers: a Show all quests switch; by default quest markers show only the open objectives of your started quests. (#116)
+
+Changed:
+- The targeted screen region includes more of the inspection picture. Returning to the latest scan restores its detected Found in raid value and clears the old manual override. (#109)
+- Accepted scans use only the winning inspection's Found in raid reading. Refreshing data preserves its detection and any manual override without changing the recorded acceptance verdict. (#109)
+- Found in raid controls show scan or manual provenance on Map and Scanner. Activating the selected segment also establishes a manual override, including an explicit Unknown. (#109)
+- Item data downloads now also keep each task's extra game conditions and its availability delay, so the availability rules can see every gate. (#112)
+- Keep/sell advice, requirement rows and Flea eligibility use your local progress for the current game mode. Anything not recorded counts as not started, and hideout items count in full until the level is built. (#117)
+- The scav timer's hideout bonuses use the station levels in your local progress. (#117)
+- The status bar shows Progress for the current mode and opens Settings at Local progress. (#117)
+
+Fixed:
+- The "Last scan not accepted — pick the item" block on Map and Scanner shows its search results as wrapping buttons and no longer scrolls inside a small box. (#118)
+- The map credit at the bottom left of the Map is brighter and reads "Map creator: <name>". (#118)
+- On windows wider than 1920 px, the top bar's timers, Stats, Import and Settings line up with its right edge. (#118)
+
+Removed:
+- The progress-site token, its Settings section, Refresh progress and the Use Tracker progress switch. Saved tokens are deleted on first launch. (#117)
+
 ## v0.8.5 - 2026-11-11
 
 Blackgrid moves to the Ember look, with a System, Dark and Light theme switch. On Map and Scanner, the verdict, its reason, Found in raid and the prices now sit in one strip under the top bar. The Scanner's main column lists why an item is needed, its Flea, per-slot and trader prices, and the scan evidence, and Recent items is a flat list that never cuts off. Settings opens as a full page, and debug detail moves to a collapsed Diagnostics section there.
