@@ -10,8 +10,8 @@ Defines how Blackgrid's offline-prepared map packs are built, proven and accepte
 A pack build SHALL record in its manifest the resolved versions of `xml`, `image`, `vector_graphics_compiler`, `vector_graphics` and `vector_graphics_codec`, as resolved for the project when the build runs. A recorded version SHALL NOT be written from a fixed value in the tool. No validation or load SHALL require a recorded version to equal any particular value.
 
 #### Scenario: Build records the installed versions
-- **WHEN** a pack is built while the project resolves `vector_graphics_compiler` 1.3.4 and `image` 4.12.0
-- **THEN** the manifest's toolchain record lists `vector_graphics_compiler` 1.3.4 and `image` 4.12.0, plus the resolved versions of the other three packages
+- **WHEN** a pack is built while the project resolves `vector_graphics_compiler` 1.3.4 and `image` 4.13.1
+- **THEN** the manifest's toolchain record lists `vector_graphics_compiler` 1.3.4 and `image` 4.13.1, plus the resolved versions of the other three packages
 
 #### Scenario: A package is not resolved
 - **WHEN** a pack build starts and the project's resolved packages do not include `vector_graphics_codec`

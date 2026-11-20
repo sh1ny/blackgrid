@@ -623,12 +623,12 @@ Subject to the License Terms for the software, you may copy and distribute with 
 The same Visual C++ Runtime Redistributable package is available from Latest supported Visual C++ Redistributable downloads and Download Visual Studio Tools. Distribution of the Visual C++ Runtime Redistributable package, merge modules, and individual binaries obtained from those pages is limited to licensed Visual Studio users and is subject to its license terms.
 ```
 
-<a id="dart-archive-4-6-0"></a>
-### `package:archive` 4.6.0 (development only)
+<a id="dart-archive-4-7-1"></a>
+### `package:archive` 4.7.1 (development only)
 
 - **Use:** a pinned dev dependency of `tool/vision/fetch_runtime.dart`, which uses it to extract the two DLLs from the nupkg. It is not part of the application or the bundle.
-- **Version:** 4.6.0
-- **Source:** <https://pub.dev/packages/archive/versions/4.6.0>
+- **Version:** 4.7.1
+- **Source:** <https://pub.dev/packages/archive/versions/4.7.1>
 - **License:** MIT, verbatim under [Map preparation MIT packages](#map-preparation-mit-packages) below (`package-root:archive/LICENSE`).
 
 <a id="apache-license-2-0"></a>
@@ -1079,13 +1079,13 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | term_glyph | 1.2.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/term_glyph/versions/1.2.2) |
 | typed_data | 1.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/typed_data/versions/1.4.0) |
 | unorm_dart | 0.3.3 | Item-title NFKC normalisation | [pub.dev](https://pub.dev/packages/unorm_dart/versions/0.3.3) |
-| vector_graphics | 1.2.6 | Native compiled-vector rendering| [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.2.6) |
-| vector_graphics_codec | 1.1.13 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.1.13) |
+| vector_graphics | 1.3.1 | Native compiled-vector rendering| [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.3.1) |
+| vector_graphics_codec | 1.2.0 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.2.0) |
 | vector_graphics_compiler | 1.3.4 | Offline map preparation| [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.4) |
 | xml | 6.6.1 | Offline SVG dependency/style preparation | [pub.dev](https://pub.dev/packages/xml/versions/6.6.1) |
-| image | 4.12.0 | Offline PNG validation| [pub.dev](https://pub.dev/packages/image/versions/4.12.0) |
+| image | 4.13.1 | Offline PNG validation| [pub.dev](https://pub.dev/packages/image/versions/4.13.1) |
 | petitparser | 7.0.2 | Preparation parser dependency | [pub.dev](https://pub.dev/packages/petitparser/versions/7.0.2) |
-| archive | 4.6.0 | Preparation image dependency| [pub.dev](https://pub.dev/packages/archive/versions/4.6.0) |
+| archive | 4.7.1 | Preparation image dependency| [pub.dev](https://pub.dev/packages/archive/versions/4.7.1) |
 | posix | 6.5.2 | Preparation image dependency | [pub.dev](https://pub.dev/packages/posix/versions/6.5.2) |
 | vector_math | 2.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/vector_math/versions/2.4.0) |
 | web | 1.1.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/web/versions/1.1.1) |
