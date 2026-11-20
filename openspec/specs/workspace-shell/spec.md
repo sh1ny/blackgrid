@@ -61,7 +61,7 @@ The strip and the Scanner's main column SHALL reflect the same current inspectio
 - **THEN** existing history isolation and accepted-item retention still apply, with no rejected candidate presented as an accepted answer
 
 ### Requirement: Top bar keeps navigation and timers reachable
-The top bar SHALL contain, from left to right, the brand, the Map/Scanner switch as one segmented control, item search with Ctrl K, enabled raid timers, the inspector toggle, and Stats, Import and Settings as quiet buttons, Settings last. On a wide window the search field SHALL be no wider than 480 logical pixels. It SHALL follow DESIGN.md X11: narrow layouts use the hex logo and icon actions with accessible labels and tooltips. Timer visibility and calculations SHALL use existing settings and rules.
+The top bar SHALL contain, from left to right, the brand, the Map/Scanner switch as one segmented control, item search with Ctrl K, enabled raid timers, the inspector toggle, and Stats, Import and Settings as quiet buttons, Settings last. On a wide window the search field SHALL be no wider than 480 logical pixels, and the width it does not use SHALL lie between the search field and the timers, so Settings ends at the top bar's right edge at every wide window width. It SHALL follow DESIGN.md X11: narrow layouts use the hex logo and icon actions with accessible labels and tooltips. Timer visibility and calculations SHALL use existing settings and rules.
 
 #### Scenario: Wide navigation
 - **WHEN** the wide shell is shown with all timers enabled
@@ -78,6 +78,10 @@ The top bar SHALL contain, from left to right, the brand, the Map/Scanner switch
 #### Scenario: Wide tools alignment
 - **WHEN** the wide top bar is shown with enabled timers
 - **THEN** search is at most 480 logical pixels wide, timers and tools align at the right edge, the actions read Stats, Import, Settings from left to right as quiet buttons with no outline and timer entries have hairline separators; compact and enlarged-text layouts retain reachable actions without horizontal overflow
+
+#### Scenario: Tools reach the right edge on a very wide window
+- **WHEN** the wide top bar is shown at 1920, 2560 and 3440 logical pixels wide, with all timers enabled and with every timer hidden
+- **THEN** in each case the search field is at most 480 logical pixels wide, it starts right after the area switch, and the gap between Settings' right edge and the top bar's right edge is the same as at 1660 logical pixels wide, at most 16 logical pixels
 
 #### Scenario: Segmented area switch
 - **WHEN** the user selects Map, then Scanner, in the top bar's segmented control
