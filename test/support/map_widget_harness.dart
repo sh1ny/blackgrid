@@ -40,6 +40,8 @@ class MapWidgetHarness {
     bool artwork = true,
     bool packFails = false,
     http.Client? client,
+    Map<String, Object?> attribution = _fixtureAttribution,
+    String? shorelineName,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -66,6 +68,8 @@ class MapWidgetHarness {
             hazardOutline: hazardOutline,
             extraMarkers: extraMarkers,
             extraLabels: extraLabels,
+            attribution: attribution,
+            name: id == 'shoreline' ? shorelineName : null,
           ),
       ],
     );
@@ -133,9 +137,11 @@ Map<String, Object?> _map(
   List<Map<String, int>>? hazardOutline,
   List<Map<String, Object?>> extraMarkers = const [],
   List<Map<String, Object?>> extraLabels = const [],
+  Map<String, Object?> attribution = _fixtureAttribution,
+  String? name,
 }) => {
   'id': id,
-  'name': id == 'thelab' ? 'Fixture Labs' : 'Fixture Shoreline',
+  'name': name ?? (id == 'thelab' ? 'Fixture Labs' : 'Fixture Shoreline'),
   'kind': 'raster',
   'geometry': {
     'bounds': [
@@ -195,7 +201,12 @@ Map<String, Object?> _map(
     ...extraMarkers,
   ],
   'labels': extraLabels,
-  'attribution': {'author': 'Deterministic test fixture'},
+  'attribution': attribution,
+};
+
+/// The attribution every fixture map carries unless a test gives another.
+const _fixtureAttribution = <String, Object?>{
+  'author': 'Deterministic test fixture',
 };
 
 Map<String, Object?> _floor(String id, String label, {required bool base}) => {
@@ -233,7 +244,8 @@ Map<String, Object?> _marker(
 
 /// Pumps the map application with a prepared fixture and real application
 /// services. Set [autoDispose] to false when a test must dispose the harness
-/// before constructing a second database.
+/// before constructing a second database. [attribution] replaces every fixture
+/// map's pack attribution, and [shorelineName] the shown Shoreline map's name.
 Future<MapWidgetHarness> pumpMapFixture(
   WidgetTester tester, {
   Size size = const Size(1912, 823),
@@ -247,6 +259,8 @@ Future<MapWidgetHarness> pumpMapFixture(
   bool packFails = false,
   http.Client? client,
   bool autoDispose = true,
+  Map<String, Object?> attribution = _fixtureAttribution,
+  String? shorelineName,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -264,6 +278,8 @@ Future<MapWidgetHarness> pumpMapFixture(
       artwork: artwork,
       packFails: packFails,
       client: client,
+      attribution: attribution,
+      shorelineName: shorelineName,
     ),
   ))!;
   if (autoDispose) addPumpedTearDown(tester, harness.dispose);

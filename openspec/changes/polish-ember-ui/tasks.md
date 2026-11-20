@@ -16,9 +16,9 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills for
 | scan-correction → The offer fits in the answer strip without its own scroll bar | Results wrap as buttons | test/ui/scan_correction_card_test.dart | scan-correction: Results wrap as buttons | green |
 | scan-correction → The offer fits in the answer strip without its own scroll bar | No results still says so | test/ui/scan_correction_card_test.dart | scan-correction: No results still says so | green |
 | scan-correction → The offer fits in the answer strip without its own scroll bar | Short window keeps the strip limit | test/ui/scan_correction_card_test.dart | scan-correction: Short window keeps the strip limit | green |
-| map-controls → The map credit names the map's creator | Map with an author | test/ui/map_workspace_controls_test.dart | map-controls: Map with an author | red |
-| map-controls → The map credit names the map's creator | Map without an author | test/ui/map_workspace_controls_test.dart | map-controls: Map without an author | red |
-| map-controls → The map credit names the map's creator | Long credit on a narrow map | test/ui/map_workspace_controls_test.dart | map-controls: Long credit on a narrow map | red |
+| map-controls → The map credit names the map's creator | Map with an author | test/ui/map_workspace_controls_test.dart | map-controls: Map with an author | green |
+| map-controls → The map credit names the map's creator | Map without an author | test/ui/map_workspace_controls_test.dart | map-controls: Map without an author | green |
+| map-controls → The map credit names the map's creator | Long credit on a narrow map | test/ui/map_workspace_controls_test.dart | map-controls: Long credit on a narrow map | green |
 | M9 exit criterion | The `polish-ember-ui` fixes look right | — | task 4.2 | user |
 
 ## 1. Top-bar tools reach the right edge
@@ -33,8 +33,8 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills for
 
 ## 3. Map credit names the map's creator
 
-- [ ] 3.1 In `test/ui/map_workspace_controls_test.dart`, add `map-controls: Map with an author` (text `Map creator: Shebuka`, colour equals the dark palette `ink`), `map-controls: Map without an author` (pack map with no `author` and name `Customs`: text `Customs`, nothing starts with `Map creator:`) and `map-controls: Long credit on a narrow map` (one line, ellipsis overflow, its rect does not overlap the map control stack). Run them and confirm the first two fail.
-- [ ] 3.2 In `lib/ui/map_workspace.dart`, render `Map creator: <author>` when `attribution['author']` is a non-empty string, else `map.name`, in `_overlayInk.ink` (design D3). Verify that the 3.1 tests and every `map-controls:` test pass, including `Normal use`, and flip the rows to green.
+- [x] 3.1 In `test/ui/map_workspace_controls_test.dart`, add `map-controls: Map with an author` (text `Map creator: Shebuka`, colour equals the dark palette `ink`), `map-controls: Map without an author` (pack map with no `author` and name `Customs`: text `Customs`, nothing starts with `Map creator:`) and `map-controls: Long credit on a narrow map` (one line, ellipsis overflow, its rect does not overlap the map control stack). Run them and confirm the first two fail.
+- [x] 3.2 In `lib/ui/map_workspace.dart`, render `Map creator: <author>` when `attribution['author']` is a non-empty string, else `map.name`, in `_overlayInk.ink` (design D3). Verify that the 3.1 tests and every `map-controls:` test pass, including `Normal use`, and flip the rows to green.
 
 ## 4. Integration and the owner's check
 

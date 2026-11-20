@@ -8,8 +8,10 @@ import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/map_screen.dart';
+import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -662,6 +664,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(_pinBar, findsNothing);
     h.services.settings.busy = false;
+  });
+
+  testWidgets('map-controls: Map with an author', (tester) async {
+    await pumpMapFixture(tester, attribution: const {'author': 'Shebuka'});
+    expect(_attribution, findsOneWidget);
+    final credit = tester.widget<Text>(_attribution);
+    expect(credit.data, 'Map creator: Shebuka');
+    expect(credit.style?.color, EmberColors.dark.ink);
+  });
+
+  testWidgets('map-controls: Map without an author', (tester) async {
+    await pumpMapFixture(
+      tester,
+      attribution: const {},
+      shorelineName: 'Customs',
+    );
+    expect(tester.widget<Text>(_attribution).data, 'Customs');
+    expect(find.textContaining(RegExp('^Map creator:')), findsNothing);
+  });
+
+  testWidgets('map-controls: Long credit on a narrow map', (tester) async {
+    await pumpMapFixture(
+      tester,
+      size: const Size(960, 720),
+      attribution: {'author': List.filled(40, 'Longname').join(' ')},
+    );
+    final credit = tester.widget<Text>(_attribution);
+    expect(credit.maxLines, 1);
+    expect(credit.overflow, TextOverflow.ellipsis);
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: _attribution, matching: find.byType(RichText)),
+    );
+    expect(paragraph.didExceedMaxLines, isTrue, reason: 'it is shortened');
+    expect(
+      tester.getRect(_attribution).overlaps(tester.getRect(_actions)),
+      isFalse,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('map-controls: overlays do not overlap at 960 px', (
