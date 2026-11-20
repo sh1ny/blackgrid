@@ -8,6 +8,10 @@ import 'ember/theme_access.dart';
 
 /// Candidate and search controls for a scan awaiting manual correction.
 ///
+/// Candidates and search results both show as buttons that wrap onto further
+/// rows, so the block stays short and is laid out at its full height, with no
+/// scroll view of its own.
+///
 /// Owns the search field controller and synchronizes it with the offer's query
 /// whenever the selection notifies.
 class CorrectionOfferBlock extends StatefulWidget {
@@ -132,16 +136,22 @@ class _CorrectionOfferBlockState extends State<CorrectionOfferBlock> {
               ),
             )
           else
-            for (final item in results)
-              InkWell(
-                key: Key('correction-result-${item.id}'),
-                onTap: () =>
-                    selection.selectCorrection(offer.reportId, item.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(_rowLabel(item, shared)),
-                ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final item in results)
+                    OutlinedButton(
+                      key: Key('correction-result-${item.id}'),
+                      onPressed: () =>
+                          selection.selectCorrection(offer.reportId, item.id),
+                      child: Text(_rowLabel(item, shared)),
+                    ),
+                ],
               ),
+            ),
         ],
       ),
     );
