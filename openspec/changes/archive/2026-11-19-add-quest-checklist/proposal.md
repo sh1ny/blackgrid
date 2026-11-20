@@ -94,5 +94,5 @@ The Map now has a Quests panel listing the quests you have started in the curren
 
 ### Added
 
-- Map inspector: a Quests panel with your started quests, tickable objectives and +/- counters, with undo (add-quest-checklist).
-- Markers: a Show all quests switch; by default quest markers show only the open objectives of your started quests (add-quest-checklist).
+- Map inspector: a Quests panel with your started quests, tickable objectives and +/- counters, with undo.
+- Markers: a Show all quests switch; by default quest markers show only the open objectives of your started quests.

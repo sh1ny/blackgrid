@@ -65,6 +65,4 @@ Adds local progress storage for the upcoming tracker. Existing Tracker-backed ad
 
 ### Added
 
-- Durable, mode-separated progress histories with local progress cycles, replay-safe event projection and an undo interface.
-- A strict versioned event format and typed store interface covering task, objective, hideout, player and trader progress, with deterministic conflict ordering and explicit failures.
-- Additive schema-8 storage with snapshot-consistent pages, fail-closed history validation and guarded, retry-safe compensation without changing Tracker credentials or advice authority.
+- Blackgrid keeps its own history of your quest, hideout, level and trader progress for each game mode, so changes can be replayed safely and undone.
