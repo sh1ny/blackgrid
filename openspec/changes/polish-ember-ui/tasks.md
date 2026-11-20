@@ -10,7 +10,7 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills for
 | workspace-shell → Top bar keeps navigation and timers reachable | Narrow navigation and disabled timers | test/ui/shell_test.dart | workspace-shell: Narrow navigation and disabled timers | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Anchored search results and explicit selection | test/ui/shell_test.dart | workspace-shell: Anchored search results and explicit selection | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Wide tools alignment | test/ui/shell_test.dart | workspace-shell: Wide tools alignment (and its compact variants) | green |
-| workspace-shell → Top bar keeps navigation and timers reachable | Tools reach the right edge on a very wide window | test/ui/shell_test.dart | workspace-shell: Tools reach the right edge on a very wide window | red |
+| workspace-shell → Top bar keeps navigation and timers reachable | Tools reach the right edge on a very wide window | test/ui/shell_test.dart | workspace-shell: Tools reach the right edge on a very wide window | green |
 | workspace-shell → Top bar keeps navigation and timers reachable | Segmented area switch | test/ui/shell_test.dart | workspace-shell: Segmented area switch | green |
 | scan-correction → The offer fits in the answer strip without its own scroll bar | Full offer on a 1080p window | test/ui/scan_correction_card_test.dart | scan-correction: Full offer on a 1080p window | red |
 | scan-correction → The offer fits in the answer strip without its own scroll bar | Results wrap as buttons | test/ui/scan_correction_card_test.dart | scan-correction: Results wrap as buttons | red |
@@ -23,8 +23,8 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills for
 
 ## 1. Top-bar tools reach the right edge
 
-- [ ] 1.1 Add the widget test `workspace-shell: Tools reach the right edge on a very wide window`. Pump the shell at 1920×1080, 2560×1440 and 3440×1440, with all timers enabled and again with every timer hidden. Assert that the search field is at most 480 wide and starts right after the area switch, that `bar.right - settings.right` is at most 16, and that it equals the 1660-wide value. Run it and confirm it fails at 2560 and 3440 because of the gap after Settings.
-- [ ] 1.2 In `lib/ui/shell.dart` `_headerItems`, replace the wide `Flexible` + `Spacer` with one `Expanded` that holds the 480 px-capped search aligned to its start (design D1). Leave the compact `Wrap` alone. Verify that the 1.1 test and every `workspace-shell:` test in `test/ui/shell_test.dart` pass, and flip the row to green.
+- [x] 1.1 Add the widget test `workspace-shell: Tools reach the right edge on a very wide window`. Pump the shell at 1920×1080, 2560×1440 and 3440×1440, with all timers enabled and again with every timer hidden. Assert that the search field is at most 480 wide and starts right after the area switch, that `bar.right - settings.right` is at most 16, and that it equals the 1660-wide value. Run it and confirm it fails at 2560 and 3440 because of the gap after Settings.
+- [x] 1.2 In `lib/ui/shell.dart` `_headerItems`, replace the wide `Flexible` + `Spacer` with one `Expanded` that holds the 480 px-capped search aligned to its start (design D1). Leave the compact `Wrap` alone. Verify that the 1.1 test and every `workspace-shell:` test in `test/ui/shell_test.dart` pass, and flip the row to green.
 
 ## 2. Correction offer fits without a scroll bar
 
