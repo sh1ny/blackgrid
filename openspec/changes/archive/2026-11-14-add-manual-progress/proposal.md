@@ -111,4 +111,4 @@ You can now enter your own progress for each game mode in Settings: level, facti
 
 ### Added
 
-- Settings, Local progress: a Your progress part for entering level, faction, edition, trader loyalty, hideout station levels and quest states by hand, per game mode, with undo and redo of the last change (add-manual-progress).
+- Settings, Local progress: a Your progress part for entering level, faction, edition, trader loyalty, hideout station levels and quest states by hand, per game mode, with undo and redo of the last change.

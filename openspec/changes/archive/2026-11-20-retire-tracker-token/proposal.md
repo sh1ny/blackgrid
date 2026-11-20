@@ -104,10 +104,10 @@ Advice now comes entirely from the progress Blackgrid keeps on your PC. Keep/sel
 
 ### Changed
 
-- Keep/sell advice, requirement rows and Flea eligibility use your local progress for the current game mode. Anything not recorded counts as not started, and hideout items count in full until the level is built (retire-tracker-token).
-- The scav timer's hideout bonuses use the station levels in your local progress (retire-tracker-token).
-- The status bar shows Progress for the current mode and opens Settings at Local progress (retire-tracker-token).
+- Keep/sell advice, requirement rows and Flea eligibility use your local progress for the current game mode. Anything not recorded counts as not started, and hideout items count in full until the level is built.
+- The scav timer's hideout bonuses use the station levels in your local progress.
+- The status bar shows Progress for the current mode and opens Settings at Local progress.
 
 ### Removed
 
-- The progress-site token, its Settings section, Refresh progress and the Use Tracker progress switch. Saved tokens are deleted on first launch (retire-tracker-token).
+- The progress-site token, its Settings section, Refresh progress and the Use Tracker progress switch. Saved tokens are deleted on first launch.

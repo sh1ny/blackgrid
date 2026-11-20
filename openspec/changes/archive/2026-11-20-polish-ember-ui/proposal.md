@@ -82,6 +82,6 @@ Three small fixes to the Ember interface. The "Last scan not accepted" block fit
 
 ### Fixed
 
-- The "Last scan not accepted — pick the item" block on Map and Scanner shows its search results as wrapping buttons and no longer scrolls inside a small box (polish-ember-ui).
-- The map credit at the bottom left of the Map is brighter and reads "Map creator: <name>" (polish-ember-ui).
-- On windows wider than 1920 px, the top bar's timers, Stats, Import and Settings line up with its right edge (polish-ember-ui).
+- The "Last scan not accepted — pick the item" block on Map and Scanner shows its search results as wrapping buttons and no longer scrolls inside a small box.
+- The map credit at the bottom left of the Map is brighter and reads "Map creator: <name>".
+- On windows wider than 1920 px, the top bar's timers, Stats, Import and Settings line up with its right edge.
