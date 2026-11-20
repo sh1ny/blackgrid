@@ -1795,6 +1795,71 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'workspace-shell: Tools reach the right edge on a very wide window',
+    (tester) async {
+      final h = await pumpM1(tester, size: const Size(1660, 870));
+      final bar = find.byKey(const Key('shell-top-bar'));
+      final settingsAction = find.descendant(
+        of: bar,
+        matching: find.widgetWithText(TextButton, 'Settings'),
+      );
+      double rightGap() =>
+          tester.getRect(bar).right - tester.getRect(settingsAction).right;
+      final baseline = rightGap();
+      expect(baseline, lessThanOrEqualTo(16));
+
+      Future<void> resize(Size size) async {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+      }
+
+      for (final timersShown in [true, false]) {
+        await tester.runAsync(
+          () => h.services.settings.setRaidTimers(
+            h.services.settings.raidTimers.copyWith(
+              showTimeInRaid: timersShown,
+              showRunThrough: timersShown,
+              showScavCooldown: timersShown,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          h.services.raidTimers.view.entries,
+          hasLength(timersShown ? 3 : 0),
+        );
+        for (final size in const [
+          Size(1920, 1080),
+          Size(2560, 1440),
+          Size(3440, 1440),
+        ]) {
+          await resize(size);
+          final reason = '$size, timers shown: $timersShown';
+          final search = tester.getRect(
+            find.descendant(of: bar, matching: find.byType(TextField)),
+          );
+          final areaSwitch = tester.getRect(
+            find.descendant(
+              of: bar,
+              matching: find.byType(SegmentedButton<int>),
+            ),
+          );
+          expect(search.width, lessThanOrEqualTo(480), reason: reason);
+          // The search follows the area switch after the 8 px item gap.
+          expect(
+            search.left - areaSwitch.right,
+            inInclusiveRange(0, 16),
+            reason: reason,
+          );
+          expect(rightGap(), lessThanOrEqualTo(16), reason: reason);
+          expect(rightGap(), moreOrLessEquals(baseline), reason: reason);
+          expect(tester.takeException(), isNull, reason: reason);
+        }
+      }
+    },
+  );
+
   for (final (size, scale) in [
     (const Size(960, 720), 1.0),
     (const Size(1660, 870), 1.5),

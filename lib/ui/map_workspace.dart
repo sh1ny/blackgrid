@@ -49,6 +49,13 @@ const _controlHelp = [
 /// Gap between the map's edge and the controls drawn over it.
 const _overlayInset = 12.0;
 
+/// The artwork credit for [map]: `Map creator: <author>` when its pack names
+/// an author, else the map's name alone.
+String _creditText(PreparedMap map) => switch (map.attribution['author']) {
+  final String author when author.isNotEmpty => 'Map creator: $author',
+  _ => map.name,
+};
+
 /// The id of the floor control's Auto segment.
 const _autoFloor = 'auto';
 
@@ -942,12 +949,12 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                       child: ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: clearWidth),
                         child: Text(
-                          '${map.attribution['author'] ?? map.name}',
+                          _creditText(map),
                           key: const Key('map-attribution'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: EmberType.label.copyWith(
-                            color: _overlayInk.inkSecondary,
+                            color: _overlayInk.ink,
                           ),
                         ),
                       ),

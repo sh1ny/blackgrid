@@ -153,20 +153,9 @@ class AnswerStrip extends StatelessWidget {
               ),
             if (offer != null) ...[
               const SizedBox(height: 8),
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: (MediaQuery.sizeOf(context).height * .18).clamp(
-                    64,
-                    130,
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: CorrectionOfferBlock(
-                    selection: selection,
-                    offer: offer,
-                  ),
-                ),
-              ),
+              // Shown at its full height; the strip's own scrolling applies
+              // when the whole strip is taller than its limit.
+              CorrectionOfferBlock(selection: selection, offer: offer),
             ],
           ],
         ),

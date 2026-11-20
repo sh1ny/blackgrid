@@ -491,15 +491,18 @@ class _BlackgridShellState extends State<BlackgridShell> {
       _areaSwitch(),
       if (compact)
         search
-      else ...[
-        Flexible(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: search,
+      else
+        // One slot takes all the free width, with the capped search at its
+        // start, so the tools after it always end at the bar's right edge.
+        Expanded(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: search,
+            ),
           ),
         ),
-        const Spacer(),
-      ],
       RaidTimerStrip(controller: widget.services.raidTimers),
       IconButton(
         key: const Key('inspector-toggle'),

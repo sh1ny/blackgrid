@@ -322,6 +322,181 @@ void main() {
     expect(find.text('No items match'), findsOneWidget);
   });
 
+  group('the offer fits in the answer strip', () {
+    // Ten long names that all match "filler", so the search shows its cap
+    // of 8 and the first 5 are also the candidates.
+    final fillers = {
+      'alpha': 'Alpha shown',
+      for (var i = 0; i < 10; i++) 'f$i': 'Filler armor plate $i',
+    };
+    final fullOffer = _offer(
+      text: 'filler',
+      candidates: [for (var i = 0; i < 5; i++) TitleCandidate('f$i', .9)],
+    );
+    final offerBlock = find.byKey(const Key('correction-offer'));
+    final strip = find.byKey(const Key('answer-strip'));
+    Finder result(String id) => find.byKey(Key('correction-result-$id'));
+    final resultIds = [for (var i = 0; i < 8; i++) 'f$i'];
+
+    /// The strip's own scroll view, the one around the whole answer strip.
+    Finder stripScroll() => find
+        .ancestor(of: strip, matching: find.byType(SingleChildScrollView))
+        .first;
+
+    void expectNoOwnScrollView() {
+      expect(
+        find.descendant(
+          of: offerBlock,
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(
+          of: offerBlock,
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsNWidgets(
+          find
+              .ancestor(of: strip, matching: find.byType(SingleChildScrollView))
+              .evaluate()
+              .length,
+        ),
+        reason: 'no scroll view between the offer and the strip',
+      );
+    }
+
+    testWidgets('scan-correction: Full offer on a 1080p window', (
+      tester,
+    ) async {
+      await _arrange(
+        tester,
+        names: fillers,
+        offer: fullOffer,
+        size: const Size(1920, 1080),
+      );
+      for (final area in ['nav-map', 'nav-scanner']) {
+        await tester.tap(find.byKey(Key(area)));
+        await tester.pumpAndSettle();
+        expectNoOwnScrollView();
+        final visible = tester.getRect(stripScroll());
+        void expectVisible(Finder finder, String what) {
+          final rect = tester.getRect(finder);
+          expect(
+            visible.contains(rect.topLeft) &&
+                visible.contains(rect.bottomRight - const Offset(.01, .01)),
+            isTrue,
+            reason: '$what is inside the visible strip on $area',
+          );
+        }
+
+        for (var i = 0; i < 5; i++) {
+          expectVisible(
+            find.byKey(Key('correction-candidate-f$i')),
+            'candidate f$i',
+          );
+        }
+        expectVisible(find.byKey(const Key('correction-query')), 'field');
+        for (final id in resultIds) {
+          expectVisible(result(id), 'result $id');
+        }
+        final scrollable = tester.state<ScrollableState>(
+          find
+              .descendant(of: stripScroll(), matching: find.byType(Scrollable))
+              .first,
+        );
+        expect(scrollable.position.maxScrollExtent, 0, reason: area);
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('scan-correction: Results wrap as buttons', (tester) async {
+      final h = await _arrange(
+        tester,
+        names: fillers,
+        offer: fullOffer,
+        size: const Size(960, 720),
+      );
+      expect(
+        h.services.selection.correctionResults.map((i) => i.id),
+        resultIds,
+      );
+      final rects = <Rect>[];
+      for (final id in resultIds) {
+        expect(
+          find.descendant(of: result(id), matching: find.byType(Text)),
+          findsOneWidget,
+        );
+        expect(tester.widget(result(id)), isA<OutlinedButton>(), reason: id);
+        rects.add(tester.getRect(result(id)));
+      }
+      // Reading order: each button is right of the one before on its row,
+      // or starts a lower row.
+      for (var i = 1; i < rects.length; i++) {
+        final (before, after) = (rects[i - 1], rects[i]);
+        expect(
+          after.top > before.top ||
+              (after.top == before.top && after.left > before.left),
+          isTrue,
+          reason: 'result ${resultIds[i]} follows ${resultIds[i - 1]}',
+        );
+      }
+      expect(
+        rects.map((r) => r.top).toSet().length,
+        greaterThan(1),
+        reason: 'results wrap onto more than one row',
+      );
+      final pick = result('f6');
+      await tester.ensureVisible(pick);
+      await tester.pumpAndSettle();
+      await tester.runAsync(() => tester.tap(pick));
+      await tester.pumpAndSettle();
+      expect(h.services.selection.selectedId, 'f6');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('scan-correction: No results still says so', (tester) async {
+      final h = await _arrange(
+        tester,
+        names: fillers,
+        offer: fullOffer,
+        size: const Size(1920, 1080),
+      );
+      await tester.enterText(find.byKey(const Key('correction-query')), 'zzzz');
+      await tester.pump();
+      expect(find.byKey(const Key('correction-no-match')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w.key.toString().startsWith("[<'correction-result-"),
+        ),
+        findsNothing,
+      );
+      expect(h.services.selection.selectedId, 'alpha');
+    });
+
+    testWidgets('scan-correction: Short window keeps the strip limit', (
+      tester,
+    ) async {
+      await _arrange(
+        tester,
+        names: fillers,
+        offer: fullOffer,
+        size: const Size(1280, 600),
+      );
+      expectNoOwnScrollView();
+      final visible = tester.getRect(stripScroll());
+      expect(visible.height, lessThanOrEqualTo(600 * .55));
+      final last = result(resultIds.last);
+      await tester.ensureVisible(last);
+      await tester.pumpAndSettle();
+      final rect = tester.getRect(last);
+      final viewport = tester.getRect(stripScroll());
+      expect(rect.top, greaterThanOrEqualTo(viewport.top));
+      expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('same-name candidates', () {
     // IDs end in the suffixes the offer shows.
     const flea = 'weapon-4b423c';
