@@ -8,57 +8,30 @@ Milestone IDs keep the implementation strategy's numbering (M0–M6), so they ma
 
 A change that names a GitHub issue resolves it through its PR: the PR description links the issue with a closing keyword (`Closes #41`), so merging the PR closes the issue, and the PR's body says what of the issue it delivers. If the PR delivers only part of the issue, it links it with `Refs #N` instead, and the issue says what is left.
 
-## Now: M9 - local progress tracker
+## Now: M10 - alerts and window behaviour
 
-Promoted at the M8.5 close on 2026-11-10 with its split agreed on 2026-11-02. The owner added two changes on 2026-11-10: `detect-found-in-raid` runs first and `polish-ember-ui` runs last.
+Planned with the user on 2026-10-30. The split below was agreed at the M8.5 close on 2026-11-10 and kept at the M9 close on 2026-11-20.
 
-Replaces the planned Tarkov Tracker task sync (user decision 2026-11-01). The rules under Later apply to it too. Blackgrid tracks quest and hideout progress itself, on the player's machine. The tracker is built so sync can be added later, but it syncs nothing. The existing read-only progress-site token stays exactly as it is until this milestone's last change replaces everything it provides.
-
-**Exit criteria:**
-- Every progress change is stored as an event with a unique ID, device ID, timestamp, game mode, wipe and data format version, and the current state is computed from the events. Replaying an event twice changes nothing. The newest change per task, objective or station wins, and game-log events beat older manual edits. Proved by model tests. (agent)
-- The availability rules are a plain Dart package with no Flutter or Windows dependency. For each task they say done, available or locked, and why: level, trader loyalty, a missing or must-be-failed prerequisite, an alternative task, faction or edition. Proved by tests on frozen tarkov.dev fixtures. (agent)
-- Task started, failed and finished events from the logs fill the store per mode and wipe. A log-folder replay rebuilds a wipe and is refused during a raid. Proved by offline fixture tests. (agent)
-- Keep/sell advice, the scav cooldown's hideout bonuses and task state come from local progress, and the token integration is removed. (agent)
-- A replay of the player's real log folders matches their in-game quest state, and the checklist and manual progress entry work in play. (user)
-- Found in raid is filled from the scan: Yes when the check icon is found, No when the corner was fully captured without it, and Unknown only when the corner was cut off or unreadable. The manual control still overrides it and shows where the value came from. Proved by fixture tests on the owner's screenshot set. (agent)
-- On live scans, Found in raid reads correctly for found and not-found items, and the `polish-ember-ui` fixes look right. (user)
-
-**Changes** (in order):
-1. `detect-found-in-raid` - added 2026-11-10 (owner decision), before the tracker work. The Scanner reads the found-in-raid check icon in the bottom-left corner of the inspect window's item picture (right of the mastery medal when one is shown) and fills Found in raid with three states: Yes when the icon is found, No when the corner was fully captured without it, Unknown only when the corner was cut off or unreadable. The manual control stays as an override and shows where the value came from. Needs an ADR that amends ADR-0016's band (at 3440x1440 the icon of a cascaded window falls below it), offsets measured on recorded scans, and an owner-supplied screenshot set: found and not found, with and without the medal, centred and cascaded windows, two resolutions. It only analyses the same screen copy, so it adds no contact with the game. The live check is the owner's.
-2. `add-progress-store` - an ADR for the local tracker and its event format, then the event store in the Drift database: device ID, mode and wipe keys, a format version, newest-change-wins merging, counters stored as values rather than increments, and undo from the event history.
-3. `add-task-catalog` - keep more tarkov.dev data: tasks, objectives, prerequisites (including must-be-failed and alternatives), trader and level requirements, faction, Kappa and Lightkeeper flags, and hideout stations and levels. Mode-scoped like the item catalog.
-4. `add-task-rules` - the availability rules package. We write the edition rules ourselves.
-5. `add-task-log-progress` - take task events from M7's raid lifecycle into the store, and replay old log folders.
-6. `add-manual-progress` - the player enters their level, trader loyalty levels and built hideout station levels by hand, and can override any task the logs missed.
-7. `add-quest-checklist` - active quests with tickable objectives and +/- counters for kill and found-in-raid objectives. Ticking an objective updates the map's quest markers.
-8. `retire-tracker-token` - switch keep/sell advice, the scav timer and task state to local progress, and remove the token integration. Before it starts, the user decides whether to keep a one-time "import my progress" from the site.
-9. `polish-ember-ui` - added 2026-11-10 (owner): small fixes to the Ember interface from the owner's M8.5 check, scoped with the owner before it starts. Initial candidates: the last-scan "not accepted" note under the scanned item on Map and Scanner fits without a scroll bar; the map credit at the bottom left of the Map is a little brighter and reads "Map creator: <name>" (today it shows the name alone); and Stats, Import and Settings align fully to the right edge of the top bar on windows wider than 1920×1080.
-
-**Inputs for `add-progress-store`'s ADR** (from the user's future-ideas list, 2026-11-01):
-- **Why our own tracker:** showing tasks, availability, needed items and the hideout has to be built in Blackgrid either way, because a third-party API returns only IDs and states. Syncing with someone else's service adds daily request quotas, tokens the user must create, polling, conflict handling and terms of use, and it still cannot write hideout or trader progress. A local tracker has none of these limits and works offline. Blackgrid never writes to the progress site.
-- **Sync-ready from the first release:** tarkov.dev IDs in every key, with game mode and wipe; each app downloads tarkov.dev data itself, so a sync service would only ever hold the player's progress; the rules package gives web and mobile the same answers as the desktop. The extra cost now is one or two tasks in this change, and the event history also gives undo, log replay and the wipe summary.
-- **Upkeep:** the availability rules are the hardest part (alternatives, must-be-failed prerequisites, faction and edition rules) and need checking every wipe.
-
-## Next: M10 - alerts and window behaviour
-
-Planned with the user on 2026-10-30. The split below was agreed at the M8.5 close.
-
-**Split agreed:** 2026-11-10
+**Exit criteria** (drafted at the M9 close):
+- Each alert (match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder, restart-failed-tasks) fires once from its raid lifecycle, timer or progress event, has its own switch, plays the default or the player's custom sound, and has a test button. Proved by fake-clock and fixture tests with a fake audio port. (agent)
+- Screenshot cleanup is off by default; when switched on it deletes only that raid's screenshots, only after the raid ends, and never touches other files. Proved by offline tests on a temp folder. (agent)
+- Tray, stay on top and start minimized are saved settings that survive a restart, and stay on top applies only to Blackgrid's own opaque window. Proved by settings and restart tests. (agent)
+- The alerts sound right and fire at the right moments in play, screenshot cleanup removes a real raid's screenshots, and the window behaviour works on the owner's desktop. (user)
 
 **Changes** (in order):
 1. `add-audio-alerts` - match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder and restart-failed-tasks, each with a switch, a custom sound and a test button. The user decides how the default sounds are recorded before this starts.
 2. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
 3. `add-window-behaviour` - tray, stay on top and start minimized.
 
-## Later
-
-The milestones below run in this order after M10, starting with M11. M11–M19 were added on 2026-11-01 from the user's future-ideas list.
-
-**Rules for M9 and everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
-
-### M11 - quest planning
+## Next: M11 - quest planning
 
 The player sees how to reach the quests they want. A quest tree draws each trader's quests as a prerequisite graph: selecting a quest traces the path that unlocks it, a search finds which quest rewards an item, and right-click sets a quest's state by hand. A next-quest suggestion gives its reasons: what the quest unlocks, whether it counts toward Kappa or Lightkeeper, and whether it can be finished now. The milestone also shows Kappa, Lightkeeper and trader loyalty progress. Builds on M9's rules.
+
+## Later
+
+The milestones below run in this order after M11, starting with M12. M11–M19 were added on 2026-11-01 from the user's future-ideas list.
+
+**Rules for M9 and everything below** (user decisions 2026-11-01): nothing is drawn over the game. "Stay on top" for Blackgrid's own opaque window is allowed; a transparent, borderless or click-through map is not. No global in-game hotkeys whose only job is to drive such a map. There are no squad features (shared positions, item needs or raid planning) and no live position on a phone. The desktop app needs no server and no account. Features use only the game's log files, the screenshot folder, the player's own input and public tarkov.dev data.
 
 ### M12 - hideout
 
@@ -154,3 +127,4 @@ M6 moved the builds to CI: a pushed `v` tag publishes a GitHub Release with a zi
 - M7 - raid lifecycle, timers and local stats - 2026-11-02 ([PR #76](https://github.com/sh1ny/blackgrid/pull/76), [PR #77](https://github.com/sh1ny/blackgrid/pull/77), [PR #79](https://github.com/sh1ny/blackgrid/pull/79)) - Agent checks passed on `main` `c2b28f7`: offline fixture tests prove lines and multi-byte text split across reads, both log orders and reconnects; fake-clock tests prove the timers; restart and clear tests prove settings and stats survive. The user reported the raid state line working on `0.6.0+384` (2026-11-01) and the timers and local stats on `0.6.0+386` (2026-11-02, a short test). Learned: reconnects make "the same raid" a cross-cutting rule (lifecycle, timers and stats each had to agree on it), and a mid-raid clear followed by a reconnect and a restart can still recount one raid, accepted as [#80](https://github.com/sh1ny/blackgrid/issues/80).
 - M8 - map labels and popups - 2026-11-08 ([PR #84](https://github.com/sh1ny/blackgrid/pull/84), [PR #86](https://github.com/sh1ny/blackgrid/pull/86), [PR #88](https://github.com/sh1ny/blackgrid/pull/88), [PR #90](https://github.com/sh1ny/blackgrid/pull/90), [PR #91](https://github.com/sh1ny/blackgrid/pull/91), [PR #94](https://github.com/sh1ny/blackgrid/pull/94), [PR #95](https://github.com/sh1ny/blackgrid/pull/95)) - Agent checks passed in CI on the merged tree of `main` `7559767` (offline suite, map pack check and qualification), covering the extract label and outline painter tests, the marker bubble widget tests and the place label pack and painter tests. The user reported extract names, outlines and the map help working on `0.7.0+399` (2026-11-02), and the place labels and marker bubbles reading correctly on real maps (2026-11-08). Learned: the generation-backed rebuild with its per-map change report turned each pack change (toolchain, metadata, labels) into a reviewable regeneration, and the owner checks only the maps it lists; the full-rebuild qualification tests needed their own 10-minute timeout on CI.
 - M8.5 - Ember interface - 2026-11-10 ([PR #93](https://github.com/sh1ny/blackgrid/pull/93), [PR #97](https://github.com/sh1ny/blackgrid/pull/97), [PR #98](https://github.com/sh1ny/blackgrid/pull/98), [PR #100](https://github.com/sh1ny/blackgrid/pull/100), [PR #102](https://github.com/sh1ny/blackgrid/pull/102), [PR #103](https://github.com/sh1ny/blackgrid/pull/103), [PR #104](https://github.com/sh1ny/blackgrid/pull/104), [PR #105](https://github.com/sh1ny/blackgrid/pull/105)) - Agent checks passed on `main` `0af350f`: the offline suite (3023 tests) covers the Ember rooms and theme switch, the six verdict plates, the strip geometry at wide and 960 px, the Settings page, the diagnostics moved off Map and Scanner, and the B-view Scanner. ADR-0039 covers the map role colours, and Geist and Literata are bundled with their OFL texts in the third-party notices. The owner signed off the Scanner against the B view and checked both rooms on a second monitor and alt-tabbed (2026-11-10), with follow-up fixes queued as `polish-ember-ui`. Learned: the Scanner shipped with its old inspector until the owner compared it with the mockup, so the milestone grew a seventh change. Widget tests draw text in the Ahem font, which overstates width, so layout checks that depend on width now load the real fonts.
+- M9 - local progress tracker - 2026-11-20 ([PR #109](https://github.com/sh1ny/blackgrid/pull/109), [PR #110](https://github.com/sh1ny/blackgrid/pull/110), [PR #111](https://github.com/sh1ny/blackgrid/pull/111), [PR #112](https://github.com/sh1ny/blackgrid/pull/112), [PR #113](https://github.com/sh1ny/blackgrid/pull/113), [PR #114](https://github.com/sh1ny/blackgrid/pull/114), [PR #116](https://github.com/sh1ny/blackgrid/pull/116), [PR #117](https://github.com/sh1ny/blackgrid/pull/117), [PR #118](https://github.com/sh1ny/blackgrid/pull/118)) - Agent checks passed in CI on `main` `38aa0f3` and locally (analyze clean, offline suite of 3310 tests): model tests prove the event store's idempotent replay and newest-change-wins merge; `packages/blackgrid_progress` is plain Dart with fixture and gate tests on frozen tarkov.dev data; offline log fixtures prove task events, wipe replay and its refusal during a raid; found-in-raid fixture tests cover the owner's screenshot set; and no tracker token code remains in `lib`. The owner reported on 2026-11-20 that the log replay matches their in-game quest state, the checklist and manual entry work in play, Found in raid reads correctly on live scans, and the `polish-ember-ui` fixes look right. Learned: building the tracker locally first, with the rules as a plain Dart package, let the token integration go in one last change with nothing left depending on it.
