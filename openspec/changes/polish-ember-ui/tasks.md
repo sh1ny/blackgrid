@@ -38,5 +38,5 @@ Dart work follows the "Dart and Flutter code" section of `AGENTS.md`. Skills for
 
 ## 4. Integration and the owner's check
 
-- [ ] 4.1 Run `dart format` on the changed files, then `mise run analyze` (no issues) and `mise run test` (all pass, including the release-notes check of this proposal). Confirm that every test-map row except the user row is green.
+- [x] 4.1 Run `dart format` on the changed files, then `mise run analyze` (no issues) and `mise run test` (all pass, including the release-notes check of this proposal). Confirm that every test-map row except the user row is green.
 - [ ] 4.2 [user] The owner checks in the app, on a window wider than 1920×1080, that: the "Last scan not accepted — pick the item" block on Map and Scanner shows its results as buttons with no scroll bar; the map credit reads "Map creator: <name>" and is easier to read; and Stats, Import and Settings sit at the top bar's right edge. This is the `polish-ember-ui` part of M9's user-verified exit criterion. Agents do not run it, and it stays unverified until the owner reports a result.
