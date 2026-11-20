@@ -83,10 +83,7 @@ CustomPin _pin(String label) => CustomPin(
 /// Writes a screenshot modified at [modified] into a new folder and points the
 /// Map's screenshot input at it, with log following off.
 Future<Directory> _useFolder(WidgetTester tester, MapWidgetHarness h) async {
-  final directory = (await tester.runAsync(
-    () => Directory.systemTemp.createTemp('blackgrid-map-inspector-'),
-  ))!;
-  addTearDown(() => directory.delete(recursive: true));
+  final directory = h.createTempDirectory('blackgrid-map-inspector-');
   await tester.runAsync(
     () => h.services.settings.setMapInputs(
       screenshotDirectory: directory.path,

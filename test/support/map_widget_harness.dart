@@ -28,6 +28,20 @@ class MapWidgetHarness {
   MapWidgetHarness._(this.services, this._scanLogs);
   final AppServices services;
   final Directory? _scanLogs;
+  final List<Directory> _ownedDirectories = [];
+
+  /// Creates a temporary directory that [dispose] deletes after the services
+  /// close.
+  ///
+  /// Use it for any folder the app watches or reads, such as a game log or
+  /// screenshot folder. A test tear-down registered after the harness runs
+  /// before the services close, while Windows may still hold a watched file
+  /// open, so deleting there can fail with a sharing violation.
+  Directory createTempDirectory(String prefix) {
+    final directory = Directory.systemTemp.createTempSync(prefix);
+    _ownedDirectories.add(directory);
+    return directory;
+  }
 
   static Future<MapWidgetHarness> create({
     String? sourceCategory,
@@ -126,8 +140,9 @@ class MapWidgetHarness {
 
   Future<void> dispose() async {
     await services.dispose();
-    final logs = _scanLogs;
-    if (logs != null && logs.existsSync()) logs.deleteSync(recursive: true);
+    for (final directory in [?_scanLogs, ..._ownedDirectories]) {
+      if (directory.existsSync()) directory.deleteSync(recursive: true);
+    }
   }
 }
 

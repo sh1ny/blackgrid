@@ -149,10 +149,7 @@ Future<void> _useLogFolder(
   MapWidgetHarness h,
   List<String> messages,
 ) async {
-  final root = (await tester.runAsync(
-    () => Directory.systemTemp.createTemp('blackgrid-map-raid-'),
-  ))!;
-  addTearDown(() => root.delete(recursive: true));
+  final root = h.createTempDirectory('blackgrid-map-raid-');
   await tester.runAsync(() async {
     final folder = await Directory(
       '${root.path}${Platform.pathSeparator}log_2026.10.31_22-00-00_1.3.0.0.48484',
@@ -248,10 +245,7 @@ void main() {
 
   testWidgets('map-rail: Status lines use labels', (tester) async {
     final h = await pumpMapFixture(tester);
-    final root = (await tester.runAsync(
-      () => Directory.systemTemp.createTemp('blackgrid-map-logs-'),
-    ))!;
-    addTearDown(() => root.delete(recursive: true));
+    final root = h.createTempDirectory('blackgrid-map-logs-');
     await tester.runAsync(() async {
       final session = Directory(
         '${root.path}${Platform.pathSeparator}log_2026.10.01_10-00-00',
