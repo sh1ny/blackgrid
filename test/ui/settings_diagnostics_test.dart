@@ -1,9 +1,8 @@
 import 'dart:async';
 
-import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
-import 'package:blackgrid/ui/labels.dart' show localTimeLabel;
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
@@ -301,18 +300,17 @@ void main() {
       expect(find.textContaining('Source:'), findsNothing);
     });
 
-    testWidgets('Diagnostics shows when progress refresh is available again', (
+    testWidgets('settings-diagnostics: Local progress unavailable', (
       tester,
     ) async {
-      final h = await harness(tester);
-      final until = DateTime.now().add(const Duration(minutes: 3));
-      h.services.progress
-        ..status = ProgressStatus.cooldown
-        ..cooldownUntil = until;
+      final h = await harness(tester, noMode: true);
+      expect(h.services.progress.status, ProgressAuthorityStatus.unavailable);
       await show(tester, h);
 
-      final time = localTimeLabel(until, now: DateTime.now());
-      expect(find.text('Refresh available again at $time'), findsOneWidget);
+      expect(find.text('Local progress: unavailable'), findsOneWidget);
+      expect(find.textContaining('Tracker'), findsNothing);
+      expect(find.textContaining('cooldown'), findsNothing);
+      expect(find.textContaining('Progress updated'), findsNothing);
     });
   });
 }

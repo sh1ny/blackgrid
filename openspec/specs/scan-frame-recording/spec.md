@@ -131,12 +131,12 @@ A session SHALL hand at most 500 scans to the writer. The 500th hand-off SHALL s
 - **WHEN** Blackgrid closes with recorded scans still queued
 - **THEN** it waits up to 2 seconds for them, and every line in `frames.jsonl` names files that exist
 
-### Requirement: Recordings stay local and carry no credentials
-Recorded files SHALL be written only to the session folder on this machine, and SHALL NOT be uploaded or sent anywhere. Case lines SHALL hold no credentials or Tracker data. The scan timing log SHALL stay pixel-free and keep schema v1.
+### Requirement: Recordings stay local and carry no credentials or progress
+Recorded files SHALL be written only to the session folder on this machine, and SHALL NOT be uploaded or sent anywhere. Case lines SHALL hold no credentials or progress data. The scan timing log SHALL stay pixel-free and keep schema v1.
 
-#### Scenario: Recording with Tracker connected
-- **WHEN** a scan is recorded while a Tracker token is saved
-- **THEN** no file in the session folder contains the token
+#### Scenario: Recording with local progress recorded
+- **WHEN** a scan is recorded while the effective mode's local progress records finished tasks and a player level
+- **THEN** no case line in the session folder holds a task state, objective count, station level or player level
 
 #### Scenario: Timing log while recording
 - **WHEN** a recorded scan is logged

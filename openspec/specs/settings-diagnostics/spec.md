@@ -20,21 +20,6 @@ The Map, the Scanner and their inspectors SHALL NOT show scan codes, OCR text, t
 - **WHEN** the answer strip shows an item corrected by hand from scan 7, 3 minutes after the correction
 - **THEN** its provenance line reads "Corrected from a scan · 3 min ago · chosen by hand" and contains no `#7`
 
-### Requirement: Problems the player must act on stay on the main windows
-Moving diagnostic detail SHALL NOT hide a problem the player must act on. In plain words, the Map and Scanner SHALL keep showing scan rejection and failure reasons, the recording stop note and the live scan state. Catalog and Tracker errors SHALL stay reachable from them: the status bar SHALL show the item data and Tracker status words, which lead to the Settings sections that show the error text (Item and map data, Tracker progress).
-
-#### Scenario: Rejected scan still explains itself
-- **WHEN** a scan ends rejected `belowSimilarity` with best candidate X
-- **THEN** the Scanner says the name did not match any item closely enough and shows X labelled not accepted, and no text on it contains `belowSimilarity`
-
-#### Scenario: Errors the player must act on stay visible
-- **WHEN** the catalog has an error, recording stopped because a write failed, and the Scanner is shown
-- **THEN** the Scanner still shows the recording stop note and the status bar says item data is out of date, and following that status opens Settings at Item and map data, which shows the catalog error text
-
-#### Scenario: Tracker error stays reachable
-- **WHEN** a Tracker progress refresh fails with an error and the Scanner is shown
-- **THEN** the status bar shows the Tracker status, and Settings → Tracker progress shows "Tracker problem: " followed by the error text, in the error ink
-
 ### Requirement: Diagnostics shows the latest scans' evidence
 Expanded, Diagnostics SHALL show the evidence of the scan the Scanner shows: its scan number, end state, winning pass, marker score, title crop, OCR text, best and runner-up candidates with their scores and margin, the accepted item's ID, and the rejection or failure code with any wider-scan failure. When a later scan was not accepted, it SHALL show that scan's number, code, OCR text and marker score too. Before any scan is published it SHALL say no scan is published yet.
 
@@ -92,21 +77,6 @@ Expanded, Diagnostics SHALL list the 10 most recent published scans, newest firs
 - **WHEN** no scan has been published and Diagnostics is expanded
 - **THEN** the list says there are no scans yet
 
-### Requirement: Diagnostics shows data source detail
-Expanded, Diagnostics SHALL describe the item data behind the item shown (a history item's saved data, else the live catalog): its source, its download time in UTC, the items source update time, the record count of each dataset, the price time in UTC, the Tracker progress update time in UTC, the cooldown end time while refresh is cooling down, and the age limits after which item data, prices and progress count as old. With no complete catalog it SHALL say so.
-
-#### Scenario: Current catalog
-- **WHEN** a catalog downloaded at 2026-11-10T08:05:00Z is current and Diagnostics is expanded
-- **THEN** Diagnostics shows the source, `2026-11-10T08:05:00.000Z` and each dataset's record count
-
-#### Scenario: No catalog
-- **WHEN** no complete catalog is available and Diagnostics is expanded
-- **THEN** Diagnostics says there is no complete item data download and shows no record counts
-
-#### Scenario: Tracker in cooldown
-- **WHEN** Tracker progress is in cooldown and Diagnostics is expanded
-- **THEN** Diagnostics shows when refresh is available again
-
 ### Requirement: Collapsed Diagnostics does no scan or source work
 While Diagnostics is collapsed, its scan and data source parts SHALL NOT be built: no title crop is decoded and nothing listens for scans for them. Expanding SHALL show the current state. Collapsing SHALL release any decoded crop.
 
@@ -128,3 +98,33 @@ Expanded, Diagnostics' Data sources part SHALL describe the map data: the mode s
 #### Scenario: Never checked
 - **WHEN** no map data check has completed and Diagnostics is expanded
 - **THEN** Data sources says the map data has not been checked, and the Item and map data section shows no source or mode line
+
+### Requirement: Problems the player must act on stay reachable from the main windows
+Moving diagnostic detail SHALL NOT hide a problem the player must act on. In plain words, the Map and Scanner SHALL keep showing scan rejection and failure reasons, the recording stop note and the live scan state. Catalog and local progress errors SHALL stay reachable from them: the status bar SHALL show the item data and progress status words, which lead to the Settings sections that show the error text (Item and map data, Local progress).
+
+#### Scenario: Rejected scan still explains itself
+- **WHEN** a scan ends rejected `belowSimilarity` with best candidate X
+- **THEN** the Scanner says the name did not match any item closely enough and shows X labelled not accepted, and no text on it contains `belowSimilarity`
+
+#### Scenario: Errors the player must act on stay visible
+- **WHEN** the catalog has an error, recording stopped because a write failed, and the Scanner is shown
+- **THEN** the Scanner still shows the recording stop note and the status bar says item data is out of date, and following that status opens Settings at Item and map data, which shows the catalog error text
+
+#### Scenario: Local progress error stays reachable
+- **WHEN** local progress failed to load with an error and the Scanner is shown
+- **THEN** the status bar says "Progress unavailable", and following it opens Settings at Local progress, which shows the load error text
+
+### Requirement: Diagnostics shows item data and progress source detail
+Expanded, Diagnostics SHALL describe the item data behind the item shown (a history item's saved data, else the live catalog): its source, its download time in UTC, the items source update time, the record count of each dataset, the price time in UTC, whether the effective mode's local progress can be read, and the age limits after which item data and prices count as old. With no complete catalog it SHALL say so.
+
+#### Scenario: Current catalog
+- **WHEN** a catalog downloaded at 2026-11-10T08:05:00Z is current and Diagnostics is expanded
+- **THEN** Diagnostics shows the source, `2026-11-10T08:05:00.000Z` and each dataset's record count
+
+#### Scenario: No catalog
+- **WHEN** no complete catalog is available and Diagnostics is expanded
+- **THEN** Diagnostics says there is no complete item data download and shows no record counts
+
+#### Scenario: Local progress unavailable
+- **WHEN** the effective mode's local progress cannot be read and Diagnostics is expanded
+- **THEN** Diagnostics says local progress is unavailable, and no Diagnostics text mentions Tracker, a progress update time or a refresh cooldown

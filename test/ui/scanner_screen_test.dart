@@ -28,7 +28,7 @@ void main() {
       expect(find.widgetWithText(TextField, 'Search items…'), findsOneWidget);
       expect(find.byKey(const Key('status-game-mode')), findsOneWidget);
       expect(find.byKey(const Key('status-item-data')), findsOneWidget);
-      expect(find.byKey(const Key('status-tracker')), findsOneWidget);
+      expect(find.byKey(const Key('status-progress')), findsOneWidget);
     },
   );
   testWidgets(

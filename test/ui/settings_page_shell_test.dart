@@ -1,6 +1,4 @@
-import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/ui/app.dart';
-import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/scanner_screen.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_section.dart';
@@ -12,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
 import '../support/raid_timer_support.dart';
+import 'support/progress_read_failing_database.dart';
 import 'support/scan_ui_support.dart';
 import '../support/pump_async.dart';
 
@@ -301,57 +300,33 @@ void main() {
 
   testWidgets('settings-page: Settings action while open', (tester) async {
     await pumpM1(tester);
-    await _openFromStatus(tester, 'status-tracker');
-    final tracker = _title(SettingsSection.tracker);
-    final position = tester.getTopLeft(tracker);
-    expect(_inView(tester, tracker), isTrue);
+    await _openFromStatus(tester, 'status-progress');
+    final progress = _title(SettingsSection.localProgress);
+    final position = tester.getTopLeft(progress);
+    expect(_inView(tester, progress), isTrue);
 
     await tester.tap(_settingsAction);
     await tester.pumpAndSettle();
 
     expect(_page, findsOneWidget);
-    expect(tester.getTopLeft(tracker), position);
-    expect(_holdsFocus(tester, tracker), isTrue);
+    expect(tester.getTopLeft(progress), position);
+    expect(_holdsFocus(tester, progress), isTrue);
   });
 
-  testWidgets('settings-page: Status bar Tracker', (tester) async {
+  testWidgets('settings-page: Status bar Progress', (tester) async {
     await pumpM1(tester);
     await tester.tap(find.byKey(const Key('nav-scanner')));
     await tester.pumpAndSettle();
 
-    await _openFromStatus(tester, 'status-tracker');
+    await _openFromStatus(tester, 'status-progress');
 
-    final tracker = _title(SettingsSection.tracker);
-    expect(_inView(tester, tracker), isTrue);
-    expect(_holdsFocus(tester, tracker), isTrue);
+    final progress = _title(SettingsSection.localProgress);
+    expect(_inView(tester, progress), isTrue);
+    expect(_holdsFocus(tester, progress), isTrue);
     await tester.tap(_back('Scanner'));
     await tester.pumpAndSettle();
     expect(_page, findsNothing);
     expect(find.byType(ScannerScreen), findsOneWidget);
-  });
-
-  testWidgets('settings-diagnostics: Tracker error stays reachable', (
-    tester,
-  ) async {
-    final h = await pumpM1(tester);
-    await tester.tap(find.byKey(const Key('nav-scanner')));
-    await tester.pumpAndSettle();
-    const failure = 'Tracker refresh failed: synthetic fixture failure';
-    h.services.progress.error = failure;
-    h.services.progress.status = ProgressStatus.failed;
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('status-tracker')), findsOneWidget);
-    expect(find.textContaining(failure), findsNothing);
-
-    await _openFromStatus(tester, 'status-tracker');
-
-    final line = find.text('Tracker problem: $failure');
-    expect(line, findsOneWidget);
-    expect(_inView(tester, line), isTrue);
-    expect(
-      tester.widget<Text>(line).style?.color,
-      tester.element(line).ember.errInk,
-    );
   });
 
   testWidgets('settings-page: Already open', (tester) async {
@@ -391,9 +366,34 @@ void main() {
   testWidgets('settings-page: Open at a section', (tester) async {
     await pumpM1(tester);
 
-    await _openFromStatus(tester, 'status-tracker');
+    await _openFromStatus(tester, 'status-progress');
 
-    expect(_inView(tester, _title(SettingsSection.tracker)), isTrue);
+    expect(_inView(tester, _title(SettingsSection.localProgress)), isTrue);
     expect(find.text('Map inputs'), findsNothing);
+  });
+
+  testWidgets('settings-diagnostics: Local progress error stays reachable', (
+    tester,
+  ) async {
+    await pumpM1(tester, database: ProgressReadFailingDatabase());
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    final status = find.byKey(const Key('status-progress'));
+    expect(
+      find.descendant(of: status, matching: find.text('Progress unavailable')),
+      findsOneWidget,
+    );
+
+    await _openFromStatus(tester, 'status-progress');
+
+    final title = _title(SettingsSection.localProgress);
+    expect(_inView(tester, title), isTrue);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('settings-local-progress')),
+        matching: find.textContaining(ProgressReadFailingDatabase.failure),
+      ),
+      findsWidgets,
+    );
   });
 }

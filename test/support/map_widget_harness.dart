@@ -19,7 +19,6 @@ import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 import '../ui/support/scan_ui_support.dart';
-import 'm1_harness.dart';
 import 'prepared_pack_manifest.dart';
 import 'pump_async.dart';
 
@@ -41,7 +40,6 @@ class MapWidgetHarness {
     bool artwork = true,
     bool packFails = false,
     http.Client? client,
-    MemoryCredentials? credentials,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -92,7 +90,6 @@ class MapWidgetHarness {
         : Directory.systemTemp.createTempSync('blackgrid-map-scan-');
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
-      credentials: credentials ?? MemoryCredentials(),
       clock: () => fixtureNow,
       mapController: MapController(
         loader: loader,
@@ -249,7 +246,6 @@ Future<MapWidgetHarness> pumpMapFixture(
   bool artwork = true,
   bool packFails = false,
   http.Client? client,
-  MemoryCredentials? credentials,
   bool autoDispose = true,
 }) async {
   tester.view.physicalSize = size;
@@ -268,7 +264,6 @@ Future<MapWidgetHarness> pumpMapFixture(
       artwork: artwork,
       packFails: packFails,
       client: client,
-      credentials: credentials,
     ),
   ))!;
   if (autoDispose) addPumpedTearDown(tester, harness.dispose);

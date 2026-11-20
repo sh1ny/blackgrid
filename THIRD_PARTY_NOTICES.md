@@ -1099,9 +1099,9 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 
 **Flutter engine:** the pinned SDK supplies aggregate native third-party notices in `sky_engine/LICENSE`; preserve those framework/engine notices when distributing a complete Flutter bundle. The aggregate is not duplicated here. This dependency-selection record is not a clean-machine release or public-publication qualification.
 
-**Windows APIs:** Blackgrid calls the installed Windows current-user DPAPI, known-folder and file-replacement APIs through a narrowly authored runner channel. No Win32 wrapper package or reference protection code is selected.
+**Windows APIs:** Blackgrid asks the installed Windows known-folder API for the LocalAppData path through a narrowly authored runner channel. No Win32 wrapper package or reference protection code is selected.
 
-**Remote data:** production GETs use [json.tarkov.dev](https://json.tarkov.dev/endpoints) and the read-only [Tracker API](https://api.tarkovtracker.org/openapi.json). Hosting and API availability are not blanket redistribution licenses for game data, artwork or private progress. Credentials and personal progress are not included in repository fixtures, local history, notices or diagnostics. Future asset selection and public distribution retain their own rights gates.
+**Remote data:** production GETs use [json.tarkov.dev](https://json.tarkov.dev/endpoints). Earlier versions also read the TarkovTracker API; Blackgrid no longer calls it. Hosting and API availability are not blanket redistribution licenses for game data or artwork. Personal progress are not included in repository fixtures, local history, notices or diagnostics. Future asset selection and public distribution retain their own rights gates.
 
 **Item icons:** item icons are Battlestate Games renders hosted by tarkov.dev (`assets.tarkov.dev`). Blackgrid downloads an item's icon at runtime, at the user's direction, only when the item is shown, into the user's local cache (`%LOCALAPPDATA%\Blackgrid\item-icons\`; [ADR-0022](docs/adr/0022-item-icons-runtime-cache.md)). The icons are not shipped with Blackgrid, not committed to this repository, and not covered by Blackgrid's licence.
 

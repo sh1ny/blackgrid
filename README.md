@@ -59,10 +59,9 @@ Blackgrid modifies no game files. A test in this repository fails if the capture
 | Service | What Blackgrid gets from it | Needed? |
 |---|---|---|
 | [tarkov.dev](https://tarkov.dev) | Items, prices, traders, quests, hideout, crafts and barters. Blackgrid downloads them at start and when you change game mode | Yes, for item advice |
-| [TarkovTracker](https://tarkovtracker.org) | Your quest and hideout progress, read only, so that Keep means you still need the item | No. It stays off until you paste a token in Settings |
 | Windows text recognition | Reads extract names from your O screenshots, on your PC | Built into Windows |
 
-Blackgrid downloads data and never uploads yours. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`. Blackgrid encrypts a TarkovTracker token so that only your Windows user can read it. The maps ship inside the app. [Data sources and credits](#data-sources-and-credits) says where they come from.
+Blackgrid downloads data and never uploads yours. There is no Blackgrid account, server or telemetry. Your settings, pins and history stay on your PC in `%LOCALAPPDATA%\Blackgrid\`. Your quest and hideout progress comes from your own game logs and what you enter in Settings, never from another service. The maps ship inside the app. [Data sources and credits](#data-sources-and-credits) says where they come from.
 
 ---
 
@@ -75,9 +74,9 @@ The rest of this page covers building and working on Blackgrid. Blackgrid is a D
 - **Cautious keep/sell advice.** One pure-Dart [`DecisionEngine`](lib/domain/decision_engine.dart) picks the first answer that applies, in this order: Keep, Keep for later, Check / May Need, Flea, Trader, Price unavailable. It answers Check when the catalog or progress data is missing, when found-in-raid status is unknown, when a requirement is unresolved, or when the price quote is more than one hour old.
 - **Native map, no WebView.** All 13 maps render from a prepared pack in [`assets/maps/`](assets/maps/active.json). Preparation compiles SVG to `vector_graphics` ahead of time. The [scene](lib/maps/native_map_scene.dart) keeps decoded tiles and pictures in a 192 MiB LRU cache.
 - **Session data from files only.** [`SessionLogReader`](lib/data/session_log_reader.dart) reads the newest game log every 250 ms for the map and mode. [Screenshot file names](lib/domain/screenshot_filename.dart) give position and heading. A DLL ([`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp)) reads saved extract panels with Windows `Windows.Media.Ocr`, and the app checks the DLL's hash before loading it.
-- **Read-only progress, protected tokens.** [`TrackerClient`](lib/data/tracker_client.dart) sends only GET requests to `api.tarkovtracker.org`, with a 30 s timeout. Each token belongs to one mode (`PVP_`, `PVE_`, `SZN_`). The [Windows runner](windows/runner/credential_protector.cpp) encrypts tokens with DPAPI for the current user and stores them outside SQLite.
+- **Progress from local files only.** [`ProgressAuthority`](lib/application/progress_authority.dart) gives the decision engine the effective mode's local progress: the game-log replay plus what you enter in Settings. Anything unrecorded counts as not started, so Keep stays on until you record it. Blackgrid makes no request to a progress service and stores no account token. On each launch it deletes any `credentials\*.dpapi` token file that an older version saved ([ADR-0046](docs/adr/0046-local-progress-is-the-only-progress-authority.md)).
 - **One local database.** A single Drift SQLite file ([`database.dart`](lib/data/database.dart)) holds settings, pins, item history and one catalog snapshot per mode. [`drift_schemas/`](drift_schemas/) records every schema version. If the file on disk has a newer version than the app knows, the app refuses to open it instead of resetting it.
-- **Local progress history, not a Tracker replacement.** [`TaskLogProgressController`](lib/application/task_log_progress_controller.dart) records started, failed and finished tasks from the game logs into the [`LocalProgressStore`](lib/domain/local_progress_store.dart) ledger. Schema 9 keeps one active local wipe per mode; the first task creates it automatically. Startup catches up missed folders outside a raid. In **Settings → Local progress**, replay from a date into the same wipe, or confirm a new wipe while keeping old history. Replay never duplicates events or deletes manual corrections. Runs stop between folders if a raid starts, and report skipped records, unreadable folders and storage failures. Deleted game logs and task failures not logged during raids cannot be recovered from logs. There is no automatic wipe reset. Tracker still supplies advice and timer progress; no quest checklist is introduced here ([ADR-0044](docs/adr/0044-log-task-progress-active-wipes.md), extending [ADR-0041](docs/adr/0041-local-progress-event-ledger.md)).
+- **Local progress history.** [`TaskLogProgressController`](lib/application/task_log_progress_controller.dart) records started, failed and finished tasks from the game logs into the [`LocalProgressStore`](lib/domain/local_progress_store.dart) ledger. Schema 9 keeps one active local wipe per mode; the first task creates it automatically. Startup catches up missed folders outside a raid. In **Settings → Local progress**, replay from a date into the same wipe, or confirm a new wipe while keeping old history. Replay never duplicates events or deletes manual corrections. Runs stop between folders if a raid starts, and report skipped records, unreadable folders and storage failures. Deleted game logs and task failures not logged during raids cannot be recovered from logs. There is no automatic wipe reset. Advice, requirement rows, Flea eligibility and raid-timer hideout bonuses read this progress; no quest checklist is introduced here ([ADR-0044](docs/adr/0044-log-task-progress-active-wipes.md), extending [ADR-0041](docs/adr/0041-local-progress-event-ledger.md)).
   Closing Blackgrid stops replay. Replay again from the same selected date to finish; failed or interrupted results show that retry date. Startup catch-up does not resume an earlier replay below its existing folder watermark.
 - **Native code checked by hash.** At install, CMake writes the SHA-256 of the panel OCR DLL and a manifest of every vision file. The app refuses to load a file that does not match. [`third_party.lock.json`](windows/vision/third_party.lock.json) pins the third-party vision inputs (OpenCV 4.13, Tesseract engine 5.0.0, Leptonica 1.82.0, `eng.traineddata`), and [`check_bundle.dart`](tool/vision/check_bundle.dart) checks them offline.
 - **Explicit legacy import.** [`LegacyImport`](lib/data/legacy_import.dart) reads only the settings and history JSON files you name. It shows a preview that lists every collision. Accepting the preview writes everything in one transaction, and the same files cannot be imported twice.
@@ -87,7 +86,7 @@ The rest of this page covers building and working on Blackgrid. Blackgrid is a D
 ```mermaid
 flowchart LR
     Cat(["json.tarkov.dev"]) -->|GET| C[CatalogController]
-    Trk(["api.tarkovtracker.org"]) -->|GET| P[ProgressController]
+    Logs2[/"game logs + Settings entries"/] --> P[ProgressAuthority]
     C --> S[SelectionController]
     P --> S
     S --> E[DecisionEngine] --> UI["Shell<br/>Map | Scanner"]
@@ -101,9 +100,9 @@ flowchart LR
 
 | Part | Owner | What it does |
 |---|---|---|
-| Startup | [`AppServices`](lib/application/app_services.dart) | Opens storage, credentials and the HTTP client, builds the controllers, and disposes of them in order |
+| Startup | [`AppServices`](lib/application/app_services.dart) | Opens storage and the HTTP client, builds the controllers, and disposes of them in order |
 | Catalog | [`CatalogController`](lib/application/catalog_controller.dart) and [`CatalogClient`](lib/data/catalog_client.dart) | Downloads 6 required and 4 optional English datasets for the chosen mode, normalises them off the UI isolate, and replaces the snapshot in one transaction |
-| Progress | [`ProgressController`](lib/application/progress_controller.dart) and [`TrackerClient`](lib/data/tracker_client.dart) | Reads `/token` and `/progress`, keeps the results in memory only, and treats them as current for 15 minutes |
+| Progress | [`ProgressAuthority`](lib/application/progress_authority.dart) and [`LocalProgressStore`](lib/domain/local_progress_store.dart) | Turns the effective mode's local progress into facts for the decision engine. Unrecorded means not started, 0 or not built; edition gates stay unknown |
 | Decision | [`SelectionController`](lib/application/selection_controller.dart) and [`DecisionEngine`](lib/domain/decision_engine.dart) | Makes one decision for the selected item and shows it in both Map and Scanner |
 | Map | [`MapController`](lib/application/map_controller.dart) and [`lib/maps/`](lib/maps/prepared_map_loader.dart) | Loads the active pack, floors, markers and pins, and handles pan, zoom and hit testing |
 | Session | [`MapSessionController`](lib/application/map_session_controller.dart) | Tracks the detected map and mode, player positions and highlighted extracts. It runs at most one OCR request and keeps one more waiting |
@@ -134,7 +133,7 @@ To check the toolchain, run `mise exec -- flutter doctor -v`. Warnings about And
 1. Close Escape from Tarkov, then run `mise exec -- flutter run -d windows`.
 2. Open **Settings** and choose the **Live game mode**: PvP, PvE or Seasonal. It starts as Unknown. Choosing a mode refreshes the catalog. If the refresh fails, use **Refresh complete catalog** to try again.
 3. Press Ctrl K to search for an item. The Scanner area shows the decision, the requirements, the data sources and your history.
-4. Optional: in **Settings**, save a Tracker token for the mode, and set the game log and screenshot folders. Leave a folder empty to detect it automatically.
+4. Optional: in **Settings**, set the game log and screenshot folders, and review **Local progress**. Leave a folder empty to detect it automatically.
 5. On **Map**, choose **Read latest screenshot** in the map picker after you save a screenshot in game, or turn on **Follow logs** in **Settings** to switch maps automatically. While the game log reports a mode, that mode replaces the one in Settings.
 
 To build a Release bundle, run `mise exec -- flutter build windows`. Ship the whole `build/windows/x64/runner/Release/` folder, not only `blackgrid.exe`.
@@ -147,9 +146,9 @@ To build a Release bundle, run `mise exec -- flutter build windows`. Ship the wh
 
 | Layer | Files | Role |
 |---|---|---|
-| Domain | [`decision_engine.dart`](lib/domain/decision_engine.dart), [`catalog.dart`](lib/domain/catalog.dart), [`progress.dart`](lib/domain/progress.dart), [`settings.dart`](lib/domain/settings.dart), [`map_geometry.dart`](lib/domain/map_geometry.dart), [`map_floors.dart`](lib/domain/map_floors.dart), [`raid_panel_text_parser.dart`](lib/domain/raid_panel_text_parser.dart), [`raid_exfil_matcher.dart`](lib/domain/raid_exfil_matcher.dart) | Pure Dart rules for decisions, data age, settings, map math and extract-panel text matching |
-| Application | [`app_services.dart`](lib/application/app_services.dart), [`catalog_controller.dart`](lib/application/catalog_controller.dart), [`progress_controller.dart`](lib/application/progress_controller.dart), [`selection_controller.dart`](lib/application/selection_controller.dart), [`settings_controller.dart`](lib/application/settings_controller.dart), [`history_controller.dart`](lib/application/history_controller.dart), [`map_controller.dart`](lib/application/map_controller.dart), [`map_session_controller.dart`](lib/application/map_session_controller.dart) | `ChangeNotifier` controllers, all built in `AppServices` |
-| Data | [`database.dart`](lib/data/database.dart), [`catalog_client.dart`](lib/data/catalog_client.dart), [`tracker_client.dart`](lib/data/tracker_client.dart), [`credential_store.dart`](lib/data/credential_store.dart), [`session_log_reader.dart`](lib/data/session_log_reader.dart), [`screenshot_directory_watcher.dart`](lib/data/screenshot_directory_watcher.dart), [`game_paths.dart`](lib/data/game_paths.dart), [`raid_panel_ocr.dart`](lib/data/raid_panel_ocr.dart), [`legacy_import.dart`](lib/data/legacy_import.dart) | Adapters for HTTP, SQLite, DPAPI, game files and OCR |
+| Domain | [`decision_engine.dart`](lib/domain/decision_engine.dart), [`catalog.dart`](lib/domain/catalog.dart), [`progress_facts.dart`](lib/domain/progress_facts.dart), [`settings.dart`](lib/domain/settings.dart), [`map_geometry.dart`](lib/domain/map_geometry.dart), [`map_floors.dart`](lib/domain/map_floors.dart), [`raid_panel_text_parser.dart`](lib/domain/raid_panel_text_parser.dart), [`raid_exfil_matcher.dart`](lib/domain/raid_exfil_matcher.dart) | Pure Dart rules for decisions, data age, settings, map math and extract-panel text matching |
+| Application | [`app_services.dart`](lib/application/app_services.dart), [`catalog_controller.dart`](lib/application/catalog_controller.dart), [`progress_authority.dart`](lib/application/progress_authority.dart), [`selection_controller.dart`](lib/application/selection_controller.dart), [`settings_controller.dart`](lib/application/settings_controller.dart), [`history_controller.dart`](lib/application/history_controller.dart), [`map_controller.dart`](lib/application/map_controller.dart), [`map_session_controller.dart`](lib/application/map_session_controller.dart) | `ChangeNotifier` controllers, all built in `AppServices` |
+| Data | [`database.dart`](lib/data/database.dart), [`catalog_client.dart`](lib/data/catalog_client.dart), [`retired_tokens.dart`](lib/data/retired_tokens.dart), [`session_log_reader.dart`](lib/data/session_log_reader.dart), [`screenshot_directory_watcher.dart`](lib/data/screenshot_directory_watcher.dart), [`game_paths.dart`](lib/data/game_paths.dart), [`raid_panel_ocr.dart`](lib/data/raid_panel_ocr.dart), [`legacy_import.dart`](lib/data/legacy_import.dart) | Adapters for HTTP, SQLite, game files and OCR |
 | Vision | [`vision_runtime.dart`](lib/data/vision/vision_runtime.dart), [`vision_primitives.dart`](lib/data/vision/vision_primitives.dart), [`tesseract_binding.dart`](lib/data/vision/tesseract_binding.dart), [`vision_self_check.dart`](lib/application/vision_self_check.dart) | Item vision runtime. So far only `--vision-self-check` and the tests use it |
 | Maps | [`prepared_map_loader.dart`](lib/maps/prepared_map_loader.dart), [`prepared_map.dart`](lib/maps/prepared_map.dart), [`native_map_scene.dart`](lib/maps/native_map_scene.dart) | Loads the pack and renders it natively |
 | UI | [`shell.dart`](lib/ui/shell.dart), [`map_screen.dart`](lib/ui/map_screen.dart), [`map_workspace.dart`](lib/ui/map_workspace.dart), [`scanner_screen.dart`](lib/ui/scanner_screen.dart), [`item_decision_card.dart`](lib/ui/item_decision_card.dart), [`settings_page.dart`](lib/ui/settings/settings_page.dart), [`import_dialog.dart`](lib/ui/import_dialog.dart), [`theme.dart`](lib/ui/theme.dart) | The window with two areas. Both areas stay mounted when you switch |
@@ -160,7 +159,7 @@ In Scanner you can look up items in the catalog by hand, or turn on **live scan*
 
 | Part | File | What it does |
 |---|---|---|
-| Credentials channel | [`credential_protector.cpp`](windows/runner/credential_protector.cpp) | The `blackgrid/credentials` platform channel. It finds the LocalAppData path, replaces files atomically, and encrypts and decrypts with DPAPI |
+| Local data channel | [`local_data_channel.cpp`](windows/runner/local_data_channel.cpp) | The `blackgrid/local_data` platform channel. Its only call, `localDataPath`, returns the LocalAppData path |
 | Panel OCR DLL | [`panel_ocr.cpp`](windows/ocr/panel_ocr.cpp) | `blackgrid_panel_ocr.dll`, a wrapper over `Windows.Media.Ocr` |
 | Vision DLL | [`vision.cpp`](windows/vision/vision.cpp), [`vision.h`](windows/vision/vision.h) | `blackgrid_vision.dll`, a `bgv_*` C ABI over static OpenCV `core` and `imgproc` |
 | Vision build | [`CMakeLists.txt`](windows/vision/CMakeLists.txt), [`verify_inputs.cmake`](windows/vision/verify_inputs.cmake), [`write_manifest.cmake`](windows/vision/write_manifest.cmake) | Refuses inputs that are not pinned, and writes `data/vision/runtime.manifest.json` at install |
@@ -216,7 +215,6 @@ Blackgrid has no config file. The **Settings** dialog and the Map area save one 
   "selectedMap": "shoreline",   // one of the 13 supported map IDs
   "saveMarkerFilters": false,   // true = remember which marker categories are shown
   "markerFilters": {},          // category to visibility, for example "PmcExtracts": true
-  "trackerEnabled": false,      // read-only Tracker progress for the current mode
   "gameLogDirectory": "",       // empty = find it from the registry or the Steam libraries
   "screenshotDirectory": "",    // empty = Documents\Escape from Tarkov\Screenshots
   "liveScan": false,            // true = live scan is on at start
@@ -225,7 +223,7 @@ Blackgrid has no config file. The **Settings** dialog and the Map area save one 
 }
 ```
 
-Tracker tokens are not in this row. They are in `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi`.
+Older versions also wrote `trackerEnabled`. Blackgrid ignores it when it loads an old file and no longer writes it.
 
 ---
 
@@ -256,9 +254,8 @@ Prices are gross RUB, before Flea fees. Accepted scans supply detected found-in-
 | Catalog | `json.tarkov.dev/{regular\|pve\|pvp-season}/{items,traders,tasks,hideout,crafts,barters}`, plus optional `*_en` translations | 24 h from download. The source's own timestamps are shown but not used | Blackgrid keeps the last good snapshot and shows the status `stale` or `failed` |
 | Map markers | `json.tarkov.dev/{regular\|pve\|pvp-season}/{maps,maps_en,tasks,tasks_en,traders,traders_en}` | A compatible last good snapshot never expires | Blackgrid uses the selected mode's last good snapshot. Without one, it uses the bundled regular-mode markers and labels them as such |
 | Flea quote | Inside the catalog | 1 h | The decision falls back to Check |
-| Tracker | `api.tarkovtracker.org/token`, `/progress` | 15 min, in memory only | Login or mode errors clear the progress. Network errors keep it and mark it stale. Blackgrid honours `Retry-After`, and waits 60 s when the header is missing or invalid |
 
-Every request is a GET with a 30 s deadline, and Blackgrid follows no redirects. The catalog refreshes once at launch and again on each mode switch. Progress refreshes at the same times, if you saved a Tracker token for the mode and turned on the Tracker integration. Blackgrid does not retry a failed refresh by itself. Use Refresh, or select the mode again.
+Every request is a GET with a 30 s deadline, and Blackgrid follows no redirects. The catalog refreshes once at launch and again on each mode switch. Blackgrid does not retry a failed refresh by itself. Use Refresh, or select the mode again.
 </details>
 
 <details>
@@ -267,7 +264,8 @@ Every request is a GET with a 30 s deadline, and Blackgrid follows no redirects.
 | Path | What it holds |
 |---|---|
 | `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite` | Settings, pins, one history row per item and mode, catalog snapshots, the import ledger and map data snapshots per mode |
-| `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi` | The Tracker token, encrypted with DPAPI for the current user. Another Windows user cannot decrypt it |
+
+Earlier versions saved a Tracker token in `%LOCALAPPDATA%\Blackgrid\credentials\<mode>.dpapi`. Blackgrid deletes those files, and the folder if it is then empty, on each launch.
 
 History stores only the item ID, mode, source, UTC time and revision. Blackgrid has no telemetry, account or backend.
 </details>
@@ -413,7 +411,7 @@ the manifest, artwork notices, and metadata.
 | Inputs | The settings and history JSON paths you type. Blackgrid does not scan folders |
 | Supported revisions | Settings 0 to 3, scanner preferences 0 to 1, history 0 to 1 |
 | Pins | Known map IDs and frame revisions. Labs revision 0 pins are converted to revision 1 |
-| Never imported | Tracker keys, progress, computed advice, found-in-raid status, prices, and old overlay and capture settings |
+| Never imported | Tracker keys and the old Tracker switch, progress, computed advice, found-in-raid status, prices, and old overlay and capture settings |
 | Collisions | Within the source files, the higher revision wins, then the later UTC time, then file order. Existing records win unless you choose to replace them |
 | Commit | **Accept preview and import** writes all records and the file digest ledger in one transaction. It does not change the source files |
 </details>
@@ -506,7 +504,7 @@ mise run release:prepare -- 0.7.0 --summary-file ../release-summary.txt
 | `mise run test` | Domain, data, controllers, widgets and map logic, plus the untagged M0 contract, statistics, comparison, export and CLI tests. All offline. Use it while you develop |
 | `mise run test:qualification` | Tests tagged `qualification` ([`dart_test.yaml`](dart_test.yaml)): map pack preparation, the M0 collector and fixture integrity, panel OCR, the vision runtime, CMake and bundle checks. The native capture test is skipped unless `BLACKGRID_NO_GAMES_RUNNING=1` confirms that no game is running |
 | `mise run test:all` | Both of the above. Run it before you merge |
-| [`m1_windows_smoke_test.dart`](integration_test/m1_windows_smoke_test.dart) | Real DPAPI, the real catalog and reopening SQLite, on Windows |
+| [`m1_windows_smoke_test.dart`](integration_test/m1_windows_smoke_test.dart) | The real catalog and reopening SQLite, on Windows |
 
 The tests are in [`test/`](test/).
 
@@ -557,7 +555,7 @@ The map marker icons, for extracts, quests, spawns, bosses, hazards and the rest
 
 ### TarkovTracker
 
-The optional quest and hideout progress comes from the read-only [TarkovTracker](https://tarkovtracker.org) API ([tarkovtracker-org](https://github.com/tarkovtracker-org)).
+Earlier versions read optional quest and hideout progress from the [TarkovTracker](https://tarkovtracker.org) API ([tarkovtracker-org](https://github.com/tarkovtracker-org)). Blackgrid no longer calls that API or stores its tokens. Thank you to its maintainers.
 
 ### Escape from Tarkov
 

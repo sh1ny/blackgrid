@@ -1,6 +1,6 @@
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/history_controller.dart';
-import 'package:blackgrid/application/progress_controller.dart';
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/application/scan_correction.dart';
 import 'package:blackgrid/application/scan_decision_feed.dart';
 import 'package:blackgrid/application/session_scan_state.dart';
@@ -10,12 +10,11 @@ import 'package:blackgrid/data/catalog_client.dart';
 import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/vision/inspection_fir.dart';
-import 'package:blackgrid/data/tracker_client.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
-import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/local_progress.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,8 +22,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
-import '../support/m1_harness.dart';
 import 'support/fake_accepted_scan_source.dart';
+import 'support/fake_progress_access.dart';
 import 'support/history_wait.dart';
 
 class _NoStore implements CatalogStore {
@@ -34,17 +33,6 @@ class _NoStore implements CatalogStore {
   @override
   Future<void> commitCatalog(CatalogSnapshot snapshot) async {}
 }
-
-const _activeTask = EntityProgress(
-  complete: false,
-  failed: false,
-  invalid: false,
-);
-const _remainingObjective = EntityProgress(
-  complete: false,
-  count: 1,
-  invalid: false,
-);
 
 /// One item per precedence rule, and what the engine must answer for it.
 class _Fixture {
@@ -166,16 +154,19 @@ CatalogSnapshot _catalogSnapshot() => CatalogSnapshot(
   sourceTimestamps: {for (final key in catalogDatasets) key: fixtureNow},
 );
 
-ProgressSnapshot _progressSnapshot() => decisionProgress(
+Map<ProgressTarget, ProgressEvent> _progressWinners() => localWinners(
+  // A started task skips its gates, so only the item whose gates are open
+  // (and the FIR-only item) has a started task; the others stay not started.
   tasks: {
     for (final f in _fixtures)
-      if (f.needed) 'task-${f.id}': _activeTask,
-    'task-fir-only': _activeTask,
+      if (f.needed && f.expected == Recommendation.keep)
+        'task-${f.id}': ProgressTaskStatus.started,
+    'task-fir-only': ProgressTaskStatus.started,
   },
-  objectives: {
+  objectiveCounts: {
     for (final f in _fixtures)
-      if (f.needed) 'objective-${f.id}': _remainingObjective,
-    'objective-fir-only': _remainingObjective,
+      if (f.needed) 'objective-${f.id}': 1,
+    'objective-fir-only': 1,
   },
 );
 
@@ -183,7 +174,8 @@ void main() {
   const epoch = ScanEpoch(0, 0);
   late BlackgridDatabase database;
   late CatalogController catalog;
-  late ProgressController progress;
+  late FakeProgressAccess access;
+  late ProgressAuthority progress;
   late SelectionController selection;
   late CatalogSnapshot snapshot;
   late HistoryController history;
@@ -191,7 +183,7 @@ void main() {
   late SessionScanState scans;
   late ScanDecisionFeed feed;
 
-  setUp(() {
+  setUp(() async {
     database = BlackgridDatabase(NativeDatabase.memory());
     snapshot = _catalogSnapshot();
     catalog =
@@ -204,16 +196,13 @@ void main() {
           ..mode = GameMode.pvp
           ..snapshot = snapshot
           ..status = CatalogStatus.current;
-    progress =
-        ProgressController(
-            store: MemoryCredentials(),
-            client: TrackerClient(
-              client: MockClient((_) async => http.Response('', 500)),
-            ),
-          )
-          ..mode = GameMode.pvp
-          ..snapshot = _progressSnapshot()
-          ..status = ProgressStatus.current;
+    access = FakeProgressAccess(winners: _progressWinners());
+    progress = ProgressAuthority(
+      access: access,
+      modeChanges: catalog,
+      mode: () => catalog.mode,
+    );
+    await progressPublished(progress);
     history = HistoryController(database);
     selection = SelectionController(
       database: database,
@@ -277,13 +266,13 @@ void main() {
   });
 
   test('scanned item with unknown progress is Check naming progress', () async {
-    progress.snapshot = null;
-    progress.status = ProgressStatus.missing;
+    access.unavailableModes.add(GameMode.pvp);
+    access.changed();
     await scan('flea');
     selection.setFir(FirState.yes);
     final d = selection.decision!;
     expect(d.recommendation, Recommendation.check);
-    expect(d.warnings, contains('Tracker progress missing or out of date'));
+    expect(d.warnings, contains('Progress unavailable'));
     expect(d.recommendation, isNot(Recommendation.flea));
     expect(d.recommendation, isNot(Recommendation.trader));
   });

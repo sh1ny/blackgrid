@@ -1,84 +1,105 @@
 # progress-authority Specification
 
 ## Purpose
-Decides when tracker progress for a mode is fetched without user action and which fetch results may be published, so that decisions do not stay degraded by missing progress while a credential is saved.
-
-Unless a scenario says otherwise, the scenarios in this capability assume the read-only Tracker integration is enabled.
+Gives the decision engine, requirement rows, Flea eligibility and raid timers one source of progress: the effective mode's local progress, from the game log replay and the player's manual entries, so that advice does not stay degraded by missing progress.
 
 ## Requirements
 
-### Requirement: Selecting a known mode with a saved credential starts one progress refresh
-After the app selects a known mode, at launch or by switching, and reads a saved tracker credential for it while the read-only Tracker integration is enabled, the app SHALL start one progress refresh without user action and without delaying startup or the mode switch. With no saved credential, an unreadable one, the Tracker integration disabled or `unknown` mode, it SHALL make no tracker request. A selection superseded before its credential read ends SHALL start no refresh.
+### Requirement: Advice reads the effective mode's local progress
+Keep/sell advice, requirement rows and Flea eligibility SHALL use the current values of the effective mode's active wipe as their progress, and no other progress source. A mode with no active wipe SHALL count as progress with nothing recorded. The `unknown` mode SHALL have no progress. A change to local progress for the effective mode SHALL recompute the shown advice without a new scan.
 
-#### Scenario: Launch with a saved credential
-- **WHEN** the app launches into a known mode with a saved credential, and the tracker returns valid progress
-- **THEN** startup completes before the fetch returns, exactly one tracker fetch is made for that mode, and the progress status then becomes `current`
+#### Scenario: Finished task from the logs
+- **WHEN** the PvP wipe records the task "Shortage" finished from a game log, and an item that "Shortage" needs is selected in PvP
+- **THEN** that need is satisfied with "task completed", and no request is made to any progress site
 
-#### Scenario: No saved credential
-- **WHEN** the selected known mode has no saved credential
-- **THEN** no tracker request is made and the progress status is `missing`
+#### Scenario: Manual edit recomputes the shown advice
+- **WHEN** an item that "Shortage" needs is shown with a Keep verdict, and the player then marks "Shortage" finished by hand
+- **THEN** the shown verdict and requirement rows are recomputed from the new value, and no scan or history entry is added
 
-#### Scenario: Unreadable credential
-- **WHEN** reading the saved credential for the selected mode fails
-- **THEN** no tracker request is made and the progress status is `failed` with "Tracker token unavailable"
+#### Scenario: Other mode's progress is not used
+- **WHEN** "Shortage" is finished only in the PvE wipe and the effective mode is PvP
+- **THEN** PvP advice treats "Shortage" as not started
 
-#### Scenario: Tracker integration disabled
-- **WHEN** the selected known mode has a saved credential and the read-only Tracker integration is disabled
-- **THEN** no tracker request is made
+#### Scenario: Unknown mode
+- **WHEN** the effective mode is `unknown`
+- **THEN** the decision's open inputs include progress
 
-#### Scenario: Unknown mode makes no request
-- **WHEN** the selected mode is `unknown`
-- **THEN** no tracker request is made
+### Requirement: Unrecorded progress counts as not started, zero or not built
+In advice, a task with no recorded state SHALL count as not started, an objective with no recorded count as 0 and not done, and a station with no recorded level as level 0. As in the availability rules, a started task's needs SHALL skip its gates, and a failed task SHALL count as done unless the item data says it is restartable. A gate that needs an unset level (above 1), faction or edition SHALL be unknown, and only that gate.
 
-#### Scenario: Selection superseded during the credential read
-- **WHEN** the user switches from mode A to mode B before A's credential read has ended, and both modes have saved credentials
-- **THEN** no tracker fetch is made for A, and exactly one is made for B
+#### Scenario: Empty wipe with level set
+- **WHEN** the PvP wipe records only player level 20, and an item needed 2 times by the level-10 task "Shortage" is selected
+- **THEN** the need is "needed now" with 2 remaining
 
-#### Scenario: Saving a credential does not refresh
-- **WHEN** the user saves a valid credential for the selected mode, or enables the Tracker integration
-- **THEN** no tracker request is made until the user refreshes or selects a mode
+#### Scenario: Level unset
+- **WHEN** the PvP wipe has no player level, and an item needed by a task with a minimum level is selected
+- **THEN** that need is unresolved because whether the player can do it is not known yet, and other needs keep their states
 
-### Requirement: A failed automatic progress refresh is not retried
-A failed automatic progress refresh SHALL NOT be retried automatically. The next tracker fetch for that mode SHALL happen only on a manual refresh or a later selection of a mode, and a manual refresh during a cooldown SHALL make no request.
+#### Scenario: Counted objective
+- **WHEN** the PvP wipe records count 1 for an objective that needs 3 of the item, and the task is started
+- **THEN** the need has 2 remaining
 
-#### Scenario: Tracker unavailable at launch
-- **WHEN** the automatic progress fetch fails because the tracker cannot be reached
-- **THEN** the progress status is `failed` with "Tracker transport unavailable", and no further fetch is made until the user refreshes or selects a mode
+#### Scenario: Started task skips its gates
+- **WHEN** the PvP wipe records "Shortage" started from the logs and no player level, and an item "Shortage" needs 2 times is selected
+- **THEN** that need is "needed now" with 2 remaining
 
-#### Scenario: Tracker answers with a cooldown
-- **WHEN** the automatic progress fetch is answered with a cooldown until time C
-- **THEN** the progress status is `cooldown`, no further fetch is made, and a manual refresh before C makes no request
+#### Scenario: Started task with an unrecorded prerequisite
+- **WHEN** the PvP wipe records "Shortage" started and nothing for the task it requires to be complete, and an item "Shortage" needs is selected
+- **THEN** that need is "needed now", not "needed later"
 
-#### Scenario: Rejected credential
-- **WHEN** the automatic progress fetch fails because the tracker rejects the credential
-- **THEN** the progress status is `failed`, no progress snapshot is published, and no further fetch is made until the user refreshes or selects a mode
+#### Scenario: Restartable failed task
+- **WHEN** the PvP wipe records a restartable task failed, and an item that task needs is selected
+- **THEN** that need is treated as for a not-started task, not satisfied
 
-### Requirement: An automatic progress refresh never publishes into another selection
-A progress refresh started for one mode selection SHALL NOT publish its result, success or failure, after a different mode is selected, even when the user later switches back to the first mode.
+#### Scenario: Non-restartable failed task
+- **WHEN** the PvP wipe records a task failed that the item data does not mark restartable
+- **THEN** that need is satisfied with "task failed; no active obligation"
 
-#### Scenario: Switch during the automatic refresh
-- **WHEN** the automatic progress refresh for mode A is in flight, the user switches to mode B, and A's fetch then succeeds
-- **THEN** B's progress snapshot and status are not replaced by A's result
+#### Scenario: Level 1 minimum with no level
+- **WHEN** the player level is unset and an item is needed by a not-started task whose minimum level is 1
+- **THEN** the level does not make that need unresolved
 
-#### Scenario: Switch back before the old fetch returns
-- **WHEN** the automatic progress refresh for mode A is in flight, the user switches to B and back to A, and the first A fetch then returns
-- **THEN** the first fetch's result is not published, and A's progress is published only from the fetch started by the latest selection of A
+#### Scenario: Unset faction
+- **WHEN** the faction is unset and an item is needed only by a USEC task
+- **THEN** that need is unresolved, not "does not apply to you"
 
-### Requirement: A malformed Tracker response keeps the session's last good progress
-When a progress refresh fails because the Tracker response cannot be read, the app SHALL keep the progress already loaded in this app session for that mode, with status `stale` and the error "Tracker response invalid". With no progress loaded yet, the status SHALL be `failed`. A rejected token, a missing read permission, a mode mismatch or an account mismatch SHALL still discard the loaded progress.
+### Requirement: Hideout items count in full until the level is built
+A hideout station level's item requirement SHALL be satisfied when the station's recorded level is at least that level. Otherwise it SHALL need its full count, because item hand-ins toward an unbuilt level are not recorded. The previous level SHALL gate it as needed now or needed later.
 
-#### Scenario: Malformed response after a good refresh
-- **WHEN** a refresh has published progress for a mode, and the next refresh for that mode returns a body that is not valid progress
-- **THEN** the earlier progress is still published, the status is `stale` and the error is "Tracker response invalid"
+#### Scenario: Level built
+- **WHEN** the PvP wipe records Medstation at level 2, and an item needed for Medstation level 2 is selected
+- **THEN** that need is satisfied
 
-#### Scenario: Malformed response with no progress yet
-- **WHEN** the first refresh for a mode returns a body that is not valid progress
-- **THEN** no progress is published and the status is `failed` with "Tracker response invalid"
+#### Scenario: Next level
+- **WHEN** the PvP wipe records Medstation at level 1, and an item needed 2 times for Medstation level 2 is selected
+- **THEN** that need is "needed now" with 2 remaining
 
-#### Scenario: Rejected token still discards progress
-- **WHEN** a refresh has published progress for a mode, and the next refresh is answered HTTP 401
-- **THEN** no progress is published and the status is `failed` with "Tracker credential denied"
+#### Scenario: Later level
+- **WHEN** Medstation has no recorded level, and an item needed for Medstation level 2 is selected
+- **THEN** that need is "needed later" with its full count remaining
 
-#### Scenario: Account mismatch still discards progress
-- **WHEN** a refresh has published progress for a mode, and the next refresh returns progress for a different account
-- **THEN** no progress is published and the status is `failed` with "Tracker account mismatch"
+### Requirement: Edition gates stay unknown
+An item requirement whose item data lists game editions SHALL have an unknown edition gate, whatever edition the player recorded, because the item data's edition values have no reviewed mapping to the player's edition.
+
+#### Scenario: Edition-gated task
+- **WHEN** an item is needed by a task whose item data lists game editions, and the player's edition is recorded
+- **THEN** that need is unresolved
+
+#### Scenario: No edition list
+- **WHEN** an item is needed by a task whose item data lists no game editions, and the player's edition is unset
+- **THEN** the edition does not make that need unresolved
+
+### Requirement: Unavailable local progress is reported, never treated as empty
+When the effective mode's local progress cannot be read (local progress failed to load, the mode's wipe history is unavailable, or a read fails), advice SHALL have no progress and SHALL name progress as the missing input. Local progress SHALL have no age limit while it can be read.
+
+#### Scenario: Wipe history unavailable
+- **WHEN** PvP's wipe history is unavailable and an item with a task need is selected in PvP
+- **THEN** the decision is Check, names progress as the missing input, and never says the task is not started
+
+#### Scenario: Old progress still counts
+- **WHEN** the last PvP progress event is a week old
+- **THEN** advice uses it, and nothing says progress is out of date
+
+#### Scenario: Read fails after a good read
+- **WHEN** advice used PvP progress and the next read of PvP progress fails
+- **THEN** advice has no progress until a later read succeeds

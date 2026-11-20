@@ -87,17 +87,6 @@ When the stored database was written by a newer Blackgrid version, the startup s
 - **WHEN** opening local storage fails for any other reason
 - **THEN** the startup screen shows "Local storage or current-user protection could not be opened. Existing data is not reset, downgraded or deleted."
 
-### Requirement: A damaged saved token reports the token as unavailable
-When the saved Tracker token file for a mode holds bytes that cannot be decrypted, reading it SHALL report the token as unavailable without any Tracker request and without any plaintext fallback. Saving a new token for that mode SHALL replace the damaged file, and the new token SHALL read back after a restart.
-
-#### Scenario: Corrupt token bytes on disk
-- **WHEN** the token file for a mode holds random bytes and the app selects that mode
-- **THEN** progress status is `failed` with "Tracker token unavailable" and no Tracker request is made
-
-#### Scenario: Saving a new token recovers
-- **WHEN** the token file is damaged and the user saves a new token for that mode, and the store is reopened
-- **THEN** the new token reads back
-
 ### Requirement: History retains the recorded verdict
 Each newly recorded manual, accepted-scan or correction activity SHALL store the verdict displayed at recording time, when available, atomically with its existing identity, mode, source, time and revision. Re-observing the same item and mode SHALL replace the activity as today. FIR edits, refresh, age ticks and viewing history SHALL NOT rewrite its recorded verdict.
 
@@ -127,3 +116,26 @@ Upgrade SHALL preserve existing activity without inventing verdicts. Missing or 
 #### Scenario: Unrecognised optional value
 - **WHEN** an otherwise readable activity has an unrecognised verdict value
 - **THEN** the row remains readable with an unknown indicator and loading does not rewrite its stored bytes
+
+### Requirement: Saved progress-site tokens are deleted at startup
+At each launch, the app SHALL delete the saved progress-site token files `pvp.dpapi`, `pve.dpapi` and `seasonal.dpapi`, and the app's own temporary token files `<mode>.dpapi.*.tmp` for those modes, in the local data folder's `credentials` folder, and then that folder when it is empty, without reading, decrypting or sending the files. A failed delete SHALL NOT block startup and SHALL be retried at the next launch. Nothing else in the local data folder SHALL be deleted.
+
+#### Scenario: Upgrade with saved tokens
+- **WHEN** the app starts with `credentials\pvp.dpapi` and `credentials\pve.dpapi` in its local data folder
+- **THEN** both files and the `credentials` folder are gone, and the database, logs and item icons are unchanged
+
+#### Scenario: Temporary token file left by a crash
+- **WHEN** the app starts with `credentials\pvp.dpapi.4242.1700000000.tmp` and no other file in `credentials`
+- **THEN** the temporary file and the `credentials` folder are gone
+
+#### Scenario: Nothing saved
+- **WHEN** the app starts with no `credentials` folder
+- **THEN** startup completes and no folder is created
+
+#### Scenario: A file cannot be deleted
+- **WHEN** `credentials\pvp.dpapi` is locked by another process at startup
+- **THEN** startup completes, the file is still there, and the next launch deletes it once it is unlocked
+
+#### Scenario: Unexpected file in the folder
+- **WHEN** the `credentials` folder also holds a file the user put there
+- **THEN** the token files are deleted, the user's file and the folder are kept

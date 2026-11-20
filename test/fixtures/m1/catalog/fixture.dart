@@ -3,7 +3,10 @@ import 'dart:io';
 
 import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/progress.dart';
+import 'package:blackgrid/domain/local_progress.dart' show ProgressTaskStatus;
+import 'package:blackgrid/domain/progress_facts.dart';
+import 'package:blackgrid_progress/blackgrid_progress.dart'
+    show ProgressCatalog;
 
 final fixtureNow = DateTime.utc(2026, 10, 6);
 // Live wire shape (observed 2026-10-18): dataset envelopes carry only data and
@@ -45,10 +48,6 @@ Map<String, dynamic> sharedObjectiveWireFixture() {
   return j;
 }
 
-Map<String, dynamic> progressWire() => Map<String, dynamic>.from(
-  jsonDecode(File('test/fixtures/m1/progress/progress.json').readAsStringSync())
-      as Map,
-);
 CatalogSnapshot fixtureCatalog({
   GameMode mode = GameMode.pvp,
   Map<String, dynamic>? wire,
@@ -124,7 +123,9 @@ CatalogSnapshot decisionCatalog({
   Iterable<ItemRequirement> requirements = const [],
   DateTime? observedAt,
   Map<String, DateTime?>? times,
+  ProgressCatalog? progressCatalog,
 }) => CatalogSnapshot(
+  progressCatalog: progressCatalog,
   mode: GameMode.pvp,
   revision: 'synthetic-revision',
   observedAt: observedAt ?? fixtureNow,
@@ -142,28 +143,26 @@ CatalogSnapshot decisionCatalog({
           key: key == 'items' ? fixtureNow : null,
       },
 );
-ProgressSnapshot decisionProgress({
-  Map<String, EntityProgress> tasks = const {},
-  Map<String, EntityProgress> objectives = const {},
-  Map<String, EntityProgress> modules = const {},
-  Map<String, EntityProgress> parts = const {},
-  DateTime? observedAt,
-  int? playerLevel = 30,
-  int? edition = 1,
+
+/// Synthetic local progress facts; level 30 and faction USEC unless set.
+ProgressFacts decisionFacts({
+  Map<String, ProgressTaskStatus> tasks = const {},
+  Map<String, int> objectiveCounts = const {},
+  Set<String> objectivesComplete = const {},
+  Map<String, int> stations = const {},
+  int? level = 30,
+  String? edition,
   String? faction = 'USEC',
   GameMode mode = GameMode.pvp,
-}) => ProgressSnapshot(
+}) => ProgressFacts(
   mode: mode,
-  credentialSession: 1,
-  owner: 'synthetic-owner',
-  observedAt: observedAt ?? fixtureNow,
-  playerLevel: playerLevel,
-  gameEdition: edition,
+  taskStates: tasks,
+  objectiveCounts: objectiveCounts,
+  objectivesComplete: objectivesComplete,
+  stationLevels: stations,
+  level: level,
+  edition: edition,
   faction: faction,
-  tasks: tasks,
-  objectives: objectives,
-  modules: modules,
-  parts: parts,
 );
 ItemRequirement taskNeed({
   num? count = 3,

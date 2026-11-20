@@ -7,7 +7,6 @@ import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
-import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/settings.dart';
@@ -20,15 +19,6 @@ import '../support/m1_harness.dart';
 import '../ui/support/scan_ui_support.dart';
 import 'support/fake_scan_ports.dart';
 import 'support/history_wait.dart';
-
-class _EmptyCredentials implements CredentialStore {
-  @override
-  Future<String?> readCredential(GameMode mode) async => null;
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async {}
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
-}
 
 final _marker = VisionTemplate(
   'inspectionMarker',
@@ -43,7 +33,6 @@ class _Rig {
     logs = Directory.systemTemp.createTempSync('blackgrid-app-scan-');
     services = AppServices(
       database: database,
-      credentials: _EmptyCredentials(),
       client: MockClient((_) async => http.Response('', 503)),
       scanLogDirectory: logs,
       scanRuntimeDirectory: runtimeDirectory,

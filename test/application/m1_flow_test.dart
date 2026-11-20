@@ -52,7 +52,6 @@ void main() {
     expect(h.services.settings.pins.length, 1);
     expect(h.services.selection.selectedId, isNull);
     expect(h.services.selection.fir, FirState.unknown);
-    expect(h.services.progress.snapshot, isNull);
     expect(h.services.scans.hasAcceptedScan, isFalse);
     expect((await h.db.loadCatalog(GameMode.pve))!.revision, revision);
     await h.dispose();

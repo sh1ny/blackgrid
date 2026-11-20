@@ -6,9 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/raid_timer_support.dart';
 
 const _strip = Key('raid-timer-strip');
-const _scavTooltip =
-    'Base 25:00 × Fence 1.00 × hideout 1.00\n'
-    'No Tracker progress for this mode: no hideout bonuses';
+const _scavTooltip = 'Base 25:00 × Fence 1.00 × hideout 1.00';
 
 Finder _inStrip(Finder matching) =>
     find.descendant(of: find.byKey(_strip), matching: matching);

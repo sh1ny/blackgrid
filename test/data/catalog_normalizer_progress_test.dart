@@ -6,7 +6,6 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/decision_engine.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
-import 'package:blackgrid/domain/progress.dart';
 import 'package:blackgrid/domain/raid_timers.dart';
 import 'package:blackgrid_progress/blackgrid_progress.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -347,18 +346,9 @@ void main() {
     expect(_legacyProjection(withoutBlock), captured);
     expect(withoutBlock.toJson(), withoutJson);
 
-    final progress = decisionProgress(
-      tasks: const {
-        'task-a': EntityProgress(
-          complete: false,
-          failed: false,
-          invalid: false,
-        ),
-      },
-      objectives: const {
-        'find-a': EntityProgress(complete: false, count: 1, invalid: false),
-      },
-      modules: const {'station-a-1': EntityProgress(complete: true)},
+    final progress = decisionFacts(
+      objectiveCounts: const {'find-a': 1},
+      stations: const {'station-a': 1},
     );
     const engine = DecisionEngine();
     for (final id in withBlock.items.keys) {

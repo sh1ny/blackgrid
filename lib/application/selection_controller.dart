@@ -10,7 +10,7 @@ import '../domain/decision_engine.dart';
 import '../domain/inspection_context.dart';
 import '../domain/settings.dart';
 import 'catalog_controller.dart';
-import 'progress_controller.dart';
+import 'progress_authority.dart';
 import 'accepted_scan.dart';
 import 'history_controller.dart';
 import 'scan_correction.dart';
@@ -42,13 +42,12 @@ class SelectionController extends ChangeNotifier {
     progress.addListener(_onAuthority);
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       catalog.updateAge();
-      progress.updateAge();
       _onAuthority();
     });
   }
   final BlackgridDatabase database;
   final CatalogController catalog;
-  final ProgressController progress;
+  final ProgressAuthority progress;
   final HistoryController history;
   final DateTime Function() clock;
 
@@ -458,19 +457,16 @@ class SelectionController extends ChangeNotifier {
       _decision = null;
       return;
     }
-    final progressMatches = progress.mode == inspectionMode;
     _decision = _engine.evaluate(
       selected,
       InspectionContext(
         mode: inspectionMode,
         now: clock().toUtc(),
         catalog: inspectionCatalog,
-        progress: progressMatches ? progress.snapshot : null,
+        progress: progress.mode == inspectionMode ? progress.facts : null,
         fir: fir,
         catalogStale:
             _usesLiveCatalog && catalog.status != CatalogStatus.current,
-        progressStale:
-            !progressMatches || progress.status != ProgressStatus.current,
       ),
     );
   }

@@ -149,9 +149,6 @@ ImportPreview parseLegacySources(
             ? _boolean(root['SaveMarkerFilters'])
             : false,
         markerFilters: filters,
-        trackerEnabled: scanner.containsKey('TrackerProgressEnabled')
-            ? _boolean(scanner['TrackerProgressEnabled'])
-            : false,
       );
       accounting.add(
         ImportAccounting(

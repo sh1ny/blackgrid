@@ -8,6 +8,8 @@ import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
+import 'package:blackgrid/domain/local_progress.dart';
+import 'package:blackgrid/domain/local_progress_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -54,6 +56,56 @@ class _HeldActivityDatabase extends BlackgridDatabase {
 }
 
 void main() {
+  test('progress-authority: Manual edit recomputes the shown advice', () async {
+    final h = M1Harness(
+      shapeWire: (wire) {
+        // Only task-a needs item-a, so the task decides the verdict.
+        (wire['hideout']['data'] as Map).clear();
+        wire['crafts']['data'] = [];
+        wire['barters']['data'] = [];
+      },
+    );
+    addTearDown(h.dispose);
+    await h.initialize();
+    await h.progressReady();
+    final s = h.services.selection;
+    await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
+    s.setFir(FirState.yes);
+    expect(s.decision!.recommendation, Recommendation.keep);
+    final before = s.decision!;
+    expect(before.reasons.single.state, NeedState.actionable);
+    final historyRows = h.services.history.rows.length;
+
+    final recomputed = Completer<void>();
+    void listener() {
+      if (s.decision!.recommendation != Recommendation.keep &&
+          !recomputed.isCompleted) {
+        recomputed.complete();
+      }
+    }
+
+    s.addListener(listener);
+    addTearDown(() => s.removeListener(listener));
+    final result = await h.services.localProgress.appendManual(
+      GameMode.pvp,
+      const ProgressTarget(
+        kind: ProgressEntityKind.task,
+        id: 'task-a',
+        field: ProgressField.state,
+      ),
+      const ProgressTaskState(ProgressTaskStatus.finished),
+    );
+    expect(result, isA<ProgressSuccess<ProgressEvent>>());
+    await recomputed.future;
+
+    expect(s.decision, isNot(same(before)));
+    expect(s.decision!.recommendation, isNot(Recommendation.keep));
+    expect(s.decision!.reasons.single.state, NeedState.satisfied);
+    expect(s.scan, isNull);
+    expect(s.isHistory, isFalse);
+    expect(h.services.history.rows, hasLength(historyRows));
+  });
+
   test('local-data-durability: Each source records its verdict', () async {
     final h = M1Harness();
     addTearDown(h.dispose);
@@ -100,29 +152,17 @@ void main() {
   });
 
   test('local-data-durability: Later data changes', () async {
-    const token = 'PVP_synthetic-fixture-only';
     final h = M1Harness(
       shapeWire: (wire) {
         (wire['tasks']['data']['tasks'] as Map).clear();
         (wire['hideout']['data'] as Map).clear();
         wire['crafts']['data'] = [];
         wire['barters']['data'] = [];
-        wire['token'] = {
-          'success': true,
-          'permissions': ['GP'],
-          'token': token,
-          'owner': 'synthetic-owner',
-          'note': 'Synthetic',
-          'calls': 0,
-          'gameMode': 'pvp',
-        };
-        wire['progress'] = progressWire();
       },
     );
     addTearDown(h.dispose);
-    h.credentials.values[GameMode.pvp] = token;
     await h.initialize();
-    await h.services.progress.refresh();
+    await h.recordPlayerLevel(30);
     final s = h.services.selection;
     await s.selectManual(h.services.catalog.snapshot!.items['item-a']!);
     final recorded = h.services.history.rows.single;
@@ -164,7 +204,6 @@ void main() {
   test(
     'acceptance freezes detected verdict before a held history write',
     () async {
-      const token = 'PVP_synthetic-fixture-only';
       final db = _HeldActivityDatabase();
       final h = M1Harness(
         database: db,
@@ -173,22 +212,11 @@ void main() {
           (wire['hideout']['data'] as Map).clear();
           wire['crafts']['data'] = [];
           wire['barters']['data'] = [];
-          wire['token'] = {
-            'success': true,
-            'permissions': ['GP'],
-            'token': token,
-            'owner': 'synthetic-owner',
-            'note': 'Synthetic',
-            'calls': 0,
-            'gameMode': 'pvp',
-          };
-          wire['progress'] = progressWire();
         },
       );
       addTearDown(h.dispose);
-      h.credentials.values[GameMode.pvp] = token;
       await h.initialize();
-      await h.services.progress.refresh();
+      await h.recordPlayerLevel(30);
       final s = h.services.selection;
       final gate = db.gate = Completer<void>();
       addTearDown(() {
@@ -501,10 +529,9 @@ void main() {
       expect(s.firSource, FirSource.manual);
       expect(s.firOverride, FirState.unknown);
       await h.services.catalog.refresh();
-      await h.services.progress.refresh();
+      await h.progressReady();
       now = now.add(const Duration(hours: 25));
       h.services.catalog.updateAge();
-      h.services.progress.updateAge();
       expect(s.fir, FirState.unknown);
       expect(s.firOverride, FirState.unknown);
       expect(s.detectedFir, same(_found));
@@ -576,7 +603,6 @@ void main() {
       'detected-Yes Flea snapshot and history survive price ageing to Check',
       () async {
         var now = fixtureNow;
-        const token = 'PVP_synthetic-fixture-only';
         final h = M1Harness(
           clock: () => now,
           shapeWire: (wire) {
@@ -585,22 +611,11 @@ void main() {
             (wire['hideout']['data'] as Map).clear();
             wire['crafts']['data'] = [];
             wire['barters']['data'] = [];
-            wire['token'] = {
-              'success': true,
-              'permissions': ['GP'],
-              'token': token,
-              'owner': 'synthetic-owner',
-              'note': 'Synthetic',
-              'calls': 0,
-              'gameMode': 'pvp',
-            };
-            wire['progress'] = progressWire();
           },
         );
         addTearDown(h.dispose);
-        h.credentials.values[GameMode.pvp] = token;
         await h.initialize();
-        await h.services.progress.refresh();
+        await h.recordPlayerLevel(30);
         final s = h.services.selection;
         await scan(s, 'item-a', detectedFir: _found);
         final accepted = s.scan!;

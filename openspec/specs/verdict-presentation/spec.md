@@ -51,18 +51,18 @@ Below every plate the answer strip SHALL show one plain-language reason, derived
 - **THEN** it reads "Needed later for Medstation: 2"
 
 #### Scenario: Check names the first open question
-- **GIVEN** a Check / May Need decision with item data and Tracker progress current, found in raid unknown, and no unresolved need that requires a found-in-raid item
+- **GIVEN** a Check / May Need decision with item data and progress known, found in raid unknown, and no unresolved need that requires a found-in-raid item
 - **WHEN** the reason is derived
 - **THEN** it reads "Found in raid unknown for this item"
 
 #### Scenario: Check picks questions in a fixed order
 - **GIVEN** a Check / May Need decision where several inputs are open
 - **WHEN** the reason is derived
-- **THEN** it names the first open input in this order: item data, Tracker progress, found in raid, an unresolved need (naming its source), Flea eligibility, price time
+- **THEN** it names the first open input in this order: item data, progress, found in raid, an unresolved need (naming its source), Flea eligibility, price time
 
 #### Scenario: Check wording for each open input
 - **WHEN** the first open input of a Check / May Need decision is each kind in turn
-- **THEN** the reason reads, for item data, "Item data missing or out of date"; for Tracker progress, "Tracker progress missing or out of date"; for an unresolved need from "Shortage", "Can't tell yet if Shortage needs it"; for Flea eligibility, "Not known if it can be sold on the Flea"; for a price time over an hour old, "Flea price is over an hour old"; and for a price time that is missing or in the future, "Flea price time unknown"
+- **THEN** the reason reads, for item data, "Item data missing or out of date"; for progress, "Progress unavailable"; for an unresolved need from "Shortage", "Can't tell yet if Shortage needs it"; for Flea eligibility, "Not known if it can be sold on the Flea"; for a price time over an hour old, "Flea price is over an hour old"; and for a price time that is missing or in the future, "Flea price time unknown"
 
 #### Scenario: Found in raid unknown outranks the needs it leaves open
 - **GIVEN** a Check / May Need decision with found in raid unknown and the need "Shortage" unresolved because it needs a found-in-raid item

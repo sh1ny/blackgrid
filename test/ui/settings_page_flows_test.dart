@@ -404,37 +404,6 @@ void main() {
   );
 
   testWidgets(
-    'configuration masks active-mode token saves and removes through controller',
-    (tester) async {
-      final h = await pumpM1(tester);
-      await _openSettings(tester);
-      final field = find.widgetWithText(
-        TextField,
-        'Tracker token (current game mode)',
-      );
-      expect(tester.widget<TextField>(field).obscureText, isTrue);
-      await tester.ensureVisible(field);
-      await tester.enterText(field, 'PVP_SYNTHETIC_LOCAL_ONLY');
-      await tester.ensureVisible(find.text('Save token'));
-      await tester.pumpAndSettle();
-      await tapM1Async(
-        tester,
-        find.text('Save token'),
-        () => find.text('Tracker token saved').evaluate().isNotEmpty,
-      );
-      expect(h.credentials.values[GameMode.pvp], 'PVP_SYNTHETIC_LOCAL_ONLY');
-      expect(tester.widget<TextField>(field).controller!.text, isEmpty);
-      expect(find.text('Tracker token saved'), findsOneWidget);
-      await tapM1Async(
-        tester,
-        find.text('Remove token'),
-        () => h.credentials.values[GameMode.pvp] == null,
-      );
-      expect(h.credentials.values[GameMode.pvp], isNull);
-      expect(h.services.progress.snapshot, isNull);
-    },
-  );
-  testWidgets(
     'mode and catalog refresh configuration are working supporting controls',
     (tester) async {
       final h = await pumpM1(tester);

@@ -5,10 +5,10 @@ import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import '../data/catalog_client.dart';
-import '../data/credential_store.dart';
 import '../data/database.dart';
 import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
+import '../data/retired_tokens.dart';
 import '../data/game_paths.dart';
 import '../data/item_icon_client.dart';
 import '../data/live_map_cache.dart';
@@ -17,9 +17,7 @@ import '../data/raid_panel_ocr.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
 import '../data/session_log_reader.dart';
-import '../data/tracker_client.dart';
 import '../domain/catalog.dart';
-import '../domain/credential_store.dart';
 import '../maps/map_marker_icons.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map_loader.dart';
@@ -31,7 +29,7 @@ import 'local_stats_controller.dart';
 import 'map_controller.dart';
 import 'map_session_controller.dart';
 import 'manual_progress_controller.dart';
-import 'progress_controller.dart';
+import 'progress_authority.dart';
 import 'raid_lifecycle_controller.dart';
 import 'raid_timers_controller.dart';
 import 'task_log_progress_controller.dart';
@@ -49,7 +47,6 @@ class AppServices {
   /// the same way as the default recorder.
   AppServices({
     required this.database,
-    required CredentialStore credentials,
     required http.Client client,
     DateTime Function()? clock,
     MapController? mapController,
@@ -86,10 +83,22 @@ class AppServices {
       client: CatalogClient(client: client, clock: clock),
       clock: clock,
     );
-    progress = ProgressController(
-      store: credentials,
-      client: TrackerClient(client: client, clock: clock),
+    // The lifecycle controller subscribes before MapSessionController binds,
+    // so the first replay of the session folder reaches it.
+    final logReader = SessionLogReader();
+    raidLifecycle = RaidLifecycleController(logReader);
+    localProgress = TaskLogProgressController(
+      store: database,
+      wipeStore: database,
+      lifecycle: raidLifecycle,
+      logRoot: () => logReader.root,
       clock: clock,
+    );
+    // Before selection and the timers, which read its facts.
+    progress = ProgressAuthority(
+      access: localProgress,
+      modeChanges: catalog,
+      mode: () => catalog.mode,
     );
     selection = SelectionController(
       database: database,
@@ -100,10 +109,6 @@ class AppServices {
       epoch: _currentEpoch,
     );
     importer = LegacyImport(database);
-    // The lifecycle controller subscribes before MapSessionController binds,
-    // so the first replay of the session folder reaches it.
-    final logReader = SessionLogReader();
-    raidLifecycle = RaidLifecycleController(logReader);
     // Also before the first bind: it records cooldown starts from the replay.
     raidTimers = RaidTimersController(
       lifecycle: raidLifecycle,
@@ -119,13 +124,6 @@ class AppServices {
       mode: () => catalog.mode,
       store: database,
       clock: clock ?? DateTime.now,
-    );
-    localProgress = TaskLogProgressController(
-      store: database,
-      wipeStore: database,
-      lifecycle: raidLifecycle,
-      logRoot: () => logReader.root,
-      clock: clock,
     );
     mapData =
         mapDataController ??
@@ -239,7 +237,9 @@ class AppServices {
   Future<void> _modeChange = Future.value();
   late final HistoryController history;
   late final CatalogController catalog;
-  late final ProgressController progress;
+
+  /// Publishes the applied mode's local progress facts to advice and timers.
+  late final ProgressAuthority progress;
   late final SelectionController selection;
   late final LegacyImport importer;
   final scans = SessionScanState();
@@ -249,9 +249,9 @@ class AppServices {
 
   /// Completes when the latest mode selection's background work has finished.
   ///
-  /// The work is both controllers' `setMode` calls and every catalog and
-  /// progress refresh started after them. A selection that starts no refresh
-  /// completes right after its `setMode` calls. Each selection gets its own
+  /// The work is the catalog's `setMode` call and the catalog refresh started
+  /// after it. A selection that starts no refresh completes right after its
+  /// `setMode` call. Each selection gets its own
   /// future, so a caller that captured the value before a later switch still
   /// observes the earlier selection. Failures are reported through the
   /// controllers, not here.
@@ -266,11 +266,12 @@ class AppServices {
       ScanEpoch(_modeTransition, mapSession.state.sessionEpoch);
   static Future<AppServices> open() async {
     final paths = await LocalPaths.resolve();
+    // Start-up never waits on it; it swallows its own errors.
+    unawaited(deleteRetiredTokens(paths));
     final database = BlackgridDatabase.open(paths.database);
     final client = http.Client();
     final result = AppServices(
       database: database,
-      credentials: DpapiCredentialStore(paths.credentials),
       client: client,
       itemIcons: await _openItemIcons(paths, database, client),
       markerIcons: MapMarkerIcons(),
@@ -375,20 +376,10 @@ class AppServices {
       epochChanged = true;
       // Both invalidate synchronously, before either asynchronous read ends.
       final transition = _modeTransition;
-      final progressReady = progress.setMode(mode);
       final catalogReady = catalog.setMode(mode);
-      _modeChange = Future.wait([progressReady, catalogReady]).then((_) {});
-      // The refreshes are never part of _modeChange: startup and a switch must
+      _modeChange = catalogReady;
+      // The refresh is never part of _modeChange: startup and a switch must
       // not wait on the network.
-      // The Tracker preference gates progress as it gates the manual Refresh
-      // buttons; ProgressController.refresh does not read it.
-      final progressRefresh = _refreshAfter(
-        progressReady,
-        transition,
-        mode,
-        progress.refresh,
-        when: () => settings.settings.trackerEnabled,
-      );
       final catalogRefresh = _refreshAfter(
         catalogReady,
         transition,
@@ -396,8 +387,7 @@ class AppServices {
         catalog.refresh,
         when: () => catalog.status != CatalogStatus.current,
       );
-      _automaticRefreshes = Future.wait([progressRefresh, catalogRefresh])
-          .then((_) {}, onError: (Object _) {});
+      _automaticRefreshes = catalogRefresh.then((_) {}, onError: (Object _) {});
     }
     if (state.sessionEpoch != _appliedSessionEpoch) {
       _appliedSessionEpoch = state.sessionEpoch;
@@ -475,15 +465,17 @@ class AppServices {
       }
       await mapSession.close();
     } finally {
+      // Consumers before the authority they listen to, the authority before
+      // the sources it listens to. After mapSession.close() has closed the
+      // reader the timers listen to.
+      raidTimers.dispose();
+      selection.dispose();
+      progress.dispose();
       await localProgress.close();
       localProgress.dispose();
-      // After mapSession.close() has closed the reader it listens to.
-      raidTimers.dispose();
       localStats.dispose();
       raidLifecycle.dispose();
       scans.dispose();
-      selection.dispose();
-      progress.dispose();
       catalog.dispose();
       maps.dispose();
       markerIcons.dispose();

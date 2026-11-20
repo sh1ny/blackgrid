@@ -130,7 +130,7 @@ class _RequirementPanelState extends State<RequirementPanel> {
             : reasons.isEmpty
             ? const Center(
                 child: Text(
-                  'No catalog requirement references. Tracker progress may still be unknown.',
+                  'No catalog requirement references. Your progress may still be unknown.',
                 ),
               )
             : _rows(context, reasons, open),
@@ -287,7 +287,7 @@ class _RequirementRow extends StatelessWidget {
   }
 }
 
-/// The technical detail behind the item data, prices and tracker progress.
+/// The technical detail behind the item data, prices and local progress.
 ///
 /// It describes the item data behind the inspected item: for a history item
 /// from another game mode, that mode's saved item data, otherwise the live
@@ -315,8 +315,6 @@ class DataSourceDiagnostics extends StatelessWidget {
       final map = services.mapData.state;
       final snapshot = selection.inspectionCatalog;
       final quote = selection.item?.quoteAt;
-      final progressSnapshot = services.progress.snapshot;
-      final cooldownUntil = services.progress.cooldownUntil;
       final small = Theme.of(context).textTheme.bodySmall;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,21 +338,13 @@ class DataSourceDiagnostics extends StatelessWidget {
             '${quote?.toUtc().toIso8601String() ?? 'unknown'}',
             style: small,
           ),
-          if (progressSnapshot != null)
-            Text(
-              'Progress updated (UTC): '
-              '${progressSnapshot.observedAt.toUtc().toIso8601String()}',
-              style: small,
-            ),
-          if (cooldownUntil != null)
-            Text(
-              'Refresh available again at '
-              '${localTimeLabel(cooldownUntil, now: DateTime.now())}',
-              style: small,
-            ),
+          Text(
+            'Local progress: ${progressStatusLabel(services.progress.status)}',
+            style: small,
+          ),
           Text(
             'Data is treated as old after: item data 24h, '
-            'prices 1h, tracker progress 15m.',
+            'prices 1h.',
             style: small,
           ),
           Text('Selected mode: ${modeLabel(map.mode)}', style: small),

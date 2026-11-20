@@ -24,7 +24,8 @@ import 'package:blackgrid/data/vision/vision_image.dart';
 import 'package:blackgrid/data/vision/vision_job.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/catalog_store.dart';
-import 'package:blackgrid/domain/credential_store.dart';
+import 'package:blackgrid/domain/local_progress.dart';
+import 'package:blackgrid/domain/local_progress_store.dart';
 import 'package:blackgrid/domain/title_matching.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,24 +176,6 @@ final class _Writer implements ScanFrameWriter {
   void kill() => kills++;
 
   void ack(RecordedScan scan) => onAnswer(ScanFrameAck(token, scan.id));
-}
-
-/// A Tracker token saved on this machine, which no recorded file may hold.
-const String _token = 'PVP_synthetic-fixture-only';
-
-/// A credential store with one Tracker token, in memory.
-final class _MemoryCredentials implements CredentialStore {
-  final Map<GameMode, String> tokens = {GameMode.pvp: _token};
-
-  @override
-  Future<String?> readCredential(GameMode mode) async => tokens[mode];
-
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async =>
-      tokens[mode] = token;
-
-  @override
-  Future<void> removeCredential(GameMode mode) async => tokens.remove(mode);
 }
 
 /// The key structure of a log line, without its values.
@@ -926,25 +909,6 @@ void main() {
       expect(rig.frames.released, contains(full.frameId));
     });
 
-    test('recorded files never contain the saved Tracker token', () async {
-      rig = await _Rig.create(persist: true);
-      final credentials = _MemoryCredentials();
-      expect(await credentials.readCredential(GameMode.pvp), _token);
-      await rig.startRecording();
-      await rig.fallbackScan(evidence: _ev(), outcome: _accepted(_ev()));
-      final scan = await rig.recorded.at(0);
-
-      expect(encodeScanFrameLine(scan), isNot(contains(_token)));
-      final files = Directory(rig.root)
-          .listSync(recursive: true)
-          .whereType<File>()
-          .toList();
-      expect(files, hasLength(1), reason: 'the persisted case line');
-      for (final file in files) {
-        expect(latin1.decode(file.readAsBytesSync()), isNot(contains(_token)));
-      }
-    });
-
     test('recording on at scan start marks the line', () async {
       rig = await _Rig.create();
       await rig.startRecording();
@@ -1241,6 +1205,89 @@ void main() {
         expect(rig.frames.released, contains(lateFrame.frameId));
         expect(rig.recorded.length, 0);
         expect(rig.recorder.status.value.handedOff, 0);
+      },
+    );
+  });
+
+  group('local progress', () {
+    test(
+      'scan-frame-recording: Recording with local progress recorded',
+      () async {
+        rig = await _Rig.create();
+        final scope = switch (await rig.db.createProgressCycle(GameMode.pvp)) {
+          ProgressSuccess(:final value) => value.scope,
+          ProgressFailure(:final failure) => fail('no cycle: $failure'),
+        };
+        ProgressEvent fact(
+          String id,
+          ProgressEntityKind kind,
+          String entity,
+          ProgressField field,
+          ProgressValue value,
+        ) => ProgressEvent(
+          eventId: 'evt-$id',
+          deviceId: 'device',
+          occurredAtMs: 1,
+          scope: scope,
+          source: ProgressSource.manual,
+          target: ProgressTarget(kind: kind, id: entity, field: field),
+          value: value,
+        );
+        final appended = await rig.db.appendProgressEvents(scope, [
+          fact(
+            'task',
+            ProgressEntityKind.task,
+            'task-zq81',
+            ProgressField.state,
+            const ProgressTaskState(ProgressTaskStatus.finished),
+          ),
+          fact(
+            'objective',
+            ProgressEntityKind.objective,
+            'objective-zq82',
+            ProgressField.count,
+            const ProgressInteger(7),
+          ),
+          fact(
+            'station',
+            ProgressEntityKind.station,
+            'station-zq83',
+            ProgressField.level,
+            const ProgressInteger(3),
+          ),
+          fact(
+            'level',
+            ProgressEntityKind.player,
+            'self',
+            ProgressField.level,
+            const ProgressInteger(37),
+          ),
+        ]);
+        expect(appended, isA<ProgressSuccess<ProgressAppendResult>>());
+
+        await rig.startRecording();
+        await rig.busyScan();
+        final lines = [
+          for (final scan in [await rig.recorded.at(0)])
+            encodeScanFrameLine(scan),
+        ];
+
+        expect(lines, hasLength(1));
+        final decoded = jsonDecode(lines.single) as Map<String, Object?>;
+        for (final line in lines) {
+          for (final secret in ['zq81', 'zq82', 'zq83', 'finished']) {
+            expect(line, isNot(contains(secret)), reason: secret);
+          }
+        }
+        final forbidden = RegExp(
+          'task|objective|station|player|level|progress|loyalty',
+          caseSensitive: false,
+        );
+        expect(
+          decoded.keys.where(forbidden.hasMatch),
+          isEmpty,
+          reason: 'no case line key names progress',
+        );
       },
     );
   });

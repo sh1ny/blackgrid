@@ -6,7 +6,7 @@ Defines what Blackgrid's screens may say to a player: plain-language labels for 
 ## Requirements
 
 ### Requirement: Shown states use plain-language labels
-Wherever a screen shows a catalog or Tracker progress status, a map input status, a raid panel state, a scan rejection reason, a scan failure code, a scan pass, a found-in-raid state or an activity source, it SHALL show a plain-language label for that value, never the value's internal name. Every value of each of these SHALL have a label, written as words with spaces, not camelCase.
+Wherever a screen shows a catalog status, a local progress status, a map input status, a raid panel state, a scan rejection reason, a scan failure code, a scan pass, a found-in-raid state or an activity source, it SHALL show a plain-language label for that value, never the value's internal name. Every value of each of these SHALL have a label, written as words with spaces, not camelCase.
 
 #### Scenario: Stale catalog in the footer
 - **WHEN** the catalog status is stale
@@ -59,7 +59,7 @@ History row ages and the answer strip's provenance line SHALL be relative ages (
 - **THEN** the answer strip and the Updated row of the Scanner's Prices section say "price time unknown"
 
 #### Scenario: No UTC time in the inspector
-- **WHEN** the Scanner's inspector is open with item data, a price time and Tracker progress all known
+- **WHEN** the Scanner's inspector is open with item data, a price time and progress all known
 - **THEN** no text in the inspector contains an ISO 8601 time with `T` and `Z`
 
 ### Requirement: Raw enum names are never interpolated into UI text

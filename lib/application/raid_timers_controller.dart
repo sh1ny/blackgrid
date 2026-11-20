@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../domain/catalog.dart';
-import '../domain/progress.dart';
+import '../domain/progress_facts.dart';
 import '../domain/raid_lifecycle.dart';
 import '../domain/raid_timers.dart';
 import '../domain/settings.dart';
@@ -45,15 +45,15 @@ abstract interface class RaidTimerCatalogSource implements Listenable {
   CatalogSnapshot? get snapshot;
 }
 
-/// What [RaidTimersController] reads from the Tracker progress.
+/// What [RaidTimersController] reads from the local progress.
 ///
-/// [ProgressController] is the real source.
+/// `ProgressAuthority` is the real source.
 abstract interface class RaidTimerProgressSource implements Listenable {
   /// The mode the progress is loaded for.
   GameMode get mode;
 
-  /// The progress, which may still belong to an earlier mode.
-  ProgressSnapshot? get snapshot;
+  /// The facts of [mode], or `null` while they are loading or unavailable.
+  ProgressFacts? get facts;
 }
 
 /// Projects the raid timers for the shell strip and records scav cooldown
@@ -124,7 +124,7 @@ class RaidTimersController extends ChangeNotifier {
   RaidTimersView _project() {
     final mode = _catalog.mode;
     final snapshot = _catalog.snapshot;
-    final progress = _progress.mode == mode ? _progress.snapshot : null;
+    final progress = _progress.mode == mode ? _progress.facts : null;
     return raidTimersView(
       now: _clock(),
       lifecycle: _lifecycle.state,

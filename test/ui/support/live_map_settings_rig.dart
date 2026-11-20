@@ -8,7 +8,6 @@ import 'package:blackgrid/application/map_controller.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/live_map_refresh.dart';
 import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/maps/live_map_snapshot.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
@@ -45,14 +44,12 @@ class SettingsRig {
       publish: (_, {required changed}) {},
       buildMarkers: (_, _) async => const {},
     );
-    final credentials = SettingsCredentials();
     final loader = PreparedMapPackLoader(
       loadBytes: (_) async =>
           ByteData.sublistView(Uint8List.fromList(utf8.encode('{}'))),
     );
     final services = AppServices(
       database: database,
-      credentials: credentials,
       client: client,
       clock: () => settingsNow,
       mapController: MapController(
@@ -94,17 +91,6 @@ class SettingsRig {
     await services.dispose();
     client.close();
   }
-}
-
-class SettingsCredentials implements CredentialStore {
-  @override
-  Future<String?> readCredential(GameMode mode) async => null;
-
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async {}
-
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
 }
 
 class SettingsStore implements LiveMapStore {

@@ -1,7 +1,7 @@
 # raid-timers Specification
 
 ## Purpose
-Shows the player's raid timers in Blackgrid's own window: time in raid, the run-through countdown and the scav cooldown, worked out from the game's log times, the item data, the player's Fence reputation and their Tracker hideout progress, never drawn on the game screen.
+Shows the player's raid timers in Blackgrid's own window: time in raid, the run-through countdown and the scav cooldown, worked out from the game's log times, the item data, the player's Fence reputation and their local hideout progress, never drawn on the game screen.
 
 ## Requirements
 
@@ -112,20 +112,28 @@ The cooldown length for a mode SHALL be that mode's base scav cooldown from item
 - **WHEN** the mode's catalog has no base scav cooldown or no Fence reputation levels
 - **THEN** the cooldown length is unknown and the scav entry shows "unknown" with a reason
 
-### Requirement: Built hideout levels come from Tracker progress for the same mode
-A hideout level SHALL count as built only when the Tracker progress for the cooldown's mode marks that level complete. Without Tracker progress for that mode, no bonus SHALL apply and the scav entry SHALL say the length has no hideout bonuses. Progress that is no longer current SHALL still be used.
+### Requirement: Built hideout levels come from local progress for the same mode
+A hideout level SHALL count as built only when the local progress of the cooldown's mode records that station at that level or higher. A station with no recorded level SHALL count as not built. When the mode's local progress cannot be read, no bonus SHALL apply and the scav entry SHALL say the length has no hideout bonuses because progress is unavailable. Progress SHALL count however old it is.
 
 #### Scenario: Progress for the mode
-- **WHEN** PvP progress marks Intelligence Center level 1 complete
+- **WHEN** PvP local progress records Intelligence Center at level 1
 - **THEN** the PvP cooldown length includes its −0.15 bonus
 
+#### Scenario: Higher level counts lower bonuses
+- **WHEN** PvP local progress records Intelligence Center at level 3
+- **THEN** the PvP cooldown length includes the bonuses of Intelligence Center levels 1, 2 and 3 that the item data lists
+
 #### Scenario: Progress for another mode
-- **WHEN** only PvE progress is loaded and the PvP cooldown is shown
-- **THEN** no hideout bonus applies to the PvP length and the scav entry says it has no hideout bonuses
+- **WHEN** only PvE local progress records Intelligence Center and the PvP cooldown is shown
+- **THEN** no Intelligence Center bonus applies to the PvP length
+
+#### Scenario: Progress unavailable
+- **WHEN** PvP's local progress cannot be read and the PvP cooldown is shown
+- **THEN** no hideout bonus applies and the scav entry says progress is unavailable, so there are no hideout bonuses
 
 #### Scenario: Stale progress
-- **WHEN** the PvP progress is older than 15 minutes and marks Intelligence Center level 3 complete
-- **THEN** the PvP cooldown length still includes the level 3 bonus
+- **WHEN** the PvP station level was recorded a week ago
+- **THEN** the PvP cooldown length still includes its bonus
 
 ### Requirement: The scav cooldown counts down to ready
 The scav cooldown shown SHALL be the active mode's (the mode detected from the game's logs, else the mode chosen in Settings): the start plus the length, minus the current time. It SHALL show the remaining time while above zero and "ready" once it reaches zero or when that mode has no start. A change of reputation, item data or progress SHALL change the remaining time at once.

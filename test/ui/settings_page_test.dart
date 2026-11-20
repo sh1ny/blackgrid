@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/live_map_data_controller.dart';
-import 'package:blackgrid/application/progress_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
-import 'package:blackgrid/data/tracker_client.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
@@ -21,7 +19,6 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 
 import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
@@ -179,36 +176,6 @@ Future<void> _breakSettingsSaves(WidgetTester tester, M1Harness h) =>
       ),
     );
 
-/// A progress controller whose token actions throw, which the real one never
-/// does: it turns a failed credential store into an error line instead.
-class _ThrowingProgress extends ProgressController {
-  _ThrowingProgress()
-    : super(
-        store: MemoryCredentials(),
-        client: TrackerClient(
-          client: MockClient((_) async => http.Response('{}', 404)),
-        ),
-      );
-
-  @override
-  Future<void> saveCredential(String token) =>
-      Future.error(StateError('synthetic credential failure'));
-}
-
-/// Services whose Tracker progress controller is [_ThrowingProgress].
-class _ThrowingTokenServices extends AppServices {
-  _ThrowingTokenServices({
-    required super.database,
-    required super.credentials,
-    required super.client,
-  });
-
-  final _throwing = _ThrowingProgress();
-
-  @override
-  ProgressController get progress => _throwing;
-}
-
 void main() {
   group('sections', () {
     testWidgets('sidebar lists nine sections in order', (tester) async {
@@ -227,7 +194,6 @@ void main() {
         'General',
         'Live scan',
         'Item and map data',
-        'Tracker progress',
         'Local progress',
         'Game files',
         'Raid timers',
@@ -240,7 +206,7 @@ void main() {
           tester.getTopLeft(_title(section)).dy,
       ];
       expect(tops, orderedEquals([...tops]..sort()));
-      expect(SettingsSection.values, hasLength(9));
+      expect(SettingsSection.values, hasLength(8));
     });
 
     testWidgets('settings-page: Jump to a section', (tester) async {
@@ -274,8 +240,12 @@ void main() {
     testWidgets('a requested section is shown and focused on mount', (
       tester,
     ) async {
-      await _pumpHarness(tester, section: SettingsSection.tracker, request: 1);
-      final title = _title(SettingsSection.tracker);
+      await _pumpHarness(
+        tester,
+        section: SettingsSection.localProgress,
+        request: 1,
+      );
+      final title = _title(SettingsSection.localProgress);
       expect(_inView(tester, title), isTrue);
       expect(_holdsFocus(tester, title), isTrue);
       expect(find.text('Map inputs'), findsNothing);
@@ -720,81 +690,6 @@ void main() {
     });
   });
 
-  group('Tracker progress', () {
-    final tokenField = find.widgetWithText(
-      TextField,
-      'Tracker token (current game mode)',
-    );
-
-    testWidgets('settings-page: Save token', (tester) async {
-      final h = await _pumpHarness(tester);
-      await _show(tester, tokenField);
-      expect(tester.widget<TextField>(tokenField).obscureText, isTrue);
-      await tester.enterText(tokenField, 'PVP_SYNTHETIC_LOCAL_ONLY');
-      await _show(tester, find.text('Save token'));
-
-      await tapM1Async(
-        tester,
-        find.text('Save token'),
-        () => find.text('Tracker token saved').evaluate().isNotEmpty,
-      );
-
-      expect(h.credentials.values[GameMode.pvp], 'PVP_SYNTHETIC_LOCAL_ONLY');
-      expect(find.text('Saved for PvP'), findsOneWidget);
-      expect(tester.widget<TextField>(tokenField).controller!.text, isEmpty);
-    });
-
-    testWidgets('settings-page: Token action fails', (tester) async {
-      final services = (await tester.runAsync(() async {
-        final made = _ThrowingTokenServices(
-          database: BlackgridDatabase(NativeDatabase.memory()),
-          credentials: MemoryCredentials(),
-          client: MockClient((_) async => http.Response('{}', 404)),
-        );
-        await made.catalog.setMode(GameMode.pvp);
-        return made;
-      }))!;
-      addTearDown(services.dispose);
-      await _pump(tester, services);
-      await _show(tester, tokenField);
-      await tester.enterText(tokenField, 'PVP_SYNTHETIC_LOCAL_ONLY');
-      await _show(tester, find.text('Save token'));
-
-      await tester.tap(find.text('Save token'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text(
-          'Tracker token operation failed. Nothing was stored as plain text.',
-        ),
-        findsOneWidget,
-      );
-      expect(tester.widget<TextField>(tokenField).controller!.text, isEmpty);
-    });
-
-    testWidgets('settings-page: No mode', (tester) async {
-      await _pumpHarness(tester, mode: GameMode.unknown);
-      await _show(tester, find.text('Save token'));
-
-      expect(
-        tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Save token'),
-            )
-            .onPressed,
-        isNull,
-      );
-      expect(
-        tester
-            .widget<OutlinedButton>(
-              find.widgetWithText(OutlinedButton, 'Remove token'),
-            )
-            .onPressed,
-        isNull,
-      );
-    });
-  });
-
   group('Game files', () {
     testWidgets('settings-page: Save a folder on Enter', (tester) async {
       final h = await _pumpHarness(tester);
@@ -940,7 +835,6 @@ void main() {
         'Time in raid',
         'Run-through',
         'Scav cooldown',
-        'Use Tracker progress',
       ]) {
         await present(_rowNamed(name), name);
       }
@@ -959,25 +853,13 @@ void main() {
       );
       await present(find.byKey(const Key('scan-hotkey-picker')), 'scan key');
       await present(
-        find.widgetWithText(TextField, 'Tracker token (current game mode)'),
-        'token field',
-      );
-      await present(
-        find.widgetWithText(FilledButton, 'Save token'),
-        'save token',
-      );
-      await present(
-        find.widgetWithText(OutlinedButton, 'Remove token'),
-        'remove token',
-      );
-      await present(
-        find.widgetWithText(OutlinedButton, 'Refresh progress'),
-        'refresh progress',
-      );
-      await present(
         find.byKey(const Key('settings-diagnostics-toggle')),
         'diagnostics',
       );
+      // No control offers a token, Tracker progress or a progress refresh.
+      for (final gone in ['Tracker', 'Refresh progress', 'token']) {
+        expect(find.textContaining(gone), findsNothing, reason: gone);
+      }
       // The ink-only switch is the only switch on the page.
       expect(find.byType(Switch), findsNothing);
       expect(find.byType(SwitchListTile), findsNothing);
@@ -986,7 +868,7 @@ void main() {
       for (final key in [
         'settings-item-data',
         'settings-live-scan',
-        'settings-tracker',
+        'settings-local-progress',
       ]) {
         expect(find.byKey(Key(key)), findsOneWidget, reason: key);
       }

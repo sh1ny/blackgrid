@@ -19,8 +19,8 @@ enum OpenInput {
   /// Item data is missing or out of date.
   itemData,
 
-  /// Tracker progress is missing or out of date.
-  trackerProgress,
+  /// Local progress for the mode could not be read.
+  progress,
 
   /// Whether the item was found in raid is unknown.
   foundInRaid,

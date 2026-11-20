@@ -275,9 +275,9 @@ The task catalog model, its stored form and the parsing of the tarkov.dev task a
 - **WHEN** a change adds a Flutter or Windows-only dependency to the model
 - **THEN** a dependency check fails the offline test suite
 
-### Requirement: Existing advice and Tracker behaviour are unchanged
+### Requirement: The task catalog does not change advice
 
-Introducing the task catalog SHALL NOT change keep/sell advice, requirement rows, raid timers, Tracker requests or credentials, or any screen.
+Introducing the task catalog SHALL NOT change keep/sell advice, requirement rows or raid timers.
 
 #### Scenario: Same advice with and without the block
 
@@ -287,7 +287,7 @@ Introducing the task catalog SHALL NOT change keep/sell advice, requirement rows
 #### Scenario: Task catalog unavailable
 
 - **WHEN** the active snapshot has no task catalog
-- **THEN** every existing screen shows what it showed before this change
+- **THEN** advice, requirement rows and timer inputs are the same as with one
 
 ### Requirement: Other task requirements are retained leniently
 

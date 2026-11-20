@@ -232,7 +232,6 @@ class AppSettings {
     this.selectedMap = 'shoreline',
     this.saveMarkerFilters = false,
     Map<String, bool> markerFilters = const {},
-    this.trackerEnabled = false,
     this.gameLogDirectory = '',
     this.screenshotDirectory = '',
     this.followGameLogs = true,
@@ -247,7 +246,6 @@ class AppSettings {
   final String selectedMap;
   final bool saveMarkerFilters;
   final Map<String, bool> markerFilters;
-  final bool trackerEnabled;
   final String gameLogDirectory;
   final String screenshotDirectory;
   final bool followGameLogs;
@@ -273,7 +271,6 @@ class AppSettings {
     String? selectedMap,
     bool? saveMarkerFilters,
     Map<String, bool>? markerFilters,
-    bool? trackerEnabled,
     String? gameLogDirectory,
     String? screenshotDirectory,
     bool? followGameLogs,
@@ -287,7 +284,6 @@ class AppSettings {
     selectedMap: selectedMap ?? this.selectedMap,
     saveMarkerFilters: saveMarkerFilters ?? this.saveMarkerFilters,
     markerFilters: markerFilters ?? this.markerFilters,
-    trackerEnabled: trackerEnabled ?? this.trackerEnabled,
     gameLogDirectory: gameLogDirectory ?? this.gameLogDirectory,
     screenshotDirectory: screenshotDirectory ?? this.screenshotDirectory,
     followGameLogs: followGameLogs ?? this.followGameLogs,
@@ -302,7 +298,6 @@ class AppSettings {
     'selectedMap': selectedMap,
     'saveMarkerFilters': saveMarkerFilters,
     'markerFilters': markerFilters,
-    'trackerEnabled': trackerEnabled,
     'gameLogDirectory': gameLogDirectory,
     'screenshotDirectory': screenshotDirectory,
     'followGameLogs': followGameLogs,
@@ -312,6 +307,11 @@ class AppSettings {
     'themeMode': themeMode.name,
     'showAllQuests': showAllQuests,
   };
+
+  /// Reads settings from [json].
+  ///
+  /// A stored `trackerEnabled` key from an older build is ignored and is not
+  /// written back by [toJson].
   factory AppSettings.fromJson(Map<String, Object?> json) {
     final mode = GameMode.values.firstWhere((m) => m.name == json['mode']);
     final map = json['selectedMap'] as String;
@@ -341,7 +341,6 @@ class AppSettings {
       selectedMap: map,
       saveMarkerFilters: json['saveMarkerFilters'] as bool,
       markerFilters: filters,
-      trackerEnabled: json['trackerEnabled'] as bool,
       gameLogDirectory: json['gameLogDirectory'] as String? ?? '',
       screenshotDirectory: json['screenshotDirectory'] as String? ?? '',
       followGameLogs: json['followGameLogs'] as bool? ?? true,

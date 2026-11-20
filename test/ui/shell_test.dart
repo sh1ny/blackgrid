@@ -1,3 +1,4 @@
+import 'package:blackgrid/application/progress_authority.dart';
 import 'package:blackgrid/application/scan_correction.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/data/capture/capture_failure.dart';
@@ -9,7 +10,7 @@ import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/app_logo.dart';
 
 import '../support/m1_harness.dart';
-import '../fixtures/m1/catalog/fixture.dart' show fixtureNow, progressWire;
+import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;
 
 import 'package:blackgrid/data/vision/marker_template.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
@@ -1056,7 +1057,6 @@ void main() {
   testWidgets('long catalog reason wraps fully inside the shared strip', (
     tester,
   ) async {
-    const token = 'PVP_synthetic-fixture-only';
     final longName = '${'Long task name ' * 5}end'.padRight(80, 'x');
     tester.view.physicalSize = const Size(960, 720);
     tester.view.devicePixelRatio = 1;
@@ -1070,21 +1070,10 @@ void main() {
           wire['tasks_en'] = {
             'data': {'task-a name': longName},
           };
-          wire['token'] = {
-            'success': true,
-            'permissions': ['GP'],
-            'token': token,
-            'owner': 'synthetic-owner',
-            'note': 'Synthetic',
-            'calls': 0,
-            'gameMode': 'pvp',
-          };
-          wire['progress'] = progressWire();
         },
       );
-      result.credentials.values[GameMode.pvp] = token;
       await result.initialize();
-      await result.services.progress.refresh();
+      await result.progressReady();
       await result.services.selection.selectManual(
         result.services.catalog.snapshot!.items['item-a']!,
       );
@@ -1463,7 +1452,34 @@ void main() {
     }
 
     await check('status-item-data', 'itemData');
-    await check('status-tracker', 'tracker');
+    await check('status-progress', 'localProgress');
+  });
+  testWidgets('workspace-shell: Progress status words', (tester) async {
+    final h = await pumpM1(tester);
+    expect(h.services.progress.status, ProgressAuthorityStatus.local);
+    final bar = find.byKey(const Key('shell-status-bar'));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('status-progress')),
+        matching: find.text('Progress local'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: find.textContaining('Tracker')),
+      findsNothing,
+    );
+  });
+  testWidgets('workspace-shell: Progress unavailable', (tester) async {
+    final h = await pumpM1(tester, mode: GameMode.unknown);
+    expect(h.services.progress.status, ProgressAuthorityStatus.unavailable);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('status-progress')),
+        matching: find.text('Progress unavailable'),
+      ),
+      findsOneWidget,
+    );
   });
   testWidgets('workspace-shell: Settings target while the page is open', (
     tester,
@@ -1476,26 +1492,26 @@ void main() {
     await pumpUntilComplete(tester, () => h.services.localProgress.settled);
     await tester.pumpAndSettle();
     final page = find.byType(SettingsPage);
-    final tracker = find.byKey(const Key('settings-title-tracker'));
+    final target = find.byKey(const Key('settings-title-localProgress'));
     expect(page, findsOneWidget);
-    // Scroll past Tracker progress, so reaching it again is a real move.
+    // Scroll past Local progress, so reaching it again is a real move.
     await tester.tap(find.byKey(const Key('settings-nav-raidTimers')));
     await tester.pumpAndSettle();
     expect(
-      tester.getRect(tracker).top,
+      tester.getRect(target).top,
       lessThan(tester.getRect(page).top),
-      reason: 'Tracker progress is scrolled out of view',
+      reason: 'Local progress is scrolled out of view',
     );
 
-    await tester.tap(find.byKey(const Key('status-tracker')));
+    await tester.tap(find.byKey(const Key('status-progress')));
     await tester.pumpAndSettle();
 
     expect(page, findsOneWidget);
     expect(
-      tester.getRect(tracker).bottom,
+      tester.getRect(target).bottom,
       lessThanOrEqualTo(tester.getRect(page).bottom),
     );
-    expect(Focus.of(tester.element(tracker)).hasPrimaryFocus, isTrue);
+    expect(Focus.of(tester.element(target)).hasPrimaryFocus, isTrue);
   });
   for (final size in [
     const Size(1660, 870),
@@ -2382,29 +2398,14 @@ void main() {
     });
 
     testWidgets('the Scanner inspector shows no UTC time', (tester) async {
-      const token = 'PVP_synthetic-fixture-only';
       tester.view.physicalSize = const Size(1660, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final h = (await tester.runAsync(() async {
-        final result = M1Harness(
-          shapeWire: (wire) {
-            wire['token'] = {
-              'success': true,
-              'permissions': ['GP'],
-              'token': token,
-              'owner': 'synthetic-owner',
-              'note': 'Synthetic',
-              'calls': 0,
-              'gameMode': 'pvp',
-            };
-            wire['progress'] = progressWire();
-          },
-        );
-        result.credentials.values[GameMode.pvp] = token;
+        final result = M1Harness(shapeWire: (wire) {});
         await result.initialize();
-        await result.services.progress.refresh();
+        await result.progressReady();
         await result.services.selection.selectManual(
           result.services.catalog.snapshot!.items['item-a']!,
         );
@@ -2413,10 +2414,10 @@ void main() {
       addPumpedTearDown(tester, h.dispose);
       await tester.pumpWidget(BlackgridApp(services: h.services));
       await tester.pumpAndSettle();
-      // Item data, a price time and Tracker progress are all known.
+      // Item data, a price time and local progress are all known.
       expect(h.services.catalog.snapshot, isNotNull);
       expect(h.services.selection.item?.quoteAt, isNotNull);
-      expect(h.services.progress.snapshot, isNotNull);
+      expect(h.services.progress.facts, isNotNull);
 
       await expandInspector(tester);
       final inspector = find.byKey(const Key('shell-inspector'));

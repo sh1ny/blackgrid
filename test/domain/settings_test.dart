@@ -63,10 +63,23 @@ void main() {
         selectedMap: 'customs',
         saveMarkerFilters: false,
         markerFilters: const {},
-        trackerEnabled: false,
       ).applyTo(stored);
       expect(applied.themeMode, ThemeChoice.light);
       expect(applied.selectedMap, 'customs');
+    });
+  });
+
+  group('AppSettings.trackerEnabled retired', () {
+    test('a settings.json holding trackerEnabled still loads', () {
+      final json = AppSettings(selectedMap: 'customs').toJson()
+        ..['trackerEnabled'] = true;
+      final loaded = AppSettings.fromJson(json);
+      expect(loaded.selectedMap, 'customs');
+      expect(loaded.toJson().containsKey('trackerEnabled'), isFalse);
+    });
+
+    test('toJson no longer writes trackerEnabled', () {
+      expect(AppSettings().toJson().containsKey('trackerEnabled'), isFalse);
     });
   });
 

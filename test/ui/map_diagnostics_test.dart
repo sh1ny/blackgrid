@@ -213,7 +213,6 @@ void main() {
       'Save marker filters',
       'Follow logs',
       'Show raid timers',
-      'Use Tracker progress',
     ]) {
       final other = find.descendant(
         of: find.byType(SettingsPage),

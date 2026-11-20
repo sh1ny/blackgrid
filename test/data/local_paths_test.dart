@@ -31,7 +31,7 @@ void main() {
     // A file where the logs directory would go must not block startup; the
     // timing log reports it as unavailable on its first write instead.
     File('${root.path}${Platform.pathSeparator}logs').writeAsStringSync('x');
-    const channel = MethodChannel('blackgrid/credentials');
+    const channel = MethodChannel(localDataChannelName);
     final messenger =
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(
@@ -43,6 +43,11 @@ void main() {
     final paths = await LocalPaths.resolve();
 
     expect(paths.root.path, root.path);
-    expect(paths.credentials.existsSync(), isTrue);
+    expect(
+      Directory('${root.path}${Platform.pathSeparator}credentials')
+          .existsSync(),
+      isFalse,
+      reason: 'resolve no longer creates the retired credentials folder',
+    );
   });
 }

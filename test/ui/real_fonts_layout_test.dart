@@ -1,6 +1,5 @@
 // Width checks that need the app's real fonts (see loadRealFonts). Every test
 // in this file runs with Geist and Literata loaded.
-import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/verdict_reason.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
@@ -9,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../fixtures/m1/catalog/fixture.dart' show progressWire;
 import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/real_fonts.dart';
@@ -47,7 +45,6 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(loadRealFonts);
-    const token = 'PVP_synthetic-fixture-only';
     final longName = 'Long task name ${'y' * 100}';
     tester.view.physicalSize = const Size(1300, 870);
     tester.view.devicePixelRatio = 1;
@@ -59,21 +56,10 @@ void main() {
           wire['tasks_en'] = {
             'data': {'task-a name': longName},
           };
-          wire['token'] = {
-            'success': true,
-            'permissions': ['GP'],
-            'token': token,
-            'owner': 'synthetic-owner',
-            'note': 'Synthetic',
-            'calls': 0,
-            'gameMode': 'pvp',
-          };
-          wire['progress'] = progressWire();
         },
       );
-      result.credentials.values[GameMode.pvp] = token;
       await result.initialize();
-      await result.services.progress.refresh();
+      await result.progressReady();
       await result.services.selection.selectManual(
         result.services.catalog.snapshot!.items['item-a']!,
       );

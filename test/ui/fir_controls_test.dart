@@ -98,7 +98,7 @@ void main() {
           _expectSource(tester, 'Manual override');
           _expectSelected(tester, value);
           await tester.runAsync(() => h.services.catalog.refresh());
-          await tester.runAsync(() => h.services.progress.refresh());
+          await tester.runAsync(h.progressReady);
           await tester.pumpAndSettle();
           expect(h.services.selection.firOverride, value);
           expect(h.services.selection.scan!.detectedFir, same(reading));

@@ -9,8 +9,6 @@ import 'package:http/http.dart' as http;
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/data/database.dart';
-import 'package:blackgrid/domain/catalog.dart';
-import 'package:blackgrid/domain/credential_store.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/app.dart';
@@ -28,16 +26,6 @@ class _NoRequests extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) =>
       Future.error(StateError('Native map qualification prohibits HTTP'));
-}
-
-class _NoCredentials implements CredentialStore {
-  @override
-  Future<String?> readCredential(GameMode mode) async => null;
-  @override
-  Future<void> writeCredential(GameMode mode, String token) async =>
-      throw StateError('Qualification has no credentials');
-  @override
-  Future<void> removeCredential(GameMode mode) async {}
 }
 
 Future<void> _requireGameClosed() async {
@@ -79,7 +67,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final services = AppServices(
     database: BlackgridDatabase(NativeDatabase.memory()),
-    credentials: _NoCredentials(),
     client: _NoRequests(),
   );
   final expectedMapIds = supportedMaps.toSet();

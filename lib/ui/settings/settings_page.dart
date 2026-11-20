@@ -23,9 +23,8 @@ import 'settings_section.dart';
 /// The Settings page: a sidebar of sections beside one scrolling column of
 /// rows.
 ///
-/// Every setting saves as it is changed, with no Save button; only the Tracker
-/// token saves on its own button. Text fields save on Enter, and when they lose
-/// focus. A section that a link names is scrolled into view and its title takes
+/// Every setting saves as it is changed, with no Save button. Text fields save
+/// on Enter, and when they lose focus. A section that a link names is scrolled into view and its title takes
 /// keyboard focus. The page keeps only view state: which sections are expanded
 /// and what the player has typed. Saved settings belong to
 /// [AppServices.settings].
@@ -75,7 +74,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _tokenText = TextEditingController();
   final _titleKeys = {
     for (final section in SettingsSection.values) section: GlobalKey(),
   };
@@ -87,12 +85,6 @@ class _SettingsPageState extends State<SettingsPage> {
   /// Whether Diagnostics is expanded. It is page state, so each mount starts
   /// collapsed.
   bool _diagnosticsExpanded = false;
-
-  /// Whether a token action is running.
-  bool _tokenBusy = false;
-
-  /// The result line of the last token action.
-  String? _tokenMessage;
 
   AppServices get _services => widget.services;
 
@@ -116,8 +108,6 @@ class _SettingsPageState extends State<SettingsPage> {
       focus.dispose();
     }
     _pageTitleFocus.dispose();
-    _tokenText.clear();
-    _tokenText.dispose();
     super.dispose();
   }
 
@@ -149,31 +139,6 @@ class _SettingsPageState extends State<SettingsPage> {
       Scrollable.ensureVisible(target);
       _titleFocus[section]!.requestFocus();
     });
-  }
-
-  Future<void> _tokenAction(
-    Future<void> Function() work,
-    String success,
-  ) async {
-    setState(() {
-      _tokenBusy = true;
-      _tokenMessage = null;
-    });
-    try {
-      await work();
-      if (!mounted) return;
-      _tokenText.clear();
-      setState(() => _tokenMessage = _services.progress.error ?? success);
-    } catch (_) {
-      if (!mounted) return;
-      _tokenText.clear();
-      setState(
-        () => _tokenMessage =
-            'Tracker token operation failed. Nothing was stored as plain text.',
-      );
-    } finally {
-      if (mounted) setState(() => _tokenBusy = false);
-    }
   }
 
   @override
@@ -315,12 +280,6 @@ class _SettingsPageState extends State<SettingsPage> {
           SettingsSection.itemData,
           _itemAndMapData(context),
           contentKey: const Key('settings-item-data'),
-        ),
-        _section(
-          context,
-          SettingsSection.tracker,
-          _tracker(context),
-          contentKey: const Key('settings-tracker'),
         ),
         _section(context, SettingsSection.localProgress, [
           LocalProgressSettings(
@@ -484,108 +443,6 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Text(
             state.refreshing ? 'Refreshing map data…' : 'Refresh map data',
           ),
-        ),
-      ),
-    ];
-  }
-
-  List<Widget> _tracker(BuildContext context) {
-    final services = _services;
-    final settings = services.settings;
-    final progress = services.progress;
-    final known = services.catalog.mode != GameMode.unknown;
-    final idle = !settings.busy;
-    return [
-      SettingsRow.toggle(
-        name: 'Use Tracker progress',
-        explanation: 'Blackgrid only reads your progress. Your token needs the GP permission.',
-        value: settings.settings.trackerEnabled,
-        enabled: idle && !_tokenBusy,
-        onChanged: (value) => unawaited(() async {
-          final saved = await settings.save(
-            settings.settings.copyWith(trackerEnabled: value),
-          );
-          if (saved && !value) await progress.setMode(services.catalog.mode);
-        }()),
-      ),
-      SettingsRow(
-        name: 'Tracker token',
-        explanation: progress.hasCredential
-            ? 'Saved for ${modeLabel(progress.mode)}'
-            : 'Not saved',
-        trailing: const SizedBox.shrink(),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(bottom: EmberSpace.md),
-        child: TextField(
-          controller: _tokenText,
-          obscureText: true,
-          autocorrect: false,
-          enableSuggestions: false,
-          decoration: const InputDecoration(
-            labelText: 'Tracker token (current game mode)',
-            helperText: 'Starts with PVP_, PVE_ or SZN_. It is never imported or kept in the database.',
-          ),
-        ),
-      ),
-      Wrap(
-        spacing: EmberSpace.sm,
-        runSpacing: EmberSpace.sm,
-        children: [
-          FilledButton(
-            onPressed: _tokenBusy || !known
-                ? null
-                : () => unawaited(
-                    _tokenAction(
-                      () => progress.saveCredential(_tokenText.text.trim()),
-                      'Tracker token saved',
-                    ),
-                  ),
-            child: const Text('Save token'),
-          ),
-          OutlinedButton(
-            onPressed: _tokenBusy || !known || !progress.hasCredential
-                ? null
-                : () => unawaited(
-                    _tokenAction(progress.removeCredential, 'Token removed'),
-                  ),
-            child: const Text('Remove token'),
-          ),
-          OutlinedButton(
-            onPressed:
-                _tokenBusy ||
-                    !progress.hasCredential ||
-                    !settings.settings.trackerEnabled
-                ? null
-                : () => unawaited(
-                    _tokenAction(progress.refresh, 'Progress refreshed'),
-                  ),
-            child: const Text('Refresh progress'),
-          ),
-        ],
-      ),
-      Padding(
-        padding: const EdgeInsets.only(top: EmberSpace.md),
-        child: () {
-          final error = _tokenMessage == null ? progress.error : null;
-          return Text(
-            _tokenMessage ??
-                (error == null
-                    ? 'Progress: ${progressStatusLabel(progress.status)}'
-                    : 'Tracker problem: $error'),
-            style: EmberType.label.copyWith(
-              color: error == null
-                  ? context.ember.inkTertiary
-                  : context.ember.errInk,
-            ),
-          );
-        }(),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(top: EmberSpace.sm),
-        child: Text(
-          'Your Tracker token is stored encrypted for your Windows account. Your progress is kept only while Blackgrid is open, so refresh it after a restart.',
-          style: EmberType.label.copyWith(color: context.ember.inkTertiary),
         ),
       ),
     ];
