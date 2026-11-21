@@ -21,11 +21,11 @@ Blackgrid SHALL offer eight alerts, each with a fixed spoken line: match found (
 The match found alert SHALL fire on a match-found transition and the raid starting alert on a raid-starting transition, each at most once per transition identity. A raid entered from a queue with no raid-starting countdown SHALL fire the raid starting alert on its raid-started transition instead.
 
 #### Scenario: A queue to a raid
-- **WHEN** a queue entered, match found, raid starting and raid started are read live, with both alerts on
+- **WHEN** a queue entered, match found, server joined, raid starting and raid started are read live, with both alerts on
 - **THEN** "Match found" plays once, then "Raid starting" plays once
 
 #### Scenario: Raid with no countdown
-- **WHEN** a queue entered and match found are followed directly by raid started
+- **WHEN** a queue entered, match found and server joined are followed directly by raid started
 - **THEN** "Match found" plays, then "Raid starting" plays once as the raid starts
 
 #### Scenario: Rejoined raid
@@ -41,10 +41,10 @@ The match found alert SHALL fire on a match-found transition and the raid starti
 - **THEN** no alert plays
 
 ### Requirement: Run-through over fires when the countdown reaches zero
-The run-through over alert SHALL fire once per raid when the run-through countdown reaches 0:00 while that raid is current and Blackgrid is open, and only for a raid whose guessed side is PMC and that was not entered by a reconnect.
+The run-through over alert SHALL fire once per raid when the run-through countdown reaches 0:00 while that raid is current and Blackgrid is open, and only for a raid whose guessed side is PMC and whose recorded entry is not a reconnect. A raid continued after a client restart keeps its recorded entry, start and side.
 
 #### Scenario: Countdown reaches zero
-- **WHEN** a raid is current, the run-through length is 7:10 and the clock moves from 7:09 to 7:10 after the raid's start
+- **WHEN** a PMC raid is current, the run-through length is 7:10 and the clock moves from 7:09 to 7:10 after the raid's start
 - **THEN** "Run-through over" plays once, and not again later in the same raid
 
 #### Scenario: Raid ends first
@@ -54,6 +54,10 @@ The run-through over alert SHALL fire once per raid when the run-through countdo
 #### Scenario: Already over at startup
 - **WHEN** Blackgrid starts while a raid is current whose run-through countdown is already 0:00
 - **THEN** the run-through over alert does not play for that raid
+
+#### Scenario: Raid continued after a client restart
+- **WHEN** the client restarts during a PMC raid entered from a queue, the raid is continued, and 7:10 passes after the raid's original start
+- **THEN** "Run-through over" plays once for that raid
 
 #### Scenario: Scav or reconnected raid
 - **WHEN** the current raid's guessed side is scav, or it was entered by a reconnect, and 7:10 passes after its start

@@ -9,9 +9,9 @@ It also serves M10's user-verified criterion that the alerts sound right and fir
 ## What Changes
 
 - Eight spoken alerts: match found, raid starting, run-through over, scav ready, air filter on, air filter off, check your quest items, and restart failed tasks. Each one fires once from its own event:
-  - **Match found** and **raid starting** fire from the raid lifecycle.
-  - **Run-through over** fires when the countdown reaches 0:00 during a raid.
-  - **Scav ready** fires when the active mode's scav cooldown reaches ready.
+  - **Match found** and **raid starting** fire from the raid lifecycle. Match found waits until the client joins the raid's server, so a cancelled match says nothing. A queued raid with no countdown says raid starting as it starts.
+  - **Run-through over** fires when the countdown reaches 0:00 during a PMC raid that was not a reconnect.
+  - **Scav ready** fires when the active mode's scav cooldown reaches ready outside a raid; a cooldown that ends mid-raid is not spoken.
   - **Air filter on** fires when the player enters the queue, and **air filter off** when the raid ends. Both are reminders: they fire only when local progress says the Air Filtering Unit is built.
   - **Check your quest items** fires once per queue, as soon as the log names the map. It fires only when a started task has an unfinished plant, mark or quest-item hand-over objective on that map. It never checks the inventory.
   - **Restart failed tasks** fires once when the player is back in the menus after a task failed that the quest data marks restartable.
@@ -31,6 +31,7 @@ It also serves M10's user-verified criterion that the alerts sound right and fir
 
 ### Modified Capabilities
 - `raid-lifecycle`: adds the queue-entered, map-known, match-found and raid-starting transitions, each published once with its record identity.
+- `game-log-input`: adds the server joined event, read from the line the client logs when it joins the raid's server.
 - `settings-page`: adds the Alerts section to the list and order of sections.
 
 ## Impact
@@ -38,6 +39,7 @@ It also serves M10's user-verified criterion that the alerts sound right and fir
 - **Dart:**
   - `lib/domain/`: new alert trigger rules and alert settings; new transition variants in `raid_lifecycle.dart`.
   - `lib/application/`: a new alerts controller and an audio port.
+  - `lib/data/game_log/`: the parser reads the server-joined line.
   - `lib/data/`: an audio adapter over the runner channel.
   - `lib/ui/`: the Settings Alerts section.
   - `app_services.dart`: wiring.
@@ -113,6 +115,6 @@ DECISION_MAKING: important
 Blackgrid can now speak alerts for match found, raid starting, run-through over and scav ready, with optional reminders for the air filter, quest items and restartable failed tasks. Each alert has its own switch, a test button and a choice of Windows voice or your own sound file.
 
 ### Added
-- Spoken alerts for match found, raid starting, run-through over and scav ready, on by default, each with a switch and a test button in the new Alerts section of Settings.
+- Spoken alerts for match found, raid starting, run-through over and scav ready, on by default, each with a switch and a test button in the new Alerts section of Settings. Match found speaks once you join the raid's server, so cancelling matching stays silent. Run-through over is for PMC raids, and scav ready stays silent if your cooldown ends mid-raid.
 - Optional reminders: air filter on and off, check your quest items when the map you queue for has item objectives, and restart failed tasks when you are back in the menus.
 - Voice settings: pick any installed Windows voice, preview it, set speed and volume, or play your own WAV or MP3 file for any alert.

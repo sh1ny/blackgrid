@@ -2,6 +2,7 @@ import 'package:blackgrid/application/audio_port.dart';
 import 'package:blackgrid/domain/alerts.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/progress_facts.dart';
+import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -146,6 +147,27 @@ void main() {
         rig.async.elapse(const Duration(minutes: 30));
 
         expect(rig.audio.calls, isEmpty);
+      });
+    });
+
+    test('a raid continued after a client restart keeps its alert', () {
+      runAlerts(now, (rig) {
+        rig.audio.autoComplete = const AudioOk();
+        rig.lifecycle.startRaid(now, mode: GameMode.pvp);
+        rig.open();
+        rig.async.elapse(const Duration(minutes: 2));
+
+        // The client restarts and rejoins the same raid.
+        rig.lifecycle
+          ..feed(const SessionFolderChanged('next'))
+          ..profile(alertsAt(12, 2))
+          ..rejoin(alertsAt(12, 3))
+          ..raidStarted(alertsAt(12, 3, 10));
+        rig.async.elapse(const Duration(minutes: 5, seconds: 9));
+        expect(rig.played, isEmpty);
+        rig.async.elapse(_second);
+
+        expect(rig.played, ['Run-through over']);
       });
     });
 

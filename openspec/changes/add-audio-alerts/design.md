@@ -85,7 +85,7 @@ See proposal.md for what changes and why. Today:
 
 ### D6: Lifecycle publishes queue progress transitions
 
-- **Choice:** The `reduce` function adds `QueueEnteredTransition`, `MapKnownTransition(mapId?)`, `MatchFoundTransition` and `RaidStartingTransition`, each with the event's record identity and time. Existing exhaustive switches add the new variants as no-ops.
+- **Choice:** The `reduce` function adds `QueueEnteredTransition`, `MapKnownTransition(mapId?)`, `MatchFoundTransition` and `RaidStartingTransition`, each with the event's record identity and time. The match-found transition carries the server-joined record's identity and time, because matching completed is also logged on a cancel. Existing exhaustive switches add the new variants as no-ops.
 - **Rejected:** `AlertsController` diffing `RaidLifecycleState.phase` on `notifyListeners`. Phase changes inside one batch collapse, so match found followed by raid starting in one batch would be seen once. They also carry no record identity for de-duplication.
 - **Reversal cost:** low
 - **Important:** yes, it binds future changes as a shared interface.
@@ -264,7 +264,7 @@ flowchart TB
 - **Run-through length changed mid-raid:** the deadline is re-planned. A new deadline already in the past is marked as seen and does not fire (D7).
 - **Raid ended by a client restart:** the ending is published when the next queue is entered, so "air filter off" would play right before "air filter on". The air filter off rule skips endings whose cause is client restart (review S3).
 - **Rejoin:** a raid rejoined event does not publish map-known, and neither does a scene loaded after it: map-known is published only for scenes after a queue entered, while the pending entry is a queue (review N2). A rejoin is not a queue, so the quest items rule does not apply. "Once per queue" is keyed by the queue-entered transition's identity (review S2).
-- **Reconnect:** the raid keeps its identity and start. A raid entered by a reconnect has no run-through over alert, since its start time is the rejoin, not the raid's own start.
+- **Reconnect:** a raid whose recorded entry is a reconnect starts at the rejoin, not at the raid's own start, and its side is unknown, so it has no run-through over alert. A raid continued after a client restart is different: it keeps its recorded entry, identity, start and side, so a continued PMC raid still says run-through over once, at its original start plus the run-through length.
 - **Scav raid:** run-through over is a PMC rule, so a raid whose guessed side is not PMC has no run-through alert. The timer strip still shows the countdown.
 - **Cancelled matching:** the game logs matching completed on a cancel too, so match found waits for the client to join the raid's server after it.
 - **No countdown:** a queued raid whose countdown line is missing says raid starting when it starts, so the line is not lost.
