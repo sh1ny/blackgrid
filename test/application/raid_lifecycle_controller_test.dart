@@ -93,6 +93,10 @@ _Key _key(RaidTransition t) => switch (t) {
   MatchingAbortedTransition() => ('aborted', t.id, t.time, null),
   FleaSoldTransition() => ('flea', t.id, t.time, null),
   TaskTransition() => ('task', t.id, t.time, null),
+  QueueEnteredTransition() => ('queue', t.id, t.time, null),
+  MapKnownTransition() => ('map', t.id, t.time, null),
+  MatchFoundTransition() => ('found', t.id, t.time, null),
+  RaidStartingTransition() => ('starting', t.id, t.time, null),
 };
 
 /// A flea sale of 2 of one item paying 45 000 roubles, as the game logs it.
@@ -205,9 +209,42 @@ void main() {
     final first = await replay();
     final second = await replay();
 
-    expect(first.map((t) => _key(t).$1), ['aborted', 'started', 'ended']);
+    expect(first.map((t) => _key(t).$1), [
+      'queue',
+      'aborted',
+      'queue',
+      'map',
+      'found',
+      'starting',
+      'started',
+      'ended',
+    ]);
     expect(second.map(_key).toList(), first.map(_key).toList());
   });
+
+  test(
+    're-reading a folder republishes queue progress with the same identities',
+    () async {
+      await writeWhole();
+      final first = await replay();
+      final second = await replay();
+
+      bool isProgress(RaidTransition t) =>
+          t is QueueEnteredTransition ||
+          t is MapKnownTransition ||
+          t is MatchFoundTransition ||
+          t is RaidStartingTransition;
+      final firstProgress = first.where(isProgress).toList();
+      expect(firstProgress, hasLength(5));
+      expect(
+        second.where(isProgress).map(_key).toList(),
+        firstProgress.map(_key).toList(),
+      );
+      final map = firstProgress.whereType<MapKnownTransition>().single;
+      expect(map.mapId, 'customs');
+      expect(map.time, DateTime(2026, 10, 31, 22, 2, 20));
+    },
+  );
 
   test('replayed folder republishes the sale with the same identity', () async {
     await write(LogFile.backend, '');
@@ -314,7 +351,12 @@ void main() {
     await reader.rescan();
     final raid = controller.state.raid!;
     expect(controller.state.phase, RaidPhase.inRaid);
-    expect(seen.map((t) => _key(t).$1), ['aborted', 'started']);
+    expect(
+      seen
+          .map((t) => _key(t).$1)
+          .where((kind) => kind == 'aborted' || kind == 'started'),
+      ['aborted', 'started'],
+    );
 
     // The restarted client creates its folder before its application log.
     await Directory('${root.path}/$next').create();
@@ -338,7 +380,12 @@ void main() {
     );
     await reader.rescan();
 
-    expect(seen.map((t) => _key(t).$1), ['aborted', 'started']);
+    expect(
+      seen
+          .map((t) => _key(t).$1)
+          .where((kind) => kind == 'aborted' || kind == 'started'),
+      ['aborted', 'started'],
+    );
     expect(controller.state.phase, RaidPhase.inRaid);
     expect(controller.state.raid!.interrupted, isFalse);
   });

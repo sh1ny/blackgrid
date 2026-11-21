@@ -428,6 +428,39 @@ final class MatchingAbortedTransition extends RaidTransition {
   const MatchingAbortedTransition(super.id, super.time);
 }
 
+/// The player entered the matchmaking queue.
+///
+/// Carries the queue-entered record's identity and time; it is published even
+/// when the same event also ends an interrupted raid.
+final class QueueEnteredTransition extends RaidTransition {
+  /// Creates the transition.
+  const QueueEnteredTransition(super.id, super.time);
+}
+
+/// The map of the queued raid became known.
+///
+/// Published for a scene loaded record read in a queue (see
+/// [RaidLifecycleState.pendingEntry]), never for a rejoin.
+final class MapKnownTransition extends RaidTransition {
+  /// Creates the transition for the scene mapped to [mapId].
+  const MapKnownTransition(super.id, super.time, this.mapId);
+
+  /// The settings map ID, or `null` when the scene is not a supported map.
+  final String? mapId;
+}
+
+/// Matchmaking found a raid.
+final class MatchFoundTransition extends RaidTransition {
+  /// Creates the transition.
+  const MatchFoundTransition(super.id, super.time);
+}
+
+/// The game began starting the raid.
+final class RaidStartingTransition extends RaidTransition {
+  /// Creates the transition.
+  const RaidStartingTransition(super.id, super.time);
+}
+
 /// A flea market sale was read from the push-notifications log.
 ///
 /// It carries the sale's record identity and time; it never changes the raid
@@ -705,10 +738,13 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
       final ProfileSelected e => _profileSelected(state, e),
       final QueueEntered e => _queueEntered(state, e),
       final SceneLoaded e => _sceneLoaded(state, e),
-      MatchFound() => (state.copyWith(phase: RaidPhase.matchFound), const []),
+      final MatchFound e => (
+        state.copyWith(phase: RaidPhase.matchFound),
+        [MatchFoundTransition(e.id, e.time)],
+      ),
       final RaidStarting e => (
         state.copyWith(phase: RaidPhase.raidStarting, pendingCountdown: e.time),
-        const [],
+        [RaidStartingTransition(e.id, e.time)],
       ),
       final RaidStarted e => _raidStarted(state, e),
       final MatchingAborted e => _matchingAborted(state, e),
@@ -935,13 +971,20 @@ RaidReduction _queueEntered(RaidLifecycleState state, QueueEntered e) {
       pendingEntry: RaidEntry.queue,
       pendingStart: null,
     ),
-    transitions,
+    [...transitions, QueueEnteredTransition(e.id, e.time)],
   );
 }
 
+// A scene read in a queue names the queued map. A rejoin sets another pending
+// entry, so a scene after it publishes nothing.
 RaidReduction _sceneLoaded(RaidLifecycleState state, SceneLoaded e) =>
     _isLoading(state.phase)
-    ? (state.copyWith(pendingMapId: e.mapId), const [])
+    ? (
+        state.copyWith(pendingMapId: e.mapId),
+        state.pendingEntry == RaidEntry.queue
+            ? [MapKnownTransition(e.id, e.time, e.mapId)]
+            : const [],
+      )
     : (state, const []);
 
 RaidReduction _raidRejoined(RaidLifecycleState state, RaidRejoined e) {
