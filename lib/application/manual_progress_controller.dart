@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/catalog.dart';
 import '../domain/local_progress.dart';
 import '../domain/local_progress_store.dart';
+import '../domain/objective_progress.dart';
 import 'local_progress_access.dart';
 import 'quest_checklist.dart';
 import 'raid_timers_controller.dart';

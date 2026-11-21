@@ -6,8 +6,8 @@ This change has no spec scenarios (`skip_specs: true`, behaviour unchanged). The
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| D1 objective rule | A counter target is a whole-number count over 1 | `test/domain/objective_progress_test.dart` | `objectiveCounterTarget` group (table) | red |
-| D1 objective rule | Done by completion, or by a counter reaching its target | `test/domain/objective_progress_test.dart` | `objectiveDone` group (table) | red |
+| D1 objective rule | A counter target is a whole-number count over 1 | `test/domain/objective_progress_test.dart` | `objectiveCounterTarget` group (table) | green |
+| D1 objective rule | Done by completion, or by a counter reaching its target | `test/domain/objective_progress_test.dart` | `objectiveDone` group (table) | green |
 | D2 deadlines | Run-through ends its length after the current raid's start; none without a current raid | `test/domain/raid_timers_test.dart` | `deadlines` group: run-through cases | red |
 | D2 deadlines | Scav ready is start plus length; no ready time without a start; nothing for an unknown mode or missing inputs | `test/domain/raid_timers_test.dart` | `deadlines` group: scav cases | red |
 | D3 strip agreement | The strip shows `0:01` 1 µs before the run-through end and `done` at it, `0:01` 1 ms before scav ready and `ready` at it | `test/domain/raid_timers_test.dart` | `the strip flips exactly at the deadlines` | red |
@@ -16,9 +16,9 @@ This change has no spec scenarios (`skip_specs: true`, behaviour unchanged). The
 
 ## 1. One objective rule in the domain
 
-- [ ] 1.1 Write `test/domain/objective_progress_test.dart` with the `objectiveCounterTarget` and `objectiveDone` tables (counts null, 0, 1, 1.0, 2.5, 2, 3.0, 40; completion alone, counter below, at and past its target, a count on a non-counter, a fractional count). Verify it fails because `package:blackgrid/domain/objective_progress.dart` does not exist yet (`flutter test test/domain/objective_progress_test.dart` through mise).
-- [ ] 1.2 Add `lib/domain/objective_progress.dart` with `objectiveCounterTarget` (moved from `lib/application/quest_checklist.dart`) and `objectiveDone(objective, complete:, count:)`, with `///` docs. Point the checklist row, the marker filter (`complete: done.contains(id)`), `ManualProgressController` and `questItemsCheck` at it. Delete the application copy and `_objectiveDone`, with no re-export. Verify that the 1.1 tests pass (flip rows 1-2 green), that the checklist, alert rules and manual progress tests pass unchanged, and that `rg "_objectiveDone|count != count.truncate|target != target.truncate" lib` finds only `lib/domain/objective_progress.dart`.
-- [ ] 1.3 Update `openspec/architecture.md`: the `AlertsController` row and the component that owns the checklist name `lib/domain/objective_progress.dart` as the one objective rule. Verify by reading the diff.
+- [x] 1.1 Write `test/domain/objective_progress_test.dart` with the `objectiveCounterTarget` and `objectiveDone` tables (counts null, 0, 1, 1.0, 2.5, 2, 3.0, 40; completion alone, counter below, at and past its target, a count on a non-counter, a fractional count). Verify it fails because `package:blackgrid/domain/objective_progress.dart` does not exist yet (`flutter test test/domain/objective_progress_test.dart` through mise).
+- [x] 1.2 Add `lib/domain/objective_progress.dart` with `objectiveCounterTarget` (moved from `lib/application/quest_checklist.dart`) and `objectiveDone(objective, complete:, count:)`, with `///` docs. Point the checklist row, the marker filter (`complete: done.contains(id)`), `ManualProgressController` and `questItemsCheck` at it. Delete the application copy and `_objectiveDone`, with no re-export. Verify that the 1.1 tests pass (flip rows 1-2 green), that the checklist, alert rules and manual progress tests pass unchanged, and that `rg "_objectiveDone|count != count.truncate|target != target.truncate" lib` finds only `lib/domain/objective_progress.dart`.
+- [x] 1.3 Update `openspec/architecture.md`: the `AlertsController` row and the component that owns the checklist name `lib/domain/objective_progress.dart` as the one objective rule. Verify by reading the diff.
 
 ## 2. One timer-deadline function
 

@@ -1,6 +1,7 @@
 import 'package:blackgrid_progress/blackgrid_progress.dart';
 
 import '../domain/local_progress.dart';
+import '../domain/objective_progress.dart';
 
 /// The register a counter objective's count is recorded in.
 ProgressTarget objectiveCountRegister(String objectiveId) => ProgressTarget(
@@ -15,15 +16,6 @@ ProgressTarget objectiveCompleteRegister(String objectiveId) => ProgressTarget(
   id: objectiveId,
   field: ProgressField.complete,
 );
-
-/// The target count of a counter objective, or `null` when it is not one.
-///
-/// A counter is an objective whose catalog count is a whole number over 1.
-int? objectiveCounterTarget(TaskObjective objective) {
-  final count = objective.count;
-  if (count == null || count <= 1 || count != count.truncate()) return null;
-  return count.toInt();
-}
 
 /// A task named only by its identity and display name.
 final class QuestTaskRef {
@@ -249,9 +241,11 @@ QuestObjective _objectiveRow(
     onThisMap: onThisMap,
     target: target,
     count: count,
-    done:
-        _completed(winners, objective.id) ||
-        (target != null && count >= target),
+    done: objectiveDone(
+      objective,
+      complete: _completed(winners, objective.id),
+      count: count,
+    ),
     sharedWith: List.unmodifiable([
       for (final ref in listing ?? const <QuestTaskRef>[])
         if (ref.id != taskId) ref,
@@ -295,8 +289,11 @@ QuestMarkerFilter? buildQuestMarkerFilter({
   if (catalog != null) {
     for (final task in catalog.tasks) {
       for (final objective in task.objectives) {
-        final goal = objectiveCounterTarget(objective);
-        if (goal != null && _recordedCount(winners, objective.id) >= goal) {
+        if (objectiveDone(
+          objective,
+          complete: done.contains(objective.id),
+          count: _recordedCount(winners, objective.id),
+        )) {
           done.add(objective.id);
         }
       }
