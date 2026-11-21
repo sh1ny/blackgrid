@@ -18,22 +18,30 @@ Blackgrid SHALL offer eight alerts, each with a fixed spoken line: match found (
 - **THEN** that entry is ignored, the eight alerts load with their stored or default values, and the record loads without a load notice
 
 ### Requirement: Match found and raid starting fire from the raid lifecycle
-The match found alert SHALL fire on a match-found transition and the raid starting alert on a raid-starting transition, each at most once per transition identity.
+The match found alert SHALL fire on a match-found transition and the raid starting alert on a raid-starting transition, each at most once per transition identity. A raid entered from a queue with no raid-starting countdown SHALL fire the raid starting alert on its raid-started transition instead.
 
 #### Scenario: A queue to a raid
 - **WHEN** a queue entered, match found, raid starting and raid started are read live, with both alerts on
 - **THEN** "Match found" plays once, then "Raid starting" plays once
 
 #### Scenario: Raid with no countdown
-- **WHEN** match found is followed directly by raid started
-- **THEN** "Match found" plays and "Raid starting" does not
+- **WHEN** a queue entered and match found are followed directly by raid started
+- **THEN** "Match found" plays, then "Raid starting" plays once as the raid starts
+
+#### Scenario: Rejoined raid
+- **WHEN** a raid rejoined is followed by raid started
+- **THEN** the raid starting alert does not play
+
+#### Scenario: Cancelled match
+- **WHEN** a queue entered, match found and matching aborted are read live
+- **THEN** the match found alert does not play
 
 #### Scenario: Same transition delivered twice
 - **WHEN** a match-found transition with an identity that already fired an alert arrives again
 - **THEN** no alert plays
 
 ### Requirement: Run-through over fires when the countdown reaches zero
-The run-through over alert SHALL fire once per raid when the run-through countdown reaches 0:00 while that raid is current and Blackgrid is open.
+The run-through over alert SHALL fire once per raid when the run-through countdown reaches 0:00 while that raid is current and Blackgrid is open, and only for a raid whose guessed side is PMC and that was not entered by a reconnect.
 
 #### Scenario: Countdown reaches zero
 - **WHEN** a raid is current, the run-through length is 7:10 and the clock moves from 7:09 to 7:10 after the raid's start
@@ -47,12 +55,20 @@ The run-through over alert SHALL fire once per raid when the run-through countdo
 - **WHEN** Blackgrid starts while a raid is current whose run-through countdown is already 0:00
 - **THEN** the run-through over alert does not play for that raid
 
+#### Scenario: Scav or reconnected raid
+- **WHEN** the current raid's guessed side is scav, or it was entered by a reconnect, and 7:10 passes after its start
+- **THEN** the run-through over alert does not play for that raid
+
 ### Requirement: Scav ready fires when the active mode's cooldown reaches ready
-The scav ready alert SHALL fire once per cooldown start when the active mode's scav cooldown moves from a remaining time above zero to ready while Blackgrid is open.
+The scav ready alert SHALL fire once per cooldown start when the active mode's scav cooldown moves from a remaining time above zero to ready while Blackgrid is open and the phase is not in raid. A cooldown that reaches ready during a raid SHALL not play, then or later.
 
 #### Scenario: Cooldown runs out
 - **WHEN** the active mode's cooldown shows 0:01 and the clock moves past its end
 - **THEN** "Scav ready" plays once
+
+#### Scenario: Ready during a raid
+- **WHEN** the active mode's cooldown reaches ready while the phase is in raid
+- **THEN** the scav ready alert does not play, and does not play when the raid ends
 
 #### Scenario: Ready at startup
 - **WHEN** Blackgrid starts and the active mode's scav cooldown is already ready

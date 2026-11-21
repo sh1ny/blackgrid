@@ -264,7 +264,11 @@ flowchart TB
 - **Run-through length changed mid-raid:** the deadline is re-planned. A new deadline already in the past is marked as seen and does not fire (D7).
 - **Raid ended by a client restart:** the ending is published when the next queue is entered, so "air filter off" would play right before "air filter on". The air filter off rule skips endings whose cause is client restart (review S3).
 - **Rejoin:** a raid rejoined event does not publish map-known, and neither does a scene loaded after it: map-known is published only for scenes after a queue entered, while the pending entry is a queue (review N2). A rejoin is not a queue, so the quest items rule does not apply. "Once per queue" is keyed by the queue-entered transition's identity (review S2).
-- **Reconnect:** the raid keeps its identity and start, so run-through over still fires at most once for it.
+- **Reconnect:** the raid keeps its identity and start. A raid entered by a reconnect has no run-through over alert, since its start time is the rejoin, not the raid's own start.
+- **Scav raid:** run-through over is a PMC rule, so a raid whose guessed side is not PMC has no run-through alert. The timer strip still shows the countdown.
+- **Cancelled matching:** the game logs matching completed on a cancel too, so match found waits for the client to join the raid's server after it.
+- **No countdown:** a queued raid whose countdown line is missing says raid starting when it starts, so the line is not lost.
+- **Scav cooldown ends mid-raid:** scav ready is dropped, not delayed to the raid's end.
 - **Transit:** a new raid starts a new run-through count.
 - **Settings changed while an alert waits:** the item plays with the settings read when it starts playing. An alert switched off while it waits is dropped.
 - **Test pressed rapidly:** each press is queued, subject to the bound of 8.

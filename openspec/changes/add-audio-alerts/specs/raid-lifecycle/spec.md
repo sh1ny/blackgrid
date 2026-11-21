@@ -3,10 +3,10 @@
 ## ADDED Requirements
 
 ### Requirement: Queue progress transitions are published once
-Each queue entered, match found and raid starting event SHALL publish one transition of that kind, and each scene loaded event read while the phase is in queue, match found or raid starting, after a queue entered and before any raid rejoined since, SHALL publish one map-known transition with the map, or no map when it is not a supported map. Each SHALL carry the record identity and time of its event, and a re-read SHALL publish them with the same identities.
+Each queue entered and raid starting event SHALL publish one transition of that kind. Match-found transitions follow the requirement below. Each scene loaded event read while the phase is in queue, match found or raid starting, after a queue entered and before any raid rejoined since, SHALL publish one map-known transition with the map, or no map when it is not a supported map. Each SHALL carry the record identity and time of its event, and a re-read SHALL publish them with the same identities.
 
 #### Scenario: Queue to raid
-- **WHEN** the events are queue entered, scene loaded on Customs, match found, raid starting and raid started
+- **WHEN** the events are queue entered, scene loaded on Customs, match found, server joined, raid starting and raid started
 - **THEN** one queue-entered, one map-known with Customs, one match-found, one raid-starting and one raid-started transition are published, in that order
 
 #### Scenario: Scene outside a queue
@@ -28,6 +28,21 @@ Each queue entered, match found and raid starting event SHALL publish one transi
 #### Scenario: Re-read after restart
 - **WHEN** the app restarts and reads the same session folder again
 - **THEN** each queue-entered, map-known, match-found and raid-starting transition has the same record identity and time as before the restart
+
+### Requirement: A match is found once the raid's server is joined
+The first server joined event read while the phase is match found, after a queue entered and before any raid rejoined since, SHALL publish one match-found transition with its record identity and time. A match found event alone SHALL publish none, because the game also logs it when matching is cancelled.
+
+#### Scenario: Cancelled match
+- **WHEN** the events are queue entered, match found and matching aborted
+- **THEN** no match-found transition is published
+
+#### Scenario: Server joined outside a matched queue
+- **WHEN** a server joined event is read while the phase is in menus or in queue
+- **THEN** no match-found transition is published
+
+#### Scenario: Second server joined in one queue
+- **WHEN** two server joined events are read after one match found
+- **THEN** one match-found transition is published, for the first
 
 ## MODIFIED Requirements
 
