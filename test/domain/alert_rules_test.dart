@@ -130,6 +130,39 @@ void main() {
       expect(_checkWithData(facts: _facts(done: true)), isA<QuestItemsQuiet>());
     });
 
+    test('a counter objective is done once its count reaches the target', () {
+      ProgressCatalog counted() => ProgressCatalog(
+        stations: const [],
+        tasks: [
+          CatalogTask(
+            id: 'task-1',
+            name: 'Task',
+            objectives: [
+              TaskObjective(
+                id: 'obj-1',
+                type: ObjectiveType.plantItem,
+                count: 3,
+              ),
+            ],
+          ),
+        ],
+      );
+      ProgressFacts planted(int count) => ProgressFacts(
+        mode: GameMode.pvp,
+        taskStates: {'task-1': ProgressTaskStatus.started},
+        objectiveCounts: {'obj-1': count},
+      );
+
+      expect(
+        _checkWithData(catalog: counted(), facts: planted(2)),
+        isA<QuestItemsFire>(),
+      );
+      expect(
+        _checkWithData(catalog: counted(), facts: planted(3)),
+        isA<QuestItemsQuiet>(),
+      );
+    });
+
     test('silent when the task is not started', () {
       expect(
         _checkWithData(facts: _facts(state: null)),

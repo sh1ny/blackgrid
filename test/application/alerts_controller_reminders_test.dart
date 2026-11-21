@@ -315,6 +315,53 @@ void main() {
     });
   });
 
+  group('redelivery after the switch goes on', () {
+    test('a map-known read while quest items is off never plays later', () {
+      runAlerts(now, (rig) {
+        _openWithData(rig);
+        rig.settings.setOn(AlertKind.questItems, on: false);
+        rig.lifecycle.profile(_t());
+        rig.lifecycle.queue(_t());
+        final transition = MapKnownTransition(
+          rig.lifecycle.nextId(),
+          _t(),
+          'customs',
+        );
+        rig.lifecycle.emit(transition);
+        rig.settle();
+
+        rig.settings.setOn(AlertKind.questItems, on: true);
+        rig.lifecycle.emit(transition);
+        rig.settle();
+
+        expect(rig.played, isNot(contains('Check your quest items')));
+      });
+    });
+
+    test('a failure read while failed tasks is off never plays later', () {
+      runAlerts(now, (rig) {
+        _openWithData(rig);
+        rig.settings.setOn(AlertKind.failedTasks, on: false);
+        rig.lifecycle.profile(_t());
+        final transition = TaskTransition(
+          rig.lifecycle.nextId(),
+          _t(),
+          'task-1',
+          ProgressTaskStatus.failed,
+          GameMode.pvp,
+        );
+        rig.lifecycle.emit(transition);
+        rig.settle();
+
+        rig.settings.setOn(AlertKind.failedTasks, on: true);
+        rig.lifecycle.emit(transition);
+        rig.settle();
+
+        expect(rig.played, isNot(contains('Restart failed tasks')));
+      });
+    });
+  });
+
   group('failed tasks', () {
     test('failed tasks plays on return to menus, not mid-raid', () {
       runAlerts(now, (rig) {

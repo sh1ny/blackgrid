@@ -80,7 +80,8 @@ final class QuestObjectiveRef {
 /// [objectives] are the quest objectives the Map shows for that map, or
 /// `null` when no map pack is loaded. One counts when its task is started,
 /// its catalog objective is a plant item, plant quest item, mark or hand over
-/// quest item objective, and it is not done. A map that is `null` or not
+/// quest item objective, and it is not done: neither recorded complete nor,
+/// for a counter objective, at its target count. A map that is `null` or not
 /// supported is quiet before any data is checked. The player's inventory is
 /// never read.
 QuestItemsCheck questItemsCheck({
@@ -101,16 +102,29 @@ QuestItemsCheck questItemsCheck({
   if (facts == null) return const QuestItemsUnavailable(AlertDataGap.progress);
   for (final QuestObjectiveRef(:taskId, :objectiveId) in objectives) {
     if (facts.taskState(taskId) != ProgressTaskStatus.started) continue;
-    if (facts.objectiveComplete(objectiveId)) continue;
     final taskObjectives = catalog.tasksById[taskId]?.objectives ?? const [];
     for (final objective in taskObjectives) {
       if (objective.id == objectiveId &&
-          _itemObjectiveTypes.contains(objective.type)) {
+          _itemObjectiveTypes.contains(objective.type) &&
+          !_objectiveDone(objective, facts)) {
         return const QuestItemsFire();
       }
     }
   }
   return const QuestItemsQuiet();
+}
+
+/// Whether [objective] is recorded complete, or, for a counter objective
+/// (a whole-number target over 1), its recorded count reached the target.
+///
+/// The quest checklist records a counter's completion only in its count.
+bool _objectiveDone(TaskObjective objective, ProgressFacts facts) {
+  if (facts.objectiveComplete(objective.id)) return true;
+  final target = objective.count;
+  if (target == null || target <= 1 || target != target.truncate()) {
+    return false;
+  }
+  return facts.objectiveCount(objective.id) >= target;
 }
 
 /// Whether the Air Filtering Unit is recorded built.

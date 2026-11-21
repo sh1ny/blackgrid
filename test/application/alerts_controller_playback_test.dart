@@ -312,6 +312,27 @@ void main() {
     });
   });
 
+  test('the voice note goes away when a listed-missing voice speaks', () {
+    runAlerts(origin, (rig) {
+      rig.settings.setAlerts(AlertSettings(voice: 'gone'));
+      rig.audio.voiceList = const [
+        AudioVoice(id: 'other', name: 'Other', language: 'en-US'),
+      ];
+      final c = rig.open().controller;
+      c.refreshVoices();
+      rig.settle();
+      expect(c.voiceNote, isNotNull);
+
+      // The player reinstalls the voice; the preview speaks with it.
+      c.test(AlertKind.matchFound);
+      rig.settle();
+      rig.finish();
+
+      expect(rig.audio.playCalls.last.args['voice'], 'gone');
+      expect(c.voiceNote, isNull);
+    });
+  });
+
   test('a test waits behind the playing alert', () {
     runAlerts(origin, (rig) {
       final c = rig.open().controller;

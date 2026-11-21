@@ -160,6 +160,10 @@ class AlertsController extends ChangeNotifier {
   final Map<AlertKind, ({String path, String message})> _fileProblems = {};
   String? _lastFailure;
   String? _missingVoice;
+
+  /// The saved voice that last spoke, evidence newer than [_voices] that it
+  /// is installed.
+  String? _spokenVoice;
   List<AudioVoice> _voices = const [];
   bool _voicesUnavailable = false;
   bool _voicesRead = false;
@@ -195,7 +199,8 @@ class AlertsController extends ChangeNotifier {
   /// What the voice row says about the saved voice, or `null`.
   ///
   /// Set when the saved voice is not installed: a speak call failed with
-  /// voice missing, or the voice list was read and lacks it.
+  /// voice missing, or the voice list was read and lacks it and the voice has
+  /// not spoken since.
   String? get voiceNote {
     final saved = _settings.alerts.voice;
     if (saved == null) return null;
@@ -203,6 +208,7 @@ class AlertsController extends ChangeNotifier {
         _missingVoice == saved ||
         (_voicesRead &&
             !_voicesUnavailable &&
+            _spokenVoice != saved &&
             !_voices.any((voice) => voice.id == saved));
     return missing
         ? 'The saved voice is not installed. '
@@ -259,6 +265,7 @@ class AlertsController extends ChangeNotifier {
     if (_disposed) return;
     _voices = List.unmodifiable(read);
     if (read.any((voice) => voice.id == _missingVoice)) _missingVoice = null;
+    _spokenVoice = null;
     _voicesUnavailable = read.isEmpty;
     _voicesRead = true;
     notifyListeners();
@@ -357,7 +364,15 @@ class AlertsController extends ChangeNotifier {
   /// transition.
   void _questItems(MapKnownTransition transition, String? mapId) {
     if (!isFreshLogTime(transition.time, _clock())) return;
-    if (!_settings.alerts.itemFor(AlertKind.questItems).on) return;
+    if (!_settings.alerts.itemFor(AlertKind.questItems).on) {
+      // Remembered while off, so a redelivery after the switch goes on plays
+      // nothing.
+      _remember(_firedTransitions, (
+        AlertKind.questItems,
+        transition.id,
+      ), _maxFiredTransitions);
+      return;
+    }
     if (_questPlayed && _questPlayedQueueId == _queueId) return;
     _questMapId = mapId;
     switch (_questCheck(mapId)) {
@@ -378,11 +393,13 @@ class AlertsController extends ChangeNotifier {
   /// Sets the failed-task flag for a fresh failure of a restartable task.
   void _taskFailed(TaskTransition transition, String taskId) {
     if (!isFreshLogTime(transition.time, _clock())) return;
-    if (!_settings.alerts.itemFor(AlertKind.failedTasks).on) return;
-    if (!isRestartable(_progressCatalog, taskId)) return;
     final key = (AlertKind.failedTasks, transition.id);
     if (_firedTransitions.contains(key)) return;
+    // Remembered even while the alert is off, so a redelivered failure never
+    // plays after the switch goes on.
     _remember(_firedTransitions, key, _maxFiredTransitions);
+    if (!_settings.alerts.itemFor(AlertKind.failedTasks).on) return;
+    if (!isRestartable(_progressCatalog, taskId)) return;
     // A failure read in the same batch as one that already released the
     // reminder is covered by it: one reminder for the failures of a raid.
     if (_failedReleasedBatch == _lifecycleBatch) return;
@@ -621,6 +638,7 @@ class AlertsController extends ChangeNotifier {
         result is AudioFailure &&
         result.code == AudioFailureCode.voiceMissing) {
       _missingVoice = voice;
+      if (_spokenVoice == voice) _spokenVoice = null;
       voice = null;
       result = await _speakOnce(text, null);
       if (_disposed) return;
@@ -628,7 +646,10 @@ class AlertsController extends ChangeNotifier {
     switch (result) {
       case AudioOk():
         // The saved voice spoke, so it is installed again.
-        if (voice != null && voice == _missingVoice) _missingVoice = null;
+        if (voice != null) {
+          _spokenVoice = voice;
+          if (voice == _missingVoice) _missingVoice = null;
+        }
         _succeeded();
       case AudioFailure(code: AudioFailureCode.stopped):
         notifyListeners();
