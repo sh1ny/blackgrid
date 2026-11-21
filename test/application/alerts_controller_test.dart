@@ -38,6 +38,7 @@ void main() {
         final id = rig.lifecycle.nextId;
         rig.lifecycle.feedBatch([
           MatchFound(id(), now),
+          ServerJoined(id(), now),
           RaidStarting(id(), now),
         ]);
         rig.settle();
@@ -47,7 +48,7 @@ void main() {
       });
     });
 
-    test('no raid starting alert without a countdown', () {
+    test('raid starting plays at raid start when no countdown was logged', () {
       runAlerts(now, (rig) {
         rig.audio.autoComplete = const AudioOk();
         rig.open();
@@ -58,7 +59,36 @@ void main() {
           ..raidStarted(now);
         rig.settle();
 
-        expect(rig.played, ['Match found']);
+        expect(rig.played, ['Match found', 'Raid starting']);
+      });
+    });
+
+    test('a rejoined raid plays no raid starting', () {
+      runAlerts(now, (rig) {
+        rig.audio.autoComplete = const AudioOk();
+        rig.open();
+        rig.lifecycle
+          ..profile(now)
+          ..rejoin(now)
+          ..raidStarted(now);
+        rig.settle();
+
+        expect(rig.played, isEmpty);
+      });
+    });
+
+    test('matching completed without joining a server plays nothing', () {
+      runAlerts(now, (rig) {
+        rig.audio.autoComplete = const AudioOk();
+        rig.open();
+        rig.lifecycle
+          ..profile(now)
+          ..queue(now)
+          ..matchingCompleted(now)
+          ..matchingCancelled(now);
+        rig.settle();
+
+        expect(rig.played, isEmpty);
       });
     });
 

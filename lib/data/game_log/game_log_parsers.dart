@@ -119,6 +119,8 @@ ParseResult _application(LogRecordId id, DateTime time, String message) {
     _ when message.startsWith('MatchingCompleted:') => _event(
       MatchFound(id, time),
     ),
+    _ when message.startsWith('TRACE-NetworkGameCreate profileStatus') =>
+      _event(ServerJoined(id, time)),
     _ when message.startsWith('GameStarting:') => _event(
       RaidStarting(id, time),
     ),

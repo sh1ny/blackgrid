@@ -17,6 +17,8 @@ final class _Log {
   GameLogEvent scene(String at, String? mapId) =>
       SceneLoaded(_id(), t(at), mapId);
   GameLogEvent found(String at) => MatchFound(_id(), t(at));
+  GameLogEvent joined(String at) => ServerJoined(_id(), t(at));
+  GameLogEvent cancelled(String at) => MatchingAborted(_id(), t(at));
   GameLogEvent starting(String at) => RaidStarting(_id(), t(at));
   GameLogEvent started(String at) => RaidStarted(_id(), t(at));
   GameLogEvent exit(String at) => RaidExit(_id(), t(at));
@@ -48,6 +50,7 @@ void main() {
       log.queue('19:38:10'),
       log.scene('19:38:20', 'customs'),
       log.found('19:40:00'),
+      log.joined('19:40:05'),
       log.starting('19:40:30'),
       log.started('19:41:06'),
     ];
@@ -63,14 +66,53 @@ void main() {
     for (final (transition, event) in [
       (published[0], events[1]),
       (published[1], events[2]),
-      (published[2], events[3]),
-      (published[3], events[4]),
-      (published[4], events[5]),
+      (published[2], events[4]),
+      (published[3], events[5]),
+      (published[4], events[6]),
     ]) {
       expect(transition.id, _idOf(event));
       expect(transition.time, _timeOf(event));
     }
     expect((published[1] as MapKnownTransition).mapId, 'customs');
+  });
+
+  test('matching completed alone publishes no match found', () {
+    final log = _Log();
+    final published = _publish([
+      log.profile('19:30:00'),
+      log.queue('19:38:10'),
+      log.found('19:40:00'),
+      log.cancelled('19:40:01'),
+    ]);
+    expect(published.whereType<MatchFoundTransition>(), isEmpty);
+  });
+
+  test('a server joined outside a matched queue publishes nothing', () {
+    final log = _Log();
+    expect(
+      _publish([log.profile('19:30:00'), log.joined('19:30:05')]),
+      isEmpty,
+    );
+    expect(
+      _publish([
+        log.profile('19:30:00'),
+        log.queue('19:38:10'),
+        log.joined('19:38:20'),
+      ]).whereType<MatchFoundTransition>(),
+      isEmpty,
+    );
+  });
+
+  test('a second server joined in one queue publishes once', () {
+    final log = _Log();
+    final published = _publish([
+      log.profile('19:30:00'),
+      log.queue('19:38:10'),
+      log.found('19:40:00'),
+      log.joined('19:40:05'),
+      log.joined('19:40:06'),
+    ]);
+    expect(published.whereType<MatchFoundTransition>(), hasLength(1));
   });
 
   test('scene in menus publishes no map-known', () {

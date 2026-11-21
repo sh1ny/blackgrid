@@ -330,6 +330,14 @@ class AlertsController extends ChangeNotifier {
           AlertKind.failedTasks,
           () => _taskFailed(transition, taskId),
         );
+      case RaidStartedTransition(:final raid)
+          when raid.entry == RaidEntry.queue && raid.raidStartingTime == null:
+        // No countdown was logged for this queued raid: the raid starting line
+        // plays when the raid starts instead.
+        _guardRule(
+          AlertKind.raidStarting,
+          () => _fireFromLog(AlertKind.raidStarting, transition),
+        );
       case TaskTransition() ||
           RaidStartedTransition() ||
           MatchingAbortedTransition() ||
@@ -450,7 +458,10 @@ class AlertsController extends ChangeNotifier {
   List<_Deadline> _deadlines() {
     final deadlines = <_Deadline>[];
     final raid = _lifecycle.state.currentRaid;
-    if (raid != null) {
+    // Only a PMC raid that was not a reconnect has a run-through to warn about.
+    if (raid != null &&
+        raid.side == RaidSide.pmc &&
+        raid.entry != RaidEntry.reconnect) {
       deadlines.add(
         _Deadline(
           AlertKind.runThroughOver,
@@ -514,7 +525,9 @@ class AlertsController extends ChangeNotifier {
         }
         continue;
       }
-      if (_armed[slot] == deadline.at) due.add(deadline.kind);
+      if (_armed[slot] == deadline.at && _speaksNow(deadline.kind)) {
+        due.add(deadline.kind);
+      }
       _remember(seen, deadline.key, _maxSeenDeadlines);
     }
     _armed = armed;
@@ -524,6 +537,11 @@ class AlertsController extends ChangeNotifier {
         : _timerFactory(earliest.difference(now), _onDeadlineTimer);
     due.forEach(_fire);
   }
+
+  // The scav cooldown can end mid-raid, when the line is no use: it is then
+  // dropped, not delayed.
+  bool _speaksNow(AlertKind kind) =>
+      kind != AlertKind.scavReady || _lifecycle.state.phase != RaidPhase.inRaid;
 
   void _onDeadlineTimer() {
     if (_disposed) return;

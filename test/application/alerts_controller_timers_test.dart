@@ -117,7 +117,7 @@ void main() {
         rig.open();
         rig.async.elapse(const Duration(minutes: 8));
         rig.lifecycle.raidExit(alertsAt(12, 8));
-        rig.lifecycle.startRaid(alertsAt(12, 9));
+        rig.lifecycle.startRaid(alertsAt(12, 8));
         rig.async.elapse(const Duration(minutes: 9));
 
         expect(rig.played, ['Run-through over', 'Run-through over']);
@@ -137,6 +137,33 @@ void main() {
       });
     });
 
+    test('a scav raid has no run-through alert', () {
+      runAlerts(now, (rig) {
+        rig.audio.autoComplete = const AudioOk();
+        rig.lifecycle.startRaid(now, scav: true);
+        rig.open();
+
+        rig.async.elapse(const Duration(minutes: 30));
+
+        expect(rig.audio.calls, isEmpty);
+      });
+    });
+
+    test('a reconnected raid has no run-through alert', () {
+      runAlerts(now, (rig) {
+        rig.audio.autoComplete = const AudioOk();
+        rig.lifecycle
+          ..profile(now)
+          ..rejoin(now)
+          ..raidStarted(now);
+        rig.open();
+
+        rig.async.elapse(const Duration(minutes: 30));
+
+        expect(rig.audio.calls, isEmpty);
+      });
+    });
+
     test('one timer is armed for the earliest deadline', () {
       runAlerts(now, (rig) {
         rig.lifecycle.startRaid(now);
@@ -146,11 +173,14 @@ void main() {
         );
         _openOn(rig, GameMode.pvp);
 
-        // The scav deadline is 5 minutes ahead, the run-through 7:10.
+        // The scav deadline is 5 minutes ahead, the run-through 7:10. The scav
+        // deadline passes mid-raid, so only the run-through speaks.
         expect(rig.async.nonPeriodicTimerCount, 1);
         rig.async.elapse(const Duration(minutes: 5));
-        expect(rig.played, ['Scav ready']);
+        expect(rig.played, isEmpty);
         expect(rig.async.nonPeriodicTimerCount, 1);
+        rig.async.elapse(const Duration(minutes: 2, seconds: 10));
+        expect(rig.played, ['Run-through over']);
       });
     });
   });
@@ -250,6 +280,23 @@ void main() {
         );
         _openOn(rig, GameMode.pvp);
 
+        rig.async.elapse(const Duration(hours: 1));
+
+        expect(rig.audio.calls, isEmpty);
+      });
+    });
+
+    test('a cooldown that ends mid-raid plays nothing', () {
+      runAlerts(now, (rig) {
+        rig.settings.setStart(
+          GameMode.pvp,
+          now.subtract(const Duration(minutes: 20)),
+        );
+        rig.lifecycle.startRaid(now, mode: GameMode.pvp, scav: true);
+        _openOn(rig, GameMode.pvp);
+
+        rig.async.elapse(const Duration(minutes: 10));
+        rig.lifecycle.raidExit(alertsAt(12, 10));
         rig.async.elapse(const Duration(hours: 1));
 
         expect(rig.audio.calls, isEmpty);

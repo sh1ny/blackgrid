@@ -80,7 +80,12 @@ void main() {
           ..raidStarted(_t())
           ..raidExit(_t());
 
-        expect(rig.played, ['Air filter on', 'Air filter off']);
+        // A queued raid with no countdown says raid starting as it starts.
+        expect(rig.played, [
+          'Air filter on',
+          'Raid starting',
+          'Air filter off',
+        ]);
       });
     });
 
@@ -99,6 +104,7 @@ void main() {
     test('air filter reminders silent when the unit is not built', () {
       runAlerts(now, (rig) {
         _openWithData(rig, facts: _facts(air: 0));
+        rig.settings.setOn(AlertKind.raidStarting, on: false);
         rig.lifecycle
           ..profile(_t())
           ..queue(_t())
@@ -113,6 +119,7 @@ void main() {
     test('air filter reminders wait for local progress', () {
       runAlerts(now, (rig) {
         _openWithData(rig, data: false);
+        rig.settings.setOn(AlertKind.raidStarting, on: false);
         rig.lifecycle
           ..profile(_t())
           ..queue(_t())

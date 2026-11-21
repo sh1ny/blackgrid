@@ -67,7 +67,18 @@ class FakeAlertLifecycle extends ChangeNotifier
   void profile(DateTime t) => feed(ProfileSelected(nextId(), t));
   void queue(DateTime t) => feed(QueueEntered(nextId(), t));
   void scene(DateTime t, String? map) => feed(SceneLoaded(nextId(), t, map));
-  void matchFound(DateTime t) => feed(MatchFound(nextId(), t));
+
+  /// Matchmaking completes and the client joins the raid's server.
+  void matchFound(DateTime t) {
+    matchingCompleted(t);
+    serverJoined(t);
+  }
+
+  void matchingCompleted(DateTime t) => feed(MatchFound(nextId(), t));
+  void serverJoined(DateTime t) => feed(ServerJoined(nextId(), t));
+  void matchingCancelled(DateTime t) => feed(MatchingAborted(nextId(), t));
+  void rejoin(DateTime t) =>
+      feed(RaidRejoined(nextId(), t, 'MatchWait', 'bigmap', 'customs'));
   void raidStarting(DateTime t) => feed(RaidStarting(nextId(), t));
   void raidStarted(DateTime t) => feed(RaidStarted(nextId(), t));
   void raidExit(DateTime t) => feed(RaidExit(nextId(), t));
@@ -75,10 +86,15 @@ class FakeAlertLifecycle extends ChangeNotifier
       feed(TaskFailed(nextId(), t, task));
 
   /// A raid entered from the queue and started at [start].
-  void startRaid(DateTime start, {GameMode? mode}) {
+  ///
+  /// A PMC raid by default: its countdown is dated a minute before [start],
+  /// long enough to make it a PMC countdown and too old to speak. A [scav]
+  /// raid logs no countdown.
+  void startRaid(DateTime start, {GameMode? mode, bool scav = false}) {
     if (mode != null) feed(SessionModeChanged(nextId(), start, mode));
     profile(start);
     queue(start);
+    if (!scav) raidStarting(start.subtract(const Duration(minutes: 1)));
     raidStarted(start);
   }
 

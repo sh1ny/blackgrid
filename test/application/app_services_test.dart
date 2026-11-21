@@ -240,7 +240,11 @@ void main() {
               '22:00:30.000',
             ) +
             line('Matching with group id: 1', '22:01:00.000') +
-            line('MatchingCompleted: 1', '22:02:30.000'),
+            line('MatchingCompleted: 1', '22:02:29.000') +
+            line(
+              'TRACE-NetworkGameCreate profileStatus: Location: bigmap',
+              '22:02:30.000',
+            ),
       );
       final audio = FakeAudioPort()..autoComplete = const AudioOk();
       final services = AppServices(
@@ -260,9 +264,7 @@ void main() {
       await pumpEventQueue();
 
       // Built before the first bind: the replay reached the controller.
-      expect(audio.playCalls.map((call) => call.args['text']), [
-        'Match found',
-      ]);
+      expect(audio.playCalls.map((call) => call.args['text']), ['Match found']);
 
       await services.dispose();
       disposed = true;

@@ -55,6 +55,14 @@ final List<_Entry> _session = [
   ),
   (
     LogFile.application,
+    _line(
+      'application',
+      'TRACE-NetworkGameCreate profileStatus: Location: bigmap',
+      '22:02:31.000',
+    ),
+  ),
+  (
+    LogFile.application,
     _line('application', 'GameStarting: 7', '22:02:40.000'),
   ),
   (LogFile.application, _line('application', 'GameStarted: 7', '22:03:00.000')),
@@ -343,7 +351,7 @@ void main() {
     final (controller, reader, seen) = open();
     await write(LogFile.application, '');
     await reader.bind(root.path);
-    for (final (file, line) in _session.take(8)) {
+    for (final (file, line) in _session.take(9)) {
       if (file == LogFile.application) {
         await write(LogFile.application, line, append: true);
       }
