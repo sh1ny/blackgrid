@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/database.dart';
+import '../domain/alerts.dart';
 import '../domain/catalog.dart';
 import '../domain/settings.dart';
 import 'raid_timers_controller.dart';
@@ -177,6 +178,50 @@ class SettingsController extends ChangeNotifier
   /// Saves the chosen theme through [save].
   Future<bool> setThemeChoice(ThemeChoice choice) =>
       save(_settings.copyWith(themeMode: choice));
+
+  Future<bool> _saveAlerts(AlertSettings alerts) =>
+      save(_settings.copyWith(alerts: alerts));
+
+  /// Switches the [kind] alert on or off through [save].
+  Future<bool> setAlertOn(AlertKind kind, bool on) => _saveAlerts(
+    _settings.alerts.withItem(
+      kind,
+      _settings.alerts.itemFor(kind).copyWith(on: on),
+    ),
+  );
+
+  /// Sets the sound of the [kind] alert.
+  ///
+  /// Returns `null` when the sound was saved, or a plain message when it was
+  /// refused or not saved. A file that is not WAV or MP3 is refused, and in
+  /// every failure the previous sound stays.
+  Future<String?> setAlertSound(AlertKind kind, AlertSound sound) async {
+    if (sound is FileSound && !sound.isSupported) {
+      return 'Only WAV and MP3 files can be used as an alert sound.';
+    }
+    final saved = await _saveAlerts(
+      _settings.alerts.withItem(
+        kind,
+        _settings.alerts.itemFor(kind).copyWith(sound: sound),
+      ),
+    );
+    return saved
+        ? null
+        : error ??
+              'Settings could not be saved. Your previous settings are kept.';
+  }
+
+  /// Sets the voice of every spoken alert; `null` is the Windows default.
+  Future<bool> setAlertVoice(String? voice) =>
+      _saveAlerts(_settings.alerts.copyWith(voice: voice));
+
+  /// Sets the speech speed, clamped to -5 through 5.
+  Future<bool> setAlertSpeed(int speed) =>
+      _saveAlerts(_settings.alerts.copyWith(speed: speed));
+
+  /// Sets the volume in percent, clamped to 0 through 100.
+  Future<bool> setAlertVolume(int volume) =>
+      _saveAlerts(_settings.alerts.copyWith(volume: volume));
 
   Future<bool> setMode(GameMode mode) => save(_settings.copyWith(mode: mode));
   Future<bool> setMap(String map) =>

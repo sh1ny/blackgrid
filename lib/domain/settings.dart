@@ -1,3 +1,4 @@
+import 'alerts.dart';
 import 'catalog.dart';
 import 'decision.dart';
 
@@ -240,7 +241,9 @@ class AppSettings {
     RaidTimerSettings? raidTimers,
     this.themeMode = ThemeChoice.system,
     this.showAllQuests = false,
+    AlertSettings? alerts,
   }) : raidTimers = raidTimers ?? RaidTimerSettings.defaults,
+       alerts = alerts ?? AlertSettings(),
        markerFilters = Map.unmodifiable(markerFilters);
   final GameMode mode;
   final String selectedMap;
@@ -266,6 +269,9 @@ class AppSettings {
   /// objectives of started quests. Kept only while [saveMarkerFilters] is on.
   final bool showAllQuests;
 
+  /// The audio alert preferences.
+  final AlertSettings alerts;
+
   AppSettings copyWith({
     GameMode? mode,
     String? selectedMap,
@@ -279,6 +285,7 @@ class AppSettings {
     RaidTimerSettings? raidTimers,
     ThemeChoice? themeMode,
     bool? showAllQuests,
+    AlertSettings? alerts,
   }) => AppSettings(
     mode: mode ?? this.mode,
     selectedMap: selectedMap ?? this.selectedMap,
@@ -292,6 +299,7 @@ class AppSettings {
     raidTimers: raidTimers ?? this.raidTimers,
     themeMode: themeMode ?? this.themeMode,
     showAllQuests: showAllQuests ?? this.showAllQuests,
+    alerts: alerts ?? this.alerts,
   );
   Map<String, Object?> toJson() => {
     'mode': mode.name,
@@ -306,6 +314,7 @@ class AppSettings {
     'raidTimers': raidTimers.toJson(),
     'themeMode': themeMode.name,
     'showAllQuests': showAllQuests,
+    'alerts': alerts.toJson(),
   };
 
   /// Reads settings from [json].
@@ -331,6 +340,15 @@ class AppSettings {
     } on Object {
       timers = RaidTimerSettings.defaults;
     }
+    // Decoded on its own so a bad alerts block cannot reset the other settings.
+    AlertSettings alerts;
+    try {
+      alerts = json.containsKey('alerts')
+          ? AlertSettings.fromJson(json['alerts'])
+          : AlertSettings();
+    } on Object {
+      alerts = AlertSettings();
+    }
     // Decoded on its own: a missing or unknown value reads as system.
     final theme = ThemeChoice.values.firstWhere(
       (c) => c.name == json['themeMode'],
@@ -349,6 +367,7 @@ class AppSettings {
       raidTimers: timers,
       themeMode: theme,
       showAllQuests: json['showAllQuests'] as bool? ?? false,
+      alerts: alerts,
     );
   }
 }

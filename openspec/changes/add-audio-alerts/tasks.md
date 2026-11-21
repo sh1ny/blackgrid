@@ -4,8 +4,8 @@
 
 | Requirement | Scenario | Test file | Test name | State |
 |---|---|---|---|---|
-| audio-alerts → The alerts and their spoken lines | Spoken line of an alert | test/domain/alerts_test.dart | `each alert has its fixed spoken line` | red |
-| audio-alerts → The alerts and their spoken lines | Unknown alert in stored settings | test/domain/alert_settings_test.dart | `unknown alert id in stored settings is ignored` | red |
+| audio-alerts → The alerts and their spoken lines | Spoken line of an alert | test/domain/alerts_test.dart | `each alert has its fixed spoken line` | green |
+| audio-alerts → The alerts and their spoken lines | Unknown alert in stored settings | test/domain/alert_settings_test.dart | `unknown alert id in stored settings is ignored` | green |
 | audio-alerts → Match found and raid starting fire from the raid lifecycle | A queue to a raid | test/application/alerts_controller_test.dart | `match found then raid starting each play once` | red |
 | audio-alerts → Match found and raid starting fire from the raid lifecycle | Raid with no countdown | test/application/alerts_controller_test.dart | `no raid starting alert without a countdown` | red |
 | audio-alerts → Match found and raid starting fire from the raid lifecycle | Same transition delivered twice | test/application/alerts_controller_test.dart | `a transition identity fires at most once` | red |
@@ -20,20 +20,20 @@
 | audio-alerts → Air filter reminders follow the queue and the raid's end | Raid ended by a client restart | test/application/alerts_controller_reminders_test.dart | `client-restart ending skips air filter off` | red |
 | audio-alerts → Air filter reminders follow the queue and the raid's end | Unit not built | test/application/alerts_controller_reminders_test.dart | `air filter reminders silent when the unit is not built` | red |
 | audio-alerts → Air filter reminders follow the queue and the raid's end | Progress unavailable | test/application/alerts_controller_reminders_test.dart | `air filter reminders wait for local progress` | red |
-| audio-alerts → Quest items reminder fires once per queue for item objectives on the map | A plant objective on the queued map | test/domain/alert_rules_test.dart | `quest items fires for an unfinished plant objective on the map` | red |
-| audio-alerts → Quest items reminder fires once per queue for item objectives on the map | Objective already done | test/domain/alert_rules_test.dart | `quest items silent when the objective is done` | red |
+| audio-alerts → Quest items reminder fires once per queue for item objectives on the map | A plant objective on the queued map | test/domain/alert_rules_test.dart | `quest items fires for an unfinished plant objective on the map` | green |
+| audio-alerts → Quest items reminder fires once per queue for item objectives on the map | Objective already done | test/domain/alert_rules_test.dart | `quest items silent when the objective is done` | green |
 | audio-alerts → Quest items reminder fires once per queue for item objectives on the map | Map changes in the same queue | test/application/alerts_controller_reminders_test.dart | `quest items plays at most once per queue` | red |
-| audio-alerts → Quest items reminder fires once per queue for item objectives on the map | Unknown map | test/domain/alert_rules_test.dart | `quest items silent for an unknown map` | red |
+| audio-alerts → Quest items reminder fires once per queue for item objectives on the map | Unknown map | test/domain/alert_rules_test.dart | `quest items silent for an unknown map` | green |
 | audio-alerts → Quest items reminder fires once per queue for item objectives on the map | Map or quest data unavailable | test/application/alerts_controller_reminders_test.dart | `quest items waits for map, quest or progress data` | red |
 | audio-alerts → Failed tasks reminder waits for the menus | Failure mid-raid | test/application/alerts_controller_reminders_test.dart | `failed tasks plays on return to menus, not mid-raid` | red |
-| audio-alerts → Failed tasks reminder waits for the menus | Failure that cannot be restarted | test/domain/alert_rules_test.dart | `failed tasks ignores tasks not marked restartable` | red |
+| audio-alerts → Failed tasks reminder waits for the menus | Failure that cannot be restarted | test/domain/alert_rules_test.dart | `failed tasks ignores tasks not marked restartable` | green |
 | audio-alerts → Failed tasks reminder waits for the menus | Two failures in one raid | test/application/alerts_controller_reminders_test.dart | `two failures play one reminder` | red |
 | audio-alerts → Failed tasks reminder waits for the menus | Failure read while in menus | test/application/alerts_controller_reminders_test.dart | `failure read in menus plays at once` | red |
 | audio-alerts → Failed tasks reminder waits for the menus | Client restart mid-raid | test/application/alerts_controller_reminders_test.dart | `failed tasks waits through a client restart until the raid ends` | red |
 | audio-alerts → Only fresh log events fire alerts | Live event | test/application/alerts_controller_test.dart | `a transition logged 2 s ago plays` | red |
 | audio-alerts → Only fresh log events fire alerts | Replay at startup | test/application/alerts_controller_test.dart | `a replayed transition logged 20 minutes ago plays nothing` | red |
 | audio-alerts → Only fresh log events fire alerts | Log time in the future | test/application/alerts_controller_test.dart | `a transition with a future log time counts as fresh` | red |
-| audio-alerts → Each alert has a switch | Defaults | test/domain/alert_settings_test.dart | `default switches: raid four on, reminders off` | red |
+| audio-alerts → Each alert has a switch | Defaults | test/domain/alert_settings_test.dart | `default switches: raid four on, reminders off` | green |
 | audio-alerts → Each alert has a switch | Alert off | test/application/alerts_controller_test.dart | `an alert switched off does not play` | red |
 | audio-alerts → Each alert plays speech or the player's sound file | Custom file | test/application/alerts_controller_playback_test.dart | `custom file plays in place of speech` | red |
 | audio-alerts → Each alert plays speech or the player's sound file | File removed | test/application/alerts_controller_playback_test.dart | `missing file falls back to speech and flags the row` | red |
@@ -47,12 +47,12 @@
 | audio-alerts → One voice for all spoken alerts | Saved voice uninstalled | test/application/alerts_controller_playback_test.dart | `uninstalled voice falls back to default and is reported` | red |
 | audio-alerts → One voice for all spoken alerts | No voices listed | test/ui/settings_page_alerts_test.dart | `unreadable voice list offers only Windows default` | red |
 | audio-alerts → Speed and volume stay in range | Volume applies to files | test/application/alerts_controller_playback_test.dart | `volume is passed to file playback` | red |
-| audio-alerts → Speed and volume stay in range | Out-of-range stored value | test/domain/alert_settings_test.dart | `stored speed 9 loads as 5` | red |
+| audio-alerts → Speed and volume stay in range | Out-of-range stored value | test/domain/alert_settings_test.dart | `stored speed 9 loads as 5` | green |
 | audio-alerts → Each alert has a test button | Test an alert that is off | test/ui/settings_page_alerts_test.dart | `test button plays an alert that is off` | red |
 | audio-alerts → Each alert has a test button | Test while another alert plays | test/application/alerts_controller_playback_test.dart | `a test waits behind the playing alert` | red |
-| audio-alerts → Alert settings survive restart | Restart keeps choices | test/application/settings_alerts_test.dart | `alert settings survive a restart` | red |
-| audio-alerts → Alert settings survive restart | Older record | test/application/settings_alerts_test.dart | `a record without alerts loads the defaults` | red |
-| audio-alerts → Alert settings survive restart | Save fails | test/application/settings_alerts_test.dart | `a failed volume save keeps the previous value` | red |
+| audio-alerts → Alert settings survive restart | Restart keeps choices | test/application/settings_alerts_test.dart | `alert settings survive a restart` | green |
+| audio-alerts → Alert settings survive restart | Older record | test/application/settings_alerts_test.dart | `a record without alerts loads the defaults` | green |
+| audio-alerts → Alert settings survive restart | Save fails | test/application/settings_alerts_test.dart | `a failed volume save keeps the previous value` | green |
 | audio-alerts → Alerts never touch the game | Alerts use only the audio channel | test/data/channel_audio_port_test.dart | `alerts call only the audio channel's methods` | red |
 | audio-alerts → Alerts never touch the game | An alert while the game has focus | tasks.md 6.4 | user task 6.4 | user |
 | raid-lifecycle → Queue progress transitions are published once | Queue to raid | test/domain/raid_lifecycle_queue_test.dart | `queue to raid publishes queue progress in order` | green |
@@ -81,11 +81,11 @@ Skills: dart-use-pattern-matching, dart-write-documentation, dart-add-unit-test,
 
 Skills: dart-use-pattern-matching, dart-write-documentation, dart-add-unit-test.
 
-- [ ] 2.1 Write failing tests in `test/domain/alerts_test.dart` and `test/domain/alert_settings_test.dart` for these rows: spoken lines, unknown alert id ignored, default switches, speed 9 loads as 5. Add JSON round-trip tests for the sealed `AlertSound` (speech, file, unknown kind loads as speech) and for a malformed `alerts` block giving the defaults while other settings stay.
-- [ ] 2.2 Implement the `AlertKind` ids and lines, the sealed `AlertSound` (`SpeechSound`, `FileSound`) and `AlertSettings` (voice, speed −5..5, volume 0..100, items) in `lib/domain/`. Store them in `AppSettings` under the `alerts` key, decoded in their own `try` (D4). Verify the 2.1 tests pass and flip their rows green.
-- [ ] 2.3 Write failing tests in `test/domain/alert_rules_test.dart` for the pure rules: the freshness check (30 s, future counts as fresh), quest items over a marker list, `ProgressFacts` and the progress catalog (plant item, plant quest item, mark and give quest item; done and unknown-map cases), the air filter built check by `normalizedName`, and whether a failed task is restartable.
-- [ ] 2.4 Implement the rules in `lib/domain/alert_rules.dart` (D2, D8, D9, D10). Verify the 2.3 tests pass and flip their rows green.
-- [ ] 2.5 Add the alert setters to `SettingsController`, with clamping, the WAV/MP3 check on a file sound and a save failure that keeps the previous value. Write the `test/application/settings_alerts_test.dart` rows first (restart keeps choices, older record, save fails), then implement. Verify they pass and flip the rows green.
+- [x] 2.1 Write failing tests in `test/domain/alerts_test.dart` and `test/domain/alert_settings_test.dart` for these rows: spoken lines, unknown alert id ignored, default switches, speed 9 loads as 5. Add JSON round-trip tests for the sealed `AlertSound` (speech, file, unknown kind loads as speech) and for a malformed `alerts` block giving the defaults while other settings stay.
+- [x] 2.2 Implement the `AlertKind` ids and lines, the sealed `AlertSound` (`SpeechSound`, `FileSound`) and `AlertSettings` (voice, speed −5..5, volume 0..100, items) in `lib/domain/`. Store them in `AppSettings` under the `alerts` key, decoded in their own `try` (D4). Verify the 2.1 tests pass and flip their rows green.
+- [x] 2.3 Write failing tests in `test/domain/alert_rules_test.dart` for the pure rules: the freshness check (30 s, future counts as fresh), quest items over a marker list, `ProgressFacts` and the progress catalog (plant item, plant quest item, mark and give quest item; done and unknown-map cases), the air filter built check by `normalizedName`, and whether a failed task is restartable.
+- [x] 2.4 Implement the rules in `lib/domain/alert_rules.dart` (D2, D8, D9, D10). Verify the 2.3 tests pass and flip their rows green.
+- [x] 2.5 Add the alert setters to `SettingsController`, with clamping, the WAV/MP3 check on a file sound and a save failure that keeps the previous value. Write the `test/application/settings_alerts_test.dart` rows first (restart keeps choices, older record, save fails), then implement. Verify they pass and flip the rows green.
 
 ## 3. Alerts controller and playback queue
 
