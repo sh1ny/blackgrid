@@ -107,7 +107,7 @@ Every event SHALL carry the time written on its record and a record identity mad
 - **THEN** the two queue-entered events have different record identities
 
 ### Requirement: Application log lines become lifecycle events
-Blackgrid SHALL turn application log records into session mode, profile selected, queue entered, scene loaded, match found, raid starting, raid started, matching aborted and raid rejoined events, each recognised by its fixed message text. Any other record SHALL produce no event.
+Blackgrid SHALL turn application log records into session mode, profile selected, queue entered, scene loaded, match found, server joined, raid starting, raid started, matching aborted and raid rejoined events, each recognised by its fixed message text. Any other record SHALL produce no event.
 
 #### Scenario: Menu events
 - **WHEN** the application log holds `Session mode: PvpSeason` and `PrepareSelectedProfileLocally ProfileId:<id> AccountId:<n>`
@@ -118,8 +118,8 @@ Blackgrid SHALL turn application log records into session mode, profile selected
 - **THEN** a raid-rejoined event is produced with status MatchWait and map Customs
 
 #### Scenario: A full raid in the application log
-- **WHEN** the application log holds, in order, `Matching with group id: 6601208`, `scene preset path:maps/lighthouse_preset.bundle rcid:lighthouse.scenespreset.asset`, `MatchingCompleted:89.19 real:97.16 diff:7.97`, `GameStarting:150.37(26.13) real:164.48(26.56) diff:14.11` and `GameStarted:161.35(10.98) real:176.48(12) diff:15.12`
-- **THEN** the events are queue entered, scene loaded on Lighthouse, match found, raid starting and raid started, in that order
+- **WHEN** the application log holds, in order, `Matching with group id: 6601208`, `scene preset path:maps/lighthouse_preset.bundle rcid:lighthouse.scenespreset.asset`, `MatchingCompleted:89.19 real:97.16 diff:7.97`, `TRACE-NetworkGameCreate profileStatus: 'Profileid: <id>, Status: Busy, RaidMode: Online, Location: Lighthouse, shortId: <id>'`, `GameStarting:150.37(26.13) real:164.48(26.56) diff:14.11` and `GameStarted:161.35(10.98) real:176.48(12) diff:15.12`
+- **THEN** the events are queue entered, scene loaded on Lighthouse, match found, server joined, raid starting and raid started, in that order
 
 #### Scenario: Matching cancelled
 - **WHEN** the application log holds `Network game matching cancelled.`
