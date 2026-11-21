@@ -386,6 +386,43 @@ void main() {
       });
     });
 
+    test('two failures and the return to menus in one batch play once', () {
+      runAlerts(now, (rig) {
+        _openWithData(rig);
+        rig.settings.setOn(AlertKind.airFilterOff, on: false);
+        rig.lifecycle.startRaid(_t());
+        final id = rig.lifecycle.nextId;
+        rig.lifecycle.feedBatch([
+          TaskFailed(id(), _t(), 'task-1'),
+          TaskFailed(id(), _t(), 'task-1'),
+          RaidExit(id(), _t()),
+          ProfileSelected(id(), _t()),
+        ]);
+        rig.settle();
+
+        expect(
+          rig.played.where((l) => l == 'Restart failed tasks'),
+          hasLength(1),
+        );
+      });
+    });
+
+    test('a later failure read in menus plays again', () {
+      runAlerts(now, (rig) {
+        _openWithData(rig);
+        rig.lifecycle.profile(_t());
+        rig.lifecycle.taskFailed(_t(), 'task-1');
+        rig.settle();
+        rig.lifecycle.taskFailed(_t(), 'task-1');
+        rig.settle();
+
+        expect(
+          rig.played.where((l) => l == 'Restart failed tasks'),
+          hasLength(2),
+        );
+      });
+    });
+
     test('failed tasks waits through a client restart until the raid ends', () {
       runAlerts(now, (rig) {
         _openWithData(rig);

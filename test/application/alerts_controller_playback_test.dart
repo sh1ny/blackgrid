@@ -272,6 +272,46 @@ void main() {
     });
   });
 
+  test('the voice note goes away once the saved voice speaks again', () {
+    runAlerts(origin, (rig) {
+      rig.settings.setAlerts(AlertSettings(voice: 'gone'));
+      final c = rig.open().controller;
+      c.test(AlertKind.matchFound);
+      rig.settle();
+      rig.finish(const AudioFailure(AudioFailureCode.voiceMissing));
+      rig.finish();
+      expect(c.voiceNote, isNotNull);
+
+      // The player reinstalls the voice; the next speak with it succeeds.
+      c.test(AlertKind.matchFound);
+      rig.settle();
+      rig.finish();
+
+      expect(rig.audio.playCalls.last.args['voice'], 'gone');
+      expect(c.voiceNote, isNull);
+    });
+  });
+
+  test('the voice note goes away when the voice list has it again', () {
+    runAlerts(origin, (rig) {
+      rig.settings.setAlerts(AlertSettings(voice: 'gone'));
+      final c = rig.open().controller;
+      c.test(AlertKind.matchFound);
+      rig.settle();
+      rig.finish(const AudioFailure(AudioFailureCode.voiceMissing));
+      rig.finish();
+      expect(c.voiceNote, isNotNull);
+
+      rig.audio.voiceList = const [
+        AudioVoice(id: 'gone', name: 'Gone', language: 'en-US'),
+      ];
+      c.refreshVoices();
+      rig.settle();
+
+      expect(c.voiceNote, isNull);
+    });
+  });
+
   test('a test waits behind the playing alert', () {
     runAlerts(origin, (rig) {
       final c = rig.open().controller;

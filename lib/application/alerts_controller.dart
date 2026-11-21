@@ -117,6 +117,7 @@ class AlertsController extends ChangeNotifier {
     this._timerFactory = Timer.new,
   }) {
     _subscription = _lifecycle.transitions.listen(_onTransition);
+    _lifecycle.addListener(_onLifecycleBatch);
     for (final source in _sources) {
       source.addListener(_onSourceChanged);
     }
@@ -145,6 +146,13 @@ class AlertsController extends ChangeNotifier {
   bool _questWaiting = false;
   String? _questMapId;
   bool _failedPending = false;
+
+  /// Counts lifecycle batches: the lifecycle notifies once per batch, before
+  /// it publishes the batch's transitions.
+  int _lifecycleBatch = 0;
+
+  /// The batch whose transitions released the failed tasks reminder.
+  int? _failedReleasedBatch;
   final Queue<_QueuedAlert> _waiting = Queue();
   bool _playing = false;
   Completer<AudioResult>? _pendingPlayback;
@@ -250,6 +258,7 @@ class AlertsController extends ChangeNotifier {
     }
     if (_disposed) return;
     _voices = List.unmodifiable(read);
+    if (read.any((voice) => voice.id == _missingVoice)) _missingVoice = null;
     _voicesUnavailable = read.isEmpty;
     _voicesRead = true;
     notifyListeners();
@@ -374,6 +383,9 @@ class AlertsController extends ChangeNotifier {
     final key = (AlertKind.failedTasks, transition.id);
     if (_firedTransitions.contains(key)) return;
     _remember(_firedTransitions, key, _maxFiredTransitions);
+    // A failure read in the same batch as one that already released the
+    // reminder is covered by it: one reminder for the failures of a raid.
+    if (_failedReleasedBatch == _lifecycleBatch) return;
     _failedPending = true;
     _releaseFailedTasks();
   }
@@ -388,6 +400,7 @@ class AlertsController extends ChangeNotifier {
     final state = _lifecycle.state;
     if (state.phase != RaidPhase.inMenus || state.currentRaid != null) return;
     _failedPending = false;
+    _failedReleasedBatch = _lifecycleBatch;
     _fire(AlertKind.failedTasks);
   }
 
@@ -400,6 +413,8 @@ class AlertsController extends ChangeNotifier {
       _failed('The "${kind.line}" alert could not be decided.');
     }
   }
+
+  void _onLifecycleBatch() => _lifecycleBatch++;
 
   void _onSourceChanged() {
     if (_disposed) return;
@@ -499,16 +514,18 @@ class AlertsController extends ChangeNotifier {
     _plan();
   }
 
-  /// Fires [kind] for [transition] when the transition is fresh, has not fired
-  /// this alert before and the alert is on.
+  /// Fires [kind] for [transition] when the transition is fresh, has not been
+  /// seen for this alert before and the alert is on.
   ///
   /// Returns whether the alert fired.
   bool _fireFromLog(AlertKind kind, RaidTransition transition) {
     if (!isFreshLogTime(transition.time, _clock())) return false;
     final key = (kind, transition.id);
     if (_firedTransitions.contains(key)) return false;
-    if (!_settings.alerts.itemFor(kind).on) return false;
+    // Remembered even while the alert is off, so a redelivered transition
+    // never plays after the switch goes on.
     _remember(_firedTransitions, key, _maxFiredTransitions);
+    if (!_settings.alerts.itemFor(kind).on) return false;
     _fire(kind);
     return true;
   }
@@ -610,6 +627,8 @@ class AlertsController extends ChangeNotifier {
     }
     switch (result) {
       case AudioOk():
+        // The saved voice spoke, so it is installed again.
+        if (voice != null && voice == _missingVoice) _missingVoice = null;
         _succeeded();
       case AudioFailure(code: AudioFailureCode.stopped):
         notifyListeners();
@@ -693,6 +712,7 @@ class AlertsController extends ChangeNotifier {
     }
     unawaited(_stopQuietly());
     unawaited(_subscription.cancel());
+    _lifecycle.removeListener(_onLifecycleBatch);
     for (final source in _sources) {
       source.removeListener(_onSourceChanged);
     }

@@ -126,6 +126,23 @@ void main() {
       });
     });
 
+    test('a transition read while its alert is off never plays later', () {
+      runAlerts(now, (rig) {
+        rig.settings.setOn(AlertKind.matchFound, on: false);
+        rig.open();
+        final transition = MatchFoundTransition(rig.lifecycle.nextId(), now);
+        rig.lifecycle.emit(transition);
+        rig.settle();
+
+        // The switch goes on and a rescan delivers the same transition again.
+        rig.settings.setOn(AlertKind.matchFound, on: true);
+        rig.lifecycle.emit(transition);
+        rig.settle();
+
+        expect(rig.audio.calls, isEmpty);
+      });
+    });
+
     test('a replayed transition logged 20 minutes ago plays nothing', () {
       runAlerts(now, (rig) {
         rig.open();
