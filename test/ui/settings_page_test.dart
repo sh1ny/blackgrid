@@ -178,7 +178,7 @@ Future<void> _breakSettingsSaves(WidgetTester tester, M1Harness h) =>
 
 void main() {
   group('sections', () {
-    testWidgets('sidebar lists nine sections in order', (tester) async {
+    testWidgets('sidebar lists the sections in order', (tester) async {
       await _pumpHarness(tester);
       final texts = [
         for (final text in tester.widgetList<Text>(
@@ -197,6 +197,7 @@ void main() {
         'Local progress',
         'Game files',
         'Raid timers',
+        'Alerts',
         'Map',
         'Diagnostics',
       ]);
@@ -206,7 +207,7 @@ void main() {
           tester.getTopLeft(_title(section)).dy,
       ];
       expect(tops, orderedEquals([...tops]..sort()));
-      expect(SettingsSection.values, hasLength(8));
+      expect(SettingsSection.values, hasLength(9));
     });
 
     testWidgets('settings-page: Jump to a section', (tester) async {
@@ -215,6 +216,18 @@ void main() {
       expect(tester.getTopLeft(title).dy, greaterThan(_windowHeight));
 
       await tester.tap(_nav(SettingsSection.raidTimers));
+      await tester.pumpAndSettle();
+
+      expect(_inView(tester, title), isTrue);
+      expect(_holdsFocus(tester, title), isTrue);
+    });
+
+    testWidgets('settings-page: Jump to Alerts', (tester) async {
+      await _pumpHarness(tester);
+      final title = _title(SettingsSection.alerts);
+      expect(tester.getTopLeft(title).dy, greaterThan(_windowHeight));
+
+      await tester.tap(_nav(SettingsSection.alerts));
       await tester.pumpAndSettle();
 
       expect(_inView(tester, title), isTrue);

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blackgrid/application/app_services.dart';
+import 'package:blackgrid/application/audio_port.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/local_progress.dart';
@@ -15,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
+import '../support/fake_audio_port.dart';
 
 Future<void> _whenMapSession(
   AppServices services,
@@ -222,6 +224,58 @@ void main() {
       DateTime(2026, 10, 31, 22, 9, 4),
     );
   });
+  test(
+    'the alerts controller hears the first log replay and is disposed',
+    () async {
+      final root = await Directory.systemTemp.createTemp('blackgrid-alerts-');
+      final folder = await Directory(
+        '${root.path}/log_2026.10.31_22-00-00_1.3.0.0.48484',
+      ).create();
+      String line(String message, String time) =>
+          '2026-10-31 $time|1.3.0.0.48484|Info|application|$message\n';
+      await File('${folder.path}/application_000.log').writeAsString(
+        line('Session mode: Pve', '22:00:10.000') +
+            line(
+              'PrepareSelectedProfileLocally ProfileId:aaaa AccountId:1',
+              '22:00:30.000',
+            ) +
+            line('Matching with group id: 1', '22:01:00.000') +
+            line('MatchingCompleted: 1', '22:02:29.000') +
+            line(
+              'TRACE-NetworkGameCreate profileStatus: Location: bigmap',
+              '22:02:30.000',
+            ),
+      );
+      final audio = FakeAudioPort()..autoComplete = const AudioOk();
+      final services = AppServices(
+        database: BlackgridDatabase(NativeDatabase.memory()),
+        client: MockClient((request) async => http.Response('', 503)),
+        // Two seconds after the match was found: only that line is fresh.
+        clock: () => DateTime(2026, 10, 31, 22, 2, 32),
+        audioPort: audio,
+      );
+      var disposed = false;
+      addTearDown(() async {
+        if (!disposed) await services.dispose();
+        await root.delete(recursive: true);
+      });
+      await services.settings.save(AppSettings(gameLogDirectory: root.path));
+      await services.initialize();
+      await pumpEventQueue();
+
+      // Built before the first bind: the replay reached the controller.
+      expect(audio.playCalls.map((call) => call.args['text']), ['Match found']);
+
+      await services.dispose();
+      disposed = true;
+      await pumpEventQueue();
+      expect(audio.calls.last.method, 'stop');
+      expect(
+        () => services.alerts.addListener(() {}),
+        throwsA(isA<FlutterError>()),
+      );
+    },
+  );
   test('the local stats controller is built and disposed with the services', () async {
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),

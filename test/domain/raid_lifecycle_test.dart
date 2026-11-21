@@ -55,6 +55,16 @@ final class _Trace {
   RaidLifecycleState get last => states.last;
   List<RaidPhase> get phases => [for (final s in states) s.phase];
   Iterable<T> all<T extends RaidTransition>() => transitions.whereType<T>();
+
+  /// The raid started, raid ended and matching aborted transitions, without
+  /// the queue progress ones.
+  List<RaidTransition> get lifecycle => [
+    for (final t in transitions)
+      if (t is RaidStartedTransition ||
+          t is RaidEndedTransition ||
+          t is MatchingAbortedTransition)
+        t,
+  ];
 }
 
 /// A queued raid on Customs up to and including raid started at 19:41:06.
@@ -122,7 +132,7 @@ void main() {
       final trace = _Trace(events);
       final started = trace.all<RaidStartedTransition>().single;
       final ended = trace.all<RaidEndedTransition>().single;
-      expect(trace.transitions, hasLength(2));
+      expect(trace.lifecycle, hasLength(2));
       expect(started.id, (events[5] as RecordedGameLogEvent).id);
       expect(started.time, log.t('19:41:06'));
       expect(ended.id, (events[6] as RecordedGameLogEvent).id);
@@ -314,7 +324,7 @@ void main() {
       final abort = trace.all<MatchingAbortedTransition>().single;
       expect(abort.id, (events[4] as RecordedGameLogEvent).id);
       expect(abort.time, log.t('19:40:20'));
-      expect(trace.transitions, hasLength(1));
+      expect(trace.lifecycle, hasLength(1));
     });
 
     test('profile select while loading aborts the queue', () {
@@ -329,7 +339,7 @@ void main() {
       expect(trace.last.phase, RaidPhase.inMenus);
       expect(trace.last.lastQueueAborted, isTrue);
       expect(trace.all<MatchingAbortedTransition>(), hasLength(1));
-      expect(trace.transitions, hasLength(1));
+      expect(trace.lifecycle, hasLength(1));
     });
 
     test('raid exit while in the queue aborts it', () {
@@ -537,7 +547,7 @@ void main() {
       expect(steps[1].$2, isEmpty);
       expect(steps[1].$1.raid?.endTime, isNull);
       expect(steps[2].$1.phase, RaidPhase.inQueue);
-      final ended = steps[2].$2.single as RaidEndedTransition;
+      final ended = steps[2].$2.whereType<RaidEndedTransition>().single;
       expect(ended.cause, RaidEndCause.clientRestart);
       expect(ended.time, log.t('23:15:20'));
       expect(ended.id, profile.id);

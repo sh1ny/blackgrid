@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 import '../data/catalog_client.dart';
+import '../data/channel_audio_port.dart';
 import '../data/database.dart';
 import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
@@ -21,6 +22,9 @@ import '../domain/catalog.dart';
 import '../maps/map_marker_icons.dart';
 import '../maps/native_map_scene.dart';
 import '../maps/prepared_map_loader.dart';
+import '../maps/quest_objective_refs.dart';
+import 'alerts_controller.dart';
+import 'audio_port.dart';
 import 'catalog_controller.dart';
 import 'history_controller.dart';
 import 'live_map_data_controller.dart';
@@ -44,7 +48,8 @@ class AppServices {
   /// Creates the application services and owns their disposal.
   ///
   /// If [scanFrameRecorder] is supplied, these services own and dispose it in
-  /// the same way as the default recorder.
+  /// the same way as the default recorder. Alerts play through [audioPort],
+  /// which defaults to the runner's `blackgrid/audio` channel.
   AppServices({
     required this.database,
     required http.Client client,
@@ -58,6 +63,7 @@ class AppServices {
     ScanFrameRecorder? scanFrameRecorder,
     ItemIconCache? itemIcons,
     MapMarkerIcons? markerIcons,
+    AudioPort? audioPort,
     String? scanRuntimeDirectory,
     ScanTemplatesLoader? scanTemplatesLoader,
     ScanCaptureFactory? scanCaptureFactory,
@@ -116,6 +122,20 @@ class AppServices {
       catalog: catalog,
       progress: progress,
       clock: clock ?? DateTime.now,
+    );
+    // Also before the first bind: the transitions stream does not buffer,
+    // and the replay must reach the freshness gate.
+    alerts = AlertsController(
+      lifecycle: raidLifecycle,
+      settings: settings,
+      catalog: catalog,
+      progress: progress,
+      audio: audioPort ?? ChannelAudioPort(),
+      clock: clock ?? DateTime.now,
+      questObjectives: (mapId) {
+        final markers = maps.markersFor(mapId);
+        return markers == null ? null : questObjectiveRefs(markers);
+      },
     );
     // Also before the first bind: the transitions stream does not buffer.
     localStats = LocalStatsController(
@@ -206,6 +226,12 @@ class AppServices {
   /// Projects the raid timers for the shell strip and records scav cooldown
   /// starts as raids end.
   late final RaidTimersController raidTimers;
+
+  /// Plays the spoken alerts and owns their playback queue.
+  ///
+  /// Built before the first bind, like [raidTimers]; disposing it stops
+  /// playback.
+  late final AlertsController alerts;
 
   /// Stores raids and flea sales as the lifecycle publishes them and serves
   /// the Stats dialog.
@@ -468,6 +494,7 @@ class AppServices {
       // Consumers before the authority they listen to, the authority before
       // the sources it listens to. After mapSession.close() has closed the
       // reader the timers listen to.
+      alerts.dispose();
       raidTimers.dispose();
       selection.dispose();
       progress.dispose();

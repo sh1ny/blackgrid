@@ -108,7 +108,11 @@ class RaidTimersController extends ChangeNotifier {
       case RaidStartedTransition() ||
           MatchingAbortedTransition() ||
           FleaSoldTransition() ||
-          TaskTransition():
+          TaskTransition() ||
+          QueueEnteredTransition() ||
+          MapKnownTransition() ||
+          MatchFoundTransition() ||
+          RaidStartingTransition():
         break;
     }
   }

@@ -81,6 +81,19 @@ class MapController extends ChangeNotifier {
       _preparedMap?.markers ??
       const [];
 
+  /// The active marker inventory of the map with settings ID
+  /// [settingsMapId].
+  ///
+  /// Returns the live markers when map data has been published for it,
+  /// otherwise the bundled pack markers. Returns `null` when no map pack is
+  /// loaded or the pack has no such map.
+  List<PreparedMarker>? markersFor(String settingsMapId) {
+    final pack = _pack;
+    if (pack == null) return null;
+    return _activeMarkerInventories[settingsMapId] ??
+        pack.byId[settingsMapId]?.markers;
+  }
+
   String? get selectedMapId => _selectedMapId;
 
   /// Changes only when selected map or prepared content authority changes.

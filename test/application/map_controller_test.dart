@@ -30,6 +30,44 @@ void main() {
     for (final marker in controller.raidMatchedMarkers) marker.marker.id,
   ];
 
+  group('markersFor', () {
+    test('returns the bundled markers of a map in the pack', () {
+      expect(controller.markersFor('interchange')!.map((m) => m.id), [
+        'west',
+        'east',
+        'gate',
+        'upper',
+        'q-open',
+        'q-done',
+        'q-other-open',
+        'q-notask',
+        'q-noobj',
+      ]);
+      // A map that was never opened reads from the pack too.
+      expect(controller.markersFor('icebreaker'), hasLength(9));
+    });
+
+    test('returns the live markers once published', () {
+      final live = [controller.activeMarkers.first];
+      controller.publishMarkers({'interchange': live}, changed: true);
+
+      expect(controller.markersFor('interchange'), live);
+      // A pack map the live data omits has no markers.
+      expect(controller.markersFor('icebreaker'), isEmpty);
+
+      controller.publishMarkers(null, changed: true);
+      expect(controller.markersFor('interchange'), hasLength(9));
+    });
+
+    test('is null for a map outside the pack and with no pack loaded', () {
+      expect(controller.markersFor('nowhere'), isNull);
+
+      final empty = _controller();
+      addTearDown(empty.dispose);
+      expect(empty.markersFor('interchange'), isNull);
+    });
+  });
+
   group('map-controls: This raid lists the matched extracts', () {
     test(
       'lists only highlighted markers that pass category, floor and map',

@@ -114,10 +114,19 @@ final class SceneLoaded extends RecordedGameLogEvent {
   final String? mapId;
 }
 
-/// Matchmaking found a raid.
+/// Matchmaking completed.
+///
+/// The game also logs this when the player cancels matching, so it does not by
+/// itself mean a raid was found; see [ServerJoined].
 final class MatchFound extends RecordedGameLogEvent {
   /// Creates the event.
   const MatchFound(super.id, super.time);
+}
+
+/// The client joined the game server of the raid it was matched to.
+final class ServerJoined extends RecordedGameLogEvent {
+  /// Creates the event.
+  const ServerJoined(super.id, super.time);
 }
 
 /// The game began starting the raid.
@@ -428,6 +437,42 @@ final class MatchingAbortedTransition extends RaidTransition {
   const MatchingAbortedTransition(super.id, super.time);
 }
 
+/// The player entered the matchmaking queue.
+///
+/// Carries the queue-entered record's identity and time; it is published even
+/// when the same event also ends an interrupted raid.
+final class QueueEnteredTransition extends RaidTransition {
+  /// Creates the transition.
+  const QueueEnteredTransition(super.id, super.time);
+}
+
+/// The map of the queued raid became known.
+///
+/// Published for a scene loaded record read in a queue (see
+/// [RaidLifecycleState.pendingEntry]), never for a rejoin.
+final class MapKnownTransition extends RaidTransition {
+  /// Creates the transition for the scene mapped to [mapId].
+  const MapKnownTransition(super.id, super.time, this.mapId);
+
+  /// The settings map ID, or `null` when the scene is not a supported map.
+  final String? mapId;
+}
+
+/// Matchmaking found a raid.
+///
+/// Published for the first server joined record read after matchmaking
+/// completed in a queue, never for a cancelled match or a rejoin.
+final class MatchFoundTransition extends RaidTransition {
+  /// Creates the transition.
+  const MatchFoundTransition(super.id, super.time);
+}
+
+/// The game began starting the raid.
+final class RaidStartingTransition extends RaidTransition {
+  /// Creates the transition.
+  const RaidStartingTransition(super.id, super.time);
+}
+
 /// A flea market sale was read from the push-notifications log.
 ///
 /// It carries the sale's record identity and time; it never changes the raid
@@ -507,6 +552,7 @@ final class RaidLifecycleState {
     this.pendingEntry,
     this.pendingStart,
     this.restartProfile,
+    this.matchAnnounced = false,
   }) : _modeHistory = null;
 
   const RaidLifecycleState._({
@@ -524,6 +570,7 @@ final class RaidLifecycleState {
     this.pendingEntry,
     this.pendingStart,
     this.restartProfile,
+    this.matchAnnounced = false,
     this._modeHistory,
   });
 
@@ -578,6 +625,11 @@ final class RaidLifecycleState {
   /// The first profile selection after a restart interrupted the raid.
   final ({LogRecordId id, DateTime time})? restartProfile;
 
+  /// Whether the match of the current queue was already published.
+  ///
+  /// Cleared by a queue entry.
+  final bool matchAnnounced;
+
   /// The raid that has not ended, or `null`.
   Raid? get currentRaid => switch (raid) {
     final Raid r when r.isCurrent => r,
@@ -600,6 +652,7 @@ final class RaidLifecycleState {
     Object? pendingEntry = _keep,
     Object? pendingStart = _keep,
     Object? restartProfile = _keep,
+    bool? matchAnnounced,
   }) => _copyWith(
     phase: phase,
     raid: raid,
@@ -615,6 +668,7 @@ final class RaidLifecycleState {
     pendingEntry: pendingEntry,
     pendingStart: pendingStart,
     restartProfile: restartProfile,
+    matchAnnounced: matchAnnounced,
   );
 
   RaidLifecycleState _copyWith({
@@ -632,6 +686,7 @@ final class RaidLifecycleState {
     Object? pendingEntry = _keep,
     Object? pendingStart = _keep,
     Object? restartProfile = _keep,
+    bool? matchAnnounced,
     Object? modeHistory = _keep,
   }) => RaidLifecycleState._(
     phase: phase ?? this.phase,
@@ -668,6 +723,7 @@ final class RaidLifecycleState {
     restartProfile: identical(restartProfile, _keep)
         ? this.restartProfile
         : restartProfile as ({LogRecordId id, DateTime time})?,
+    matchAnnounced: matchAnnounced ?? this.matchAnnounced,
     modeHistory: identical(modeHistory, _keep)
         ? _modeHistory
         : modeHistory as _ModeEvidence?,
@@ -706,9 +762,10 @@ RaidReduction reduce(RaidLifecycleState state, GameLogEvent event) =>
       final QueueEntered e => _queueEntered(state, e),
       final SceneLoaded e => _sceneLoaded(state, e),
       MatchFound() => (state.copyWith(phase: RaidPhase.matchFound), const []),
+      final ServerJoined e => _serverJoined(state, e),
       final RaidStarting e => (
         state.copyWith(phase: RaidPhase.raidStarting, pendingCountdown: e.time),
-        const [],
+        [RaidStartingTransition(e.id, e.time)],
       ),
       final RaidStarted e => _raidStarted(state, e),
       final MatchingAborted e => _matchingAborted(state, e),
@@ -934,14 +991,34 @@ RaidReduction _queueEntered(RaidLifecycleState state, QueueEntered e) {
       pendingMapId: null,
       pendingEntry: RaidEntry.queue,
       pendingStart: null,
+      matchAnnounced: false,
     ),
-    transitions,
+    [...transitions, QueueEnteredTransition(e.id, e.time)],
   );
 }
 
+// Matchmaking completes on a cancel too; only joining the raid's server after
+// it, in a queue, means a raid was found.
+RaidReduction _serverJoined(RaidLifecycleState state, ServerJoined e) =>
+    state.phase == RaidPhase.matchFound &&
+        state.pendingEntry == RaidEntry.queue &&
+        !state.matchAnnounced
+    ? (
+        state.copyWith(matchAnnounced: true),
+        [MatchFoundTransition(e.id, e.time)],
+      )
+    : (state, const []);
+
+// A scene read in a queue names the queued map. A rejoin sets another pending
+// entry, so a scene after it publishes nothing.
 RaidReduction _sceneLoaded(RaidLifecycleState state, SceneLoaded e) =>
     _isLoading(state.phase)
-    ? (state.copyWith(pendingMapId: e.mapId), const [])
+    ? (
+        state.copyWith(pendingMapId: e.mapId),
+        state.pendingEntry == RaidEntry.queue
+            ? [MapKnownTransition(e.id, e.time, e.mapId)]
+            : const [],
+      )
     : (state, const []);
 
 RaidReduction _raidRejoined(RaidLifecycleState state, RaidRejoined e) {

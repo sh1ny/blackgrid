@@ -134,7 +134,11 @@ class LocalStatsController extends ChangeNotifier {
         unawaited(_enqueueWrite(() => _store.recordSale(row)));
       case RaidEndedTransition() ||
           MatchingAbortedTransition() ||
-          TaskTransition():
+          TaskTransition() ||
+          QueueEnteredTransition() ||
+          MapKnownTransition() ||
+          MatchFoundTransition() ||
+          RaidStartingTransition():
         break;
     }
   }

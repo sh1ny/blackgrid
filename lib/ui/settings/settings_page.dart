@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../application/app_services.dart';
+import '../../application/alerts_controller.dart';
 import '../../application/app_version.dart' as app_version;
 import '../../application/live_map_data_controller.dart';
 import '../../domain/catalog.dart';
@@ -12,6 +13,7 @@ import '../ember/ember_tokens.dart';
 import '../ember/theme_access.dart';
 import '../labels.dart';
 import '../panels.dart';
+import 'alerts_settings.dart';
 import 'commit_field.dart';
 import 'live_scan_settings.dart';
 import 'local_progress_settings.dart';
@@ -46,6 +48,7 @@ class SettingsPage extends StatefulWidget {
     this.section,
     this.request = 0,
     this.version = app_version.appVersion,
+    this.alerts,
   });
 
   /// The services the sections read and change.
@@ -68,6 +71,14 @@ class SettingsPage extends StatefulWidget {
 
   /// The app version shown in General.
   final String version;
+
+  /// The controller behind the Alerts section's test, preview, voice and file
+  /// buttons, or `null` while none is wired.
+  ///
+  /// Without it the section still shows and saves the switches, voice, speed
+  /// and volume, but its test, preview, "Get more voices" and file buttons are
+  /// disabled.
+  final AlertsController? alerts;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -289,6 +300,9 @@ class _SettingsPageState extends State<SettingsPage> {
         ], contentKey: const Key('settings-local-progress')),
         _section(context, SettingsSection.gameFiles, _gameFiles()),
         _section(context, SettingsSection.raidTimers, _raidTimers(context)),
+        _section(context, SettingsSection.alerts, [
+          AlertsSettings(settings: settings, alerts: widget.alerts),
+        ], contentKey: const Key('settings-alerts')),
         _section(context, SettingsSection.map, _map()),
         _section(context, SettingsSection.diagnostics, [
           CollapsibleGridPanel(

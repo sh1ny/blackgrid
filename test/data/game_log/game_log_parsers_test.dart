@@ -85,6 +85,9 @@ void main() {
         '${_app}scene preset path:maps/lighthouse_preset.bundle '
             'rcid:lighthouse.scenespreset.asset',
         '${_app}MatchingCompleted:89.19 real:97.16 diff:7.97',
+        "${_app}TRACE-NetworkGameCreate profileStatus: 'Profileid: aaaa, "
+            "Status: Busy, RaidMode: Online, Location: Lighthouse, "
+            "shortId: ABC123'",
         '${_app}GameStarting:150.37(26.13) real:164.48(26.56) diff:14.11',
         '${_app}GameStarted:161.35(10.98) real:176.48(12) diff:15.12',
       ];
@@ -95,8 +98,9 @@ void main() {
       expect(events[1], isA<SceneLoaded>());
       expect((events[1]! as SceneLoaded).mapId, 'lighthouse');
       expect(events[2], isA<MatchFound>());
-      expect(events[3], isA<RaidStarting>());
-      expect(events[4], isA<RaidStarted>());
+      expect(events[3], isA<ServerJoined>());
+      expect(events[4], isA<RaidStarting>());
+      expect(events[5], isA<RaidStarted>());
     });
 
     test('matching cancelled line', () {
