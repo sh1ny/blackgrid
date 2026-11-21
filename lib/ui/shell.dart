@@ -256,6 +256,7 @@ class _BlackgridShellState extends State<BlackgridShell> {
                         Positioned.fill(
                           child: SettingsPage(
                             services: widget.services,
+                            alerts: widget.services.alerts,
                             backLabel:
                                 'Back to ${_areaName(settings.backArea)}',
                             onBack: _closeSettings,
