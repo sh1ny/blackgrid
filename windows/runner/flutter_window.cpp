@@ -27,6 +27,8 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   local_data_channel_ =
       RegisterLocalDataChannel(flutter_controller_->engine()->messenger());
+  audio_channel_ = RegisterAudioChannel(
+      flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -42,6 +44,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  audio_channel_.reset();
   local_data_channel_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
@@ -65,6 +68,19 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case kAudioChannelMessage:
+      if (audio_channel_) {
+        audio_channel_->HandleMessage(wparam, lparam);
+      }
+      return 0;
+    case WM_TIMER:
+      if (wparam == kAudioChannelTimerId) {
+        if (audio_channel_) {
+          audio_channel_->HandleTimer();
+        }
+        return 0;
+      }
+      break;
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;

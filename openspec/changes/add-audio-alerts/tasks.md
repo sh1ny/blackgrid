@@ -53,7 +53,7 @@
 | audio-alerts → Alert settings survive restart | Restart keeps choices | test/application/settings_alerts_test.dart | `alert settings survive a restart` | green |
 | audio-alerts → Alert settings survive restart | Older record | test/application/settings_alerts_test.dart | `a record without alerts loads the defaults` | green |
 | audio-alerts → Alert settings survive restart | Save fails | test/application/settings_alerts_test.dart | `a failed volume save keeps the previous value` | green |
-| audio-alerts → Alerts never touch the game | Alerts use only the audio channel | test/data/channel_audio_port_test.dart | `alerts call only the audio channel's methods` | red |
+| audio-alerts → Alerts never touch the game | Alerts use only the audio channel | test/data/channel_audio_port_test.dart | `alerts call only the audio channel's methods` | green |
 | audio-alerts → Alerts never touch the game | An alert while the game has focus | tasks.md 6.4 | user task 6.4 | user |
 | raid-lifecycle → Queue progress transitions are published once | Queue to raid | test/domain/raid_lifecycle_queue_test.dart | `queue to raid publishes queue progress in order` | green |
 | raid-lifecycle → Queue progress transitions are published once | Scene outside a queue | test/domain/raid_lifecycle_queue_test.dart | `scene in menus publishes no map-known` | green |
@@ -102,15 +102,15 @@ Skills: dart-use-pattern-matching, dart-write-documentation, dart-add-unit-test.
 
 Skills: dart-write-documentation, dart-add-unit-test, dart-run-static-analysis.
 
-- [ ] 4.1 Write a failing test in `test/data/channel_audio_port_test.dart` that uses a mock method-call handler on `blackgrid/audio`. It checks that each `AudioPort` call maps to its channel method and arguments, that each error code maps to its `AudioResult`, and that firing every alert and test makes no call outside that channel's methods. That last check is the "Alerts use only the audio channel" row.
-- [ ] 4.2 Implement `ChannelAudioPort` in `lib/data/`. Verify the 4.1 test passes and flip its row green.
-- [ ] 4.3 Implement `windows/runner/audio_channel.cpp/.h` and register it in `flutter_window.cpp` beside `local_data_channel`:
+- [x] 4.1 Write a failing test in `test/data/channel_audio_port_test.dart` that uses a mock method-call handler on `blackgrid/audio`. It checks that each `AudioPort` call maps to its channel method and arguments, that each error code maps to its `AudioResult`, and that firing every alert and test makes no call outside that channel's methods. That last check is the "Alerts use only the audio channel" row.
+- [x] 4.2 Implement `ChannelAudioPort` in `lib/data/`. Verify the 4.1 test passes and flip its row green.
+- [x] 4.3 Implement `windows/runner/audio_channel.cpp/.h` and register it in `flutter_window.cpp` beside `local_data_channel`:
   - `voices` (OneCore `SpeechSynthesizer::AllVoices`), `speak` (synthesise to a stream, play through `MediaPlayer`), `playFile` (with the runner's own timeout), `stop`, `openVoiceSettings` (`ms-settings:speech`) and `pickSoundFile` (`IFileOpenDialog`, WAV/MP3 filter, owned by the Blackgrid window).
   - Completions are marshalled through a private window message, with no `.get()` on the UI thread. One pending result is completed exactly once, including `stopped` on window destroy and `busy`.
   - Link `windowsapp.lib`.
 
   Verify that `mise run build:release` compiles with no new warnings at /W4, that `mise run bundle:check` passes with the bundle inventory unchanged, and that `mise run analyze` is clean.
-- [ ] 4.4 [evidence] Run an offline smoke check of the runner channel on this machine, only after confirming Escape from Tarkov is not running (AGENTS.md). Launch Blackgrid, press each alert's test button and the voice preview, and record the voices listed and each call's result → evidence/runner-smoke.md
+- [x] 4.4 [evidence] Run an offline smoke check of the runner channel on this machine, only after confirming Escape from Tarkov is not running (AGENTS.md). Launch Blackgrid, press each alert's test button and the voice preview, and record the voices listed and each call's result → evidence/runner-smoke.md
 
 ## 5. Settings Alerts section
 
