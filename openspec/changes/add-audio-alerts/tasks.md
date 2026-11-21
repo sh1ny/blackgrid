@@ -132,8 +132,8 @@ Skills: flutter-add-widget-test, dart-write-documentation. Colours come from the
 
 - [x] 6.1 Build `AlertsController` in `AppServices` right after `RaidLifecycleController`, before the reader binds. Feed it the settings, catalog, `ProgressAuthority`, `MapController` and `ChannelAudioPort`, and dispose it in order (stopping playback). Verify with an `app_services` test that the controller is built before bind and disposed, and with `mise run test` and `mise run analyze`, both clean.
 - [x] 6.2 Run `openspec validate add-audio-alerts --strict` and `mise run release-notes -- --check openspec/changes/add-audio-alerts/proposal.md`. Verify both exit 0.
-- [ ] 6.3 [user] The owner plays raids with the alerts on and checks the M10 user criterion for alerts. Each alert must sound right and fire at the right moment: match found, raid starting, run-through over and scav ready; the air filter and quest items reminders at queue time; restart failed tasks back in the menus. Recorded as unverified until the owner reports it.
-- [ ] 6.4 [user] The owner checks that an alert playing while the game window has focus leaves the game focused and undisturbed. This is the "An alert while the game has focus" row.
+- [x] 6.3 [user] The owner plays raids with the alerts on and checks the M10 user criterion for alerts. Each alert must sound right and fire at the right moment: match found, raid starting, run-through over and scav ready; the air filter and quest items reminders at queue time; restart failed tasks back in the menus. Passed (owner, 2026-11-21). The owner notes that "Raid starting" plays at the end of the countdown, because the game writes its countdown line then, and accepts it.
+- [x] 6.4 [user] The owner checks that an alert playing while the game window has focus leaves the game focused and undisturbed. This is the "An alert while the game has focus" row. Passed (owner, 2026-11-21).
 
 ## Workflow follow-up
 
