@@ -4,16 +4,20 @@ import '../data/database.dart';
 import '../domain/alerts.dart';
 import '../domain/catalog.dart';
 import '../domain/settings.dart';
+import 'alerts_controller.dart' show AlertSettingsSource;
 import 'raid_timers_controller.dart';
 
 class SettingsController extends ChangeNotifier
-    implements RaidTimerSettingsSource {
+    implements RaidTimerSettingsSource, AlertSettingsSource {
   SettingsController(this.database);
   final BlackgridDatabase database;
   AppSettings _settings = AppSettings();
   List<CustomPin> _pins = const [];
   AppSettings get settings => _settings;
   List<CustomPin> get pins => _pins;
+
+  @override
+  AlertSettings get alerts => _settings.alerts;
 
   @override
   RaidTimerSettings get raidTimers => _settings.raidTimers;
@@ -195,6 +199,7 @@ class SettingsController extends ChangeNotifier
   /// Returns `null` when the sound was saved, or a plain message when it was
   /// refused or not saved. A file that is not WAV or MP3 is refused, and in
   /// every failure the previous sound stays.
+  @override
   Future<String?> setAlertSound(AlertKind kind, AlertSound sound) async {
     if (sound is FileSound && !sound.isSupported) {
       return 'Only WAV and MP3 files can be used as an alert sound.';
