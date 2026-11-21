@@ -21,6 +21,9 @@ enum SettingsSection {
   /// The raid timers and their settings.
   raidTimers('Raid timers'),
 
+  /// The spoken alerts: voice, speed, volume and one row per alert.
+  alerts('Alerts'),
+
   /// Save marker filters.
   map('Map'),
 

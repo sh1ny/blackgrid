@@ -37,18 +37,18 @@
 | audio-alerts → Each alert has a switch | Alert off | test/application/alerts_controller_test.dart | `an alert switched off does not play` | green |
 | audio-alerts → Each alert plays speech or the player's sound file | Custom file | test/application/alerts_controller_playback_test.dart | `custom file plays in place of speech` | green |
 | audio-alerts → Each alert plays speech or the player's sound file | File removed | test/application/alerts_controller_playback_test.dart | `missing file falls back to speech and flags the row` | green |
-| audio-alerts → Each alert plays speech or the player's sound file | Unsupported file chosen | test/ui/settings_page_alerts_test.dart | `choosing a non-WAV/MP3 file is refused` | red |
-| audio-alerts → Each alert plays speech or the player's sound file | File choice cancelled | test/ui/settings_page_alerts_test.dart | `cancelling the file dialog keeps the sound` | red |
+| audio-alerts → Each alert plays speech or the player's sound file | Unsupported file chosen | test/ui/settings_page_alerts_test.dart | `choosing a non-WAV/MP3 file is refused` | green |
+| audio-alerts → Each alert plays speech or the player's sound file | File choice cancelled | test/ui/settings_page_alerts_test.dart | `cancelling the file dialog keeps the sound` | green |
 | audio-alerts → Alerts play one at a time | Two alerts close together | test/application/alerts_controller_playback_test.dart | `alerts play in order without overlap` | green |
 | audio-alerts → Alerts play one at a time | Stale alert | test/application/alerts_controller_playback_test.dart | `an alert waiting over 15 s is dropped` | green |
 | audio-alerts → Playback failures stay visible and never stop the alerts | Speech unavailable | test/application/alerts_controller_playback_test.dart | `speech failure is shown and the next alert plays` | green |
 | audio-alerts → Playback failures stay visible and never stop the alerts | Recovery | test/application/alerts_controller_playback_test.dart | `a later success clears the failure` | green |
-| audio-alerts → One voice for all spoken alerts | Voice list | test/ui/settings_page_alerts_test.dart | `voice list starts with Windows default` | red |
+| audio-alerts → One voice for all spoken alerts | Voice list | test/ui/settings_page_alerts_test.dart | `voice list starts with Windows default` | green |
 | audio-alerts → One voice for all spoken alerts | Saved voice uninstalled | test/application/alerts_controller_playback_test.dart | `uninstalled voice falls back to default and is reported` | green |
-| audio-alerts → One voice for all spoken alerts | No voices listed | test/ui/settings_page_alerts_test.dart | `unreadable voice list offers only Windows default` | red |
+| audio-alerts → One voice for all spoken alerts | No voices listed | test/ui/settings_page_alerts_test.dart | `unreadable voice list offers only Windows default` | green |
 | audio-alerts → Speed and volume stay in range | Volume applies to files | test/application/alerts_controller_playback_test.dart | `volume is passed to file playback` | green |
 | audio-alerts → Speed and volume stay in range | Out-of-range stored value | test/domain/alert_settings_test.dart | `stored speed 9 loads as 5` | green |
-| audio-alerts → Each alert has a test button | Test an alert that is off | test/ui/settings_page_alerts_test.dart | `test button plays an alert that is off` | red |
+| audio-alerts → Each alert has a test button | Test an alert that is off | test/ui/settings_page_alerts_test.dart | `test button plays an alert that is off` | green |
 | audio-alerts → Each alert has a test button | Test while another alert plays | test/application/alerts_controller_playback_test.dart | `a test waits behind the playing alert` | green |
 | audio-alerts → Alert settings survive restart | Restart keeps choices | test/application/settings_alerts_test.dart | `alert settings survive a restart` | green |
 | audio-alerts → Alert settings survive restart | Older record | test/application/settings_alerts_test.dart | `a record without alerts loads the defaults` | green |
@@ -64,9 +64,9 @@
 | raid-lifecycle → Each lifecycle transition is published once | One transition per event | test/domain/raid_lifecycle_test.dart | `a whole raid publishes one start and one end` | green |
 | raid-lifecycle → Each lifecycle transition is published once | Re-read after restart | test/application/raid_lifecycle_controller_test.dart | `re-reading a folder republishes the same transitions` | green |
 | raid-lifecycle → Each lifecycle transition is published once | Queue progress does not change the raid transitions | test/domain/raid_lifecycle_queue_test.dart | `queue progress leaves raid start and end identities unchanged` | green |
-| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | `sidebar lists the sections in order` | red |
+| settings-page → Settings sections and their order | Sidebar order | test/ui/settings_page_test.dart | `sidebar lists the sections in order` | green |
 | settings-page → Settings sections and their order | Jump to a section | test/ui/settings_page_test.dart | `settings-page: Jump to a section` | green |
-| settings-page → Settings sections and their order | Jump to Alerts | test/ui/settings_page_test.dart | `settings-page: Jump to Alerts` | red |
+| settings-page → Settings sections and their order | Jump to Alerts | test/ui/settings_page_test.dart | `settings-page: Jump to Alerts` | green |
 | settings-page → Settings sections and their order | Jump to Diagnostics | test/ui/settings_page_test.dart | `settings-page: Jump to Diagnostics` | green |
 
 ## 1. ADR and lifecycle queue transitions
@@ -116,8 +116,8 @@ Skills: dart-write-documentation, dart-add-unit-test, dart-run-static-analysis.
 
 Skills: flutter-add-widget-test, dart-write-documentation. Colours come from the Ember theme (ADR-0037).
 
-- [ ] 5.1 Write failing widget tests in `test/ui/settings_page_alerts_test.dart`, plus the sidebar order and Jump to Alerts rows in `test/ui/settings_page_test.dart`. Cover: the voice list starting with Windows default, an unreadable voice list, the test button on an alert that is off, a refused non-WAV/MP3 file, a cancelled dialog, and the row problems and waiting notes shown. Use the fake port.
-- [ ] 5.2 Build the Alerts section between Raid timers and Map. It has the voice row (dropdown, preview, Get more voices), the speed and volume sliders, the last playback failure line, and eight alert rows, each with a switch (DESIGN.md X13), a sound choice (speech, or a file through the Windows dialog), a test button and its problem line. Verify the 5.1 tests pass, flip their rows green, and re-run `settings-page: Jump to a section` and `settings-page: Jump to Diagnostics` (still green).
+- [x] 5.1 Write failing widget tests in `test/ui/settings_page_alerts_test.dart`, plus the sidebar order and Jump to Alerts rows in `test/ui/settings_page_test.dart`. Cover: the voice list starting with Windows default, an unreadable voice list, the test button on an alert that is off, a refused non-WAV/MP3 file, a cancelled dialog, and the row problems and waiting notes shown. Use the fake port.
+- [x] 5.2 Build the Alerts section between Raid timers and Map. It has the voice row (dropdown, preview, Get more voices), the speed and volume sliders, the last playback failure line, and eight alert rows, each with a switch (DESIGN.md X13), a sound choice (speech, or a file through the Windows dialog), a test button and its problem line. Verify the 5.1 tests pass, flip their rows green, and re-run `settings-page: Jump to a section` and `settings-page: Jump to Diagnostics` (still green).
 
 ## 6. Wiring and integration
 
