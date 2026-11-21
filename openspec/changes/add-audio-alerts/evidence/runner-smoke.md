@@ -57,3 +57,9 @@ The completion times match the length of each line, so `speak` and `playFile` co
 - How loud the alerts are next to game audio. That is the owner's in-play check (task 6.3).
 
 The fake-port tests cover the Dart handling of each of these codes.
+
+## Re-run after the pre-ship fixes
+
+- **When:** 2026-11-21 03:55 local, by the agent, offline, with the same harness. `EscapeFromTarkov not running at 2026-11-21T03:55:52` right before launch.
+- **What changed:** speech volume is now applied once, by the player, and a late synthesis result can no longer replace a newer one (pre-ship round 1).
+- **Result:** exit code 0. Every call returned the same result as the first run: all speak calls `ok` (Mark at speed 5 in 902 ms, at speed −5 in 3432 ms), `voice_missing`, `file_missing`, `file_unplayable`, `busy` and `stopped` as before, and `chimes.wav` `ok` in 1553 ms.

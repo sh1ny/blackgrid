@@ -55,8 +55,11 @@ enum class PlaybackKind { kNone, kSpeech, kFile };
 struct Shared {
   HWND window = nullptr;
   std::mutex mutex;
+  // The synthesized stream and the playback generation that asked for it, so
+  // a late synthesis for a stopped call is never played for a newer one.
   streams::IRandomAccessStream stream{nullptr};
   winrt::hstring content_type;
+  uint64_t stream_generation = 0;
 };
 
 void Post(const std::shared_ptr<Shared>& shared, uint64_t generation,
@@ -305,9 +308,8 @@ struct AudioChannel::Impl {
         }
         synthesizer.Voice(found);
       }
-      auto options = synthesizer.Options();
-      options.SpeakingRate(SpeakingRate(speed));
-      options.AudioVolume(static_cast<double>(level) / 100.0);
+      // Volume is applied once, by the player (StartPlayer), as for files.
+      synthesizer.Options().SpeakingRate(SpeakingRate(speed));
 
       result = std::move(method_result);
       kind = PlaybackKind::kSpeech;
@@ -330,8 +332,12 @@ struct AudioChannel::Impl {
               const auto stream = operation.GetResults();
               {
                 std::lock_guard<std::mutex> lock(state->mutex);
-                state->stream = stream;
-                state->content_type = stream.ContentType();
+                // An older call's late synthesis never replaces a newer one.
+                if (gen >= state->stream_generation) {
+                  state->stream = stream;
+                  state->content_type = stream.ContentType();
+                  state->stream_generation = gen;
+                }
               }
               Post(state, gen, kSynthesized);
             } catch (const winrt::hresult_error&) {
@@ -440,8 +446,10 @@ struct AudioChannel::Impl {
       winrt::hstring content_type;
       {
         std::lock_guard<std::mutex> lock(shared->mutex);
-        stream = shared->stream;
-        content_type = shared->content_type;
+        if (shared->stream_generation == generation) {
+          stream = shared->stream;
+          content_type = shared->content_type;
+        }
         shared->stream = nullptr;
       }
       if (!stream) {
