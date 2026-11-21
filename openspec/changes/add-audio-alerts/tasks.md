@@ -7,12 +7,18 @@
 | audio-alerts → The alerts and their spoken lines | Spoken line of an alert | test/domain/alerts_test.dart | `each alert has its fixed spoken line` | green |
 | audio-alerts → The alerts and their spoken lines | Unknown alert in stored settings | test/domain/alert_settings_test.dart | `unknown alert id in stored settings is ignored` | green |
 | audio-alerts → Match found and raid starting fire from the raid lifecycle | A queue to a raid | test/application/alerts_controller_test.dart | `match found then raid starting each play once` | green |
-| audio-alerts → Match found and raid starting fire from the raid lifecycle | Raid with no countdown | test/application/alerts_controller_test.dart | `no raid starting alert without a countdown` | green |
+| audio-alerts → Match found and raid starting fire from the raid lifecycle | Raid with no countdown | test/application/alerts_controller_test.dart | `raid starting plays at raid start when no countdown was logged` | green |
+| audio-alerts → Match found and raid starting fire from the raid lifecycle | Rejoined raid | test/application/alerts_controller_test.dart | `a rejoined raid plays no raid starting` | green |
+| audio-alerts → Match found and raid starting fire from the raid lifecycle | Cancelled match | test/application/alerts_controller_test.dart | `matching completed without joining a server plays nothing` | green |
 | audio-alerts → Match found and raid starting fire from the raid lifecycle | Same transition delivered twice | test/application/alerts_controller_test.dart | `a transition identity fires at most once` | green |
 | audio-alerts → Run-through over fires when the countdown reaches zero | Countdown reaches zero | test/application/alerts_controller_timers_test.dart | `run-through over plays once when the countdown reaches zero` | green |
 | audio-alerts → Run-through over fires when the countdown reaches zero | Raid ends first | test/application/alerts_controller_timers_test.dart | `raid ending before the run-through plays nothing` | green |
 | audio-alerts → Run-through over fires when the countdown reaches zero | Already over at startup | test/application/alerts_controller_timers_test.dart | `run-through already over at startup plays nothing` | green |
+| audio-alerts → Run-through over fires when the countdown reaches zero | Raid continued after a client restart | test/application/alerts_controller_timers_test.dart | `a raid continued after a client restart keeps its alert` | green |
+| audio-alerts → Run-through over fires when the countdown reaches zero | Scav or reconnected raid | test/application/alerts_controller_timers_test.dart | `a scav raid has no run-through alert` | green |
+| audio-alerts → Run-through over fires when the countdown reaches zero | Scav or reconnected raid | test/application/alerts_controller_timers_test.dart | `a reconnected raid has no run-through alert` | green |
 | audio-alerts → Scav ready fires when the active mode's cooldown reaches ready | Cooldown runs out | test/application/alerts_controller_timers_test.dart | `scav ready plays once when the cooldown runs out` | green |
+| audio-alerts → Scav ready fires when the active mode's cooldown reaches ready | Ready during a raid | test/application/alerts_controller_timers_test.dart | `a cooldown that ends mid-raid plays nothing` | green |
 | audio-alerts → Scav ready fires when the active mode's cooldown reaches ready | Ready at startup | test/application/alerts_controller_timers_test.dart | `scav already ready at startup plays nothing` | green |
 | audio-alerts → Scav ready fires when the active mode's cooldown reaches ready | Mode switch to a ready mode | test/application/alerts_controller_timers_test.dart | `switching to a ready mode plays nothing` | green |
 | audio-alerts → Scav ready fires when the active mode's cooldown reaches ready | Progress loads after startup | test/application/alerts_controller_timers_test.dart | `progress loading that makes the cooldown ready plays nothing` | green |
@@ -61,6 +67,9 @@
 | raid-lifecycle → Queue progress transitions are published once | Scene after a rejoin | test/domain/raid_lifecycle_queue_test.dart | `scene after a transit rejoin publishes no map-known` | green |
 | raid-lifecycle → Queue progress transitions are published once | Unsupported scene | test/domain/raid_lifecycle_queue_test.dart | `unsupported scene in queue publishes map-known with no map` | green |
 | raid-lifecycle → Queue progress transitions are published once | Re-read after restart | test/application/raid_lifecycle_controller_test.dart | `re-reading a folder republishes queue progress with the same identities` | green |
+| raid-lifecycle → A match is found once the raid's server is joined | Cancelled match | test/domain/raid_lifecycle_queue_test.dart | `matching completed alone publishes no match found` | green |
+| raid-lifecycle → A match is found once the raid's server is joined | Server joined outside a matched queue | test/domain/raid_lifecycle_queue_test.dart | `a server joined outside a matched queue publishes nothing` | green |
+| raid-lifecycle → A match is found once the raid's server is joined | Second server joined in one queue | test/domain/raid_lifecycle_queue_test.dart | `a second server joined in one queue publishes once` | green |
 | raid-lifecycle → Each lifecycle transition is published once | One transition per event | test/domain/raid_lifecycle_test.dart | `a whole raid publishes one start and one end` | green |
 | raid-lifecycle → Each lifecycle transition is published once | Re-read after restart | test/application/raid_lifecycle_controller_test.dart | `re-reading a folder republishes the same transitions` | green |
 | raid-lifecycle → Each lifecycle transition is published once | Queue progress does not change the raid transitions | test/domain/raid_lifecycle_queue_test.dart | `queue progress leaves raid start and end identities unchanged` | green |

@@ -386,10 +386,11 @@ class _AlertsSettingsState extends State<AlertsSettings> {
   }
 
   String _explanation(AlertKind kind) => switch (kind) {
-    AlertKind.matchFound => 'When the game finds a match.',
+    AlertKind.matchFound => 'When you join the server of a found match.',
     AlertKind.raidStarting => 'When the raid countdown starts.',
-    AlertKind.runThroughOver => 'When the run-through countdown ends.',
-    AlertKind.scavReady => 'When the scav cooldown ends.',
+    AlertKind.runThroughOver =>
+      'When the run-through countdown of a PMC raid ends.',
+    AlertKind.scavReady => 'When the scav cooldown ends outside a raid.',
     AlertKind.airFilterOn => 'A reminder to switch the air filter on.',
     AlertKind.airFilterOff => 'A reminder to switch the air filter off.',
     AlertKind.questItems => 'A reminder to bring quest items for the map.',
