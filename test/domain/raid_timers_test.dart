@@ -151,6 +151,24 @@ void main() {
       expect(_text(v, RaidTimerKind.runThrough), 'Run-through done');
     });
 
+    test('a raid that starts after now shows the full run-through', () {
+      final v = _view(
+        now: start.subtract(const Duration(seconds: 10)),
+        raid: _raid(start),
+        settings: settings,
+      );
+      expect(_text(v, RaidTimerKind.runThrough), 'Run-through 7:10');
+    });
+
+    test('a fractional elapsed time rounds the run-through up', () {
+      final v = _view(
+        now: start.add(const Duration(seconds: 120, milliseconds: 500)),
+        raid: _raid(start),
+        settings: settings,
+      );
+      expect(_text(v, RaidTimerKind.runThrough), 'Run-through 5:10');
+    });
+
     test('no run-through after the raid ends', () {
       final raid = _raid(start, end: start.add(const Duration(minutes: 4)));
       final v = _view(
@@ -381,6 +399,99 @@ void main() {
       );
       expect(_text(v, RaidTimerKind.scav), 'Scav unknown');
       expect(_entry(v, RaidTimerKind.scav).tooltip, 'Choose a mode');
+    });
+  });
+
+  group('deadlines', () {
+    final settings = RaidTimerSettings(runThroughSeconds: 430);
+    final cooldownStart = DateTime(2026, 11, 1, 20, 5);
+    final starts = {GameMode.seasonal: cooldownStart};
+
+    RaidTimerDeadlines deadlines({
+      Raid? raid,
+      GameMode activeMode = GameMode.seasonal,
+      Map<GameMode, DateTime> starts = const {},
+      ScavCooldownInputs? inputs,
+    }) => raidTimerDeadlines(
+      lifecycle: _state(raid),
+      settings: settings,
+      activeMode: activeMode,
+      cooldownStarts: starts,
+      inputs: inputs,
+      progress: null,
+    );
+
+    test('the run-through ends its length after the raid start', () {
+      final d = deadlines(raid: _raid(start));
+      expect(d.runThroughEnd, start.add(const Duration(seconds: 430)));
+    });
+
+    test('an ended raid or no raid has no run-through end', () {
+      final ended = _raid(start, end: start.add(const Duration(minutes: 4)));
+      expect(deadlines(raid: ended).runThroughEnd, isNull);
+      expect(deadlines().runThroughEnd, isNull);
+    });
+
+    test('the scav cooldown is ready its length after the start', () {
+      final d = deadlines(starts: starts, inputs: _inputs());
+      expect(d.scavLength?.seconds, 1500);
+      expect(d.scavReady, cooldownStart.add(const Duration(seconds: 1500)));
+    });
+
+    test('a mode without a start has a length but no ready time', () {
+      final d = deadlines(
+        activeMode: GameMode.pvp,
+        starts: starts,
+        inputs: _inputs(),
+      );
+      expect(d.scavLength?.seconds, 1500);
+      expect(d.scavReady, isNull);
+    });
+
+    test('an unknown mode or missing inputs give no scav deadline', () {
+      for (final d in [
+        deadlines(
+          activeMode: GameMode.unknown,
+          starts: {GameMode.unknown: cooldownStart},
+          inputs: _inputs(),
+        ),
+        deadlines(starts: starts),
+      ]) {
+        expect(d.scavLength, isNull);
+        expect(d.scavReady, isNull);
+      }
+    });
+
+    test('the strip flips exactly at the deadlines', () {
+      final d = deadlines(
+        raid: _raid(start),
+        starts: starts,
+        inputs: _inputs(),
+      );
+      final runThroughEnd = d.runThroughEnd!;
+      final scavReady = d.scavReady!;
+      RaidTimersView at(DateTime now) => _view(
+        now: now,
+        raid: _raid(start),
+        settings: settings,
+        starts: starts,
+        inputs: _inputs(),
+      );
+
+      final beforeEnd = at(
+        runThroughEnd.subtract(const Duration(microseconds: 1)),
+      );
+      expect(_text(beforeEnd, RaidTimerKind.runThrough), 'Run-through 0:01');
+      expect(
+        _text(at(runThroughEnd), RaidTimerKind.runThrough),
+        'Run-through done',
+      );
+
+      final beforeReady = at(
+        scavReady.subtract(const Duration(milliseconds: 1)),
+      );
+      expect(_text(beforeReady, RaidTimerKind.scav), 'Scav 0:01');
+      expect(_text(at(scavReady), RaidTimerKind.scav), 'Scav ready');
     });
   });
 
