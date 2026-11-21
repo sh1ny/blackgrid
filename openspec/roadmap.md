@@ -20,8 +20,9 @@ Planned with the user on 2026-10-30. The split below was agreed at the M8.5 clos
 
 **Changes** (in order):
 1. `add-audio-alerts` - match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder and restart-failed-tasks, each with a switch, a custom sound and a test button. The user decides how the default sounds are recorded before this starts.
-2. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
-3. `add-window-behaviour` - tray, stay on top and start minimized.
+2. `refactor-shared-objective-rules` - one "objective done" rule in `lib/domain` for the quest checklist and the alerts, and one timer-deadline function for the timer strip and the alerts; behaviour unchanged. Added by the owner on 2026-11-21 from the weekly architecture review (candidates 2 and 3, narrow parts only).
+3. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
+4. `add-window-behaviour` - tray, stay on top and start minimized.
 
 ## Next: M11 - quest planning
 

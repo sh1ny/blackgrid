@@ -453,51 +453,34 @@ class AlertsController extends ChangeNotifier {
 
   // ---- Timer alerts -----------------------------------------------------
 
-  /// The deadlines the current inputs give, with the same arithmetic as the
-  /// timer strip.
+  /// The deadlines the current inputs give, from [raidTimerDeadlines], which
+  /// the timer strip also shows.
   List<_Deadline> _deadlines() {
-    final deadlines = <_Deadline>[];
-    final raid = _lifecycle.state.currentRaid;
-    // Only a PMC raid that was not a reconnect has a run-through to warn about.
-    if (raid != null &&
-        raid.side == RaidSide.pmc &&
-        raid.entry != RaidEntry.reconnect) {
-      deadlines.add(
-        _Deadline(
-          AlertKind.runThroughOver,
-          raid.startId,
-          raid.startTime.add(
-            Duration(seconds: _settings.raidTimers.runThroughSeconds),
-          ),
-        ),
-      );
-    }
     final mode = _catalog.mode;
     final snapshot = _catalog.snapshot;
-    final inputs = snapshot != null && snapshot.mode == mode
-        ? snapshot.scavCooldown
-        : null;
+    final times = raidTimerDeadlines(
+      lifecycle: _lifecycle.state,
+      settings: _settings.raidTimers,
+      activeMode: mode,
+      cooldownStarts: _settings.effectiveScavCooldownStarts,
+      inputs: snapshot != null && snapshot.mode == mode
+          ? snapshot.scavCooldown
+          : null,
+      progress: _progress.mode == mode ? _progress.facts : null,
+    );
+    final raid = _lifecycle.state.currentRaid;
     final start = _settings.effectiveScavCooldownStarts[mode];
-    if (mode != GameMode.unknown && inputs != null && start != null) {
-      final ProgressFacts? facts = _progress.mode == mode
-          ? _progress.facts
-          : null;
-      final length = scavCooldownLength(
-        inputs,
-        _settings.raidTimers.fenceReputationFor(mode),
-        facts,
-        mode,
-      );
-      if (length != null) {
-        deadlines.add(
-          _Deadline(AlertKind.scavReady, (
-            mode,
-            start,
-          ), start.add(Duration(seconds: length.seconds))),
-        );
-      }
-    }
-    return deadlines;
+    return [
+      // Only a PMC raid that was not a reconnect has a run-through to warn
+      // about.
+      if (times.runThroughEnd case final end?
+          when raid != null &&
+              raid.side == RaidSide.pmc &&
+              raid.entry != RaidEntry.reconnect)
+        _Deadline(AlertKind.runThroughOver, raid.startId, end),
+      if (times.scavReady case final ready? when start != null)
+        _Deadline(AlertKind.scavReady, (mode, start), ready),
+    ];
   }
 
   /// Plans the timer alerts from the current inputs.

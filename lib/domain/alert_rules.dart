@@ -1,6 +1,7 @@
 import 'package:blackgrid_progress/blackgrid_progress.dart';
 
 import 'local_progress.dart' show ProgressTaskStatus;
+import 'objective_progress.dart';
 import 'progress_facts.dart';
 import 'settings.dart' show supportedMaps;
 
@@ -106,25 +107,16 @@ QuestItemsCheck questItemsCheck({
     for (final objective in taskObjectives) {
       if (objective.id == objectiveId &&
           _itemObjectiveTypes.contains(objective.type) &&
-          !_objectiveDone(objective, facts)) {
+          !objectiveDone(
+            objective,
+            complete: facts.objectiveComplete(objective.id),
+            count: facts.objectiveCount(objective.id),
+          )) {
         return const QuestItemsFire();
       }
     }
   }
   return const QuestItemsQuiet();
-}
-
-/// Whether [objective] is recorded complete, or, for a counter objective
-/// (a whole-number target over 1), its recorded count reached the target.
-///
-/// The quest checklist records a counter's completion only in its count.
-bool _objectiveDone(TaskObjective objective, ProgressFacts facts) {
-  if (facts.objectiveComplete(objective.id)) return true;
-  final target = objective.count;
-  if (target == null || target <= 1 || target != target.truncate()) {
-    return false;
-  }
-  return facts.objectiveCount(objective.id) >= target;
 }
 
 /// Whether the Air Filtering Unit is recorded built.

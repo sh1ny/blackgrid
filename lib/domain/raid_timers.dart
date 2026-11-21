@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'catalog.dart';
 import 'progress_facts.dart';
 import 'raid_lifecycle.dart';
@@ -176,6 +178,69 @@ const _maxCooldownSeconds = 24 * 60 * 60;
 bool _countable(double seconds) =>
     seconds.isFinite && seconds <= _maxCooldownSeconds;
 
+/// When the run-through and the scav cooldown end, from the log times and the
+/// settings.
+///
+/// The timer strip shows these and the timer alerts fire on them, so both
+/// agree on every moment.
+class RaidTimerDeadlines {
+  /// Creates deadlines.
+  const RaidTimerDeadlines({
+    required this.runThroughEnd,
+    required this.scavLength,
+    required this.scavReady,
+  });
+
+  /// When the current raid's run-through ends, or `null` when no raid is
+  /// current.
+  final DateTime? runThroughEnd;
+
+  /// The active mode's scav cooldown length, or `null` when the mode is
+  /// unknown or the length cannot be computed (see [scavCooldownLength]).
+  final ScavCooldownLength? scavLength;
+
+  /// When the active mode's scav cooldown ends, or `null` when [scavLength] is
+  /// `null` or the mode has no cooldown start.
+  final DateTime? scavReady;
+}
+
+/// Works out when the run-through and the active mode's scav cooldown end.
+///
+/// Pure, and independent of the clock. The run-through ends
+/// [RaidTimerSettings.runThroughSeconds] after the current raid's log start.
+/// The scav cooldown ends its [scavCooldownLength] after [activeMode]'s entry
+/// in [cooldownStarts], which holds each mode's start (including starts not
+/// yet saved). [inputs] must belong to [activeMode]; [progress] counts only
+/// when its mode is [activeMode].
+RaidTimerDeadlines raidTimerDeadlines({
+  required RaidLifecycleState lifecycle,
+  required RaidTimerSettings settings,
+  required GameMode activeMode,
+  required Map<GameMode, DateTime> cooldownStarts,
+  required ScavCooldownInputs? inputs,
+  required ProgressFacts? progress,
+}) {
+  final raid = lifecycle.currentRaid;
+  final length = activeMode == GameMode.unknown || inputs == null
+      ? null
+      : scavCooldownLength(
+          inputs,
+          settings.fenceReputationFor(activeMode),
+          progress,
+          activeMode,
+        );
+  final start = cooldownStarts[activeMode];
+  return RaidTimerDeadlines(
+    runThroughEnd: raid?.startTime.add(
+      Duration(seconds: settings.runThroughSeconds),
+    ),
+    scavLength: length,
+    scavReady: length == null || start == null
+        ? null
+        : start.add(Duration(seconds: length.seconds)),
+  );
+}
+
 const _noProgress = 'Progress unavailable: no hideout bonuses';
 
 /// Projects the timers at [now] from the log times and the settings.
@@ -199,6 +264,14 @@ RaidTimersView raidTimersView({
   required ProgressFacts? progress,
 }) {
   if (!settings.enabled) return RaidTimersView.empty;
+  final deadlines = raidTimerDeadlines(
+    lifecycle: lifecycle,
+    settings: settings,
+    activeMode: activeMode,
+    cooldownStarts: cooldownStarts,
+    inputs: inputs,
+    progress: progress,
+  );
   final entries = <RaidTimerEntry>[];
   var moving = false;
 
@@ -233,10 +306,17 @@ RaidTimersView raidTimersView({
 
   if (settings.showRunThrough) {
     final String value;
-    if (current == null) {
+    final end = deadlines.runThroughEnd;
+    if (end == null) {
       value = noValue;
     } else {
-      final left = settings.runThroughSeconds - seconds(current.startTime, now);
+      // Whole seconds left, rounded up; a raid that starts after now shows
+      // the full length.
+      final micros = end.difference(now).inMicroseconds;
+      final left = math.min(
+        settings.runThroughSeconds,
+        (micros / Duration.microsecondsPerSecond).ceil(),
+      );
       final done = left <= 0;
       value = done ? 'done' : formatTimerSeconds(left);
       moving = moving || !done;
@@ -253,11 +333,8 @@ RaidTimersView raidTimersView({
   if (settings.showScavCooldown) {
     final entry = _scavEntry(
       now: now,
-      settings: settings,
       activeMode: activeMode,
-      starts: cooldownStarts,
-      inputs: inputs,
-      progress: progress,
+      deadlines: deadlines,
     );
     entries.add(entry.$1);
     moving = moving || entry.$2;
@@ -267,11 +344,8 @@ RaidTimersView raidTimersView({
 
 (RaidTimerEntry, bool) _scavEntry({
   required DateTime now,
-  required RaidTimerSettings settings,
   required GameMode activeMode,
-  required Map<GameMode, DateTime> starts,
-  required ScavCooldownInputs? inputs,
-  required ProgressFacts? progress,
+  required RaidTimerDeadlines deadlines,
 }) {
   RaidTimerEntry unknown(String reason) => (RaidTimerEntry(
     kind: RaidTimerKind.scav,
@@ -282,25 +356,13 @@ RaidTimersView raidTimersView({
   if (activeMode == GameMode.unknown) {
     return (unknown('Choose a mode'), false);
   }
-  final length = inputs == null
-      ? null
-      : scavCooldownLength(
-          inputs,
-          settings.fenceReputationFor(activeMode),
-          progress,
-          activeMode,
-        );
+  final length = deadlines.scavLength;
   if (length == null) return (unknown('No item data for this mode'), false);
   final tooltip = length.hasProgress
       ? length.inputsText
       : '${length.inputsText}\n$_noProgress';
-  final start = starts[activeMode];
-  final remainingMs = start == null
-      ? 0
-      : start
-            .add(Duration(seconds: length.seconds))
-            .difference(now)
-            .inMilliseconds;
+  final ready = deadlines.scavReady;
+  final remainingMs = ready == null ? 0 : ready.difference(now).inMilliseconds;
   final counting = remainingMs > 0;
   return (
     RaidTimerEntry(
