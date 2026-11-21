@@ -33,8 +33,8 @@ This change has no spec scenarios (`skip_specs: true`, behaviour unchanged). The
 
 ## 3. Integration checks
 
-- [ ] 3.1 Format with `dart format` (pinned toolchain through mise), then run `mise run analyze` and `mise run test` (never the qualification tier). Verify both exit 0.
-- [ ] 3.2 Run `mise run release-notes -- --check openspec/changes/refactor-shared-objective-rules/proposal.md`. Verify it exits 0.
+- [x] 3.1 Format with `dart format` (pinned toolchain through mise), then run `mise run analyze` and `mise run test` (never the qualification tier). Verify both exit 0.
+- [x] 3.2 Run `mise run release-notes -- --check openspec/changes/refactor-shared-objective-rules/proposal.md`. Verify it exits 0.
 
 ## Workflow follow-up
 
