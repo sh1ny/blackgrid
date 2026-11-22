@@ -95,7 +95,7 @@ Skills: `dart-write-documentation`, `dart-add-unit-test`, `dart-run-static-analy
 
 Skills: `dart-add-unit-test`, `dart-run-static-analysis`, and AGENTS.md "Dart and Flutter code".
 
-- [ ] 6.1 After the runner group is committed, run `mise run build:release`, `openspec validate add-screenshot-cleanup --strict` and `mise run release-notes -- --check openspec/changes/add-screenshot-cleanup/proposal.md`. Verify all three exit 0. The release wrapper requires a clean tree, so it cannot run before the runner group commit.
+- [x] 6.1 After the runner group is committed, run `mise run build:release`, `openspec validate add-screenshot-cleanup --strict` and `mise run release-notes -- --check openspec/changes/add-screenshot-cleanup/proposal.md`. Verify all three exit 0. The release wrapper requires a clean tree, so it cannot run before the runner group commit.
 - [ ] 6.2 [user] The owner switches cleanup on and plays a real raid that includes screenshots. Check that the raid's screenshots are in the Recycle Bin afterwards, that screenshots from before the raid and any other files in the folder are still there, and that the result line matches. If the owner has a screenshot folder on a drive with no Recycle Bin, also check that cleanup leaves the files there and says they could not be moved. This is the M10 user criterion "screenshot cleanup removes a real raid's screenshots".
 
 ## Workflow follow-up
