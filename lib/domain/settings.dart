@@ -235,6 +235,7 @@ class AppSettings {
     Map<String, bool> markerFilters = const {},
     this.gameLogDirectory = '',
     this.screenshotDirectory = '',
+    this.cleanUpRaidScreenshots = false,
     this.followGameLogs = true,
     this.liveScan = false,
     this.scanHotkey = ScanHotkey.f9,
@@ -251,6 +252,9 @@ class AppSettings {
   final Map<String, bool> markerFilters;
   final String gameLogDirectory;
   final String screenshotDirectory;
+
+  /// Whether a raid's screenshots are recycled after it ends.
+  final bool cleanUpRaidScreenshots;
   final bool followGameLogs;
 
   /// Whether the live scanner starts with the application. Off by default.
@@ -279,6 +283,7 @@ class AppSettings {
     Map<String, bool>? markerFilters,
     String? gameLogDirectory,
     String? screenshotDirectory,
+    bool? cleanUpRaidScreenshots,
     bool? followGameLogs,
     bool? liveScan,
     ScanHotkey? scanHotkey,
@@ -293,6 +298,8 @@ class AppSettings {
     markerFilters: markerFilters ?? this.markerFilters,
     gameLogDirectory: gameLogDirectory ?? this.gameLogDirectory,
     screenshotDirectory: screenshotDirectory ?? this.screenshotDirectory,
+    cleanUpRaidScreenshots:
+        cleanUpRaidScreenshots ?? this.cleanUpRaidScreenshots,
     followGameLogs: followGameLogs ?? this.followGameLogs,
     liveScan: liveScan ?? this.liveScan,
     scanHotkey: scanHotkey ?? this.scanHotkey,
@@ -308,6 +315,7 @@ class AppSettings {
     'markerFilters': markerFilters,
     'gameLogDirectory': gameLogDirectory,
     'screenshotDirectory': screenshotDirectory,
+    'cleanUpRaidScreenshots': cleanUpRaidScreenshots,
     'followGameLogs': followGameLogs,
     'liveScan': liveScan,
     'scanHotkey': scanHotkey.stored,
@@ -361,6 +369,7 @@ class AppSettings {
       markerFilters: filters,
       gameLogDirectory: json['gameLogDirectory'] as String? ?? '',
       screenshotDirectory: json['screenshotDirectory'] as String? ?? '',
+      cleanUpRaidScreenshots: json['cleanUpRaidScreenshots'] == true,
       followGameLogs: json['followGameLogs'] as bool? ?? true,
       liveScan: json['liveScan'] as bool? ?? false,
       scanHotkey: ScanHotkey.fromStored(json['scanHotkey']),
