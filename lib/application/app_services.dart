@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../data/catalog_client.dart';
 import '../data/channel_audio_port.dart';
+import '../data/channel_recycle_port.dart';
 import '../data/database.dart';
 import '../data/legacy_import.dart';
 import '../data/local_paths.dart';
@@ -18,6 +19,7 @@ import '../data/raid_panel_ocr.dart';
 import '../data/scan_frame_recorder.dart';
 import '../data/scan_timing_log.dart';
 import '../data/session_log_reader.dart';
+import '../data/screenshot_folder_lister.dart';
 import '../domain/catalog.dart';
 import '../maps/map_marker_icons.dart';
 import '../maps/native_map_scene.dart';
@@ -36,6 +38,8 @@ import 'manual_progress_controller.dart';
 import 'progress_authority.dart';
 import 'raid_lifecycle_controller.dart';
 import 'raid_timers_controller.dart';
+import 'recycle_port.dart';
+import 'screenshot_cleanup_controller.dart';
 import 'task_log_progress_controller.dart';
 import 'scan_coordinator.dart';
 import 'scan_decision_feed.dart';
@@ -64,6 +68,7 @@ class AppServices {
     ItemIconCache? itemIcons,
     MapMarkerIcons? markerIcons,
     AudioPort? audioPort,
+    RecyclePort? recyclePort,
     String? scanRuntimeDirectory,
     ScanTemplatesLoader? scanTemplatesLoader,
     ScanCaptureFactory? scanCaptureFactory,
@@ -93,6 +98,14 @@ class AppServices {
     // so the first replay of the session folder reaches it.
     final logReader = SessionLogReader();
     raidLifecycle = RaidLifecycleController(logReader);
+    screenshotCleanup = ScreenshotCleanupController(
+      lifecycle: raidLifecycle,
+      settings: settings,
+      folder: () => mapSession.state.screenshotDirectory,
+      listFolder: ScreenshotFolderLister().list,
+      recycle: recyclePort ?? ChannelRecyclePort(),
+      clock: clock ?? DateTime.now,
+    );
     localProgress = TaskLogProgressController(
       store: database,
       wipeStore: database,
@@ -222,6 +235,9 @@ class AppServices {
   /// Folds the session logs into the raid phase; the reader is owned by
   /// [mapSession], which binds and closes it.
   late final RaidLifecycleController raidLifecycle;
+
+  /// Recycles only fresh ended raids' screenshots and owns the cleanup queue.
+  late final ScreenshotCleanupController screenshotCleanup;
 
   /// Projects the raid timers for the shell strip and records scav cooldown
   /// starts as raids end.
@@ -472,6 +488,7 @@ class AppServices {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    screenshotCleanup.dispose();
     manualProgress.dispose();
     settings.removeListener(_syncMapSettings);
     maps.removeListener(_syncMapContext);

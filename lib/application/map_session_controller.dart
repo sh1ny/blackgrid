@@ -223,6 +223,29 @@ class MapSessionController extends ChangeNotifier {
     if (logChanged || screenshotsChanged) {
       _binding = _binding.then((_) async {
         if (_closed) return;
+        String? screenshotDirectory;
+        if (screenshotsChanged &&
+            _unchanged(next, (p) => p.screenshotDirectory)) {
+          try {
+            final directory = next.screenshotDirectory.isNotEmpty
+                ? next.screenshotDirectory
+                : await _discovery?.screenshots() ?? '';
+            if (_unchanged(next, (p) => p.screenshotDirectory)) {
+              screenshotDirectory = directory;
+              _screenshotDirectory = directory;
+              // Replay consumers need the resolved folder before log binding.
+              // The screenshot watcher still binds after the logs below.
+              notifyListeners();
+            }
+          } catch (error) {
+            if (!_closed) {
+              _screenshotStatus = MapInputStatus.error;
+              _screenshotMessage =
+                  'Screenshot input could not be bound: $error';
+              notifyListeners();
+            }
+          }
+        }
         // Each input reports its own bind failure; a throw here would also
         // poison every later bind and shutdown awaiting this chain.
         if (logChanged && _unchanged(next, (p) => p.gameLogDirectory)) {
@@ -246,17 +269,10 @@ class MapSessionController extends ChangeNotifier {
             }
           }
         }
-        if (screenshotsChanged &&
+        if (screenshotDirectory != null &&
             _unchanged(next, (p) => p.screenshotDirectory)) {
           try {
-            final directory = next.screenshotDirectory.isNotEmpty
-                ? next.screenshotDirectory
-                : await _discovery?.screenshots() ?? '';
-            if (_unchanged(next, (p) => p.screenshotDirectory)) {
-              _screenshotDirectory = directory;
-              notifyListeners();
-              await _screenshots.bind(directory);
-            }
+            await _screenshots.bind(screenshotDirectory);
           } catch (error) {
             if (!_closed) {
               _screenshotStatus = MapInputStatus.error;

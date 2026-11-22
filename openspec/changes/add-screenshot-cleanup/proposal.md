@@ -82,4 +82,4 @@ Blackgrid can now tidy the game's screenshot folder. Switch on "Delete a raid's 
 
 ### Added
 - Opt-in screenshot cleanup: after a raid ends, the game screenshots taken during it move to the Windows Recycle Bin. Settings > Game files has the switch, shows the last result, and reports when the setting could not be saved.
-- Cleanup ignores stale raid endings and duplicate endings, leaves unrelated files alone, and reports files it could not move or confirm as moved.
+- Cleanup ignores stale raid endings and duplicate endings, leaves unrelated files alone, and reports files it could not move or confirm as moved. Files that cannot be recycled stay in place; cleanup never deletes them permanently.

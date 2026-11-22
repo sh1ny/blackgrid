@@ -77,9 +77,9 @@ Skills: `flutter-add-widget-test`, `dart-write-documentation`, `dart-run-static-
 
 Skills: `dart-write-documentation`, `dart-add-unit-test`, `dart-run-static-analysis` for the Dart port; the C++ follows `windows/runner/audio_channel.cpp`.
 
-- [ ] 5.1 Write a failing test in `test/data/channel_recycle_port_test.dart` with a mock method-call handler on `blackgrid/recycle`. It checks the `recycle` arguments (`folder`, `names` of at most 64) and `cancel`, the mapping of each status string, a malformed reply giving a call failure, and the port making no call outside those two methods.
-- [ ] 5.2 Implement `ChannelRecyclePort` in `lib/data/channel_recycle_port.dart`. Verify the 5.1 test passes.
-- [ ] 5.3 Implement `windows/runner/recycle_channel.{h,cpp}` and register it in `flutter_window.cpp` beside the audio channel, with `kRecycleChannelMessage = WM_APP + 2` (review S4). Add it to `windows/runner/CMakeLists.txt`. The channel works as follows (D1, D2):
+- [x] 5.1 Write a failing test in `test/data/channel_recycle_port_test.dart` with a mock method-call handler on `blackgrid/recycle`. It checks the `recycle` arguments (`folder`, `names` of at most 64) and `cancel`, the mapping of each status string, a malformed reply giving a call failure, and the port making no call outside those two methods.
+- [x] 5.2 Implement `ChannelRecyclePort` in `lib/data/channel_recycle_port.dart`. Verify the 5.1 test passes.
+- [x] 5.3 Implement `windows/runner/recycle_channel.{h,cpp}` and register it in `flutter_window.cpp` beside the audio channel, with `kRecycleChannelMessage = WM_APP + 2` (review S4). Add it to `windows/runner/CMakeLists.txt`. The channel works as follows (D1, D2):
   - each name is checked again: no separator and no `..`, not a directory and not a reparse point;
   - each file gets its own `IFileOperation`, with `FOFX_RECYCLEONDELETE | FOF_ALLOWUNDO | FOF_NO_UI`, on an STA worker thread, with a `PreDeleteItem` veto when `TSF_DELETE_RECYCLE_IF_POSSIBLE` is missing;
   - the worker shares a `Shared` (HWND, generation, `std::atomic<bool> stop`) and never refers back to the channel. `stop` is reset for each new call (review S6);
@@ -87,15 +87,15 @@ Skills: `dart-write-documentation`, `dart-add-unit-test`, `dart-run-static-analy
   - destroying the channel sets `stop`, completes the pending call with `cancelled` and detaches the worker. Use `cancelled` for this case everywhere; ADR-0048 states it, which settles the design's `failed` wording (review S7);
   - a second call while one is pending gets `busy`.
 
-  Verify that `mise run build:release` compiles cleanly.
-- [ ] 5.4 Build `ScreenshotCleanupController` in `AppServices` right after `RaidLifecycleController`, before the reader binds. Feed it `SettingsController`, `mapSession.state.screenshotDirectory`, `ScreenshotFolderLister`, `ChannelRecyclePort` and `DateTime.now`. In `AppServices.dispose`, dispose it before `mapSession.close()` and `raidLifecycle.dispose()` (review S4). Verify with a `test/application/app_services_test.dart` case that it is built before bind and disposed first, and with `mise run test` and `mise run analyze`, both clean.
-- [ ] 5.5 [evidence] Run an offline smoke check of the real channel, only after confirming Escape from Tarkov is not running (AGENTS.md). Point Blackgrid's game log folder at a temp fixture session folder and its screenshot folder at a temp folder on the system drive holding game-named and other files. Switch cleanup on, append fresh queue, raid-start and raid-exit lines to the fixture logs, and record which files went to the Recycle Bin, which stayed, and the result line → evidence/runner-smoke.md
+  Verify that `mise exec -- flutter build windows --release` compiles cleanly before the group commit; the clean-tree release wrapper is checked by 6.1 after that commit.
+- [x] 5.4 Build `ScreenshotCleanupController` in `AppServices` right after `RaidLifecycleController`, before the reader binds. Feed it `SettingsController`, `mapSession.state.screenshotDirectory`, `ScreenshotFolderLister`, `ChannelRecyclePort` and `DateTime.now`. In `AppServices.dispose`, dispose it before `mapSession.close()` and `raidLifecycle.dispose()` (review S4). Resolve and publish the screenshot folder in `MapSessionController` before log replay, without moving screenshot watcher binding ahead of the logs. Verify with a `test/application/app_services_test.dart` case that it is built before bind and disposed first, and with `mise run test` and `mise run analyze`, both clean.
+- [x] 5.5 [evidence] Run an offline smoke check of the real channel, only after confirming Escape from Tarkov is not running (AGENTS.md). Point Blackgrid's game log folder at a temp fixture session folder and its screenshot folder at a temp folder on the system drive holding game-named and other files. Switch cleanup on, append fresh queue, raid-start and raid-exit lines to the fixture logs, and record which files went to the Recycle Bin, which stayed, and the result line → evidence/runner-smoke.md
 
 ## 6. Wiring and integration
 
 Skills: `dart-add-unit-test`, `dart-run-static-analysis`, and AGENTS.md "Dart and Flutter code".
 
-- [ ] 6.1 Run `openspec validate add-screenshot-cleanup --strict` and `mise run release-notes -- --check openspec/changes/add-screenshot-cleanup/proposal.md`. Verify both exit 0.
+- [ ] 6.1 After the runner group is committed, run `mise run build:release`, `openspec validate add-screenshot-cleanup --strict` and `mise run release-notes -- --check openspec/changes/add-screenshot-cleanup/proposal.md`. Verify all three exit 0. The release wrapper requires a clean tree, so it cannot run before the runner group commit.
 - [ ] 6.2 [user] The owner switches cleanup on and plays a real raid that includes screenshots. Check that the raid's screenshots are in the Recycle Bin afterwards, that screenshots from before the raid and any other files in the folder are still there, and that the result line matches. If the owner has a screenshot folder on a drive with no Recycle Bin, also check that cleanup leaves the files there and says they could not be moved. This is the M10 user criterion "screenshot cleanup removes a real raid's screenshots".
 
 ## Workflow follow-up

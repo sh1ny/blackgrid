@@ -29,6 +29,8 @@ bool FlutterWindow::OnCreate() {
       RegisterLocalDataChannel(flutter_controller_->engine()->messenger());
   audio_channel_ = RegisterAudioChannel(
       flutter_controller_->engine()->messenger(), GetHandle());
+  recycle_channel_ = RegisterRecycleChannel(
+      flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -44,6 +46,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  recycle_channel_.reset();
   audio_channel_.reset();
   local_data_channel_.reset();
   if (flutter_controller_) {
@@ -68,6 +71,11 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case kRecycleChannelMessage:
+      if (recycle_channel_) {
+        recycle_channel_->HandleMessage(wparam);
+      }
+      return 0;
     case kAudioChannelMessage:
       if (audio_channel_) {
         audio_channel_->HandleMessage(wparam, lparam);

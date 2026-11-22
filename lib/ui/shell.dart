@@ -257,6 +257,8 @@ class _BlackgridShellState extends State<BlackgridShell> {
                           child: SettingsPage(
                             services: widget.services,
                             alerts: widget.services.alerts,
+                            screenshotCleanup:
+                                widget.services.screenshotCleanup,
                             backLabel:
                                 'Back to ${_areaName(settings.backArea)}',
                             onBack: _closeSettings,
