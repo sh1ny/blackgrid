@@ -8,7 +8,7 @@ Tests that drive the controller use `test/support/fake_recycle_port.dart`, a fak
 |---|---|---|---|---|
 | screenshot-cleanup → Screenshot cleanup is an opt-in setting | Off by default | `test/application/settings_screenshot_cleanup_test.dart` | `screenshot-cleanup: Off by default` | green |
 | screenshot-cleanup → Screenshot cleanup is an opt-in setting | The setting survives a restart | `test/application/settings_screenshot_cleanup_test.dart` | `screenshot-cleanup: The setting survives a restart` | green |
-| screenshot-cleanup → Screenshot cleanup is an opt-in setting | Save fails | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Save fails` | red |
+| screenshot-cleanup → Screenshot cleanup is an opt-in setting | Save fails | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Save fails` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | A live raid ends | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: A live raid ends` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | A raid ended by a client restart | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: A raid ended by a client restart` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | Replay at start-up | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Replay at start-up` | green |
@@ -30,16 +30,16 @@ Tests that drive the controller use `test/support/fake_recycle_port.dart`, a fak
 | screenshot-cleanup → Cleanups run one at a time | Switched off while a cleanup waits | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Switched off while a cleanup waits` | green |
 | screenshot-cleanup → Cleanups run one at a time | Blackgrid closes during a cleanup | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Blackgrid closes during a cleanup` | green |
 | screenshot-cleanup → Cleanups run one at a time | Too many cleanups waiting | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Too many cleanups waiting` | green |
-| screenshot-cleanup → The last cleanup's result is shown | Screenshots moved | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Screenshots moved` | red |
-| screenshot-cleanup → The last cleanup's result is shown | Some could not be moved | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Some could not be moved` | red |
-| screenshot-cleanup → The last cleanup's result is shown | No screenshots in the raid | `test/ui/settings_page_test.dart` | `screenshot-cleanup: No screenshots in the raid` | red |
+| screenshot-cleanup → The last cleanup's result is shown | Screenshots moved | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Screenshots moved` | green |
+| screenshot-cleanup → The last cleanup's result is shown | Some could not be moved | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Some could not be moved` | green |
+| screenshot-cleanup → The last cleanup's result is shown | No screenshots in the raid | `test/ui/settings_page_test.dart` | `screenshot-cleanup: No screenshots in the raid` | green |
 | screenshot-cleanup → The last cleanup's result is shown | The folder is missing | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: The folder is missing` | green |
-| screenshot-cleanup → The last cleanup's result is shown | Nothing yet | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Nothing yet` | red |
+| screenshot-cleanup → The last cleanup's result is shown | Nothing yet | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Nothing yet` | green |
 | settings-page → Game files section | Save a folder on Enter | `test/ui/settings_page_test.dart` | `settings-page: Save a folder on Enter` | green |
 | settings-page → Game files section | Save on leaving | `test/ui/settings_page_test.dart` | `settings-page: Save on leaving` | green |
 | settings-page → Game files section | Save fails | `test/ui/settings_page_test.dart` | `settings-page: Save fails` | green |
-| settings-page → Game files section | The cleanup switch sits under the screenshot folder | `test/ui/settings_page_test.dart` | `settings-page: The cleanup switch sits under the screenshot folder` | red |
-| settings-page → Game files section | Switching cleanup on | `test/ui/settings_page_test.dart` | `settings-page: Switching cleanup on` | red |
+| settings-page → Game files section | The cleanup switch sits under the screenshot folder | `test/ui/settings_page_test.dart` | `settings-page: The cleanup switch sits under the screenshot folder` | green |
+| settings-page → Game files section | Switching cleanup on | `test/ui/settings_page_test.dart` | `settings-page: Switching cleanup on` | green |
 
 ## 1. ADR and architecture
 
@@ -70,8 +70,8 @@ Skills: `dart-use-pattern-matching`, `dart-write-documentation`, `dart-add-unit-
 
 Skills: `flutter-add-widget-test`, `dart-write-documentation`, `dart-run-static-analysis`, and AGENTS.md "Dart and Flutter code".
 
-- [ ] 4.1 Write failing widget tests in `test/ui/settings_page_test.dart` for "The cleanup switch sits under the screenshot folder", "Switching cleanup on", "screenshot-cleanup: Save fails", "Screenshots moved", "Some could not be moved", "No screenshots in the raid" and "Nothing yet". Drive the result lines from a controller over the fake port. Also check the "could not be confirmed" and "cleanup unavailable for this run" lines (review S8). Verify they fail.
-- [ ] 4.2 Build the switch "Delete a raid's screenshots after it ends" (a DESIGN.md X13 switch) under the screenshot folder in Game files, with its result line. Verify the 4.1 tests pass, flip their rows green, and re-run `settings-page: Save a folder on Enter`, `settings-page: Save on leaving` and `settings-page: Save fails` (still green).
+- [x] 4.1 Write failing widget tests in `test/ui/settings_page_test.dart` for "The cleanup switch sits under the screenshot folder", "Switching cleanup on", "screenshot-cleanup: Save fails", "Screenshots moved", "Some could not be moved", "No screenshots in the raid" and "Nothing yet". Drive the result lines from a controller over the fake port. Also check the "could not be confirmed" and "cleanup unavailable for this run" lines (review S8). Verify they fail.
+- [x] 4.2 Build the switch "Delete a raid's screenshots after it ends" (a DESIGN.md X13 switch) under the screenshot folder in Game files, with its result line. Verify the 4.1 tests pass, flip their rows green, and re-run `settings-page: Save a folder on Enter`, `settings-page: Save on leaving` and `settings-page: Save fails` (still green).
 
 ## 5. Runner recycle channel
 
