@@ -203,6 +203,8 @@ In Scanner you can look up items in the catalog by hand, or turn on **live scan*
 | [`.claude/agents/`](.claude/agents/specwright-implementer.md), [`.omp/agents/`](.omp/agents/specwright-implementer.md) | The Specwright implementer and reviewer agents |
 | [`openspec/`](openspec/config.yaml) | The Specwright change workflow, [architecture](openspec/architecture.md), [roadmap](openspec/roadmap.md) and [ADRs](docs/adr/README.md) |
 
+Specwright uses the `sw` binary pinned in [`openspec/.specwright/VERSION`](openspec/.specwright/VERSION), not the former per-skill scripts. Use the [upstream install prompt](https://github.com/sh1ny/specwright#-install--update) with that version, then start a fresh agent session.
+
 ---
 
 ## Settings
