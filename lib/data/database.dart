@@ -227,6 +227,16 @@ class ProgressHeads extends Table {
   Set<Column> get primaryKey => {mode, cycleId, entityKind, entityId, field};
 }
 
+/// A durable claim keyed by the log record that originally started a raid.
+class ScreenshotCleanupClaims extends Table {
+  TextColumn get folder => text()();
+  TextColumn get file => text()();
+  IntColumn get offset => integer()();
+
+  @override
+  Set<Column> get primaryKey => {folder, file, offset};
+}
+
 /// The settings read from the database and whether the stored record was
 /// unreadable.
 class StoredSettings {
@@ -280,6 +290,7 @@ class NewerDatabaseException implements Exception {
     ProgressEvents,
     ProgressHeads,
     ProgressWipes,
+    ScreenshotCleanupClaims,
   ],
 )
 class BlackgridDatabase extends _$BlackgridDatabase
@@ -307,13 +318,13 @@ class BlackgridDatabase extends _$BlackgridDatabase
   factory BlackgridDatabase.open(File file) =>
       BlackgridDatabase(NativeDatabase.createInBackground(file));
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from > to) throw NewerDatabaseException(onDisk: from, supported: to);
-      if (from < 1 || to != 9 || from >= to) {
+      if (from < 1 || to != 10 || from >= to) {
         throw StateError('Unsupported database upgrade.');
       }
       await transaction(() async {
@@ -347,12 +358,29 @@ class BlackgridDatabase extends _$BlackgridDatabase
           await m.createIndex(progressEventsRegisterOrder);
         }
         if (from < 9) await m.createTable(progressWipes);
+        if (from < 10) await m.createTable(screenshotCleanupClaims);
       });
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Durably claims the original raid start [id] before moving screenshots.
+  ///
+  /// Returns `true` only for a new claim and `false` if the claim already
+  /// exists. Propagates storage failures to the caller.
+  Future<bool> claimScreenshotCleanup(LogRecordId id) async {
+    final inserted = await into(screenshotCleanupClaims).insertReturningOrNull(
+      ScreenshotCleanupClaimsCompanion.insert(
+        folder: id.folder,
+        file: id.file.name,
+        offset: id.offset,
+      ),
+      mode: InsertMode.insertOrIgnore,
+    );
+    return inserted != null;
+  }
 
   String _catalogKey(GameMode mode) => 'json.tarkov.dev:${mode.name}';
   @override

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:blackgrid/application/raid_lifecycle_controller.dart';
 import 'package:blackgrid/data/game_log/game_log_parsers.dart';
 import 'package:blackgrid/data/session_log_reader.dart';
+import 'package:blackgrid/domain/alert_rules.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/local_progress.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
@@ -14,6 +15,23 @@ const _version = '1.3.0.0.48484';
 
 String _line(String log, String message, String time) =>
     '2026-10-31 $time|$_version|Info|$log|$message\n';
+
+String _start(String time) => _line('application', 'GameStarted: 7', time);
+
+String _profile(String time) => _line(
+  'application',
+  'PrepareSelectedProfileLocally ProfileId:aaaa AccountId:1',
+  time,
+);
+
+String _rejoin(String time) => _line(
+  'application',
+  'Transit reconnect status:MatchWait raidMode:Online location:laboratory',
+  time,
+);
+
+String _queue(String time) =>
+    _line('application', 'Matching with group id: 1', time);
 
 /// One log line and the file it belongs to, in log-time order.
 typedef _Entry = (LogFile, String);
@@ -132,8 +150,13 @@ void main() {
   late Directory folder;
   final readers = <SessionLogReader>[];
 
-  SessionLogReader newReader() {
-    final reader = SessionLogReader(pollInterval: const Duration(days: 1));
+  SessionLogReader newReader({
+    Future<FileStat> Function(File file)? snapshotStat,
+  }) {
+    final reader = SessionLogReader(
+      pollInterval: const Duration(days: 1),
+      snapshotStat: snapshotStat,
+    );
     readers.add(reader);
     return reader;
   }
@@ -158,8 +181,10 @@ void main() {
   });
 
   /// Builds a controller over a fresh reader, collecting its transitions.
-  (RaidLifecycleController, SessionLogReader, List<RaidTransition>) open() {
-    final reader = newReader();
+  (RaidLifecycleController, SessionLogReader, List<RaidTransition>) open({
+    Future<FileStat> Function(File file)? snapshotStat,
+  }) {
+    final reader = newReader(snapshotStat: snapshotStat);
     final controller = RaidLifecycleController(reader);
     addTearDown(controller.dispose);
     final seen = <RaidTransition>[];
@@ -398,14 +423,248 @@ void main() {
     expect(controller.state.raid!.interrupted, isFalse);
   });
 
+  test('cleanup skips startup and reconnect-only raids', () async {
+    await write(LogFile.application, _start('22:00:00.000'));
+    final (controller, reader, seen) = open();
+    final cleanup = <RaidTransition>[];
+    controller.cleanupTransitions.listen(cleanup.add);
+    await reader.bind(root.path);
+
+    await write(
+      LogFile.application,
+      _profile('22:00:05.000') +
+          _queue('22:00:06.000') +
+          _rejoin('22:00:07.000') +
+          _start('22:00:08.000') +
+          _profile('22:00:10.000'),
+      append: true,
+    );
+    await reader.rescan();
+    expect(
+      seen.whereType<RaidStartedTransition>().map((start) => start.raid.entry),
+      [RaidEntry.noQueue, RaidEntry.reconnect],
+    );
+    expect(seen.whereType<RaidEndedTransition>(), hasLength(2));
+    expect(cleanup, isEmpty);
+
+    await write(LogFile.application, _start('22:00:11.000'), append: true);
+    await reader.rescan();
+    // The backend role was confirmed absent when the session was bound.
+    await write(LogFile.backend, _session[9].$2);
+    await reader.rescan();
+    expect(cleanup, [seen.whereType<RaidEndedTransition>().last]);
+    expect(
+      (cleanup.single as RaidEndedTransition).cause,
+      RaidEndCause.raidExit,
+    );
+  });
+
+  test(
+    'cleanup ignores deferred baseline bytes after clock rollback',
+    () async {
+      final partialStart = _start('22:00:00.000');
+      // The start's header is already on disk, but not its final newline.
+      await write(
+        LogFile.application,
+        partialStart.substring(0, partialStart.length - 1),
+      );
+      final (controller, reader, seen) = open();
+      final cleanup = <RaidTransition>[];
+      controller.cleanupTransitions.listen(cleanup.add);
+      await reader.bind(root.path);
+      expect(seen, isEmpty);
+
+      await write(
+        LogFile.application,
+        '\n${_profile('22:00:05.000')}',
+        append: true,
+      );
+      await reader.rescan();
+      final replayed = seen.whereType<RaidEndedTransition>().single;
+      final initialClock = DateTime(2026, 10, 31, 23);
+      final rolledBackClock = DateTime(2026, 10, 31, 22, 0, 10);
+      expect(isFreshLogTime(replayed.time, initialClock), isFalse);
+      expect(isFreshLogTime(replayed.time, rolledBackClock), isTrue);
+      expect(cleanup, isEmpty);
+
+      await write(
+        LogFile.application,
+        _start('22:00:11.000') + _profile('22:00:12.000'),
+        append: true,
+      );
+      await reader.rescan();
+      expect(cleanup, [seen.whereType<RaidEndedTransition>().last]);
+    },
+  );
+
+  test(
+    'the first successful snapshot baselines an unknown file size',
+    () async {
+      await write(LogFile.application, _start('22:00:00.000'));
+      var failStat = true;
+      final (controller, reader, seen) = open(
+        snapshotStat: (file) async {
+          if (failStat) {
+            throw FileSystemException('no snapshot size', file.path);
+          }
+          return file.stat();
+        },
+      );
+      final cleanup = <RaidTransition>[];
+      controller.cleanupTransitions.listen(cleanup.add);
+      await reader.bind(root.path);
+      expect(seen, isEmpty);
+
+      await write(LogFile.application, _profile('22:00:05.000'), append: true);
+      failStat = false;
+      await reader.rescan();
+      expect(seen.whereType<RaidEndedTransition>(), hasLength(1));
+      expect(cleanup, isEmpty);
+
+      await write(
+        LogFile.application,
+        _start('22:00:11.000') + _profile('22:00:12.000'),
+        append: true,
+      );
+      await reader.rescan();
+      expect(cleanup, [seen.whereType<RaidEndedTransition>().last]);
+    },
+  );
+
+  for (final reconnect in [false, true]) {
+    test(
+      reconnect
+          ? 'cleanup keeps the original live raid identity across reconnect'
+          : 'cleanup publishes a live crash ending immediately before its queue',
+      () async {
+        await write(LogFile.application, '');
+        final (controller, reader, seen) = open();
+        final cleanup = <RaidTransition>[];
+        controller.cleanupTransitions.listen(cleanup.add);
+        await reader.bind(root.path);
+        await write(LogFile.application, _start('22:00:00.000'), append: true);
+        await reader.rescan();
+        final original = seen.whereType<RaidStartedTransition>().single;
+
+        const next = 'log_2026.10.31_23-00-00_1.3.0.0.48484';
+        folder = await Directory('${root.path}/$next').create();
+        await write(
+          LogFile.application,
+          _profile('23:00:01.000') +
+              (reconnect
+                  ? _rejoin('23:00:05.000') +
+                        _start('23:00:10.000') +
+                        _profile('23:00:15.000')
+                  : _queue('23:05:00.000')),
+        );
+        await reader.rescan();
+
+        expect(seen.whereType<RaidStartedTransition>(), [original]);
+        final ended = seen.whereType<RaidEndedTransition>().single;
+        expect(ended.raid.startId, original.id);
+        if (reconnect) {
+          expect(ended.cause, RaidEndCause.menus);
+          expect(cleanup, [ended]);
+        } else {
+          expect(ended.cause, RaidEndCause.clientRestart);
+          expect(ended.time, DateTime(2026, 10, 31, 23, 0, 1));
+          final queue = seen.whereType<QueueEnteredTransition>().single;
+          expect(queue.time, DateTime(2026, 10, 31, 23, 5));
+          expect(cleanup, [ended, queue]);
+        }
+      },
+    );
+  }
+
+  test(
+    'a deferred backend replay cannot end an enrolled raid for cleanup',
+    () async {
+      final partialExit = _session[9].$2;
+      await write(LogFile.application, '');
+      await write(
+        LogFile.backend,
+        partialExit.substring(0, partialExit.length - 1),
+      );
+      final (controller, reader, seen) = open();
+      final cleanup = <RaidTransition>[];
+      controller.cleanupTransitions.listen(cleanup.add);
+      await reader.bind(root.path);
+
+      await write(LogFile.application, _start('22:09:00.000'), append: true);
+      await reader.rescan();
+      await write(LogFile.backend, '\n', append: true);
+      await reader.rescan();
+      expect(
+        seen.whereType<RaidEndedTransition>().single.cause,
+        RaidEndCause.raidExit,
+      );
+      expect(cleanup, isEmpty);
+
+      await write(
+        LogFile.application,
+        _start('22:09:05.000') + _profile('22:09:10.000'),
+        append: true,
+      );
+      await reader.rescan();
+      expect(cleanup, [seen.whereType<RaidEndedTransition>().last]);
+    },
+  );
+
+  test('a transit needs both its rejoin record and GameStarted live', () async {
+    await write(
+      LogFile.application,
+      _start('22:00:00.000') +
+          _profile('22:00:05.000') +
+          _rejoin('22:00:06.000'),
+    );
+    final (controller, reader, seen) = open();
+    final cleanup = <RaidTransition>[];
+    controller.cleanupTransitions.listen(cleanup.add);
+    await reader.bind(root.path);
+
+    await write(
+      LogFile.application,
+      _start('22:00:07.000') + _profile('22:00:08.000'),
+      append: true,
+    );
+    await reader.rescan();
+    expect(
+      seen.whereType<RaidStartedTransition>().last.raid.entry,
+      RaidEntry.transit,
+    );
+    expect(seen.whereType<RaidEndedTransition>(), hasLength(2));
+    expect(cleanup, isEmpty);
+
+    await write(LogFile.application, _rejoin('22:00:09.000'), append: true);
+    await reader.rescan();
+    await write(
+      LogFile.application,
+      _start('22:00:10.000') + _profile('22:00:11.000'),
+      append: true,
+    );
+    await reader.rescan();
+    final started = seen.whereType<RaidStartedTransition>().last;
+    final ended = seen.whereType<RaidEndedTransition>().last;
+    expect(started.raid.entry, RaidEntry.transit);
+    expect(started.time, DateTime(2026, 10, 31, 22, 0, 9));
+    expect(ended.raid.startId, started.id);
+    expect(cleanup, [ended]);
+  });
+
   test('dispose stops the subscription and closes transitions', () async {
     await writeWhole();
     final reader = newReader();
     final controller = RaidLifecycleController(reader);
     var done = false;
+    var cleanupDone = false;
     controller.transitions.listen((_) {}, onDone: () => done = true);
+    controller.cleanupTransitions.listen(
+      (_) {},
+      onDone: () => cleanupDone = true,
+    );
     controller.dispose();
     expect(done, isTrue);
+    expect(cleanupDone, isTrue);
     await reader.bind(root.path);
     expect(controller.state.phase, RaidPhase.unknown);
   });

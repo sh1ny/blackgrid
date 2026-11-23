@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
@@ -148,6 +149,45 @@ class MapSessionController extends ChangeNotifier {
     pendingScreenshotPath: _pending?.saved.path,
   );
 
+  /// Resolves the saved screenshot folder to an absolute path for cleanup.
+  ///
+  /// Returns an empty string if the folder cannot be resolved or the saved
+  /// folder setting changes during resolution. The watcher may still be bound
+  /// to a previous folder, so its state is not used here.
+  Future<String> resolveScreenshotCleanupFolder() async {
+    if (_closed) return '';
+    final configured = settings.settings.screenshotDirectory;
+    var changed = false;
+    void trackFolder() {
+      if (settings.settings.screenshotDirectory != configured) changed = true;
+    }
+
+    settings.addListener(trackFolder);
+    try {
+      final directory = await _resolveScreenshotDirectory(configured);
+      if (_closed ||
+          changed ||
+          settings.settings.screenshotDirectory != configured ||
+          directory.isEmpty) {
+        return '';
+      }
+      final path = Platform.isWindows
+          ? directory.replaceAll('/', r'\')
+          : directory;
+      final absolute = Directory(path).absolute;
+      return absolute.isAbsolute ? absolute.path : '';
+    } catch (_) {
+      return '';
+    } finally {
+      settings.removeListener(trackFolder);
+    }
+  }
+
+  Future<String> _resolveScreenshotDirectory(String configured) async =>
+      configured.isNotEmpty
+      ? configured
+      : await _discovery?.screenshots() ?? '';
+
   Future<void> initialize() => _initializing ??= _initialize();
 
   Future<void> _initialize() async {
@@ -249,9 +289,9 @@ class MapSessionController extends ChangeNotifier {
         if (screenshotsChanged &&
             _unchanged(next, (p) => p.screenshotDirectory)) {
           try {
-            final directory = next.screenshotDirectory.isNotEmpty
-                ? next.screenshotDirectory
-                : await _discovery?.screenshots() ?? '';
+            final directory = await _resolveScreenshotDirectory(
+              next.screenshotDirectory,
+            );
             if (_unchanged(next, (p) => p.screenshotDirectory)) {
               _screenshotDirectory = directory;
               notifyListeners();

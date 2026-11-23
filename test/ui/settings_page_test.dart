@@ -4,14 +4,21 @@ import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/live_map_data_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
+import 'package:blackgrid/application/recycle_port.dart';
+import 'package:blackgrid/application/screenshot_cleanup_controller.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/data/vision/marker_template.dart';
+import 'package:blackgrid/data/screenshot_folder_lister.dart';
 import 'package:blackgrid/data/vision/vision_failure.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/domain/raid_lifecycle.dart';
+import 'package:blackgrid/domain/screenshot_cleanup.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
+import 'package:blackgrid/ui/settings/raid_timer_input.dart'
+    show notSavedMessage;
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_row.dart';
 import 'package:blackgrid/ui/settings/settings_section.dart';
@@ -23,6 +30,7 @@ import 'package:http/http.dart' as http;
 import '../support/m1_harness.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/raid_timer_support.dart';
+import '../support/fake_recycle_port.dart';
 import 'support/live_map_settings_rig.dart';
 import 'support/scan_ui_support.dart';
 
@@ -59,6 +67,7 @@ Future<void> _pump(
   int request = 0,
   SettingsFlushController? flush,
   String? version,
+  ScreenshotCleanupController? cleanup,
   Size size = const Size(1672, _windowHeight),
 }) async {
   tester.view.physicalSize = size;
@@ -80,6 +89,7 @@ Future<void> _pump(
                   flush: controller,
                   section: section,
                   request: request,
+                  screenshotCleanup: cleanup,
                 )
               : SettingsPage(
                   services: services,
@@ -89,6 +99,7 @@ Future<void> _pump(
                   section: section,
                   request: request,
                   version: version,
+                  screenshotCleanup: cleanup,
                 ),
         ),
       ),
@@ -176,7 +187,219 @@ Future<void> _breakSettingsSaves(WidgetTester tester, M1Harness h) =>
       ),
     );
 
+const _cleanupLabel = "Delete a raid's screenshots after it ends";
+final _cleanupTime = DateTime(2026, 11, 22, 14, 30);
+
+class _CleanupRig {
+  _CleanupRig(AppServices services, int count) {
+    controller = ScreenshotCleanupController(
+      transitions: events.stream,
+      settings: services.settings,
+      folder: () async => 'screenshots',
+      listFolder: (_) async => ScreenshotFolderListed([
+        for (var i = 0; i < count; i++)
+          ScreenshotEntry(
+            name:
+                '2026-11-22[14-05]_-120.5, 2.1, 33.4_0, 0.70711, 0, 0.70711_$i.png',
+            isFile: true,
+            isLink: false,
+            modified: _cleanupTime.subtract(const Duration(minutes: 1)),
+          ),
+      ]),
+      claim: (_) async => true,
+      recycle: recycle,
+      clock: () => _cleanupTime,
+      backstop: (_) => const Duration(seconds: 1),
+      cancelWait: const Duration(seconds: 1),
+    );
+  }
+  final events = StreamController<RaidTransition>.broadcast(sync: true);
+  final recycle = FakeRecyclePort();
+  late final ScreenshotCleanupController controller;
+
+  void end() {
+    const id = LogRecordId('cleanup-ui', LogFile.application, 1);
+    events.add(
+      RaidEndedTransition(
+        id,
+        _cleanupTime,
+        Raid(
+          mapId: null,
+          mode: null,
+          queueTime: null,
+          startTime: _cleanupTime.subtract(const Duration(minutes: 30)),
+          startId: id,
+          entry: RaidEntry.noQueue,
+          endTime: _cleanupTime,
+          endCause: RaidEndCause.raidExit,
+        ),
+      ),
+    );
+  }
+
+  void dispose() {
+    controller.dispose();
+    unawaited(events.close());
+  }
+}
+
 void main() {
+  group('Screenshot cleanup', () {
+    testWidgets(
+      'settings-page: The cleanup switch sits under the screenshot folder',
+      (tester) async {
+        final h = await _pumpHarness(
+          tester,
+          section: SettingsSection.gameFiles,
+        );
+        final row = _rowNamed(_cleanupLabel);
+        expect(row, findsOneWidget);
+        expect(_settings(h).cleanUpRaidScreenshots, isFalse);
+        expect(
+          tester.getTopLeft(row).dy,
+          greaterThan(
+            tester
+                .getBottomLeft(
+                  find.widgetWithText(TextField, 'Screenshot folder'),
+                )
+                .dy,
+          ),
+        );
+        expect(
+          tester.getBottomLeft(row).dy,
+          lessThanOrEqualTo(tester.getTopLeft(_rowNamed('Follow logs')).dy),
+        );
+      },
+    );
+
+    testWidgets('settings-page: Switching cleanup on', (tester) async {
+      final h = await _pumpHarness(tester, section: SettingsSection.gameFiles);
+      final before = _settings(h);
+      await _show(tester, find.text(_cleanupLabel));
+      await tester.runAsync(() => tester.tap(find.text(_cleanupLabel)));
+      await tester.pumpAndSettle();
+      final saved = (await tester.runAsync(h.db.readSettings))!.settings;
+      expect(saved.cleanUpRaidScreenshots, isTrue);
+      expect(saved.gameLogDirectory, before.gameLogDirectory);
+      expect(saved.screenshotDirectory, before.screenshotDirectory);
+      expect(saved.followGameLogs, before.followGameLogs);
+    });
+
+    testWidgets('screenshot-cleanup: Save fails', (tester) async {
+      final h = await _pumpHarness(tester, section: SettingsSection.gameFiles);
+      await _breakSettingsSaves(tester, h);
+      await _show(tester, find.text(_cleanupLabel));
+      await tester.runAsync(() => tester.tap(find.text(_cleanupLabel)));
+      await tester.pumpAndSettle();
+      await pumpUntil(
+        tester,
+        () => find.text(notSavedMessage).evaluate().isNotEmpty,
+      );
+      expect(_settings(h).cleanUpRaidScreenshots, isFalse);
+      expect(
+        find.descendant(
+          of: _rowNamed(_cleanupLabel),
+          matching: find.text(notSavedMessage),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('screenshot-cleanup: Nothing yet', (tester) async {
+      final h = await _harness(tester);
+      final rig = _CleanupRig(h.services, 1);
+      addTearDown(rig.dispose);
+      await _pump(
+        tester,
+        h.services,
+        cleanup: rig.controller,
+        section: SettingsSection.gameFiles,
+      );
+      expect(
+        tester.widget<SettingsRow>(_rowNamed(_cleanupLabel)).message,
+        isNull,
+      );
+    });
+
+    for (final scenario in [
+      (
+        name: 'Screenshots moved',
+        count: 12,
+        failed: 0,
+        message: 'Moved 12 screenshots from the last raid to the Recycle Bin.',
+      ),
+      (
+        name: 'Some could not be moved',
+        count: 12,
+        failed: 2,
+        message: 'Moved 10 screenshots from the last raid to the Recycle Bin. 2 could not be moved and are still in the folder.',
+      ),
+      (
+        name: 'No screenshots in the raid',
+        count: 0,
+        failed: 0,
+        message: 'The last raid had no screenshots to move.',
+      ),
+    ]) {
+      testWidgets('screenshot-cleanup: ${scenario.name}', (tester) async {
+        final h = await _harness(tester);
+        await tester.runAsync(
+          () => h.services.settings.setCleanUpRaidScreenshots(true),
+        );
+        final rig = _CleanupRig(h.services, scenario.count);
+        addTearDown(rig.dispose);
+        await _pump(
+          tester,
+          h.services,
+          cleanup: rig.controller,
+          section: SettingsSection.gameFiles,
+        );
+        rig.end();
+        await tester.pump();
+        if (scenario.count > 0) {
+          final call = rig.recycle.calls.single;
+          call.complete({
+            for (final name in call.names.take(scenario.failed))
+              name: const RecycleFailed(),
+          });
+          await tester.pumpAndSettle();
+        }
+        await tester.pumpAndSettle();
+        expect(find.text(scenario.message), findsOneWidget);
+      });
+    }
+
+    testWidgets('screenshot-cleanup: Unconfirmed and unavailable result', (
+      tester,
+    ) async {
+      final h = await _harness(tester);
+      await tester.runAsync(
+        () => h.services.settings.setCleanUpRaidScreenshots(true),
+      );
+      final rig = _CleanupRig(h.services, 1);
+      addTearDown(rig.dispose);
+      await _pump(
+        tester,
+        h.services,
+        cleanup: rig.controller,
+        section: SettingsSection.gameFiles,
+      );
+      rig.end();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(rig.recycle.cancellations, 1);
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.textContaining('could not be confirmed as moved'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Cleanup is unavailable for this run'),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('sections', () {
     testWidgets('sidebar lists the sections in order', (tester) async {
       await _pumpHarness(tester);

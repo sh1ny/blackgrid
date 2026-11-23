@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/audio_port.dart';
+import 'package:blackgrid/application/recycle_port.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/local_progress.dart';
@@ -17,6 +18,7 @@ import 'package:http/testing.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';
 import '../support/fake_audio_port.dart';
+import '../support/fake_recycle_port.dart';
 
 Future<void> _whenMapSession(
   AppServices services,
@@ -60,7 +62,109 @@ class _DelayedCatalogDatabase extends BlackgridDatabase {
   }
 }
 
+class _DisposalRecyclePort implements RecyclePort {
+  final fake = FakeRecyclePort();
+  void Function()? onCancel;
+  bool cancelledWithSourcesAlive = false;
+  List<FakeRecycleCall> get calls => fake.calls;
+  int get cancellations => fake.cancellations;
+  Future<FakeRecycleCall> waitForCall(int index) => fake.waitForCall(index);
+
+  @override
+  Future<RecycleReply> recycle(String folder, List<String> names) =>
+      fake.recycle(folder, names);
+
+  @override
+  Future<void> cancel() async {
+    onCancel?.call();
+    cancelledWithSourcesAlive = onCancel != null;
+    await fake.cancel();
+  }
+}
+
 void main() {
+  test('screenshot cleanup skips recent startup replay, handles live endings and cancels before its sources close', () async {
+    final root = await Directory.systemTemp.createTemp(
+      'blackgrid-cleanup-services-',
+    );
+    final logs = await Directory('${root.path}/logs/log_2026.11.22_14-00-00')
+        .create(recursive: true);
+    final shots = await Directory('${root.path}/shots').create();
+    const name =
+        '2026-11-22[14-05]_-120.5, 2.1, 33.4_0, 0.70711, 0, 0.70711_12.34.png';
+    final shot = await File('${shots.path}/$name').writeAsBytes([1, 2, 3]);
+    await shot.setLastModified(DateTime(2026, 11, 22, 14, 29));
+    String line(String channel, String message, String time) =>
+        '2026-11-22 $time|0.16.9.0.40000|Info|$channel|$message\n';
+    await File('${logs.path}/application_000.log').writeAsString(
+      line('application', 'Matching with group id: 1', '14:00:00.000') +
+          line('application', 'GameStarted: 1', '14:00:10.000'),
+    );
+    final backend = File('${logs.path}/backend_000.log');
+    const exit =
+        'WebSocketSharp - binary message received: type=Notification, trackingId=t1, payloadType=userMatchOver, payloadLength=393';
+    await backend.writeAsString(line('backend', exit, '14:29:30.000'));
+    var now = DateTime(2026, 11, 22, 14, 29, 31);
+    final port = _DisposalRecyclePort();
+    final services = AppServices(
+      database: BlackgridDatabase(NativeDatabase.memory()),
+      client: MockClient((_) async => http.Response('', 503)),
+      clock: () => now,
+      recyclePort: port,
+    );
+    var disposed = false;
+    addTearDown(() async {
+      if (!disposed) await services.dispose();
+      for (final call in port.calls) {
+        if (!call.completion.isCompleted) call.complete();
+      }
+      await root.delete(recursive: true);
+    });
+    await services.settings.save(
+      AppSettings(
+        gameLogDirectory: '${root.path}/logs',
+        screenshotDirectory: shots.path,
+        cleanUpRaidScreenshots: true,
+      ),
+    );
+    await services.initialize();
+    expect(services.screenshotCleanup.lastResult, isNull);
+    expect(port.calls, isEmpty);
+    await shot.setLastModified(DateTime(2026, 11, 22, 14, 29, 59));
+    now = DateTime(2026, 11, 22, 14, 30, 1);
+    await File('${logs.path}/application_000.log').writeAsString(
+      line('application', 'Matching with group id: 2', '14:29:35.000') +
+          line('application', 'GameStarted: 2', '14:29:40.000'),
+      mode: FileMode.append,
+    );
+    await backend.writeAsString(
+      line('backend', exit, '14:30:00.000'),
+      mode: FileMode.append,
+    );
+    final call = await port.waitForCall(0).timeout(const Duration(seconds: 5));
+    expect(
+      call.folder,
+      Platform.isWindows ? shots.path.replaceAll('/', r'\') : shots.path,
+    );
+    expect(call.names, [name]);
+    port.onCancel = () {
+      void listener() {}
+      services.mapSession.addListener(listener);
+      services.mapSession.removeListener(listener);
+      services.raidLifecycle.addListener(listener);
+      services.raidLifecycle.removeListener(listener);
+    };
+    await services.dispose();
+    disposed = true;
+    expect(port.cancellations, 1);
+    expect(port.cancelledWithSourcesAlive, isTrue);
+    expect(
+      () => services.screenshotCleanup.addListener(() {}),
+      throwsA(isA<FlutterError>()),
+    );
+    call.complete();
+  });
+
   /// Services in PvP with the fixture catalog, whose `task-a` has the counter
   /// objective `find-a`, and the manual projection attached.
   Future<AppServices> questServices() async {

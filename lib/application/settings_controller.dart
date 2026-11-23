@@ -243,6 +243,11 @@ class SettingsController extends ChangeNotifier
       followGameLogs: followGameLogs,
     ),
   );
+
+  /// Saves whether raid screenshots are recycled after a raid ends.
+  Future<bool> setCleanUpRaidScreenshots(bool value) =>
+      save(_settings.copyWith(cleanUpRaidScreenshots: value));
+
   Future<bool> setMarker(String key, bool value) => save(
     _settings.copyWith(markerFilters: {..._settings.markerFilters, key: value}),
   );

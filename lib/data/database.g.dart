@@ -6107,6 +6107,273 @@ class ProgressWipesCompanion extends UpdateCompanion<ProgressWipeRecord> {
   }
 }
 
+class $ScreenshotCleanupClaimsTable extends ScreenshotCleanupClaims
+    with TableInfo<$ScreenshotCleanupClaimsTable, ScreenshotCleanupClaim> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScreenshotCleanupClaimsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _folderMeta = const VerificationMeta('folder');
+  @override
+  late final GeneratedColumn<String> folder = GeneratedColumn<String>(
+    'folder',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileMeta = const VerificationMeta('file');
+  @override
+  late final GeneratedColumn<String> file = GeneratedColumn<String>(
+    'file',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _offsetMeta = const VerificationMeta('offset');
+  @override
+  late final GeneratedColumn<int> offset = GeneratedColumn<int>(
+    'offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [folder, file, offset];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'screenshot_cleanup_claims';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScreenshotCleanupClaim> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('folder')) {
+      context.handle(
+        _folderMeta,
+        folder.isAcceptableOrUnknown(data['folder']!, _folderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderMeta);
+    }
+    if (data.containsKey('file')) {
+      context.handle(
+        _fileMeta,
+        file.isAcceptableOrUnknown(data['file']!, _fileMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileMeta);
+    }
+    if (data.containsKey('offset')) {
+      context.handle(
+        _offsetMeta,
+        offset.isAcceptableOrUnknown(data['offset']!, _offsetMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_offsetMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {folder, file, offset};
+  @override
+  ScreenshotCleanupClaim map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScreenshotCleanupClaim(
+      folder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder'],
+      )!,
+      file: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file'],
+      )!,
+      offset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}offset'],
+      )!,
+    );
+  }
+
+  @override
+  $ScreenshotCleanupClaimsTable createAlias(String alias) {
+    return $ScreenshotCleanupClaimsTable(attachedDatabase, alias);
+  }
+}
+
+class ScreenshotCleanupClaim extends DataClass
+    implements Insertable<ScreenshotCleanupClaim> {
+  final String folder;
+  final String file;
+  final int offset;
+  const ScreenshotCleanupClaim({
+    required this.folder,
+    required this.file,
+    required this.offset,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['folder'] = Variable<String>(folder);
+    map['file'] = Variable<String>(file);
+    map['offset'] = Variable<int>(offset);
+    return map;
+  }
+
+  ScreenshotCleanupClaimsCompanion toCompanion(bool nullToAbsent) {
+    return ScreenshotCleanupClaimsCompanion(
+      folder: Value(folder),
+      file: Value(file),
+      offset: Value(offset),
+    );
+  }
+
+  factory ScreenshotCleanupClaim.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScreenshotCleanupClaim(
+      folder: serializer.fromJson<String>(json['folder']),
+      file: serializer.fromJson<String>(json['file']),
+      offset: serializer.fromJson<int>(json['offset']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'folder': serializer.toJson<String>(folder),
+      'file': serializer.toJson<String>(file),
+      'offset': serializer.toJson<int>(offset),
+    };
+  }
+
+  ScreenshotCleanupClaim copyWith({
+    String? folder,
+    String? file,
+    int? offset,
+  }) => ScreenshotCleanupClaim(
+    folder: folder ?? this.folder,
+    file: file ?? this.file,
+    offset: offset ?? this.offset,
+  );
+  ScreenshotCleanupClaim copyWithCompanion(
+    ScreenshotCleanupClaimsCompanion data,
+  ) {
+    return ScreenshotCleanupClaim(
+      folder: data.folder.present ? data.folder.value : this.folder,
+      file: data.file.present ? data.file.value : this.file,
+      offset: data.offset.present ? data.offset.value : this.offset,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScreenshotCleanupClaim(')
+          ..write('folder: $folder, ')
+          ..write('file: $file, ')
+          ..write('offset: $offset')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(folder, file, offset);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScreenshotCleanupClaim &&
+          other.folder == this.folder &&
+          other.file == this.file &&
+          other.offset == this.offset);
+}
+
+class ScreenshotCleanupClaimsCompanion
+    extends UpdateCompanion<ScreenshotCleanupClaim> {
+  final Value<String> folder;
+  final Value<String> file;
+  final Value<int> offset;
+  final Value<int> rowid;
+  const ScreenshotCleanupClaimsCompanion({
+    this.folder = const Value.absent(),
+    this.file = const Value.absent(),
+    this.offset = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ScreenshotCleanupClaimsCompanion.insert({
+    required String folder,
+    required String file,
+    required int offset,
+    this.rowid = const Value.absent(),
+  }) : folder = Value(folder),
+       file = Value(file),
+       offset = Value(offset);
+  static Insertable<ScreenshotCleanupClaim> custom({
+    Expression<String>? folder,
+    Expression<String>? file,
+    Expression<int>? offset,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (folder != null) 'folder': folder,
+      if (file != null) 'file': file,
+      if (offset != null) 'offset': offset,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ScreenshotCleanupClaimsCompanion copyWith({
+    Value<String>? folder,
+    Value<String>? file,
+    Value<int>? offset,
+    Value<int>? rowid,
+  }) {
+    return ScreenshotCleanupClaimsCompanion(
+      folder: folder ?? this.folder,
+      file: file ?? this.file,
+      offset: offset ?? this.offset,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (folder.present) {
+      map['folder'] = Variable<String>(folder.value);
+    }
+    if (file.present) {
+      map['file'] = Variable<String>(file.value);
+    }
+    if (offset.present) {
+      map['offset'] = Variable<int>(offset.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScreenshotCleanupClaimsCompanion(')
+          ..write('folder: $folder, ')
+          ..write('file: $file, ')
+          ..write('offset: $offset, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$BlackgridDatabase extends GeneratedDatabase {
   _$BlackgridDatabase(QueryExecutor e) : super(e);
   $BlackgridDatabaseManager get managers => $BlackgridDatabaseManager(this);
@@ -6137,6 +6404,8 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
   late final $ProgressEventsTable progressEvents = $ProgressEventsTable(this);
   late final $ProgressHeadsTable progressHeads = $ProgressHeadsTable(this);
   late final $ProgressWipesTable progressWipes = $ProgressWipesTable(this);
+  late final $ScreenshotCleanupClaimsTable screenshotCleanupClaims =
+      $ScreenshotCleanupClaimsTable(this);
   late final Index raidStatRecordsModeStart = Index(
     'raid_stat_records_mode_start',
     'CREATE INDEX raid_stat_records_mode_start ON raid_stat_records (mode, start_ms)',
@@ -6175,6 +6444,7 @@ abstract class _$BlackgridDatabase extends GeneratedDatabase {
     progressEvents,
     progressHeads,
     progressWipes,
+    screenshotCleanupClaims,
     raidStatRecordsModeStart,
     fleaSaleRecordsMode,
     progressEventsScopeSequence,
@@ -10426,6 +10696,199 @@ typedef $$ProgressWipesTableProcessedTableManager =
       ProgressWipeRecord,
       PrefetchHooks Function()
     >;
+typedef $$ScreenshotCleanupClaimsTableCreateCompanionBuilder =
+    ScreenshotCleanupClaimsCompanion Function({
+      required String folder,
+      required String file,
+      required int offset,
+      Value<int> rowid,
+    });
+typedef $$ScreenshotCleanupClaimsTableUpdateCompanionBuilder =
+    ScreenshotCleanupClaimsCompanion Function({
+      Value<String> folder,
+      Value<String> file,
+      Value<int> offset,
+      Value<int> rowid,
+    });
+
+class $$ScreenshotCleanupClaimsTableFilterComposer
+    extends Composer<_$BlackgridDatabase, $ScreenshotCleanupClaimsTable> {
+  $$ScreenshotCleanupClaimsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get folder => $composableBuilder(
+    column: $table.folder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get file => $composableBuilder(
+    column: $table.file,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScreenshotCleanupClaimsTableOrderingComposer
+    extends Composer<_$BlackgridDatabase, $ScreenshotCleanupClaimsTable> {
+  $$ScreenshotCleanupClaimsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get folder => $composableBuilder(
+    column: $table.folder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get file => $composableBuilder(
+    column: $table.file,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScreenshotCleanupClaimsTableAnnotationComposer
+    extends Composer<_$BlackgridDatabase, $ScreenshotCleanupClaimsTable> {
+  $$ScreenshotCleanupClaimsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get folder =>
+      $composableBuilder(column: $table.folder, builder: (column) => column);
+
+  GeneratedColumn<String> get file =>
+      $composableBuilder(column: $table.file, builder: (column) => column);
+
+  GeneratedColumn<int> get offset =>
+      $composableBuilder(column: $table.offset, builder: (column) => column);
+}
+
+class $$ScreenshotCleanupClaimsTableTableManager
+    extends
+        RootTableManager<
+          _$BlackgridDatabase,
+          $ScreenshotCleanupClaimsTable,
+          ScreenshotCleanupClaim,
+          $$ScreenshotCleanupClaimsTableFilterComposer,
+          $$ScreenshotCleanupClaimsTableOrderingComposer,
+          $$ScreenshotCleanupClaimsTableAnnotationComposer,
+          $$ScreenshotCleanupClaimsTableCreateCompanionBuilder,
+          $$ScreenshotCleanupClaimsTableUpdateCompanionBuilder,
+          (
+            ScreenshotCleanupClaim,
+            BaseReferences<
+              _$BlackgridDatabase,
+              $ScreenshotCleanupClaimsTable,
+              ScreenshotCleanupClaim
+            >,
+          ),
+          ScreenshotCleanupClaim,
+          PrefetchHooks Function()
+        > {
+  $$ScreenshotCleanupClaimsTableTableManager(
+    _$BlackgridDatabase db,
+    $ScreenshotCleanupClaimsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScreenshotCleanupClaimsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ScreenshotCleanupClaimsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ScreenshotCleanupClaimsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> folder = const Value.absent(),
+                Value<String> file = const Value.absent(),
+                Value<int> offset = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ScreenshotCleanupClaimsCompanion(
+                folder: folder,
+                file: file,
+                offset: offset,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String folder,
+                required String file,
+                required int offset,
+                Value<int> rowid = const Value.absent(),
+              }) => ScreenshotCleanupClaimsCompanion.insert(
+                folder: folder,
+                file: file,
+                offset: offset,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ScreenshotCleanupClaimsTable,
+                    ScreenshotCleanupClaim
+                  >(table),
+                  BaseReferences<
+                    _$BlackgridDatabase,
+                    $ScreenshotCleanupClaimsTable,
+                    ScreenshotCleanupClaim
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScreenshotCleanupClaimsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$BlackgridDatabase,
+      $ScreenshotCleanupClaimsTable,
+      ScreenshotCleanupClaim,
+      $$ScreenshotCleanupClaimsTableFilterComposer,
+      $$ScreenshotCleanupClaimsTableOrderingComposer,
+      $$ScreenshotCleanupClaimsTableAnnotationComposer,
+      $$ScreenshotCleanupClaimsTableCreateCompanionBuilder,
+      $$ScreenshotCleanupClaimsTableUpdateCompanionBuilder,
+      (
+        ScreenshotCleanupClaim,
+        BaseReferences<
+          _$BlackgridDatabase,
+          $ScreenshotCleanupClaimsTable,
+          ScreenshotCleanupClaim
+        >,
+      ),
+      ScreenshotCleanupClaim,
+      PrefetchHooks Function()
+    >;
 
 class $BlackgridDatabaseManager {
   final _$BlackgridDatabase _db;
@@ -10464,4 +10927,9 @@ class $BlackgridDatabaseManager {
       $$ProgressHeadsTableTableManager(_db, _db.progressHeads);
   $$ProgressWipesTableTableManager get progressWipes =>
       $$ProgressWipesTableTableManager(_db, _db.progressWipes);
+  $$ScreenshotCleanupClaimsTableTableManager get screenshotCleanupClaims =>
+      $$ScreenshotCleanupClaimsTableTableManager(
+        _db,
+        _db.screenshotCleanupClaims,
+      );
 }

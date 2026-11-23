@@ -6,6 +6,7 @@ import '../../application/app_services.dart';
 import '../../application/alerts_controller.dart';
 import '../../application/app_version.dart' as app_version;
 import '../../application/live_map_data_controller.dart';
+import '../../application/screenshot_cleanup_controller.dart';
 import '../../domain/catalog.dart';
 import '../../domain/raid_timers.dart';
 import '../../domain/settings.dart';
@@ -20,6 +21,7 @@ import 'local_progress_settings.dart';
 import 'raid_timer_input.dart';
 import 'settings_diagnostics_body.dart';
 import 'settings_row.dart';
+import 'screenshot_cleanup_settings.dart';
 import 'settings_section.dart';
 
 /// The Settings page: a sidebar of sections beside one scrolling column of
@@ -49,6 +51,7 @@ class SettingsPage extends StatefulWidget {
     this.request = 0,
     this.version = app_version.appVersion,
     this.alerts,
+    this.screenshotCleanup,
   });
 
   /// The services the sections read and change.
@@ -79,6 +82,9 @@ class SettingsPage extends StatefulWidget {
   /// and volume, but its test, preview, "Get more voices" and file buttons are
   /// disabled.
   final AlertsController? alerts;
+
+  /// The app-scoped screenshot cleanup result shown in Game files.
+  final ScreenshotCleanupController? screenshotCleanup;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -491,6 +497,10 @@ class _SettingsPageState extends State<SettingsPage> {
           value: settings.settings.screenshotDirectory,
           onCommit: (text) => save(shots: text.trim()),
         ),
+      ),
+      ScreenshotCleanupSettings(
+        settings: settings,
+        cleanup: widget.screenshotCleanup,
       ),
       SettingsRow.toggle(
         name: 'Follow logs',

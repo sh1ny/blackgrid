@@ -72,7 +72,13 @@ int compareSessionFolderNames(String a, String b) {
 }
 
 /// Lists session directories under [root] in date-time and name order.
-Future<List<SessionFolder>> listSessionFolders(String root) async {
+///
+/// Calls [onListed] only after a successful directory listing, including an
+/// empty one. A root that cannot be found also returns an empty list.
+Future<List<SessionFolder>> listSessionFolders(
+  String root, {
+  void Function()? onListed,
+}) async {
   final directory = Directory(root);
   if (!await directory.exists()) return [];
   final folders = <SessionFolder>[];
@@ -86,6 +92,7 @@ Future<List<SessionFolder>> listSessionFolders(String root) async {
     final comparison = a.time.compareTo(b.time);
     return comparison == 0 ? a.name.compareTo(b.name) : comparison;
   });
+  onListed?.call();
   return folders;
 }
 
