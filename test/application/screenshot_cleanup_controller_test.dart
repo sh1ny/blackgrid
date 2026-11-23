@@ -549,12 +549,17 @@ void main() {
       expect(h.recycle.calls, hasLength(1));
       expect(h.controller.lastResult!.unconfirmed, 64);
       expect(h.controller.lastResult!.notMoved, 1);
+      // The second result must include skips made after the first one.
+      for (var i = 3; i <= 6; i++) {
+        h.lifecycle.end(_raid(i));
+      }
       async.elapse(const Duration(seconds: 3));
       async.flushMicrotasks();
       expect(h.recycle.calls, hasLength(1));
       expect(h.controller.lastResult!.unavailable, isTrue);
       expect(h.controller.lastResult!.unconfirmed, 64);
       expect(h.controller.lastResult!.notMoved, 1);
+      expect(h.controller.lastResult!.skippedRaids, 1);
       h.lifecycle.end(_raid(3));
       async.flushMicrotasks();
       expect(h.recycle.calls, hasLength(1));

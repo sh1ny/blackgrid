@@ -262,15 +262,13 @@ class ScreenshotCleanupController extends ChangeNotifier {
           _unavailable = true;
           _pending.clear();
           if (!_disposed) {
-            final previous = _lastResult;
-            _lastResult = ScreenshotCleanupResult(
+            _skipped += _lastResult?.skippedRaids ?? 0;
+            _publish(
               moved: moved,
               notMoved: notMoved + names.length - end,
               unconfirmed: unconfirmed + batch.length,
               unavailable: true,
-              skippedRaids: previous?.skippedRaids ?? 0,
             );
-            notifyListeners();
           }
         } catch (_) {
           // A failed late reply still means the port has drained.

@@ -37,3 +37,9 @@ A Blackgrid-only window capture confirmed that the switch follows the screenshot
 ## Limits
 
 No live-game test was performed. The owner-only real-raid and optional no-Recycle-Bin-drive checks remain unverified under task 6.2. This smoke proves recycling on the system drive; the no-permanent-delete veto remains enforced in the runner and its alternative-drive behavior is not claimed verified here.
+
+## Nonrecyclable source — 2026-11-23
+
+- Confirmed by process-name check that Escape from Tarkov and BattlEye were not running before launching the offline Windows integration test. No game was launched, controlled or inspected.
+- Ran `integration_test/screenshot_recycle_windows_test.dart` with the `qualification` tag on Windows through `mcp__dart_run_tests`. The test used a unique temporary directory accessed through the local SMB share (`\\localhost\C$`), not any game or user screenshot directory.
+- The real `blackgrid/recycle` runner returned `notRecyclable` for the synthetic game-named screenshot. The source stayed in place, and its three bytes were unchanged. One test passed. This is separate from the owner's real-raid check in task 6.2.
