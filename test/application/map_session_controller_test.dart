@@ -163,6 +163,99 @@ void main() {
     expect(session.state.screenshotStatus, MapInputStatus.missing);
   });
 
+  test('cleanup resolves a relative folder to an absolute path', () async {
+    final relative = 'test${Platform.pathSeparator}fixtures';
+    expect(await settings.setMapInputs(screenshotDirectory: relative), isTrue);
+
+    final folder = await session.resolveScreenshotCleanupFolder();
+
+    expect(
+      folder,
+      '${Directory.current.path}${Platform.pathSeparator}$relative',
+    );
+    expect(Directory(folder).isAbsolute, isTrue);
+  });
+
+  test('cleanup resolves the saved default before watcher rebind', () async {
+    await session.close();
+    final discoveryStarted = Completer<void>();
+    final documents = Completer<String?>();
+    session = MapSessionController(
+      settings: settings,
+      discovery: GamePathDiscovery(
+        readRegistry: (_, _) {
+          if (!discoveryStarted.isCompleted) discoveryStarted.complete();
+          return documents.future;
+        },
+        environment: const {},
+      ),
+    );
+    await session.initialize();
+    expect(await settings.setMapInputs(screenshotDirectory: ''), isTrue);
+    try {
+      await discoveryStarted.future.timeout(const Duration(seconds: 5));
+      expect(session.state.screenshotDirectory, screenshots.path);
+
+      final resolution = session.resolveScreenshotCleanupFolder();
+      documents.complete(root.path);
+
+      expect(
+        await resolution,
+        Directory('${root.path}\\Escape from Tarkov\\Screenshots')
+            .absolute
+            .path,
+      );
+    } finally {
+      if (!documents.isCompleted) documents.complete(null);
+    }
+  });
+
+  test('cleanup discards discovery after a saved folder change', () async {
+    await session.close();
+    final discoveryStarted = Completer<void>();
+    final documents = Completer<String?>();
+    session = MapSessionController(
+      settings: settings,
+      discovery: GamePathDiscovery(
+        readRegistry: (_, _) {
+          discoveryStarted.complete();
+          return documents.future;
+        },
+        environment: const {},
+      ),
+    );
+    expect(await settings.setMapInputs(screenshotDirectory: ''), isTrue);
+    final resolution = session.resolveScreenshotCleanupFolder();
+    try {
+      await discoveryStarted.future.timeout(const Duration(seconds: 5));
+      expect(
+        await settings.setMapInputs(screenshotDirectory: screenshots.path),
+        isTrue,
+      );
+      expect(await session.resolveScreenshotCleanupFolder(), screenshots.path);
+      // Returning to the original setting does not revive this lookup.
+      expect(await settings.setMapInputs(screenshotDirectory: ''), isTrue);
+    } finally {
+      documents.complete(root.path);
+    }
+
+    expect(await resolution, isEmpty);
+  });
+
+  test('cleanup returns no folder when default discovery fails', () async {
+    await session.close();
+    session = MapSessionController(
+      settings: settings,
+      discovery: GamePathDiscovery(
+        readRegistry: (_, _) async => throw StateError('Registry unavailable'),
+        environment: const {},
+      ),
+    );
+    expect(await settings.setMapInputs(screenshotDirectory: ''), isTrue);
+
+    expect(await session.resolveScreenshotCleanupFolder(), isEmpty);
+  });
+
   test('watched screenshots apply to the selected map without an agreeing log session', () async {
     await settings.setMap('woods');
     await session.initialize();

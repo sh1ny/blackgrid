@@ -9,6 +9,12 @@ import 'game_log/game_log_parsers.dart';
 import 'game_log/log_file_tail.dart';
 import 'game_log/session_folders.dart';
 
+/// An ordered event batch and the application/backend records proven live.
+typedef SessionLogBatch = ({
+  List<GameLogEvent> events,
+  Set<LogRecordId> liveIds,
+});
+
 /// Configured-root-only replay and tail of the three raid-lifecycle logs.
 ///
 /// Each scan snapshots push first and application last, reads to those sizes,
@@ -45,7 +51,8 @@ class SessionLogReader {
   /// Optional size-snapshot filesystem seam for deterministic offline tests.
   final Future<FileStat> Function(File file)? snapshotStat;
   final _states = StreamController<SessionLogState>.broadcast(sync: true);
-  final _events = StreamController<List<GameLogEvent>>.broadcast(sync: true);
+  final _events = StreamController<SessionLogBatch>.broadcast(sync: true);
+  late final _plainEvents = _events.stream.map((batch) => batch.events);
 
   /// The application-log state; see the class comment for what it excludes.
   Stream<SessionLogState> get states => _states.stream;
@@ -55,7 +62,10 @@ class SessionLogReader {
   /// Control events ([LogInputReset], [SessionFolderChanged]) come first in
   /// their batch, followed by the sorted record events. A scan with nothing to
   /// report emits no batch.
-  Stream<List<GameLogEvent>> get events => _events.stream;
+  Stream<List<GameLogEvent>> get events => _plainEvents;
+
+  /// The same ordered batches as [events], with byte provenance.
+  Stream<SessionLogBatch> get eventBatches => _events.stream;
   SessionLogState _state = const SessionLogState();
 
   /// The latest published state.
@@ -97,6 +107,13 @@ class SessionLogReader {
   final _unreadable = <LogFile>{};
   final _pendingControl = <GameLogEvent>[];
   bool _needReset = false;
+  String? _newestObservedSession;
+  bool _rootListed = false;
+  String? _provenanceSession;
+  bool _sessionStartsLive = false;
+  bool _applicationNeedsBaseline = false;
+  final _boundaries = <LogFile, _LiveBoundary>{};
+  String? _backendReadPath;
 
   /// Whether a different newest session folder has no application log yet.
   bool _folderAwaitsApplicationLog = false;
@@ -122,6 +139,9 @@ class SessionLogReader {
     _watch = null;
     _root = root;
     _reset(null, null);
+    _newestObservedSession = null;
+    _rootListed = false;
+    _forgetSelection();
     _pendingControl.clear();
     _needReset = true;
     if (_closed) return;
@@ -131,7 +151,7 @@ class SessionLogReader {
         message: 'No game log directory configured.',
       );
       _needReset = false;
-      _events.add(const [LogInputReset()]);
+      _events.add((events: const [LogInputReset()], liveIds: const {}));
       return;
     }
     await rescan();
@@ -162,6 +182,7 @@ class SessionLogReader {
     for (final tail in _tails.values) {
       tail.reset();
     }
+    _backendReadPath = null;
     _problems.clear();
     _unreadable.clear();
     _recordRejected = false;
@@ -245,18 +266,107 @@ class SessionLogReader {
     }
   }
 
-  Future<_Selection?> _select() async {
+  void _forgetSelection() {
+    _provenanceSession = null;
+    _sessionStartsLive = false;
+    _applicationNeedsBaseline = false;
+    _boundaries.clear();
+  }
+
+  // This tracks file selection independently of the reduction's input reset:
+  // a rewrite may schedule a second scan to replay the same selected files.
+  void _observeRole(LogFile kind, File? file) {
+    if (kind == LogFile.application && _applicationNeedsBaseline) {
+      if (file == null) return;
+      _applicationNeedsBaseline = false;
+      _boundaries[kind] = (path: file.path, offset: null);
+      return;
+    }
+    final previous = _boundaries[kind];
+    final path = file?.path;
+    if (previous != null && previous.path == path) return;
+    final startsLive = previous == null
+        ? _sessionStartsLive
+        : previous.path == null;
+    _boundaries[kind] = (path: path, offset: startsLive ? 0 : null);
+  }
+
+  void _setBoundary(LogFile kind, int? size) {
+    final path = _boundaries[kind]?.path;
+    if (path != null) _boundaries[kind] = (path: path, offset: size);
+  }
+
+  void _baselineSnapshot(Map<LogFile, FileStat> snapshots) {
+    _setBoundary(LogFile.application, snapshots[LogFile.application]?.size);
+    _setBoundary(LogFile.backend, snapshots[LogFile.backend]?.size);
+  }
+
+  Future<FileStat> _snapshot(
+    File file,
+    LogFile kind,
+    bool Function() cancelled,
+  ) async {
+    final stat = await (snapshotStat?.call(file) ?? file.stat());
+    // Retain each known size even if a later stat or read fails.
+    if (!cancelled() &&
+        stat.type == FileSystemEntityType.file &&
+        _boundaries[kind]?.offset == null) {
+      _setBoundary(kind, stat.size);
+    }
+    return stat;
+  }
+
+  Future<_Selection?> _select(bool Function() cancelled) async {
     _folderAwaitsApplicationLog = false;
-    final sessions = await listSessionFolders(_root);
-    if (sessions.isEmpty) return null;
+    var listed = false;
+    final sessions = await listSessionFolders(
+      _root,
+      onListed: () => listed = true,
+    );
+    if (cancelled()) return null;
+    if (sessions.isEmpty) {
+      _forgetSelection();
+      if (listed) _rootListed = true;
+      return null;
+    }
     final session = sessions.last;
+    final newest = _newestObservedSession;
+    final newer =
+        newest == null || compareSessionFolderNames(session.name, newest) > 0;
+    if (session.path != _provenanceSession) {
+      _forgetSelection();
+      _provenanceSession = session.path;
+      _sessionStartsLive = _rootListed && newer;
+    }
+    if (newer) _newestObservedSession = session.name;
+    _rootListed = true;
     final files = await selectSessionLogFiles(
       Directory(session.path),
       LogFile.values,
     );
+    if (cancelled()) return null;
     final application = files[LogFile.application];
+    final backend = files[LogFile.backend];
+    if (application == null && _path != null && session.path == _session) {
+      // Losing the bound application role resets the input. Its return is a
+      // replay, not the first appearance of a previously absent file.
+      _applicationNeedsBaseline = true;
+      _sessionStartsLive = false;
+      _boundaries.clear();
+    }
+    _observeRole(LogFile.application, application);
+    _observeRole(LogFile.backend, backend);
     if (application == null) {
       _folderAwaitsApplicationLog = session.path != _session;
+      // An existing backend may already contain bytes even though the
+      // application role cannot publish records yet.
+      if (backend != null && _boundaries[LogFile.backend]?.offset == null) {
+        try {
+          await _snapshot(backend, LogFile.backend, cancelled);
+        } on FileSystemException {
+          // Leave the size unknown until a snapshot succeeds.
+        }
+      }
       return null;
     }
     return _Selection(
@@ -264,7 +374,7 @@ class SessionLogReader {
       session.name,
       session.time,
       application,
-      files[LogFile.backend],
+      backend,
       files[LogFile.pushNotifications],
     );
   }
@@ -302,7 +412,15 @@ class SessionLogReader {
     });
     final batch = [..._pendingControl, ...found];
     _pendingControl.clear();
-    if (batch.isNotEmpty) _events.add(batch);
+    if (batch.isEmpty) return;
+    Set<LogRecordId>? liveIds;
+    for (final event in found) {
+      final boundary = _boundaries[event.id.file]?.offset;
+      if (boundary != null && event.id.offset >= boundary) {
+        (liveIds ??= {}).add(event.id);
+      }
+    }
+    _events.add((events: batch, liveIds: liveIds ?? const {}));
   }
 
   /// Runs one scan, adding record events to [found]. Returns false when the
@@ -313,7 +431,7 @@ class SessionLogReader {
     List<RecordedGameLogEvent> found,
   ) async {
     bool cancelled() => _closed || generation != _generation;
-    final selected = await _select();
+    final selected = await _select(cancelled);
     if (cancelled()) return false;
     if (selected == null) {
       if (_path != null || _session != null) {
@@ -341,7 +459,18 @@ class SessionLogReader {
       LogFile.backend: selected.backend,
       LogFile.pushNotifications: selected.push,
     };
-    final snapshots = await statSessionLogSnapshot(files, stat: snapshotStat);
+    final snapshots = await statSessionLogSnapshot(
+      files,
+      stat: (file) => _snapshot(
+        file,
+        identical(file, selected.application)
+            ? LogFile.application
+            : identical(file, selected.backend)
+            ? LogFile.backend
+            : LogFile.pushNotifications,
+        cancelled,
+      ),
+    );
     final missing = <LogFile, String>{};
     for (final kind in files.keys) {
       final stat = snapshots[kind];
@@ -361,7 +490,10 @@ class SessionLogReader {
     if (replaced) {
       // A new folder only announces itself; a replaced or truncated
       // application log in the same folder also restarts the replay.
-      if (selected.session == _session) _needReset = true;
+      if (selected.session == _session) {
+        _needReset = true;
+        _baselineSnapshot(snapshots);
+      }
       _reset(application.path, selected.session);
       _publish(MapInputStatus.reading);
       if (_needReset) _pendingControl.add(const LogInputReset());
@@ -377,6 +509,7 @@ class SessionLogReader {
     );
     if (batch.cancelled || cancelled()) return false;
     if (batch.restarted) {
+      _baselineSnapshot(snapshots);
       _reset(null, null);
       _publish(MapInputStatus.reading);
       _pendingControl.clear();
@@ -419,6 +552,13 @@ class SessionLogReader {
       if (kind == LogFile.pushNotifications && !applicationComplete) continue;
       final file = files[kind];
       if (file == null || !snapshots.containsKey(kind)) {
+        if (kind == LogFile.backend) {
+          if (file?.path == _backendReadPath && _tails[kind]!.offset > 0) {
+            // Discarding this cursor will replay its consumed bytes.
+            _setBoundary(kind, null);
+          }
+          _backendReadPath = null;
+        }
         _tails[kind]!.reset();
         continue;
       }
@@ -464,10 +604,17 @@ class SessionLogReader {
     bool Function() cancelled,
   ) async {
     final tail = _tails[kind]!;
+    final backend = kind == LogFile.backend;
+    final sameBackendPath = backend && file.path == _backendReadPath;
+    if (backend) _backendReadPath = file.path;
+    if (sameBackendPath && size < tail.offset) _setBoundary(kind, size);
     try {
       var batch = await tail.read(file, size, isCancelled: cancelled);
       if (batch.cancelled || cancelled()) return false;
       final rewritten = batch.restarted;
+      // A path change already has the new path's first snapshot, which may
+      // precede this read. Only a restart within a path changes its boundary.
+      if (rewritten && sameBackendPath) _setBoundary(kind, size);
       var bytesRead = batch.bytesRead;
       if (batch.restarted && batch.items.isEmpty) {
         // Same-length rewrite: the tail reset itself; read again from the top.
@@ -547,6 +694,10 @@ class SessionLogReader {
     await _events.close();
   }
 }
+
+// A null path means the role was absent; a selected path with no offset
+// awaits its first successful size snapshot.
+typedef _LiveBoundary = ({String? path, int? offset});
 
 /// The newest session folder and the newest file of each kind inside it.
 final class _Selection {

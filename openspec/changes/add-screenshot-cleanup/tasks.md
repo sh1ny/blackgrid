@@ -11,13 +11,13 @@ Tests that drive the controller use `test/support/fake_recycle_port.dart`, a fak
 | screenshot-cleanup → Screenshot cleanup is an opt-in setting | Save fails | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Save fails` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | A live raid ends | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: A live raid ends` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | A raid ended by a client restart | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: A raid ended by a client restart` | green |
-| screenshot-cleanup → Only a fresh raid ending starts a cleanup | Replay at start-up | `test/application/app_services_test.dart` | `screenshot cleanup skips recent startup replay, handles live endings and cancels before its sources close` | red |
-| screenshot-cleanup → Only a fresh raid ending starts a cleanup | Blackgrid opens mid-raid | `test/application/raid_lifecycle_controller_test.dart` | `cleanup skips startup and reconnect-only raids` | planned |
-| screenshot-cleanup → Only a fresh raid ending starts a cleanup | A delayed replay after the clock moved backward | `test/application/raid_lifecycle_controller_test.dart` | `cleanup ignores deferred baseline bytes after clock rollback` | planned |
-| screenshot-cleanup → Only a fresh raid ending starts a cleanup | Switched on after the raid ended | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Switched on after the raid ended` | red |
+| screenshot-cleanup → Only a fresh raid ending starts a cleanup | Replay at start-up | `test/application/app_services_test.dart` | `screenshot cleanup skips recent startup replay, handles live endings and cancels before its sources close` | green |
+| screenshot-cleanup → Only a fresh raid ending starts a cleanup | Blackgrid opens mid-raid | `test/application/raid_lifecycle_controller_test.dart` | `cleanup skips startup and reconnect-only raids` | green |
+| screenshot-cleanup → Only a fresh raid ending starts a cleanup | A delayed replay after the clock moved backward | `test/application/raid_lifecycle_controller_test.dart` | `cleanup ignores deferred baseline bytes after clock rollback` | green |
+| screenshot-cleanup → Only a fresh raid ending starts a cleanup | Switched on after the raid ended | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Switched on after the raid ended` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | Matching aborted | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Matching aborted` | green |
 | screenshot-cleanup → Only a fresh raid ending starts a cleanup | The same raid ends again | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: The same raid ends again` | green |
-| screenshot-cleanup → Only a fresh raid ending starts a cleanup | The same raid ends again after restart | `test/data/screenshot_cleanup_claim_test.dart` | `a claimed raid is still refused after closing and reopening storage` | red |
+| screenshot-cleanup → Only a fresh raid ending starts a cleanup | The same raid ends again after restart | `test/data/screenshot_cleanup_claim_test.dart` | `a claimed raid is still refused after closing and reopening storage` | green |
 | screenshot-cleanup → A raid's screenshots are picked by folder, name and time | A screenshot from the raid | `test/domain/screenshot_cleanup_test.dart` | `screenshot-cleanup: A screenshot from the raid` | green |
 | screenshot-cleanup → A raid's screenshots are picked by folder, name and time | Screenshots outside the raid window | `test/domain/screenshot_cleanup_test.dart` | `screenshot-cleanup: Screenshots outside the raid window` | green |
 | screenshot-cleanup → A raid's screenshots are picked by folder, name and time | Files that are not game screenshots | `test/data/screenshot_folder_lister_test.dart` | `screenshot-cleanup: Files that are not game screenshots` | green |
@@ -26,20 +26,20 @@ Tests that drive the controller use `test/support/fake_recycle_port.dart`, a fak
 | screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | Every file moves | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Every file moves` | green |
 | screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | The Recycle Bin cannot take a file | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: The Recycle Bin cannot take a file` | green |
 | screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | The runner rejects the call before moving any file | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: The recycle call fails` | green |
-| screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | The move acknowledgement is invalid | `test/data/channel_recycle_port_test.dart`, `test/application/screenshot_cleanup_controller_test.dart` | Duplicate names and unconfirmed outcome | planned |
+| screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | The move acknowledgement is invalid | `test/data/channel_recycle_port_test.dart`, `test/application/screenshot_cleanup_controller_test.dart` | `duplicate entry with the expected count`; `invalid acknowledgement leaves move counts unconfirmed` | green |
 | screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | The recycle call does not answer | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: The recycle call does not answer` | green |
 | screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | One file is locked | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: One file is locked` | green |
 | screenshot-cleanup → Screenshots go to the Recycle Bin, never deleted for good | A file vanished before the move | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: A file vanished before the move` | green |
 | screenshot-cleanup → Cleanups run one at a time | Two raids end close together | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Two raids end close together` | green |
 | screenshot-cleanup → Cleanups run one at a time | Switched off while a cleanup waits | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Switched off while a cleanup waits` | green |
-| screenshot-cleanup → Cleanups run one at a time | Switched off before the first move | `test/application/screenshot_cleanup_controller_test.dart` | `opt-out during preparation prevents dispatch` | planned |
+| screenshot-cleanup → Cleanups run one at a time | Switched off before the first move | `test/application/screenshot_cleanup_controller_test.dart` | `opt-out during preparation prevents dispatch` | green |
 | screenshot-cleanup → Cleanups run one at a time | Blackgrid closes during a cleanup | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Blackgrid closes during a cleanup` | green |
 | screenshot-cleanup → Cleanups run one at a time | Too many cleanups waiting | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: Too many cleanups waiting` | green |
 | screenshot-cleanup → The last cleanup's result is shown | Screenshots moved | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Screenshots moved` | green |
 | screenshot-cleanup → The last cleanup's result is shown | Some could not be moved | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Some could not be moved` | green |
 | screenshot-cleanup → The last cleanup's result is shown | No screenshots in the raid | `test/ui/settings_page_test.dart` | `screenshot-cleanup: No screenshots in the raid` | green |
 | screenshot-cleanup → The last cleanup's result is shown | The folder is missing | `test/application/screenshot_cleanup_controller_test.dart` | `screenshot-cleanup: The folder is missing` | green |
-| screenshot-cleanup → The last cleanup's result is shown | The claim store fails | `test/application/screenshot_cleanup_controller_test.dart` | `claim failure leaves all files alone` | planned |
+| screenshot-cleanup → The last cleanup's result is shown | The claim store fails | `test/application/screenshot_cleanup_controller_test.dart` | `claim failure leaves all files alone` | green |
 | screenshot-cleanup → The last cleanup's result is shown | Nothing yet | `test/ui/settings_page_test.dart` | `screenshot-cleanup: Nothing yet` | green |
 | settings-page → Game files section | Save a folder on Enter | `test/ui/settings_page_test.dart` | `settings-page: Save a folder on Enter` | green |
 | settings-page → Game files section | Save on leaving | `test/ui/settings_page_test.dart` | `settings-page: Save on leaving` | green |
@@ -106,9 +106,9 @@ Skills: `dart-add-unit-test`, `dart-run-static-analysis`, and AGENTS.md "Dart an
 
 ## 7. Pre-ship review corrections
 
-- [ ] 7.1 Enroll only raid starts Blackgrid observes live and claim the original identity atomically before moves. Cover recent replay, opening mid-raid, reconnect-only reconstruction, live crash/reconnect, delayed pre-opt-in endings, opt-out during preparation, and duplicate claim refusal after database reopen. Update ADR-0049 and the architecture index.
-- [ ] 7.2 Resolve the current saved screenshot folder to one absolute path when cleanup starts. Cover a relative path and a preference change during resolution. Preserve the configured-path and direct-basename rules in D1 and D7.
-- [ ] 7.3 Keep unconfirmed counts when the port becomes unavailable, recognize Shell source-not-found results, and classify count-correct duplicate channel replies as unconfirmed. Run the controller and channel tests, native release compilation, and strict OpenSpec validation.
+- [x] 7.1 Enroll only raid starts Blackgrid observes live and claim the original identity atomically before moves. Cover recent replay, opening mid-raid, reconnect-only reconstruction, live crash/reconnect, delayed pre-opt-in endings, opt-out during preparation, and duplicate claim refusal after database reopen. Update ADR-0049 and the architecture index.
+- [x] 7.2 Resolve the current saved screenshot folder to one absolute path when cleanup starts. Cover a relative path and a preference change during resolution. Preserve the configured-path and direct-basename rules in D1 and D7.
+- [x] 7.3 Keep unconfirmed counts when the port becomes unavailable, recognize Shell source-not-found results, and classify count-correct duplicate channel replies as unconfirmed. Run the controller and channel tests, native release compilation, and strict OpenSpec validation.
 
 ## Workflow follow-up
 

@@ -99,10 +99,11 @@ class AppServices {
     final logReader = SessionLogReader();
     raidLifecycle = RaidLifecycleController(logReader);
     screenshotCleanup = ScreenshotCleanupController(
-      lifecycle: raidLifecycle,
+      transitions: raidLifecycle.cleanupTransitions,
       settings: settings,
-      folder: () => mapSession.state.screenshotDirectory,
+      folder: () => mapSession.resolveScreenshotCleanupFolder(),
       listFolder: ScreenshotFolderLister().list,
+      claim: database.claimScreenshotCleanup,
       recycle: recyclePort ?? ChannelRecyclePort(),
       clock: clock ?? DateTime.now,
     );

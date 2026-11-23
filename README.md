@@ -436,6 +436,7 @@ Schema history:
 - Version 7 adds the optional recorded verdict to item history.
 - Version 8 adds the mode-scoped local progress event ledger and its derived heads.
 - Version 9 adds active local wipes and their log-folder reading positions; previous cycles and history are retained.
+- Version 10 adds durable screenshot cleanup claims keyed by the original raid start's log record. Existing data is retained.
 
 `LiveMapCacheStore` keeps the last good map data for each game mode. That is the six exact json.tarkov.dev response bodies, their ETag and Last-Modified values, and the time of the last check. It replaces all of them together in one transaction. Each time the markers are used, Blackgrid builds them from these bodies with the current normalizer and prepared pack, so a new app version never reads outdated derived data. If a stored body no longer normalizes, Blackgrid ignores it and shows the bundled markers instead. Stored data does not expire.
 

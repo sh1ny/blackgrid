@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
@@ -148,6 +149,45 @@ class MapSessionController extends ChangeNotifier {
     pendingScreenshotPath: _pending?.saved.path,
   );
 
+  /// Resolves the saved screenshot folder to an absolute path for cleanup.
+  ///
+  /// Returns an empty string if the folder cannot be resolved or the saved
+  /// folder setting changes during resolution. The watcher may still be bound
+  /// to a previous folder, so its state is not used here.
+  Future<String> resolveScreenshotCleanupFolder() async {
+    if (_closed) return '';
+    final configured = settings.settings.screenshotDirectory;
+    var changed = false;
+    void trackFolder() {
+      if (settings.settings.screenshotDirectory != configured) changed = true;
+    }
+
+    settings.addListener(trackFolder);
+    try {
+      final directory = await _resolveScreenshotDirectory(configured);
+      if (_closed ||
+          changed ||
+          settings.settings.screenshotDirectory != configured ||
+          directory.isEmpty) {
+        return '';
+      }
+      final path = Platform.isWindows
+          ? directory.replaceAll('/', r'\')
+          : directory;
+      final absolute = Directory(path).absolute;
+      return absolute.isAbsolute ? absolute.path : '';
+    } catch (_) {
+      return '';
+    } finally {
+      settings.removeListener(trackFolder);
+    }
+  }
+
+  Future<String> _resolveScreenshotDirectory(String configured) async =>
+      configured.isNotEmpty
+      ? configured
+      : await _discovery?.screenshots() ?? '';
+
   Future<void> initialize() => _initializing ??= _initialize();
 
   Future<void> _initialize() async {
@@ -223,29 +263,6 @@ class MapSessionController extends ChangeNotifier {
     if (logChanged || screenshotsChanged) {
       _binding = _binding.then((_) async {
         if (_closed) return;
-        String? screenshotDirectory;
-        if (screenshotsChanged &&
-            _unchanged(next, (p) => p.screenshotDirectory)) {
-          try {
-            final directory = next.screenshotDirectory.isNotEmpty
-                ? next.screenshotDirectory
-                : await _discovery?.screenshots() ?? '';
-            if (_unchanged(next, (p) => p.screenshotDirectory)) {
-              screenshotDirectory = directory;
-              _screenshotDirectory = directory;
-              // Replay consumers need the resolved folder before log binding.
-              // The screenshot watcher still binds after the logs below.
-              notifyListeners();
-            }
-          } catch (error) {
-            if (!_closed) {
-              _screenshotStatus = MapInputStatus.error;
-              _screenshotMessage =
-                  'Screenshot input could not be bound: $error';
-              notifyListeners();
-            }
-          }
-        }
         // Each input reports its own bind failure; a throw here would also
         // poison every later bind and shutdown awaiting this chain.
         if (logChanged && _unchanged(next, (p) => p.gameLogDirectory)) {
@@ -269,10 +286,17 @@ class MapSessionController extends ChangeNotifier {
             }
           }
         }
-        if (screenshotDirectory != null &&
+        if (screenshotsChanged &&
             _unchanged(next, (p) => p.screenshotDirectory)) {
           try {
-            await _screenshots.bind(screenshotDirectory);
+            final directory = await _resolveScreenshotDirectory(
+              next.screenshotDirectory,
+            );
+            if (_unchanged(next, (p) => p.screenshotDirectory)) {
+              _screenshotDirectory = directory;
+              notifyListeners();
+              await _screenshots.bind(directory);
+            }
           } catch (error) {
             if (!_closed) {
               _screenshotStatus = MapInputStatus.error;

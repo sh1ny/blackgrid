@@ -19,7 +19,7 @@ import 'generated/schema.dart';
 
 void main() {
   test(
-    'schema 8 upgrades to 9 preserving progress ledger and user records',
+    'schema 8 upgrades to 10 preserving progress ledger and user records',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'blackgrid-v8-wipes-',
@@ -122,7 +122,7 @@ void main() {
         final version = await db
             .customSelect('PRAGMA user_version')
             .getSingle();
-        expect(version.data.values.single, 9);
+        expect(version.data.values.single, 10);
       }
 
       await expectRetained();
@@ -132,7 +132,7 @@ void main() {
     },
   );
 
-  test('schema 7 upgrades to 8 preserving existing records and permitting scoped progress writes', () async {
+  test('schema 7 upgrades to the current schema preserving existing records and permitting scoped progress writes', () async {
     final directory = await Directory.systemTemp.createTemp(
       'blackgrid-v7-progress-',
     );

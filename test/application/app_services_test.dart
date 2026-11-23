@@ -83,7 +83,7 @@ class _DisposalRecyclePort implements RecyclePort {
 }
 
 void main() {
-  test('screenshot cleanup observes initial replay and cancels before its sources close', () async {
+  test('screenshot cleanup skips recent startup replay, handles live endings and cancels before its sources close', () async {
     final root = await Directory.systemTemp.createTemp(
       'blackgrid-cleanup-services-',
     );
@@ -100,18 +100,16 @@ void main() {
       line('application', 'Matching with group id: 1', '14:00:00.000') +
           line('application', 'GameStarted: 1', '14:00:10.000'),
     );
-    await File('${logs.path}/backend_000.log').writeAsString(
-      line(
-        'backend',
-        'WebSocketSharp - binary message received: type=Notification, trackingId=t1, payloadType=userMatchOver, payloadLength=393',
-        '14:30:00.000',
-      ),
-    );
+    final backend = File('${logs.path}/backend_000.log');
+    const exit =
+        'WebSocketSharp - binary message received: type=Notification, trackingId=t1, payloadType=userMatchOver, payloadLength=393';
+    await backend.writeAsString(line('backend', exit, '14:29:30.000'));
+    var now = DateTime(2026, 11, 22, 14, 29, 31);
     final port = _DisposalRecyclePort();
     final services = AppServices(
       database: BlackgridDatabase(NativeDatabase.memory()),
       client: MockClient((_) async => http.Response('', 503)),
-      clock: () => DateTime(2026, 11, 22, 14, 30, 1),
+      clock: () => now,
       recyclePort: port,
     );
     var disposed = false;
@@ -130,8 +128,24 @@ void main() {
       ),
     );
     await services.initialize();
+    expect(services.screenshotCleanup.lastResult, isNull);
+    expect(port.calls, isEmpty);
+    await shot.setLastModified(DateTime(2026, 11, 22, 14, 29, 59));
+    now = DateTime(2026, 11, 22, 14, 30, 1);
+    await File('${logs.path}/application_000.log').writeAsString(
+      line('application', 'Matching with group id: 2', '14:29:35.000') +
+          line('application', 'GameStarted: 2', '14:29:40.000'),
+      mode: FileMode.append,
+    );
+    await backend.writeAsString(
+      line('backend', exit, '14:30:00.000'),
+      mode: FileMode.append,
+    );
     final call = await port.waitForCall(0).timeout(const Duration(seconds: 5));
-    expect(call.folder, shots.path);
+    expect(
+      call.folder,
+      Platform.isWindows ? shots.path.replaceAll('/', r'\') : shots.path,
+    );
     expect(call.names, [name]);
     port.onCancel = () {
       void listener() {}

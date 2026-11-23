@@ -4,7 +4,6 @@ import 'package:blackgrid/application/app_services.dart';
 import 'package:blackgrid/application/catalog_controller.dart';
 import 'package:blackgrid/application/live_map_data_controller.dart';
 import 'package:blackgrid/application/scan_coordinator.dart';
-import 'package:blackgrid/application/raid_timers_controller.dart';
 import 'package:blackgrid/application/recycle_port.dart';
 import 'package:blackgrid/application/screenshot_cleanup_controller.dart';
 import 'package:blackgrid/data/database.dart';
@@ -191,26 +190,12 @@ Future<void> _breakSettingsSaves(WidgetTester tester, M1Harness h) =>
 const _cleanupLabel = "Delete a raid's screenshots after it ends";
 final _cleanupTime = DateTime(2026, 11, 22, 14, 30);
 
-class _CleanupLifecycle extends ChangeNotifier
-    implements RaidTimerLifecycleSource {
-  final events = StreamController<RaidTransition>.broadcast(sync: true);
-  @override
-  RaidLifecycleState get state => RaidLifecycleState.initial;
-  @override
-  Stream<RaidTransition> get transitions => events.stream;
-  @override
-  void dispose() {
-    unawaited(events.close());
-    super.dispose();
-  }
-}
-
 class _CleanupRig {
   _CleanupRig(AppServices services, int count) {
     controller = ScreenshotCleanupController(
-      lifecycle: lifecycle,
+      transitions: events.stream,
       settings: services.settings,
-      folder: () => 'screenshots',
+      folder: () async => 'screenshots',
       listFolder: (_) async => ScreenshotFolderListed([
         for (var i = 0; i < count; i++)
           ScreenshotEntry(
@@ -221,19 +206,20 @@ class _CleanupRig {
             modified: _cleanupTime.subtract(const Duration(minutes: 1)),
           ),
       ]),
+      claim: (_) async => true,
       recycle: recycle,
       clock: () => _cleanupTime,
       backstop: (_) => const Duration(seconds: 1),
       cancelWait: const Duration(seconds: 1),
     );
   }
-  final lifecycle = _CleanupLifecycle();
+  final events = StreamController<RaidTransition>.broadcast(sync: true);
   final recycle = FakeRecyclePort();
   late final ScreenshotCleanupController controller;
 
   void end() {
     const id = LogRecordId('cleanup-ui', LogFile.application, 1);
-    lifecycle.events.add(
+    events.add(
       RaidEndedTransition(
         id,
         _cleanupTime,
@@ -253,7 +239,7 @@ class _CleanupRig {
 
   void dispose() {
     controller.dispose();
-    lifecycle.dispose();
+    unawaited(events.close());
   }
 }
 

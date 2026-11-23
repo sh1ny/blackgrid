@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:blackgrid/application/raid_timers_controller.dart';
 import 'package:blackgrid/application/recycle_port.dart';
 import 'package:blackgrid/application/screenshot_cleanup_controller.dart';
 import 'package:blackgrid/application/settings_controller.dart';
@@ -34,20 +33,22 @@ Raid _raid(
   endCause: cause,
 );
 
-class _Lifecycle extends ChangeNotifier implements RaidTimerLifecycleSource {
+class _Lifecycle {
   final _stream = StreamController<RaidTransition>.broadcast(sync: true);
-  @override
-  RaidLifecycleState get state => RaidLifecycleState.initial;
-  @override
   Stream<RaidTransition> get transitions => _stream.stream;
   void emit(RaidTransition transition) => _stream.add(transition);
   void end(Raid raid) =>
       emit(RaidEndedTransition(raid.startId, raid.endTime!, raid));
-  @override
-  void dispose() {
-    unawaited(_stream.close());
-    super.dispose();
+  void reduceEvents(Iterable<GameLogEvent> events) {
+    var current = RaidLifecycleState.initial;
+    for (final event in events) {
+      final (next, transitions) = reduce(current, event);
+      current = next;
+      transitions.forEach(emit);
+    }
   }
+
+  void dispose() => unawaited(_stream.close());
 }
 
 class _Settings extends ChangeNotifier implements SettingsController {
@@ -64,7 +65,12 @@ class _Settings extends ChangeNotifier implements SettingsController {
 }
 
 class _Harness {
-  _Harness({int count = 1, bool enabled = true}) {
+  _Harness({
+    int count = 1,
+    bool enabled = true,
+    Future<bool> Function(LogRecordId)? claim,
+  }) {
+    final claimed = <LogRecordId>{};
     settings.enabled = enabled;
     entries = List.generate(
       count,
@@ -76,25 +82,30 @@ class _Harness {
       ),
     );
     controller = ScreenshotCleanupController(
-      lifecycle: lifecycle,
+      transitions: lifecycle.transitions,
       settings: settings,
-      folder: () => folder,
+      folder: () async => folder,
       listFolder: (path) async {
         listed.add(path);
+        if (heldListing case final held?) return held.future;
         return listing ?? ScreenshotFolderListed(entries);
       },
+      claim: claim ?? ((id) async => claimed.add(id)),
       recycle: recycle,
-      clock: () => _now,
+      clock: () => now,
       backstop: (_) => const Duration(seconds: 2),
       cancelWait: const Duration(seconds: 3),
     );
+    now = _now;
   }
   final lifecycle = _Lifecycle();
   final settings = _Settings();
   final recycle = FakeRecyclePort();
+  DateTime now = _now.subtract(const Duration(hours: 1));
   final listed = <String>[];
   late List<ScreenshotEntry> entries;
   ScreenshotFolderListing? listing;
+  Completer<ScreenshotFolderListing>? heldListing;
   String folder = 'first';
   late ScreenshotCleanupController controller;
   void close() {
@@ -139,12 +150,20 @@ void main() {
           modified: _now.subtract(const Duration(minutes: 1)),
         ),
       ];
-      h.lifecycle.end(_raid(1, end: old, cause: RaidEndCause.clientRestart));
-      h.lifecycle.emit(QueueEnteredTransition(_id(10), old));
+      h.lifecycle.reduceEvents([
+        RaidStarted(_id(1), _now.subtract(const Duration(minutes: 30))),
+        SessionFolderChanged('stale-restart', old),
+        ProfileSelected(_id(3), old),
+        QueueEntered(_id(10), old),
+      ]);
       async.flushMicrotasks();
       expect(h.recycle.calls, isEmpty);
-      h.lifecycle.end(_raid(2, end: old, cause: RaidEndCause.clientRestart));
-      h.lifecycle.emit(QueueEnteredTransition(_id(11), _now));
+      h.lifecycle.reduceEvents([
+        RaidStarted(_id(2), _now.subtract(const Duration(minutes: 30))),
+        SessionFolderChanged('live-restart', old),
+        ProfileSelected(_id(4), old),
+        QueueEntered(_id(11), _now),
+      ]);
       async.flushMicrotasks();
       expect(h.recycle.calls, hasLength(1));
       expect(h.recycle.calls.single.names, ['${_base}_1.png']);
@@ -172,8 +191,13 @@ void main() {
     'screenshot-cleanup: Switched on after the raid ended',
     () => fakeAsync((async) {
       final h = _Harness(enabled: false);
-      h.lifecycle.end(_raid(1));
+      final earlier = _now.subtract(const Duration(seconds: 1));
       h.settings.setEnabled(true);
+      h.lifecycle.end(_raid(1, end: earlier));
+      h.lifecycle.end(
+        _raid(2, end: earlier, cause: RaidEndCause.clientRestart),
+      );
+      h.lifecycle.emit(QueueEnteredTransition(_id(10), _now));
       async.flushMicrotasks();
       expect(h.recycle.calls, isEmpty);
       expect(h.controller.lastResult, isNull);
@@ -215,12 +239,20 @@ void main() {
     'reconnect with the same start identity is cleaned once',
     () => fakeAsync((async) {
       final h = _Harness();
-      final raid = _raid(1);
-      h.lifecycle.end(raid);
+      final start = _now.subtract(const Duration(minutes: 30));
+      final restart = _now.subtract(const Duration(minutes: 3));
+      h.lifecycle.reduceEvents([
+        RaidStarted(_id(1), start),
+        SessionFolderChanged('reconnect', restart),
+        ProfileSelected(_id(3), restart),
+        RaidRejoined(_id(4), restart, 'MatchWait', 'bigmap', 'customs'),
+        RaidStarted(_id(5), restart),
+        RaidExit(_id(6), _now),
+      ]);
       async.flushMicrotasks();
       h.recycle.calls.single.complete();
       async.flushMicrotasks();
-      h.lifecycle.end(raid.withInterrupted(value: true));
+      h.lifecycle.end(_raid(1));
       async.flushMicrotasks();
       expect(h.recycle.calls, hasLength(1));
       h.close();
@@ -279,6 +311,32 @@ void main() {
       async.flushMicrotasks();
       expect(h.controller.lastResult!.moved, 0);
       expect(h.controller.lastResult!.notMoved, 2);
+      h.close();
+    }),
+  );
+
+  test(
+    'invalid acknowledgement leaves move counts unconfirmed',
+    () => fakeAsync((async) {
+      final h = _Harness(count: 2);
+      h.lifecycle.end(_raid(1));
+      async.flushMicrotasks();
+      h.recycle.calls.single.completion.complete(const RecycleUnknownOutcome());
+      async.flushMicrotasks();
+      expect(h.controller.lastResult!.notMoved, 0);
+      expect(h.controller.lastResult!.unconfirmed, 2);
+      h.close();
+    }),
+  );
+
+  test(
+    'claim failure leaves all files alone',
+    () => fakeAsync((async) {
+      final h = _Harness(claim: (_) async => throw StateError('unwritable'));
+      h.lifecycle.end(_raid(1));
+      async.flushMicrotasks();
+      expect(h.recycle.calls, isEmpty);
+      expect(h.controller.lastResult!.claimFailed, isTrue);
       h.close();
     }),
   );
@@ -360,6 +418,23 @@ void main() {
       async.flushMicrotasks();
       expect(h.recycle.calls, hasLength(1));
       expect(h.controller.lastResult!.moved, 1);
+      h.close();
+    }),
+  );
+
+  test(
+    'opt-out during preparation prevents dispatch',
+    () => fakeAsync((async) {
+      final h = _Harness();
+      final listing = h.heldListing = Completer<ScreenshotFolderListing>();
+      h.lifecycle.end(_raid(1));
+      async.flushMicrotasks();
+      expect(h.listed, ['first']);
+      h.settings.setEnabled(false);
+      h.settings.setEnabled(true);
+      listing.complete(ScreenshotFolderListed(h.entries));
+      async.flushMicrotasks();
+      expect(h.recycle.calls, isEmpty);
       h.close();
     }),
   );
@@ -478,6 +553,12 @@ void main() {
       async.flushMicrotasks();
       expect(h.recycle.calls, hasLength(1));
       expect(h.controller.lastResult!.unavailable, isTrue);
+      expect(h.controller.lastResult!.unconfirmed, 64);
+      expect(h.controller.lastResult!.notMoved, 1);
+      h.lifecycle.end(_raid(3));
+      async.flushMicrotasks();
+      expect(h.recycle.calls, hasLength(1));
+      expect(h.controller.lastResult!.unconfirmed, 64);
       h.recycle.calls[0].complete();
       async.flushMicrotasks();
       h.close();

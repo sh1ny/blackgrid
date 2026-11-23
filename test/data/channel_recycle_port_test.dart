@@ -77,7 +77,7 @@ void main() {
     expect(calls, isEmpty);
   });
 
-  group('malformed replies fail the whole call', () {
+  group('malformed replies leave outcomes unconfirmed', () {
     final invalidReplies = <String, Object?>{
       'null': null,
       'non-list': 'moved',
@@ -101,20 +101,27 @@ void main() {
         <String, Object?>{'name': 'other.png', 'status': 'moved'},
       ],
       'missing entry': <Object?>[],
-      'duplicate entry': [
-        <String, Object?>{'name': 'a.png', 'status': 'moved'},
-        <String, Object?>{'name': 'a.png', 'status': 'missing'},
-      ],
     };
     for (final entry in invalidReplies.entries) {
       test(entry.key, () async {
         answer = (_) async => entry.value;
         expect(
           await ChannelRecyclePort().recycle('folder', ['a.png']),
-          isA<RecycleCallFailure>(),
+          isA<RecycleUnknownOutcome>(),
         );
       });
     }
+
+    test('duplicate entry with the expected count', () async {
+      answer = (_) async => [
+        <String, Object?>{'name': 'a.png', 'status': 'moved'},
+        <String, Object?>{'name': 'a.png', 'status': 'missing'},
+      ];
+      expect(
+        await ChannelRecyclePort().recycle('folder', ['a.png', 'b.png']),
+        isA<RecycleUnknownOutcome>(),
+      );
+    });
   });
 
   test('platform exception becomes call failure', () async {

@@ -7,7 +7,6 @@ import '../data/screenshot_folder_lister.dart';
 import '../domain/alert_rules.dart';
 import '../domain/raid_lifecycle.dart';
 import '../domain/screenshot_cleanup.dart';
-import 'raid_timers_controller.dart';
 import 'recycle_port.dart';
 import 'settings_controller.dart';
 
@@ -20,6 +19,7 @@ class ScreenshotCleanupResult {
     this.notMoved = 0,
     this.unconfirmed = 0,
     this.folderUnreadable = false,
+    this.claimFailed = false,
     this.noScreenshots = false,
     this.unavailable = false,
     this.skippedRaids = 0,
@@ -37,6 +37,9 @@ class ScreenshotCleanupResult {
   /// Whether the screenshot folder could not be read.
   final bool folderUnreadable;
 
+  /// Whether the raid could not be durably claimed before moving files.
+  final bool claimFailed;
+
   /// Whether no screenshots matched the raid.
   final bool noScreenshots;
 
@@ -49,25 +52,28 @@ class ScreenshotCleanupResult {
 
 /// Serializes fresh raid screenshot cleanups through the recycle port.
 class ScreenshotCleanupController extends ChangeNotifier {
-  /// Subscribes to [lifecycle] and uses the injected boundaries for cleanup.
+  /// Subscribes to cleanup-eligible lifecycle [transitions].
   ScreenshotCleanupController({
-    required RaidTimerLifecycleSource lifecycle,
+    required Stream<RaidTransition> transitions,
     required SettingsController settings,
     required this._folder,
     required this._listFolder,
+    required this._claim,
     required this._recycle,
     required this._clock,
     Duration Function(int)? backstop,
     this._cancelWait = const Duration(seconds: 30),
   }) : _settings = settings,
        _backstop = backstop ?? _defaultBackstop {
-    _subscription = lifecycle.transitions.listen(_onTransition);
+    _onSettingsChanged();
+    _subscription = transitions.listen(_onTransition);
     settings.addListener(_onSettingsChanged);
   }
 
   static Duration _defaultBackstop(int count) => Duration(seconds: 10 + count);
   final SettingsController _settings;
-  final String Function() _folder;
+  final Future<String> Function() _folder;
+  final Future<bool> Function(LogRecordId) _claim;
   final Future<ScreenshotFolderListing> Function(String) _listFolder;
   final RecyclePort _recycle;
   final DateTime Function() _clock;
@@ -75,9 +81,10 @@ class ScreenshotCleanupController extends ChangeNotifier {
   final Duration _cancelWait;
   late final StreamSubscription<RaidTransition> _subscription;
   final Queue<Raid> _pending = Queue<Raid>();
-  final Queue<LogRecordId> _cleaned = Queue<LogRecordId>();
   Raid? _active;
   Raid? _restartEnding;
+  DateTime? _enabledSince;
+  int _enableEpoch = 0;
   bool _disposed = false;
   bool _running = false;
   bool _unavailable = false;
@@ -89,36 +96,47 @@ class ScreenshotCleanupController extends ChangeNotifier {
 
   void _onSettingsChanged() {
     if (!_settings.settings.cleanUpRaidScreenshots) {
+      if (_enabledSince != null) _enableEpoch++;
+      _enabledSince = null;
       _pending.clear();
       _restartEnding = null;
+    } else {
+      _enabledSince ??= _clock();
     }
   }
 
   void _onTransition(RaidTransition transition) {
     if (_disposed) return;
+    final now = _clock();
+    final enabledSince = _enabledSince;
     final held = _restartEnding;
     _restartEnding = null;
     if (held != null &&
         transition is QueueEnteredTransition &&
-        _settings.settings.cleanUpRaidScreenshots &&
-        isFreshLogTime(transition.time, _clock())) {
+        enabledSince != null &&
+        _fresh(transition.time, now)) {
       _enqueue(held);
     }
     if (transition is! RaidEndedTransition ||
-        !_settings.settings.cleanUpRaidScreenshots) {
+        enabledSince == null ||
+        transition.time.isBefore(enabledSince) ||
+        transition.time.isAfter(now)) {
       return;
     }
     if (transition.cause == RaidEndCause.clientRestart) {
       _restartEnding = transition.raid;
-    } else if (isFreshLogTime(transition.time, _clock())) {
+    } else if (_fresh(transition.time, now)) {
       _enqueue(transition.raid);
     }
   }
 
+  bool _fresh(DateTime time, DateTime now) =>
+      !time.isAfter(now) && isFreshLogTime(time, now);
+
   void _enqueue(Raid raid) {
+    if (_unavailable) return;
     final id = raid.startId;
     if (_active?.startId == id ||
-        _cleaned.contains(id) ||
         _pending.any((queued) => queued.startId == id)) {
       return;
     }
@@ -135,13 +153,7 @@ class ScreenshotCleanupController extends ChangeNotifier {
     while (!_disposed && _pending.isNotEmpty) {
       final raid = _pending.removeFirst();
       _active = raid;
-      try {
-        await _cleanup(raid);
-      } catch (_) {
-        if (!_disposed) _publish();
-      }
-      _cleaned.addLast(raid.startId);
-      if (_cleaned.length > 16) _cleaned.removeFirst();
+      await _cleanup(raid);
       _active = null;
     }
     _running = false;
@@ -152,6 +164,7 @@ class ScreenshotCleanupController extends ChangeNotifier {
     int notMoved = 0,
     int unconfirmed = 0,
     bool folderUnreadable = false,
+    bool claimFailed = false,
     bool noScreenshots = false,
     bool unavailable = false,
   }) {
@@ -161,6 +174,7 @@ class ScreenshotCleanupController extends ChangeNotifier {
       notMoved: notMoved,
       unconfirmed: unconfirmed,
       folderUnreadable: folderUnreadable,
+      claimFailed: claimFailed,
       noScreenshots: noScreenshots,
       unavailable: unavailable,
       skippedRaids: _skipped,
@@ -170,11 +184,18 @@ class ScreenshotCleanupController extends ChangeNotifier {
   }
 
   Future<void> _cleanup(Raid raid) async {
-    if (_unavailable) {
-      _publish(unavailable: true);
+    final epoch = _enableEpoch;
+    bool canDispatch() =>
+        !_disposed && _enabledSince != null && epoch == _enableEpoch;
+
+    final String folder;
+    try {
+      folder = await _folder();
+    } catch (_) {
+      if (canDispatch()) _publish(folderUnreadable: true);
       return;
     }
-    final folder = _folder();
+    if (!canDispatch()) return;
     if (folder.isEmpty) {
       _publish(folderUnreadable: true);
       return;
@@ -183,10 +204,10 @@ class ScreenshotCleanupController extends ChangeNotifier {
     try {
       listing = await _listFolder(folder);
     } catch (_) {
-      _publish(folderUnreadable: true);
+      if (canDispatch()) _publish(folderUnreadable: true);
       return;
     }
-    if (_disposed) return;
+    if (!canDispatch()) return;
     if (listing is! ScreenshotFolderListed) {
       _publish(folderUnreadable: true);
       return;
@@ -196,8 +217,17 @@ class ScreenshotCleanupController extends ChangeNotifier {
       _publish(noScreenshots: true);
       return;
     }
+    try {
+      if (!await _claim(raid.startId)) return;
+    } catch (_) {
+      if (canDispatch()) _publish(claimFailed: true);
+      return;
+    }
+    if (!canDispatch()) return;
+
     var moved = 0;
     var notMoved = 0;
+    var unconfirmed = 0;
     for (var offset = 0; offset < names.length; offset += 64) {
       if (_disposed) return;
       final end = offset + 64 < names.length ? offset + 64 : names.length;
@@ -206,7 +236,7 @@ class ScreenshotCleanupController extends ChangeNotifier {
       try {
         future = _recycle.recycle(folder, batch);
       } catch (_) {
-        notMoved += batch.length;
+        unconfirmed += batch.length;
         continue;
       }
       final RecycleReply? reply;
@@ -215,7 +245,7 @@ class ScreenshotCleanupController extends ChangeNotifier {
             .then<RecycleReply?>((value) => value)
             .timeout(_backstop(batch.length), onTimeout: () => null);
       } catch (_) {
-        notMoved += batch.length;
+        unconfirmed += batch.length;
         continue;
       }
       if (_disposed) return;
@@ -224,18 +254,19 @@ class ScreenshotCleanupController extends ChangeNotifier {
         _publish(
           moved: moved,
           notMoved: notMoved + names.length - end,
-          unconfirmed: batch.length,
+          unconfirmed: unconfirmed + batch.length,
         );
         try {
           await future.timeout(_cancelWait);
         } on TimeoutException {
           _unavailable = true;
+          _pending.clear();
           if (!_disposed) {
             final previous = _lastResult;
             _lastResult = ScreenshotCleanupResult(
               moved: moved,
               notMoved: notMoved + names.length - end,
-              unconfirmed: batch.length,
+              unconfirmed: unconfirmed + batch.length,
               unavailable: true,
               skippedRaids: previous?.skippedRaids ?? 0,
             );
@@ -248,6 +279,8 @@ class ScreenshotCleanupController extends ChangeNotifier {
       }
       if (reply is RecycleCallFailure) {
         notMoved += batch.length;
+      } else if (reply is RecycleUnknownOutcome) {
+        unconfirmed += batch.length;
       } else if (reply is RecycleStatuses) {
         for (final name in batch) {
           final status = reply.statuses[name];
@@ -259,7 +292,7 @@ class ScreenshotCleanupController extends ChangeNotifier {
         }
       }
     }
-    _publish(moved: moved, notMoved: notMoved);
+    _publish(moved: moved, notMoved: notMoved, unconfirmed: unconfirmed);
   }
 
   Future<void> _cancel() async {

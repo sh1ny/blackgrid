@@ -1,5 +1,6 @@
 #include "recycle_channel.h"
 
+#include <sherrors.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <wrl/client.h>
@@ -14,6 +15,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -100,6 +102,12 @@ bool AbsoluteFolder(const std::wstring& folder) {
       folder[2] != L'?' && folder[2] != L'.' && folder[2] != L'\\';
 }
 
+bool IsMissingSource(HRESULT result) {
+  return result == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) ||
+         result == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND) ||
+         result == COPYENGINE_E_PATH_NOT_FOUND_SRC;
+}
+
 class DeleteSink final : public IFileOperationProgressSink {
  public:
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** out) override {
@@ -135,6 +143,7 @@ class DeleteSink final : public IFileOperationProgressSink {
   }
   HRESULT STDMETHODCALLTYPE PostDeleteItem(DWORD, IShellItem*, HRESULT result,
                                             IShellItem* recycled) override {
+    delete_result = result;
     moved = SUCCEEDED(result) && recycled != nullptr;
     return S_OK;
   }
@@ -148,6 +157,7 @@ class DeleteSink final : public IFileOperationProgressSink {
 
   bool vetoed = false;
   bool moved = false;
+  std::optional<HRESULT> delete_result;
 
  private:
   std::atomic<ULONG> references_{1};
@@ -171,11 +181,7 @@ const char* RecycleOne(const std::wstring& folder, const std::string& name) {
   ComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.c_str(), nullptr,
                                            IID_PPV_ARGS(&item));
-  if (FAILED(hr)) {
-    return hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) ||
-                   hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)
-        ? "missing" : "failed";
-  }
+  if (FAILED(hr)) return IsMissingSource(hr) ? "missing" : "failed";
   ComPtr<IFileOperation> operation;
   hr = CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL,
                         IID_PPV_ARGS(&operation));
@@ -185,10 +191,12 @@ const char* RecycleOne(const std::wstring& folder, const std::string& name) {
   ComPtr<DeleteSink> sink;
   sink.Attach(new DeleteSink());
   hr = operation->DeleteItem(item.Get(), sink.Get());
-  if (FAILED(hr)) return "failed";
+  if (FAILED(hr)) return IsMissingSource(hr) ? "missing" : "failed";
   hr = operation->PerformOperations();
+  if (sink->moved) return "moved";
+  // The per-item result takes precedence over the batch result when present.
+  if (IsMissingSource(sink->delete_result.value_or(hr))) return "missing";
   if (sink->vetoed) return "notRecyclable";
-  if (SUCCEEDED(hr) && sink->moved) return "moved";
   return "failed";
 }
 

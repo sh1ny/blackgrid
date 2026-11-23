@@ -41,8 +41,7 @@ class _ScreenshotCleanupSettingsState extends State<ScreenshotCleanupSettings> {
       final lines = [?_saveError, if (result != null) _resultLine(result)];
       return SettingsRow.toggle(
         name: "Delete a raid's screenshots after it ends",
-        explanation:
-            'Moves only that raid’s game screenshots to the Recycle Bin.',
+        explanation: 'Moves game screenshots to the Recycle Bin for raids Blackgrid saw start.',
         value: widget.settings.settings.cleanUpRaidScreenshots,
         enabled: !widget.settings.busy,
         onChanged: _save,
@@ -56,6 +55,8 @@ String _resultLine(ScreenshotCleanupResult result) {
   final lines = <String>[];
   if (result.folderUnreadable) {
     lines.add('The screenshot folder could not be read.');
+  } else if (result.claimFailed) {
+    lines.add('Cleanup could not be recorded. No screenshots were moved.');
   } else if (result.noScreenshots) {
     lines.add('The last raid had no screenshots to move.');
   } else {

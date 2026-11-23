@@ -26,14 +26,14 @@ class ChannelRecyclePort implements RecyclePort {
         'names': names,
       });
       if (reply is! List || reply.length != names.length) {
-        return const RecycleCallFailure();
+        return const RecycleUnknownOutcome();
       }
       final statuses = <String, RecycleStatus>{};
       for (final entry in reply) {
         if (entry is! Map ||
             entry['name'] is! String ||
             entry['status'] is! String) {
-          return const RecycleCallFailure();
+          return const RecycleUnknownOutcome();
         }
         final name = entry['name'] as String;
         final status = switch (entry['status']) {
@@ -48,13 +48,20 @@ class ChannelRecyclePort implements RecyclePort {
         if (!requested.contains(name) ||
             statuses.containsKey(name) ||
             status == null) {
-          return const RecycleCallFailure();
+          return const RecycleUnknownOutcome();
         }
         statuses[name] = status;
       }
       return RecycleStatuses({for (final name in names) name: statuses[name]!});
-    } on PlatformException {
-      return const RecycleCallFailure();
+    } on PlatformException catch (error) {
+      return switch (error.code) {
+        'bad_arguments' ||
+        'busy' ||
+        'unavailable' => const RecycleCallFailure(),
+        _ => const RecycleUnknownOutcome(),
+      };
+    } on FormatException {
+      return const RecycleUnknownOutcome();
     } on MissingPluginException {
       return const RecycleCallFailure();
     }

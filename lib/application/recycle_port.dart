@@ -54,10 +54,16 @@ final class RecycleStatuses extends RecycleReply {
   final Map<String, RecycleStatus> statuses;
 }
 
-/// The channel failed to return a valid per-name reply.
+/// The call was rejected before any requested move began.
 final class RecycleCallFailure extends RecycleReply {
   /// Creates a call failure.
   const RecycleCallFailure();
+}
+
+/// A dispatched call did not return usable evidence of what moved.
+final class RecycleUnknownOutcome extends RecycleReply {
+  /// Creates an unconfirmed call outcome.
+  const RecycleUnknownOutcome();
 }
 
 /// The sole application boundary for moving screenshots to the Recycle Bin.
