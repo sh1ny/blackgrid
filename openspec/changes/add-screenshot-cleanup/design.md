@@ -5,7 +5,7 @@
 | Trigger | Applies? | Evidence |
 |---|---|---|
 | T1 Components (new component, or 3+ with directed relationships) | yes | A new `ScreenshotCleanupController` reads `RaidLifecycleController`, `SettingsController` and `MapSessionController`, and drives a new recycle port over a new runner channel. |
-| T2 State (persistent state, caches, 3+ state machine) | yes | A new persisted setting (`cleanUpRaidScreenshots`), plus in-memory cleaned-raid identities and a last-result value. |
+| T2 State (persistent state, caches, 3+ state machine) | yes | A saved switch, a per-run live start, durable cleanup claims, and the last result. |
 | T3 Concurrency (background work, workers/isolates, async, retries) | yes | Raid endings arrive while a cleanup is still moving files. The runner moves files on a worker thread and posts results back. |
 | T4 Boundaries (data format, migration, shared interface, IPC, external) | yes | A new `blackgrid/recycle` method channel, a new settings key, and the first write into a game folder that was read-only until now (`openspec/architecture.md:32`). |
 | T5 Volume (grows without a fixed bound) | yes | The screenshot folder has no count cap (`openspec/architecture.md:147`). One raid can have hundreds of screenshots. |
@@ -28,6 +28,7 @@ TIER: FULL
 ### D1: Dart picks the files, the runner only recycles them
 
 - **Choice:** A pure domain function `pickRaidScreenshots(entries, raid)` takes a listing of `(name, isFile, isLink, modified)` and returns the names that pass proposal S1. A data-layer lister builds that listing with `Directory.list(followLinks: false)` and `stat`. The `RecyclePort` then gets the folder and the picked names. The runner checks each one again: it joins the name to the folder, rejects names that contain a path separator or `..`, confirms with `GetFileAttributesW` that the path is not a directory and not a reparse point, and only then recycles it. It reports one status per name.
+  The configured directory is authoritative, including junctions in its path. Dart's selection is by direct basename and modified time; no file-identity lock or staging is used against concurrent same-name replacement. Leaf links, directories and path traversal are still rejected.
 - **Rejected:** The runner lists, filters and recycles, given the folder and the raid window. The name and time rules would then live in C++, which can only be tested in a running app, and they would duplicate `parseScreenshotFilename`.
 - **Reversal cost:** medium, because the channel contract changes.
 - **Important:** yes, it binds future changes through the channel contract.
@@ -53,7 +54,10 @@ TIER: FULL
 
 ### D4: One app-scoped controller owns cleanup
 
-- **Choice:** `ScreenshotCleanupController` (in `lib/application/`) is built in `AppServices` next to `AlertsController`. In its constructor it subscribes to `RaidLifecycleController.transitions`, so it sees the replay and can ignore it. It reads `settings.cleanUpRaidScreenshots` and `mapSession.state.screenshotDirectory` when a raid ends, and it takes a `clock`, a lister and a `RecyclePort`, all injected. It runs one cleanup at a time from a FIFO, remembers cleaned raids by `startId` and exposes `lastResult` for the Game files row.
+- **Choice:** Subscribe before input binding to the lifecycle's cleanup-only projection. Enroll only a non-reconnect `RaidStartedTransition` whose start-defining record and `GameStarted` record were both read live (the same record for a normal start). Reset clears enrollment. Only a live ending for the enrolled identity qualifies, and every ending of that identity consumes enrollment. A live game reconnect keeps the original identity; reconnect-only reconstruction never enrolls. Other lifecycle consumers still receive every transition.
+- **Live provenance:** `SessionLogReader` carries live record IDs alongside its existing ordered batch. For each selected application and backend file, record the snapshot's byte size before reading on first bind, replay, path change or truncation. Reads after an I/O error retain the boundary for that same path. If the size is unknown, the first successful snapshot is the baseline; never infer zero on a failed stat. On an in-place rewrite use that scan's snapshot size as the boundary before classifying replacement records. A record is live only if its header offset is at or above the boundary. A line begun before the boundary remains replay even when completed later. A role confirmed absent by a successful directory selection starts at offset zero if it appears later in that same folder; a replaced existing role gets a new size boundary.
+- **Session changes:** A successful root listing establishes the newest known session name (or confirmed empty root); retain the high-water mark across missing or older selections until rebind. A folder first appearing after a known-empty listing or newer than the mark in a later successful listing is live from byte zero: it did not exist in the earlier listing. Existing first selection after binding, older or returning folders, and unresolved origin are baselined from existing size. Application reset or rewrite always baselines existing content and clears enrollment. Backend rewrites baseline their own file without changing existing lifecycle behavior.
+- **Cleanup controller:** Gate on opt-in at actual end time, preserve queue-entry freshness for crash endings, and capture the saved screenshot folder when preparation begins. Log timestamps do not establish provenance.
 - **Rejected:**
   - Folding cleanup into `MapSessionController`, which owns the folder. That controller is Map evidence with an epoch model (`openspec/architecture.md:105`), and file removal would widen its failure radius.
   - Folding cleanup into `AlertsController`. It is about audio, and the two features would then share a failure path.
@@ -74,17 +78,17 @@ TIER: FULL
 - **Important:** yes, it binds future changes, because it is a boundary.
 - **Chosen by:** agent
 
-### D6: Cleaned raids are remembered in memory, bounded
+### D6: Claim each raid identity durably before moves
 
-- **Choice:** A FIFO set of the last 16 `startId`s, kept in memory only. A restart needs no memory, because replayed endings are stale (S2). A transit and a reconnect each get their own `startId` or keep the same one, matching the raid-lifecycle identities, so each raid is cleaned at most once.
-- **Rejected:** Persisting cleaned identities. Freshness already prevents a second cleanup after a restart, and a stored list would need a schema.
-- **Reversal cost:** low
-- **Important:** no
-- **Chosen by:** agent
+- **Choice:** Insert one SQLite key `(folder, file, offset)` for the original start, after names are picked and before dispatch. Only the successful new insert permits moves. A duplicate is silent; storage failure reports that cleanup could not be recorded. No eviction, reset or retry after partial work. D4 excludes reconnect-only reconstruction rather than claiming an alias.
+- **Rejected:** A memory-only cache or timestamp watermark. An old record can be read again after a rebind or clock change, and a timestamp does not distinguish record identities.
+- **Reversal cost:** medium (additive local schema).
+- **Important:** yes, a repeat can move files the user restored.
+- **Chosen by:** user (strict no-repeat policy); storage design by agent.
 
 ### D7: The raid window is inclusive local wall-clock time, and the folder is captured at start
 
-- **Choice:** A file qualifies when `raid.startTime <= modified <= raid.endTime`. Both times are local `DateTime`s: the log times are local by ADR-0030, and `FileStat.modified` is local. The folder is `mapSession.state.screenshotDirectory`, read once when the cleanup starts. An empty value counts as a folder that could not be read. The picked list is built just before the move, so a file deleted in the meantime surfaces as the runner's `missing` status, which counts as neither moved nor failed.
+- **Choice:** A file qualifies when `raid.startTime <= modified <= raid.endTime`. Both timestamps share the local log/file clock. Resolve the currently saved setting or its default when cleanup starts, and pass that one absolute path to both listing and the runner. A failed or superseded resolution yields no move. An existing absolute path may include a configured junction; neither the watcher’s previous binding nor the file’s resolved target is used as fallback. A file that vanishes before the Shell move counts as `missing`.
 - **Rejected:** Matching on the minute stamp in the filename. It has minute resolution only, so screenshots from the minute before the raid would also match.
 - **Reversal cost:** high, because it decides which files go. The spec scenarios at 13:59:59 and 14:30:01 settle it in tests.
 - **Important:** yes, the reversal cost is high.
@@ -92,7 +96,7 @@ TIER: FULL
 
 ### D8: A crash ending is judged fresh by the queue entry that publishes it
 
-- **Choice:** When a `RaidEndedTransition` has `cause == RaidEndCause.clientRestart`, the controller holds it and judges freshness by the `QueueEnteredTransition` that the reducer publishes right after it in the same reduction (`raid_lifecycle.dart:995`). It never uses the ending's own time, which is when the player reached the menus. A live crash raid is then cleaned when the player next queues, and a replayed one stays stale because its queue entry is old. If the next transition is not a queue entry, the held ending is dropped, which is the safe direction. The raid window keeps `raid.endTime`, the profile-selection time.
+- **Choice:** A `clientRestart` ending requires both a live `ProfileSelected` record (keep provenance only for the reducer's pending `restartProfile`) and a live `QueueEntered` that publishes it. Use the latter's timestamp for freshness and the former's timestamp for opt-in eligibility and the screenshot window. The projection sends the admitted ending immediately before its queue transition. Normal endings require their own causing record to be live. A replayed or unmatched ending cannot authorize a move.
 - **Rejected:** Judging by the clock reading when the transition arrives. The start-up replay also arrives "now", so this would clean replayed crash raids and break S2. Accepting the gap was the other option, which leaves every crashed raid uncleaned when the player waits more than 30 s before queueing.
 - **Reversal cost:** low
 - **Important:** yes, it changes what happens to users' files.
@@ -103,7 +107,7 @@ TIER: FULL
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
 |---|---|---|---|---|---|---|
 | S1 | Which files are a raid's screenshots | Game-named `.png`/`.jpg`/`.jpeg` directly in the folder, modified in the raid window | Any image file in the window; window from the queue | high | yes | user |
-| S2 | Which endings start a cleanup | Fresh endings only, while cleanup is on; a crash ending is judged by its queue entry | Replayed endings too | high | yes | user |
+| S2 | Which endings start a cleanup | Fresh ending of a raid Blackgrid saw start live; crash freshness uses its queue entry | Replay or reconnect-only raids | high | yes | user |
 | S3 | How files are removed | Windows Recycle Bin via a runner channel | Permanent delete from Dart | medium | yes | user |
 | S4 | Where the setting lives | Game files switch with a last-result line | Switch only; Map inputs section | low | yes | user |
 | D1 | Dart and runner split | Dart picks, runner re-checks and recycles names | Runner lists, filters and recycles | medium | yes | user |
@@ -111,7 +115,7 @@ TIER: FULL
 | D3 | Setting storage | Flat `cleanUpRaidScreenshots` bool | Nested `screenshotCleanup` block | medium | yes | user |
 | D4 | Owner | New app-scoped `ScreenshotCleanupController` | Inside `MapSessionController` or `AlertsController` | low | no | agent |
 | D5 | ADR | ADR-0048 for the one write into a game folder, with an audit test | Architecture edit only | low | yes | agent |
-| D6 | Cleaned-raid memory | In-memory FIFO of 16 `startId`s | Persisted identities | low | no | agent |
+| D6 | At-most-once cleanup | Durable claim keyed by raid start identity before the first move | Memory-only identities or a time watermark | medium | yes | user |
 | D7 | Window and folder | Inclusive local times; folder read at cleanup start | Filename minute stamp | high | yes | agent |
 | D8 | Crash ending freshness | Judged by the queue entry published with it | Arrival clock; accept the gap | low | yes | user |
 
@@ -121,9 +125,10 @@ Components (T1, T4):
 
 ```mermaid
 flowchart LR
-  Life[RaidLifecycleController] -- RaidEndedTransition --> Clean[ScreenshotCleanupController]
+  Life[RaidLifecycleController] -- enrolled live ending and queue --> Clean[ScreenshotCleanupController]
   Settings[SettingsController] -- cleanUpRaidScreenshots --> Clean
-  Session[MapSessionController] -- state.screenshotDirectory --> Clean
+  Session[MapSessionController] -- saved folder snapshot --> Clean
+  Clean -- claim raid start --> DB[(SQLite)]
   Clean -- list, stat --> Lister[ScreenshotFolderLister]
   Lister -. read-only .-> Folder[(Screenshot folder)]
   Clean -- folder + names --> Port[ChannelRecyclePort]
@@ -142,9 +147,11 @@ stateDiagram-v2
   Queued --> Listing: its turn
   Listing --> Done: folder unreadable (result: folder)
   Listing --> Done: nothing picked (result: none)
-  Listing --> Recycling: names picked
-  Recycling --> Done: all statuses back (result: moved / notMoved)
-  Recycling --> Done: channel error or backstop (result: failed)
+  Listing --> Claiming: names picked and still enabled
+  Claiming --> Dropped: duplicate or opt-out before dispatch
+  Claiming --> Done: storage failure
+  Claiming --> Recycling: first move dispatched
+  Recycling --> Done: confirmed and unconfirmed counts
 ```
 
 Recycle call (T3, T4):
@@ -176,7 +183,9 @@ sequenceDiagram
 |---|---|---|---|---|
 | `cleanUpRaidScreenshots` | `SettingsController` (`setCleanUpRaidScreenshots`) | Durable | Missing or malformed decodes as `false` | Settings record |
 | Cleanup queue (pending raid endings) | `ScreenshotCleanupController` | Memory, app run | Cleared when cleanup is switched off, and on dispose | Controller |
-| Cleaned `startId`s | `ScreenshotCleanupController` | Memory, app run, last 16 | FIFO eviction; not rebuilt after restart (D6) | Controller |
+| Live log boundaries | `SessionLogReader` | Bound input, current selection | Replace on replay or file change; retain across delayed read | Existing byte size for each of two file roles and newest observed session name |
+| Live raid enrollment | `RaidLifecycleController` | Input epoch | Clear on reset, replace at start and consume on ending | One original start ID plus active pending start/profile provenance |
+| Claimed raid start identities | Local SQLite cleanup-claim table | Durable | Insert once; no reset, eviction or retry | `(folder, file, offset)` primary key |
 | `lastResult` | `ScreenshotCleanupController` | Memory, app run | Replaced by each finished cleanup; `null` until the first one | Controller |
 | Pending recycle call | Runner `RecycleChannel` | One call at most | Completed by the worker's post or by destruction (`failed`) | Runner |
 | Screenshot files | The player and the game; cleanup moves them only through the runner | Durable | Never rebuilt; the Recycle Bin is the undo | File system |
@@ -187,7 +196,8 @@ sequenceDiagram
 |---|---|---|---|---|
 | Lister | Folder missing, inaccessible or empty path → no move | Next raid ending tries again | yes | User: result line "screenshot folder could not be read" |
 | Domain pick | Pure function; a stat failing on one entry drops that entry | none needed | yes | nobody (the file stays, which is safe) |
-| Recycle port / channel | `PlatformException` or malformed reply → that call's names count as not moved. Backstop (see Resource Bounds) → `cancel`, no further batch for that raid, unanswered names reported as "could not be confirmed as moved" | Next raid, once the late reply arrives or the cancel wait ends | yes, recycling is idempotent per name (`missing` once gone) | User: result line |
+| Claim store | Duplicate → no move; write failure → no move | Next eligible raid | No retry | Failure only: user sees cleanup could not be recorded |
+| Recycle port / channel | Proven pre-move rejection → not moved. Malformed or lost acknowledgement → unconfirmed. Backstop → cancel and send no further batch for the raid | Next raid only if the port drains | No retry of the claimed raid | User: result line |
 | Runner worker | Vetoed or failed file → that file's status only | Other files go on | yes | User: counted as not moved |
 | Runner destroyed mid-call (app closes) | `stop` set, pending result completed with `cancelled`, worker detached; it finishes at most its current file and its post is dropped | none | n/a | nobody: the app is closing; unmoved files stay (spec) |
 | Controller | An exception in one cleanup → that cleanup ends with result `failed`, the queue goes on | Next ending | yes | User: result line |
@@ -197,7 +207,7 @@ sequenceDiagram
 | Queue / buffer / cache / transfer | Bound | At the bound | Timeout | At 10x / 100x |
 |---|---|---|---|---|
 | Cleanup queue | 4 pending raid endings | The new ending is not queued, and the next result says a raid was skipped (spec) | none (each run is bounded below) | Raids end minutes apart; 4 is never reached in play |
-| Cleaned `startId`s | 16 | FIFO eviction | n/a | Raids are minutes long; 16 covers hours |
+| Claimed raid start identities | One compact key per claimed raid, no in-memory cache or count cap | No eviction: duplicate keys must remain refused after a restart | Single local insert before first move; failure prevents the move | Indexed lookup; storage grows linearly with actual cleanup attempts |
 | Folder listing | No count cap, one listing per cleanup, `stat` per image file | n/a | none | 10k files: one listing of a few seconds, off the UI thread (async IO); 100k: slower, still one at a time. Recorded in the architecture bounds table |
 | Names per channel call | 64 | Dart sends further batches of 64 one after another, each only after the previous one answered | Dart backstop of 10 s plus 1 s per name (74 s for a full batch) | A raid with 640 screenshots needs 10 calls; one slow file costs at most its own share of the backstop |
 | Pending recycle calls in the runner | 1 | A second call is rejected with `busy`. The controller never sends one: after a backstop it calls `cancel` and waits for the late reply, up to 30 s, before its next call. With no reply by then it marks the port unavailable for this run (the result line says so) | Backstop, then a 30 s cancel wait | n/a |
@@ -206,23 +216,23 @@ sequenceDiagram
 
 - **Partial completion.** Each name has its own status. The result counts moved and not-moved names. `missing` counts as neither.
 - **Concurrent endings.** These are FIFO, one at a time (spec: "Cleanups run one at a time"). A transit raid's end and the next raid's start carry different windows, so their picks do not overlap.
-- **Switched off mid-run.** A running cleanup finishes and pending ones are dropped. Switched on mid-raid: the ending is fresh and cleanup is on when it arrives, so that raid is cleaned.
+- **Switched off mid-run.** Disabling clears waiting work and invalidates preparation (including disable/re-enable during an await). Only a cleanup whose first move was dispatched may finish. Switching on during a raid Blackgrid saw start live can qualify that raid.
 - **Folder changed.** The folder is read when the cleanup starts (D7). A change during a raid uses the new folder, as the spec scenario says.
 - **Stale or out-of-order endings.** Freshness drops stale ones. A raid ended by a client restart is not published when the player reaches the menus. `_selectProfile` only records `restartProfile`. The ending is published by `_queueEntered` (`lib/domain/raid_lifecycle.dart:965-997`) at the next queue entry, carrying the profile-selection time, and is followed in the same reduction by that `QueueEnteredTransition`. D8 judges it by the queue entry's time.
 - **Map side effect.** After a cleanup the watcher sees the files gone. `_seen` and `_fileStamps` drop them (`screenshot_directory_watcher.dart:263-264`), and the status may become "No saved screenshots found." The player's last shown position stays. This is intended and needs no change.
 - **Clock skew.** The log times and the file times come from the same machine's local clock. A DST shift during a raid can move the window by an hour. Not handled; recorded as a risk.
-- **Restart mid-cleanup.** Unmoved files stay. After the restart the replayed ending is stale, so that raid is not cleaned again. Recorded as a trade-off.
+- **Restart mid-cleanup.** Unmoved files stay. Neither startup replay nor a later repeated ending can retry the claimed raid.
 
 ## Mechanism Ledger (FULL)
 
 | Mechanism | Built? | Why (harm nobody catches / expensive later) | Evidence that would change the call |
 |---|---|---|---|
-| Freshness gate on endings | yes | Without it a replay removes kept screenshots (S2) | n/a |
+| Byte provenance plus freshness | yes | Old bytes remain replay after a clock rollback or deferred read; freshness still limits delayed live endings (S2) | n/a |
 | Runner re-check of name and attributes | yes | A bug in Dart, or a file swapped for a link after listing, would move a file outside the rules. Nobody would notice until the player looks | n/a |
 | `PreDeleteItem` veto | yes | Without it a permanent delete can happen silently (D2) | n/a |
 | Audit test on the watcher and the cleanup's Dart sources | yes | Keeps the Recycle Bin channel the only writer (D5) | n/a |
 | Dart backstop per call, with runner `cancel` | yes | A hung shell call would stall all later cleanups with nobody told; without `cancel` the worker would keep moving files after Dart gave up (review M2) | n/a |
-| Persisted cleaned identities | no | Freshness covers restarts (D6) | A report of a raid cleaned twice |
+| Persisted cleanup claims | yes | Refuses repeated identities across app runs, independently of timestamps and replay boundaries | n/a |
 | Retry of a failed raid | no | The result line tells the player, and a retry could act long after the raid | Owner feedback asking for one |
 | Confirmation before moving | no | Off by default, opt-in, and the Recycle Bin is the undo | Owner feedback |
 | Cleaning raids that ended while the app was closed | no | Out of scope (S2) | Owner request |
@@ -241,6 +251,7 @@ sequenceDiagram
   - ADR-0030: log inputs stay read-only. Not touched.
   - ADR-0046: `blackgrid/local_data` sets the channel naming precedent.
 - **To record during apply:** ADR-0048, "Screenshot cleanup recycles a raid's screenshots through a runner channel" (D5). The same task updates `openspec/architecture.md`: the diagram label, the runner row, the state rows, the bounds row and the T4/T6 triage lines.
+- **Pre-ship amendment:** ADR-0049 supersedes ADR-0048 only for admission, identity retention and folder resolution.
 
 ## Open Questions
 

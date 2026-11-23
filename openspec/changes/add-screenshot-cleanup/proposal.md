@@ -9,14 +9,14 @@ It also serves part of M10's user-verified criterion: screenshot cleanup removes
 ## What Changes
 
 - A new setting, **Delete a raid's screenshots after it ends**, off by default. It sits under the screenshot folder in Settings > Game files.
-- When it is on and a raid ends while Blackgrid is running, Blackgrid sends that raid's screenshots to the Windows Recycle Bin. A file counts as one of that raid's screenshots only when all of these hold:
-  - it sits directly in the screenshot folder Blackgrid watches, not in a subfolder;
+- When it is on and a raid Blackgrid saw start live ends, Blackgrid sends that raid's screenshots to the Windows Recycle Bin. A file counts as one of that raid's screenshots only when all of these hold:
+  - it sits directly in the configured screenshot folder, not in a subfolder;
   - it is a `.png`, `.jpg` or `.jpeg` file whose name parses as a game screenshot name;
   - its modified time falls between the raid's start and its end.
-- Only a fresh raid ending starts a cleanup. Raids that ended while Blackgrid was closed, or that the log replay shows again at start-up, are left alone. A raid is cleaned up at most once.
+- Only a fresh ending qualifies. Blackgrid leaves raids already in progress when it opens, replayed raids, and reconnect-only reconstructions alone. A raid is cleaned up at most once.
 - One line under the switch shows the last cleanup: how many screenshots it moved to the Recycle Bin, or why it could not, for example a missing folder or files that could not be moved. Nothing is shown before the first cleanup.
 - The setting is stored with the other settings and survives a restart.
-- Cleanup never deletes permanently, never follows links and never touches a file outside the rules above.
+- Cleanup never deletes permanently, recurses, or follows individual file links. It uses the configured folder path as Windows resolves it and does not lock selected names against concurrent replacement.
 
 ## Capabilities
 
@@ -35,7 +35,7 @@ It also serves part of M10's user-verified criterion: screenshot cleanup removes
   - `lib/ui/settings/`: the switch and result line in Game files.
   - `app_services.dart`: wiring.
 - **Native:** a new method channel in the Windows runner (`windows/runner/`) that moves the given files to the Recycle Bin through the Windows shell. It uses an OS component, so no DLL is added and the release bundle inventory is unchanged.
-- **Stored data:** a new screenshot cleanup flag in the local settings record. A record without it loads as off.
+- **Stored data:** the opt-in flag defaults to off; a durable local claim keyed by raid start prevents any second move attempt, even after restart.
 - **No game interaction.** Blackgrid only reads the logs and moves files in the screenshot folder. It never touches the game process, and it never draws on the game or sends anything to it.
 - **Dependencies:** none added.
 
@@ -46,7 +46,7 @@ DECISION_MAKING: important
 
 ### S1: Which files are a raid's screenshots
 
-- **Choice:** `.png`, `.jpg` or `.jpeg` files directly in the watched screenshot folder, whose name parses as a game screenshot, with a modified time between the raid's start and end.
+- **Choice:** `.png`, `.jpg` or `.jpeg` files directly in the configured screenshot folder, whose name parses as a game screenshot, with a modified time between the raid's start and end.
 - **Rejected:** Any image file in the raid window, which could delete a file the player put there. A window that opens at the queue, which takes in loading screenshots and makes the rule harder to reason about.
 - **Reversal cost:** high, because a wrong rule removes the player's files.
 - **Important:** yes, it changes what happens to the player's files.
@@ -54,7 +54,7 @@ DECISION_MAKING: important
 
 ### S2: Which raid endings start a cleanup
 
-- **Choice:** Only fresh raid endings, under the alerts' freshness rule, while cleanup is on. Replayed endings and raids that ended before cleanup was switched on are left alone. A raid ended by a game crash is published only at the next queue entry, so its freshness is judged by that queue entry. The owner chose to clean crashed raids in design review round 1 (M1).
+- **Choice:** Require an original start observed live and a fresh ending after opt-in. A reconnect can continue an observed raid, but does not qualify one Blackgrid did not see start. Claim the original start before the first move. For a client restart, the publishing queue determines freshness; the actual raid end determines opt-in eligibility.
 - **Rejected:** Cleaning every ending the replay shows, which can remove screenshots from earlier raids that the player kept.
 - **Reversal cost:** high, because a wrong rule removes the player's files.
 - **Important:** yes, it changes what happens to the player's files.
@@ -78,8 +78,8 @@ DECISION_MAKING: important
 
 ## Release Notes
 
-Blackgrid can now tidy the game's screenshot folder. Switch on "Delete a raid's screenshots after it ends" in Settings > Game files, and after each raid the screenshots taken during it go to the Recycle Bin. It is off by default and never touches other files.
+Switch on "Delete a raid's screenshots after it ends" in Settings > Game files to move a raid's game screenshots to the Recycle Bin at the end. Blackgrid must have been open when the raid started. Cleanup is off by default.
 
 ### Added
-- Opt-in screenshot cleanup: after a raid ends, the game screenshots taken during it move to the Windows Recycle Bin. Settings > Game files has the switch, shows the last result, and reports when the setting could not be saved.
-- Cleanup ignores stale raid endings and duplicate endings, leaves unrelated files alone, and reports files it could not move or confirm as moved. Files that cannot be recycled stay in place; cleanup never deletes them permanently.
+- Opt-in screenshot cleanup for raids Blackgrid saw start live. Settings > Game files shows the last result and reports when the setting could not be saved.
+- Cleanup skips replay, stale and duplicate endings. Only matching screenshots in the configured folder are selected, and none are permanently deleted. Blackgrid reports moves it could not confirm.

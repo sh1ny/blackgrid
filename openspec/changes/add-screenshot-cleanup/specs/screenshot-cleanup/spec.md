@@ -22,22 +22,26 @@ Screenshot cleanup SHALL be off by default. It SHALL be a saved setting that sur
 - **THEN** the switch shows the setting in use, which is unchanged, and says it was not saved
 
 ### Requirement: Only a fresh raid ending starts a cleanup
-A cleanup SHALL start only from a raid-ended transition that is fresh under the alerts' freshness rule, received while cleanup is on. A raid ended by a client restart SHALL be judged by the time of the queue entry published with its ending, not by the ending's own time. Each raid SHALL be cleaned up at most once, matched by the record identity of its start. A replayed or stale raid ending, a raid ended before cleanup was switched on, and a queue that ended without a raid SHALL start no cleanup.
+Cleanup SHALL require Blackgrid to observe a raid's original start live and a fresh ending after opt-in. Replay, reconnect-only reconstruction and matching aborts SHALL NOT qualify. For client restarts, use the publishing queue for freshness and the actual end for opt-in. Before its first move, cleanup SHALL durably claim the raid's start identity and SHALL NOT move files for a repeated claim.
 
 #### Scenario: A live raid ends
-- **WHEN** cleanup is on and a fresh raid-ended transition arrives
+- **WHEN** Blackgrid observes a raid start live and cleanup is on when that raid ends fresh
 - **THEN** a cleanup of that raid's screenshots starts
 
 #### Scenario: A raid ended by a client restart
-- **WHEN** cleanup is on, the game restarted during a raid, the player reached the menus at 14:40:00 and entered the queue at 14:45:00, and the ending arrives while the clock reads 14:45:01
+- **WHEN** Blackgrid observed the raid start live, cleanup is on, the game restarted, the player reached the menus at 14:40:00 and entered the queue at 14:45:00, and the ending arrives at 14:45:01
 - **THEN** a cleanup of that raid's screenshots starts
 
 #### Scenario: Replay at start-up
-- **WHEN** cleanup is on and Blackgrid starts and replays a session folder whose raids ended an hour ago
+- **WHEN** cleanup is on and Blackgrid starts and replays a session folder containing an ended raid, even if it ended less than 30 seconds ago
 - **THEN** no cleanup starts and no file is moved
 
+#### Scenario: Blackgrid opens mid-raid
+- **WHEN** Blackgrid starts while a raid is in progress, including when it reconstructs that raid from a later reconnect
+- **THEN** that raid's screenshots stay in the folder when it ends
+
 #### Scenario: Switched on after the raid ended
-- **WHEN** a raid ends while cleanup is off and the player then switches cleanup on
+- **WHEN** a raid ends while cleanup is off, and its ending is delivered after the player switches cleanup on
 - **THEN** no cleanup starts for that raid
 
 #### Scenario: Matching aborted
@@ -49,7 +53,7 @@ A cleanup SHALL start only from a raid-ended transition that is fresh under the 
 - **THEN** no second cleanup starts
 
 ### Requirement: A raid's screenshots are picked by folder, name and time
-A cleanup SHALL take a file only when it is a regular file directly in the screenshot folder in use when the cleanup starts, not in a subfolder and not reached through a link; its extension is `.png`, `.jpg` or `.jpeg` in any case; its name parses as a game screenshot name; and its modified time is at or after the raid's start and at or before its end. No other file SHALL be moved or changed.
+Cleanup SHALL select only direct regular `.png`, `.jpg` or `.jpeg` files (any case) with a game screenshot basename and modification time within the inclusive raid window. It SHALL NOT recurse or follow leaf links. The runner SHALL reject unsafe basenames, directories and leaf reparse points. Windows resolves the configured folder path normally, including junctions. Selection does not pin file identity against concurrent replacement.
 
 #### Scenario: A screenshot from the raid
 - **WHEN** a raid ran from 14:00:00 to 14:30:00 and the folder holds `2026-11-22[14-05]_-120.5, 2.1, 33.4_0, 0.70711, 0, 0.70711_12.34.png` modified at 14:05:10
@@ -82,9 +86,13 @@ A cleanup SHALL move each picked file to the Windows Recycle Bin. A file the Rec
 - **WHEN** the screenshot folder is on a drive with no Recycle Bin
 - **THEN** every picked file stays in the folder and the cleanup counts them as not moved
 
-#### Scenario: The recycle call fails
-- **WHEN** a cleanup sends its picked screenshots and the move call fails as a whole
-- **THEN** every file of that call stays in the folder, counts as not moved, and the result line says how many could not be moved
+#### Scenario: The runner rejects the call before moving any file
+- **WHEN** the runner refuses a whole call before moving any file
+- **THEN** every file of that call stays in the folder and counts as not moved
+
+#### Scenario: The move acknowledgement is invalid
+- **WHEN** a dispatched call's reply cannot establish individual outcomes
+- **THEN** its files count as unconfirmed, not as still in the folder
 
 #### Scenario: The recycle call does not answer
 - **WHEN** a cleanup sends its picked screenshots and no answer comes within the time limit
@@ -108,6 +116,10 @@ Cleanups SHALL run one after another in the order their raids ended. Switching c
 #### Scenario: Switched off while a cleanup waits
 - **WHEN** a cleanup is waiting behind another and the player switches cleanup off
 - **THEN** the waiting cleanup does not start
+
+#### Scenario: Switched off before the first move
+- **WHEN** cleanup is switched off during folder discovery, listing or claiming, before its first move is sent
+- **THEN** that cleanup sends no move, even if cleanup is switched back on before preparation finishes
 
 #### Scenario: Blackgrid closes during a cleanup
 - **WHEN** Blackgrid closes while a cleanup is moving files
@@ -135,6 +147,10 @@ After each cleanup the setting SHALL show one line with its result: how many scr
 #### Scenario: The folder is missing
 - **WHEN** a cleanup starts and the screenshot folder does not exist
 - **THEN** no file is moved and the line says the screenshot folder could not be read
+
+#### Scenario: The claim store fails
+- **WHEN** Blackgrid cannot establish a new durable claim for the raid
+- **THEN** it moves no files and shows that the cleanup could not be recorded; a duplicate claim is skipped silently
 
 #### Scenario: Nothing yet
 - **WHEN** Blackgrid has started and no cleanup has run
