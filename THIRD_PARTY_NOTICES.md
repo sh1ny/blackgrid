@@ -1072,7 +1072,7 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | record_use | 1.1.1 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/record_use/versions/1.1.1) |
 | sky_engine | Flutter 3.47.9 | Engine / aggregate native notices | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
 | source_span | 1.10.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/source_span/versions/1.10.2) |
-| sqlite3 | 3.9.1 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/sqlite3/versions/3.9.1) |
+| sqlite3 | 3.9.2 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/sqlite3/versions/3.9.2) |
 | stack_trace | 1.12.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stack_trace/versions/1.12.2) |
 | stream_channel | 2.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stream_channel/versions/2.1.4) |
 | string_scanner | 1.4.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/string_scanner/versions/1.4.1) |
