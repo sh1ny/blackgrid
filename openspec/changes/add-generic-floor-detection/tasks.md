@@ -44,8 +44,8 @@
 
 ## 3. Verify the complete offline change
 
-- [ ] 3.1 Run the prescribed gaming guard before heavy work, then prove `mise run analyze`, `mise run test`, `mise run maps:check` and validate release notes (`mise run release-notes -- --check openspec/changes/add-generic-floor-detection/proposal.md`). If heavy qualification is delegated to CI, verify the named hosted checks on the exact PR head.
-- [ ] 3.2 [evidence] Record the rebuild, test, reproduction and independently reviewed marker comparison evidence; list owner-only checks as unverified → evidence/verification.md
+- [x] 3.1 Run the prescribed gaming guard before heavy work, then prove `mise run analyze`, `mise run test`, `mise run maps:check` and validate release notes (`mise run release-notes -- --check openspec/changes/add-generic-floor-detection/proposal.md`). If heavy qualification is delegated to CI, verify the named hosted checks on the exact PR head.
+- [x] 3.2 [evidence] Record the rebuild, test, reproduction and independently reviewed marker comparison evidence; list owner-only checks as unverified → evidence/verification.md
 
 ## Workflow follow-up
 
