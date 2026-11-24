@@ -127,7 +127,7 @@ void main() {
   test('narrowest extent and stable floor id win in either order', () {
     final box = GameBounds(minX: 0, minZ: -4, maxX: 4, maxZ: 0);
     final shared = FloorExtent(HeightBand(0, 10), bounds: [box]);
-    final narrow = FloorExtent(HeightBand(5, 7), bounds: [box]);
+    final narrow = FloorExtent(HeightBand(4, 7), bounds: [box]);
     final medium = FloorExtent(HeightBand(5, 9), bounds: [box]);
     final wide = MapFloor(
       id: 'Wide',
@@ -151,7 +151,7 @@ void main() {
         overlays: reverse ? floors.reversed : floors,
       );
       expect(policy.supportsAutomaticHeight, isTrue);
-      // A must beat B's medium span even if A's wider span is visited first.
+      // A beats B's higher minimum, even when A's wider span is visited first.
       expect(
         policy.floorForPosition(GamePoint(4, -4, height: 6))?.id,
         'Narrow_A',

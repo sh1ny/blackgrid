@@ -13,7 +13,8 @@ The prescribed gaming check returned `NOT GAMING` before the rebuild, full offli
 - `openspec validate add-generic-floor-detection --strict` and the proposal's `mise run release-notes -- --check` both passed.
 - Pre-ship round 1: the mixed vector map regression first failed because an empty SVG ID hid a valid tile identity. It passed after the fix, together with strengthened checks for diagnostic precedence, resolved base eligibility under exclusive floors, and competing extents on one floor.
 - Pre-ship round 2: the synthetic wide-versus-tied selection and the shipped Icebreaker Infirmary/Storage Security overlap passed in the focused suite.
-- Pre-ship round 3: the unnamed tile-layer regression first failed on a blank diagnostic, then passed with the tile rendition named; the CLI help now distinguishes v5 validation from offline v4 migration.
+- Pre-ship round 3 (owner authorized one extra fix round): the unnamed tile-layer regression first failed on a blank diagnostic, then passed with the tile rendition named; the CLI help now distinguishes v5 validation from offline v4 migration.
+- Pre-ship round 4 (the coordinator delegated the decision): chose the test-only fix over a waiver. The overlap assertion now distinguishes the approved narrowest-span rule from highest-minimum ordering.
 
 ## Active pack rebuild
 
