@@ -41,6 +41,10 @@ Blackgrid SHALL turn application log records into session mode, profile selected
 - **WHEN** the application log holds `scene preset path:maps/factory_event_preset.bundle` or `scene preset path:maps/laboratory_event_preset.bundle`
 - **THEN** the scene-loaded event's map is Factory or The Lab, and Factory or The Lab is the detected map
 
+#### Scenario: Terminal and Labyrinth preset scenes
+- **WHEN** the application log holds `scene preset path:maps/terminal_preset.bundle rcid:terminal.scenespreset.asset`, or the same line with `labyrinth_preset`
+- **THEN** the scene-loaded event's map is Terminal, or Labyrinth for the Labyrinth line
+
 #### Scenario: Unrelated line
 - **WHEN** the application log holds `Reason:PacketsQueue, Position:(62.883, 10.690, -947.049), SpeedLimit:1.0595`
 - **THEN** no event is produced
