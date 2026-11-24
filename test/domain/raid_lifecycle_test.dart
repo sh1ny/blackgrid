@@ -224,6 +224,65 @@ void main() {
       expect(trace.last.raid?.mapId, isNull);
       expect(trace.last.phase, RaidPhase.inRaid);
     });
+
+    // A transit logs its location, then a scene in the same millisecond
+    // (#129). An unsupported scene must not erase the location's map.
+    test('unsupported scene after a transit keeps the transit map', () {
+      final log = _Log();
+      final trace = _Trace([
+        log.profile('19:30:00'),
+        log.queue('19:38:10'),
+        log.scene('19:38:20', 'shoreline'),
+        log.started('19:41:06'),
+        log.exit('19:54:20'),
+        log.profile('19:54:35'),
+        log.rejoin('19:55:00', 'Terminal', 'terminal'),
+        log.scene('19:55:00', null),
+        log.started('19:55:30'),
+      ]);
+      final raid = trace.last.raid!;
+      expect(raid.mapId, 'terminal');
+      expect(raid.entry, RaidEntry.transit);
+    });
+
+    test('supported scene after a rejoin replaces the map', () {
+      final log = _Log();
+      final trace = _Trace([
+        log.profile('19:30:00'),
+        log.rejoin('19:31:00', 'Woods', 'woods'),
+        log.scene('19:31:00', 'customs'),
+        log.started('19:31:30'),
+      ]);
+      expect(trace.last.raid?.mapId, 'customs');
+    });
+
+    test('unknown rejoin and unsupported scene leave the map unknown', () {
+      final log = _Log();
+      final trace = _Trace([
+        log.profile('19:30:00'),
+        log.rejoin('19:31:00', 'mystery', null),
+        log.scene('19:31:00', null),
+        log.started('19:31:30'),
+      ]);
+      expect(trace.last.raid?.mapId, isNull);
+      expect(trace.last.phase, RaidPhase.inRaid);
+    });
+
+    test('unsupported scene in a queue keeps the earlier map', () {
+      final log = _Log();
+      final trace = _Trace([
+        log.profile('19:30:00'),
+        log.queue('19:38:10'),
+        log.scene('19:38:20', 'customs'),
+        log.scene('19:38:40', null),
+        log.started('19:41:06'),
+      ]);
+      expect(trace.last.raid?.mapId, 'customs');
+      expect(trace.all<MapKnownTransition>().map((t) => t.mapId), [
+        'customs',
+        null,
+      ]);
+    });
   });
 
   group('first ending wins', () {

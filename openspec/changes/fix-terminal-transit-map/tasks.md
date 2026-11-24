@@ -17,10 +17,10 @@
 | game-log-input → Application log lines become lifecycle events | Unrelated line | test/data/game_log/game_log_parsers_test.dart | unrelated line produces nothing | green |
 | raid-lifecycle → A raid records its map, mode, times and entry | Recorded raid | test/domain/raid_lifecycle_test.dart | records map, mode, times, entry and cause | green |
 | raid-lifecycle → A raid records its map, mode, times and entry | Map unknown | test/domain/raid_lifecycle_test.dart | unsupported scene leaves the map unknown | green |
-| raid-lifecycle → A raid records its map, mode, times and entry | Unsupported scene after a transit keeps the transit map | test/domain/raid_lifecycle_test.dart | unsupported scene after a transit keeps the transit map | red |
-| raid-lifecycle → A raid records its map, mode, times and entry | Supported scene after a rejoin replaces the map | test/domain/raid_lifecycle_test.dart | supported scene after a rejoin replaces the map | red |
-| raid-lifecycle → A raid records its map, mode, times and entry | Unknown rejoin and unsupported scene | test/domain/raid_lifecycle_test.dart | unknown rejoin and unsupported scene leave the map unknown | red |
-| raid-lifecycle → A raid records its map, mode, times and entry | Unsupported scene in a queue after a known scene | test/domain/raid_lifecycle_test.dart | unsupported scene in a queue keeps the earlier map | red |
+| raid-lifecycle → A raid records its map, mode, times and entry | Unsupported scene after a transit keeps the transit map | test/domain/raid_lifecycle_test.dart | unsupported scene after a transit keeps the transit map | green |
+| raid-lifecycle → A raid records its map, mode, times and entry | Supported scene after a rejoin replaces the map | test/domain/raid_lifecycle_test.dart | supported scene after a rejoin replaces the map | green |
+| raid-lifecycle → A raid records its map, mode, times and entry | Unknown rejoin and unsupported scene | test/domain/raid_lifecycle_test.dart | unknown rejoin and unsupported scene leave the map unknown | green |
+| raid-lifecycle → A raid records its map, mode, times and entry | Unsupported scene in a queue after a known scene | test/domain/raid_lifecycle_test.dart | unsupported scene in a queue keeps the earlier map | green |
 
 Some rows start red only because their test is new. Their behaviour already holds, so they may pass as soon as they are written: the unknown-location rejoin, the scene that replaces a rejoin map, and the unknown rejoin followed by an unsupported scene. That is expected and is not a red-first failure.
 
@@ -39,16 +39,16 @@ Some rows start red only because their test is new. Their behaviour already hold
 
 ## 2. An unsupported scene keeps the known map
 
-- [ ] 2.1 Write the failing reducer tests in the `raid record` group of `test/domain/raid_lifecycle_test.dart`:
+- [x] 2.1 Write the failing reducer tests in the `raid record` group of `test/domain/raid_lifecycle_test.dart`:
   - `unsupported scene after a transit keeps the transit map`: a Shoreline raid ends, then profile selected, rejoin Terminal, an unsupported scene and raid started. The raid is on `terminal` with entry transit.
   - `supported scene after a rejoin replaces the map`: rejoin Woods, then a Customs scene and raid started. The map is `customs`.
   - `unknown rejoin and unsupported scene leave the map unknown`.
   - `unsupported scene in a queue keeps the earlier map`: queue, Customs scene, unsupported scene and raid started. The raid map is `customs`, and the second scene publishes one map-known transition with no map.
 
   Run `mise run test -- test/domain/raid_lifecycle_test.dart`. The transit-map and queue tests must fail because the unsupported scene erases the map.
-- [ ] 2.2 In `_sceneLoaded`, keep the pending map when the scene names no supported map (D3), and say so in its comment. The map-known transition keeps the scene's own map. Verify that the 2.1 tests and the whole `test/domain/` folder pass, flip the 2.1 rows green, and re-run `unsupported scene leaves the map unknown` and `records map, mode, times, entry and cause` (rows already green).
-- [ ] 2.3 Add `fix-terminal-transit-map` to M10's change list in `openspec/roadmap.md` as a corrective entry from #129. Verify by reading the roadmap.
-- [ ] 2.4 Run `mise run analyze` and `mise run test`, and format with `dart format`. Verify that all of them pass.
+- [x] 2.2 In `_sceneLoaded`, keep the pending map when the scene names no supported map (D3), and say so in its comment. The map-known transition keeps the scene's own map. Verify that the 2.1 tests and the whole `test/domain/` folder pass, flip the 2.1 rows green, and re-run `unsupported scene leaves the map unknown` and `records map, mode, times, entry and cause` (rows already green).
+- [x] 2.3 Add `fix-terminal-transit-map` to M10's change list in `openspec/roadmap.md` as a corrective entry from #129. Verify by reading the roadmap.
+- [x] 2.4 Run `mise run analyze` and `mise run test`, and format with `dart format`. Verify that all of them pass.
 
 ## Workflow follow-up
 

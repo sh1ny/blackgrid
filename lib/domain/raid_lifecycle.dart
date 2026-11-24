@@ -1011,10 +1011,17 @@ RaidReduction _serverJoined(RaidLifecycleState state, ServerJoined e) =>
 
 // A scene read in a queue names the queued map. A rejoin sets another pending
 // entry, so a scene after it publishes nothing.
+//
+// A scene with no supported map keeps the map already known for the pending
+// raid, from a rejoin location or an earlier scene. Only scenes are guarded:
+// a rejoin still sets its location's map, which is null when unknown. The
+// map-known transition still reports this scene's own map, so an unsupported
+// scene in a queue publishes "no map" while the raid keeps the earlier map
+// (#129: a Terminal transit is followed by a `terminal_preset` scene).
 RaidReduction _sceneLoaded(RaidLifecycleState state, SceneLoaded e) =>
     _isLoading(state.phase)
     ? (
-        state.copyWith(pendingMapId: e.mapId),
+        state.copyWith(pendingMapId: e.mapId ?? state.pendingMapId),
         state.pendingEntry == RaidEntry.queue
             ? [MapKnownTransition(e.id, e.time, e.mapId)]
             : const [],
