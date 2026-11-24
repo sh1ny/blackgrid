@@ -263,10 +263,6 @@ void main() {
       expect(() => map.markers.first.details.clear(), throwsUnsupportedError);
       expect(() => map.components.clear(), throwsUnsupportedError);
       expect(() => map.tiles.clear(), throwsUnsupportedError);
-      expect(
-        map.floorPolicy.supportsAutomaticHeight,
-        entry.key == 'thelab' || entry.key == 'icebreaker',
-      );
     }
     final explicit = PreparedMarker.fromJson({
       ..._marker('authored-key', 'questItems'),
@@ -558,7 +554,7 @@ void main() {
     expect(map.rasterDependencies, isEmpty);
     expect(map.floorPolicy.floors.map((floor) => floor.id), ['Main_Level']);
     expect(map.floorPolicy.overlays, isEmpty);
-    expect(map.floorPolicy.base.heightBand, isNull);
+    expect(map.floorPolicy.base.extents, isEmpty);
     expect(map.floorPolicy.supportsAutomaticHeight, isFalse);
     expect(map.displayFrame.originalArtwork.width, 4096);
     expect(map.displayFrame.originalArtwork.height, 4096);
@@ -566,12 +562,10 @@ void main() {
     expect(map.tileLayout!.nativeTilePixels.width, 256);
     expect((raw['geometry'] as Map)['rotation'], 270);
     expect((raw['geometry'] as Map)['affine'], [2.115, 85.5, 2.115, 128]);
-    for (final height in [null, -10000.0, 0.0, 10000.0]) {
-      expect(map.floorPolicy.floorForHeight(height), isNull);
-      expect(map.floorPolicy.selectionForHeight(height).visibleLayerIds, [
-        'Main_Level',
-      ]);
-    }
+    expect(
+      map.floorPolicy.floorForPosition(GamePoint(0, 0, height: 1)),
+      isNull,
+    );
     final loaded = <String>[];
     final owner = NativeMapResourceOwner(
       PreparedMapPackLoader(
@@ -852,23 +846,16 @@ void main() {
       helicopter.outline.map((point) => point.height),
       everyElement(21.06),
     );
-    expect(map.floorPolicy.floorForHeight(21.06)!.id, 'Helipad');
     expect(helicopter.details['position'], {'x': .28, 'y': 22.56, 'z': -66.03});
     expect(
       helicopter.source['floorAssignment'],
       containsPair('basis', 'helicopter-extraction-at-physical-helipad-centre'),
     );
-    expect(map.floorPolicy.floorForHeight(22.56)!.id, 'Gym_Canteen');
-    expect(map.floorPolicy.floorForHeight(22.2)!.id, 'Gym_Canteen');
-    expect(map.floorPolicy.floorForHeight(19.57)!.id, 'Helipad');
-    expect(map.floorPolicy.floorForHeight(null), isNull);
-    expect(map.floorPolicy.floorForHeight(0)!.id, 'Control_Room');
     bool visibleOn(String floorId) => map.floorPolicy
         .reset()
         .select(floorId)
         .isVisible(
           floorId: helicopter.floorId,
-          height: helicopter.position.height,
           unknownHeight: UnknownHeightVisibility.hidden,
         );
     expect(visibleOn('Helipad'), isTrue);
@@ -883,7 +870,6 @@ void main() {
           .select('Officers_Deck')
           .isVisible(
             floorId: serverDoor.floorId,
-            height: serverDoor.position.height,
             unknownHeight: UnknownHeightVisibility.hidden,
           ),
       isTrue,
@@ -1011,6 +997,7 @@ Map<String, dynamic> _vectorMap() => {
       'manual': true,
       'exclusive': false,
       'attachedIds': [],
+      'extents': [],
       'componentIds': ['base'],
       'artwork': {
         'components': [
@@ -1038,6 +1025,7 @@ Map<String, dynamic> _vectorMap() => {
       'manual': true,
       'exclusive': false,
       'attachedIds': [],
+      'extents': [],
       'componentIds': ['overlay'],
       'artwork': {
         'components': [
@@ -1086,6 +1074,7 @@ Map<String, dynamic> _rasterMap() => {
       'manual': true,
       'exclusive': true,
       'attachedIds': [],
+      'extents': [],
       'artwork': {
         'tiles': [
           {'x': 0, 'y': 0, 'empty': false, 'path': 'base-0.png'},
@@ -1099,7 +1088,12 @@ Map<String, dynamic> _rasterMap() => {
       'manual': true,
       'exclusive': true,
       'attachedIds': [],
-      'heightBand': [3, 5],
+      'extents': [
+        {
+          'height': [3, 5],
+          'bounds': [],
+        },
+      ],
       'artwork': {
         'tiles': [
           {'x': 0, 'y': 0, 'empty': false, 'path': 'upper-0.png'},
@@ -1124,6 +1118,7 @@ Map<String, dynamic> _calibratedRasterMap(String sourceKey) {
     for (final floor in raw['floors'] as List)
       <String, dynamic>{
         ...floor as Map<String, Object?>,
+        'extents': [],
         'artwork': {'tiles': <Object>[]},
       },
   ];

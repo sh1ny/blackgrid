@@ -58,6 +58,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Floor",
           "manual": true
         },
@@ -86,6 +87,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                3,
+                6
+              ]
+            }
+          ],
           "id": "Second_Floor",
           "manual": true
         },
@@ -114,6 +124,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                6,
+                10000
+              ]
+            }
+          ],
           "id": "Third_Floor",
           "manual": true
         },
@@ -142,6 +161,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                -10000,
+                -1
+              ]
+            }
+          ],
           "id": "Basement",
           "manual": true
         }
@@ -64702,6 +64730,7 @@
           ],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         },
@@ -64730,6 +64759,158 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  165,
+                  125,
+                  243,
+                  190
+                ],
+                [
+                  72,
+                  -170,
+                  116,
+                  -83
+                ],
+                [
+                  341,
+                  -84,
+                  356,
+                  -30
+                ],
+                [
+                  321,
+                  -59,
+                  334,
+                  -52
+                ],
+                [
+                  577,
+                  -1,
+                  589,
+                  10
+                ],
+                [
+                  532,
+                  -134,
+                  580,
+                  -104
+                ],
+                [
+                  599,
+                  -139,
+                  625,
+                  -120
+                ]
+              ],
+              "height": [
+                2.7,
+                6.5
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  532,
+                  -134,
+                  580,
+                  -104
+                ],
+                [
+                  -223,
+                  -131,
+                  -199,
+                  -90
+                ],
+                [
+                  169,
+                  -160,
+                  239,
+                  3
+                ],
+                [
+                  316,
+                  -95,
+                  336,
+                  -56
+                ],
+                [
+                  556,
+                  -92,
+                  584,
+                  -46
+                ],
+                [
+                  65,
+                  -22,
+                  93,
+                  0
+                ]
+              ],
+              "height": [
+                5.7,
+                1000
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  450,
+                  -90,
+                  497,
+                  -44
+                ]
+              ],
+              "height": [
+                14,
+                15
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  22,
+                  -38,
+                  73,
+                  57
+                ]
+              ],
+              "height": [
+                3.9,
+                7.6
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  100,
+                  -57,
+                  119,
+                  -42
+                ]
+              ],
+              "height": [
+                4.4,
+                6.5
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  246,
+                  -79,
+                  279,
+                  -1.4
+                ]
+              ],
+              "height": [
+                4.6,
+                7.9
+              ]
+            }
+          ],
           "id": "Second_Floor",
           "manual": true
         },
@@ -64758,6 +64939,64 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  165,
+                  125,
+                  243,
+                  190
+                ]
+              ],
+              "height": [
+                5.7,
+                1000
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  22,
+                  -73,
+                  73,
+                  -38
+                ]
+              ],
+              "height": [
+                7.7,
+                11.3
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  88,
+                  -64,
+                  126,
+                  -35
+                ]
+              ],
+              "height": [
+                6.7,
+                11.6
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  246,
+                  -79,
+                  279,
+                  -1.4
+                ]
+              ],
+              "height": [
+                8.0,
+                11.1
+              ]
+            }
+          ],
           "id": "Third_Floor",
           "manual": true
         },
@@ -66575,6 +66814,22 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  246,
+                  -79,
+                  279,
+                  -1.4
+                ]
+              ],
+              "height": [
+                11.2,
+                54.7
+              ]
+            }
+          ],
           "id": "Fourth_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/customs_0.16/4th/{z}/{x}/{y}.png"
@@ -66604,6 +66859,52 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  620,
+                  -137,
+                  635,
+                  -125
+                ],
+                [
+                  458,
+                  -122,
+                  473,
+                  -110
+                ],
+                [
+                  308,
+                  -184,
+                  314,
+                  -173
+                ],
+                [
+                  323,
+                  -88,
+                  349,
+                  -32
+                ],
+                [
+                  193,
+                  -158,
+                  219,
+                  -137
+                ],
+                [
+                  88,
+                  -61,
+                  122,
+                  -40
+                ]
+              ],
+              "height": [
+                -1000,
+                0.5
+              ]
+            }
+          ],
           "id": "Underground_Level",
           "manual": true
         }
@@ -250562,6 +250863,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         }
@@ -335240,6 +335542,7 @@
           ],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         },
@@ -335268,6 +335571,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                -1,
+                2
+              ]
+            }
+          ],
           "id": "Second_Floor",
           "manual": true
         },
@@ -335296,6 +335608,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                2,
+                1000
+              ]
+            }
+          ],
           "id": "Third_Floor",
           "manual": true
         },
@@ -335324,6 +335645,28 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -237,
+                  -104,
+                  -137,
+                  -68
+                ],
+                [
+                  -268,
+                  -163,
+                  -234,
+                  -134
+                ]
+              ],
+              "height": [
+                -1000,
+                -5
+              ]
+            }
+          ],
           "id": "Underground_Level",
           "manual": true
         }
@@ -459362,6 +459705,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "label": "Ground Level",
           "manual": true
@@ -459421,9 +459765,21 @@
             "Ramps-1"
           ],
           "exclusive": false,
-          "heightBand": [
-            25,
-            34
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -222,
+                  -327,
+                  120,
+                  218
+                ]
+              ],
+              "height": [
+                25,
+                34
+              ]
+            }
           ],
           "id": "First_Floor",
           "label": "2nd Floor",
@@ -459475,9 +459831,21 @@
             "Ramps-2"
           ],
           "exclusive": false,
-          "heightBand": [
-            34,
-            1000
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -222,
+                  -327,
+                  120,
+                  218
+                ]
+              ],
+              "height": [
+                34,
+                1000
+              ]
+            }
           ],
           "id": "Second_Floor",
           "label": "3rd Floor",
@@ -533857,6 +534225,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "First_Level",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/1st/{z}/{x}/{y}.png"
@@ -536165,9 +536534,21 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
-          "heightBand": [
-            3,
-            1000
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -271,
+                  -422,
+                  -101,
+                  -270
+                ]
+              ],
+              "height": [
+                3,
+                10000
+              ]
+            }
           ],
           "id": "Second_Level",
           "manual": true,
@@ -538435,9 +538816,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
-          "heightBand": [
-            -1000,
-            -0.9
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                -10000,
+                -0.9
+              ]
+            }
           ],
           "id": "Technical_Level",
           "manual": true,
@@ -580718,6 +581104,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         },
@@ -582801,6 +583188,164 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -17,
+                  164,
+                  1,
+                  199
+                ]
+              ],
+              "height": [
+                22.1,
+                25.7
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -177,
+                  26,
+                  -77,
+                  106
+                ],
+                [
+                  51,
+                  59,
+                  62,
+                  108
+                ]
+              ],
+              "height": [
+                -3.5,
+                -0.64
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -177,
+                  -37,
+                  -104,
+                  5
+                ]
+              ],
+              "height": [
+                -3.5,
+                -0.64
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -85,
+                  -47,
+                  -47,
+                  -18
+                ]
+              ],
+              "height": [
+                -3.9,
+                -0.6
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -78,
+                  -13,
+                  -19.91,
+                  39
+                ]
+              ],
+              "height": [
+                -4.3,
+                -2.2
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -2,
+                  -50,
+                  99,
+                  7
+                ]
+              ],
+              "height": [
+                -3.8,
+                -1.1
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  137,
+                  -175,
+                  191,
+                  -120
+                ]
+              ],
+              "height": [
+                -1.9,
+                11.3
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -119,
+                  -156,
+                  -109,
+                  -147
+                ],
+                [
+                  289,
+                  -92,
+                  299,
+                  -82
+                ],
+                [
+                  -7,
+                  -210,
+                  3,
+                  -200
+                ],
+                [
+                  185,
+                  -260,
+                  195,
+                  -250
+                ],
+                [
+                  266,
+                  17,
+                  276,
+                  27
+                ]
+              ],
+              "height": [
+                1,
+                8
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -146,
+                  -139,
+                  -128,
+                  -120
+                ]
+              ],
+              "height": [
+                -4.1,
+                -1.2
+              ]
+            }
+          ],
           "id": "Second_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/reserve/2nd/{z}/{x}/{y}.png"
@@ -584787,6 +585332,92 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -17,
+                  164,
+                  1,
+                  199
+                ]
+              ],
+              "height": [
+                25.7,
+                29.3
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -177,
+                  26,
+                  -77,
+                  106
+                ]
+              ],
+              "height": [
+                -0.64,
+                2.23
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -177,
+                  -37,
+                  -104,
+                  5
+                ]
+              ],
+              "height": [
+                -0.64,
+                2.23
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -85,
+                  -47,
+                  -47,
+                  -18
+                ]
+              ],
+              "height": [
+                -0.6,
+                10
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -78,
+                  -13,
+                  -19.91,
+                  39
+                ]
+              ],
+              "height": [
+                -2.2,
+                2.14
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -2,
+                  -50,
+                  99,
+                  7
+                ]
+              ],
+              "height": [
+                -1.1,
+                1.6
+              ]
+            }
+          ],
           "id": "Third_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/reserve/3rd/{z}/{x}/{y}.png"
@@ -586710,6 +587341,64 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -17,
+                  164,
+                  1,
+                  199
+                ]
+              ],
+              "height": [
+                29.3,
+                36
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -177,
+                  26,
+                  -77,
+                  106
+                ]
+              ],
+              "height": [
+                2.23,
+                5
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -78,
+                  -13,
+                  -19.91,
+                  39
+                ]
+              ],
+              "height": [
+                2.15,
+                6.6
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -2,
+                  -50,
+                  99,
+                  7
+                ]
+              ],
+              "height": [
+                1.6,
+                4.7
+              ]
+            }
+          ],
           "id": "Fourth_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/reserve/4th/{z}/{x}/{y}.png"
@@ -588563,6 +589252,22 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  -177,
+                  26,
+                  -77,
+                  106
+                ]
+              ],
+              "height": [
+                5,
+                9.5
+              ]
+            }
+          ],
           "id": "Fifth_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/reserve/5th/{z}/{x}/{y}.png"
@@ -588592,6 +589297,90 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  18,
+                  -208,
+                  128,
+                  -33
+                ],
+                [
+                  -176,
+                  -42,
+                  -46,
+                  127
+                ]
+              ],
+              "height": [
+                -10000,
+                -7.27
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -124,
+                  124,
+                  -40,
+                  189
+                ]
+              ],
+              "height": [
+                -10000,
+                -12
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -65,
+                  173,
+                  23,
+                  189
+                ]
+              ],
+              "height": [
+                -10000,
+                18
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  19,
+                  -196,
+                  74,
+                  -149
+                ]
+              ],
+              "height": [
+                -7.27,
+                -3.2
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  -274,
+                  -79,
+                  -246,
+                  -53
+                ],
+                [
+                  126,
+                  -26,
+                  238,
+                  45
+                ]
+              ],
+              "height": [
+                -11,
+                -4.6
+              ]
+            }
+          ],
           "id": "Bunkers",
           "manual": true
         }
@@ -680637,6 +681426,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         }
@@ -777625,6 +778415,7 @@
           ],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         },
@@ -777653,6 +778444,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                10,
+                15
+              ]
+            }
+          ],
           "id": "Second_Floor",
           "manual": true
         },
@@ -777681,6 +778481,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                15,
+                20
+              ]
+            }
+          ],
           "id": "Third_Floor",
           "manual": true
         },
@@ -777709,6 +778518,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                20,
+                25
+              ]
+            }
+          ],
           "id": "Fourth_Floor",
           "manual": true
         },
@@ -777737,6 +778555,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                25,
+                10000
+              ]
+            }
+          ],
           "id": "Fifth_Floor",
           "manual": true
         },
@@ -777765,6 +778592,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                -10000,
+                -6
+              ]
+            }
+          ],
           "id": "Underground_Level",
           "manual": true
         }
@@ -947325,6 +948161,7 @@
           ],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         },
@@ -947353,6 +948190,29 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                28,
+                32.3
+              ]
+            },
+            {
+              "bounds": [
+                [
+                  91,
+                  216,
+                  98,
+                  228
+                ]
+              ],
+              "height": [
+                26,
+                31
+              ]
+            }
+          ],
           "id": "Second_Floor",
           "manual": true
         },
@@ -947381,6 +948241,15 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                32.3,
+                1000
+              ]
+            }
+          ],
           "id": "Third_Floor",
           "manual": true
         },
@@ -947409,6 +948278,28 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
+          "extents": [
+            {
+              "bounds": [
+                [
+                  43,
+                  -100,
+                  117,
+                  190
+                ],
+                [
+                  117,
+                  49,
+                  143,
+                  80
+                ]
+              ],
+              "height": [
+                -1000,
+                21
+              ]
+            }
+          ],
           "id": "Underground_Level",
           "manual": true
         }
@@ -1004924,6 +1005815,7 @@
           ],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Ground_Level",
           "manual": true
         }
@@ -1012854,9 +1013746,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            -10000,
-            3.6
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                -10000,
+                3.5
+              ]
+            }
           ],
           "id": "Control_Room",
           "manual": true,
@@ -1014718,9 +1015615,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            3.6,
-            5.7
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                3.6,
+                5.6
+              ]
+            }
           ],
           "id": "Engine_Room",
           "manual": true,
@@ -1016638,9 +1017540,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            5.7,
-            8.8
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                5.7,
+                8.7
+              ]
+            }
           ],
           "id": "Engine_Room_Upper",
           "manual": true,
@@ -1018558,9 +1019465,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            8.8,
-            11.9
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                8.8,
+                11.8
+              ]
+            }
           ],
           "id": "Fuel_Pumps_Lower",
           "manual": true,
@@ -1020478,9 +1021390,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            11.9,
-            15
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                11.9,
+                14.9
+              ]
+            }
           ],
           "id": "Fuel_Pumps",
           "manual": true,
@@ -1022685,9 +1023602,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            15,
-            18.92
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                15,
+                18.93
+              ]
+            }
           ],
           "id": "Storage_Security",
           "manual": true,
@@ -1024913,6 +1025835,15 @@
           "attachedIds": [],
           "base": true,
           "exclusive": true,
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                18.92,
+                19.56
+              ]
+            }
+          ],
           "id": "Infirmary",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/06_infirmary/{z}/{x}/{y}.png"
@@ -1027109,9 +1028040,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            19.57,
-            22.2
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                19.57,
+                22.1
+              ]
+            }
           ],
           "id": "Helipad",
           "manual": true,
@@ -1029197,9 +1030133,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            22.2,
-            25.3
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                22.2,
+                25.2
+              ]
+            }
           ],
           "id": "Gym_Canteen",
           "manual": true,
@@ -1031271,9 +1032212,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            25.3,
-            28.3
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                25.3,
+                28.2
+              ]
+            }
           ],
           "id": "Accommodation_Lower",
           "manual": true,
@@ -1033275,9 +1034221,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            28.3,
-            31.4
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                28.3,
+                31.3
+              ]
+            }
           ],
           "id": "Accommodation_Mid",
           "manual": true,
@@ -1035265,9 +1036216,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            31.4,
-            34.5
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                31.4,
+                34.4
+              ]
+            }
           ],
           "id": "Accommodation_Upper",
           "manual": true,
@@ -1037255,9 +1038211,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            34.5,
-            37.6
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                34.5,
+                37.5
+              ]
+            }
           ],
           "id": "Officers_Deck",
           "manual": true,
@@ -1039189,9 +1040150,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            37.6,
-            40.7
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                37.6,
+                40.6
+              ]
+            }
           ],
           "id": "Stairs_Blocked",
           "manual": true,
@@ -1041081,9 +1042047,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            40.7,
-            43.8
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                40.7,
+                43.7
+              ]
+            }
           ],
           "id": "Bridge",
           "manual": true,
@@ -1042973,9 +1043944,14 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            43.8,
-            10000
+          "extents": [
+            {
+              "bounds": [],
+              "height": [
+                43.8,
+                10000
+              ]
+            }
           ],
           "id": "Bridge_Roof",
           "manual": true,
@@ -1055218,6 +1056194,7 @@
           "attachedIds": [],
           "base": true,
           "exclusive": false,
+          "extents": [],
           "id": "Main_Level",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/labyrinth/main/{z}/{x}/{y}.png"
@@ -1083513,7 +1084490,7 @@
     },
     {
       "path": "evidence/calibration.json",
-      "sha256": "0eb38479d6aeff22890404685fa1e4e0fbe4881f5ffeeef94abf6f608af91818"
+      "sha256": "5e2d8d8b52c51bf47a2e1bc572cde71dd14b6074a882291a0034219f78ec6ebb"
     },
     {
       "path": "evidence/customs/Customs.svg",
@@ -1083573,7 +1084550,7 @@
     },
     {
       "path": "evidence/sources.json",
-      "sha256": "041dd8afa34d9749a61840726b7ae3c9d5db3fc60bc8750b245acb12d03b8171"
+      "sha256": "3fa2f9c9610bce3a76418bf2b839eb5d960c5d40ddcddd5c73da30b080e06d49"
     },
     {
       "path": "evidence/streetsoftarkov/StreetsOfTarkov.svg",
@@ -1083620,9 +1084597,9 @@
       "sha256": "b356ded5e763e81edc1710d58c2fc7943f6ad6f48cd261c83dd0a192f45f0b9a"
     }
   ],
-  "preparationVersion": 4,
+  "preparationVersion": 5,
   "schemaVersion": 1,
-  "sourceGeneration": "041dd8afa34d9749a61840726b7ae3c9d5db3fc60bc8750b245acb12d03b8171",
+  "sourceGeneration": "3fa2f9c9610bce3a76418bf2b839eb5d960c5d40ddcddd5c73da30b080e06d49",
   "sourceLock": {
     "metadataBlob": "4d7f7bbe8c233027b735ccb37b9b3ee48737163f",
     "metadataRepositoryRevision": "ef62766bbd7ffb294c7184f9b8bfe8ed0f18320e",
@@ -1083661,9 +1084638,9 @@
     "labyrinth"
   ],
   "toolchain": {
-    "image": "4.12.0",
-    "vector_graphics": "1.2.5",
-    "vector_graphics_codec": "1.1.13",
+    "image": "4.13.1",
+    "vector_graphics": "1.3.1",
+    "vector_graphics_codec": "1.2.0",
     "vector_graphics_compiler": "1.3.4",
     "xml": "6.6.1"
   },

@@ -81,7 +81,7 @@ class PreparedMapPackLoader {
       throw const FormatException('Unsupported prepared manifest version.');
     }
     final preparationVersion = manifest['preparationVersion'];
-    if (preparationVersion != 4) {
+    if (preparationVersion != preparedPackVersion) {
       throw FormatException(
         'Unsupported prepared map version $preparationVersion.',
       );

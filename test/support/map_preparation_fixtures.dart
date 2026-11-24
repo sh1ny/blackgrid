@@ -276,6 +276,7 @@ Map<String, dynamic> preparedMapMetadataFixture(String sourceKey) {
   };
   final order = <String>[];
   for (final floor in raw['floors'] as List) {
+    floor['extents'] = <Object>[];
     if (raw['kind'] == 'vector' && floor['sourceTileUrl'] == null) {
       final ids =
           (floor['componentIds'] as List?) ??

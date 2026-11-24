@@ -999,6 +999,7 @@ PreparedMap _map(String id) => PreparedMap.fromJson({
       'manual': true,
       'exclusive': false,
       'attachedIds': <String>[],
+      'extents': [],
       'artwork': {
         'tiles': [
           {'x': 0, 'y': 0, 'empty': false, 'path': 'base.png'},

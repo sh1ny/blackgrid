@@ -1059,6 +1059,63 @@ void main() {
   });
 
   test(
+    'spatial marker floors govern paint and hits independently of Auto',
+    () async {
+      Map<String, dynamic> marker(String id, int coordinate, {String? floor}) =>
+          {
+            'id': id,
+            'name': id,
+            'category': 'extracts',
+            'position': {'x': coordinate, 'z': coordinate, 'height': 4},
+            'floorId': ?floor,
+            'details': <String, Object?>{},
+            'source': {'url': 'fixture'},
+          };
+      final reserve = _map(
+        'reserve',
+        markers: [
+          marker('inside', 4),
+          marker('outside', 26),
+          marker('explicit', 11, floor: 'Base'),
+        ],
+      );
+      final upper = (reserve['floors'] as List)[1] as Map;
+      upper['extents'] = [
+        {
+          'height': [3, 5],
+          'bounds': [
+            [0, 0, 16, 16],
+          ],
+        },
+      ];
+      final controller = _controllerFor(
+        preparedPackBytes(
+          preparedPackManifest(maps: [reserve]),
+          other: (path) async => _picture(),
+        ),
+      );
+      addTearDown(controller.dispose);
+      controller.updateViewport(const Size(320, 320));
+      await controller.initialize(selectedMapId: 'reserve');
+      Iterable<String> visibleIds() =>
+          controller.visibleMarkers().map((projection) => projection.marker.id);
+      expect(visibleIds(), unorderedEquals(['outside', 'explicit']));
+
+      controller.toggleFloor('Upper');
+      expect(controller.automaticFloorFollowing, isFalse);
+      expect(visibleIds(), unorderedEquals(['inside', 'outside', 'explicit']));
+      final anchor = controller
+          .visibleMarkers()
+          .singleWhere((projection) => projection.marker.id == 'inside')
+          .viewportPoint;
+      expect(controller.hitTestMarker(anchor)?.marker.id, 'inside');
+      controller.toggleFloor('Upper');
+      expect(visibleIds(), unorderedEquals(['outside', 'explicit']));
+      expect(controller.hitTestMarker(anchor), isNull);
+    },
+  );
+
+  test(
     'category/floor query and hit logic share cached viewport projections',
     () async {
       final controller = _controller();
@@ -1092,13 +1149,12 @@ void main() {
         controller.hitTestMarker(ViewportPoint(anchor.x + 19, anchor.y)),
         isNull,
       );
-      expect(controller.applyOfflineHeight(4), isFalse);
+      controller.setPlayerSample(GamePoint(0, 0, height: 4));
       expect(controller.floorSelection!.selectedOverlayIds, isEmpty);
       await controller.selectPersistedMap('icebreaker');
-      expect(controller.applyOfflineHeight(null), isFalse);
-      expect(controller.applyOfflineHeight(3), isTrue);
+      controller.setPlayerSample(GamePoint(0, 0, height: 3));
       expect(controller.floorSelection!.selectedOverlayIds, {'Upper'});
-      expect(controller.applyOfflineHeight(5), isTrue);
+      controller.setPlayerSample(GamePoint(0, 0, height: 5));
       expect(controller.floorSelection!.selectedOverlayIds, isEmpty);
     },
   );
@@ -1534,6 +1590,7 @@ Map<String, dynamic> _map(
       'manual': true,
       'exclusive': exclusive,
       'attachedIds': [],
+      'extents': [],
       'artwork': {
         'components': [
           {
@@ -1551,7 +1608,13 @@ Map<String, dynamic> _map(
       'manual': true,
       'exclusive': exclusive,
       'attachedIds': [],
-      'heightBand': [3, 5],
+      'extents': [
+        if (exclusive)
+          {
+            'height': [3, 5],
+            'bounds': [],
+          },
+      ],
       'artwork': {
         'components': [
           {

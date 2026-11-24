@@ -7,6 +7,8 @@
 /// `validateCandidate` repeats both on the candidate's own evidence.
 library;
 
+import 'layer_extents.dart';
+
 /// The default label rotation in degrees when the source gives none.
 const defaultLabelRotation = 0;
 
@@ -335,8 +337,13 @@ void checkBandTable(
         problems.add('$mapId: floor ${band.floorId} is not a floor of the map');
         continue;
       }
-      final resolved = _resolve(band.source, upstream, '${local['kind']}');
       final label = '$mapId ${band.floorId}';
+      final resolved = _resolve(
+        band.source,
+        upstream,
+        '${local['kind']}',
+        label,
+      );
       if (resolved == null) {
         problems.add('$label: the metadata has no ${_describe(band.source)}');
         continue;
@@ -382,6 +389,7 @@ String _describe(LabelBandSource source) => switch (source) {
   LabelBandSource source,
   Map<String, dynamic> upstream,
   String kind,
+  String context,
 ) {
   String? identity(Map node) => kind == 'vector' && node['svgLayer'] is String
       ? node['svgLayer'] as String
@@ -400,10 +408,13 @@ String _describe(LabelBandSource source) => switch (source) {
     case LayerExtent(:final name, :final extentIndex):
       for (final layer in (upstream['layers'] as List? ?? const [])) {
         if (layer is! Map || layer['name'] != name) continue;
-        final extents = layer['extents'] as List? ?? const [];
+        final where = '$context: layer "$name" extent #$extentIndex';
+        final extents = sourceLayerExtents(layer, where);
         if (extentIndex >= extents.length) return null;
-        final band = pair((extents[extentIndex] as Map)['height']);
-        return band == null ? null : (band: band, identity: identity(layer));
+        return (
+          band: sourceExtentHeight(extents[extentIndex], where),
+          identity: identity(layer),
+        );
       }
       return null;
   }
