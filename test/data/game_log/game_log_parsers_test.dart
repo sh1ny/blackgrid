@@ -5,6 +5,7 @@ import 'package:blackgrid/data/game_log/game_locations.dart';
 import 'package:blackgrid/data/game_log/log_file_tail.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
+import 'package:blackgrid/domain/settings.dart';
 import 'package:test/test.dart';
 
 const _app = '2026-10-28 19:41:06.991|1.2.5.0.48146|Info|application|';
@@ -132,6 +133,68 @@ void main() {
       expect(mapOf('laboratory_event_preset'), 'thelab');
     });
 
+    // Scene names as the game logs them (owner's logs, #129): a Terminal
+    // transit loads `terminal_preset`, not the bare `terminal`.
+    test('Terminal and Labyrinth preset scenes have their map', () {
+      SceneLoaded scene(String preset) =>
+          _event(
+                LogFile.application,
+                '${_app}scene preset path:maps/$preset.bundle '
+                'rcid:$preset.scenespreset.asset',
+              )!
+              as SceneLoaded;
+      expect(scene('terminal_preset').mapId, 'terminal');
+      expect(scene('labyrinth_preset').mapId, 'labyrinth');
+      expect(scene('terminal').mapId, 'terminal');
+      expect(scene('labyrinth').mapId, 'labyrinth');
+    });
+
+    test('scene names cover every supported map', () {
+      const scenes = [
+        'factory_day_preset',
+        'customs_preset',
+        'woods_preset',
+        'shoreline_preset',
+        'shopping_mall',
+        'laboratory_preset',
+        'rezerv_base_preset',
+        'lighthouse_preset',
+        'city_preset',
+        'sandbox_preset',
+        'terminal_preset',
+        'icebreaker',
+        'labyrinth_preset',
+      ];
+      final reached = {for (final scene in scenes) sceneMapId(scene)};
+      expect(reached, containsAll(supportedMaps));
+    });
+
+    test('transit reconnect into Terminal or Labyrinth has its map', () {
+      String? mapOf(String location) =>
+          (_event(
+                    LogFile.application,
+                    '${_app}Transit reconnect status:MatchWait raidMode:Online '
+                    'location:$location settingsLocal:False',
+                  )!
+                  as RaidRejoined)
+              .mapId;
+      expect(mapOf('Terminal'), 'terminal');
+      expect(mapOf('terminal'), 'terminal');
+      expect(mapOf('Labyrinth'), 'labyrinth');
+    });
+
+    test('transit reconnect into an unknown location has no map', () {
+      final event = _event(
+        LogFile.application,
+        '${_app}Transit reconnect status:MatchWait raidMode:Online '
+        'location:nowhere settingsLocal:False',
+      );
+      expect(event, isA<RaidRejoined>());
+      final rejoined = event! as RaidRejoined;
+      expect(rejoined.location, 'nowhere');
+      expect(rejoined.mapId, isNull);
+    });
+
     test('rejoin locations are case-insensitive and cover every map', () {
       const expected = {
         'bigmap': 'customs',
@@ -149,11 +212,14 @@ void main() {
         'factory4_night': 'factory',
         'factory_event': 'factory',
         'Icebreaker': 'icebreaker',
+        'Terminal': 'terminal',
+        'Labyrinth': 'labyrinth',
         'BIGMAP': 'customs',
       };
       for (final MapEntry(:key, :value) in expected.entries) {
         expect(rejoinLocationMapId(key), value, reason: key);
       }
+      expect(expected.values.toSet(), containsAll(supportedMaps));
       expect(rejoinLocationMapId('nowhere'), isNull);
     });
 
