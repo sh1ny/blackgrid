@@ -381,13 +381,18 @@ void main() {
           try {
             final pixels = await _render(scene, 32);
             expect(_rgba(pixels, 32, 2, 2), [255, 0, 0, 255]);
-            // Attached First_Floor paints last. A selected overlay fades the
-            // base with its attached layers (#130): 20% blue over red.
+            // Attached First_Floor paints last within the base. A selected
+            // overlay fades the base with its attached layers and paints over
+            // them (#130).
+            final overlaid = selected.selectedOverlayIds.isNotEmpty;
             expect(
               _rgba(pixels, 32, 8, 8),
-              selected.selectedOverlayIds.isEmpty
-                  ? [0, 0, 255, 255]
-                  : [204, 0, 51, 255],
+              overlaid ? [255, 0, 0, 255] : [0, 0, 255, 255],
+            );
+            // Only First_Floor covers x 16..20: 20% blue, premultiplied.
+            expect(
+              _rgba(pixels, 32, 18, 8),
+              overlaid ? [0, 0, 51, 51] : [0, 0, 255, 255],
             );
             expect(_rgba(pixels, 32, 24, 24), [0, 0, 0, 0]);
           } finally {
@@ -581,6 +586,50 @@ void main() {
     },
   );
 
+  // #130: the pack's layer order can put the base after a chosen floor (on
+  // Factory, Basement comes before Ground_Floor; on Streets, First_Floor comes
+  // after Underground_Level). The faded base must still stay under it.
+  for (final key in ['reserve', 'streets-of-tarkov']) {
+    test(
+      '$key: a chosen floor stays over a base later in layer order',
+      () async {
+        final raw = preparedMapMetadataFixture(key);
+        raw['layerOrder'] = (raw['layerOrder'] as List).reversed.toList();
+        final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+        final base = map.floorPolicy.base.id;
+        expect(map.components.last.floorId, base);
+        final scenes = _FloorFadeScenes(map);
+        addTearDown(scenes.dispose);
+        final vectorFloors = [
+          for (final floor in map.floorPolicy.overlays)
+            if (map.components.any((c) => c.floorId == floor.id)) floor.id,
+        ];
+        expect(vectorFloors, isNotEmpty);
+        for (final floor in vectorFloors) {
+          final pixels = await scenes.render(
+            map.floorPolicy.reset().select(floor),
+          );
+          for (final x in [
+            _FloorFadeScenes.attachedX,
+            _FloorFadeScenes.baseX,
+          ]) {
+            expect(_rgba(pixels, 32, x, 0), [
+              0,
+              255,
+              0,
+              255,
+            ], reason: '$floor x=$x');
+          }
+          expect(
+            _rgba(pixels, 32, _FloorFadeScenes.baseX, 16)[3],
+            inExclusiveRange(0, 128),
+            reason: floor,
+          );
+        }
+      },
+    );
+  }
+
   test('base and its attached layers alone stay at full strength', () async {
     final map = PreparedMap.fromJson(
       preparedMapMetadataFixture('streets-of-tarkov'),
@@ -675,7 +724,7 @@ void main() {
         '<rect x="4" y="4" width="4" height="4" fill="#ff0000"/>',
       ),
       'fixture/overlay.vec': _vector(
-        '<rect x="16" y="4" width="4" height="4" fill="#0000ff"/>',
+        '<rect x="16" y="4" width="2" height="4" fill="#0000ff"/>',
       ),
     };
     final owner = NativeMapResourceOwner(
@@ -693,10 +742,11 @@ void main() {
     final pixels = await _render(scene, 32);
     // The selected overlay fades the base to 20% (#130); premultiplied RGBA.
     expect(_rgba(pixels, 32, 6, 6), [51, 0, 0, 51]);
-    // Overlay is painted first despite being the second selectable floor.
-    // The base's exact dx=12, sigma=0 alpha shadow, faded with the base, is
-    // painted over it.
-    expect(_rgba(pixels, 32, 18, 6), [0, 0, 203, 255]);
+    // The faded base and its exact dx=12, sigma=0 alpha shadow paint under
+    // the selected overlay (#130), although the base is the first floor.
+    expect(_rgba(pixels, 32, 17, 6), [0, 0, 255, 255]);
+    // Where the overlay does not reach, the shadow shows, faded with the base.
+    expect(_rgba(pixels, 32, 19, 6), [0, 0, 0, 51]);
     expect(_rgba(pixels, 32, 10, 6), [0, 0, 0, 0]);
     expect(owner.pictureApproximateBytes, greaterThan(0));
     expect(owner.imageDecodedBytes, 0);
@@ -1212,8 +1262,8 @@ ByteData _json(Object value) =>
 ///
 /// The base floor's own vector draws opaque red over x 16..32, its attached
 /// layers over x 0..16, and its raster tiles are opaque everywhere. Every
-/// other floor draws only one pixel at (31, 0), so pixels in row 16 show the
-/// base alone.
+/// other floor's vector draws opaque green over row 0 only, so pixels in row
+/// 16 show the base alone and row 0 shows what is painted over the base.
 class _FloorFadeScenes {
   _FloorFadeScenes(this.map) {
     final base = map.floorPolicy.base.id;
@@ -1234,7 +1284,7 @@ class _FloorFadeScenes {
           final component = map.components.singleWhere((c) => c.path == path);
           if (component.floorId != base) {
             return _vector(
-              '<rect x="31" y="0" width="1" height="1" fill="#00ff00"/>',
+              '<rect x="0" y="0" width="32" height="1" fill="#00ff00"/>',
             );
           }
           final left = component.id == base ? 16 : 0;

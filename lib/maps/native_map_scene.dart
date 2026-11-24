@@ -286,8 +286,10 @@ class NativeMapScene {
   /// artwork or raster tiles and on vector and raster maps alike (#130). The
   /// earlier tarkov.dev rule, fading only under a tile floor drawn over SVG
   /// artwork, was rejected: it left vector floors such as Reserve Bunkers and
-  /// every Streets floor over a full-strength ground level. On an exclusive
-  /// map a selected floor hides the base, so this has nothing to fade there.
+  /// every Streets floor over a full-strength ground level. A faded base
+  /// paints before every other floor, so the pack's layer order never puts it
+  /// over the chosen floor. On an exclusive map a selected floor hides the
+  /// base, so this has nothing to fade there.
   final bool _dimBase;
   final List<_SceneTile> _tiles;
   final List<_NativeResource> _resources;
@@ -331,30 +333,53 @@ class NativeMapScene {
     canvas.scale(transform.scale);
     final crop = map.displayFrame.crop;
     canvas.translate(-crop.left, -crop.top);
-    for (final item in _pictures) {
-      final dimmed = _dimBase && item.floorId == map.floorPolicy.base.id;
-      if (dimmed) canvas.saveLayer(null, _dimPaint);
-      for (final effect in item.effects) {
-        canvas.save();
-        canvas.translate(effect.dx, effect.dy);
-        canvas.saveLayer(null, effect.paint);
-        canvas.drawPicture(item.picture);
-        canvas.restore();
+    final base = map.floorPolicy.base.id;
+    // A faded base paints before every chosen floor, whatever the pack's layer
+    // order says, so it never covers the floor the player is on (#130). Each
+    // pass keeps the pack's order among its own items.
+    if (_dimBase) {
+      for (final item in _pictures) {
+        if (item.floorId != base) continue;
+        canvas.saveLayer(null, _dimPaint);
+        _paintPicture(canvas, item);
         canvas.restore();
       }
-      canvas.drawPicture(item.picture);
-      if (dimmed) canvas.restore();
+      for (final item in _tiles) {
+        if (item.floorId != base) continue;
+        canvas.drawImageRect(
+          item.image,
+          item.source,
+          item.destination,
+          _dimTilePaint,
+        );
+      }
+    }
+    for (final item in _pictures) {
+      if (_dimBase && item.floorId == base) continue;
+      _paintPicture(canvas, item);
     }
     for (final item in _tiles) {
-      final dimmed = _dimBase && item.floorId == map.floorPolicy.base.id;
+      if (_dimBase && item.floorId == base) continue;
       canvas.drawImageRect(
         item.image,
         item.source,
         item.destination,
-        dimmed ? _dimTilePaint : _tilePaint,
+        _tilePaint,
       );
     }
     canvas.restore();
+  }
+
+  static void _paintPicture(ui.Canvas canvas, _ScenePicture item) {
+    for (final effect in item.effects) {
+      canvas.save();
+      canvas.translate(effect.dx, effect.dy);
+      canvas.saveLayer(null, effect.paint);
+      canvas.drawPicture(item.picture);
+      canvas.restore();
+      canvas.restore();
+    }
+    canvas.drawPicture(item.picture);
   }
 
   /// Releases this demand's leases without disposing resources used elsewhere.
