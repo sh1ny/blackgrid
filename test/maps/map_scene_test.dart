@@ -381,7 +381,19 @@ void main() {
           try {
             final pixels = await _render(scene, 32);
             expect(_rgba(pixels, 32, 2, 2), [255, 0, 0, 255]);
-            expect(_rgba(pixels, 32, 8, 8), [0, 0, 255, 255]);
+            // Attached First_Floor paints last within the base. A selected
+            // overlay fades the base with its attached layers and paints over
+            // them (#130).
+            final overlaid = selected.selectedOverlayIds.isNotEmpty;
+            expect(
+              _rgba(pixels, 32, 8, 8),
+              overlaid ? [255, 0, 0, 255] : [0, 0, 255, 255],
+            );
+            // Only First_Floor covers x 16..20: 20% blue, premultiplied.
+            expect(
+              _rgba(pixels, 32, 18, 8),
+              overlaid ? [0, 0, 51, 51] : [0, 0, 255, 255],
+            );
             expect(_rgba(pixels, 32, 24, 24), [0, 0, 0, 0]);
           } finally {
             scene.dispose();
@@ -492,64 +504,205 @@ void main() {
     'customs': {'Fourth_Floor'},
     'reserve': {'Second_Floor', 'Third_Floor', 'Fourth_Floor', 'Fifth_Floor'},
   }.entries) {
-    test('${entry.key} abstract SVG draws tile-only floors over a dimmed base', () async {
-      // Synthetic artwork exercises loading and composition only; overlay
-      // placement is covered against tarkov.dev's CRS in its own test.
-      final raw = preparedMapMetadataFixture(entry.key);
-      final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
-      expect(map.kind, 'vector');
-      expect(map.tiles.map((tile) => tile.floorId).toSet(), entry.value);
-      final loaded = <String>[];
-      final owner = NativeMapResourceOwner(
-        PreparedMapPackLoader(
-          loadBytes: (path) async {
-            loaded.add(path);
-            return path.endsWith('.png')
-                ? ByteData.sublistView(
-                    image.encodePng(
-                      image.Image(width: 256, height: 256, numChannels: 4),
-                    ),
-                  )
-                : _vector(
-                    '<rect x="0" y="0" width="32" height="32" fill="#ff0000"/>',
-                  );
-          },
-        ),
-      );
-      addTearDown(owner.dispose);
-      Future<int> baseAlpha(MapFloorSelection selection) async {
-        final scene = (await owner.loadScene(
-          map,
-          selection,
-          MapViewTransform(),
-          const ui.Size(32, 32),
-          isCurrent: () => true,
-        ))!;
-        try {
-          return _rgba(await _render(scene, 32), 32, 16, 16)[3];
-        } finally {
-          scene.dispose();
+    test(
+      '${entry.key} abstract SVG keeps raster tiles to its tile-only floors',
+      () async {
+        // Synthetic artwork exercises loading only; overlay placement is
+        // covered against tarkov.dev's CRS in its own test.
+        final map = PreparedMap.fromJson(
+          preparedMapMetadataFixture(entry.key),
+          assetRoot: 'fixture/',
+        );
+        expect(map.kind, 'vector');
+        expect(map.tiles.map((tile) => tile.floorId).toSet(), entry.value);
+        final scenes = _FloorFadeScenes(map);
+        addTearDown(scenes.dispose);
+        await scenes.baseAlpha(map.floorPolicy.reset());
+        expect(scenes.loadedTiles, isEmpty);
+        for (final floor in map.floorPolicy.overlays) {
+          scenes.loaded.clear();
+          await scenes.baseAlpha(map.floorPolicy.reset().select(floor.id));
+          if (entry.value.contains(floor.id)) {
+            expect(
+              map.tiles.where((tile) => tile.floorId == floor.id),
+              isNotEmpty,
+            );
+          } else {
+            expect(scenes.loadedTiles, isEmpty, reason: floor.id);
+          }
         }
-      }
+      },
+    );
+  }
 
-      expect(await baseAlpha(map.floorPolicy.reset()), 255);
-      expect(loaded.where((path) => path.endsWith('.png')), isEmpty);
-      for (final floor in map.floorPolicy.overlays) {
-        loaded.clear();
-        final alpha = await baseAlpha(map.floorPolicy.reset().select(floor.id));
-        if (entry.value.contains(floor.id)) {
-          expect(alpha, inExclusiveRange(0, 128));
-          expect(
-            map.tiles.where((tile) => tile.floorId == floor.id),
-            isNotEmpty,
+  // #130: a chosen floor fades the base whatever it is drawn with. Base
+  // artwork is opaque; overlay artwork stays clear of the probe pixel, so the
+  // probe shows only how strongly the base is drawn.
+  Future<Map<String, int>> fadedBaseAlphas(String key) async {
+    final map = PreparedMap.fromJson(
+      preparedMapMetadataFixture(key),
+      assetRoot: 'fixture/',
+    );
+    expect(map.floorPolicy.exclusive, isFalse);
+    expect(map.floorPolicy.overlays, isNotEmpty);
+    final scenes = _FloorFadeScenes(map);
+    try {
+      expect(await scenes.baseAlpha(map.floorPolicy.reset()), 255);
+      return {
+        for (final floor in map.floorPolicy.overlays)
+          floor.id: await scenes.baseAlpha(
+            map.floorPolicy.reset().select(floor.id),
+          ),
+      };
+    } finally {
+      scenes.dispose();
+    }
+  }
+
+  for (final key in ['reserve', 'streets-of-tarkov', 'the-lab']) {
+    test('$key: every non-base floor fades the base', () async {
+      final alphas = await fadedBaseAlphas(key);
+      for (final MapEntry(key: floor, value: alpha) in alphas.entries) {
+        expect(alpha, inExclusiveRange(0, 128), reason: floor);
+      }
+      expect(
+        alphas.values.toSet(),
+        hasLength(1),
+        reason: 'one fade strength for every floor: $alphas',
+      );
+    });
+  }
+
+  test(
+    'vector, tile and raster floors fade the base at one strength',
+    () async {
+      final reserve = await fadedBaseAlphas('reserve');
+      final labs = await fadedBaseAlphas('the-lab');
+      // Bunkers is vector artwork, Second_Floor tiles over vector artwork, and
+      // Labs a raster map.
+      expect(reserve['Bunkers'], inExclusiveRange(0, 128));
+      expect(reserve['Second_Floor'], reserve['Bunkers']);
+      expect(labs['Second_Level'], reserve['Bunkers']);
+    },
+  );
+
+  // #130: the pack's layer order can put the base after a chosen floor (on
+  // Factory, Basement comes before Ground_Floor; on Streets, First_Floor comes
+  // after Underground_Level). The faded base must still stay under it.
+  for (final key in ['reserve', 'streets-of-tarkov']) {
+    test(
+      '$key: a chosen floor stays over a base later in layer order',
+      () async {
+        final raw = preparedMapMetadataFixture(key);
+        raw['layerOrder'] = (raw['layerOrder'] as List).reversed.toList();
+        final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+        final base = map.floorPolicy.base.id;
+        expect(map.components.last.floorId, base);
+        final scenes = _FloorFadeScenes(map);
+        addTearDown(scenes.dispose);
+        final vectorFloors = [
+          for (final floor in map.floorPolicy.overlays)
+            if (map.components.any((c) => c.floorId == floor.id)) floor.id,
+        ];
+        expect(vectorFloors, isNotEmpty);
+        for (final floor in vectorFloors) {
+          final pixels = await scenes.render(
+            map.floorPolicy.reset().select(floor),
           );
-        } else {
-          expect(alpha, 255);
-          expect(loaded.where((path) => path.endsWith('.png')), isEmpty);
+          for (final x in [
+            _FloorFadeScenes.attachedX,
+            _FloorFadeScenes.baseX,
+          ]) {
+            expect(_rgba(pixels, 32, x, 0), [
+              0,
+              255,
+              0,
+              255,
+            ], reason: '$floor x=$x');
+          }
+          expect(
+            _rgba(pixels, 32, _FloorFadeScenes.baseX, 16)[3],
+            inExclusiveRange(0, 128),
+            reason: floor,
+          );
         }
+      },
+    );
+  }
+
+  // #130: raster overlay tiles stay over the faded base, at full strength,
+  // even when the base's tiles come last in the pack's tile order.
+  for (final baseLast in [false, true]) {
+    test('the-lab: raster overlay tiles stay over the faded base'
+        '${baseLast ? ' listed last' : ''}', () async {
+      final raw = preparedMapMetadataFixture('the-lab');
+      if (baseLast) {
+        final floors = (raw['floors'] as List)
+          ..sort(
+            (a, b) => (a['base'] == true ? 1 : 0) - (b['base'] == true ? 1 : 0),
+          );
+        expect(floors.last['base'], isTrue);
+      }
+      final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+      final base = map.floorPolicy.base.id;
+      expect(map.components, isEmpty, reason: 'only tiles draw on Labs');
+      expect(map.tiles.last.floorId == base, baseLast);
+      final scenes = _FloorFadeScenes(map);
+      addTearDown(scenes.dispose);
+      for (final floor in map.floorPolicy.overlays) {
+        final pixels = await scenes.render(
+          map.floorPolicy.reset().select(floor.id),
+        );
+        expect(_rgba(pixels, 32, 0, 0), [0, 0, 255, 255], reason: floor.id);
+        expect(_rgba(pixels, 32, _FloorFadeScenes.baseX, 16), [
+          51,
+          0,
+          0,
+          51,
+        ], reason: floor.id);
       }
     });
   }
+
+  test('base and its attached layers alone stay at full strength', () async {
+    final map = PreparedMap.fromJson(
+      preparedMapMetadataFixture('streets-of-tarkov'),
+      assetRoot: 'fixture/',
+    );
+    expect(map.floorPolicy.base.attachedLayerIds, ['First_Floor']);
+    final scenes = _FloorFadeScenes(map);
+    addTearDown(scenes.dispose);
+    final base = await scenes.render(map.floorPolicy.reset());
+    expect(_rgba(base, 32, _FloorFadeScenes.baseX, 16)[3], 255);
+    expect(_rgba(base, 32, _FloorFadeScenes.attachedX, 16)[3], 255);
+    final faded = await scenes.render(
+      map.floorPolicy.reset().select('Second_Floor'),
+    );
+    expect(
+      _rgba(faded, 32, _FloorFadeScenes.attachedX, 16)[3],
+      inExclusiveRange(0, 128),
+      reason: 'an attached layer fades with its base',
+    );
+  });
+
+  test(
+    'icebreaker: a chosen floor hides the base instead of fading it',
+    () async {
+      final map = PreparedMap.fromJson(
+        preparedMapMetadataFixture('icebreaker'),
+        assetRoot: 'fixture/',
+      );
+      expect(map.floorPolicy.exclusive, isTrue);
+      final scenes = _FloorFadeScenes(map);
+      addTearDown(scenes.dispose);
+      expect(await scenes.baseAlpha(map.floorPolicy.reset()), 255);
+      final other = map.floorPolicy.overlays.first;
+      expect(
+        await scenes.baseAlpha(map.floorPolicy.reset().select(other.id)),
+        0,
+      );
+    },
+  );
 
   test('Labyrinth native raster has one scene and no inferred automatic height bands', () async {
     final raw = preparedMapMetadataFixture('the-labyrinth');
@@ -605,7 +758,7 @@ void main() {
         '<rect x="4" y="4" width="4" height="4" fill="#ff0000"/>',
       ),
       'fixture/overlay.vec': _vector(
-        '<rect x="16" y="4" width="4" height="4" fill="#0000ff"/>',
+        '<rect x="16" y="4" width="2" height="4" fill="#0000ff"/>',
       ),
     };
     final owner = NativeMapResourceOwner(
@@ -621,10 +774,13 @@ void main() {
     ))!;
     addTearDown(scene.dispose);
     final pixels = await _render(scene, 32);
-    expect(_rgba(pixels, 32, 6, 6), [255, 0, 0, 255]);
-    // Overlay is painted first despite being the second selectable floor.
-    // The base's exact dx=12, sigma=0 alpha shadow is painted over it.
-    expect(_rgba(pixels, 32, 18, 6), [0, 0, 0, 255]);
+    // The selected overlay fades the base to 20% (#130); premultiplied RGBA.
+    expect(_rgba(pixels, 32, 6, 6), [51, 0, 0, 51]);
+    // The faded base and its exact dx=12, sigma=0 alpha shadow paint under
+    // the selected overlay (#130), although the base is the first floor.
+    expect(_rgba(pixels, 32, 17, 6), [0, 0, 255, 255]);
+    // Where the overlay does not reach, the shadow shows, faded with the base.
+    expect(_rgba(pixels, 32, 19, 6), [0, 0, 0, 51]);
     expect(_rgba(pixels, 32, 10, 6), [0, 0, 0, 0]);
     expect(owner.pictureApproximateBytes, greaterThan(0));
     expect(owner.imageDecodedBytes, 0);
@@ -1135,6 +1291,86 @@ Map<String, dynamic> _calibratedRasterMap(String sourceKey) {
 
 ByteData _json(Object value) =>
     ByteData.sublistView(Uint8List.fromList(utf8.encode(jsonEncode(value))));
+
+/// Loads scenes of [map] with synthetic artwork for fade checks.
+///
+/// The base floor's own vector draws opaque red over x 16..32, its attached
+/// layers over x 0..16, and its raster tiles are opaque everywhere. Every
+/// other floor's vector draws opaque green over row 0 only, and its tiles
+/// opaque blue over their top rows, so pixels in row 16 show the base alone
+/// and row 0 shows what is painted over the base, and by which kind.
+class _FloorFadeScenes {
+  _FloorFadeScenes(this.map) {
+    final base = map.floorPolicy.base.id;
+    _owner = NativeMapResourceOwner(
+      PreparedMapPackLoader(
+        loadBytes: (path) async {
+          loaded.add(path);
+          if (path.endsWith('.png')) {
+            final opaque = map.tiles.any(
+              (tile) => tile.path == path && tile.floorId == base,
+            );
+            final pixels = image.Image(width: 256, height: 256, numChannels: 4);
+            if (opaque) {
+              image.fill(pixels, color: image.ColorRgba8(255, 0, 0, 255));
+            } else {
+              image.fillRect(
+                pixels,
+                x1: 0,
+                y1: 0,
+                x2: 255,
+                y2: 7,
+                color: image.ColorRgba8(0, 0, 255, 255),
+              );
+            }
+            return ByteData.sublistView(image.encodePng(pixels));
+          }
+          final component = map.components.singleWhere((c) => c.path == path);
+          if (component.floorId != base) {
+            return _vector(
+              '<rect x="0" y="0" width="32" height="1" fill="#00ff00"/>',
+            );
+          }
+          final left = component.id == base ? 16 : 0;
+          return _vector(
+            '<rect x="$left" y="0" width="16" height="32" fill="#ff0000"/>',
+          );
+        },
+      ),
+    );
+  }
+
+  static const baseX = 24;
+  static const attachedX = 8;
+
+  final PreparedMap map;
+  final loaded = <String>[];
+  late final NativeMapResourceOwner _owner;
+
+  Iterable<String> get loadedTiles =>
+      loaded.where((path) => path.endsWith('.png'));
+
+  Future<ByteData> render(MapFloorSelection selection) async {
+    final scene = (await _owner.loadScene(
+      map,
+      selection,
+      MapViewTransform(),
+      const ui.Size(32, 32),
+      isCurrent: () => true,
+    ))!;
+    try {
+      return await _render(scene, 32);
+    } finally {
+      scene.dispose();
+    }
+  }
+
+  Future<int> baseAlpha(MapFloorSelection selection) async =>
+      _rgba(await render(selection), 32, baseX, 16)[3];
+
+  void dispose() => _owner.dispose();
+}
+
 ByteData _vector(String content) => ByteData.sublistView(
   compiler.encodeSvg(
     xml:
