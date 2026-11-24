@@ -11,6 +11,7 @@ The prescribed gaming check returned `NOT GAMING` before the rebuild, full offli
 - `mise run test`: 3,609 offline tests passed.
 - `mise run maps:check`: `Map pack 2cc3a1cf4ab49250e9df8aa67438cbf3a3fcb53cb34288bf9a41c789f99b5bb5 reproduced byte-identically with xml 6.6.1, image 4.13.1, vector_graphics_compiler 1.3.4, vector_graphics 1.3.1, vector_graphics_codec 1.2.0.`
 - `openspec validate add-generic-floor-detection --strict` and the proposal's `mise run release-notes -- --check` both passed.
+- Pre-ship round 1: the mixed vector map regression first failed because an empty SVG ID hid a valid tile identity. It passed after the fix, together with strengthened checks for diagnostic precedence, resolved base eligibility under exclusive floors, and competing extents on one floor.
 
 ## Active pack rebuild
 

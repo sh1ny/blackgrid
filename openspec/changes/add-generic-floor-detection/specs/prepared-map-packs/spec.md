@@ -45,15 +45,19 @@ The builder SHALL read each supported map's frozen interactive layer extents (`e
 - **WHEN** a layer with extents matches zero floors or more than one floor
 - **THEN** the build fails naming the map and layer and no generation is promoted
 
+#### Scenario: Tile identity fallback
+- **WHEN** an extent-bearing layer on a vector map has an empty SVG ID and a tile path that matches one floor
+- **THEN** the builder keeps that tile-backed floor and attaches the layer's extents to it
+
 #### Scenario: Upstream corners are reversed
 - **WHEN** a source rectangle's first corner is greater than its second on either axis
 - **THEN** the prepared rectangle stores the minimum and maximum on that axis and preserves the covered game coordinates
 
 ### Requirement: Malformed source floor extents fail preparation
-Omitted or empty source `bounds` SHALL mean height-only. Present non-list bounds, malformed or degenerate rectangles, and nonfinite or nonpositive height spans SHALL fail preparation with the map and layer named.
+Omitted or empty source `bounds` SHALL mean height-only. Present non-list bounds, malformed or degenerate rectangles, and nonfinite or nonpositive height spans SHALL fail preparation with the map and layer named. A generic floor inventory error SHALL NOT mask this diagnostic.
 
 #### Scenario: Malformed source extent
-- **WHEN** an extent-bearing layer has a malformed height range or a `bounds` value that is present but null or invalid
+- **WHEN** an extent-bearing layer has a malformed height range or a `bounds` value that is present but null or invalid, and the source is also missing a required floor
 - **THEN** preparation rejects that source naming the map and layer, without promoting a generation
 
 ### Requirement: Validation re-derives floor extents from candidate evidence

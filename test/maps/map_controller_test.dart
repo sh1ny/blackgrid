@@ -1079,7 +1079,11 @@ void main() {
           marker('explicit', 11, floor: 'Base'),
         ],
       );
-      final upper = (reserve['floors'] as List)[1] as Map;
+      final floors = (reserve['floors'] as List).cast<Map>();
+      for (final floor in floors) {
+        floor['exclusive'] = true;
+      }
+      final upper = floors[1];
       upper['extents'] = [
         {
           'height': [3, 5],
@@ -1100,10 +1104,16 @@ void main() {
       Iterable<String> visibleIds() =>
           controller.visibleMarkers().map((projection) => projection.marker.id);
       expect(visibleIds(), unorderedEquals(['outside', 'explicit']));
+      final outside = controller
+          .visibleMarkers()
+          .singleWhere((projection) => projection.marker.id == 'outside')
+          .viewportPoint;
+      expect(controller.hitTestMarker(outside)?.marker.id, 'outside');
 
       controller.toggleFloor('Upper');
       expect(controller.automaticFloorFollowing, isFalse);
-      expect(visibleIds(), unorderedEquals(['inside', 'outside', 'explicit']));
+      expect(visibleIds(), ['inside']);
+      expect(controller.hitTestMarker(outside), isNull);
       final anchor = controller
           .visibleMarkers()
           .singleWhere((projection) => projection.marker.id == 'inside')

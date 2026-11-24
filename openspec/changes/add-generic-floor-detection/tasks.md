@@ -25,6 +25,7 @@
 | The app loads only packs that carry labels | Label names an unknown floor | `test/maps/prepared_map_labels_test.dart` | `label with an unknown floor fails naming map and floor` | green |
 | Prepared floor extents come from frozen interactive layers | Every shipped multi-floor map carries extents | `test/maps/active_pack_loader_test.dart` | `all bundled multi-floor maps carry the frozen extents` | green |
 | Prepared floor extents come from frozen interactive layers | Unlinked or ambiguous extent layer | `test/maps/map_preparation_test.dart` | `extent layers require one named prepared floor` | green |
+| Prepared floor extents come from frozen interactive layers | Tile identity fallback | `test/maps/map_preparation_test.dart` | `a tile-backed floor on a vector map accepts an empty SVG id` | green |
 | Prepared floor extents come from frozen interactive layers | Upstream corners are reversed | `test/maps/map_preparation_test.dart` | `metadata links and normalizes floor extents by rendition identity` | green |
 | Malformed source floor extents fail preparation | Malformed source extent | `test/maps/map_preparation_test.dart` | `malformed source extents name the map and layer` | green |
 | Validation re-derives floor extents from candidate evidence | Candidate extents differ from evidence | `test/maps/map_preparation_qualification_test.dart` | `candidate rejects divergent extents and legacy floor keys` | green |

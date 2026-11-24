@@ -1046,6 +1046,7 @@ void main() {
       },
     ]) {
       expect(
+        // The technical floor is also missing; report the bad extent first.
         () => reconcileFloors(calibrationFor('the-lab'), {
           'tilePath': labsTiles[0],
           'layers': [
@@ -1054,7 +1055,6 @@ void main() {
               'tilePath': labsTiles[1],
               'extents': [extent],
             },
-            {'tilePath': labsTiles[2]},
           ],
         }),
         throwsA(
@@ -1129,6 +1129,36 @@ void main() {
           [-222, -327, 120, 218],
           [4, 5, 8, 9],
         ],
+      },
+    ]);
+  });
+
+  test('a tile-backed floor on a vector map accepts an empty SVG id', () {
+    final local = calibrationFor('customs');
+    final localFloors = (local['floors'] as List).cast<Map<String, Object?>>();
+    final fourth = localFloors.singleWhere((f) => f['id'] == 'Fourth_Floor');
+    final floors = reconcileFloors(local, {
+      'svgLayer': 'Ground_Level',
+      'layers': [
+        {'svgLayer': 'Second_Floor'},
+        {'svgLayer': 'Third_Floor'},
+        {'svgLayer': 'Underground_Level'},
+        {
+          'name': '4th Floor',
+          'svgLayer': '',
+          'tilePath': fourth['sourceTileUrl'],
+          'extents': [
+            {
+              'height': [25, 34],
+            },
+          ],
+        },
+      ],
+    });
+    expect(floors.singleWhere((f) => f['id'] == 'Fourth_Floor')['extents'], [
+      {
+        'height': [25, 34],
+        'bounds': [],
       },
     ]);
   });

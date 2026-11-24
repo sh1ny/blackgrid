@@ -127,17 +127,15 @@ void main() {
   test('narrowest extent and stable floor id win in either order', () {
     final box = GameBounds(minX: 0, minZ: -4, maxX: 4, maxZ: 0);
     final shared = FloorExtent(HeightBand(0, 10), bounds: [box]);
-    final elsewhere = FloorExtent(
-      HeightBand(5, 7),
-      bounds: [GameBounds(minX: 10, minZ: 10, maxX: 14, maxZ: 14)],
-    );
+    final narrow = FloorExtent(HeightBand(5, 7), bounds: [box]);
+    final medium = FloorExtent(HeightBand(5, 9), bounds: [box]);
     final wide = MapFloor(
       id: 'Wide',
       label: 'Wide',
       extents: [FloorExtent(HeightBand(4, 20))],
     );
     for (final reverse in [false, true]) {
-      final extents = [shared, elsewhere];
+      final extents = [shared, narrow];
       final floors = [
         wide,
         MapFloor(
@@ -145,7 +143,7 @@ void main() {
           label: 'A',
           extents: reverse ? extents.reversed : extents,
         ),
-        MapFloor(id: 'Narrow_B', label: 'B', extents: [shared]),
+        MapFloor(id: 'Narrow_B', label: 'B', extents: [medium, shared]),
       ];
       final policy = MapFloorPolicy(
         mapId: 'synthetic',
@@ -153,10 +151,12 @@ void main() {
         overlays: reverse ? floors.reversed : floors,
       );
       expect(policy.supportsAutomaticHeight, isTrue);
+      // A must beat B's medium span even if A's wider span is visited first.
       expect(
         policy.floorForPosition(GamePoint(4, -4, height: 6))?.id,
         'Narrow_A',
       );
+      // Below both narrow bands, the shared spans tie.
       expect(
         policy.floorForPosition(GamePoint(4, -4, height: 0))?.id,
         'Narrow_A',

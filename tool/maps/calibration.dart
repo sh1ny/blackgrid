@@ -344,12 +344,24 @@ List<Map<String, Object?>> reconcileFloors(
   final mapId = local['id'];
   final layers = upstream['layers'] as List? ?? const [];
   final byFloor = <Object?, List<Map<String, Object?>>>{};
+  final sourceLayers = <String>{};
+  final isVector = local['kind'] == 'vector';
+  void addRendition(Object? svg, Object? tile) {
+    if (isVector && svg is String && svg.isNotEmpty) {
+      sourceLayers.add(svg);
+    } else if (tile is String && tile.isNotEmpty) {
+      sourceLayers.add(tile);
+    }
+  }
+
+  addRendition(upstream['svgLayer'], upstream['tilePath']);
   for (final (index, layer) in layers.indexed) {
     if (layer is! Map) {
       throw FormatException('$mapId: layer #$index must be an object');
     }
     final svg = layer['svgLayer'];
     final tile = layer['tilePath'];
+    addRendition(svg, tile);
     final name = layer['name'] ?? svg ?? tile ?? '#$index';
     final context = '$mapId: layer "$name"';
     final extents = sourceLayerExtents(layer, context);
@@ -376,17 +388,6 @@ List<Map<String, Object?>> reconcileFloors(
       attached.add(normalizeSourceExtent(extent, context));
     }
   }
-  final sourceLayers = <String>{
-    if (local['kind'] == 'vector' && upstream['svgLayer'] is String)
-      upstream['svgLayer'] as String
-    else if (upstream['tilePath'] is String)
-      upstream['tilePath'] as String,
-    for (final layer in layers)
-      if (local['kind'] == 'vector' && layer['svgLayer'] is String)
-        layer['svgLayer'] as String
-      else if (layer['tilePath'] is String)
-        layer['tilePath'] as String,
-  };
   for (final floor in floors) {
     final identity = floor['sourceTileUrl'] ?? floor['id'];
     if (!sourceLayers.contains(identity)) {
