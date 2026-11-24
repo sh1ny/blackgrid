@@ -28,6 +28,7 @@
 | Prepared floor extents come from frozen interactive layers | Tile identity fallback | `test/maps/map_preparation_test.dart` | `a tile-backed floor on a vector map accepts an empty SVG id` | green |
 | Prepared floor extents come from frozen interactive layers | Upstream corners are reversed | `test/maps/map_preparation_test.dart` | `metadata links and normalizes floor extents by rendition identity` | green |
 | Malformed source floor extents fail preparation | Malformed source extent | `test/maps/map_preparation_test.dart` | `malformed source extents name the map and layer` | green |
+| Malformed source floor extents fail preparation | Unnamed malformed tile layer identifies its rendition | `test/maps/map_preparation_test.dart` | `malformed unnamed tile layer reports its rendition identity` | green |
 | Validation re-derives floor extents from candidate evidence | Candidate extents differ from evidence | `test/maps/map_preparation_qualification_test.dart` | `candidate rejects divergent extents and legacy floor keys` | green |
 | Pack loading rejects malformed floor extents | Invalid extents do not load | `test/maps/prepared_floor_extents_test.dart` | `loader and validator reject malformed floor extents` | green |
 | Offline rebuild migrates legacy floor calibration | Offline rebuild upgrades the prior generation | `test/maps/map_preparation_qualification_test.dart` | `verified v4 rebuild migrates only direct floor bands` | green |

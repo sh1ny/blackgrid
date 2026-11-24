@@ -69,12 +69,13 @@ vector is compiled twice and a build fails when the two outputs differ.
 validate/promote bind canonical vector component paths and actual compiled
 payloads to dependency-closed source SVGs: validation recompiles every vector
 from its evidence and requires identical bytes, and every payload header must
-match the manifest's vectorCodecFormat. Only preparation version 4 with a
-vectorCodecFormat validates. Preparation v4
-preserves v2's content-addressed original PNG witnesses for transparent tiles;
+match the manifest's vectorCodecFormat. Validation requires preparation v5
+with floor extents and vectorCodecFormat. Offline refresh can rebuild a
+verified active v4 generation into v5; validation does not accept v4 candidates.
+Preparation v5 preserves v2's content-addressed original PNG witnesses for transparent tiles;
 empty records are decoded and hash-bound just like visible tiles, not inferred
 from byte size or trusted from the manifest. Crops must remain wholly inside
-the unchanged original artwork frame. New rebuilds require v4's complete
+the unchanged original artwork frame. New rebuilds require a complete
 inventory; old raw partial inputs do not silently become complete candidates.
 promote atomically replaces only active.json. refresh keeps only the active
 generation. No command mutates an active version.

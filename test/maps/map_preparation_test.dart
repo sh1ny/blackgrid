@@ -1069,6 +1069,33 @@ void main() {
     }
   });
 
+  test('malformed unnamed tile layer reports its rendition identity', () {
+    expect(
+      () => reconcileFloors(calibrationFor('the-lab'), {
+        'tilePath': labsTiles[0],
+        'layers': [
+          {
+            'svgLayer': '',
+            'tilePath': labsTiles[1],
+            'extents': [
+              {
+                'height': [3, 5],
+                'bounds': null,
+              },
+            ],
+          },
+        ],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('thelab'), contains(labsTiles[1]), contains('bounds')),
+        ),
+      ),
+    );
+  });
+
   test('metadata links and normalizes floor extents by rendition identity', () {
     final floors = reconcileFloors(calibrationFor('interchange'), {
       'svgLayer': 'Ground_Level',

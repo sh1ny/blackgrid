@@ -362,13 +362,17 @@ List<Map<String, Object?>> reconcileFloors(
     final svg = layer['svgLayer'];
     final tile = layer['tilePath'];
     addRendition(svg, tile);
-    final name = layer['name'] ?? svg ?? tile ?? '#$index';
+    final useSvg = svg is String && svg.isNotEmpty;
+    final identity = useSvg ? svg : tile;
+    final name = switch (layer['name']) {
+      final String value when value.trim().isNotEmpty => value,
+      _ when identity is String && identity.isNotEmpty => identity,
+      _ => '#$index',
+    };
     final context = '$mapId: layer "$name"';
     final extents = sourceLayerExtents(layer, context);
     if (extents.isEmpty) continue;
 
-    final useSvg = svg is String && svg.isNotEmpty;
-    final identity = useSvg ? svg : tile;
     Map<String, Object?>? owner;
     if (identity is String && identity.isNotEmpty) {
       final key = useSvg ? 'id' : 'sourceTileUrl';
