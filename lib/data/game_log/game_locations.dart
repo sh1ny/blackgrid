@@ -27,13 +27,20 @@ String? sceneMapId(String scene) {
     'sandbox_high' ||
     'sandbox_high_preset' ||
     'sandbox_start_preset' => 'groundzero',
-    'terminal' || 'icebreaker' || 'labyrinth' => name,
+    'terminal' || 'terminal_preset' => 'terminal',
+    'labyrinth' || 'labyrinth_preset' => 'labyrinth',
+    'icebreaker' => 'icebreaker',
     _ => null,
   };
 }
 
 /// Maps the `location:` of a transit reconnect line to a settings map ID, or
 /// `null` when the location is unknown. [location] is case-insensitive.
+///
+/// Every map in `supportedMaps` must be reachable from this table and from
+/// [sceneMapId]. A missing name makes that map's transit raids count as
+/// "Unknown map" (#129). The coverage tests in `game_log_parsers_test.dart`
+/// check both tables against `supportedMaps`.
 String? rejoinLocationMapId(String location) =>
     switch (location.toLowerCase()) {
       'bigmap' => 'customs',
@@ -47,6 +54,8 @@ String? rejoinLocationMapId(String location) =>
       'sandbox' || 'sandbox_high' => 'groundzero',
       'factory4_day' || 'factory4_night' || 'factory_event' => 'factory',
       'icebreaker' => 'icebreaker',
+      'terminal' => 'terminal',
+      'labyrinth' => 'labyrinth',
       _ => null,
     };
 

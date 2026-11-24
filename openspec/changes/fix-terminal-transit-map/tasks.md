@@ -6,14 +6,14 @@
 |---|---|---|---|---|
 | game-log-input → Application log lines become lifecycle events | Menu events | test/data/game_log/game_log_parsers_test.dart | session mode and profile selected | green |
 | game-log-input → Application log lines become lifecycle events | Rejoin line | test/data/game_log/game_log_parsers_test.dart | transit reconnect line becomes raid rejoined | green |
-| game-log-input → Application log lines become lifecycle events | Rejoin into Terminal or Labyrinth | test/data/game_log/game_log_parsers_test.dart | transit reconnect into Terminal or Labyrinth has its map | red |
-| game-log-input → Application log lines become lifecycle events | Every supported map can be rejoined | test/data/game_log/game_log_parsers_test.dart | rejoin locations are case-insensitive and cover every map | red |
-| game-log-input → Application log lines become lifecycle events | Rejoin into an unknown location | test/data/game_log/game_log_parsers_test.dart | transit reconnect into an unknown location has no map | red |
+| game-log-input → Application log lines become lifecycle events | Rejoin into Terminal or Labyrinth | test/data/game_log/game_log_parsers_test.dart | transit reconnect into Terminal or Labyrinth has its map | green |
+| game-log-input → Application log lines become lifecycle events | Every supported map can be rejoined | test/data/game_log/game_log_parsers_test.dart | rejoin locations are case-insensitive and cover every map | green |
+| game-log-input → Application log lines become lifecycle events | Rejoin into an unknown location | test/data/game_log/game_log_parsers_test.dart | transit reconnect into an unknown location has no map | green |
 | game-log-input → Application log lines become lifecycle events | A full raid in the application log | test/data/game_log/game_log_parsers_test.dart | full raid lines in order | green |
 | game-log-input → Application log lines become lifecycle events | Matching cancelled | test/data/game_log/game_log_parsers_test.dart | matching cancelled line | green |
 | game-log-input → Application log lines become lifecycle events | Unknown scene | test/data/game_log/game_log_parsers_test.dart | unknown scene has no map | green |
 | game-log-input → Application log lines become lifecycle events | Event map presets | test/data/game_log/game_log_parsers_test.dart | event presets map to Factory and The Lab | green |
-| game-log-input → Application log lines become lifecycle events | Terminal and Labyrinth preset scenes | test/data/game_log/game_log_parsers_test.dart | Terminal and Labyrinth preset scenes have their map | red |
+| game-log-input → Application log lines become lifecycle events | Terminal and Labyrinth preset scenes | test/data/game_log/game_log_parsers_test.dart | Terminal and Labyrinth preset scenes have their map | green |
 | game-log-input → Application log lines become lifecycle events | Unrelated line | test/data/game_log/game_log_parsers_test.dart | unrelated line produces nothing | green |
 | raid-lifecycle → A raid records its map, mode, times and entry | Recorded raid | test/domain/raid_lifecycle_test.dart | records map, mode, times, entry and cause | green |
 | raid-lifecycle → A raid records its map, mode, times and entry | Map unknown | test/domain/raid_lifecycle_test.dart | unsupported scene leaves the map unknown | green |
@@ -26,16 +26,16 @@ Some rows start red only because their test is new. Their behaviour already hold
 
 ## 1. Lookup tables cover Terminal and Labyrinth
 
-- [ ] 1.1 [evidence] Capture the owner's real log lines that settle the names: the `location:Terminal` transit lines behind the stored null-map raids, the `terminal_preset` scene line that follows each one, and the tally of transit locations and scene names across all session folders. Copy the lines from the logs and keep no profile or account IDs. → evidence/owner-log-lines.txt
-- [ ] 1.2 Write the failing parser tests in `test/data/game_log/game_log_parsers_test.dart`:
+- [x] 1.1 [evidence] Capture the owner's real log lines that settle the names: the `location:Terminal` transit lines behind the stored null-map raids, the `terminal_preset` scene line that follows each one, and the tally of transit locations and scene names across all session folders. Copy the lines from the logs and keep no profile or account IDs. → evidence/owner-log-lines.txt
+- [x] 1.2 Write the failing parser tests in `test/data/game_log/game_log_parsers_test.dart`:
   - (a) `transit reconnect into Terminal or Labyrinth has its map`: `location:Terminal` and `location:terminal` give `terminal`, and `location:Labyrinth` gives `labyrinth`.
   - (b) Extend `rejoin locations are case-insensitive and cover every map` so every ID in `supportedMaps` is reached by at least one rejoin location (D2).
   - (c) `transit reconnect into an unknown location has no map`: location `nowhere` gives a null map.
   - (d) `Terminal and Labyrinth preset scenes have their map`: `terminal_preset` gives `terminal` and `labyrinth_preset` gives `labyrinth`. Add a scene coverage check so every ID in `supportedMaps` is reached by at least one scene name (D2).
 
   Run `mise run test -- test/data/game_log/game_log_parsers_test.dart`. (a), (b) and (d) must fail because those names map to null.
-- [ ] 1.3 Add `terminal` and `labyrinth` to `rejoinLocationMapId`, and `terminal_preset` and `labyrinth_preset` to `sceneMapId` (D1). Write C1 into the doc comment of `rejoinLocationMapId`: every supported map must be reachable from both tables, and the coverage tests enforce it. Verify that the 1.2 tests pass, then flip their test-map rows green.
-- [ ] 1.4 Add `terminal_preset` to the recognised scenes in the game-inputs paragraph of `openspec/architecture.md`. Verify by reading the paragraph.
+- [x] 1.3 Add `terminal` and `labyrinth` to `rejoinLocationMapId`, and `terminal_preset` and `labyrinth_preset` to `sceneMapId` (D1). Write C1 into the doc comment of `rejoinLocationMapId`: every supported map must be reachable from both tables, and the coverage tests enforce it. Verify that the 1.2 tests pass, then flip their test-map rows green.
+- [x] 1.4 Add `terminal_preset` to the recognised scenes in the game-inputs paragraph of `openspec/architecture.md`. Verify by reading the paragraph.
 
 ## 2. An unsupported scene keeps the known map
 
