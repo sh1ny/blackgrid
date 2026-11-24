@@ -34,7 +34,7 @@
 
 ## 1. Record the approved contract
 
-- [ ] 1.1 Write ADR-0050 and update the architecture contract/index (C1); verify the ADR's only supersession is ADR-0036's preparation version and that the deltas still carry C2–C7 (`openspec validate add-generic-floor-detection --strict`).
+- [x] 1.1 Write ADR-0050 and update the architecture contract/index (C1); verify the ADR's only supersession is ADR-0036's preparation version and that the deltas still carry C2–C7 (`openspec validate add-generic-floor-detection --strict`).
 
 ## 2. Prepare and apply spatial floor extents
 
