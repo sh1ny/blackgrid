@@ -645,6 +645,7 @@ void main() {
       }
       final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
       final base = map.floorPolicy.base.id;
+      expect(map.components, isEmpty, reason: 'only tiles draw on Labs');
       expect(map.tiles.last.floorId == base, baseLast);
       final scenes = _FloorFadeScenes(map);
       addTearDown(scenes.dispose);
@@ -652,7 +653,7 @@ void main() {
         final pixels = await scenes.render(
           map.floorPolicy.reset().select(floor.id),
         );
-        expect(_rgba(pixels, 32, 0, 0), [0, 255, 0, 255], reason: floor.id);
+        expect(_rgba(pixels, 32, 0, 0), [0, 0, 255, 255], reason: floor.id);
         expect(_rgba(pixels, 32, _FloorFadeScenes.baseX, 16), [
           51,
           0,
@@ -1295,9 +1296,9 @@ ByteData _json(Object value) =>
 ///
 /// The base floor's own vector draws opaque red over x 16..32, its attached
 /// layers over x 0..16, and its raster tiles are opaque everywhere. Every
-/// other floor's vector draws opaque green over row 0 only, and its tiles over
-/// their top rows, so pixels in row 16 show the base alone and row 0 shows
-/// what is painted over the base.
+/// other floor's vector draws opaque green over row 0 only, and its tiles
+/// opaque blue over their top rows, so pixels in row 16 show the base alone
+/// and row 0 shows what is painted over the base, and by which kind.
 class _FloorFadeScenes {
   _FloorFadeScenes(this.map) {
     final base = map.floorPolicy.base.id;
@@ -1319,7 +1320,7 @@ class _FloorFadeScenes {
                 y1: 0,
                 x2: 255,
                 y2: 7,
-                color: image.ColorRgba8(0, 255, 0, 255),
+                color: image.ColorRgba8(0, 0, 255, 255),
               );
             }
             return ByteData.sublistView(image.encodePng(pixels));
