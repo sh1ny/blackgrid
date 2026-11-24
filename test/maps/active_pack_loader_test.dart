@@ -45,6 +45,15 @@ void main() {
       streets.floorForPosition(GamePoint(-100, 200, height: 16))?.id,
       'Third_Floor',
     );
+    final icebreaker = pack.byId['icebreaker']!.floorPolicy;
+    expect(
+      icebreaker.floorForPosition(GamePoint(0, 0, height: 18.919))?.id,
+      'Storage_Security',
+    );
+    expect(
+      icebreaker.floorForPosition(GamePoint(0, 0, height: 18.925))?.id,
+      'Infirmary',
+    );
   });
 
   final fixture = _read('test/fixtures/map_floor_marker_delta.json');

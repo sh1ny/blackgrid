@@ -132,7 +132,7 @@ void main() {
     final wide = MapFloor(
       id: 'Wide',
       label: 'Wide',
-      extents: [FloorExtent(HeightBand(4, 20))],
+      extents: [FloorExtent(HeightBand(0, 20))],
     );
     for (final reverse in [false, true]) {
       final extents = [shared, narrow];
@@ -156,7 +156,7 @@ void main() {
         policy.floorForPosition(GamePoint(4, -4, height: 6))?.id,
         'Narrow_A',
       );
-      // Below both narrow bands, the shared spans tie.
+      // Below both narrow bands, the shared spans tie ahead of Wide.
       expect(
         policy.floorForPosition(GamePoint(4, -4, height: 0))?.id,
         'Narrow_A',
