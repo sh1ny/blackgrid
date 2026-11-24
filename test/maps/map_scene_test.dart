@@ -630,6 +630,39 @@ void main() {
     );
   }
 
+  // #130: raster overlay tiles stay over the faded base, at full strength,
+  // even when the base's tiles come last in the pack's tile order.
+  for (final baseLast in [false, true]) {
+    test('the-lab: raster overlay tiles stay over the faded base'
+        '${baseLast ? ' listed last' : ''}', () async {
+      final raw = preparedMapMetadataFixture('the-lab');
+      if (baseLast) {
+        final floors = (raw['floors'] as List)
+          ..sort(
+            (a, b) => (a['base'] == true ? 1 : 0) - (b['base'] == true ? 1 : 0),
+          );
+        expect(floors.last['base'], isTrue);
+      }
+      final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+      final base = map.floorPolicy.base.id;
+      expect(map.tiles.last.floorId == base, baseLast);
+      final scenes = _FloorFadeScenes(map);
+      addTearDown(scenes.dispose);
+      for (final floor in map.floorPolicy.overlays) {
+        final pixels = await scenes.render(
+          map.floorPolicy.reset().select(floor.id),
+        );
+        expect(_rgba(pixels, 32, 0, 0), [0, 255, 0, 255], reason: floor.id);
+        expect(_rgba(pixels, 32, _FloorFadeScenes.baseX, 16), [
+          51,
+          0,
+          0,
+          51,
+        ], reason: floor.id);
+      }
+    });
+  }
+
   test('base and its attached layers alone stay at full strength', () async {
     final map = PreparedMap.fromJson(
       preparedMapMetadataFixture('streets-of-tarkov'),
@@ -1262,8 +1295,9 @@ ByteData _json(Object value) =>
 ///
 /// The base floor's own vector draws opaque red over x 16..32, its attached
 /// layers over x 0..16, and its raster tiles are opaque everywhere. Every
-/// other floor's vector draws opaque green over row 0 only, so pixels in row
-/// 16 show the base alone and row 0 shows what is painted over the base.
+/// other floor's vector draws opaque green over row 0 only, and its tiles over
+/// their top rows, so pixels in row 16 show the base alone and row 0 shows
+/// what is painted over the base.
 class _FloorFadeScenes {
   _FloorFadeScenes(this.map) {
     final base = map.floorPolicy.base.id;
@@ -1278,6 +1312,15 @@ class _FloorFadeScenes {
             final pixels = image.Image(width: 256, height: 256, numChannels: 4);
             if (opaque) {
               image.fill(pixels, color: image.ColorRgba8(255, 0, 0, 255));
+            } else {
+              image.fillRect(
+                pixels,
+                x1: 0,
+                y1: 0,
+                x2: 255,
+                y2: 7,
+                color: image.ColorRgba8(0, 255, 0, 255),
+              );
             }
             return ByteData.sublistView(image.encodePng(pixels));
           }
