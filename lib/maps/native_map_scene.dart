@@ -274,19 +274,20 @@ class NativeMapScene {
     this._tiles,
     this._resources,
     this._tilePaths,
-  ) : _dimBase =
-          map.kind == 'vector' &&
-          map.tiles.any(
-            (tile) =>
-                tile.floorId != map.floorPolicy.base.id &&
-                selection.isLayerVisible(tile.floorId),
-          );
+  ) : _dimBase = selection.selectedOverlayIds.isNotEmpty;
   final NativeMapResourceOwner _owner;
   final PreparedMap map;
   final MapFloorSelection selection;
   final List<_ScenePicture> _pictures;
 
-  /// Like tarkov.dev, a tile floor shown over SVG artwork dims the base level.
+  /// Whether the base floor, with its attached layers, is drawn faded.
+  ///
+  /// Any selected non-base floor fades the base, whether that floor is vector
+  /// artwork or raster tiles and on vector and raster maps alike (#130). The
+  /// earlier tarkov.dev rule, fading only under a tile floor drawn over SVG
+  /// artwork, was rejected: it left vector floors such as Reserve Bunkers and
+  /// every Streets floor over a full-strength ground level. On an exclusive
+  /// map a selected floor hides the base, so this has nothing to fade there.
   final bool _dimBase;
   final List<_SceneTile> _tiles;
   final List<_NativeResource> _resources;
@@ -345,11 +346,12 @@ class NativeMapScene {
       if (dimmed) canvas.restore();
     }
     for (final item in _tiles) {
+      final dimmed = _dimBase && item.floorId == map.floorPolicy.base.id;
       canvas.drawImageRect(
         item.image,
         item.source,
         item.destination,
-        _tilePaint,
+        dimmed ? _dimTilePaint : _tilePaint,
       );
     }
     canvas.restore();
@@ -364,10 +366,20 @@ class NativeMapScene {
     }
   }
 
+  /// Fades base pictures: as a layer paint, its alpha is the layer's opacity.
+  ///
+  /// Faded base tiles draw through [_dimTilePaint], which takes this same
+  /// alpha, so every floor fades the base at one strength.
   static final ui.Paint _dimPaint = ui.Paint()
     ..color = const ui.Color.fromARGB(51, 0, 0, 0);
   static final ui.Paint _tilePaint = ui.Paint()
     ..filterQuality = ui.FilterQuality.low;
+
+  /// Draws a faded base tile at [_dimPaint]'s opacity: an image draw takes
+  /// only the paint colour's alpha.
+  static final ui.Paint _dimTilePaint = ui.Paint()
+    ..filterQuality = ui.FilterQuality.low
+    ..color = _dimPaint.color;
 }
 
 bool _sameFloors(MapFloorSelection a, MapFloorSelection b) =>
