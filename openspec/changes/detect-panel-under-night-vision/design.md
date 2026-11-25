@@ -33,18 +33,18 @@ TIER: LIGHT
 
 ### D2: Keep evidence reproducible at the detector boundary
 
-- **Choice:** Use a compact synthetic RGB strip for the reported dim colour and representative near-misses. Also exercise the full detector against owner-supplied saved day, NV panel, and no-panel images offline. Retain the smallest approved fixture data that preserves the relevant scenery colour distribution and sample geometry; do not check in full owner screenshots.
+- **Choice:** Reproduce the reported 12.26 RGB with a synthetic strip; the original file is absent. The owner approved using the saved Shoreline 12.02 and 12.44 NV panels as the real regressions, 12.10 as the bright control, and the 11-21 NV no-panel screenshots as real negatives. Keep a compact spatial sampling of their detector grids, not the screenshots, plus synthetic near-misses that challenge an unconditional brightness reduction.
 - **Rejected:** Synthetic positives alone cannot distinguish a wider green rule from one that rejects real NV scenery. OCR end-to-end tests alone conflate the gate with OCR and matching and cannot isolate the false-positive risk.
 - **Reversal cost:** low.
-- **Important:** no; S1 fixes the outcome and requirement for negatives, and this choice concerns the fixture representation.
-- **Chosen by:** agent.
+- **Important:** yes for substituting the saved source images; the exact reported file cannot be used, although the replacements independently reproduce its failure.
+- **Chosen by:** user (explicitly approved the substituted captures and synthetic hard negative).
 
 ### Decision summary
 
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
 |---|---|---|---|---|---|
 | S1/D1 | Detector scope | Admission-only dim header rule, with no-panel regression checks | Lower shared brightness floor | low | yes | user |
-| D2 | Evidence format | Deterministic pixels plus offline saved-image comparison | Synthetic positive alone or OCR-only checks | low | no | agent |
+| D2 | Evidence | Two alternate saved NV failures, bright control, real no-panel scenes, and synthetic hard negative and issue colour | Synthetic-only evidence or OCR-only checks | low | yes | user |
 
 ## Assumptions
 
