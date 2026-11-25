@@ -471,7 +471,7 @@ Each request may take 30 seconds and return 16 MiB after decoding. A whole refre
 <details>
 <summary><b>Releases and changelog</b></summary>
 
-Versions follow [SemVer 2.0.0](https://semver.org/), with tags that start with `v` ([ADR-0009](docs/adr/0009-release-versioning.md)). Closing a milestone raises the minor version, so M2 became `0.2.0`. Fixes between milestones raise the patch version. A build handed out for user checks is a prerelease, such as `0.2.0-beta.1`. Only a release commit changes `version:` in `pubspec.yaml`. The build number is the number of commits up to the built `HEAD`.
+Versions follow [SemVer 2.0.0](https://semver.org/), with tags that start with `v` ([ADR-0009](docs/adr/0009-release-versioning.md)). The owner decides when to release, based on the fixes and features on `main`; a release does not wait for a milestone to close ([ADR-0051](docs/adr/0051-releases-are-timed-by-the-owner.md)). A release with new features raises the minor version, and a release with only fixes raises the patch version. A build handed out for user checks is a prerelease, such as `0.2.0-beta.1`. Only a release commit changes `version:` in `pubspec.yaml`. The build number is the number of commits up to the built `HEAD`.
 
 | Step | Command | What it does |
 |---|---|---|

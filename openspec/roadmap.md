@@ -106,7 +106,7 @@ A Flutter phone app with the web app's scope and small-screen layouts, built aft
 
 ## Release versioning (`add-release-versioning`)
 
-Decided with the user on 2026-10-08 and recorded in [ADR-0009](../docs/adr/0009-release-versioning.md): SemVer `v` tags, one minor version per milestone close (M2 → `0.2.0`), `-beta.N` prereleases for user-only checks, and a commit-count build number. Its changelog with one entry per merged PR was replaced by release notes taken from each change's proposal ([ADR-0029](../docs/adr/0029-release-notes-come-from-each-proposal.md)).
+Decided with the user on 2026-10-08 and recorded in [ADR-0009](../docs/adr/0009-release-versioning.md): SemVer `v` tags, `-beta.N` prereleases for user-only checks, and a commit-count build number. Its changelog with one entry per merged PR was replaced by release notes taken from each change's proposal ([ADR-0029](../docs/adr/0029-release-notes-come-from-each-proposal.md)). Its one minor version per milestone close was dropped on 2026-11-25: the owner decides when to release, and a release can come in the middle of a milestone ([ADR-0051](../docs/adr/0051-releases-are-timed-by-the-owner.md)).
 
 Release flow (local steps; details in the [README](../README.md)):
 
