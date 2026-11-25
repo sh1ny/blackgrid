@@ -190,17 +190,41 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
         floors: [floor('Ground_Level', base: true)],
       );
     case 'shoreline':
-      return vector(
-        id: 'shoreline',
-        name: 'Shoreline',
-        affine: [0.16, 83.2, 0.16, 111.1],
-        bounds: [
-          [504, -415],
-          [-1056, 618],
-        ],
-        frame: [1559.5717, 1032.4935],
-        floors: buildingFloors(),
-      );
+      return {
+        ...vector(
+          id: 'shoreline',
+          name: 'Shoreline',
+          affine: [0.16, 83.2, 0.16, 111.1],
+          bounds: [
+            [504, -415],
+            [-1056, 618],
+          ],
+          frame: [1559.5717, 1032.4935],
+          floors: buildingFloors(),
+        ),
+        // Climber's Trail is outdoors even though its centre height starts
+        // the height-only Second_Floor band. Do not change the player rule.
+        'markerFloorAssignments': {
+          'extracts:f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f:0': {
+            'floorId': 'Ground_Level',
+            'basis': 'outdoor-climbers-trail-extract',
+            'evidenceUrls': ['https://github.com/sh1ny/blackgrid/issues/139'],
+            'evidenceSourcePaths': [
+              'markers/maps.json:5704e554d2720bac5b8b456e/extracts/0',
+            ],
+            'sourceVolume': {
+              'position': {'x': -214.3, 'y': -1, 'z': -361.8},
+              'heightBand': [-15.64, 13.64],
+              'outline': [
+                {'x': -188.81, 'y': -15.64, 'z': -381.62},
+                {'x': -188.81, 'y': -15.64, 'z': -341.98},
+                {'x': -239.79, 'y': -15.64, 'z': -341.98},
+                {'x': -239.79, 'y': -15.64, 'z': -381.62},
+              ],
+            },
+          },
+        },
+      };
     case 'reserve':
       // tarkov.dev's default Abstract rendition: the publisher SVG declares
       // Ground/Bunkers; the 2nd-5th floors exist only as tiles drawn over it.

@@ -236,6 +236,11 @@ A marker's explicit prepared floor ownership SHALL take precedence. An unassigne
 - **WHEN** a marker's explicit floor differs from its inferred floor
 - **THEN** eligibility follows its explicit floor
 
+#### Scenario: Outdoor Climber’s Trail on bundled Shoreline
+- **WHEN** the bundled Shoreline map shows the ground level with no overlay selected and the exit categories are enabled
+- **THEN** Climber’s Trail is eligible to appear on the map and in This raid if matched, without selecting the second floor
+- **AND** Admin Basement and Transit to Labyrinth remain ineligible until Underground is shown
+
 ### Requirement: A chosen floor fades the base floor
 While any non-base floor is visible, the base floor and its attached layers SHALL be drawn faded, at one strength on every map, whether that floor is vector artwork or raster tiles. Otherwise the base SHALL be drawn at full strength. Chosen floors SHALL stay at full strength.
 

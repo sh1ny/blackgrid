@@ -335954,6 +335954,51 @@
         "Second_Floor",
         "Third_Floor"
       ],
+      "markerFloorAssignments": {
+        "extracts:f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f:0": {
+          "basis": "outdoor-climbers-trail-extract",
+          "evidenceSourcePaths": [
+            "markers/maps.json:5704e554d2720bac5b8b456e/extracts/0"
+          ],
+          "evidenceUrls": [
+            "https://github.com/sh1ny/blackgrid/issues/139"
+          ],
+          "floorId": "Ground_Level",
+          "sourceVolume": {
+            "heightBand": [
+              -15.64,
+              13.64
+            ],
+            "outline": [
+              {
+                "x": -188.81,
+                "y": -15.64,
+                "z": -381.62
+              },
+              {
+                "x": -188.81,
+                "y": -15.64,
+                "z": -341.98
+              },
+              {
+                "x": -239.79,
+                "y": -15.64,
+                "z": -341.98
+              },
+              {
+                "x": -239.79,
+                "y": -15.64,
+                "z": -381.62
+              }
+            ],
+            "position": {
+              "x": -214.3,
+              "y": -1,
+              "z": -361.8
+            }
+          }
+        }
+      },
       "markers": [
         {
           "category": "extracts",
@@ -335993,6 +336038,7 @@
             "switches": [],
             "top": 13.64
           },
+          "floorId": "Ground_Level",
           "heightBand": [
             -15.64,
             13.64
@@ -336027,6 +336073,49 @@
             "z": -361.8
           },
           "source": {
+            "floorAssignment": {
+              "basis": "outdoor-climbers-trail-extract",
+              "evidenceSourcePaths": [
+                "markers/maps.json:5704e554d2720bac5b8b456e/extracts/0"
+              ],
+              "evidenceUrls": [
+                "https://github.com/sh1ny/blackgrid/issues/139"
+              ],
+              "floorId": "Ground_Level",
+              "sourceVolume": {
+                "heightBand": [
+                  -15.64,
+                  13.64
+                ],
+                "outline": [
+                  {
+                    "x": -188.81,
+                    "y": -15.64,
+                    "z": -381.62
+                  },
+                  {
+                    "x": -188.81,
+                    "y": -15.64,
+                    "z": -341.98
+                  },
+                  {
+                    "x": -239.79,
+                    "y": -15.64,
+                    "z": -341.98
+                  },
+                  {
+                    "x": -239.79,
+                    "y": -15.64,
+                    "z": -381.62
+                  }
+                ],
+                "position": {
+                  "x": -214.3,
+                  "y": -1,
+                  "z": -361.8
+                }
+              }
+            },
             "mapId": "5704e554d2720bac5b8b456e",
             "path": "extracts/0",
             "url": "https://json.tarkov.dev/regular/maps"
@@ -1084490,7 +1084579,7 @@
     },
     {
       "path": "evidence/calibration.json",
-      "sha256": "5e2d8d8b52c51bf47a2e1bc572cde71dd14b6074a882291a0034219f78ec6ebb"
+      "sha256": "cc581b9851f06380b2e47bdfc06c4e69e3f5023db933488dce7ec1bc68cea339"
     },
     {
       "path": "evidence/customs/Customs.svg",
@@ -1084550,7 +1084639,7 @@
     },
     {
       "path": "evidence/sources.json",
-      "sha256": "3fa2f9c9610bce3a76418bf2b839eb5d960c5d40ddcddd5c73da30b080e06d49"
+      "sha256": "74052b099f12d6b640582bea035b1343d5203a68b9094bd6f3ad57e1bc973194"
     },
     {
       "path": "evidence/streetsoftarkov/StreetsOfTarkov.svg",
@@ -1084599,7 +1084688,7 @@
   ],
   "preparationVersion": 5,
   "schemaVersion": 1,
-  "sourceGeneration": "3fa2f9c9610bce3a76418bf2b839eb5d960c5d40ddcddd5c73da30b080e06d49",
+  "sourceGeneration": "74052b099f12d6b640582bea035b1343d5203a68b9094bd6f3ad57e1bc973194",
   "sourceLock": {
     "metadataBlob": "4d7f7bbe8c233027b735ccb37b9b3ee48737163f",
     "metadataRepositoryRevision": "ef62766bbd7ffb294c7184f9b8bfe8ed0f18320e",

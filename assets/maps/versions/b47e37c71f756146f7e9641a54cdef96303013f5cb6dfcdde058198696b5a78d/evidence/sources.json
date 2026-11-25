@@ -5,7 +5,7 @@
   "sources": [
     {
       "path": "calibration.json",
-      "sha256": "5e2d8d8b52c51bf47a2e1bc572cde71dd14b6074a882291a0034219f78ec6ebb",
+      "sha256": "cc581b9851f06380b2e47bdfc06c4e69e3f5023db933488dce7ec1bc68cea339",
       "url": "blackgrid:calibration-v1"
     },
     {

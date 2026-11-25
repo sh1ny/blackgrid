@@ -185,6 +185,10 @@ Map<String, List<Map<String, Object?>>> normalizeLiveMapData({
 /// source-fidelity tests. [mode] selects the source route retained in marker
 /// provenance. A missing supported source map produces no map markers; a
 /// duplicate identity or malformed present consumed record fails.
+///
+/// Reviewed floor ownership applies only to a matching identity and source
+/// placement. A stale annotation leaves the marker eligible for ordinary floor
+/// inference without rejecting the source snapshot.
 List<Map<String, Object?>> prepareMarkers(
   Map<String, dynamic> snapshot,
   Map<String, dynamic> translations,
@@ -830,7 +834,7 @@ bool _overrideMatches(
 ) {
   final position = entry['position'];
   if (position is! Map) return false;
-  if (sourceKey == 'interchange') {
+  if (sourceKey == 'interchange' || sourceKey == 'shoreline') {
     final volume = assignment['sourceVolume'];
     return volume is Map &&
         _canonicalJson(volume) ==

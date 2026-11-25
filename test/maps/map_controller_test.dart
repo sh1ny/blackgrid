@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' show Size;
 
@@ -1124,6 +1125,40 @@ void main() {
       expect(controller.hitTestMarker(anchor), isNull);
     },
   );
+
+  test('bundled Shoreline keeps Climber’s Trail on ground and indoor exits underground', () async {
+    const climbersTrail = 'extracts:f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f:0';
+    const adminBasement = 'extracts:3475b9df1bf661d3c746ff1a1a8493bae828b939:0';
+    const labyrinthTransit = 'transits:43:0';
+    const exits = {climbersTrail, adminBasement, labyrinthTransit};
+    final controller = _controllerFor(
+      (path) async => ByteData.sublistView(await File(path).readAsBytes()),
+    );
+    addTearDown(controller.dispose);
+    controller.updateViewport(const Size(960, 720));
+    await controller.initialize(selectedMapId: 'shoreline');
+    controller.setRaidHighlights(exits);
+
+    Set<String> visibleExits() => controller
+        .visibleMarkers()
+        .map((projection) => projection.marker.id)
+        .where(exits.contains)
+        .toSet();
+    Set<String> matchedExits() => controller.raidMatchedMarkers
+        .map((projection) => projection.marker.id)
+        .toSet();
+
+    controller.setPlayerSample(GamePoint(-214.3, -361.8, height: -4));
+    expect(controller.automaticFloorFollowing, isTrue);
+    expect(controller.selectedOverlayFloorIds, isEmpty);
+    expect(visibleExits(), {climbersTrail});
+    expect(matchedExits(), {climbersTrail});
+
+    controller.setPlayerSample(GamePoint(-256.87, -149.78, height: -7.71));
+    expect(controller.selectedOverlayFloorIds, {'Underground_Level'});
+    expect(visibleExits(), exits);
+    expect(matchedExits(), exits);
+  });
 
   test(
     'category/floor query and hit logic share cached viewport projections',
