@@ -11,9 +11,9 @@
 | raid-panel-reading → Short rows match only by exact name | Stray fragment | test/domain/raid_exfil_matcher_test.dart | a short row matches only an exit with that exact name | green |
 | raid-panel-reading → Saved Shoreline panels resolve | Night-vision panel | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | green |
 | raid-panel-reading → Saved Shoreline panels resolve | Exit not on the panel | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | green |
-| raid-panel-reading → Saved Shoreline panels resolve | Bright-sky panel with merged transit rows | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | red |
-| raid-panel-reading → Merged rows match every whole exit name | Two transits on one row | test/domain/raid_exfil_matcher_test.dart | a merged row matches every whole exit name in it | red |
-| raid-panel-reading → Merged rows match every whole exit name | Name inside a longer name | test/domain/raid_exfil_matcher_test.dart | a merged row matches every whole exit name in it | red |
+| raid-panel-reading → Saved Shoreline panels resolve | Bright-sky panel with merged transit rows | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | green |
+| raid-panel-reading → Merged rows match every whole exit name | Two transits on one row | test/domain/raid_exfil_matcher_test.dart | a merged row matches every whole exit name in it | green |
+| raid-panel-reading → Merged rows match every whole exit name | Name inside a longer name | test/domain/raid_exfil_matcher_test.dart | a merged row matches every whole exit name in it | green |
 | raid-panel-reading → Saved Shoreline panels resolve | Row that truly fits two exits | test/domain/raid_exfil_matcher_test.dart | competing exit names one ambiguous row withholds the whole panel (existing) | green |
 
 ## 1. Split rows at slashed-zero labels
@@ -45,9 +45,11 @@
 
 Added after the owner's check 3.1 (2026-11-25): the 12.27 bright-sky panel was withheld as ambiguous because OCR merged both transit rows into one. A night-vision panel that was not detected at all is tracked as #140.
 
-- [ ] 4.1 Add the 12.27 bright-sky panel to `test/fixtures/raid_panel/shoreline_panels.json` (the `text` and `lines` handed to `RaidPanelTextParser.parse`, with the nine exits it lists). Write "a merged row matches every whole exit name in it" in `test/domain/raid_exfil_matcher_test.dart`. Run `mise exec -- flutter test test/domain/raid_exfil_matcher_test.dart`. Both the new test and the recorded-panel test must fail with `ambiguous`, and the existing ambiguity tests must pass.
-- [ ] 4.2 In `RaidExfilMatcher.match`, when a row ties, match every exit whose whole name the row holds, except an exit whose name lies inside another of those names. Keep the row ambiguous when fewer than two exits remain, when one name equals the row, or when two remaining exits share a name. Document the rule on the helper. Verify: the 4.1 tests pass and every matcher test still passes.
-- [ ] 4.3 Run `mise run analyze`, `mise run test` and `dart format` on the changed files. All must pass.
+- [x] 4.1 Add the 12.27 bright-sky panel to `test/fixtures/raid_panel/shoreline_panels.json` (the `text` and `lines` handed to `RaidPanelTextParser.parse`, with the nine exits it lists). Write "a merged row matches every whole exit name in it" in `test/domain/raid_exfil_matcher_test.dart`. Run `mise exec -- flutter test test/domain/raid_exfil_matcher_test.dart`. Both the new test and the recorded-panel test must fail with `ambiguous`, and the existing ambiguity tests must pass.
+  - Note: `text` and `lines` captured with temporary, reverted instrumentation from the owner's screenshot. Red: both tests gave `Expected: recognized`, `Actual: ambiguous`; the competing-names tests stayed green.
+- [x] 4.2 In `RaidExfilMatcher.match`, when a row ties, match every exit whose whole name the row holds, except an exit whose name lies inside another of those names. Keep the row ambiguous when fewer than two exits remain, when one name equals the row, or when two remaining exits share a name. Document the rule on the helper. Verify: the 4.1 tests pass and every matcher test still passes.
+  - Note: offline with the Release OCR DLL, the owner's 12.27 (bright sky) and 12.28 panels are both `recognized` with the nine listed exits and no Transit to Terminal.
+- [x] 4.3 Run `mise run analyze`, `mise run test` and `dart format` on the changed files. All must pass.
 
 ## Workflow follow-up
 

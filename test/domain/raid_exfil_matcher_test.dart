@@ -101,6 +101,20 @@ void main() {
     expect(RaidExfilMatcher.namesMatch('I', 'Transit to Terminal'), isFalse);
   });
 
+  test('a merged row matches every whole exit name in it', () {
+    final matcher = RaidExfilMatcher([
+      RaidExitIdentity(id: 'tl', name: 'Transit to Lighthouse', transit: true),
+      RaidExitIdentity(id: 'ti', name: 'Transit to Icebreaker', transit: true),
+      RaidExitIdentity(id: 'tt', name: 'Transit to Terminal', transit: true),
+      RaidExitIdentity(id: 'lh', name: 'Lighthouse', transit: true),
+    ]);
+    final result = matcher.match(
+      _recognized(transits: ['Transit to Lighthouse Transit to Icebreaker']),
+    );
+    expect(result.state, RaidPanelState.recognized);
+    expect(result.ids, {'tl', 'ti'});
+  });
+
   test('recorded Shoreline panels match their listed exits', () {
     final fixture = jsonDecode(
       File('test/fixtures/raid_panel/shoreline_panels.json').readAsStringSync(),

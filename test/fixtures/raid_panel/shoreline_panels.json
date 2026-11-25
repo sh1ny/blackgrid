@@ -342,6 +342,49 @@
         "Transit to Terminal",
         "Transit to Icebreaker"
       ]
+    },
+    {
+      "label": "2026-11-25 raid time 12.27 (bright sky, merged transit rows)",
+      "text": "t, Find an extraction point Surv12 EXFILØI EXFILØ2 EXFILØ3 EXFILØ4 EXFILØ5 EXFILØ6 EXFILØ7 Road to North V-Éw Road to Customs Railway Bridge Path to Lighthouse Smugglers' Path (Co-op) Pier Boat Climber's Trail TRANSIT 01 Transit to Lighthouse TRANSIT 04 Transit to Icebreaker \"Sudak-Tudak\" tool set required (1)\nSurv12 Find an extraction point EXFILØI Road to North V-Ex EXFILØ2 EXFILØ3 EXFILØ4 EXFILØ5 EXFILØ6 EXFILØ7 Road to Customs Railway Bridge Path to Ciehthouse Smugglers' Path (Co-op) Pier Boat Climber's Trail TRANSITØI Transit to Lighthouse Transit to Icebreaker TRANSITØ4 'Sudok-Tudak\" tool set required (1)",
+      "lines": [
+        "t, Find an extraction point",
+        "Surv12",
+        "EXFILØI",
+        "EXFILØ2",
+        "EXFILØ3",
+        "EXFILØ4",
+        "EXFILØ5",
+        "EXFILØ6",
+        "EXFILØ7",
+        "Road to North V-Éw",
+        "Road to Customs",
+        "Railway Bridge",
+        "Path to Lighthouse",
+        "Smugglers' Path (Co-op)",
+        "Pier Boat",
+        "Climber's Trail",
+        "TRANSIT 01 Transit to Lighthouse",
+        "TRANSIT 04 Transit to Icebreaker",
+        "\"Sudak-Tudak\" tool set required (1)",
+        "Find an extraction point",
+        "EXFILØI Road to North V-Ex",
+        "Path to Ciehthouse",
+        "TRANSITØI Transit to Lighthouse",
+        "Transit to Icebreaker",
+        "TRANSITØ4",
+        "'Sudok-Tudak\" tool set required (1)"
+      ],
+      "exits": [
+        "Road to North V-Ex",
+        "Road to Customs",
+        "Railway Bridge",
+        "Path to Lighthouse",
+        "Smugglers' Path (Co-op)",
+        "Pier Boat",
+        "Climber's Trail",
+        "Transit to Lighthouse",
+        "Transit to Icebreaker"
+      ]
     }
   ]
 }
