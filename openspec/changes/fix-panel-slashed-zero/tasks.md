@@ -39,7 +39,8 @@
 
 ## 3. Owner check
 
-- [ ] 3.1 [user] In a Shoreline raid with marker categories on, save a screenshot with the exfil panel open (one against a bright sky or with night vision if convenient). Check that This raid lists the panel's exits and Diagnostics shows no "matches more than one current-map exit" message. Agents never launch or check against the game (AGENTS.md).
+- [x] 3.1 [user] In a Shoreline raid with marker categories on, save a screenshot with the exfil panel open (one against a bright sky or with night vision if convenient). Check that This raid lists the panel's exits and Diagnostics shows no "matches more than one current-map exit" message. Agents never launch or check against the game (AGENTS.md).
+  - Note: passed (owner, 2026-11-25, build at 96f4863). The first check on 25448c8 read one of three panels; group 4 fixed the bright-sky panel. On re-check the Shoreline panel at 16:05 was read with night vision on: "Exfil panel read (Ultrawide profile)" and 10 matched exit markers. Night-vision detection can still fail when the scene dims the header more (#140).
 
 ## 4. Merged rows match every whole exit name
 
