@@ -1,9 +1,5 @@
 # Raid panel reading
 
-## Purpose
-
-Read the exfil panel in saved raid screenshots so Blackgrid can match the listed exits.
-
 ## ADDED Requirements
 
 ### Requirement: Detect exfil headers dimmed by night vision

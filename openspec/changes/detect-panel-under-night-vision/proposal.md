@@ -14,11 +14,11 @@ In the owner's 2026-11-25 Shoreline screenshot at raid time 12.26, night vision 
 
 ### New Capabilities
 
-- `raid-panel-reading`: adds a header-detection requirement to the capability being introduced by #136. This capability is not on the current base; it will exist before this change is archived.
+None.
 
 ### Modified Capabilities
 
-None on the current base.
+- `raid-panel-reading`: adds a requirement to detect dim night-vision exfil headers without admitting scenery.
 
 ## Impact
 
