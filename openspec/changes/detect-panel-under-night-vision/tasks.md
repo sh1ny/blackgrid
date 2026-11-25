@@ -35,9 +35,14 @@
 - [x] 2.1 Add two in-palette vertical stripe negatives, one outside the crop and one inside but too narrow. Both must exceed the existing total colour coverage and fail against the colour-only implementation.
   - On the colour-only detector, both returned `true` when `false` was expected. The outside case also includes a single wide row inside the crop: the row has span but cannot reach the hit fraction without outside hits.
 - [x] 2.2 Apply D1's crop-local quarter-width run to the dim path only; leave the bright path, sampling grid and crop behaviour unchanged. Carry C3 and clarify C2 at `RaidPanelProfile.detect`. Run the detector tests and six original saved images again, then run the offline gates after the gaming check.
-  - Final detector: both dim panels and the bright control accepted; all three full no-panel images rejected. `mise run analyze` found no issues. `mise run test` passed all 3,636 app tests and 110 progress tests, including both stripe negatives and the crop regression.
+  - Pre-ship revision: both dim panels and the bright control accepted; all three full no-panel images rejected. `mise run analyze` found no issues. `mise run test` passed all 3,636 app tests and 110 progress tests, including both stripe negatives and the crop regression.
+
+## PR review evidence
+
+- Review of #142 showed that one qualifying row could unlock unrelated dim hits. The new wide-row-plus-narrow-stripe regression failed before the fix. The fix credits only samples belonging to qualifying runs; split-run tests check that either a dark or a legacy bright sample breaks the run. Rechecked all six original saved captures: all three panels detected, all three no-panel scenes rejected.
+- Post-review offline gates: `mise run analyze` found no issues; `mise run test` passed all 3,639 app tests and 110 progress tests, including the three new admission regressions.
 
 ## Workflow follow-up
 
-- Owner-only live NV re-check: save one shot with the exfil panel open and one without, then check that Blackgrid reads only the former. Request through the coordinator or obtain approval to skip; record any skip as unverified. Offline saved-image verification above is required regardless.
+- Owner-only live NV re-check: unverified. The owner explicitly approved skipping it for this PR.
 - Once #136 merges and the coordinator authorizes the rebase, rebase onto `origin/main`, treat the delta as an addition to the now-existing `raid-panel-reading` capability, and verify the rebased head. Archive the change on the PR branch, confirm green checks and review, and leave merging to the owner.

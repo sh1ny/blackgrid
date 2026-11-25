@@ -13,7 +13,8 @@ RaidPanelNames _parse(List<String> lines) {
   return names;
 }
 
-// The 12 × 10 saved-sample grid covers the scanned part of a small ultrawide frame.
+// This checks a decimated 12 × 10 sample grid, not the original 3440 × 1440
+// screenshots. Full-resolution detector results are recorded in the change.
 bool _detectSavedHeader(String frame) {
   final rows = savedRaidHeaderSamples[frame]!;
   final pixels = [
@@ -114,6 +115,31 @@ void main() {
         final wideRow =
             location == 'outside' && y == 4 && x >= 2280 && x < 2630;
         return stripe || wideRow ? 0x5D8807 : _dark;
+      }
+
+      expect(profile.detect(width, height, scenery), isFalse);
+    });
+  }
+
+  test('one wide dim row does not credit separate short dim runs', () {
+    const width = 3440, height = 1440;
+    final profile = RaidPanelProfile.forSize(width, height);
+    int scenery(int x, int y) {
+      final stripe = x >= 2280 && x < 2465;
+      final wideRow = y == 4 && x >= 2280 && x < 2630;
+      return stripe || wideRow ? 0x5D8807 : _dark;
+    }
+
+    expect(profile.detect(width, height, scenery), isFalse);
+  });
+
+  for (final (label, gap) in [('dark', _dark), ('bright green', _green)]) {
+    test('split dim runs do not join across a $label sample', () {
+      const width = 3440, height = 1440;
+      final profile = RaidPanelProfile.forSize(width, height);
+      int scenery(int x, int y) {
+        if (x == 2465) return gap;
+        return x >= 2300 && x < 2630 ? 0x5D8807 : _dark;
       }
 
       expect(profile.detect(width, height, scenery), isFalse);

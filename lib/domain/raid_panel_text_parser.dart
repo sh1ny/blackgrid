@@ -120,8 +120,8 @@ final class RaidPanelProfile {
 
   /// Detects the green exfil header across the top of the right-hand panel.
   ///
-  /// Dim night-vision hits count only within the OCR crop and require a
-  /// continuous horizontal run spanning at least a quarter of its width.
+  /// Counts only dim night-vision samples in continuous horizontal runs
+  /// inside the OCR crop that span at least a quarter of its width.
   /// This admission rule does not change [panelBottom]'s crop classification.
   bool detect(int width, int height, int Function(int x, int y) rgb) {
     final startX = (width * headerScanStartRatio).toInt();
@@ -130,32 +130,26 @@ final class RaidPanelProfile {
     final cropWidth = _cropWidth(width);
     final cropLeft = width - cropWidth;
     final minDimSpan = (cropWidth + 3) ~/ 4;
-    var brightHits = 0;
-    var dimHits = 0;
-    var hasDimRun = false;
+    // The first sample spans one pixel; each adjacent sample adds [step].
+    final minDimSamples = 1 + (minDimSpan + step - 2) ~/ step;
+    var hits = 0;
     var samples = 0;
     for (var y = 4; y < headerBottom && y < height; y += 2) {
-      int? dimRunStart;
+      var dimRun = 0;
       for (var x = startX; x < width - 4; x += step) {
-        switch (_classifyHeaderGreen(rgb(x, y), allowDim: x >= cropLeft)) {
-          case _HeaderGreen.bright:
-            brightHits++;
-            dimRunStart = null;
-          case _HeaderGreen.dim:
-            dimHits++;
-            if (!hasDimRun) {
-              dimRunStart ??= x;
-              hasDimRun = x - dimRunStart + 1 >= minDimSpan;
-            }
-          case _HeaderGreen.none:
-            dimRunStart = null;
+        final green = _classifyHeaderGreen(rgb(x, y), allowDim: x >= cropLeft);
+        if (green == _HeaderGreen.dim) {
+          dimRun++;
+        } else {
+          if (dimRun >= minDimSamples) hits += dimRun;
+          dimRun = 0;
+          if (green == _HeaderGreen.bright) hits++;
         }
         samples++;
       }
+      if (dimRun >= minDimSamples) hits += dimRun;
     }
-    if (samples == 0) return false;
-    final hits = brightHits + (hasDimRun ? dimHits : 0);
-    return hits / samples >= greenHitThreshold;
+    return samples > 0 && hits / samples >= greenHitThreshold;
   }
 
   /// Last row of panel text/background before a sustained blank run.

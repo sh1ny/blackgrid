@@ -25,11 +25,11 @@ TIER: LIGHT
 
 ### D1: Narrow dim-header admission; retain the bright path and crop rule
 
-- **Choice:** Keep existing bright admission and the scan grid. Count a dim yellow-green, low-blue sample only inside the existing OCR crop; the unchanged overall hit fraction can use dim evidence only if one row contains an uninterrupted dim run spanning at least a quarter of the crop width. Each saved dim positive has a 114-sample run out of 247 crop samples (46%). The new predicate does not change crop classification.
-- **Rejected:** A lower shared floor admits generic green tint and changes crop sizing. A colour-only exception also accepts an in-palette vertical stripe entirely outside the OCR crop. Crop bounds alone still admit a narrow vertical stripe inside them. Do not move the check into OCR or matching.
+- **Choice:** Keep existing bright admission and the scan grid. A dim yellow-green, low-blue sample counts only if it belongs to an uninterrupted run inside the OCR crop spanning at least a quarter of the crop width. Use the unchanged overall hit fraction. The saved dim positives each have 24 qualifying rows and still exceed the 10% ultrawide threshold (17.06% and 17.12%). The new predicate does not change crop classification.
+- **Rejected:** A lower shared floor admits generic green tint and changes crop sizing. A colour-only exception accepts an in-palette stripe outside the crop; crop bounds alone also admit a narrow stripe inside them. Letting one wide row unlock the entire crop still admits a wide patch over unrelated narrow stripes. Do not move the check into OCR or matching.
 - **Reversal cost:** low.
 - **Important:** yes, changes which raid screenshots are accepted; implements S1 without widening the brief.
-- **Chosen by:** user (explicitly approved the panel-local, quarter-width row rule after pre-ship found a colour-only false positive).
+- **Chosen by:** user (approved the crop-local quarter-width rule after pre-ship review and restricted credit to samples in qualifying runs after PR review).
 
 ### D2: Keep evidence reproducible at the detector boundary
 
@@ -43,7 +43,7 @@ TIER: LIGHT
 
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
 |---|---|---|---|---|---|
-| S1/D1 | Detector scope | Admission-only dim palette inside the crop, with a contiguous quarter-width row | Lower general brightness floor or add colour-only dim coverage | low | yes | user |
+| S1/D1 | Detector scope | Count only samples belonging to a crop-local contiguous quarter-width dim run | Lower general floor, colour-only coverage, or let one qualifying row unlock unrelated dim hits | low | yes | user |
 | D2 | Evidence | Two alternate saved NV failures, bright control, real no-panel scenes, and synthetic hard negative and issue colour | Synthetic-only evidence or OCR-only checks | low | yes | user |
 
 ## Assumptions
@@ -54,4 +54,4 @@ TIER: LIGHT
 
 - **C1:** Dim header support must not admit night-vision scenery without a panel. Kind: invariant. Destination: spec: specs/raid-panel-reading/spec.md → Requirement: Detect exfil headers dimmed by night vision.
 - **C2:** The dim-header rule is admission-only; the crop must not follow newly admitted dim-green scene content. Kind: invariant. Destination: doc comment: lib/domain/raid_panel_text_parser.dart RaidPanelProfile.detect.
-- **C3:** New dim evidence must belong to the OCR crop and include a horizontal header run; total colour coverage alone is not sufficient. Kind: invariant. Destination: doc comment: lib/domain/raid_panel_text_parser.dart RaidPanelProfile.detect.
+- **C3:** Count a dim sample only when it belongs to a qualifying horizontal run inside the OCR crop; a wide row must not unlock unrelated dim samples. Kind: invariant. Destination: doc comment: lib/domain/raid_panel_text_parser.dart RaidPanelProfile.detect.
