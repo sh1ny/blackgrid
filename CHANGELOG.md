@@ -1,5 +1,26 @@
 # Blackgrid Changelog
 
+## v0.10.0 - 2026-11-25
+
+Blackgrid can now speak alerts for raid events and timers, each with its own switch, a test button and a choice of Windows voice or your own sound. An opt-in setting moves a raid's screenshots to the Recycle Bin when it ends. On the Map, Auto follows floors on more maps, including Reserve and Streets, and choosing a floor fades the ground level. Saved screenshots are read under night vision and on Shoreline, and Terminal transit raids no longer count as Unknown map. Known issue: the quest-items reminder can stay on "waits for data" when map data loads late (#123).
+
+Added:
+- Spoken alerts for match found, raid starting, run-through over and scav ready, on by default, each with a switch and a test button in the new Alerts section of Settings. Match found speaks once you join the raid's server, so cancelling matching stays silent. Run-through over is for PMC raids, and scav ready stays silent if your cooldown ends mid-raid. (#121)
+- Optional reminders: air filter on and off, check your quest items when the map you queue for has item objectives, and restart failed tasks when you are back in the menus. (#121)
+- Voice settings: pick any installed Windows voice, preview it, set speed and volume, or play your own WAV or MP3 file for any alert. (#121)
+- Opt-in screenshot cleanup: "Delete a raid's screenshots after it ends" in Settings > Game files moves a raid's screenshots to the Recycle Bin, for raids Blackgrid saw start live. It is off by default, and Settings shows the last result and reports when the setting could not be saved. (#126)
+- Cleanup skips replay, stale and duplicate raid endings. Only matching screenshots in the configured folder are selected, none are permanently deleted, and Blackgrid reports moves it could not confirm. (#126)
+
+Fixed:
+- Transit and reconnect raids on Terminal and Labyrinth count under their map in Stats, not under "Unknown map". Raids counted before this fix keep their "Unknown map" entry. (#132)
+- The Map detects Terminal, and an unrecognised scene no longer erases a raid's known map. (#132)
+- Choosing Reserve Bunkers, any Streets floor or any other floor now fades the ground level the way Reserve's upper floors already did, and Labs fades its First Level under the other levels. (#133)
+- Map Auto follows floors on multi-floor maps such as Reserve and Streets, using each map's floor heights and area bounds, instead of only on Labs and Icebreaker. You can still choose a floor by hand. (#135)
+- Map markers without an assigned floor follow the same floor rules as your position; markers with an assigned floor keep it. (#135)
+- Climber’s Trail shows on Shoreline’s ground level, and Admin Basement and Transit to Labyrinth stay on the underground floor. (#141)
+- Reading extracts from a saved screenshot no longer joins panel rows when a row number's zero reads as a slashed zero, so Shoreline panels are no longer rejected as ambiguous, and a one-letter fragment no longer matches Transit to Terminal. (#136)
+- Exfil panels whose header is dimmed by night vision are read from saved screenshots, without mistaking night-vision scenery for a panel. (#142)
+
 ## v0.9.0 - 2026-11-20
 
 Blackgrid now tracks your quest and hideout progress itself, on your own PC. It reads quest events from the game logs, catches up on raids you played while it was closed, and lets you enter or fix anything by hand. Keep/sell advice, the scav timer and the quest markers on the Map all use this local progress, so the progress-site token is gone. The Scanner also reads Found in raid from the item picture.
