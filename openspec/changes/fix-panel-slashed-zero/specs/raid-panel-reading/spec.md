@@ -43,6 +43,21 @@ A saved Shoreline exfil panel that lists its exits SHALL match those exits rathe
 - **WHEN** any of the owner's four 2026-11-25 Shoreline panels is read
 - **THEN** Transit to Terminal is not matched
 
+#### Scenario: Bright-sky panel with merged transit rows
+- **WHEN** the owner's 2026-11-25 bright-sky screenshot (raid time 12.27) is read on Shoreline, where OCR joins both transit rows into `Transit to Lighthouse Transit to Icebreaker`
+- **THEN** the result is recognised and matches the same nine exits as the night-vision panel
+
 #### Scenario: Row that truly fits two exits
-- **WHEN** a single row still fits two exits with equal strength
+- **WHEN** a single row still fits two exits with equal strength, and the row does not hold each of them as a whole name
 - **THEN** the panel is reported ambiguous and nothing is highlighted, as before
+
+### Requirement: Merged rows match every whole exit name
+When OCR merges several panel rows into one, and that row holds two or more exits' whole names with none of them stronger than the others, the row SHALL match each of those exits. An exit whose whole name lies inside another of those names SHALL NOT be matched from that row. A row that equals one exit's name, or holds two exits that share the same name, SHALL still be reported ambiguous.
+
+#### Scenario: Two transits on one row
+- **WHEN** a Shoreline transit row reads `Transit to Lighthouse Transit to Icebreaker`
+- **THEN** it matches Transit to Lighthouse and Transit to Icebreaker, and not Transit to Terminal
+
+#### Scenario: Name inside a longer name
+- **WHEN** the same row is matched against exits that include `Lighthouse`
+- **THEN** `Lighthouse` is not matched, because its name lies inside `Transit to Lighthouse`

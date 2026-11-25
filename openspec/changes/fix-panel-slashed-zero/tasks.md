@@ -11,6 +11,9 @@
 | raid-panel-reading → Short rows match only by exact name | Stray fragment | test/domain/raid_exfil_matcher_test.dart | a short row matches only an exit with that exact name | green |
 | raid-panel-reading → Saved Shoreline panels resolve | Night-vision panel | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | green |
 | raid-panel-reading → Saved Shoreline panels resolve | Exit not on the panel | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | green |
+| raid-panel-reading → Saved Shoreline panels resolve | Bright-sky panel with merged transit rows | test/domain/raid_exfil_matcher_test.dart | recorded Shoreline panels match their listed exits | red |
+| raid-panel-reading → Merged rows match every whole exit name | Two transits on one row | test/domain/raid_exfil_matcher_test.dart | a merged row matches every whole exit name in it | red |
+| raid-panel-reading → Merged rows match every whole exit name | Name inside a longer name | test/domain/raid_exfil_matcher_test.dart | a merged row matches every whole exit name in it | red |
 | raid-panel-reading → Saved Shoreline panels resolve | Row that truly fits two exits | test/domain/raid_exfil_matcher_test.dart | competing exit names one ambiguous row withholds the whole panel (existing) | green |
 
 ## 1. Split rows at slashed-zero labels
@@ -38,6 +41,15 @@
 
 - [ ] 3.1 [user] In a Shoreline raid with marker categories on, save a screenshot with the exfil panel open (one against a bright sky or with night vision if convenient). Check that This raid lists the panel's exits and Diagnostics shows no "matches more than one current-map exit" message. Agents never launch or check against the game (AGENTS.md).
 
+## 4. Merged rows match every whole exit name
+
+Added after the owner's check 3.1 (2026-11-25): the 12.27 bright-sky panel was withheld as ambiguous because OCR merged both transit rows into one. A night-vision panel that was not detected at all is tracked as #140.
+
+- [ ] 4.1 Add the 12.27 bright-sky panel to `test/fixtures/raid_panel/shoreline_panels.json` (the `text` and `lines` handed to `RaidPanelTextParser.parse`, with the nine exits it lists). Write "a merged row matches every whole exit name in it" in `test/domain/raid_exfil_matcher_test.dart`. Run `mise exec -- flutter test test/domain/raid_exfil_matcher_test.dart`. Both the new test and the recorded-panel test must fail with `ambiguous`, and the existing ambiguity tests must pass.
+- [ ] 4.2 In `RaidExfilMatcher.match`, when a row ties, match every exit whose whole name the row holds, except an exit whose name lies inside another of those names. Keep the row ambiguous when fewer than two exits remain, when one name equals the row, or when two remaining exits share a name. Document the rule on the helper. Verify: the 4.1 tests pass and every matcher test still passes.
+- [ ] 4.3 Run `mise run analyze`, `mise run test` and `dart format` on the changed files. All must pass.
+
 ## Workflow follow-up
 
-- Climber's Trail sits on Shoreline's 2nd floor from #135's position classification while it is outdoors; a separate small change, not this one.
+- Night-vision panels: night vision can dim the panel header below the detection threshold (header about `(93,136,7)` against `g >= 150`), so the panel is not found. Tracked as #140.
+- Climber's Trail sits on Shoreline's 2nd floor from #135's position classification while it is outdoors; tracked as #139.
