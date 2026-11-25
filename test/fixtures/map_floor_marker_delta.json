@@ -13,7 +13,7 @@
 {"mapId":"factory","count":442,"explicitOwners":{}},
 {"mapId":"customs","count":1403,"explicitOwners":{}},
 {"mapId":"woods","count":1285,"explicitOwners":{}},
-{"mapId":"shoreline","count":1729,"explicitOwners":{}},
+{"mapId":"shoreline","count":1729,"explicitOwners":{"extracts:f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f:0":"Ground_Level"}},
 {"mapId":"interchange","count":1674,"explicitOwners":{"switches:6b9023f26446d73433823e872e6d69688083beaf:0":"Second_Floor"}},
 {"mapId":"thelab","count":1042,"explicitOwners":{}},
 {"mapId":"reserve","count":1822,"explicitOwners":{}},
@@ -3226,7 +3226,6 @@
 "transits:51:0"
 ]},
 {"mapId":"shoreline","before":null,"after":"Second_Floor","markerIds":[
-"extracts:f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f:0",
 "locks:130737d918ff6be929736f477f3f8ba6d9c29d67:0",
 "locks:38cb1e6bdd53a2845fd3781404c8ce2fac727cd7:0",
 "locks:6eb07eb78c776e16ccd1db317ca9d965a8fd3ebe:0",

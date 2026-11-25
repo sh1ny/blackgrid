@@ -295,6 +295,51 @@
       },
       "id": "shoreline",
       "kind": "vector",
+      "markerFloorAssignments": {
+        "extracts:f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f:0": {
+          "basis": "outdoor-climbers-trail-extract",
+          "evidenceSourcePaths": [
+            "markers/maps.json:5704e554d2720bac5b8b456e/extracts/0"
+          ],
+          "evidenceUrls": [
+            "https://github.com/sh1ny/blackgrid/issues/139"
+          ],
+          "floorId": "Ground_Level",
+          "sourceVolume": {
+            "heightBand": [
+              -15.64,
+              13.64
+            ],
+            "outline": [
+              {
+                "x": -188.81,
+                "y": -15.64,
+                "z": -381.62
+              },
+              {
+                "x": -188.81,
+                "y": -15.64,
+                "z": -341.98
+              },
+              {
+                "x": -239.79,
+                "y": -15.64,
+                "z": -341.98
+              },
+              {
+                "x": -239.79,
+                "y": -15.64,
+                "z": -381.62
+              }
+            ],
+            "position": {
+              "x": -214.3,
+              "y": -1,
+              "z": -361.8
+            }
+          }
+        }
+      },
       "name": "Shoreline",
       "sourceKey": "shoreline",
       "sourceSvgPath": "shoreline/Shoreline.svg"

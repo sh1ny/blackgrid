@@ -28,6 +28,7 @@ const _sourceKeys = [
 
 Map<String, dynamic> _mapSource({
   Map<String, dynamic>? customs,
+  Map<String, dynamic>? shoreline,
   Map<String, dynamic>? interchange,
   Map<String, dynamic>? icebreaker,
   Map<String, dynamic>? extra,
@@ -56,6 +57,7 @@ Map<String, dynamic> _mapSource({
       'customs': ?customs,
       'interchange': ?interchange,
       'icebreaker': ?icebreaker,
+      'shoreline': ?shoreline,
       'new-upstream-map': ?extra,
     },
     'mobs': <String, dynamic>{
@@ -535,6 +537,43 @@ void main() {
     expect(details['quest'], isNot(contains('name')));
     expect(details['quest'], isNot(contains('trader')));
   });
+
+  test(
+    'Shoreline assigns the ground floor only for the reviewed extract volume',
+    () {
+      final extract = <String, dynamic>{
+        'id': 'f7da3681df4ae3bd7b3d5ba0e0f960dc1722d23f',
+        'name': 'RedRebel_alp',
+        'position': {'x': -214.3, 'y': -1, 'z': -361.8},
+        'bottom': -15.64,
+        'top': 13.64,
+        'outline': [
+          {'x': -188.81, 'y': -15.64, 'z': -381.62},
+          {'x': -188.81, 'y': -15.64, 'z': -341.98},
+          {'x': -239.79, 'y': -15.64, 'z': -341.98},
+          {'x': -239.79, 'y': -15.64, 'z': -381.62},
+        ],
+      };
+      Map<String, Object?> normalize(Map<String, dynamic> raw) =>
+          prepareMarkers(
+            _mapSource(shoreline: _mapRecord('shoreline', extracts: [raw])),
+            {},
+            calibrationFor('shoreline'),
+          ).single;
+
+      expect(normalize(extract)['floorId'], 'Ground_Level');
+      for (final drift in <Map<String, dynamic>>[
+        {'id': 'unreviewed-same-name'},
+        {
+          'position': {'x': -214.3, 'y': -0.5, 'z': -361.8},
+        },
+        {'top': 14},
+        {'outline': (extract['outline'] as List).reversed.toList()},
+      ]) {
+        expect(normalize({...extract, ...drift}), isNot(contains('floorId')));
+      }
+    },
+  );
 
   test('reviewed floor overrides apply only to matching markers', () {
     final console = _interchangeConsole();
