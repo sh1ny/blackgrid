@@ -135,6 +135,40 @@ void main() {
     expect(rows[0].transits, rows[1].transits);
   });
 
+  test('every zero and one misread in a row number is repaired', () {
+    final names = _parse([
+      'Find an extraction point EXFILO1 Road to North V-Ex '
+          'EXFILo2 Road to Customs EXFIL Ø3 Railway Bridge '
+          'EXFIL  0l Path to Lighthouse EXFIL0| Pier Boat '
+          'TRANSITØI Transit to Lighthouse TRANSIT  Ø4 Transit to Icebreaker',
+    ]);
+    expect(
+      names.extracts,
+      containsAll([
+        'Road to North V-Ex',
+        'Road to Customs',
+        'Railway Bridge',
+        'Path to Lighthouse',
+        'Pier Boat',
+      ]),
+    );
+    expect(
+      names.transits,
+      containsAll(['Transit to Lighthouse', 'Transit to Icebreaker']),
+    );
+    for (final row in [...names.extracts, ...names.transits]) {
+      expect(row, isNot(contains(RegExp(r'(EXFIL|TRANSIT)\s*\S\S'))));
+    }
+  });
+
+  test('a label followed by a word keeps the word\'s letters', () {
+    final names = _parse(['EXFIL01 EXIT Old Bunker EXFIL02 TRANSIT Oil Gate']);
+    expect(
+      names.extracts,
+      containsAll(['EXIT Old Bunker', 'TRANSIT Oil Gate']),
+    );
+  });
+
   test('an Exfil word without a row number stays in the name', () {
     final names = _parse(['EXFIL02 Saferoom Exfil EXFIL03 Railway Exfil']);
     expect(names.extracts, containsAll(['Saferoom Exfil', 'Railway Exfil']));

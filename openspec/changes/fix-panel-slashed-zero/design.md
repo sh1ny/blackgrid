@@ -25,7 +25,7 @@ TIER: LIGHT
 
 ### D1: Repair the row number in normalisation, not in each pattern
 
-- **Choice:** Extend the parser's text normalisation. After an `EXFIL`, `EXIT` or `TRANSIT` label (with at most one space), a two-character row number whose first character is `0`, `Ø`, `O` or `o` is rewritten to digits: `Ø`/`O`/`o` become `0`, and `I`/`l`/`|` become `1`. The four label patterns stay as they are.
+- **Choice:** Extend the parser's text normalisation. After an upper-case `EXFIL`, `EXIT` or `TRANSIT` label (with any spacing, as the label patterns allow), a two-character row number not followed by a letter or digit whose first character is `0`, `Ø`, `O` or `o` is rewritten to digits: `Ø`/`O`/`o` become `0`, and `I`/`l`/`|` become `1`. The four label patterns stay as they are.
 - **Rejected:** Widening the digit class in all four regular expressions (`[0-9ØOoIl|]`). That spreads one OCR rule across four patterns and their lookaheads, and the label patterns would then also take letters as row numbers wherever a label happens to be followed by `I` or `l`.
 - **Reversal cost:** low
 - **Important:** no. It is how S1 is done, and the behaviour users see is S1's.
