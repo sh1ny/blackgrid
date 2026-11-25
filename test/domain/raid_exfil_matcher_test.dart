@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blackgrid/domain/raid_exfil_matcher.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
@@ -75,6 +78,67 @@ void main() {
       RaidExfilMatcher.namesMatch('Railway Exfl', 'Railway Exfil'),
       isTrue,
     );
+  });
+
+  test('a short row matches only an exit with that exact name', () {
+    final matcher = RaidExfilMatcher([
+      RaidExitIdentity(id: 'd2', name: 'D-2', transit: false),
+      RaidExitIdentity(
+        id: 'terminal',
+        name: 'Transit to Terminal',
+        transit: true,
+      ),
+      RaidExitIdentity(
+        id: 'lighthouse',
+        name: 'Transit to Lighthouse',
+        transit: true,
+      ),
+    ]);
+    expect(matcher.match(_recognized(extracts: ['D-2'])).ids, {'d2'});
+    final stray = matcher.match(_recognized(transits: ['I']));
+    expect(stray.state, RaidPanelState.unreadable);
+    expect(stray.ids, isEmpty);
+    expect(RaidExfilMatcher.namesMatch('I', 'Transit to Terminal'), isFalse);
+  });
+
+  test('recorded Shoreline panels match their listed exits', () {
+    final fixture = jsonDecode(
+      File('test/fixtures/raid_panel/shoreline_panels.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final exits = [
+      for (final exit in fixture['exits'] as List)
+        RaidExitIdentity(
+          id: exit['id'] as String,
+          name: exit['name'] as String,
+          transit: exit['transit'] as bool,
+        ),
+    ];
+    final nameOf = {for (final exit in exits) exit.id: exit.name};
+    final matcher = RaidExfilMatcher(exits);
+    for (final panel in fixture['panels'] as List) {
+      final text = panel['text'] as String;
+      final names = RaidPanelNames();
+      const RaidPanelTextParser().parse(
+        text,
+        (panel['lines'] as List).cast<String>(),
+        names,
+      );
+      final result = matcher.match(
+        RaidPanelEvidence(
+          state: RaidPanelState.recognized,
+          extractNames: names.extracts,
+          transitNames: names.transits,
+          rawText: text,
+        ),
+      );
+      final label = panel['label'];
+      expect(result.state, RaidPanelState.recognized, reason: '$label');
+      expect(
+        {for (final id in result.ids) nameOf[id]},
+        (panel['exits'] as List).cast<String>().toSet(),
+        reason: '$label',
+      );
+    }
   });
 
   group('competing exit names', () {

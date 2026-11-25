@@ -103,9 +103,16 @@ final class RaidExfilMatcher {
     return RaidMatchResult(RaidPanelState.recognized, ids, evidence.message);
   }
 
+  /// Whether the OCR row [ocrName] names the exit called [dataName].
+  ///
+  /// A row shorter than four letters and digits matches only an exit whose
+  /// normalised name equals it, such as Reserve's `D-2`. Containment and
+  /// fuzzy similarity are refused for it, because a label fragment such as
+  /// `I` would otherwise match every exit whose name contains that letter.
   static bool namesMatch(String ocrName, String dataName) {
     final ocr = _normalize(ocrName), data = _normalize(dataName);
     if (ocr.isEmpty || data.isEmpty) return false;
+    if (ocr.length < 4) return ocr == data;
     if (ocr == data || ocr.contains(data) || data.contains(ocr)) return true;
     if (_wordOverlap(ocr, dataName) >= _wordOverlapThreshold ||
         _wordOverlap(data, ocrName) >= _wordOverlapThreshold) {
