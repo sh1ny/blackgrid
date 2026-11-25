@@ -118,7 +118,9 @@ final class RaidPanelProfile {
     return scale < maximum ? scale : maximum;
   }
 
-  /// Green exfil header across the top of the right-hand panel area.
+  /// Detects the green exfil header across the top of the right-hand panel.
+  ///
+  /// Dim night-vision header colours count here, not in [panelBottom].
   bool detect(int width, int height, int Function(int x, int y) rgb) {
     final startX = (width * headerScanStartRatio).toInt();
     final headerBottom = _maxInt(24, (height * headerHeightRatio).toInt());
@@ -127,7 +129,7 @@ final class RaidPanelProfile {
     var samples = 0;
     for (var y = 4; y < headerBottom && y < height; y += 2) {
       for (var x = startX; x < width - 4; x += step) {
-        if (_headerGreen(rgb(x, y))) hits++;
+        if (_headerGreen(rgb(x, y), allowDim: true)) hits++;
         samples++;
       }
     }
@@ -183,9 +185,10 @@ final class RaidPanelProfile {
 int _maxInt(int a, int b) => a > b ? a : b;
 int _minInt(int a, int b) => a < b ? a : b;
 
-bool _headerGreen(int color) {
+bool _headerGreen(int color, {bool allowDim = false}) {
   final r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
-  return g >= 150 && r <= 210 && b <= 170 && g >= r + 20 && g >= b + 10;
+  if (g >= 150) return r <= 210 && b <= 170 && g >= r + 20 && g >= b + 10;
+  return allowDim && g >= 125 && r >= 70 && r <= 110 && g >= r + 25 && b <= 20;
 }
 
 bool _panelBackground(int color) {

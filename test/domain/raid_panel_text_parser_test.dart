@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 
+import '../fixtures/raid_panel/header_samples.dart';
+
 const _green = 0x3CC850; // r=60 g=200 b=80
 const _dark = 0x141618;
 const _white = 0xE6E6E6;
@@ -9,6 +11,25 @@ RaidPanelNames _parse(List<String> lines) {
   final names = RaidPanelNames();
   const RaidPanelTextParser().parse(lines.join('\n'), lines, names);
   return names;
+}
+
+// The 12 × 10 saved-sample grid covers the scanned part of a small ultrawide frame.
+bool _detectSavedHeader(String frame) {
+  final rows = savedRaidHeaderSamples[frame]!;
+  final pixels = [
+    for (final row in rows)
+      [
+        for (var i = 0; i < row.length; i += 6)
+          int.parse(row.substring(i, i + 6), radix: 16),
+      ],
+  ];
+  const width = 120, height = 28;
+  final profile = RaidPanelProfile.forSize(width, height);
+  return profile.detect(
+    width,
+    height,
+    (x, y) => pixels[(y - 4) ~/ 2][(x - 69) ~/ 4],
+  );
 }
 
 void main() {
@@ -34,8 +55,61 @@ void main() {
       expect(profile.detect(width, height, panel), isTrue);
       expect(profile.detect(width, height, (_, _) => _dark), isFalse);
       expect(profile.detect(width, height, (_, _) => _white), isFalse);
+      expect(_detectSavedHeader('2026-11-25 raid time 12.10'), isTrue);
     },
   );
+
+  test('detects an exfil header dimmed by night vision', () {
+    const width = 120, height = 28;
+    const reportedHeader = 0x5D8807; // #140: RGB (93, 136, 7).
+    final profile = RaidPanelProfile.forSize(width, height);
+    int panel(int x, int y) => x >= 84 && y < 16 ? reportedHeader : _dark;
+    expect(profile.detect(width, height, panel), isTrue);
+  });
+
+  for (final time in ['12.02', '12.44']) {
+    test('detects the saved Shoreline night-vision panel at $time', () {
+      expect(_detectSavedHeader('2026-11-25 raid time $time'), isTrue);
+    });
+  }
+
+  test('rejects night-vision scenery without an exfil header', () {
+    for (final time in ['2.12', '3.90', '5.75']) {
+      expect(
+        _detectSavedHeader('2026-11-21 raid time $time'),
+        isFalse,
+        reason: 'saved night-vision scenery at $time',
+      );
+    }
+
+    const width = 120, height = 28;
+    final profile = RaidPanelProfile.forSize(width, height);
+    const nearMisses = {
+      'ordinary green tint': 0x5D8842,
+      'saturated green light': 0x248802,
+      'dim yellow-olive tint': 0x738F02,
+    };
+    for (final entry in nearMisses.entries) {
+      int scenery(int x, int y) => x >= 84 && y < 16 ? entry.value : _dark;
+      expect(
+        profile.detect(width, height, scenery),
+        isFalse,
+        reason: entry.key,
+      );
+    }
+  });
+
+  test('dim header pixels do not extend the panel crop', () {
+    const width = 2560, height = 1440;
+    final profile = RaidPanelProfile.forSize(width, height);
+    int panel(int x, int y) {
+      if (y < 846) return _white;
+      if (y >= 850 && y < 950) return 0x5D8807;
+      return 0x808080;
+    }
+
+    expect(profile.panelBottom(width, height, panel), 873);
+  });
 
   test('panel bottom follows text rows and crop is right anchored', () {
     const width = 2560, height = 1440;
