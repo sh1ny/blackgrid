@@ -93,5 +93,5 @@ DECISION_MAKING: important
 Raids entered on Terminal or Labyrinth by transit or reconnect now count under that map in Stats, not under "Unknown map". The Map tab now detects Terminal. Raids counted before this fix keep their "Unknown map" entry.
 
 ### Fixed
-- Transit and reconnect raids on Terminal and Labyrinth count under their map in Stats, not under "Unknown map" (#129).
-- The Map tab detects Terminal from the game's `terminal_preset` scene, and an unrecognised scene no longer erases a raid's known map (#129).
+- Transit and reconnect raids on Terminal and Labyrinth count under their map in Stats, not under "Unknown map". Raids counted before this fix keep their "Unknown map" entry.
+- The Map detects Terminal, and an unrecognised scene no longer erases a raid's known map.

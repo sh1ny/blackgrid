@@ -81,5 +81,5 @@ DECISION_MAKING: important
 Switch on "Delete a raid's screenshots after it ends" in Settings > Game files to move a raid's game screenshots to the Recycle Bin at the end. Blackgrid must have been open when the raid started. Cleanup is off by default.
 
 ### Added
-- Opt-in screenshot cleanup for raids Blackgrid saw start live. Settings > Game files shows the last result and reports when the setting could not be saved.
-- Cleanup skips replay, stale and duplicate endings. Only matching screenshots in the configured folder are selected, and none are permanently deleted. Blackgrid reports moves it could not confirm.
+- Opt-in screenshot cleanup: "Delete a raid's screenshots after it ends" in Settings > Game files moves a raid's screenshots to the Recycle Bin, for raids Blackgrid saw start live. It is off by default, and Settings shows the last result and reports when the setting could not be saved.
+- Cleanup skips replay, stale and duplicate raid endings. Only matching screenshots in the configured folder are selected, none are permanently deleted, and Blackgrid reports moves it could not confirm.

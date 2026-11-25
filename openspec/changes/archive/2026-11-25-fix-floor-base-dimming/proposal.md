@@ -71,4 +71,4 @@ Choosing a floor now fades the ground level on every map, so underground and upp
 
 ### Fixed
 
-- Choosing Reserve Bunkers, any Streets floor or any other vector floor now fades the ground level the way Reserve's upper floors already did, and Labs fades its First Level under the other levels (#130).
+- Choosing Reserve Bunkers, any Streets floor or any other floor now fades the ground level the way Reserve's upper floors already did, and Labs fades its First Level under the other levels.

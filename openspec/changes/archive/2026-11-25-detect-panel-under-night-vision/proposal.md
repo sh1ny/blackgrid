@@ -45,4 +45,4 @@ Blackgrid can read saved exfil panels whose headers are dimmed by night vision.
 
 ### Fixed
 
-- Recognize the dim exfil header under night vision without treating the tested no-panel scenery as an exfil panel (#140).
+- Exfil panels whose header is dimmed by night vision are read from saved screenshots, without mistaking night-vision scenery for a panel.

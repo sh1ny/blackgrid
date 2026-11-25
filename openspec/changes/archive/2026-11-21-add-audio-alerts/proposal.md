@@ -115,6 +115,6 @@ DECISION_MAKING: important
 Blackgrid can now speak alerts for match found, raid starting, run-through over and scav ready, with optional reminders for the air filter, quest items and restartable failed tasks. Each alert has its own switch, a test button and a choice of Windows voice or your own sound file.
 
 ### Added
-- Spoken alerts for match found, raid starting, run-through over and scav ready, on by default, each with a switch and a test button in the new Alerts section of Settings. Match found speaks once you join the raid's server, so cancelling matching stays silent. Run-through over is for PMC raids, and scav ready stays silent if your cooldown ends mid-raid.
-- Optional reminders: air filter on and off, check your quest items when the map you queue for has item objectives, and restart failed tasks when you are back in the menus.
-- Voice settings: pick any installed Windows voice, preview it, set speed and volume, or play your own WAV or MP3 file for any alert.
+- Spoken alerts for match found, raid starting, run-through over and scav ready, on by default, each with a switch and a test button in the new Alerts section of Settings. Match found speaks once you join the raid's server, so cancelling matching stays silent. Run-through over is for PMC raids, and scav ready stays silent if your cooldown ends mid-raid. (#121)
+- Optional reminders: air filter on and off, check your quest items when the map you queue for has item objectives, and restart failed tasks when you are back in the menus. (#121)
+- Voice settings: pick any installed Windows voice, preview it, set speed and volume, or play your own WAV or MP3 file for any alert. (#121)
