@@ -25,11 +25,11 @@ TIER: LIGHT
 
 ### D1: Narrow dim-header admission; retain the bright path and crop rule
 
-- **Choice:** Keep existing bright admission and add a dim-header test specific to the sampled yellow-green, low-blue colours. Use the existing scan geometry and keep the new test inside admission. Calibrate it on owner-provided screenshots before changing production code. If no-panel samples still qualify, stop and revisit the plan rather than shipping a threshold that admits them.
-- **Rejected:** Lower the shared `_headerGreen` floor: this both admits generic green-tinted scenery and changes crop sizing. Do not expand into OCR or matching to handle a detector error.
+- **Choice:** Keep existing bright admission and the scan grid. Count a dim yellow-green, low-blue sample only inside the existing OCR crop; the unchanged overall hit fraction can use dim evidence only if one row contains an uninterrupted dim run spanning at least a quarter of the crop width. Each saved dim positive has a 114-sample run out of 247 crop samples (46%). The new predicate does not change crop classification.
+- **Rejected:** A lower shared floor admits generic green tint and changes crop sizing. A colour-only exception also accepts an in-palette vertical stripe entirely outside the OCR crop. Crop bounds alone still admit a narrow vertical stripe inside them. Do not move the check into OCR or matching.
 - **Reversal cost:** low.
 - **Important:** yes, changes which raid screenshots are accepted; implements S1 without widening the brief.
-- **Chosen by:** user (issue #140 calls for the dim low-blue header and no scenery false positives; exact cutoffs are determined by evidence).
+- **Chosen by:** user (explicitly approved the panel-local, quarter-width row rule after pre-ship found a colour-only false positive).
 
 ### D2: Keep evidence reproducible at the detector boundary
 
@@ -43,14 +43,15 @@ TIER: LIGHT
 
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
 |---|---|---|---|---|---|
-| S1/D1 | Detector scope | Admission-only dim header rule, with no-panel regression checks | Lower shared brightness floor | low | yes | user |
+| S1/D1 | Detector scope | Admission-only dim palette inside the crop, with a contiguous quarter-width row | Lower general brightness floor or add colour-only dim coverage | low | yes | user |
 | D2 | Evidence | Two alternate saved NV failures, bright control, real no-panel scenes, and synthetic hard negative and issue colour | Synthetic-only evidence or OCR-only checks | low | yes | user |
 
 ## Assumptions
 
-- **A1:** A colour rule with the current sampling geometry can distinguish the observed dim header from saved no-panel NV scenery. The issue gives one approximate positive colour but no scenery samples. Verify in task 1.1; D1 depends on this. If the evidence does not support it, stop before changing production code.
+- **A1 (settled):** The sampled dim palette separated the six saved frames, but colour alone did not distinguish a constructed in-palette scenery stripe from a header. The two dim positives retain the required run in the crop; group 2 verifies that evidence and rejects in-palette stripes.
 
 ## Carried constraints
 
 - **C1:** Dim header support must not admit night-vision scenery without a panel. Kind: invariant. Destination: spec: specs/raid-panel-reading/spec.md → Requirement: Detect exfil headers dimmed by night vision.
 - **C2:** The dim-header rule is admission-only; the crop must not follow newly admitted dim-green scene content. Kind: invariant. Destination: doc comment: lib/domain/raid_panel_text_parser.dart RaidPanelProfile.detect.
+- **C3:** New dim evidence must belong to the OCR crop and include a horizontal header run; total colour coverage alone is not sufficient. Kind: invariant. Destination: doc comment: lib/domain/raid_panel_text_parser.dart RaidPanelProfile.detect.
