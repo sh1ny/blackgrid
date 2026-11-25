@@ -102,6 +102,47 @@ void main() {
     expect(names.extracts, ['Tunnel']);
   });
 
+  test('slashed-zero row labels split rows like plain zeros', () {
+    const slashed =
+        'Find an extraction point EXFILØI Road to North V-Ex '
+        'EXFILØ2 Road to Customs EXFILØ3 Railway Bridge '
+        'EXFILØ4 Path to Lighthouse TRANSITØI Transit to Lighthouse '
+        'TRANSITØ4 Transit to Icebreaker';
+    const plain =
+        'Find an extraction point EXFIL01 Road to North V-Ex '
+        'EXFIL02 Road to Customs EXFIL03 Railway Bridge '
+        'EXFIL04 Path to Lighthouse TRANSIT01 Transit to Lighthouse '
+        'TRANSIT04 Transit to Icebreaker';
+    final rows = [
+      for (final text in [slashed, plain]) _parse([text]),
+    ];
+    for (final names in rows) {
+      expect(
+        names.extracts,
+        containsAll(['Road to Customs', 'Railway Bridge']),
+      );
+      expect(
+        names.transits,
+        containsAll(['Transit to Lighthouse', 'Transit to Icebreaker']),
+      );
+      for (final row in [...names.extracts, ...names.transits]) {
+        expect(row.toUpperCase(), isNot(contains('EXFIL')));
+        expect(row.toUpperCase(), isNot(contains('TRANSIT0')));
+        expect(row.toUpperCase(), isNot(contains('TRANSITØ')));
+      }
+    }
+    expect(rows[0].extracts, rows[1].extracts);
+    expect(rows[0].transits, rows[1].transits);
+  });
+
+  test('an Exfil word without a row number stays in the name', () {
+    final names = _parse(['EXFIL02 Saferoom Exfil EXFIL03 Railway Exfil']);
+    expect(names.extracts, containsAll(['Saferoom Exfil', 'Railway Exfil']));
+    expect(names.extracts.where((row) => row.contains('Railway')), [
+      'Railway Exfil',
+    ]);
+  });
+
   test('merging two recognitions keeps text and unique lines', () {
     expect(mergeRaidOcrText('', 'b'), 'b');
     expect(mergeRaidOcrText('abc def', 'DEF'), 'abc def');

@@ -259,6 +259,12 @@ final _transitInline = RegExp(
   r'\s*0?\d|\s+TRANSIT\s*0?\d|$)',
   caseSensitive: false,
 );
+final _rowNumber = RegExp(
+  r'((?:EXFIL|EXIT|TRANSIT) ?)[0ØOo]([0-9ØOoIl|])(?![\p{L}\p{N}])',
+  unicode: true,
+);
+final _zeroGlyph = RegExp('[ØOo]');
+final _oneGlyph = RegExp(r'[Il|]');
 final _numberedExtract = RegExp(r'^0?(\d{1,2})\s+([A-Za-z].+)$');
 final _timerLine = RegExp(r'^\d{1,2}:\d{2}(:\d{2})?$');
 
@@ -332,6 +338,15 @@ final class RaidPanelTextParser {
     }
   }
 
+  /// Repairs the engine's known misreads of the panel's row labels.
+  ///
+  /// The panel font draws a slashed zero, so a row number's zero can arrive
+  /// as `Ø`, `O` or `o`, and its one as `I`, `l` or `|` (`EXFILØ3`,
+  /// `TRANSITØI`). The row-label patterns only accept digits, so they rely on
+  /// this repair: without it, rows are not split at those labels and run
+  /// together. Only a two-character number right after an upper-case
+  /// `EXFIL`, `EXIT` or `TRANSIT` label is rewritten, so exit names keep
+  /// their letters.
   static String _normalize(String text) {
     var result = text.replaceAll('’', "'").replaceAll('‘', "'");
     for (final (from, to) in const [
@@ -349,7 +364,11 @@ final class RaidPanelTextParser {
         to,
       );
     }
-    return result;
+    return result.replaceAllMapped(
+      _rowNumber,
+      (match) =>
+          '${match[1]}0${match[2]!.replaceAll(_zeroGlyph, '0').replaceAll(_oneGlyph, '1')}',
+    );
   }
 
   static bool _ignored(String line) {
