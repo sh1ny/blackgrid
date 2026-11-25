@@ -966,13 +966,245 @@ void main() {
     );
   });
 
-  test('local floor identities and bands survive changed upstream labels', () {
+  test('extent layers require one named prepared floor', () {
+    final local = calibrationFor('the-lab');
+    final known = {
+      'name': 'Known upper',
+      'tilePath': labsTiles[1],
+      'extents': [
+        {
+          'height': [3, 10000],
+        },
+      ],
+    };
+    Map<String, dynamic> upstream(Object layer) => {
+      'tilePath': labsTiles.first,
+      'layers': [
+        {'tilePath': labsTiles[2]},
+        layer,
+      ],
+    };
+    Matcher named(String name) => throwsA(
+      isA<FormatException>().having(
+        (error) => error.message,
+        'message',
+        allOf(contains('thelab'), contains(name)),
+      ),
+    );
+    expect(
+      () => reconcileFloors(
+        local,
+        upstream({...known, 'name': 'No tile', 'tilePath': null}),
+      ),
+      named('No tile'),
+    );
+    expect(
+      () => reconcileFloors(
+        local,
+        upstream({...known, 'name': 'Wrong SVG', 'svgLayer': 'missing'}),
+      ),
+      named('Wrong SVG'),
+    );
+    final floors = (local['floors'] as List).cast<Map<String, Object?>>();
+    expect(
+      () => reconcileFloors({
+        ...local,
+        'floors': [
+          ...floors,
+          {...floors[1], 'id': 'Duplicate_Tile'},
+        ],
+      }, upstream(known)),
+      named('Known upper'),
+    );
+  });
+
+  test('malformed source extents name the map and layer', () {
+    for (final extent in [
+      {
+        'height': [3, 3],
+      },
+      {
+        'height': [double.nan, 5],
+      },
+      {
+        'height': [3, 5],
+        'bounds': null,
+      },
+      {
+        'height': [3, 5],
+        'bounds': 'not a list',
+      },
+      {
+        'height': [3, 5],
+        'bounds': [
+          [
+            [1, 2],
+            [1, 4],
+            'empty rectangle',
+          ],
+        ],
+      },
+    ]) {
+      expect(
+        // The technical floor is also missing; report the bad extent first.
+        () => reconcileFloors(calibrationFor('the-lab'), {
+          'tilePath': labsTiles[0],
+          'layers': [
+            {
+              'name': 'Broken upstairs',
+              'tilePath': labsTiles[1],
+              'extents': [extent],
+            },
+          ],
+        }),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('thelab'), contains('Broken upstairs')),
+          ),
+        ),
+        reason: '$extent',
+      );
+    }
+  });
+
+  test('malformed unnamed tile layer reports its rendition identity', () {
+    expect(
+      () => reconcileFloors(calibrationFor('the-lab'), {
+        'tilePath': labsTiles[0],
+        'layers': [
+          {
+            'svgLayer': '',
+            'tilePath': labsTiles[1],
+            'extents': [
+              {
+                'height': [3, 5],
+                'bounds': null,
+              },
+            ],
+          },
+        ],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('thelab'), contains(labsTiles[1]), contains('bounds')),
+        ),
+      ),
+    );
+  });
+
+  test('metadata links and normalizes floor extents by rendition identity', () {
+    final floors = reconcileFloors(calibrationFor('interchange'), {
+      'svgLayer': 'Ground_Level',
+      '_heightRange': [-1000, 25],
+      'layers': [
+        {
+          'name': 'Renamed upper',
+          'svgLayer': 'Second_Floor',
+          'tilePath': 'https://example.invalid/unselected/{z}/{x}/{y}.png',
+          'extents': [
+            {
+              'height': [34, 1000],
+              'bounds': [
+                [
+                  [120, -327],
+                  [-222, 218],
+                  'mall',
+                ],
+                [
+                  [4, 9],
+                  [8, 5],
+                ],
+              ],
+            },
+          ],
+        },
+        {
+          'name': 'Renamed middle',
+          'svgLayer': 'First_Floor',
+          'extents': [
+            {
+              'height': [25, 34],
+            },
+          ],
+        },
+      ],
+    });
+    expect(floors.map((floor) => floor['id']), [
+      'Ground_Level',
+      'First_Floor',
+      'Second_Floor',
+    ]);
+    expect(
+      floors[0]['extents'],
+      isEmpty,
+      reason: 'Root bands are not extents.',
+    );
+    expect(floors[1]['extents'], [
+      {
+        'height': [25, 34],
+        'bounds': [],
+      },
+    ]);
+    expect(floors[2]['extents'], [
+      {
+        'height': [34, 1000],
+        'bounds': [
+          [-222, -327, 120, 218],
+          [4, 5, 8, 9],
+        ],
+      },
+    ]);
+  });
+
+  test('a tile-backed floor on a vector map accepts an empty SVG id', () {
+    final local = calibrationFor('customs');
+    final localFloors = (local['floors'] as List).cast<Map<String, Object?>>();
+    final fourth = localFloors.singleWhere((f) => f['id'] == 'Fourth_Floor');
+    final floors = reconcileFloors(local, {
+      'svgLayer': 'Ground_Level',
+      'layers': [
+        {'svgLayer': 'Second_Floor'},
+        {'svgLayer': 'Third_Floor'},
+        {'svgLayer': 'Underground_Level'},
+        {
+          'name': '4th Floor',
+          'svgLayer': '',
+          'tilePath': fourth['sourceTileUrl'],
+          'extents': [
+            {
+              'height': [25, 34],
+            },
+          ],
+        },
+      ],
+    });
+    expect(floors.singleWhere((f) => f['id'] == 'Fourth_Floor')['extents'], [
+      {
+        'height': [25, 34],
+        'bounds': [],
+      },
+    ]);
+  });
+
+  test('tile-path floor identities survive changed upstream labels', () {
     final local = calibrationFor('the-lab');
     final upstream = {
       'tilePath': labsTiles.first,
       'layers': [
         {'name': 'Renamed technical', 'tilePath': labsTiles[2]},
-        {'name': 'Renamed upper', 'tilePath': labsTiles[1]},
+        {
+          'name': 'Renamed upper',
+          'tilePath': labsTiles[1],
+          'extents': [
+            {
+              'height': [3, 10000],
+            },
+          ],
+        },
       ],
     };
     final floors = reconcileFloors(local, upstream);
@@ -981,28 +1213,16 @@ void main() {
       'Second_Level',
       'Technical_Level',
     ]);
-    expect(floors[1]['heightBand'], [3, 1000]);
+    expect(floors[1]['extents'], [
+      {
+        'height': [3, 10000],
+        'bounds': [],
+      },
+    ]);
     expect(
       () => reconcileFloors(local, {'tilePath': labsTiles.first, 'layers': []}),
       throwsFormatException,
     );
-    final interchange = calibrationFor('interchange');
-    final refreshedVector = reconcileFloors(interchange, {
-      'svgLayer': 'Ground_Level',
-      'tilePath': 'https://example.invalid/unselected-raster/{z}/{x}/{y}.png',
-      'layers': [
-        {'name': 'Renamed upper', 'svgLayer': 'Second_Floor'},
-        {'name': 'Renamed middle', 'svgLayer': 'First_Floor'},
-      ],
-    });
-    expect(refreshedVector.map((f) => f['id']), [
-      'Ground_Level',
-      'First_Floor',
-      'Second_Floor',
-    ]);
-    expect(refreshedVector[1]['label'], '2nd Floor');
-    expect(refreshedVector[1]['heightBand'], [25, 34]);
-    expect(refreshedVector[2]['heightBand'], [34, 1000]);
     expect(calibrationFor('icebreaker')['floors'], hasLength(16));
     final ice = calibrationFor('icebreaker');
     final iceFloors = (ice['floors'] as List).cast<Map<String, Object?>>();
@@ -1012,23 +1232,26 @@ void main() {
       )['sourceTileUrl'],
       'layers': [
         for (final f in iceFloors.reversed)
-          {'name': 'Changed display label', 'tilePath': f['sourceTileUrl']},
+          {
+            'name': 'Changed display label',
+            'tilePath': f['sourceTileUrl'],
+            if (f['base'] == true)
+              'extents': [
+                {
+                  'height': [18.92, 19.56],
+                },
+              ],
+          },
       ],
     });
     expect(refreshedIce.map((f) => f['id']), icebreakerSources.keys);
     expect(refreshedIce.every((f) => f['exclusive'] == true), isTrue);
-    expect(
-      refreshedIce.singleWhere(
-        (f) => f['id'] == 'Storage_Security',
-      )['heightBand'],
-      [15, 18.92],
-    );
-    expect(
-      refreshedIce
-          .singleWhere((f) => f['id'] == 'Infirmary')
-          .containsKey('heightBand'),
-      isFalse,
-    );
+    expect(refreshedIce.singleWhere((f) => f['id'] == 'Infirmary')['extents'], [
+      {
+        'height': [18.92, 19.56],
+        'bounds': [],
+      },
+    ]);
     expect(
       () => reconcileFloors(local, {
         ...upstream,

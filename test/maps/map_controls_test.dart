@@ -7,6 +7,7 @@ import 'dart:ui' show Size;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:blackgrid/application/map_controller.dart';
+import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/map_floors.dart';
 import 'package:blackgrid/maps/native_map_scene.dart';
 import 'package:blackgrid/maps/prepared_map.dart';
@@ -27,6 +28,44 @@ void main() {
     manifest = jsonDecode(
       File('${pack.assetRoot}manifest.json').readAsStringSync(),
     ) as Map<String, dynamic>;
+  });
+
+  test('Auto follows Reserve and Streets independently', () async {
+    final loader = _loader();
+    final controller = MapController(
+      loader: loader,
+      resources: NativeMapResourceOwner(loader),
+    );
+    addTearDown(controller.dispose);
+    await controller.initialize(selectedMapId: 'reserve');
+    expect(controller.automaticFloorFollowing, isTrue);
+    controller.setPlayerSample(GamePoint(-100, 0, height: -9));
+    expect(controller.floorSelection!.selectedOverlayIds, {'Bunkers'});
+    controller.setPlayerSample(GamePoint(1000, 1000, height: -9));
+    expect(controller.floorSelection!.selectedOverlayIds, isEmpty);
+    controller.setPlayerSample(GamePoint(-100, 0, height: -9));
+    controller.setPlayerSample(GamePoint(-100, 0));
+    expect(controller.floorSelection!.selectedOverlayIds, {'Bunkers'});
+    controller.setPlayerSample(GamePoint(1000, 1000, height: -9));
+    expect(controller.floorSelection!.selectedOverlayIds, isEmpty);
+
+    controller.toggleFloor('Second_Floor');
+    expect(controller.automaticFloorFollowing, isFalse);
+    await controller.selectPersistedMap('streetsoftarkov');
+    expect(controller.automaticFloorFollowing, isTrue);
+    controller.setPlayerSample(GamePoint(1000, 1000, height: -9));
+    expect(controller.floorSelection!.selectedOverlayIds, {
+      'Underground_Level',
+    });
+    controller.setPlayerSample(GamePoint(-1000, -1000, height: 16));
+    expect(controller.floorSelection!.selectedOverlayIds, {'Third_Floor'});
+
+    await controller.selectPersistedMap('reserve');
+    expect(controller.automaticFloorFollowing, isFalse);
+    controller.setPlayerSample(GamePoint(-100, 0, height: -9));
+    expect(controller.floorSelection!.selectedOverlayIds, {'Second_Floor'});
+    controller.setAutomaticFloorFollowing(true);
+    expect(controller.floorSelection!.selectedOverlayIds, {'Bunkers'});
   });
 
   test('controls refer to the frozen actual artwork and metadata sources', () {
@@ -120,7 +159,7 @@ void main() {
   for (final raw in fixture['floorControls'] as List) {
     final control = raw as Map<String, dynamic>;
     test(
-      'real source height policy: ${control['mapId']} ${control['markerId']}',
+      'real source position policy: ${control['mapId']} ${control['markerId']}',
       () {
         final map = pack.byId[control['mapId']]!;
         final marker = map.markers.singleWhere(
@@ -139,15 +178,15 @@ void main() {
               'Prepared physical ownership needs independent evidence, '
               'not merely the automatic height result.',
         );
-        final floor = map.floorPolicy.floorForHeight(marker.position.height);
+        final floor = map.floorPolicy.floorForPosition(marker.position);
         expect(
           floor?.id,
           control['floorId'],
           reason: control['basis'] as String,
         );
         if (floor != null) {
-          final selection = map.floorPolicy.selectionForHeight(
-            marker.position.height,
+          final selection = map.floorPolicy.reset().followPosition(
+            marker.position,
           );
           expect(selection.isLayerVisible(floor.id), isTrue);
           if (map.floorPolicy.exclusive) {
@@ -170,7 +209,6 @@ void main() {
       expect(selection.isLayerVisible('Ground_Level'), isTrue);
       expect(selection.isLayerVisible('First_Floor'), isTrue);
       expect(selection.isLayerVisible('Second_Floor'), isFalse);
-      expect(map.floorPolicy.floorForHeight(27.9506), isNull);
     },
   );
 
@@ -260,8 +298,10 @@ void main() {
     final console = map.markers.singleWhere((marker) => marker.id == consoleId);
     expect(console.floorId, 'Second_Floor');
     expect(console.position.height, 37.347);
-    expect(map.floorPolicy.floorForHeight(37.347), isNull);
-    expect(controller.applyOfflineHeight(37.347), isFalse);
+    expect(
+      map.floorPolicy.floorForPosition(console.position)?.id,
+      'Second_Floor',
+    );
     expect(
       map.markers.singleWhere((marker) => marker.id == unresolvedId).floorId,
       isNull,
@@ -312,12 +352,12 @@ void main() {
     expect(marker.heightBand!.min, 21.06);
     expect(marker.heightBand!.max, 24.06);
     expect(
-      map.floorPolicy.floorForHeight(marker.position.height)?.id,
+      map.floorPolicy.floorForPosition(marker.position)?.id,
       'Gym_Canteen',
     );
     final helipadSelection = map.floorPolicy.reset().select('Helipad');
-    final heightSelection = map.floorPolicy.selectionForHeight(
-      marker.position.height,
+    final heightSelection = map.floorPolicy.reset().followPosition(
+      marker.position,
     );
     expect(heightSelection.visibleLayerIds, ['Gym_Canteen']);
 
@@ -325,8 +365,8 @@ void main() {
     // prepared ownership must reverse the height-only result on both floors.
     bool eligible(MapFloorSelection selection, {String? floorId}) =>
         selection.isVisible(
-          floorId: floorId,
-          height: marker.position.height,
+          floorId:
+              floorId ?? map.floorPolicy.floorForPosition(marker.position)?.id,
           unknownHeight: UnknownHeightVisibility.hidden,
         );
     expect(eligible(helipadSelection), isFalse);
@@ -337,18 +377,17 @@ void main() {
 
   test('unknown height stays unknown on every actual map, not height zero', () {
     for (final map in pack.maps) {
-      expect(map.floorPolicy.floorForHeight(null), isNull);
+      expect(map.floorPolicy.floorForPosition(GamePoint(0, 0)), isNull);
       final selection = map.floorPolicy.reset();
       expect(
-        selection.isVisible(
-          height: null,
-          unknownHeight: UnknownHeightVisibility.hidden,
-        ),
+        selection.isVisible(unknownHeight: UnknownHeightVisibility.hidden),
         isFalse,
       );
     }
     expect(
-      pack.byId['icebreaker']!.floorPolicy.floorForHeight(0)!.id,
+      pack.byId['icebreaker']!.floorPolicy
+          .floorForPosition(GamePoint(0, 0, height: 0))!
+          .id,
       'Control_Room',
     );
   });
@@ -372,12 +411,10 @@ void main() {
       expect(controller.scene, isNull);
       expect(controller.unavailable, isTrue);
       expect(controller.visibleMarkers(), isEmpty);
-      expect(
-        controller.applyOfflineHeight(
-          (observation['height'] as num?)?.toDouble(),
-        ),
-        isFalse,
+      controller.setPlayerSample(
+        GamePoint(0, 0, height: (observation['height'] as num?)?.toDouble()),
       );
+      expect(controller.floorSelection, isNull);
       expect(observation['mapId'], isNull);
       expect(observation['floorId'], isNull);
     });
@@ -393,9 +430,9 @@ void main() {
       );
       addTearDown(controller.dispose);
       await controller.initialize(selectedMapId: 'icebreaker');
-      expect(controller.applyOfflineHeight(35.64), isTrue);
+      controller.setPlayerSample(GamePoint(0, 0, height: 35.64));
       expect(controller.floorSelection!.visibleLayerIds, ['Officers_Deck']);
-      expect(controller.applyOfflineHeight(null), isFalse);
+      controller.setPlayerSample(GamePoint(0, 0));
       expect(controller.floorSelection!.visibleLayerIds, ['Officers_Deck']);
     },
   );

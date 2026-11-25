@@ -5,6 +5,53 @@ import '../domain/map_floors.dart';
 import '../domain/map_geometry.dart';
 import 'live_map_normalizer.dart';
 
+/// The only preparation version accepted by the app and candidate validator.
+const preparedPackVersion = 5;
+
+/// Decodes a prepared floor's required height and normalized X/Z extents.
+///
+/// Throws a [FormatException] naming [mapId] and the floor for invalid data.
+Iterable<FloorExtent> preparedFloorExtents(
+  Map<String, dynamic> floor, {
+  required String mapId,
+}) {
+  Never invalid(String reason) =>
+      throw FormatException('$mapId ${floor['id']}: $reason');
+  if (floor.containsKey('heightBand')) invalid('legacy floor heightBand');
+  final raw = floor['extents'];
+  if (raw is! List) invalid('floor extents must be a list');
+  if (raw.isEmpty) return const [];
+
+  GameBounds rectangle(Object? value) => switch (value) {
+    [final num lowX, final num lowZ, final num highX, final num highZ] =>
+      GameBounds(
+        minX: lowX.toDouble(),
+        minZ: lowZ.toDouble(),
+        maxX: highX.toDouble(),
+        maxZ: highZ.toDouble(),
+      ),
+    _ => invalid('malformed floor extent rectangle'),
+  };
+
+  return raw.map((extent) {
+    try {
+      return switch (extent) {
+        {
+          'height': [final num low, final num high],
+          'bounds': final List bounds,
+        } =>
+          FloorExtent(
+            HeightBand(low.toDouble(), high.toDouble()),
+            bounds: bounds.map(rectangle),
+          ),
+        _ => invalid('floor extent requires height and bounds lists'),
+      };
+    } on ArgumentError catch (error) {
+      invalid('invalid floor extent: ${error.message}');
+    }
+  });
+}
+
 /// An immutable inventory resolved from one active pack version.
 class PreparedMapPack {
   PreparedMapPack({
@@ -183,9 +230,6 @@ class PreparedMap {
         throw const FormatException('Unsupported nonmanual floor.');
       }
       final floorId = _string(raw, 'id');
-      final band = raw['heightBand'] == null
-          ? null
-          : _numbers(raw['heightBand'], 2, 'heightBand');
       return MapFloor(
         id: floorId,
         label: raw['label'] == null
@@ -195,7 +239,7 @@ class PreparedMap {
           raw['attachedIds'],
           'attachedIds',
         ).map((id) => _nonemptyString(id, 'attachedId')),
-        heightBand: band == null ? null : HeightBand(band[0], band[1]),
+        extents: preparedFloorExtents(raw, mapId: id),
       );
     }
 

@@ -20,6 +20,8 @@ import 'package:blackgrid/maps/live_map_normalizer.dart'
         normalizeLiveMapData,
         LiveMapSourceBodies,
         LiveMapBinding;
+import 'package:blackgrid/maps/prepared_map.dart'
+    show preparedFloorExtents, preparedPackVersion;
 
 import 'svg.dart';
 
@@ -139,7 +141,13 @@ String _emptyTileWitnessPath(String sourceHash) =>
 /// [open] reads a raw generation folder. [fromGeneration] reads a committed
 /// pack generation, which carries its own inputs.
 class FrozenInputs {
-  FrozenInputs._(this.index, this._files, this._unverified, this._missing);
+  FrozenInputs._(
+    this.index,
+    this._files,
+    this._unverified,
+    this._missing, [
+    this._migratedCalibration,
+  ]);
 
   /// The parsed `sources.json` index.
   final Map<String, dynamic> index;
@@ -150,6 +158,7 @@ class FrozenInputs {
 
   /// Listed sources no file carries, with the message to throw reading each.
   final Map<String, String> _missing;
+  final Uint8List? _migratedCalibration;
 
   /// Opens the raw generation at [root] and hashes every listed source.
   static Future<FrozenInputs> open(Directory root) async {
@@ -238,6 +247,9 @@ class FrozenInputs {
   /// Throws a [FormatException] when [path] is not a listed source or no file
   /// carries it.
   Future<Uint8List> bytes(String path) async {
+    if (path == 'calibration.json' && _migratedCalibration != null) {
+      return _migratedCalibration;
+    }
     if (_missing[path] case final message?) throw FormatException(message);
     final file = _files[path];
     if (file == null) throw FormatException('Unfrozen dependency: $path');
@@ -299,6 +311,27 @@ class FrozenInputs {
 
     final derivedIndex = <String, dynamic>{...index, 'sources': updatedSources};
     return FrozenInputs._(derivedIndex, files, unverified, _missing);
+  }
+
+  FrozenInputs _withMigratedCalibration(Uint8List bytes) {
+    final hash = _hash(bytes);
+    final derived = <String, dynamic>{
+      ...index,
+      'sources': [
+        for (final source in _sourceList(index))
+          if (source['path'] == 'calibration.json')
+            {...source, 'sha256': hash}
+          else
+            source,
+      ],
+    };
+    return FrozenInputs._(
+      derived,
+      _files,
+      _unverified,
+      _missing,
+      bytes.asUnmodifiableView(),
+    );
   }
 }
 
@@ -948,6 +981,9 @@ Future<Map<String, dynamic>> rebuildCandidate(
     );
   }
   final calibration = context.calibration;
+  _requireCurrentFloorCalibration(
+    (calibration['maps'] as List).cast<Map<String, dynamic>>(),
+  );
   final metadata = jsonDecode(await frozen.text('metadata/maps.json')) as List;
   final markerSnapshot = await _readFrozenSourceObject(
     frozen,
@@ -1206,10 +1242,24 @@ Future<Map<String, dynamic>> rebuildCandidate(
   return manifest;
 }
 
-/// The only preparation version the builder writes and the validator accepts.
-///
-/// Version 4 adds the required per-map `labels` list.
-const preparedPackVersion = 4;
+void _requireCurrentFloorCalibration(Iterable<Map<String, dynamic>> maps) {
+  for (final map in maps) {
+    final floors = map['floors'];
+    if (floors is! List) {
+      throw FormatException('${map['id']}: calibration requires floors');
+    }
+    for (final floor in floors) {
+      if (floor is! Map) {
+        throw FormatException('${map['id']}: malformed calibration floor');
+      }
+      if (floor.containsKey('heightBand')) {
+        throw FormatException(
+          '${map['id']} ${floor['id']}: legacy calibration floor heightBand',
+        );
+      }
+    }
+  }
+}
 
 String _baseFloorId(String mapId, Object? floors) {
   final bases = [
@@ -1590,7 +1640,7 @@ Future<Map<String, dynamic>> validateCandidate(
       manifest['outputs'] is! List) {
     throw const FormatException('Invalid candidate manifest');
   }
-  // Cheap structural gates first: the version and the labels key of every map.
+  // Check format and required manifest records before reading evidence.
   final version = manifest['preparationVersion'];
   if (version != preparedPackVersion) {
     throw FormatException('Unsupported preparation version $version');
@@ -1600,6 +1650,18 @@ Future<Map<String, dynamic>> validateCandidate(
       throw FormatException(
         '${map is Map ? map['id'] : map}: labels is missing or not a list',
       );
+    }
+    final floors = map['floors'];
+    if (floors is! List) {
+      throw FormatException('${map['id']}: floors must be a list');
+    }
+    for (final floor in floors) {
+      if (floor is! Map<String, dynamic>) {
+        throw FormatException('${map['id']}: malformed prepared floor');
+      }
+      for (final _ in preparedFloorExtents(floor, mapId: '${map['id']}')) {
+        // Consume the lazy decoder to validate each prepared extent.
+      }
     }
   }
   if (requireCompiled && manifest['vectorsCompiled'] != true) {
@@ -1680,6 +1742,7 @@ Future<Map<String, dynamic>> validateCandidate(
   }
   final calibratedMaps = (calibration['maps'] as List)
       .cast<Map<String, dynamic>>();
+  _requireCurrentFloorCalibration(calibratedMaps);
   final calibrationsBySource = <String, Map<String, dynamic>>{
     for (final map in calibratedMaps) map['sourceKey'] as String: map,
   };
@@ -1787,7 +1850,9 @@ Future<Map<String, dynamic>> validateCandidate(
       final floor = floors[i];
       final metadata = Map<String, dynamic>.from(floor)..remove('artwork');
       if (canonicalJson(metadata) != canonicalJson(expectedFloors[i])) {
-        throw const FormatException('Candidate changed local floor metadata');
+        throw FormatException(
+          '${map['id']} ${floor['id']}: candidate changed local floor metadata',
+        );
       }
       final art = floor['artwork'] as Map<String, dynamic>;
       if (map['kind'] == 'vector' && !_isRasterOverlay(expectedFloors[i])) {
@@ -2629,10 +2694,40 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
   VectorEncoder encode = _encodeVector,
 }) async {
   final committed = await verifyCommittedGeneration(packs);
+  var frozen = await FrozenInputs.fromGeneration(committed.directory);
+  var context = await MapBuildContext.fromGeneration(committed);
+  if (committed.manifest['preparationVersion'] == 4) {
+    final calibration = jsonDecode(
+      await frozen.text('calibration.json'),
+    ) as Map<String, dynamic>;
+    if (canonicalJson(calibration) != canonicalJson(context.calibration)) {
+      throw const FormatException(
+        'Builder context calibration differs from frozen inputs',
+      );
+    }
+    var changed = false;
+    for (final map in calibration['maps'] as List) {
+      for (final floor in map['floors'] as List) {
+        if (!(floor as Map).containsKey('heightBand')) continue;
+        floor.remove('heightBand');
+        changed = true;
+      }
+    }
+    if (changed) {
+      frozen = frozen._withMigratedCalibration(
+        Uint8List.fromList(utf8.encode(canonicalJson(calibration))),
+      );
+      context = MapBuildContext.reviewed(
+        calibration: calibration,
+        sourceLock: context.sourceLock,
+        noticeBytes: context.noticeBytes,
+      );
+    }
+  }
   final rebuilt = await rebuildCandidate(
-    await FrozenInputs.fromGeneration(committed.directory),
+    frozen,
     candidate,
-    context: await MapBuildContext.fromGeneration(committed),
+    context: context,
     toolchain: toolchain,
     encode: encode,
   );

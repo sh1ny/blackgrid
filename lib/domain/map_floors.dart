@@ -10,9 +10,32 @@ class HeightBand {
   }
   final double min;
   final double max;
-  bool contains(double height) {
-    requireFinite(height, 'height');
-    return min <= height && height < max;
+}
+
+/// A floor's height interval and optional game-space coverage.
+class FloorExtent {
+  FloorExtent(this.height, {Iterable<GameBounds> bounds = const []})
+    : _span = height.max - height.min,
+      bounds = bounds.isEmpty ? const [] : List.unmodifiable(bounds) {
+    requirePositiveFinite(_span, 'floor extent height span');
+  }
+
+  final HeightBand height;
+  final List<GameBounds> bounds;
+  final double _span;
+
+  bool _matches(GamePoint point, double height) {
+    if (height < this.height.min || height >= this.height.max) return false;
+    if (bounds.isEmpty) return true;
+    for (final rectangle in bounds) {
+      if (point.x >= rectangle.minX &&
+          point.x <= rectangle.maxX &&
+          point.z >= rectangle.minZ &&
+          point.z <= rectangle.maxZ) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -21,8 +44,9 @@ class MapFloor {
     required this.id,
     required this.label,
     Iterable<String> attachedLayerIds = const [],
-    this.heightBand,
-  }) : attachedLayerIds = List.unmodifiable(attachedLayerIds) {
+    Iterable<FloorExtent> extents = const [],
+  }) : attachedLayerIds = List.unmodifiable(attachedLayerIds),
+       extents = extents.isEmpty ? const [] : List.unmodifiable(extents) {
     if (id.isEmpty ||
         label.isEmpty ||
         this.attachedLayerIds.any((id) => id.isEmpty)) {
@@ -34,7 +58,7 @@ class MapFloor {
   final String id;
   final String label;
   final List<String> attachedLayerIds;
-  final HeightBand? heightBand;
+  final List<FloorExtent> extents;
 }
 
 class MapFloorPolicy {
@@ -69,152 +93,38 @@ class MapFloorPolicy {
   late final Map<String, MapFloor> _selectable;
   late final List<MapFloor> floors;
   Iterable<MapFloor> get selectableFloors => _selectable.values;
-  bool get supportsAutomaticHeight =>
-      mapId == 'thelab' || mapId == 'icebreaker';
 
-  factory MapFloorPolicy.streets() => MapFloorPolicy(
-    mapId: 'streetsoftarkov',
-    base: MapFloor(
-      id: 'Ground_Level',
-      label: 'Ground Level',
-      attachedLayerIds: ['First_Floor'],
-    ),
-    overlays: [
-      MapFloor(id: 'Fifth_Floor', label: '5th Floor'),
-      MapFloor(id: 'Fourth_Floor', label: '4th Floor'),
-      MapFloor(id: 'Third_Floor', label: '3rd Floor'),
-      MapFloor(id: 'Second_Floor', label: '2nd Floor'),
-      MapFloor(id: 'Underground_Level', label: 'Underground'),
-    ],
-  );
-
-  factory MapFloorPolicy.labs() => MapFloorPolicy(
-    mapId: 'thelab',
-    base: MapFloor(id: 'First_Level', label: 'First Level'),
-    overlays: [
-      MapFloor(
-        id: 'Second_Level',
-        label: 'Second Level',
-        heightBand: HeightBand(3, 1000),
-      ),
-      MapFloor(
-        id: 'Technical_Level',
-        label: 'Technical',
-        heightBand: HeightBand(-1000, -.9),
-      ),
-    ],
-  );
-
-  factory MapFloorPolicy.icebreaker() => MapFloorPolicy(
-    mapId: 'icebreaker',
-    base: MapFloor(id: 'Infirmary', label: 'Infirmary'),
-    exclusive: true,
-    overlays: [
-      MapFloor(
-        id: 'Bridge_Roof',
-        label: 'Bridge Roof',
-        heightBand: HeightBand(43.8, 10000),
-      ),
-      MapFloor(
-        id: 'Bridge',
-        label: 'Bridge',
-        heightBand: HeightBand(40.7, 43.8),
-      ),
-      MapFloor(
-        id: 'Stairs_Blocked',
-        label: 'Stairs Blocked',
-        heightBand: HeightBand(37.6, 40.7),
-      ),
-      MapFloor(
-        id: 'Officers_Deck',
-        label: 'Officers Deck',
-        heightBand: HeightBand(34.5, 37.6),
-      ),
-      MapFloor(
-        id: 'Accommodation_Upper',
-        label: 'Accommodation Upper',
-        heightBand: HeightBand(31.4, 34.5),
-      ),
-      MapFloor(
-        id: 'Accommodation_Mid',
-        label: 'Accommodation Mid',
-        heightBand: HeightBand(28.3, 31.4),
-      ),
-      MapFloor(
-        id: 'Accommodation_Lower',
-        label: 'Accommodation Lower',
-        heightBand: HeightBand(25.3, 28.3),
-      ),
-      MapFloor(
-        id: 'Gym_Canteen',
-        label: 'Gym Canteen',
-        heightBand: HeightBand(22.2, 25.3),
-      ),
-      MapFloor(
-        id: 'Helipad',
-        label: 'Helipad',
-        heightBand: HeightBand(19.57, 22.2),
-      ),
-      MapFloor(
-        id: 'Storage_Security',
-        label: 'Storage Security',
-        heightBand: HeightBand(15, 18.92),
-      ),
-      MapFloor(
-        id: 'Fuel_Pumps',
-        label: 'Fuel Pumps',
-        heightBand: HeightBand(11.9, 15),
-      ),
-      MapFloor(
-        id: 'Fuel_Pumps_Lower',
-        label: 'Fuel Pumps Lower',
-        heightBand: HeightBand(8.8, 11.9),
-      ),
-      MapFloor(
-        id: 'Engine_Room_Upper',
-        label: 'Engine Room Upper',
-        heightBand: HeightBand(5.7, 8.8),
-      ),
-      MapFloor(
-        id: 'Engine_Room',
-        label: 'Engine Room',
-        heightBand: HeightBand(3.6, 5.7),
-      ),
-      MapFloor(
-        id: 'Control_Room',
-        label: 'Control Room',
-        heightBand: HeightBand(-10000, 3.6),
-      ),
-    ],
+  /// Whether any prepared floor provides automatic classification data.
+  late final bool supportsAutomaticHeight = floors.any(
+    (floor) => floor.extents.isNotEmpty,
   );
 
   MapFloorSelection reset() => MapFloorSelection._(this, const {});
 
-  // Null is unresolved; an unmatched known height belongs to the base. No
-  // conventional map is auto-classified even when imported metadata has bands.
-  MapFloor? floorForHeight(double? height) {
+  /// Classifies [position] using the narrowest matching extent, then floor ID.
+  ///
+  /// Missing height or a map without extents is unresolved. A known position
+  /// outside every extent belongs to the base.
+  MapFloor? floorForPosition(GamePoint? position) {
+    if (position == null || !supportsAutomaticHeight) return null;
+    final height = position.height;
     if (height == null) return null;
-    requireFinite(height, 'height');
-    if (!supportsAutomaticHeight) return null;
     MapFloor? best;
-    for (final floor in overlays) {
-      final band = floor.heightBand;
-      if (band == null || !band.contains(height)) continue;
-      final winningBand = best?.heightBand;
-      if (winningBand == null ||
-          band.min > winningBand.min ||
-          (band.min == winningBand.min && band.max < winningBand.max)) {
-        best = floor;
+    var bestSpan = double.infinity;
+    for (final floor in floors) {
+      for (final extent in floor.extents) {
+        final span = extent._span;
+        if (span > bestSpan ||
+            (span == bestSpan && floor.id.compareTo(best!.id) >= 0)) {
+          continue;
+        }
+        if (extent._matches(position, height)) {
+          best = floor;
+          bestSpan = span;
+        }
       }
     }
     return best ?? base;
-  }
-
-  MapFloorSelection selectionForHeight(double? height) {
-    final floor = floorForHeight(height);
-    return floor == null || floor.id == base.id
-        ? reset()
-        : reset().select(floor.id);
   }
 }
 
@@ -257,6 +167,20 @@ class MapFloorSelection {
     return select(floorId);
   }
 
+  /// Selects the floor for [position], keeping this selection if unresolved.
+  MapFloorSelection followPosition(GamePoint? position) {
+    final floor = policy.floorForPosition(position);
+    if (floor == null) return this;
+    if (floor.id == policy.base.id) {
+      return selectedOverlayIds.isEmpty ? this : policy.reset();
+    }
+    if (selectedOverlayIds.length == 1 &&
+        selectedOverlayIds.contains(floor.id)) {
+      return this;
+    }
+    return MapFloorSelection._(policy, {floor.id});
+  }
+
   bool isLayerVisible(String layerId) {
     final owner = policy._layerOwners[layerId];
     if (owner == null) {
@@ -278,20 +202,11 @@ class MapFloorSelection {
     }
   }
 
-  // Use this same result for paint, pointer, keyboard focus and details. An
-  // explicit floor always wins over height. Unassigned/null height never means
-  // height zero or ground: the caller must choose the uncertainty visibility.
+  /// Tests the resolved marker floor, or the caller's policy when unresolved.
   bool isVisible({
     String? floorId,
-    double? height,
     required UnknownHeightVisibility unknownHeight,
-  }) {
-    if (height != null) requireFinite(height, 'height');
-    if (floorId != null) return isLayerVisible(floorId);
-    final inferred = policy.floorForHeight(height);
-    if (inferred == null) {
-      return unknownHeight == UnknownHeightVisibility.visible;
-    }
-    return isLayerVisible(inferred.id);
-  }
+  }) => floorId == null
+      ? unknownHeight == UnknownHeightVisibility.visible
+      : isLayerVisible(floorId);
 }

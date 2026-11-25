@@ -180,7 +180,7 @@ Map<String, Object?> _map(
   'displayCrop': {'left': 0, 'top': 0, 'right': 256, 'bottom': 256},
   'floors': [
     _floor('ground', 'Ground', base: true),
-    _floor('upper', 'Upper', base: false),
+    _floor('upper', 'Upper', base: false, automatic: id == 'thelab'),
   ],
   'markers': [
     _marker(
@@ -224,13 +224,25 @@ const _fixtureAttribution = <String, Object?>{
   'author': 'Deterministic test fixture',
 };
 
-Map<String, Object?> _floor(String id, String label, {required bool base}) => {
+Map<String, Object?> _floor(
+  String id,
+  String label, {
+  required bool base,
+  bool automatic = false,
+}) => {
   'id': id,
   'label': label,
   'base': base,
   'manual': true,
   'exclusive': false,
   'attachedIds': <String>[],
+  'extents': [
+    if (automatic)
+      {
+        'height': [3, 5],
+        'bounds': [],
+      },
+  ],
   'artwork': {
     'tiles': [
       {'x': 0, 'y': 0, 'empty': false, 'path': base ? 'base.png' : 'upper.png'},

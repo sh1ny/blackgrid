@@ -361,7 +361,10 @@ Map<String, dynamic> _map(String id) => {
         'manual': true,
         'exclusive': false,
         'attachedIds': <String>[],
-        'heightBand': ?band,
+        'extents': [
+          if (id == 'icebreaker' && band != null)
+            {'height': band, 'bounds': []},
+        ],
         'artwork': {
           'components': [
             {

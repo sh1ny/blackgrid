@@ -282,8 +282,8 @@
     }
   ],
   "floorControls": [
-    {"mapId": "interchange", "height": 23.1857, "floorId": null, "markerId": "switches:b6ebc39ee29cb6659334df309194b696bbfef555:0", "basis": "Conventional vector policy must not infer automatic floor from height."},
-    {"mapId": "interchange", "height": 37.347, "floorId": null, "preparedFloorId": "Second_Floor", "markerId": "switches:6b9023f26446d73433823e872e6d69688083beaf:0", "basis": "Exact frozen alarm-console volume and outline lie wholly inside the source Second_Floor [34,1000) band and mall rectangle. Explicit physical ownership does not turn Interchange into an automatically classified map."},
+    {"mapId": "interchange", "height": 23.1857, "floorId": "Ground_Level", "markerId": "switches:b6ebc39ee29cb6659334df309194b696bbfef555:0", "basis": "Known height is below both source overlay ranges, so the base wins."},
+    {"mapId": "interchange", "height": 37.347, "floorId": "Second_Floor", "preparedFloorId": "Second_Floor", "markerId": "switches:6b9023f26446d73433823e872e6d69688083beaf:0", "basis": "The frozen alarm console lies inside the source Second_Floor [34,1000) and mall rectangle; its authored physical ownership remains independent."},
     {"mapId": "thelab", "height": -2.81, "floorId": "Technical_Level", "markerId": "extracts:718b3e098cf256525a98ad84c481876082391b18:0", "basis": "Technical-level source art lift and frozen public marker height."},
     {"mapId": "thelab", "height": 5.38, "floorId": "Second_Level", "markerId": "extracts:aecf93f8def45d42877594c4170f5a71b5b41b39:0", "basis": "Upper-level source art lift and frozen public marker height."},
     {"mapId": "thelab", "height": 1.18, "floorId": "First_Level", "markerId": "transits:8:0", "basis": "Frozen metadata base band and source marker height; transit artwork identity is not independently qualified."},

@@ -1,4 +1,5 @@
 import 'inventory.dart';
+import 'layer_extents.dart';
 
 export 'inventory.dart' show supportedMapSources, additionalVectorSources;
 
@@ -123,30 +124,11 @@ const icebreakerSources = {
   'Bridge': '14_bridge',
   'Bridge_Roof': '15_bridge_roof',
 };
-const icebreakerBands = {
-  'Control_Room': [-10000, 3.6],
-  'Engine_Room': [3.6, 5.7],
-  'Engine_Room_Upper': [5.7, 8.8],
-  'Fuel_Pumps_Lower': [8.8, 11.9],
-  'Fuel_Pumps': [11.9, 15],
-  'Storage_Security': [15, 18.92],
-  'Helipad': [19.57, 22.2],
-  'Gym_Canteen': [22.2, 25.3],
-  'Accommodation_Lower': [25.3, 28.3],
-  'Accommodation_Mid': [28.3, 31.4],
-  'Accommodation_Upper': [31.4, 34.5],
-  'Officers_Deck': [34.5, 37.6],
-  'Stairs_Blocked': [37.6, 40.7],
-  'Bridge': [40.7, 43.8],
-  'Bridge_Roof': [43.8, 10000],
-};
-
 Map<String, Object?> calibrationFor(String sourceKey) {
   Map<String, Object?> floor(
     String id, {
     bool base = false,
     String? tilePath,
-    List<num>? band,
     List<String> attached = const [],
     bool exclusive = false,
     String? label,
@@ -158,7 +140,6 @@ Map<String, Object?> calibrationFor(String sourceKey) {
     'exclusive': exclusive,
     'attachedIds': attached,
     'sourceTileUrl': ?tilePath,
-    'heightBand': ?band,
     'label': ?label,
     'componentIds': ?componentIds,
   };
@@ -224,13 +205,11 @@ Map<String, Object?> calibrationFor(String sourceKey) {
           floor(
             'First_Floor',
             label: '2nd Floor',
-            band: [25, 34],
             componentIds: ['Structure-1', 'Pavament-1', 'Floor-1', 'Ramps-1'],
           ),
           floor(
             'Second_Floor',
             label: '3rd Floor',
-            band: [34, 1000],
             componentIds: ['Structure-2', 'Floor-2', 'Ramps-2'],
           ),
         ],
@@ -278,8 +257,8 @@ Map<String, Object?> calibrationFor(String sourceKey) {
         },
         'floors': [
           floor('First_Level', base: true, tilePath: labsTiles[0]),
-          floor('Second_Level', tilePath: labsTiles[1], band: [3, 1000]),
-          floor('Technical_Level', tilePath: labsTiles[2], band: [-1000, -0.9]),
+          floor('Second_Level', tilePath: labsTiles[1]),
+          floor('Technical_Level', tilePath: labsTiles[2]),
         ],
       };
     case 'icebreaker':
@@ -336,7 +315,6 @@ Map<String, Object?> calibrationFor(String sourceKey) {
               exclusive: true,
               tilePath:
                   'https://assets.tarkov.dev/maps/icebreaker/${entry.value}/{z}/{x}/{y}.png',
-              band: icebreakerBands[entry.key],
             ),
         ],
       };
@@ -357,22 +335,63 @@ Map<String, dynamic> interactiveMetadata(
   );
 }
 
+/// Reconciles calibrated floor families and attaches their frozen extents.
 List<Map<String, Object?>> reconcileFloors(
   Map<String, Object?> local,
   Map<String, dynamic> upstream,
 ) {
   final floors = (local['floors'] as List).cast<Map<String, Object?>>();
-  final sourceLayers = <String>{
-    if (local['kind'] == 'vector' && upstream['svgLayer'] is String)
-      upstream['svgLayer'] as String
-    else if (upstream['tilePath'] is String)
-      upstream['tilePath'] as String,
-    for (final layer in (upstream['layers'] as List? ?? []))
-      if (local['kind'] == 'vector' && layer['svgLayer'] is String)
-        layer['svgLayer'] as String
-      else if (layer['tilePath'] is String)
-        layer['tilePath'] as String,
-  };
+  final mapId = local['id'];
+  final layers = upstream['layers'] as List? ?? const [];
+  final byFloor = <Object?, List<Map<String, Object?>>>{};
+  final sourceLayers = <String>{};
+  final isVector = local['kind'] == 'vector';
+  void addRendition(Object? svg, Object? tile) {
+    if (isVector && svg is String && svg.isNotEmpty) {
+      sourceLayers.add(svg);
+    } else if (tile is String && tile.isNotEmpty) {
+      sourceLayers.add(tile);
+    }
+  }
+
+  addRendition(upstream['svgLayer'], upstream['tilePath']);
+  for (final (index, layer) in layers.indexed) {
+    if (layer is! Map) {
+      throw FormatException('$mapId: layer #$index must be an object');
+    }
+    final svg = layer['svgLayer'];
+    final tile = layer['tilePath'];
+    addRendition(svg, tile);
+    final useSvg = svg is String && svg.isNotEmpty;
+    final identity = useSvg ? svg : tile;
+    final name = switch (layer['name']) {
+      final String value when value.trim().isNotEmpty => value,
+      _ when identity is String && identity.isNotEmpty => identity,
+      _ => '#$index',
+    };
+    final context = '$mapId: layer "$name"';
+    final extents = sourceLayerExtents(layer, context);
+    if (extents.isEmpty) continue;
+
+    Map<String, Object?>? owner;
+    if (identity is String && identity.isNotEmpty) {
+      final key = useSvg ? 'id' : 'sourceTileUrl';
+      for (final floor in floors) {
+        if (floor[key] != identity) continue;
+        if (owner != null) {
+          throw FormatException('$context: $identity matches multiple floors');
+        }
+        owner = floor;
+      }
+    }
+    if (owner == null) {
+      throw FormatException('$context: $identity matches no prepared floor');
+    }
+    final attached = byFloor[owner['id']] ??= [];
+    for (final extent in extents) {
+      attached.add(normalizeSourceExtent(extent, context));
+    }
+  }
   for (final floor in floors) {
     final identity = floor['sourceTileUrl'] ?? floor['id'];
     if (!sourceLayers.contains(identity)) {
@@ -384,7 +403,7 @@ List<Map<String, Object?>> reconcileFloors(
   if (rasterDependencies.isNotEmpty) {
     final declared = <String>{
       if (upstream['tilePath'] is String) upstream['tilePath'] as String,
-      for (final layer in (upstream['layers'] as List? ?? []))
+      for (final layer in layers)
         if (layer['tilePath'] is String) layer['tilePath'] as String,
     };
     final required = rasterDependencies
@@ -409,7 +428,10 @@ List<Map<String, Object?>> reconcileFloors(
       'Upstream added uncalibrated floors: ${sourceLayers.difference(expected)}',
     );
   }
-  return floors.map((f) => Map<String, Object?>.from(f)).toList();
+  return [
+    for (final floor in floors)
+      {...floor, 'extents': byFloor[floor['id']] ?? const []},
+  ];
 }
 
 String tileUrl(String template, int x, int y) => template

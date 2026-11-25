@@ -239,6 +239,8 @@ class MapController extends ChangeNotifier {
             marker,
             map.gameToScene(marker.position),
             List.unmodifiable(marker.outline.map(map.gameToScene)),
+            marker.floorId ??
+                map.floorPolicy.floorForPosition(marker.position)?.id,
           ),
         ),
       ),
@@ -433,7 +435,7 @@ class MapController extends ChangeNotifier {
     _playerPosition = position;
     _forwardX = forwardX;
     _forwardZ = forwardZ;
-    if (automaticFloorFollowing) applyOfflineHeight(position?.height);
+    _followPlayerFloor();
     notifyListeners();
   }
 
@@ -471,7 +473,7 @@ class MapController extends ChangeNotifier {
   void setAutomaticFloorFollowing(bool value) {
     if (_disposed || !automaticFloorSupported) return;
     _automaticFloors[_selectedMapId!] = value;
-    if (value) applyOfflineHeight(_playerPosition?.height);
+    if (value) _followPlayerFloor();
     notifyListeners();
   }
 
@@ -544,23 +546,9 @@ class MapController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Applies a known offline height only to height-capable maps.
-  ///
-  /// Unknown height is not zero and leaves the manual selection unchanged.
-  /// Conventional vector maps never acquire automatic height behavior from
-  /// upstream bands alone. Returns whether a known height was applied.
-  bool applyOfflineHeight(double? height) {
-    if (_disposed ||
-        _floorSelection == null ||
-        height == null ||
-        !automaticFloorFollowing) {
-      return false;
-    }
-    requireFinite(height, 'height');
-    final policy = _floorSelection!.policy;
-    if (!policy.supportsAutomaticHeight) return false;
-    _setFloors(policy.selectionForHeight(height));
-    return true;
+  void _followPlayerFloor() {
+    if (!automaticFloorFollowing) return;
+    _setFloors(_floorSelection!.followPosition(_playerPosition));
   }
 
   void _setFloors(MapFloorSelection value) {
@@ -806,8 +794,7 @@ class MapController extends ChangeNotifier {
       position.metadata.matchesQuest(name: _questName, trader: _questTrader) &&
       _questProgressAllows(position.metadata) &&
       floors.isVisible(
-        floorId: position.marker.floorId,
-        height: position.marker.position.height,
+        floorId: position.floorId,
         unknownHeight: unknownHeightVisibility,
       );
 
@@ -982,7 +969,7 @@ class _MarkerProjection {
 }
 
 class _MarkerScenePosition {
-  _MarkerScenePosition(this.marker, this.point, this.outline)
+  _MarkerScenePosition(this.marker, this.point, this.outline, this.floorId)
     : metadata = MapMarkerMetadata(
         name: marker.name,
         type: marker.filterKey,
@@ -994,6 +981,7 @@ class _MarkerScenePosition {
   final PreparedMarker marker;
   final ScenePoint point;
   final List<ScenePoint> outline;
+  final String? floorId;
 }
 
 bool _insideOutline(ViewportPoint point, List<ViewportPoint> outline) {

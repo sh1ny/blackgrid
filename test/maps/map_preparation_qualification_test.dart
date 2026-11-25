@@ -129,6 +129,128 @@ void main() {
   Future<Directory> candidate(String name) =>
       fixtures.copyCandidate(Directory('${temporary.path}/$name'));
 
+  test('candidate rejects divergent extents and legacy floor keys', () async {
+    for (final mutation in ['extent', 'manifest', 'calibration']) {
+      final private = await candidate('floor-$mutation');
+      final manifest = await readManifest(private);
+      final factory = (manifest['maps'] as List).singleWhere(
+        (map) => map['id'] == 'factory',
+      );
+      final upper = (factory['floors'] as List).singleWhere(
+        (floor) => floor['id'] == 'Second_Floor',
+      );
+      if (mutation == 'extent') {
+        upper['extents'] = [
+          {
+            'height': [3, 5],
+            'bounds': [],
+          },
+        ];
+      } else if (mutation == 'manifest') {
+        upper['heightBand'] = [3, 6];
+      } else {
+        final path = packFile(private, 'evidence/calibration.json');
+        final calibration = jsonDecode(await path.readAsString()) as Map;
+        final map = (calibration['maps'] as List).singleWhere(
+          (map) => map['id'] == 'factory',
+        );
+        final floor = (map['floors'] as List).singleWhere(
+          (floor) => floor['id'] == 'Second_Floor',
+        );
+        floor['heightBand'] = [3, 6];
+        await path.writeAsString(canonicalJson(calibration));
+        await _refreezeEvidence(private, manifest, 'calibration.json');
+      }
+      await saveManifest(private, manifest, refreshOutputs: true);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('factory'), contains('Second_Floor')),
+          ),
+        ),
+        reason: mutation,
+      );
+    }
+  }, timeout: fullRebuildTimeout);
+
+  test('verified v4 rebuild migrates only direct floor bands', () async {
+    final legacy = Directory('${temporary.path}/legacy-floor-calibration');
+    await copyPack(fixtures.first, legacy);
+    final manifest = await readManifest(legacy)
+      ..['preparationVersion'] = 4;
+    final calibrationPath = packFile(legacy, 'evidence/calibration.json');
+    final calibration = jsonDecode(
+      await calibrationPath.readAsString(),
+    ) as Map<String, dynamic>;
+    final currentCalibration = canonicalJson(calibration);
+    final lab = (calibration['maps'] as List).singleWhere(
+      (map) => map['id'] == 'thelab',
+    );
+    (lab['floors'] as List)[1]['heightBand'] = [3, 1000];
+    for (final map in manifest['maps'] as List) {
+      for (final floor in map['floors'] as List) {
+        (floor as Map).remove('extents');
+        if (map['id'] == 'thelab' && floor['id'] == 'Second_Level') {
+          floor['heightBand'] = [3, 1000];
+        }
+      }
+    }
+    await calibrationPath.writeAsString(canonicalJson(calibration));
+    await _refreezeEvidence(legacy, manifest, 'calibration.json');
+    await saveManifest(legacy, manifest, refreshOutputs: true);
+    final manifestBytes = await packFile(legacy, 'manifest.json').readAsBytes();
+    final legacyId = sha256.convert(manifestBytes).toString();
+    final packs = Directory('${temporary.path}/packs');
+    await Directory('${packs.path}/versions').create(recursive: true);
+    await legacy.rename('${packs.path}/versions/$legacyId');
+    await packFile(packs, 'active.json').writeAsString(
+      canonicalJson({
+        'schemaVersion': 1,
+        'version': legacyId,
+        'manifest': 'versions/$legacyId/manifest.json',
+      }),
+    );
+    final pubspec = File('${temporary.path}/pubspec.yaml');
+    await pubspec.writeAsString('$mapPackAssetsBegin\n$mapPackAssetsEnd\n');
+    final result = await refreshActive(
+      packs,
+      pubspec,
+      toolchain: fixtureToolchain,
+      assetRoot: 'assets/maps',
+      candidateParent: temporary,
+      log: (_) {},
+    );
+    final active = await verifyCommittedGeneration(packs);
+    expect(active.id, result.id);
+    expect(active.manifest['preparationVersion'], 5);
+    final migrated = await MapBuildContext.fromGeneration(active);
+    expect(canonicalJson(migrated.calibration), currentCalibration);
+    expect(
+      selectArtworkRefreshCalibration(
+        baseline: migrated.calibration,
+        reviewed: MapBuildContext.reviewedConfiguration().calibration,
+      ),
+      migrated.calibration,
+    );
+    Map<Object?, Object?> outputHashes(Map<String, dynamic> generation) => {
+      for (final entry in generation['outputs'] as List)
+        entry['path']: entry['sha256'],
+    };
+    final before = outputHashes(manifest);
+    final after = outputHashes(active.manifest);
+    for (final path in ['evidence/calibration.json', 'evidence/sources.json']) {
+      expect(after.remove(path), isNot(before.remove(path)), reason: path);
+    }
+    expect(after, before);
+    expect(
+      await checkActive(packs, toolchain: fixtureToolchain),
+      contains('reproduced byte-identically'),
+    );
+  }, timeout: fullRebuildTimeout);
+
   test('two offline all-map rebuilds are byte-identical and keep original crop/frame units', () async {
     final a = await readManifest(fixtures.first);
     final b = await readManifest(fixtures.second);
@@ -202,7 +324,7 @@ void main() {
         (manifest['maps'] as List).map((map) => map['id']),
         expectedMapIds,
       );
-      expect(manifest['preparationVersion'], 4);
+      expect(manifest['preparationVersion'], 5);
       for (final map in manifest['maps'] as List) {
         final floors = map['floors'] as List;
         expect(floors.map((floor) => floor['id']), expectedFloorIds[map['id']]);
@@ -380,7 +502,7 @@ void main() {
     expect(labs['artworkFrame']['tileStride'], 175);
     expect(labs['displayCrop'], {'left': 0, 'top': 0, 'right': 1, 'bottom': 1});
     expect(labs['markers'][0]['position']['height'], isNull);
-    expect(a['preparationVersion'], 4);
+    expect(a['preparationVersion'], 5);
     final emptyTile = (labs['floors'][0]['artwork']['tiles'] as List)
         .singleWhere((tile) => tile['x'] == 0 && tile['y'] == 1);
     final witness = 'evidence/tile-alpha/${emptyTile['sourceSha256']}.png';
@@ -931,7 +1053,7 @@ void main() {
   test('failed new generation preserves asset discovery for an older frozen floor calibration', () async {
     final older = await candidate('older');
     final olderManifest = await readManifest(older);
-    expect(olderManifest['preparationVersion'], 4);
+    expect(olderManifest['preparationVersion'], 5);
     expect(olderManifest['maps'] as List, hasLength(13));
 
     // Represent an earlier full generation whose frozen calibration has no
@@ -997,7 +1119,7 @@ void main() {
     expect(originalDirectories, contains('versions/$version/'));
     final publishedOlder = Directory('${packs.path}/versions/$version');
     final validatedOlder = await validateCandidate(publishedOlder);
-    expect(validatedOlder['preparationVersion'], 4);
+    expect(validatedOlder['preparationVersion'], 5);
     expect(validatedOlder['maps'] as List, hasLength(13));
     expect(
       calibrationFor('icebreaker').containsKey('markerFloorAssignments'),
@@ -1007,7 +1129,7 @@ void main() {
 
     final newer = await candidate('newer');
     final newerManifest = await readManifest(newer);
-    expect(newerManifest['preparationVersion'], 4);
+    expect(newerManifest['preparationVersion'], 5);
     expect(newerManifest['maps'] as List, hasLength(13));
     final newerIce = (newerManifest['maps'] as List)
         .cast<Map<String, dynamic>>()

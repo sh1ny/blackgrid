@@ -329,10 +329,6 @@
             "Ramps-1"
           ],
           "exclusive": false,
-          "heightBand": [
-            25,
-            34
-          ],
           "id": "First_Floor",
           "label": "2nd Floor",
           "manual": true
@@ -346,10 +342,6 @@
             "Ramps-2"
           ],
           "exclusive": false,
-          "heightBand": [
-            34,
-            1000
-          ],
           "id": "Second_Floor",
           "label": "3rd Floor",
           "manual": true
@@ -478,10 +470,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
-          "heightBand": [
-            3,
-            1000
-          ],
           "id": "Second_Level",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/2nd/{z}/{x}/{y}.png"
@@ -490,10 +478,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": false,
-          "heightBand": [
-            -1000,
-            -0.9
-          ],
           "id": "Technical_Level",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/technical/{z}/{x}/{y}.png"
@@ -965,10 +949,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            -10000,
-            3.6
-          ],
           "id": "Control_Room",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/00_control_room/{z}/{x}/{y}.png"
@@ -977,10 +957,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            3.6,
-            5.7
-          ],
           "id": "Engine_Room",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/01_engine_room/{z}/{x}/{y}.png"
@@ -989,10 +965,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            5.7,
-            8.8
-          ],
           "id": "Engine_Room_Upper",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/02_engine_room_upper/{z}/{x}/{y}.png"
@@ -1001,10 +973,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            8.8,
-            11.9
-          ],
           "id": "Fuel_Pumps_Lower",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/03_fuel_pumps_lower/{z}/{x}/{y}.png"
@@ -1013,10 +981,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            11.9,
-            15
-          ],
           "id": "Fuel_Pumps",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/04_fuel_pumps/{z}/{x}/{y}.png"
@@ -1025,10 +989,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            15,
-            18.92
-          ],
           "id": "Storage_Security",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/05_storage_ecurity/{z}/{x}/{y}.png"
@@ -1045,10 +1005,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            19.57,
-            22.2
-          ],
           "id": "Helipad",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/07_helipad/{z}/{x}/{y}.png"
@@ -1057,10 +1013,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            22.2,
-            25.3
-          ],
           "id": "Gym_Canteen",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/08_gym-canteen/{z}/{x}/{y}.png"
@@ -1069,10 +1021,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            25.3,
-            28.3
-          ],
           "id": "Accommodation_Lower",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/09_accommodation_lower/{z}/{x}/{y}.png"
@@ -1081,10 +1029,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            28.3,
-            31.4
-          ],
           "id": "Accommodation_Mid",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/10_accommodation_mid/{z}/{x}/{y}.png"
@@ -1093,10 +1037,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            31.4,
-            34.5
-          ],
           "id": "Accommodation_Upper",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/11_accommodation_upper/{z}/{x}/{y}.png"
@@ -1105,10 +1045,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            34.5,
-            37.6
-          ],
           "id": "Officers_Deck",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/12_officers_deck/{z}/{x}/{y}.png"
@@ -1117,10 +1053,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            37.6,
-            40.7
-          ],
           "id": "Stairs_Blocked",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/13_stairs_blocked/{z}/{x}/{y}.png"
@@ -1129,10 +1061,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            40.7,
-            43.8
-          ],
           "id": "Bridge",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/14_bridge/{z}/{x}/{y}.png"
@@ -1141,10 +1069,6 @@
           "attachedIds": [],
           "base": false,
           "exclusive": true,
-          "heightBand": [
-            43.8,
-            10000
-          ],
           "id": "Bridge_Roof",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/icebreaker/15_bridge_roof/{z}/{x}/{y}.png"

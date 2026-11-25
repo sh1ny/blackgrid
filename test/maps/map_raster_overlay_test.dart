@@ -19,6 +19,7 @@ Map<String, dynamic> _floor(String id, {bool base = false, String? tiles}) => {
   'manual': true,
   'exclusive': false,
   'attachedIds': <String>[],
+  'extents': [],
   'sourceTileUrl': ?tiles,
   'artwork': tiles == null
       ? {

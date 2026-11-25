@@ -101,15 +101,7 @@ void main() {
 
       // The validator reads the key before any evidence, so a bare manifest
       // is enough. An empty list is a present key.
-      await writeManifest({
-        'schemaVersion': 1,
-        'preparationVersion': 4,
-        'maps': [
-          {'id': 'customs', 'labels': <Object>[]},
-          {'id': 'woods'},
-        ],
-        'outputs': <Object>[],
-      });
+      await writeManifest(manifest);
       await expectLater(
         validateCandidate(candidate),
         _formatError('woods', 'labels'),
@@ -124,13 +116,13 @@ void main() {
       await expectLater(_load(manifest), _formatError('woods', 'Attic'));
     });
 
-    test('preparation version 3 is refused by loader and validator', () async {
-      final manifest = preparedPackManifest()..['preparationVersion'] = 3;
-      await expectLater(_load(manifest), _formatError('version 3'));
+    test('preparation version 4 is refused by loader and validator', () async {
+      final manifest = preparedPackManifest()..['preparationVersion'] = 4;
+      await expectLater(_load(manifest), _formatError('version 4'));
 
       await writeManifest({
         'schemaVersion': 1,
-        'preparationVersion': 3,
+        'preparationVersion': 4,
         'maps': [
           {'id': 'woods', 'labels': <Object>[]},
         ],
@@ -138,7 +130,7 @@ void main() {
       });
       await expectLater(
         validateCandidate(candidate),
-        _formatError('preparation version 3'),
+        _formatError('preparation version 4'),
       );
     });
   });
