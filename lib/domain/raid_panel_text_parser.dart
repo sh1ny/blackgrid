@@ -118,18 +118,36 @@ final class RaidPanelProfile {
     return scale < maximum ? scale : maximum;
   }
 
-  /// Green exfil header across the top of the right-hand panel area.
+  /// Detects the green exfil header across the top of the right-hand panel.
+  ///
+  /// Counts only dim night-vision samples in continuous horizontal runs
+  /// inside the OCR crop that span at least a quarter of its width.
+  /// This admission rule does not change [panelBottom]'s crop classification.
   bool detect(int width, int height, int Function(int x, int y) rgb) {
     final startX = (width * headerScanStartRatio).toInt();
     final headerBottom = _maxInt(24, (height * headerHeightRatio).toInt());
     final step = width >= 3000 ? 5 : 4;
+    final cropWidth = _cropWidth(width);
+    final cropLeft = width - cropWidth;
+    final minDimSpan = (cropWidth + 3) ~/ 4;
+    // The first sample spans one pixel; each adjacent sample adds [step].
+    final minDimSamples = 1 + (minDimSpan + step - 2) ~/ step;
     var hits = 0;
     var samples = 0;
     for (var y = 4; y < headerBottom && y < height; y += 2) {
+      var dimRun = 0;
       for (var x = startX; x < width - 4; x += step) {
-        if (_headerGreen(rgb(x, y))) hits++;
+        final green = _classifyHeaderGreen(rgb(x, y), allowDim: x >= cropLeft);
+        if (green == _HeaderGreen.dim) {
+          dimRun++;
+        } else {
+          if (dimRun >= minDimSamples) hits += dimRun;
+          dimRun = 0;
+          if (green == _HeaderGreen.bright) hits++;
+        }
         samples++;
       }
+      if (dimRun >= minDimSamples) hits += dimRun;
     }
     return samples > 0 && hits / samples >= greenHitThreshold;
   }
@@ -164,12 +182,12 @@ final class RaidPanelProfile {
     return _minInt(height, _maxInt(minHeight, lastTextRow + 28));
   }
 
+  int _cropWidth(int width) =>
+      _minInt(width, _maxInt(1, (width * panelWidthRatio).toInt()));
+
   /// Right-anchored top crop of the panel area down to [bottom].
   RaidPanelBox crop(int width, int height, int bottom) {
-    final cropWidth = _minInt(
-      width,
-      _maxInt(1, (width * panelWidthRatio).toInt()),
-    );
+    final cropWidth = _cropWidth(width);
     final left = _maxInt(0, width - cropWidth);
     return RaidPanelBox(
       left,
@@ -183,9 +201,23 @@ final class RaidPanelProfile {
 int _maxInt(int a, int b) => a > b ? a : b;
 int _minInt(int a, int b) => a < b ? a : b;
 
-bool _headerGreen(int color) {
-  final r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
-  return g >= 150 && r <= 210 && b <= 170 && g >= r + 20 && g >= b + 10;
+enum _HeaderGreen { none, bright, dim }
+
+bool _headerGreen(int color) =>
+    _classifyHeaderGreen(color) == _HeaderGreen.bright;
+
+_HeaderGreen _classifyHeaderGreen(int color, {bool allowDim = false}) {
+  final g = (color >> 8) & 255;
+  if (g < (allowDim ? 125 : 150)) return _HeaderGreen.none;
+  final r = (color >> 16) & 255, b = color & 255;
+  if (g >= 150) {
+    return r <= 210 && b <= 170 && g >= r + 20 && g >= b + 10
+        ? _HeaderGreen.bright
+        : _HeaderGreen.none;
+  }
+  return r >= 70 && r <= 110 && g >= r + 25 && b <= 20
+      ? _HeaderGreen.dim
+      : _HeaderGreen.none;
 }
 
 bool _panelBackground(int color) {
