@@ -45,5 +45,5 @@ Blackgrid uses saved position samples to follow floors on supported multi-floor 
 
 ### Fixed
 
-- Map Auto now uses upstream floor heights and, where available, area bounds instead of working only on Labs and Icebreaker (#131).
-- Unassigned map markers now follow the same spatial floor rules as the player; explicitly assigned markers keep their floors (#131).
+- Map Auto follows floors on multi-floor maps such as Reserve and Streets, using each map's floor heights and area bounds, instead of only on Labs and Icebreaker. You can still choose a floor by hand.
+- Map markers without an assigned floor follow the same floor rules as your position; markers with an assigned floor keep it.

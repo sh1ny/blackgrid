@@ -60,4 +60,4 @@ Extract highlights from a saved raid screenshot now work when the exfil panel's 
 
 ### Fixed
 
-- Reading a saved screenshot's exfil panel no longer joins rows when OCR reads a row number's zero as `Ø`, so Shoreline panels stop being rejected as ambiguous, and a one-letter fragment no longer matches Transit to Terminal (#136).
+- Reading extracts from a saved screenshot no longer joins panel rows when a row number's zero reads as a slashed zero, so Shoreline panels are no longer rejected as ambiguous, and a one-letter fragment no longer matches Transit to Terminal.

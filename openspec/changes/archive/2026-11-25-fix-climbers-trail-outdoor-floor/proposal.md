@@ -42,4 +42,4 @@ Fix Shoreline’s Climber’s Trail marker on the ground map.
 
 ### Fixed
 
-- Climber’s Trail appears on Shoreline’s ground level without moving Admin Basement or Transit to Labyrinth out of the underground floor (#139).
+- Climber’s Trail shows on Shoreline’s ground level, and Admin Basement and Transit to Labyrinth stay on the underground floor.
