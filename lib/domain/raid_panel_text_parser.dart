@@ -260,7 +260,7 @@ final _transitInline = RegExp(
   caseSensitive: false,
 );
 final _rowNumber = RegExp(
-  r'((?:EXFIL|EXIT|TRANSIT)\s*)[0ØOo]([0-9ØOoIl|])(?![\p{L}\p{N}])',
+  r'((?:EXFIL|EXIT|TRANSIT)[ \t]*)[0ØOo]([0-9ØOoIl|])(?![\p{L}\p{N}])',
   unicode: true,
 );
 final _zeroGlyph = RegExp('[ØOo]');
@@ -345,8 +345,9 @@ final class RaidPanelTextParser {
   /// `TRANSITØI`). The row-label patterns only accept digits, so they rely on
   /// this repair: without it, rows are not split at those labels and run
   /// together. Only a two-character number (`01`–`09`) after an upper-case
-  /// `EXFIL`, `EXIT` or `TRANSIT` label with any spacing, and not followed by
-  /// a letter or digit, is rewritten, so exit names keep their letters.
+  /// `EXFIL`, `EXIT` or `TRANSIT` label, separated by spaces or tabs on the
+  /// same line and not followed by a letter or digit, is rewritten, so exit
+  /// names keep their letters and a label never takes the next line's text.
   static String _normalize(String text) {
     var result = text.replaceAll('’', "'").replaceAll('‘', "'");
     for (final (from, to) in const [

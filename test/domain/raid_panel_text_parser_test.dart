@@ -161,6 +161,13 @@ void main() {
     }
   });
 
+  test('a row number never joins a label across a line break', () {
+    // A line ending in an upper-case label word must not turn the start of
+    // the next line into that label's row number.
+    final names = _parse(['EXFIL01 Smugglers Path EXIT', 'Ol Boat']);
+    expect(names.extracts, isNot(contains('Boat')));
+  });
+
   test('a label followed by a word keeps the word\'s letters', () {
     final names = _parse(['EXFIL01 EXIT Old Bunker EXFIL02 TRANSIT Oil Gate']);
     expect(
