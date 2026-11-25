@@ -7,7 +7,7 @@ Turns the exfil panel in a saved raid screenshot into extract and transit rows, 
 ## ADDED Requirements
 
 ### Requirement: Panel rows split at every row label
-Reading a saved exfil panel SHALL start a new extract or transit row at every `EXFIL`, `EXIT` or `TRANSIT` label followed by a row number. A row number from `01` to `09` SHALL be recognised when OCR reads a zero in it as `Ø`, `O` or `o`, or its one as `I`, `l` or `|`. Row numbers from `10` up are read only when OCR gives plain digits. No row's name SHALL contain another row's label.
+Reading a saved exfil panel SHALL start a new extract or transit row at every `EXFIL`, `EXIT` or `TRANSIT` label followed by a row number. A row number in `01`–`09` SHALL be recognised when OCR reads a zero in it as `Ø`, `O` or `o`, or its one as `I`, `l` or `|`. Row numbers from `10` up are read only when OCR gives plain digits. No row's name SHALL contain another row's label.
 
 #### Scenario: Slashed-zero labels on one line
 - **WHEN** OCR reads Shoreline's panel as one line, `EXFILØ1 Road to North V-Ex EXFILØ2 Road to Customs EXFILØ3 Railway Bridge … TRANSITØI Transit to Lighthouse TRANSITØ4 Transit to Icebreaker`
