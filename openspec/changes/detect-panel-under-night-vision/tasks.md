@@ -7,7 +7,7 @@
 | raid-panel-reading → Detect exfil headers dimmed by night vision | Dimmed header on Shoreline | test/domain/raid_panel_text_parser_test.dart | detects an exfil header dimmed by night vision | green |
 | raid-panel-reading → Detect exfil headers dimmed by night vision | Standard header | test/domain/raid_panel_text_parser_test.dart | green header in the right panel area is detected, dark frame is not (existing) | green |
 | raid-panel-reading → Detect exfil headers dimmed by night vision | Night-vision scenery without a panel | test/domain/raid_panel_text_parser_test.dart | rejects night-vision scenery without an exfil header | green |
-| raid-panel-reading → Detect exfil headers dimmed by night vision | Night-vision scenery without a panel (in-palette shapes) | test/domain/raid_panel_text_parser_test.dart | rejects an in-palette dim stripe outside the panel crop; rejects an in-palette dim stripe inside the panel crop | red |
+| raid-panel-reading → Detect exfil headers dimmed by night vision | Night-vision scenery without a panel (in-palette shapes) | test/domain/raid_panel_text_parser_test.dart | rejects an in-palette dim stripe outside the panel crop; rejects an in-palette dim stripe inside the panel crop | green |
 
 ## 1. Admit the dim panel and reject scenery
 
@@ -32,8 +32,10 @@
 
 ## 2. Reject in-palette scenery shapes
 
-- [ ] 2.1 Add two in-palette vertical stripe negatives, one outside the crop and one inside but too narrow. Both must exceed the existing total colour coverage and fail against the colour-only implementation.
-- [ ] 2.2 Apply D1's crop-local quarter-width run to the dim path only; leave the bright path, sampling grid and crop behaviour unchanged. Carry C3 and clarify C2 at `RaidPanelProfile.detect`. Run the detector tests and six original saved images again, then run the offline gates after the gaming check.
+- [x] 2.1 Add two in-palette vertical stripe negatives, one outside the crop and one inside but too narrow. Both must exceed the existing total colour coverage and fail against the colour-only implementation.
+  - On the colour-only detector, both returned `true` when `false` was expected. The outside case also includes a single wide row inside the crop: the row has span but cannot reach the hit fraction without outside hits.
+- [x] 2.2 Apply D1's crop-local quarter-width run to the dim path only; leave the bright path, sampling grid and crop behaviour unchanged. Carry C3 and clarify C2 at `RaidPanelProfile.detect`. Run the detector tests and six original saved images again, then run the offline gates after the gaming check.
+  - Final detector: both dim panels and the bright control accepted; all three full no-panel images rejected. `mise run analyze` found no issues. `mise run test` passed all 3,636 app tests and 110 progress tests, including both stripe negatives and the crop regression.
 
 ## Workflow follow-up
 

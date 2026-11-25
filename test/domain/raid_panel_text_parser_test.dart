@@ -99,7 +99,28 @@ void main() {
     }
   });
 
-  test('dim header pixels do not extend the panel crop', () {
+  for (final (location, left, right) in [
+    ('outside', 1995, 2145),
+    ('inside', 2280, 2465),
+  ]) {
+    test('rejects an in-palette dim stripe $location the panel crop', () {
+      const width = 3440, height = 1440;
+      final profile = RaidPanelProfile.forSize(width, height);
+      // Each stripe exceeds 10% of the scan grid. For the outside stripe,
+      // add one wide row inside the crop: it has the span but not the coverage
+      // unless outside pixels are allowed to count.
+      int scenery(int x, int y) {
+        final stripe = x >= left && x < right;
+        final wideRow =
+            location == 'outside' && y == 4 && x >= 2280 && x < 2630;
+        return stripe || wideRow ? 0x5D8807 : _dark;
+      }
+
+      expect(profile.detect(width, height, scenery), isFalse);
+    });
+  }
+
+  test('new dim-header admission does not extend the panel crop', () {
     const width = 2560, height = 1440;
     final profile = RaidPanelProfile.forSize(width, height);
     int panel(int x, int y) {
