@@ -32,7 +32,21 @@ Blackgrid never asks the game where you are. It reads two kinds of files that th
 
 Your position changes on the map only when you take a screenshot. Blackgrid does not track you live.
 
+On maps with an **Auto** floor button, Auto starts on and follows your sampled position's height and, where available, the floor's horizontal bounds. This includes Reserve and Streets. Missing height leaves the current floor unchanged. Selecting a floor yourself turns Auto off for that map for the current Blackgrid session; switching maps and back keeps that override. Select **Auto** again to resume following.
+
 To see which extracts you have, press O in raid to open the list of your extracts and transits, then take a screenshot. Blackgrid reads the names from the screenshot with the text recognition built into Windows, and highlights those extracts on the map.
+
+### Screenshot cleanup is optional
+
+In **Settings → Game files**, **Delete a raid's screenshots after it ends** is off by default. If you turn it on, Blackgrid moves matching game screenshots from the configured screenshot folder to the Windows Recycle Bin after a fresh raid ending. It selects only files directly in that folder with game screenshot names and modification times within the raid; it does not search subfolders or follow individual file links. Files that cannot be recycled stay in place, never permanently deleted. The result under the switch reports moved, not-moved and unconfirmed files separately.
+
+Cleanup requires Blackgrid to have observed the raid's original start live. Opening Blackgrid mid-raid, replaying old logs or reconstructing a raid only from a reconnect does not qualify. A reconnect during the same Blackgrid run keeps an already observed start eligible. Switching cleanup off stops waiting cleanups; one already moving files can finish. Restore moved screenshots from the Recycle Bin if you need them.
+
+### Audio alerts
+
+**Settings → Alerts** has a switch and a **Test** button for each alert. **Match found**, **Raid starting**, **Run-through over** and **Scav ready** start on. Reminders to turn the air filter on or off, check quest items for the queued map and restart failed tasks start off. These are reminders only: Blackgrid does not operate the filter, inspect your inventory or restart tasks.
+
+Each alert uses Windows speech by default, or a WAV or MP3 file you select with **Choose file**. **Use speech** restores the spoken line; a missing or unplayable file also falls back to speech and shows a problem under its row. **Voice** and **Speed** apply to speech, and **Volume** applies to both speech and files. Use **Preview** to hear the voice and **Get more voices** to open Windows speech settings. **Test** plays the selected sound even when that alert's switch is off. Choices are saved locally.
 
 ### Item scanning is optional
 
@@ -50,7 +64,7 @@ Blackgrid never connects to the game. It does not read or change the game's memo
 - the screenshots you take;
 - with live scan on, a small capture of your screen, the same kind a screen-capture tool takes. To check that your click landed on the game, Blackgrid reads the title of the window under your mouse. Windows gives any program this title.
 
-Blackgrid modifies no game files. A test in this repository fails if the capture code calls any Windows function that could open or control another program.
+Game logs remain read-only. The opt-in [screenshot cleanup](#screenshot-cleanup-is-optional) is the only exception to read-only screenshot access: it moves selected screenshots to the Windows Recycle Bin, never permanently deletes them. Blackgrid does not modify the game's installation files. A test in this repository fails if the capture code calls any Windows function that could open or control another program.
 
 > **Note:** Blackgrid is a fan-made tool, not affiliated with Battlestate Games. Only Battlestate Games decides what its anti-cheat allows. Blackgrid keeps well away from the game, but no third-party tool can promise how anti-cheat will treat it.
 
@@ -209,7 +223,7 @@ Specwright uses the `sw` binary pinned in [`openspec/.specwright/VERSION`](opens
 
 ## Settings
 
-Blackgrid has no config file. The **Settings** dialog and the Map area save one JSON row (`Preferences`, id 1) in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. [`AppSettings`](lib/domain/settings.dart) defines the fields:
+Blackgrid has no config file. The **Settings** dialog and the Map area save one JSON row (`Preferences`, id 1) in `%LOCALAPPDATA%\Blackgrid\blackgrid.sqlite`. [`AppSettings`](lib/domain/settings.dart) defines the fields, including:
 
 ```jsonc
 {
@@ -219,11 +233,14 @@ Blackgrid has no config file. The **Settings** dialog and the Map area save one 
   "markerFilters": {},          // category to visibility, for example "PmcExtracts": true
   "gameLogDirectory": "",       // empty = find it from the registry or the Steam libraries
   "screenshotDirectory": "",    // empty = Documents\Escape from Tarkov\Screenshots
+  "cleanUpRaidScreenshots": false, // opt-in post-raid moves to the Recycle Bin; requires a live-observed raid start
   "liveScan": false,            // true = live scan is on at start
   "scanHotkey": "F9",           // off | F1 .. F24. Set in Scanner; registered only while live scan is on
   "followGameLogs": true        // switch the map from the logs; selectedMap is the fallback
 }
 ```
+
+The `alerts` block stores each alert's switch and sound, plus the shared voice, speed and volume. Use [Settings → Alerts](#audio-alerts) to change them.
 
 Older versions also wrote `trackerEnabled`. Blackgrid ignores it when it loads an old file and no longer writes it.
 
@@ -285,6 +302,8 @@ History stores only the item ID, mode, source, UTC time and revision. Blackgrid 
 | Home | Fits the whole map in view |
 | `+`, `=` or numpad `+` / `-` or numpad `-` | Zoom in / zoom out |
 | C | Centres the view on your last known position |
+| Auto (where available) | Follows the floor from the latest sampled position; select again after a manual override to resume |
+| Floor button | Changes the visible floors and turns Auto off for this map for the current Blackgrid session |
 | N | Adds a pin at the centre of the view |
 | Right-click outside the bubble | Adds a pin at the cursor |
 | Enter | Lets you browse the visible markers and pins |
