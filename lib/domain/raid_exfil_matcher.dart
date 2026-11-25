@@ -52,6 +52,11 @@ final class RaidExfilMatcher {
         if (candidates.isEmpty) continue;
         final best = _bestFor(ocr, candidates);
         if (best == null) {
+          final merged = _mergedRow(ocr, candidates);
+          if (merged != null) {
+            matched.addAll(merged);
+            continue;
+          }
           return RaidMatchResult(
             RaidPanelState.ambiguous,
             {},
@@ -103,9 +108,16 @@ final class RaidExfilMatcher {
     return RaidMatchResult(RaidPanelState.recognized, ids, evidence.message);
   }
 
+  /// Whether the OCR row [ocrName] names the exit called [dataName].
+  ///
+  /// A row shorter than four letters and digits matches only an exit whose
+  /// normalised name equals it, such as Reserve's `D-2`. Containment and
+  /// fuzzy similarity are refused for it, because a label fragment such as
+  /// `I` would otherwise match every exit whose name contains that letter.
   static bool namesMatch(String ocrName, String dataName) {
     final ocr = _normalize(ocrName), data = _normalize(dataName);
     if (ocr.isEmpty || data.isEmpty) return false;
+    if (ocr.length < 4) return ocr == data;
     if (ocr == data || ocr.contains(data) || data.contains(ocr)) return true;
     if (_wordOverlap(ocr, dataName) >= _wordOverlapThreshold ||
         _wordOverlap(data, ocrName) >= _wordOverlapThreshold) {
@@ -174,6 +186,36 @@ final class RaidExfilMatcher {
       }
     }
     return tied ? null : winner;
+  }
+
+  /// The exits of a row that OCR merged from several panel rows, such as
+  /// `Transit to Lighthouse Transit to Icebreaker`, or null when the row is
+  /// truly ambiguous.
+  ///
+  /// Every candidate whose whole name the row holds is kept, except one whose
+  /// name lies inside another kept name (`Lighthouse` inside `Transit to
+  /// Lighthouse`). The row stays ambiguous when fewer than two exits remain,
+  /// when a name equals the whole row, or when two remaining exits share a
+  /// name, because then the row cannot say which exit it means.
+  static List<_Exit>? _mergedRow(String ocrName, List<_Exit> candidates) {
+    final ocr = _normalize(ocrName);
+    final whole = <_Exit, String>{};
+    for (final exit in candidates) {
+      for (final name in exit.names) {
+        final data = _normalize(name);
+        if (data.length < 4 || !ocr.contains(data)) continue;
+        if (data == ocr) return null;
+        if (data.length > (whole[exit]?.length ?? 0)) whole[exit] = data;
+      }
+    }
+    final kept = [
+      for (final MapEntry(key: exit, value: data) in whole.entries)
+        if (!whole.values.any((other) => other != data && other.contains(data)))
+          (exit, data),
+    ];
+    if (kept.length < 2) return null;
+    if ({for (final (_, data) in kept) data}.length != kept.length) return null;
+    return [for (final (exit, _) in kept) exit];
   }
 
   static int _compare((int, double) left, (int, double) right) {

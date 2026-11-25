@@ -102,6 +102,88 @@ void main() {
     expect(names.extracts, ['Tunnel']);
   });
 
+  test('slashed-zero row labels split rows like plain zeros', () {
+    const slashed =
+        'Find an extraction point EXFILØI Road to North V-Ex '
+        'EXFILØ2 Road to Customs EXFILØ3 Railway Bridge '
+        'EXFILØ4 Path to Lighthouse TRANSITØI Transit to Lighthouse '
+        'TRANSITØ4 Transit to Icebreaker';
+    const plain =
+        'Find an extraction point EXFIL01 Road to North V-Ex '
+        'EXFIL02 Road to Customs EXFIL03 Railway Bridge '
+        'EXFIL04 Path to Lighthouse TRANSIT01 Transit to Lighthouse '
+        'TRANSIT04 Transit to Icebreaker';
+    final rows = [
+      for (final text in [slashed, plain]) _parse([text]),
+    ];
+    for (final names in rows) {
+      expect(
+        names.extracts,
+        containsAll(['Road to Customs', 'Railway Bridge']),
+      );
+      expect(
+        names.transits,
+        containsAll(['Transit to Lighthouse', 'Transit to Icebreaker']),
+      );
+      for (final row in [...names.extracts, ...names.transits]) {
+        expect(row.toUpperCase(), isNot(contains('EXFIL')));
+        expect(row.toUpperCase(), isNot(contains('TRANSIT0')));
+        expect(row.toUpperCase(), isNot(contains('TRANSITØ')));
+      }
+    }
+    expect(rows[0].extracts, rows[1].extracts);
+    expect(rows[0].transits, rows[1].transits);
+  });
+
+  test('every zero and one misread in a row number is repaired', () {
+    final names = _parse([
+      'Find an extraction point EXFILO1 Road to North V-Ex '
+          'EXFILo2 Road to Customs EXFIL Ø3 Railway Bridge '
+          'EXFIL  0l Path to Lighthouse EXFIL0| Pier Boat '
+          'TRANSITØI Transit to Lighthouse TRANSIT  Ø4 Transit to Icebreaker',
+    ]);
+    expect(
+      names.extracts,
+      containsAll([
+        'Road to North V-Ex',
+        'Road to Customs',
+        'Railway Bridge',
+        'Path to Lighthouse',
+        'Pier Boat',
+      ]),
+    );
+    expect(
+      names.transits,
+      containsAll(['Transit to Lighthouse', 'Transit to Icebreaker']),
+    );
+    for (final row in [...names.extracts, ...names.transits]) {
+      expect(row, isNot(contains(RegExp(r'(EXFIL|TRANSIT)\s*\S\S'))));
+    }
+  });
+
+  test('a row number never joins a label across a line break', () {
+    // A line ending in an upper-case label word must not turn the start of
+    // the next line into that label's row number.
+    final names = _parse(['EXFIL01 Smugglers Path EXIT', 'Ol Boat']);
+    expect(names.extracts, isNot(contains('Boat')));
+  });
+
+  test('a label followed by a word keeps the word\'s letters', () {
+    final names = _parse(['EXFIL01 EXIT Old Bunker EXFIL02 TRANSIT Oil Gate']);
+    expect(
+      names.extracts,
+      containsAll(['EXIT Old Bunker', 'TRANSIT Oil Gate']),
+    );
+  });
+
+  test('an Exfil word without a row number stays in the name', () {
+    final names = _parse(['EXFIL02 Saferoom Exfil EXFIL03 Railway Exfil']);
+    expect(names.extracts, containsAll(['Saferoom Exfil', 'Railway Exfil']));
+    expect(names.extracts.where((row) => row.contains('Railway')), [
+      'Railway Exfil',
+    ]);
+  });
+
   test('merging two recognitions keeps text and unique lines', () {
     expect(mergeRaidOcrText('', 'b'), 'b');
     expect(mergeRaidOcrText('abc def', 'DEF'), 'abc def');
