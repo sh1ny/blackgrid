@@ -2,8 +2,8 @@
 
 ## Metadata
 
-- **Round:** 1
-- **Prior round:** none
+- **Round:** 2
+- **Prior round:** LIGHT triage confirmed; rechecked after recording the drift constraint at its code destination.
 - **Reviewer:** n/a
 - **Reviewed:** Proposal, map-controls delta, design, cited code and frozen Shoreline manifest.
 

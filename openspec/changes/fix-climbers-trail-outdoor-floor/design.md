@@ -54,5 +54,4 @@ None. Before merge, only the owner can confirm live visibility; the bundled regr
 ## Carried constraints
 
 - **C1:** Explicit marker ownership wins; unassigned markers and player Auto still use the same position classifier. Kind: invariant. Destination: spec: specs/map-controls/spec.md → Requirement: Unassigned markers use the prepared floor extents.
-- **C2:** Live marker identities or placements may drift; a stale annotation does not force ownership or reject an otherwise valid snapshot. Kind: invariant. Destination: ADR 0035.
-- **C3:** Generated pack changes must remain reproducible from their own frozen inputs. Kind: invariant. Destination: ADR 0033.
+- **C2:** Live marker identities or placements may drift; a stale annotation does not force ownership or reject an otherwise valid snapshot. Kind: invariant. Destination: doc comment: lib/maps/live_map_normalizer.dart prepareMarkers.
