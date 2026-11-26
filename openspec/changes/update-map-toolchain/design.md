@@ -15,15 +15,16 @@ TIER: FULL
 
 ## Context
 
-See [proposal.md](proposal.md) for versions and scope. The map tool parses SVGs with `XmlDocument.parse` (`tool/maps/svg.dart:1-15`, `83`), and ADR-0033 makes the committed pack the reproduction baseline. Two existing tests inspect `href` by namespace, one with a wildcard and one with an exact URI (`test/maps/map_preparation_test.dart:1340-1347`; `test/maps/map_preparation_qualification_test.dart:559-565`). Migrate both from `namespace:` to `namespaceUri:` and verify A2 without changing the wildcard, URI or expected value. Update the two selected-version rows and compare the upstream license files with the notices (`THIRD_PARTY_NOTICES.md:1082-1087`, `1110-1116`, `1175-1181`). The codec test encodes a small SVG, checks its header and decodes it (`test/maps/vector_format_test.dart:19-37`).
+See [proposal.md](proposal.md) for versions and scope. The map tool parses SVGs with `XmlDocument.parse` (`tool/maps/svg.dart:1-15`, `83`), and ADR-0033 makes the committed pack the reproduction baseline. The pre-upgrade `namespace:` calls inspect `href` by wildcard and exact URI at the base recorded below. The upgrade migrates those calls to `namespaceUri:` without changing either expected value (`test/maps/map_preparation_test.dart:1340-1352`; `test/maps/map_preparation_qualification_test.dart:559-565`). It also replaces deprecated unqualified name constructors with `XmlName.parts` in SVG normalization and the qualification fixture (`tool/maps/svg.dart:253-259`; `test/maps/map_preparation_qualification_test.dart:820-826`). The two selected-version rows and licenses belong in the shipped notices (`THIRD_PARTY_NOTICES.md:1082-1087`, `1110-1116`, `1175-1181`). The codec test encodes a small SVG, checks its header and decodes it (`test/maps/vector_format_test.dart:19-37`).
 
-The app-icon build calls `compileSources` on the normal and optional small source before rendering (`tool/app_icon/build.dart:99-117`). The shared app-icon compile step delegates to `compileIconSvg` and reports compiler exceptions by filename (`tool/app_icon/render.dart:65-68`, `85-93`); `compileIconSvg` treats warnings as errors (`tool/markers/icon_set.dart:474-483`). The marker icon set has a separate closed allowlist that excludes filters (ADR-0023, `docs/adr/0023-project-authored-map-marker-icons.md:13-17`). The test fixture shared with the icon sheet currently uses `<filter>` as the rejected element (`test/tool/app_icon/support/icon_fixture.dart:12-15`, `test/tool/app_icon/build_test.dart:70-105`, `test/tool/app_icon/sheet_test.dart:143`).
+The app-icon build calls `compileSources` on the normal and optional small source before rendering (`tool/app_icon/build.dart:99-117`). The shared compile step delegates to `compileIconSvg` and reports compiler exceptions by filename (`tool/app_icon/render.dart:65-68`, `85-93`); `compileIconSvg` treats warnings as errors (`tool/markers/icon_set.dart:474-483`). The marker set has a separate closed allowlist that excludes filters (`docs/adr/0023-project-authored-map-marker-icons.md:13-17`). The pre-upgrade shared fixture used `<filter>` at the recorded base. The upgrade replaces it with `<foreignObject>` in the build and sheet tests (`test/tool/app_icon/support/icon_fixture.dart:12-15`; `test/tool/app_icon/build_test.dart:70-105`; `test/tool/app_icon/sheet_test.dart:137-157`).
 
 ## Decisions
 
 ### D1: Keep app-icon acceptance tied to the compiler
 
 - **Choice:** App-icon sources may use filters the compiler accepts. Keep the existing compile and render checks and the marker set's separate filter ban. Use `<foreignObject>` for the rejection fixture, subject to the offline proof in A1.
+- **Proof:** Put a small, untagged offline Flutter test in `test/` so `mise run test` runs it. Compile a synthetic Gaussian-blur SVG through `compileIconSvg` or `compileSources` and rasterize the bytes with the resolved Flutter vector runtime. Check that a margin beyond the original shape's antialiasing edge has nonzero alpha with blur and stays transparent without blur. No committed icon artwork changes.
 - **Rejected:** Add an app-icon filter allowlist or copy the marker ban. That would add an admission policy beyond the app-icon compiler and render checks.
 - **Reversal cost:** low.
 - **Important:** yes. It sets the admission boundary for future app-icon sources.
@@ -48,15 +49,17 @@ The app-icon build calls `compileSources` on the normal and optional small sourc
 ## Assumptions
 
 - **A1:** The resolved pair rejects an SVG with `<foreignObject>` when compiler warnings are errors. That result is not established by the tracked wrapper, which only sets the flag (`tool/markers/icon_set.dart:474-483`). Verify it in the existing normal-source and small-source build tests and the vector-candidate sheet test before accepting the fixture. Those tests must still name the bad file and confirm failure happens before rendering or replacing outputs. D1 relies on this proof for fixture selection, not for the owner policy.
-- **A2:** With resolved `xml` 7.0.1, `namespaceUri:` preserves the existing wildcard and exact xlink URI matches. The tracked tests still use the old argument. Verify the wildcard assertion in the pinned fast suite and the exact URI assertion in the hosted qualification suite; the fast suite excludes qualification (`mise.toml:8-17`). The XML test migration depends on both assertions keeping their existing expected values.
+- **A2:** With resolved `xml` 7.0.1, `namespaceUri:` preserves the existing wildcard and exact xlink URI matches. The pre-upgrade assertions use `namespace:` at the base recorded below. The upgraded assertions use `namespaceUri:` and retain their expected values (see Context). Verify the wildcard in the pinned fast suite and the exact URI in hosted qualification; the fast suite excludes qualification (`mise.toml:8-17`).
 
 ## Carried constraints
 
-- **C1:** App-icon SVG admission follows the existing compiler and render checks. Kind: invariant. Destination: spec: specs/app-icon/spec.md → Requirement: The icon build also writes the in-app vector.
-- **C2:** A pack that reproduces keeps its original generation and build provenance. Kind: invariant. Destination: ADR 0033.
-- **C3:** The marker icon set forbids filters independently of available compiler features. Kind: invariant. Destination: spec: specs/map-marker-icons/spec.md → Requirement: Icon files use the restricted single-tint vector form.
-- **C4:** The operator serializes pack publication writers. Kind: invariant. Destination: spec: specs/prepared-map-packs/spec.md → Requirement: Explicit publication uses the staged candidate.
-- **C5:** Non-provenance differences in a rebuilt pack require the owner's check of the maps named in the report before merge. Kind: invariant. Destination: spec: specs/prepared-map-packs/spec.md → Requirement: One command rebuilds and promotes the committed pack.
+None.
+
+## Existing constraints
+
+- App-icon admission follows compilation and successful rendering (`openspec/specs/app-icon/spec.md:82-91`); marker icons still forbid filters (`openspec/specs/map-marker-icons/spec.md:27-28`).
+- A pack that reproduces keeps its generation and original provenance (`docs/adr/0033-map-packs-proven-by-reproduction.md:18-23`).
+- The operator serializes pack publication writers (`openspec/specs/prepared-map-packs/spec.md:295-297`). Non-provenance changes keep the owner check (`openspec/specs/prepared-map-packs/spec.md:128-142`).
 
 ## Diagrams (FULL)
 

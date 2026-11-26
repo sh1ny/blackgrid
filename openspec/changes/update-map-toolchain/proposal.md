@@ -16,7 +16,7 @@ No requirements change. `app-icon` already uses the compiler to accept or reject
 
 ## Impact
 
-The root dependency constraints, lockfile and shipped dependency notices change. The app-icon rejection fixture and the two map tests that use XML's deprecated `namespace:` argument need updates; their assertions keep the same meaning. Prepared map assets change only when the reproduction report shows a difference. The app-icon artwork, Flutter SDK, `test` and `build_runner` are out of scope. `xml` 7.1.0 is also out of scope because the compiler caps it at `<=7.0.1`.
+The root dependency constraints, lockfile and shipped dependency notices change. The app-icon rejection fixture changes and an offline test checks that a supported blur renders. SVG normalization and its qualification fixture move to `XmlName.parts`. Two map tests move to XML's `namespaceUri:` argument and keep their expected results. Prepared map assets change only when the reproduction report shows a difference. The app-icon artwork, Flutter SDK, `test` and `build_runner` are out of scope. `xml` 7.1.0 is also out of scope because the compiler caps it at `<=7.0.1`.
 
 ## Decision Making
 
