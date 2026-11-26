@@ -42,7 +42,7 @@ Tests tagged `qualification` need a built bundle and native DLLs and take much l
 - **Never touch the game.** Blackgrid must not read, scan or attach to the game's process memory, send input to it, or control its window. Anti-cheat can ban players for that, so a change that does any of it can't be accepted.
 - Anything that needs the game running is tested by the maintainer, by hand. In your PR, say what you couldn't test; that's expected, not a problem.
 - Price, quest and item data come from [tarkov.dev](https://tarkov.dev) and TarkovTracker. If that data is wrong at the source, it needs fixing there.
-- If you change `vector_graphics`, `vector_graphics_compiler`, `vector_graphics_codec`, `image` or `xml` in `pubspec.yaml`, run `mise run maps:check`, and `mise run maps:rebuild` if it fails, and commit the regenerated maps with it.
+- If `pubspec.lock` changes the resolved version of `vector_graphics`, `vector_graphics_compiler`, `vector_graphics_codec`, `image` or `xml`, run `mise run maps:check`. If it fails, run `mise run maps:rebuild` and commit the regenerated maps with the lockfile change.
 
 ## Pull requests
 
