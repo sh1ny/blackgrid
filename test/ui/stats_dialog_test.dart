@@ -5,7 +5,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/local_stats.dart';
 import 'package:blackgrid/domain/raid_lifecycle.dart';
 import 'package:blackgrid/ui/stats_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 LocalStatsTotals _totals({

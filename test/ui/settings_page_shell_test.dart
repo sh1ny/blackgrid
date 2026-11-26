@@ -3,7 +3,7 @@ import 'package:blackgrid/ui/scanner_screen.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_section.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

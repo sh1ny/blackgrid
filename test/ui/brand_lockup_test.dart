@@ -1,6 +1,6 @@
 import 'package:blackgrid/ui/app_logo.dart';
 import 'package:blackgrid/ui/brand_lockup.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Future<void> _pump(WidgetTester tester, Widget lockup) => tester.pumpWidget(

@@ -8,7 +8,7 @@ import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/scanner_sections.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../application/support/history_wait.dart';

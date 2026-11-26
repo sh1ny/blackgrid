@@ -1,6 +1,6 @@
 # Blackgrid
 
-[![version](https://img.shields.io/github/v/release/sh1ny/blackgrid?label=version&color=blue)](https://github.com/sh1ny/blackgrid/releases/latest) ![Flutter](https://img.shields.io/badge/Flutter-3.47.9-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
+[![version](https://img.shields.io/github/v/release/sh1ny/blackgrid?label=version&color=blue)](https://github.com/sh1ny/blackgrid/releases/latest) ![Flutter](https://img.shields.io/badge/Flutter-3.50.1-02569B) ![platform](https://img.shields.io/badge/platform-Windows%20x64-555)
 
 Blackgrid is a helper app for Escape from Tarkov that runs next to the game on Windows. It shows where you are on the map, which extracts you have this raid, and whether the item you are looking at is worth keeping or selling.
 
@@ -126,7 +126,7 @@ flowchart LR
 
 ## Install and update
 
-> **Prerequisites:** Windows 11 x64, Git and [mise](https://mise.jdx.dev/). Visual Studio with the **Desktop development with C++** workload, its CMake tools and a Windows SDK, as [Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup) describes. Windows Developer Mode, if a native build needs symlinks. [`mise.toml`](mise.toml) supplies Flutter 3.47.9, so you do not need a global Flutter install.
+> **Prerequisites:** Windows 11 x64, Git and [mise](https://mise.jdx.dev/). Visual Studio with the **Desktop development with C++** workload, its CMake tools and a Windows SDK, as [Flutter's Windows setup](https://docs.flutter.dev/platform-integration/windows/setup) describes. Windows Developer Mode, if a native build needs symlinks. [`mise.toml`](mise.toml) supplies Flutter 3.50.1 with Dart 3.14.0, so you do not need a global Flutter install.
 
 The same commands install and update:
 

@@ -21,7 +21,7 @@ To start a new product on this system, copy `brand/` into the project and use `B
 ## Status
 
 - The CSS and the specimen were checked in a browser, in both themes.
-- The Dart files have **not** been compiled here, because this repository has no Flutter SDK. Run `flutter analyze` after dropping them into an app. They target Flutter 3.22 or later, which provides `WidgetStatePropertyAll` and the `surfaceContainer*` colour roles.
+- For Dart, add `material_ui: 1.11.1` under `dependencies` in the consuming app's `pubspec.yaml`. Copy both Dart files from `flutter/`. In the consuming app, import `package:material_ui/material_ui.dart` for `MaterialApp` and `Theme.of`. Run `flutter pub get`, then `flutter analyze`. The kit was checked with Flutter 3.50.1 and Dart 3.14.0.
 
 ## Licences
 

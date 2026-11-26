@@ -59,8 +59,11 @@ final class CapturePolicy {
 
     // From here the frame is ours: release it on every reject.
     final frames = _platform.frames;
+    // Dart SDK #64917: capture the ID, not the switch-assigned final.
+    // Remove this workaround once Flutter bundles Dart 3.14.1 or later.
+    final frameId = capture.frameId;
     CaptureResult reject(CaptureFailure failure) {
-      frames.release(capture.frameId);
+      frames.release(frameId);
       return CaptureRejected(failure);
     }
 

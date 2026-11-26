@@ -6,7 +6,7 @@ import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/scan_ui_support.dart';

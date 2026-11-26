@@ -9,7 +9,7 @@ import 'package:blackgrid/maps/map_marker_icons.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
 import 'package:blackgrid/ui/ember/ember_toggle_switch.dart';
 import 'package:blackgrid/ui/marker_preferences.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../tool/markers/icon_set.dart';

@@ -10,7 +10,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

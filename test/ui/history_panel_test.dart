@@ -6,7 +6,7 @@ import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/labels.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/ember/theme_access.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;

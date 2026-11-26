@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/screenshot_cleanup_controller.dart';
 import '../../application/settings_controller.dart';

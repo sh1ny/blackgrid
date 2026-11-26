@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:blackgrid/ui/settings/commit_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Pumps one [CommitField] inside a [SettingsFlushScope] and returns the

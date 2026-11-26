@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lets a parent ask every [CommitField] under a [SettingsFlushScope] to
 /// commit its pending text.

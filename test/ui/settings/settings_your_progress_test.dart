@@ -8,7 +8,7 @@ import 'package:blackgrid/domain/progress_wipe_store.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/settings/your_progress_panel.dart';
 import 'package:blackgrid_progress/blackgrid_progress.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _level = ProgressTarget(

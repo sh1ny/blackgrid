@@ -3,7 +3,7 @@ import 'package:blackgrid/data/catalog_normalizer.dart';
 import 'package:blackgrid/application/scan_epoch.dart';
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/title_matching.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fixtures/m1/catalog/fixture.dart';

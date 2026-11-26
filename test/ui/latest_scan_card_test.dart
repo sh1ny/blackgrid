@@ -4,7 +4,7 @@ import 'package:blackgrid/data/vision/inspection_evidence.dart';
 import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/panels.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../application/support/history_wait.dart';
