@@ -1,6 +1,5 @@
 // Ember ThemeData builder. Hand-written; the values come from ember_tokens.dart.
-// Not compiled in this repository (no Flutter SDK here): run `flutter analyze` when you drop it in.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'ember_tokens.dart';
 
