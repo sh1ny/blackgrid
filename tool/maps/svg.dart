@@ -253,7 +253,10 @@ String normalizeSvgFloor(
       final parent = floor.parent!;
       final index = parent.children.indexOf(floor);
       parent.children.remove(floor);
-      parent.children.insert(index, XmlElement(XmlName('defs'), [], [floor]));
+      parent.children.insert(
+        index,
+        XmlElement(const XmlName.parts('defs'), [], [floor]),
+      );
     }
   }
   // Source floor toggles are replaced by explicit component selection.

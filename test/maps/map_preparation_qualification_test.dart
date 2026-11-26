@@ -560,7 +560,7 @@ void main() {
     expect(
       rampElements
           .singleWhere((e) => e.getAttribute('id') == 'ramp')
-          .getAttribute('href', namespace: 'http://www.w3.org/1999/xlink'),
+          .getAttribute('href', namespaceUri: 'http://www.w3.org/1999/xlink'),
       '#base',
     );
   }, timeout: fullRebuildTimeout);
@@ -820,8 +820,8 @@ void main() {
           final root = document.rootElement;
           if (mutation == 'extra-vector-source-floor') {
             root.children.add(
-              XmlElement(XmlName('g'), [
-                XmlAttribute(XmlName('id'), 'Uncalibrated_Floor'),
+              XmlElement(const XmlName.parts('g'), [
+                XmlAttribute(const XmlName.parts('id'), 'Uncalibrated_Floor'),
               ]),
             );
           } else if (mutation == 'missing-vector-source-floor') {

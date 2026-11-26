@@ -9,10 +9,10 @@ const validSvg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
     '<rect width="10" height="10" fill="#e6a63d"/></svg>';
 
-/// An SVG that the marker compiler rejects (`filter` is unimplemented).
+/// A valid SVG with a `foreignObject` that the vector compiler rejects.
 const rejectedSvg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
-    '<filter id="f"/><rect width="10" height="10"/></svg>';
+    '<foreignObject width="10" height="10"/></svg>';
 
 /// A tiny PNG.
 Uint8List tinyPng() => Uint8List.fromList(
