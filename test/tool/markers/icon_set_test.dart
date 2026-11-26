@@ -185,6 +185,18 @@ void main() {
       }
     });
 
+    test('form: rejects an SVG blur filter by element name', () {
+      expectFailure(
+        withSvg(
+          '$head><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter>'
+          '<circle cx="12" cy="12" r="4" fill="#fff" filter="url(#blur)"/></svg>',
+        ),
+        rule: 'form',
+        subject: 'transits.svg',
+        contains: ['element <filter> is not allowed'],
+      );
+    });
+
     test(
       'form: processing instructions are named, the XML declaration passes',
       () {
