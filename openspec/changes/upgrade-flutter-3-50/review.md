@@ -1,0 +1,53 @@
+# Review
+
+## Metadata
+
+- **Round:** 1
+- **Prior round:** none
+- **Reviewer:** fresh-context subagent (OMP)
+- **Reviewed:** `proposal.md`, `design.md`, `.openspec.yaml` (`skip_specs: true`; no delta specs), and the referenced M10 roadmap entry and `continuous-integration` spec. Checked the tracked mise tasks, workspace manifests and lockfile, README, notices and OpenSpec context; CI and release workflows; qualification runner, parser, allowlist and runner test; and Windows build and package admission. Read ADRs 0003, 0005, 0009, 0024, 0025, 0026, 0029, 0033, 0042 and 0051. All six named project skills loaded. No referenced stores, app execution, builds or tests. Upstream version resolution was not verified in this static review.
+
+## Findings
+
+### Critical (blocking)
+
+None.
+
+### Moderate
+
+1. **The carried-constraints section omits safeguards the change depends on.** `design.md:55–57` says there are none newly introduced, but the test also covers existing invariants, rejected alternatives and deliberate gaps. D1 rejects splitting or broadly upgrading the resolved graph; D2 and the mechanism ledger reject local confirmation, weakened skip checks and longer deadlines; the risks exclude schema/history changes and artwork changes; and the owner-only install result must stay open outside implementation. A general reference to two ADRs and a spec leaves no single destination per constraint. A future resolver, generator or CI fix could bypass one of these restrictions while still appearing to follow the design.
+2. **The owner’s installer has no precise source identity.** `design.md:22,114–115` calls the owner’s PR-head rebuild “matching” next to the hosted qualification evidence. Ordinary CI calls the gate without a ref override (`.github/workflows/ci.yml:3–6,15–17`; `.github/workflows/gates.yml:31–37`), so a `pull_request` run normally checks out GitHub’s synthetic merge commit, not the branch head. The build stamps the actual `HEAD`, embeds its commit count, and the installer uses that count (`tool/release/src/build_step.dart:37–38,55–65,84–87`; `tool/release/src/package_step.dart:100–110,171–178`). Both packages can have the same version-only filename. A successful install of a branch-head rebuild is valid for that rebuild, not proof that the CI artifact or a later tagged artifact was installed.
+3. **A green qualification check alone does not prove the upgraded reporter preserves skip handling.** `design.md:53,122` relies on existing tests and hosted CI for this changed boundary. The runner tests supply synthetic report lines (`test/tool/ci/qualification_runner_test.dart:17–42,53–100,181–190`). The real audit treats a missing or non-boolean `skipped` value as unskipped and only requires a `done` event and one counted result (`tool/ci/src/audit.dart:331–363,389–391`). Thus a report with a visible completion lacking the current skip field and a `done` event can pass if Flutter exits zero. This is a verification gap, not evidence that 3.50.1 changes the field. The hosted evidence should show that the upgraded reporter actually supplies the expected skips to the audit and that the required native capture qualification ran unskipped.
+4. **Generator failure is attributed to a check that does not run the generator.** `design.md:102` lists both worker and CI as observers of unexpected generator output. The gate calls analyze, fast tests, map reproduction, build, qualification and packaging (`.github/workflows/gates.yml:74–103`), not the generator documented at `README.md:440–447`. Those gates consume the checked-in Dart. If the generator step is folded into “hosted gates green,” the upgrade can pass while `build_runner` fails to regenerate the checked-in database code or produces a semantic diff.
+5. **The planned post-solve proposal rewrite invalidates the review.** `proposal.md:49` directs apply to update the dependency-vetting table to match the final lockfile, while `design.md:52` says resolution has not yet run. The candidate table is outside `## Release Notes`; editing it during apply when the actual solve differs would void the verdict under the review gate. The final advisory and resolution evidence needs a location that does not silently change the reviewed scope.
+6. **Some existing-behaviour citations do not reach the code that proves the claim.** The shared-caller citation at `design.md:18` is the comment in `.github/workflows/gates.yml:3–6`; the callers are `.github/workflows/ci.yml:15–17` and `.github/workflows/release.yml:83–90`. The qualification inputs in T5 are supplied at `.github/workflows/gates.yml:92–100`, not the task wrapper at `mise.toml:15–21`. The report citations at `design.md:10,12,22,108` point to a doc comment and the allowlist/temp setup; the executable proof is `tool/ci/qualification.dart:7,50–76,83–99`, plus the tracked allowlist. The single workspace lockfile in T2 and D1 is supported by ADR-0042 and the root `pubspec.lock`, in addition to the two manifests. The claims are corroborated by tracked sources, but the current ranges leave a verifier following comments or wrappers rather than the actual boundaries. The remaining cited ranges support the build ordering, pinned install, schema/generator command distinction, timeout, same-job bundle flow and tag-only upload.
+
+### Suggestions
+
+None.
+
+## Verdict
+
+VERDICT: APPROVE_WITH_CHANGES
+
+FULL is warranted by the shared SDK, generator, reporter and Windows bundle boundaries. Reuse of the existing workspace and sequential hosted gates is appropriate: the build stamp and package admission already prevent reuse of the wrong build, and the timeout bounds the job. There is no delta requirement to test separately. The only person-only check is installation and first startup; the other checks stay with the worker or hosted CI.
+
+## Required Changes
+
+1. Replace `design.md`’s `## Carried constraints` placeholder with explicit entries, each with one destination. Route the single workspace lockfile and portable member to ADR-0042; the scoped upgrade and exclusion of overrides/`test` 1.33.0 for this pin to the M10 toolchain entry; the single SDK pin, same-run qualification, unchanged skip/no-game boundary and deadline to `continuous-integration`; packaging after qualification to ADR-0025; unchanged map reproduction to ADR-0033; and the generator comparison without schema or historical snapshot changes to the generator verification task. Route owner-only install/first startup with no game running, unverified until reported, to the M10 toolchain entry. State that any required map/toolchain or app-behaviour change outside S1 stops for a scope decision rather than being approved by the gate.
+2. In `Context` and `Flow & State Gaps`, distinguish the final PR head on which the check is reported, the actual SHA built by hosted CI, and the SHA/build number of the owner’s locally packaged candidate. Tie the owner’s reported result to the source SHA and installer checksum. Call a PR-head rebuild a separate candidate, not the hosted artifact; if same-source evidence is required, use the actual qualified checkout SHA with full history and still identify the installer as a rebuild. Do not add a PR upload, trigger a release, or move the owner check into agent implementation tasks.
+3. In A2 and the hosted qualification evidence, require the final Windows run to show the expected accepted skip entries (the applicable private-input and host-platform reasons in `tool/ci/qualification_skips.yaml`) and that native capture qualification ran unskipped. Do not count a green exit or synthetic parser tests alone. Use the existing hosted logs/report contract; do not widen the allowlist or run native qualification locally.
+4. Split the generator row from analyze/tests in `Failure & Visibility`. Name the worker as owner of a separate root `mise exec -- dart run build_runner build` check under the accepted lockfile. Compare its tracked output against the baseline and record no change or reviewed equivalent changes. A green hosted gate is not a substitute if this check cannot be run safely yet.
+5. Replace `proposal.md:49`’s instruction to update the candidate table after solving. Keep it explicitly as pre-solve evidence and record the actual lockfile delta and vetting of additional selected versions in apply verification evidence. A solve that changes the reviewed scope must be reflected in revised planning and reviewed again before proceeding.
+6. Update the citations in T2/T4/T5/T6, `Context`, D1 and `Resource Bounds` to the tracked evidence in finding 6. Cite `tool/release/src/build_step.dart:51–66` for the Flutter Windows build, and retain the existing valid ranges for workflow order, timeout and packaging. No scope or user decision needs to change to repair the citations.
+
+CHANGES_APPLIED: yes
+
+## Rebuttals
+
+1. **Fixed — accepted by reviewer.** `design.md:57–71` gives each enduring invariant one canonical ADR or spec requirement, and separately routes the change-specific limits through M10/S1 and the generator verification task. `design.md:71,130` and `proposal.md:7` retain escalation and leave the owner-only result unverified until reported.
+2. **Fixed — accepted by reviewer.** `design.md:24,129–130` separates the PR head, hosted checkout SHA, and locally packaged candidate; records the source SHA, displayed build number and installer SHA-256; and identifies a full-history rebuild of the CI checkout as a rebuild, not the hosted artifact. `proposal.md:7` keeps the install check outside implementation tasks.
+3. **Fixed — accepted by reviewer.** `design.md:55,129` requires both accepted skip entries and unskipped native capture evidence in the final hosted log, not just a green exit or synthetic report. The committed audit and hosted-only boundary are retained at `design.md:64–65`.
+4. **Fixed — accepted by reviewer.** `design.md:20,116–117` gives the worker a separate generator check under the accepted lockfile, compares tracked Dart to the baseline and explicitly rules out a green CI run as substitute evidence. `design.md:71` excludes schema and historical snapshot changes.
+5. **Fixed — accepted by reviewer.** `proposal.md:49` retains the pre-solve table and routes the actual lockfile delta, version dates and advisory results to apply evidence, after checking any additional versions and stopping before scope expansion. `design.md:127` repeats that ordering.
+6. **Fixed — accepted by reviewer.** `design.md:8–12,18–24,31,123,128` now cites the workspace ADR/lockfile, caller invocations, actual Flutter build command, qualification inputs, report creation/audit/cleanup and allowlist. The prior valid scope, timeout and gate ordering citations remain.
