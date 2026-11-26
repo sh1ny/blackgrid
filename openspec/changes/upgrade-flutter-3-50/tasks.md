@@ -13,7 +13,7 @@ No delta requirement or intended Blackgrid behaviour change. Keep the existing a
 
 ## 2. Work around the Windows AOT compiler regression
 
-- [ ] 2.1 [evidence] Apply D5 in `CapturePolicy.capture` only. Record the red Windows Release `flutter assemble` trace on Flutter 3.50.1 and the successful run of the same target after the edit. Run the existing `test/data/capture/capture_policy_test.dart` and `test/data/capture/capture_service_test.dart` offline and keep their assertions unchanged. Run the gaming check before heavy local work. Record these results in evidence/2.1.md. The unchanged hosted job below proves the complete Windows Release bundle.
+- [x] 2.1 [evidence] Apply D5 in `CapturePolicy.capture` only. Record the red Windows Release `flutter assemble` trace on Flutter 3.50.1 and the successful run of the same target after the edit. Run the existing `test/data/capture/capture_policy_test.dart` and `test/data/capture/capture_service_test.dart` offline and keep their assertions unchanged. Run the gaming check before heavy local work. Record these results in evidence/2.1.md. The unchanged hosted job below proves the complete Windows Release bundle.
 
 ## Workflow follow-up
 
