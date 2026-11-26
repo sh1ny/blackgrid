@@ -1,0 +1,55 @@
+name: Wrong map or item data
+description: An extract, marker, price or item answer is wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. Only the first box is required.
+        Prices, quests and item details come from tarkov.dev and TarkovTracker. If they're wrong there too, the fix belongs there, but tell us anyway and we'll pass it on.
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What's wrong? For example "the Smugglers' Boat extract is shown on the wrong side of the river".
+    validations:
+      required: true
+  - type: dropdown
+    id: map
+    attributes:
+      label: Map
+      options:
+        - Factory
+        - Customs
+        - Woods
+        - Shoreline
+        - Interchange
+        - The Lab
+        - Reserve
+        - Lighthouse
+        - Streets of Tarkov
+        - Ground Zero
+        - Terminal
+        - Icebreaker
+        - Labyrinth
+        - Not map-specific
+  - type: input
+    id: subject
+    attributes:
+      label: Marker or item
+      description: Optional. The extract, transit, quest item or item name as Blackgrid shows it.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Optional. What's right, and how you know (a raid you played, a wiki page, a screenshot).
+  - type: input
+    id: version
+    attributes:
+      label: Version and environment
+      description: Optional. Blackgrid version.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: A screenshot of the map or scanner helps most. Crop out anything you don't want public.
