@@ -8,24 +8,22 @@ Milestone IDs keep the implementation strategy's numbering (M0–M6), so they ma
 
 A change that names a GitHub issue resolves it through its PR: the PR description links the issue with a closing keyword (`Closes #41`), so merging the PR closes the issue, and the PR's body says what of the issue it delivers. If the PR delivers only part of the issue, it links it with `Refs #N` instead, and the issue says what is left.
 
-## Now: M10 - alerts and window behaviour
+## Now: M10 - alerts
 
 Planned with the user on 2026-10-30. The split below was agreed at the M8.5 close on 2026-11-10 and kept at the M9 close on 2026-11-20.
 
 **Exit criteria** (drafted at the M9 close):
 - Each alert (match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder, restart-failed-tasks) fires once from its raid lifecycle, timer or progress event, has its own switch, plays the default or the player's custom sound, and has a test button. Proved by fake-clock and fixture tests with a fake audio port. (agent)
 - Screenshot cleanup is off by default; when switched on it deletes only that raid's screenshots, only after the raid ends, and never touches other files. Proved by offline tests on a temp folder. (agent)
-- Tray, stay on top and start minimized are saved settings that survive a restart, and stay on top applies only to Blackgrid's own opaque window. Proved by settings and restart tests. (agent)
-- The alerts sound right and fire at the right moments in play, screenshot cleanup removes a real raid's screenshots, and the window behaviour works on the owner's desktop. (user)
+- The alerts sound right and fire at the right moments in play, and screenshot cleanup removes a real raid's screenshots. (user)
 
 **Changes** (in order):
 1. `add-audio-alerts` - match found, raid starting, run-through over, scav ready, air filter on and off, quest-items reminder and restart-failed-tasks, each with a switch, a custom sound and a test button. The user decides how the default sounds are recorded before this starts.
 2. `refactor-shared-objective-rules` - one "objective done" rule in `lib/domain` for the quest checklist and the alerts, and one timer-deadline function for the timer strip and the alerts; behaviour unchanged. Added by the owner on 2026-11-21 from the weekly architecture review (candidates 2 and 3, narrow parts only).
 3. `add-screenshot-cleanup` - opt-in, off by default: delete a raid's screenshots after it ends.
-4. `add-window-behaviour` - tray, stay on top and start minimized.
-5. `update-map-toolchain` - `vector_graphics_compiler` 1.3.4 to 1.3.6 and `xml` 6.6.1 to 7.0.1, the two updates the weekly dependency runs keep skipping, through one `maps:check` (and `maps:rebuild` if the pack no longer reproduces). 1.3.6 compiles SVG blur filters, so the app-icon test fixture that relied on `<filter>` being rejected needs an element the compiler still rejects; the owner decides whether app-icon sources may use filters (the marker icon set already forbids them). `xml` 7.1.0 stays out until `vector_graphics_compiler` lifts its `<=7.0.1` cap. Added by the owner on 2026-11-23 from the weekly dependency run (#125).
-6. `upgrade-flutter-3-50` - Flutter 3.47.9 to 3.50.1, which pins `test_api` 0.7.14 and so lets `test` move to 1.32.0 (root and `blackgrid_progress`) and `build_runner` to 2.17.1 (needs `analyzer` 14.3 or later). Includes the toolchain lines in the README, notices and `openspec/config.yaml`, the qualification tier and an install check (user). `test` 1.33.0 waits for a Flutter release that pins `test_api` 0.7.15. Added by the owner on 2026-11-23 from the weekly dependency run (#125).
-7. `fix-terminal-transit-map` - corrective entry from #129, added by the owner on 2026-11-24. Transit raids on Terminal counted as "Unknown map": the transit table had no Terminal or Labyrinth location, the scene table did not know `terminal_preset`, and an unsupported scene erased a known map while loading. Both tables now cover every supported map, and an unsupported scene keeps the known map. Advances no M10 exit criterion.
+4. `update-map-toolchain` - `vector_graphics_compiler` 1.3.4 to 1.3.6 and `xml` 6.6.1 to 7.0.1, the two updates the weekly dependency runs keep skipping, through one `maps:check` (and `maps:rebuild` if the pack no longer reproduces). 1.3.6 compiles SVG blur filters, so the app-icon test fixture that relied on `<filter>` being rejected needs an element the compiler still rejects; the owner decides whether app-icon sources may use filters (the marker icon set already forbids them). `xml` 7.1.0 stays out until `vector_graphics_compiler` lifts its `<=7.0.1` cap. Added by the owner on 2026-11-23 from the weekly dependency run (#125).
+5. `upgrade-flutter-3-50` - Flutter 3.47.9 to 3.50.1, which pins `test_api` 0.7.14 and so lets `test` move to 1.32.0 (root and `blackgrid_progress`) and `build_runner` to 2.17.1 (needs `analyzer` 14.3 or later). Includes the toolchain lines in the README, notices and `openspec/config.yaml`, the qualification tier and an install check (user). `test` 1.33.0 waits for a Flutter release that pins `test_api` 0.7.15. Added by the owner on 2026-11-23 from the weekly dependency run (#125).
+6. `fix-terminal-transit-map` - corrective entry from #129, added by the owner on 2026-11-24. Transit raids on Terminal counted as "Unknown map": the transit table had no Terminal or Labyrinth location, the scene table did not know `terminal_preset`, and an unsupported scene erased a known map while loading. Both tables now cover every supported map, and an unsupported scene keeps the known map. Advances no M10 exit criterion.
 
 ## Next: M11 - quest planning
 
@@ -96,6 +94,7 @@ A Flutter phone app with the web app's scope and small-screen layouts, built aft
 
 ### Other
 
+- `add-window-behaviour` - tray, stay on top and start minimized. Moved out of M10 by the owner on 2026-11-26.
 - Goons reports to tarkov.dev (a one-click, confirmed report that sends the map, mode, raid time and account ID). Deferred by the user on 2026-10-30.
 - After 1.0: the issues the M4.6 sweep defers to after 1.0.
 - Needs testers besides the user (moved out of M6 on 2026-10-30):
