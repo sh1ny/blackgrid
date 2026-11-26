@@ -2,7 +2,7 @@
 
 ## Test map
 
-Not applicable. No delta requirement or intended Blackgrid behaviour change. Keep the existing analyzer and widget assertions. If a regression needs a widget or behaviour change beyond the import move in S2, stop for the owner's scope decision first. Capture a failing focused test before fixing any approved behaviour change, and follow the Windows CI test rules.
+No delta requirement or intended Blackgrid behaviour change. Keep the existing analyzer and widget assertions. For the AOT regression, the Windows Release target is the failing check; the offline capture policy and service tests protect ownership and handoff. If any fix needs a widget or behaviour change beyond S2/D5, stop for the owner's scope decision first and follow the Windows CI test rules.
 
 ## 1. Upgrade and verify the Windows toolchain
 
@@ -10,6 +10,10 @@ Not applicable. No delta requirement or intended Blackgrid behaviour change. Kee
 - [x] 1.2 Update the README badge and toolchain instructions, the installed release/development package rows and applicable verbatim license texts in `THIRD_PARTY_NOTICES.md`, and `openspec/config.yaml`. Verify the active pins and notice rows against the resolved workspace and run `mise run release-notes -- --check openspec/changes/upgrade-flutter-3-50/proposal.md`. Do not edit historical version references or add another CI Flutter pin (C2).
 - [x] 1.3 [evidence] Verify A1 for the Material migration. Add `material_ui` to the root only, vet hosted versions before the targeted Pub dry run, and accept only the required Material and localization additions. Verify the lockfile with `mise exec -- flutter pub get --enforce-lockfile` and update third-party notices. Apply S2/D3 to app, test and tool imports; preserve progress portability and widget logic. For D4, change the emitted import, run `node brand/tools/build.mjs`, format only `brand/flutter/ember_tokens.dart` with the pinned Dart formatter and copy the formatted bytes to the app. Verify the pair is byte-identical, each baseline differs only in the import, token inputs and `brand/tokens.css` are unchanged, and `test/ui/ember_theme_test.dart` passes unchanged (C10). Stop on any other generated change. Record dependency and generation evidence in evidence/1.3.md.
 - [x] 1.4 [evidence] Verify A2 and A3 with the upgraded generator, unchanged analyzer command and existing tests. Run the gaming check before heavy local work; if the owner is gaming, send heavy gates to hosted CI. Run the separate root `mise exec -- dart run build_runner build` and compare tracked generated Dart to the baseline. Preserve the schema and its historical snapshots (C9). Verify with `mise run analyze` and `mise run test` when permitted; record the removal of the Flutter Material diagnostic, any required import adjustments and any observed test or layout differences. Confirm the existing same-run qualification, skip audit, hosted-only confirmation, job limit, packaging and map reproduction requirements (C3-C8). Record results and anything left to hosted CI in evidence/1.4.md.
+
+## 2. Work around the Windows AOT compiler regression
+
+- [ ] 2.1 [evidence] Apply D5 in `CapturePolicy.capture` only. Record the red Windows Release `flutter assemble` trace on Flutter 3.50.1 and the successful run of the same target after the edit. Run the existing `test/data/capture/capture_policy_test.dart` and `test/data/capture/capture_service_test.dart` offline and keep their assertions unchanged. Run the gaming check before heavy local work. Record these results in evidence/2.1.md. The unchanged hosted job below proves the complete Windows Release bundle.
 
 ## Workflow follow-up
 

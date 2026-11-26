@@ -11,6 +11,7 @@ This is the toolchain entry in M10, not an alert or screenshot-cleanup exit crit
 - Change the shared local and CI mise pin to Flutter 3.50.1, which bundles Dart 3.14.0. Update the README, third-party notices and OpenSpec context to match.
 - Use `test` 1.32.0 in the root and `blackgrid_progress` workspace member. Use `build_runner` 2.17.1 and resolve an `analyzer` in `>=14.3.0 <15.0.0`. Keep `test` 1.33.0 out because it needs `test_api` 0.7.15.
 - Move Blackgrid's Material imports to the official `material_ui` package. Flutter 3.50.1 deprecates `package:flutter/material.dart`, which makes the existing analyzer gate fail. The owner approved a mechanical migration in this change. Do not change widget behaviour, golden expectations, or gate settings to make it pass.
+- Keep Flutter 3.50.1 and work around [Dart SDK #64917](https://github.com/dart-lang/sdk/issues/64917). Windows Release compilation crashes in `CapturePolicy.capture` when its rejection closure captures a `final` assigned in a switch. Bind the frame ID after the switch and capture that ID instead. Keep capture results, frame ownership and the Release gate unchanged.
 - Keep unrelated package versions and app behaviour unchanged. Run analysis, the fast tests, map reproduction, the Windows Release build, the full hosted qualification tier and packaging under the new SDK. Fix only regressions attributable to this upgrade.
 
 ## Capabilities
@@ -80,6 +81,14 @@ DECISION_MAKING: important
 - **Important:** yes, because Blackgrid ships the replacement as a runtime dependency.
 - **Chosen by:** user.
 
+### S3: Keep Flutter 3.50.1 and work around the AOT compiler crash
+
+- **Choice:** The owner said, "Reword the function, keep 3.50.1". Make the frame ID capture explicit and leave a short comment naming Dart SDK #64917 and the removal condition: Flutter bundles Dart 3.14.1 or later. Prove the same Windows Release AOT target compiles and the existing offline capture ownership tests pass.
+- **Rejected:** Pause the upgrade until stable Flutter ships the compiler fix. The narrow change preserves runtime behaviour and keeps all gates.
+- **Reversal cost:** low; remove the workaround after the SDK fix is present and rerun the same checks.
+- **Important:** yes. This widens the approved edits from toolchain and imports to one capture function.
+- **Chosen by:** user.
+
 ## Release Notes
 
 Blackgrid uses Flutter 3.50.1 for Windows builds. This update does not change player settings or add features.
@@ -88,3 +97,4 @@ Blackgrid uses Flutter 3.50.1 for Windows builds. This update does not change pl
 
 - The Windows build uses Flutter 3.50.1 and Dart 3.14.0. Both workspace packages use `test` 1.32.0, and code generation uses `build_runner` 2.17.1.
 - Blackgrid uses Flutter's official standalone Material package in place of the deprecated SDK import. No widget or layout changes are planned.
+- The Windows build avoids a Dart AOT compiler crash without changing capture behaviour.

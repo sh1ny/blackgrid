@@ -27,6 +27,8 @@ Flutter 3.50.1 marks the legacy Material library deprecated and names `package:m
 
 The generator imports old Material for generated `ThemeExtension` tokens (`brand/tools/build.mjs:83-91,149-152`). The app uses a byte-identical copy of that output (`brand/flutter/ember_tokens.dart:1-9`, `lib/ui/ember/ember_tokens.dart:1-9`, `test/ui/ember_theme_test.dart:10-14`), as ADR-0037 requires (`docs/adr/0037-interface-colours-come-from-the-ember-theme.md:13-16`). The analyzer excludes the kit path, not the app copy (`analysis_options.yaml:3-8`). The app copy must migrate without diverging from the kit.
 
+Windows CI run [45849847761](https://github.com/sh1ny/blackgrid/actions/runs/45849847761) passed analysis, fast tests and map reproduction, then failed Release compilation with `linearscan.cc: 3013: error: unreachable code`. An isolated Windows Release `flutter assemble` trace reproduced the failure and named `CapturePolicy.capture` as the function being compiled. `capture` is a deferred `final` assigned in the `RawCaptureOk` switch case and read by the rejection closure (`lib/data/capture/capture_policy.dart:51–65`). That is the trigger described in [Dart SDK #64917](https://github.com/dart-lang/sdk/issues/64917); [Dart 3.14.1](https://github.com/dart-lang/sdk/blob/3.14.1/CHANGELOG.md#3141) fixes it. Flutter 3.50.1 bundles Dart 3.14.0.
+
 ## Decisions
 
 ### D1: Use a targeted workspace resolution
@@ -61,6 +63,14 @@ The generator imports old Material for generated `ThemeExtension` tokens (`brand
 - **Important:** yes. This amends the owner's earlier restriction against changing the kit and preserves its established app-copy contract.
 - **Chosen by:** user.
 
+### D5: Capture the frame ID, not the deferred `RawCapture`
+
+- **Choice:** Bind `final frameId = capture.frameId;` after the successful switch. Use `frameId` only in `reject`, so the closure no longer captures `capture`. Keep frame lookup and successful frame construction unchanged. Name Dart SDK #64917 in a code comment so the workaround can be removed when the Flutter pin bundles Dart 3.14.1 or later.
+- **Rejected:** Skip AOT, pass new production compiler flags, or replace the SDK. These change the existing proof or the approved pin. The compiler trace flag is diagnostic only.
+- **Reversal cost:** low. The workaround affects one method and can be removed once the pinned SDK includes Dart 3.14.1 or later.
+- **Important:** yes. Release compilation failed and the workaround touches frame ownership code.
+- **Chosen by:** user.
+
 ### Decision summary
 
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
@@ -71,12 +81,14 @@ The generator imports old Material for generated `ThemeExtension` tokens (`brand
 | D2 | Windows qualification | Hosted gates and owner-only install check | Agent-run local install or hosted-only capture qualification | low | yes | user |
 | D3 | Material import | Direct imports of the official package | Local compatibility library or weaker analysis | medium | yes | user |
 | D4 | Ember generation | Change the emitted import and refresh both identical copies | Edit outputs without their generator | low | yes | user |
+| S3/D5 | AOT compiler crash | Keep Flutter 3.50.1 and capture the initialized frame ID | Wait for another Flutter pin or change Release flags | low | yes | user |
 
 ## Assumptions
 
 - **A1:** Pub can add Material and its localization dependencies without changing unrelated versions. The SDK-only solve preserved all unrelated packages (task 1.1). D1 and D3 depend on an additional dry-run diff before accepting the Material graph.
 - **A2:** The Flutter test reporter, generated Drift output, rendered widgets and Windows runner keep their existing Blackgrid contracts. The upgraded toolchain must prove this with the existing tests, a separate generator comparison and hosted CI. The hosted qualification log must show the applicable accepted skips from `tool/ci/qualification_skips.yaml` and an unskipped native capture qualification run. A green exit or a test with synthetic report lines does not prove the upgraded reporter preserved skip handling.
 - **A3:** Direct imports and any necessary explicit Flutter imports are enough to preserve Blackgrid's widget behaviour. The package is Flutter's official replacement, but name resolution and Blackgrid's asserted layouts have not been checked under it. D3 requires the unmodified analyzer and existing widget tests.
+- **A4:** A closure over the initialized frame ID avoids the compiler crash. Confirm with the same Windows Release `flutter assemble` target that failed before the change; CI must also build the complete bundle. Offline capture policy and service tests must still prove frame release and handoff.
 
 ## Carried constraints
 
@@ -92,8 +104,9 @@ Existing invariants and their authoritative destinations:
 - **C8:** Keep byte-identical map reproduction. Kind: invariant. Destination: ADR 0033.
 - **C9:** Database schema changes require the versioned migration path; this upgrade only exercises generation. Kind: invariant. Destination: ADR 0003.
 - **C10:** Keep the app's generated Ember tokens byte-identical to the brand kit output. Kind: invariant. Destination: ADR 0037.
+- **C11:** Keep single-owner frame release on rejection and ownership handoff on success. Kind: invariant. Destination: `spec: specs/inspection-capture/spec.md → Requirement: Frame ownership is single and bounded`.
 
-Change-specific limits belong to M10's `upgrade-flutter-3-50` roadmap entry and S1/S2, not to a new durable spec. Keep `test` 1.33.0 out, do not use dependency overrides or update unrelated packages, and keep install and first launch owner-only with the game closed. The generator verification task compares tracked output without changing the schema or historical snapshots. Stop for an owner scope decision if the Material migration needs a widget or behaviour change beyond the import move, or if a map-toolchain change is needed.
+Change-specific limits belong to M10's `upgrade-flutter-3-50` roadmap entry and S1–S3, not to a new durable spec. Keep `test` 1.33.0 out, do not use dependency overrides or update unrelated packages, and keep install and first launch owner-only with the game closed. The generator verification task compares tracked output without changing the schema or historical snapshots. Stop for an owner scope decision if the Material migration needs a widget or behaviour change beyond the import move, if the AOT workaround needs more than D5, or if a map-toolchain change is needed.
 
 ## Diagrams (FULL)
 
@@ -161,6 +174,7 @@ The change adds no queues, buffers, timing thresholds or caches. The dependency 
 | Scoped version changes and lockfile comparison | Yes; use existing Pub tools | A broad solve can bring unrelated packages into this upgrade | A required change that cannot resolve without expanding scope goes to the owner |
 | Extra CI Flutter pin or additional qualification gate | No | Mise and the existing hosted job already own the version and prove the whole offline path | Evidence that the workflow bypasses mise or skips one of the required offline gates |
 | New skip or longer test deadline | No | A passing run after weakening a test would not prove the upgraded contract | A real host limitation must meet ADR-0024 and be reviewed by the owner |
+| Local AOT workaround | Yes; bind the frame ID after the switch | Dart 3.14.0 crashes in the existing Release compile | Flutter bundles the upstream Dart 3.14.1 fix and the Release build passes without the workaround |
 
 ## Risks / Trade-offs
 
