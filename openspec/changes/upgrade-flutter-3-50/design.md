@@ -23,11 +23,15 @@ The Windows workflow runs `maps:check`, builds the Release bundle, gives the bun
 
 On a pull request, the gates use the default full-history checkout for the PR event, which is GitHub's merge commit, not the PR branch tip (`.github/workflows/ci.yml:3-6,15-17`, `.github/workflows/gates.yml:31-37`). The build stamps the actual checkout SHA and commit count; packaging checks that SHA and writes the count to the installer file version (`tool/release/src/build_step.dart:35-39,59-65,84-87`, `tool/release/src/package_step.dart:97-111,171-178`). Only tagged release runs upload the installer (`.github/workflows/gates.yml:113-126`). Before a release, the owner can use the documented build and package tasks on a clean, full-history checkout of the intended source SHA to make a separate installer candidate (`README.md:476-483`).
 
+Flutter 3.50.1 marks the legacy Material library deprecated and names `package:material_ui/material_ui.dart` as the replacement ([SDK source](https://github.com/flutter/flutter/blob/3.50.1/packages/flutter/lib/material.dart)). The apply run of the existing `flutter analyze` command (`mise.toml:4-6`) failed on that deprecation. Blackgrid's root app, widgets, offline tests, Windows smoke test and map tool use the legacy import (`lib/main.dart:1-3`, `lib/ui/evidence_panels.dart:1-2`, `test/widget_test.dart:1-4`, `integration_test/m1_windows_smoke_test.dart:8-10`, `tool/maps/qualify_native.dart:4-6`).
+
+The generator imports old Material for generated `ThemeExtension` tokens (`brand/tools/build.mjs:83-91,149-152`). The app uses a byte-identical copy of that output (`brand/flutter/ember_tokens.dart:1-9`, `lib/ui/ember/ember_tokens.dart:1-9`, `test/ui/ember_theme_test.dart:10-14`), as ADR-0037 requires (`docs/adr/0037-interface-colours-come-from-the-ember-theme.md:13-16`). The analyzer excludes the kit path, not the app copy (`analysis_options.yaml:3-8`). The app copy must migrate without diverging from the kit.
+
 ## Decisions
 
 ### D1: Use a targeted workspace resolution
 
-- **Choice:** Keep the shared mise and workspace layout. Resolve only the requested test and generator changes and their required transitive updates. Check the proposed resolution before installing its hosted packages. Keep the package SDK minimums unless the scoped upgrades require a change.
+- **Choice:** Keep the shared mise and workspace layout. Resolve the requested test and generator changes, and the approved Material migration, with only their required transitive updates. Vet candidate versions before accepting the resolution. Keep the package SDK minimums unless the scoped upgrades require a change.
 - **Rejected:** Upgrade the entire graph or add permanent dependency overrides. Pub uses one root lockfile across both manifests (ADR-0042, `docs/adr/0042-progress-catalog-package.md:12-14`); unrelated upgrades make regressions harder to attribute.
 - **Reversal cost:** low. The two manifests and lockfile can be reverted together.
 - **Important:** no. This preserves the existing workspace and does not introduce a contract or a config key.
@@ -41,18 +45,38 @@ On a pull request, the gates use the default full-history checkout for the PR ev
 - **Important:** yes. Qualification touches the native capture library and installation is a user-only boundary.
 - **Chosen by:** user.
 
+### D3: Import the official Material library directly
+
+- **Choice:** Add a vetted `material_ui` version to the root manifest only. Replace `package:flutter/material.dart` in active sources with `package:material_ui/material_ui.dart`; the generated Ember file moves through D4. Use an explicit Flutter library import where the official replacement does not export a previously available name. Drop an import only if the resulting analyzer proves it is redundant. Preserve widget construction, assets and assertions.
+- **Rejected:** Add a Blackgrid forwarding library or downgrade analyzer severity. Direct imports avoid a local compatibility layer; keeping the analyzer command unchanged exposes missing imports and API differences.
+- **Reversal cost:** medium across the app, tests and tools. Revert the imports and the Material dependency together.
+- **Important:** yes. The replacement is a shipped dependency and the owner limited the work to mechanical changes.
+- **Chosen by:** user.
+
+### D4: Migrate the Ember generator and refresh both copies
+
+- **Choice:** The owner said, "Yes, change the kit's import." Change only the import emitted by `brand/tools/build.mjs` to `package:material_ui/material_ui.dart`. Regenerate the kit output, run the pinned Dart formatter on that generated Dart file only, and copy its formatted bytes to the app. Verify that both copies match byte for byte, only the import differs from each baseline, and token inputs and CSS are unchanged. Stop if formatting or generation introduces any other tracked difference. Keep every token value and the existing equality test.
+- **Rejected:** Edit the app copy alone or edit only the two generated files. The first fails the equality test; the second lets the next generation restore the deprecated import.
+- **Reversal cost:** low. Revert the matching generator and output lines together.
+- **Important:** yes. This amends the owner's earlier restriction against changing the kit and preserves its established app-copy contract.
+- **Chosen by:** user.
+
 ### Decision summary
 
 | # | Decision | Choice | Rejected | Reversal cost | Important | Chosen by |
 |---|---|---|---|---|---|---|
 | S1 | Toolchain-only scope | M10 pins, offline gates and owner install | Unrelated updates or `test` 1.33.0 | medium | yes | user |
+| S2 | Material migration scope | Migrate imports, including the generated Ember pair, without changing widgets or gates | A separate migration or muted diagnostics | medium | yes | user |
 | D1 | Workspace resolution | Targeted update with the existing lockfile | Broad upgrade or permanent overrides | low | no | agent |
 | D2 | Windows qualification | Hosted gates and owner-only install check | Agent-run local install or hosted-only capture qualification | low | yes | user |
+| D3 | Material import | Direct imports of the official package | Local compatibility library or weaker analysis | medium | yes | user |
+| D4 | Ember generation | Change the emitted import and refresh both identical copies | Edit outputs without their generator | low | yes | user |
 
 ## Assumptions
 
-- **A1:** Pub will preserve unrelated lockfile versions. The registry constraints are known, but the resolver has not run against the new SDK. D1 depends on this; a dry-run diff identifies any extra change before accepting it.
+- **A1:** Pub can add Material and its localization dependencies without changing unrelated versions. The SDK-only solve preserved all unrelated packages (task 1.1). D1 and D3 depend on an additional dry-run diff before accepting the Material graph.
 - **A2:** The Flutter test reporter, generated Drift output, rendered widgets and Windows runner keep their existing Blackgrid contracts. The upgraded toolchain must prove this with the existing tests, a separate generator comparison and hosted CI. The hosted qualification log must show the applicable accepted skips from `tool/ci/qualification_skips.yaml` and an unskipped native capture qualification run. A green exit or a test with synthetic report lines does not prove the upgraded reporter preserved skip handling.
+- **A3:** Direct imports and any necessary explicit Flutter imports are enough to preserve Blackgrid's widget behaviour. The package is Flutter's official replacement, but name resolution and Blackgrid's asserted layouts have not been checked under it. D3 requires the unmodified analyzer and existing widget tests.
 
 ## Carried constraints
 
@@ -67,8 +91,9 @@ Existing invariants and their authoritative destinations:
 - **C7:** Package only after qualification. Kind: invariant. Destination: ADR 0025.
 - **C8:** Keep byte-identical map reproduction. Kind: invariant. Destination: ADR 0033.
 - **C9:** Database schema changes require the versioned migration path; this upgrade only exercises generation. Kind: invariant. Destination: ADR 0003.
+- **C10:** Keep the app's generated Ember tokens byte-identical to the brand kit output. Kind: invariant. Destination: ADR 0037.
 
-Change-specific limits belong to M10's `upgrade-flutter-3-50` roadmap entry and S1, not to a new durable spec. Keep `test` 1.33.0 out, do not use dependency overrides or update unrelated packages, and keep install and first launch owner-only with the game closed. The generator verification task compares tracked output without changing the schema or historical snapshots. Stop for an owner scope decision if a map-toolchain change or a change to app behaviour is needed.
+Change-specific limits belong to M10's `upgrade-flutter-3-50` roadmap entry and S1/S2, not to a new durable spec. Keep `test` 1.33.0 out, do not use dependency overrides or update unrelated packages, and keep install and first launch owner-only with the game closed. The generator verification task compares tracked output without changing the schema or historical snapshots. Stop for an owner scope decision if the Material migration needs a widget or behaviour change beyond the import move, or if a map-toolchain change is needed.
 
 ## Diagrams (FULL)
 
@@ -124,7 +149,7 @@ The change adds no queues, buffers, timing thresholds or caches. The dependency 
 
 ## Flow & State Gaps (FULL)
 
-- A dry-run resolution is not proof of execution. Check the selected versions against the proposal and record the actual lockfile delta, release dates and advisory results in `evidence/1.1.md`. Analyze, generate and test using that same graph. If a required dependency would expand the scope, pause for the owner and review the amended plan first.
+- A dry-run resolution is not proof of execution. Check the selected versions against the proposal and record the actual lockfile changes in the SDK and Material evidence. Analyze, generate and test using the final graph. If a required dependency would expand the scope, pause for the owner and review the amended plan first.
 - A failed build cannot qualify a previous bundle. CI uses the current checkout and the build output from the same job (`.github/workflows/gates.yml:31-37,83-100`). Packaging runs only after those steps pass.
 - Wait for the check reported on the final archived PR head. Record both that head SHA and the actual checkout SHA shown by the successful hosted run. Check the qualification log for the applicable `Accepted skip:` entries and the unskipped native capture test (A2).
 - Leave installation unverified until the owner reports it. Record the source SHA, displayed build number, installer SHA-256, and setup and first-launch results. A local PR-head installer proves that candidate only, not a hosted artifact or a later tag. If testing the same source as CI, build from the actual qualified checkout SHA with full history and label the installer a rebuild. Do not add an upload or start a release for this check.
@@ -140,10 +165,11 @@ The change adds no queues, buffers, timing thresholds or caches. The dependency 
 ## Risks / Trade-offs
 
 - Flutter may alter a widget or render result without an analyzer error. Keep the existing UI assertions and assess the smallest failing test before changing a golden or layout expectation.
+- The standalone Material package may behave differently despite equivalent exports. The analyzer must show no new diagnostics and the existing widget tests must pass without weakening assertions. Verify any apparent layout change before treating it as a regression; a fix beyond imports needs an owner decision.
 - Build runner 2.17.1 uses `build` 5. Run the documented generator and inspect its tracked output for semantic changes; do not change the database schema or regenerate historical snapshots solely for this bump.
 - The map compiler and codec pins are not part of this change. CI still proves byte-identical map output. Do not refresh or replace artwork to make the SDK bump green.
 
 ## ADRs
 
-- **In force, constraining this change:** [0003](../../../docs/adr/0003-single-drift-sqlite-store.md), [0024](../../../docs/adr/0024-hosted-ci-runs-every-offline-gate.md), [0025](../../../docs/adr/0025-release-packaging.md), [0029](../../../docs/adr/0029-release-notes-come-from-each-proposal.md), [0033](../../../docs/adr/0033-map-packs-proven-by-reproduction.md), [0042](../../../docs/adr/0042-progress-catalog-package.md).
+- **In force, constraining this change:** [0003](../../../docs/adr/0003-single-drift-sqlite-store.md), [0024](../../../docs/adr/0024-hosted-ci-runs-every-offline-gate.md), [0025](../../../docs/adr/0025-release-packaging.md), [0029](../../../docs/adr/0029-release-notes-come-from-each-proposal.md), [0033](../../../docs/adr/0033-map-packs-proven-by-reproduction.md), [0037](../../../docs/adr/0037-interface-colours-come-from-the-ember-theme.md), [0042](../../../docs/adr/0042-progress-catalog-package.md).
 - **To record during apply:** None. This does not change an architectural boundary or policy.

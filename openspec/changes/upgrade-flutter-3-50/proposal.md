@@ -10,6 +10,7 @@ This is the toolchain entry in M10, not an alert or screenshot-cleanup exit crit
 
 - Change the shared local and CI mise pin to Flutter 3.50.1, which bundles Dart 3.14.0. Update the README, third-party notices and OpenSpec context to match.
 - Use `test` 1.32.0 in the root and `blackgrid_progress` workspace member. Use `build_runner` 2.17.1 and resolve an `analyzer` in `>=14.3.0 <15.0.0`. Keep `test` 1.33.0 out because it needs `test_api` 0.7.15.
+- Move Blackgrid's Material imports to the official `material_ui` package. Flutter 3.50.1 deprecates `package:flutter/material.dart`, which makes the existing analyzer gate fail. The owner approved a mechanical migration in this change. Do not change widget behaviour, golden expectations, or gate settings to make it pass.
 - Keep unrelated package versions and app behaviour unchanged. Run analysis, the fast tests, map reproduction, the Windows Release build, the full hosted qualification tier and packaging under the new SDK. Fix only regressions attributable to this upgrade.
 
 ## Capabilities
@@ -24,7 +25,9 @@ None. `continuous-integration` already requires CI to use the `mise.toml` pin an
 
 ## Impact
 
-The root and progress manifests share one lockfile. The Flutter framework adds `listen` and raises the `vector_math` minimum, so both the build tools and the application dependency notices need review. No Blackgrid API, data format, game interaction or installer policy changes.
+The root and progress manifests share one lockfile. Flutter adds `listen` and raises the `vector_math` minimum. The extracted Material library adds a direct application dependency and its localization dependencies. The portable progress member gains no Flutter dependency. No Blackgrid API, data format, game interaction or installer policy changes.
+
+Projects that copy the standalone Ember kit must now declare `material_ui` in their own manifest. Blackgrid supplies it in the root manifest.
 
 ### Dependency vetting
 
@@ -45,8 +48,12 @@ The root and progress manifests share one lockfile. The Flutter framework adds `
 | [`source_gen` 4.3.1](https://pub.dev/packages/source_gen/versions/4.3.1) | 2026-10-14 | Keeps `drift_dev` compatible with `build` 5 |
 | [`listen` 1.0.1](https://pub.dev/packages/listen/versions/1.0.1) | 2026-07-31 | New Flutter framework dependency |
 | [`vector_math` 2.4.4](https://pub.dev/packages/vector_math/versions/2.4.4) | 2026-10-26 | Latest compatible candidate for Flutter's new minimum [2.4.3](https://pub.dev/packages/vector_math/versions/2.4.3), released on 2026-09-18 |
+| [`material_ui` 1.11.1](https://pub.dev/packages/material_ui/versions/1.11.1) | 2026-11-16 | Official replacement for Flutter's deprecated Material import |
+| [`cupertino_ui` 1.1.7](https://pub.dev/packages/cupertino_ui/versions/1.1.7) | 2026-11-16 | Dependency of `material_ui` |
+| [`intl` 0.20.3](https://pub.dev/packages/intl/versions/0.20.3) | 2026-06-25 | Required by Flutter's localization package and both UI packages |
+| [`flutter_localizations`](https://github.com/flutter/flutter/tree/3.50.1/packages/flutter_localizations) | 2026-11-20 | Bundled Flutter SDK dependency, not a separate hosted release |
 
-This table records the candidates checked before the solve. Before installing the workspace packages, check a targeted dry run and vet any additional version it selects. The [apply evidence](evidence/1.1.md) will record the actual lockfile changes, release dates and advisory results. If resolution needs a change outside this proposal, stop for a scope decision and review the revised plan before proceeding. The owner confirmed that the publication-age hold applies to Kakeibo's npm dependencies, not to Flutter or Dart packages in Blackgrid. Advisory checks still apply.
+The table records vetted candidates. Before accepting a workspace solve, vet every newly selected version. The [SDK resolution evidence](evidence/1.1.md) and [Material resolution evidence](evidence/1.3.md) record the final lockfile changes, release dates and advisory results. Stop and re-review if resolution needs a change outside this proposal. The owner confirmed that the publication-age hold applies to Kakeibo's npm dependencies, not to Flutter or Dart packages in Blackgrid. Advisory checks still apply.
 
 ### Branch gate
 
@@ -65,6 +72,14 @@ DECISION_MAKING: important
 - **Important:** yes, because the SDK ships in the Windows bundle and CI uses the same pin.
 - **Chosen by:** user.
 
+### S2: Migrate Material imports in the upgrade
+
+- **Choice:** The owner said, "Migrate in this change." Add the official `material_ui` package and move the affected app, test and tool imports. The owner also approved updating the import emitted by the Ember generator and refreshing both byte-identical token files. Keep every token value, widget behaviour, assertion and gate intact.
+- **Rejected:** Hold the SDK upgrade for a separate migration, or mute the deprecation. The current import fails the required analyzer gate with Flutter 3.50.1.
+- **Reversal cost:** medium. Revert the imports and Material dependency together with the SDK pin.
+- **Important:** yes, because Blackgrid ships the replacement as a runtime dependency.
+- **Chosen by:** user.
+
 ## Release Notes
 
 Blackgrid uses Flutter 3.50.1 for Windows builds. This update does not change player settings or add features.
@@ -72,3 +87,4 @@ Blackgrid uses Flutter 3.50.1 for Windows builds. This update does not change pl
 ### Changed
 
 - The Windows build uses Flutter 3.50.1 and Dart 3.14.0. Both workspace packages use `test` 1.32.0, and code generation uses `build_runner` 2.17.1.
+- Blackgrid uses Flutter's official standalone Material package in place of the deprecated SDK import. No widget or layout changes are planned.
