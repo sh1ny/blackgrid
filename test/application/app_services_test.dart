@@ -83,6 +83,9 @@ class _DisposalRecyclePort implements RecyclePort {
 }
 
 void main() {
+  // Install Flutter's Listenable error handler, as app startup does.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('screenshot cleanup skips recent startup replay, handles live endings and cancels before its sources close', () async {
     final root = await Directory.systemTemp.createTemp(
       'blackgrid-cleanup-services-',

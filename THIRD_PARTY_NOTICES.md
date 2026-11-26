@@ -1045,7 +1045,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## Resolved selection
 
-Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / Dart 3.13.7 toolchain. Some transitive packages supply native build hooks rather than application Dart code; they are included conservatively in this record. Verbatim license texts below were read from the resolved packages through the official Dart tooling.
+Versions come from the committed `pubspec.lock` and the pinned Flutter 3.50.1 / Dart 3.14.0 toolchain. Some transitive packages supply native build hooks rather than application Dart code; they are included conservatively in this record. Verbatim license texts below were read from the resolved packages through the official Dart tooling.
 
 | Input | Resolved version | Use | Source |
 | --- | --- | --- | --- |
@@ -1055,22 +1055,27 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | collection | 1.19.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/collection/versions/1.19.1) |
 | convert | 3.1.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/convert/versions/3.1.2) |
 | crypto | 3.0.8 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/crypto/versions/3.0.8) |
+| cupertino_ui | 1.1.7 | Flutter Material dependency | [pub.dev](https://pub.dev/packages/cupertino_ui/versions/1.1.7) |
 | drift | 2.35.4 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/drift/versions/2.35.4) |
 | ffi | 2.2.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/ffi/versions/2.2.0) |
 | file | 7.0.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/file/versions/7.0.1) |
-| flutter | Flutter 3.47.9 | Framework / desktop runtime | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
+| flutter | Flutter 3.50.1 | Framework / desktop runtime | [Flutter](https://github.com/flutter/flutter/tree/3.50.1) |
+| flutter_localizations | Flutter 3.50.1 | Flutter SDK localization | [Flutter](https://github.com/flutter/flutter/tree/3.50.1/packages/flutter_localizations) |
 | glob | 2.2.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/glob/versions/2.2.0) |
 | hooks | 2.2.0 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/hooks/versions/2.2.0) |
 | http | 1.6.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/http/versions/1.6.0) |
 | http_parser | 4.1.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/http_parser/versions/4.1.2) |
+| intl | 0.20.3 | Flutter localization dependency | [pub.dev](https://pub.dev/packages/intl/versions/0.20.3) |
+| listen | 1.0.1 | Flutter framework dependency | [pub.dev](https://pub.dev/packages/listen/versions/1.0.1) |
 | logging | 1.3.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/logging/versions/1.3.0) |
 | material_color_utilities | 0.13.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/material_color_utilities/versions/0.13.0) |
+| material_ui | 1.11.1 | Material widgets and theme | [pub.dev](https://pub.dev/packages/material_ui/versions/1.11.1) |
 | meta | 1.19.0 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/meta/versions/1.19.0) |
 | native_toolchain_c | 0.19.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/native_toolchain_c/versions/0.19.2) |
 | path | 1.9.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/path/versions/1.9.1) |
 | pub_semver | 2.2.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/pub_semver/versions/2.2.1) |
 | record_use | 1.1.1 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/record_use/versions/1.1.1) |
-| sky_engine | Flutter 3.47.9 | Engine / aggregate native notices | [Flutter](https://github.com/flutter/flutter/tree/3.47.9) |
+| sky_engine | Flutter 3.50.1 | Engine / aggregate native notices | [Flutter](https://github.com/flutter/flutter/tree/3.50.1) |
 | source_span | 1.10.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/source_span/versions/1.10.2) |
 | sqlite3 | 3.9.2 | Application dependency or native build hook| [pub.dev](https://pub.dev/packages/sqlite3/versions/3.9.2) |
 | stack_trace | 1.12.2 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/stack_trace/versions/1.12.2) |
@@ -1087,12 +1092,12 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | petitparser | 7.0.2 | Preparation parser dependency | [pub.dev](https://pub.dev/packages/petitparser/versions/7.0.2) |
 | archive | 4.7.1 | Preparation image dependency| [pub.dev](https://pub.dev/packages/archive/versions/4.7.1) |
 | posix | 6.5.2 | Preparation image dependency | [pub.dev](https://pub.dev/packages/posix/versions/6.5.2) |
-| vector_math | 2.4.0 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/vector_math/versions/2.4.0) |
+| vector_math | 2.4.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/vector_math/versions/2.4.4) |
 | web | 1.1.1 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/web/versions/1.1.1) |
 | yaml | 3.1.4 | Application dependency or native build hook | [pub.dev](https://pub.dev/packages/yaml/versions/3.1.4) |
 | drift_dev | 2.35.3 | Development / generation / tests| [pub.dev](https://pub.dev/packages/drift_dev/versions/2.35.3) |
-| build_runner | 2.16.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/build_runner/versions/2.16.1) |
-| test | 1.31.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/test/versions/1.31.1) |
+| build_runner | 2.17.1 | Development / generation / tests | [pub.dev](https://pub.dev/packages/build_runner/versions/2.17.1) |
+| test | 1.32.0 | Development / generation / tests | [pub.dev](https://pub.dev/packages/test/versions/1.32.0) |
 | flutter_lints | 6.0.0 | Development / generation / tests | [pub.dev](https://pub.dev/packages/flutter_lints/versions/6.0.0) |
 
 **SQLite native library:** its deliverable code is [dedicated to the public domain by its authors](https://www.sqlite.org/copyright.html). This does not apply to every SQLite build script or replace the MIT license of the separate Dart `sqlite3` wrapper. Native-library selection and packaging follow the resolved wrapper's hooks.
@@ -1611,7 +1616,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-## File "package-root:flutter/LICENSE":
+## File "package-root:flutter/LICENSE" (also the SDK notice for `flutter_localizations`):
 
 
 Copyright 2014 The Flutter Authors. All rights reserved.
@@ -1822,6 +1827,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
+
+## File "package-root:intl/LICENSE":
+
+```text
+Copyright 2013, the Dart project authors.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google LLC nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
 
 ## File "package-root:logging/LICENSE":
 
@@ -2560,7 +2597,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
-## File "package-root:vector_math/LICENSE":
+## Files "package-root:cupertino_ui/LICENSE", "package-root:listen/LICENSE", "package-root:material_ui/LICENSE" and "package-root:vector_math/LICENSE" (same notice):
 
 
 Copyright 2013 The Flutter Authors

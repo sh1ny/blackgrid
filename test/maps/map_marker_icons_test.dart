@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:blackgrid/maps/map_marker_icons.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../tool/markers/icon_set.dart';

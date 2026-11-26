@@ -3,7 +3,7 @@ import 'package:blackgrid/application/selection_controller.dart';
 import 'package:blackgrid/data/vision/inspection_fir.dart';
 import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

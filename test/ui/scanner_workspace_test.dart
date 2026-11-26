@@ -13,7 +13,7 @@ import 'package:blackgrid/ui/freshness_tag.dart';
 import 'package:blackgrid/ui/panels.dart';
 import 'package:blackgrid/ui/scanner_screen.dart';
 import 'package:blackgrid/ui/scanner_sections.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fixtures/m1/catalog/fixture.dart' show fixtureNow;

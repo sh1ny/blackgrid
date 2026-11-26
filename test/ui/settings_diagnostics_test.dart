@@ -7,7 +7,7 @@ import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/scan_evidence_panel.dart';
 import 'package:blackgrid/ui/settings/commit_field.dart';
 import 'package:blackgrid/ui/settings/settings_page.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_harness.dart';

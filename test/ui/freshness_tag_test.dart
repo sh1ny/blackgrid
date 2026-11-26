@@ -5,7 +5,7 @@ import 'package:blackgrid/ui/answer_strip.dart';
 import 'package:blackgrid/ui/scanner_sections.dart';
 import 'package:blackgrid/ui/labels.dart' show localTimeLabel;
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/m1_harness.dart';

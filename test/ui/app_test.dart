@@ -6,7 +6,7 @@ import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/app_logo.dart';
 import 'package:blackgrid/ui/brand_lockup.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void expectStartupLogo(WidgetTester tester) {

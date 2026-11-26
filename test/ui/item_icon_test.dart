@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:blackgrid/application/item_icon_cache.dart';
 import 'package:blackgrid/ui/item_icon.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fake_item_icon_cache.dart';

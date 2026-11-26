@@ -297,6 +297,9 @@ List<int?> _stages(PassTimeline pass) => [
 ];
 
 void main() {
+  // Install Flutter's Listenable error handler, as app startup does.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late _Rig rig;
 
   Future<_Rig> readyRig({

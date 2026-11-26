@@ -4,7 +4,7 @@ import 'package:blackgrid/domain/inspection_context.dart';
 import 'package:blackgrid/domain/verdict_reason.dart';
 import 'package:blackgrid/ui/answer_strip.dart';
 import 'package:blackgrid/ui/app.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 

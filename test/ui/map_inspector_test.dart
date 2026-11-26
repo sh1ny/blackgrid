@@ -11,7 +11,7 @@ import 'package:blackgrid/domain/settings.dart';
 import 'package:blackgrid/ui/map_inspector.dart';
 import 'package:blackgrid/ui/marker_popup.dart';
 import 'package:blackgrid/ui/pin_editor.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

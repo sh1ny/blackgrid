@@ -23,7 +23,7 @@ import 'package:blackgrid/ui/settings/settings_page.dart';
 import 'package:blackgrid/ui/settings/settings_row.dart';
 import 'package:blackgrid/ui/settings/settings_section.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 

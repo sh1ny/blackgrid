@@ -7,7 +7,7 @@ import 'package:blackgrid/domain/map_zone_style.dart';
 import 'package:blackgrid/maps/map_marker_icons.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 

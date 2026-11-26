@@ -4,7 +4,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/decision.dart';
 import 'package:blackgrid/ui/evidence_panels.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A selection that serves a fixed decision, so the panel is driven without a

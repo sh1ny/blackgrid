@@ -2,7 +2,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/data/scan_frame_recorder.dart';
 import 'package:blackgrid/data/database.dart';
 import 'package:blackgrid/ui/app.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../ui/support/scan_ui_support.dart';

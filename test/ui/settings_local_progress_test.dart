@@ -3,7 +3,7 @@ import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/domain/progress_wipe_store.dart';
 import 'package:blackgrid/ui/ember/ember_theme.dart';
 import 'package:blackgrid/ui/settings/local_progress_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final _today = DateTime(2026, 11, 12);

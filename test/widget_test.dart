@@ -1,7 +1,7 @@
 import 'package:blackgrid/domain/catalog.dart';
 import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/panels.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/m1_widget_harness.dart';
