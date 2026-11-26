@@ -1081,8 +1081,8 @@ Versions come from the committed `pubspec.lock` and the pinned Flutter 3.47.9 / 
 | unorm_dart | 0.3.3 | Item-title NFKC normalisation | [pub.dev](https://pub.dev/packages/unorm_dart/versions/0.3.3) |
 | vector_graphics | 1.3.1 | Native compiled-vector rendering| [pub.dev](https://pub.dev/packages/vector_graphics/versions/1.3.1) |
 | vector_graphics_codec | 1.2.0 | Compiled-vector decoding | [pub.dev](https://pub.dev/packages/vector_graphics_codec/versions/1.2.0) |
-| vector_graphics_compiler | 1.3.4 | Offline map preparation| [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.4) |
-| xml | 6.6.1 | Offline SVG dependency/style preparation | [pub.dev](https://pub.dev/packages/xml/versions/6.6.1) |
+| vector_graphics_compiler | 1.3.6 | Offline map preparation| [pub.dev](https://pub.dev/packages/vector_graphics_compiler/versions/1.3.6) |
+| xml | 7.0.1 | Offline SVG dependency/style preparation | [pub.dev](https://pub.dev/packages/xml/versions/7.0.1) |
 | image | 4.13.1 | Offline PNG validation| [pub.dev](https://pub.dev/packages/image/versions/4.13.1) |
 | petitparser | 7.0.2 | Preparation parser dependency | [pub.dev](https://pub.dev/packages/petitparser/versions/7.0.2) |
 | archive | 4.7.1 | Preparation image dependency| [pub.dev](https://pub.dev/packages/archive/versions/4.7.1) |
@@ -1175,7 +1175,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The resolved XML, image, parser and archive notices carry these exact
 copyright lines:
 
-- `package-root:xml/LICENSE`: `Copyright (c) 2006-2025 Lukas Renggli.`
+- `package-root:xml/LICENSE`: `Copyright (c) 2006-2026 Lukas Renggli.`
 - `package-root:image/LICENSE`: `Copyright (c) 2013-2022 Brendan Duncan.`
 - `package-root:petitparser/LICENSE`: `Copyright (c) 2006-2024 Lukas Renggli.`
 - `package-root:archive/LICENSE`: `Copyright (c) 2013-2021 Brendan Duncan.`

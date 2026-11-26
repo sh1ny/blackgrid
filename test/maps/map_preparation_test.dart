@@ -1343,7 +1343,9 @@ void main() {
     final uses = XmlDocument.parse(
       normalizeSvgFloor(source, {'Ground_Level'}, {'Ground_Level'}),
     ).findAllElements('use').toList();
-    expect(uses.map((e) => e.getAttribute('href', namespace: '*')), ['#kept']);
+    expect(uses.map((e) => e.getAttribute('href', namespaceUri: '*')), [
+      '#kept',
+    ]);
     expect(
       () => normalizeSvgFloor(
         source.replaceAll('#stairs-86', '#stairs-1'),
