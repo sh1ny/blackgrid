@@ -213,7 +213,12 @@ void main() {
     final lab = (calibration['maps'] as List).singleWhere(
       (map) => map['id'] == 'thelab',
     );
-    (lab['floors'] as List)[1]['heightBand'] = [3, 1000];
+    (lab['floors'] as List).singleWhere(
+      (floor) => floor['id'] == 'Second_Level',
+    )['heightBand'] = [
+      3,
+      1000,
+    ];
     for (final map in manifest['maps'] as List) {
       for (final floor in map['floors'] as List) {
         (floor as Map).remove('extents');

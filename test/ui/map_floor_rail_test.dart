@@ -1,6 +1,7 @@
 import 'dart:ui' show CheckedState, Tristate;
 
 import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/ui/map_floor_rail.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -358,5 +359,30 @@ void main() {
       'upper',
     ]);
     await settleMapFixture(tester, h);
+  });
+
+  testWidgets('a short map pane keeps the stepper until the list fits again', (
+    tester,
+  ) async {
+    final preview = floorRailPreview();
+    Future<void> resize(double height) => tester.pumpWidget(
+      MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(width: 220, height: height, child: preview),
+        ),
+      ),
+    );
+    await resize(60);
+    expect(_text('Deck 7'), findsOneWidget);
+    expect(_list, findsNothing);
+    await tester.tap(find.byTooltip('Floor up'));
+    await tester.pump();
+    expect(_text('Deck 8'), findsOneWidget);
+    await resize(280);
+    await tester.pump();
+    expect(_text('16 floors'), findsOneWidget);
+    expect(_row('deck-8').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

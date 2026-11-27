@@ -69,7 +69,7 @@
 
 ## 4. Integration
 
-- [ ] 4.1 Verify `openspec validate floor-deck-rail --strict`, the release-notes check and the focused Dart checks. Run `mise run analyze` and `mise run test` after the gaming check permits heavy work. If the owner is gaming and the identical gates run on the PR commit, record verified CI results instead of claiming local passes.
+- [x] 4.1 Verify `openspec validate floor-deck-rail --strict`, the release-notes check and the focused Dart checks. Run `mise run analyze` and `mise run test` after the gaming check permits heavy work. If the owner is gaming and the identical gates run on the PR commit, record verified CI results instead of claiming local passes.
 
 ## Workflow follow-up
 

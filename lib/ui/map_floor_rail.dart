@@ -75,6 +75,8 @@ class MapFloorRailState extends State<MapFloorRail> {
   double _dividerHeight = 18;
   double _cueHeight = 24;
   bool _revealPending = false;
+  bool _isVisible = false;
+  bool _expandFits = false;
 
   MapFloorPolicy get _policy => widget.selection.policy;
   int get _count => _policy.floors.length;
@@ -84,12 +86,18 @@ class MapFloorRailState extends State<MapFloorRail> {
   double get _contentHeight =>
       _count * _rowHeight + (_showDivider ? _dividerHeight : 0);
 
+  /// Whether the pane can fit the rail or its one-line stepper.
+  bool get isVisible => _isVisible;
+
   /// Whether keyboard focus is on any rail control.
   bool get hasFocus => _scope.hasFocus;
 
   /// Focuses Expand or the current floor without changing the selection.
   void focusCurrent() {
-    if (widget.collapsed) {
+    if (!_isVisible) return;
+    if (!_expandFits) {
+      _scope.requestFocus();
+    } else if (widget.collapsed) {
       _expand.requestFocus();
     } else {
       _focusRow(_current);
@@ -212,12 +220,35 @@ class MapFloorRailState extends State<MapFloorRail> {
   }
 
   @override
-  Widget build(BuildContext context) => FocusTraversalGroup(
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compactHeight = _rowHeight + 12;
+      final visible =
+          constraints.maxHeight >= compactHeight && constraints.maxWidth >= 96;
+      // Reserve room for the header, Auto and at least one full row.
+      final expandedHeight =
+          compactHeight + _rowHeight + (_showAuto ? 2 * _rowHeight : 0);
+      final expandFits = visible && constraints.maxHeight >= expandedHeight;
+      if (expandFits != _expandFits && visible && !widget.collapsed) {
+        _scheduleReveal();
+        if (_scope.hasFocus) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) focusCurrent();
+          });
+        }
+      }
+      _isVisible = visible;
+      _expandFits = expandFits;
+      return visible ? _surface(context) : const SizedBox.shrink();
+    },
+  );
+
+  Widget _surface(BuildContext context) => FocusTraversalGroup(
     policy: WidgetOrderTraversalPolicy(),
     child: Focus(
       focusNode: _scope,
-      skipTraversal: true,
-      canRequestFocus: false,
+      skipTraversal: _expandFits,
+      canRequestFocus: !_expandFits,
       onFocusChange: widget.onFocusChanged,
       onKeyEvent: (_, event) => widget.onKeyEvent(event),
       child: Listener(
@@ -230,18 +261,28 @@ class MapFloorRailState extends State<MapFloorRail> {
         },
         child: Theme(
           data: Theme.of(context).copyWith(extensions: const [_ink]),
-          child: Material(
-            color: _ink.raised,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(color: _ink.hairlineStrong),
-              borderRadius: const BorderRadius.all(
-                Radius.circular(EmberRadius.l),
+          child: ListenableBuilder(
+            listenable: _scope,
+            builder: (context, child) => Material(
+              color: _ink.raised,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(
+                  color: _scope.hasPrimaryFocus
+                      ? _ink.focus
+                      : _ink.hairlineStrong,
+                ),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(EmberRadius.l),
+                ),
               ),
+              clipBehavior: Clip.antiAlias,
+              child: child,
             ),
-            clipBehavior: Clip.antiAlias,
             child: Padding(
               padding: const EdgeInsets.all(6),
-              child: widget.collapsed ? _compact() : _expanded(),
+              child: widget.collapsed || !_expandFits
+                  ? _compact()
+                  : _expanded(),
             ),
           ),
         ),
@@ -270,11 +311,11 @@ class MapFloorRailState extends State<MapFloorRail> {
           ),
         ),
         _stepButton(-1),
-        if (widget.autoFollowing) const _FloorTag('Auto'),
+        if (widget.autoFollowing) const Flexible(child: _FloorTag('Auto')),
         _iconButton(
           Icons.unfold_more,
           'Expand floors',
-          () => _collapse(false),
+          _expandFits ? () => _collapse(false) : null,
           focus: _expand,
         ),
       ],
@@ -662,14 +703,17 @@ class _BelowGround extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: Row(
+    child: Stack(
+      alignment: Alignment.center,
       children: [
-        const Expanded(child: CustomPaint(painter: _DashLine())),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: _meta('Below ground'),
+        const Positioned.fill(child: CustomPaint(painter: _DashLine())),
+        DecoratedBox(
+          decoration: BoxDecoration(color: _ink.raised),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: _meta('Below ground'),
+          ),
         ),
-        const Expanded(child: CustomPaint(painter: _DashLine())),
       ],
     ),
   );
@@ -681,10 +725,11 @@ class _DashLine extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = _ink.hairlineStrong;
+    final y = size.height / 2;
     for (var x = 0.0; x < size.width; x += 6) {
       canvas.drawLine(
-        Offset(x, 0),
-        Offset(math.min(x + 3, size.width), 0),
+        Offset(x, y),
+        Offset(math.min(x + 3, size.width), y),
         paint,
       );
     }

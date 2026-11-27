@@ -508,7 +508,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
 
   KeyEventResult _floorKey(KeyEvent event) {
     // Flutter otherwise invokes the route's default page-scroll action.
-    if (_railSelection == null) {
+    if (_railSelection == null || _rail.currentState?.isVisible != true) {
       return switch (event.logicalKey) {
         LogicalKeyboardKey.pageUp ||
         LogicalKeyboardKey.pageDown => KeyEventResult.handled,

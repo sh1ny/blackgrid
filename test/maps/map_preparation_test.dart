@@ -116,23 +116,23 @@ void main() {
   for (final entry in <String, (List<String>, Set<String>, num)>{
     'customs': (
       [
+        'Underground_Level',
         'Ground_Level',
         'Second_Floor',
         'Third_Floor',
         'Fourth_Floor',
-        'Underground_Level',
       ],
       {'Fourth_Floor'},
       1062.4827,
     ),
     'reserve': (
       [
+        'Bunkers',
         'Ground_Level',
         'Second_Floor',
         'Third_Floor',
         'Fourth_Floor',
         'Fifth_Floor',
-        'Bunkers',
       ],
       {'Second_Floor', 'Third_Floor', 'Fourth_Floor', 'Fifth_Floor'},
       827.28742,
@@ -171,7 +171,7 @@ void main() {
           'svgLayer': 'Ground_Level',
           'tilePath': 'https://example.invalid/main/{z}/{x}/{y}.png',
           'layers': [
-            for (final floor in floors.skip(1))
+            for (final floor in floors.where((floor) => floor['base'] != true))
               {
                 'name': floor['id'],
                 // Actual publisher has no svgLayer for the tile-only floors;
@@ -274,12 +274,15 @@ void main() {
       };
       final floors = reconcileFloors(local, upstream);
       expect(floors.map((floor) => floor['id']), [
+        'Underground_Level',
         'Ground_Level',
         'Second_Floor',
         'Third_Floor',
-        'Underground_Level',
       ]);
-      expect(floors.first['attachedIds'], ['First_Floor']);
+      expect(
+        floors.singleWhere((floor) => floor['base'] == true)['attachedIds'],
+        ['First_Floor'],
+      );
       for (final changed in [
         {...upstream, 'tilePath': null},
         {
@@ -1011,7 +1014,10 @@ void main() {
         ...local,
         'floors': [
           ...floors,
-          {...floors[1], 'id': 'Duplicate_Tile'},
+          {
+            ...floors.singleWhere((floor) => floor['id'] == 'Second_Level'),
+            'id': 'Duplicate_Tile',
+          },
         ],
       }, upstream(known)),
       named('Known upper'),
@@ -1209,16 +1215,19 @@ void main() {
     };
     final floors = reconcileFloors(local, upstream);
     expect(floors.map((f) => f['id']), [
+      'Technical_Level',
       'First_Level',
       'Second_Level',
-      'Technical_Level',
     ]);
-    expect(floors[1]['extents'], [
-      {
-        'height': [3, 10000],
-        'bounds': [],
-      },
-    ]);
+    expect(
+      floors.singleWhere((floor) => floor['id'] == 'Second_Level')['extents'],
+      [
+        {
+          'height': [3, 10000],
+          'bounds': [],
+        },
+      ],
+    );
     expect(
       () => reconcileFloors(local, {'tilePath': labsTiles.first, 'layers': []}),
       throwsFormatException,

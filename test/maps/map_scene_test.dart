@@ -587,7 +587,19 @@ void main() {
       '$key: a chosen floor stays over a base later in layer order',
       () async {
         final raw = preparedMapMetadataFixture(key);
-        raw['layerOrder'] = (raw['layerOrder'] as List).reversed.toList();
+        final baseComponents =
+            (raw['floors'] as List).singleWhere(
+                  (floor) => floor['base'] == true,
+                )['artwork']['components']
+                as List;
+        final baseIds = {
+          for (final component in baseComponents) component['id'],
+        };
+        final order = (raw['layerOrder'] as List).cast<String>();
+        raw['layerOrder'] = [
+          ...order.where((id) => !baseIds.contains(id)),
+          ...order.where(baseIds.contains),
+        ];
         final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
         final base = map.floorPolicy.base.id;
         expect(map.components.last.floorId, base);
