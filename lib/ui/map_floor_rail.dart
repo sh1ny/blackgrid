@@ -231,9 +231,15 @@ class MapFloorRailState extends State<MapFloorRail> {
       _ => null,
     };
     if (next != null) {
-      if (next != index && (event is KeyDownEvent || event is KeyRepeatEvent)) {
-        _focusRow(next);
-        if (_policy.exclusive) widget.onActivate(_policy.floors[next].id);
+      if (event is KeyDownEvent || event is KeyRepeatEvent) {
+        final movesFocus = next != index;
+        if (movesFocus) _focusRow(next);
+        final absolute =
+            key == LogicalKeyboardKey.home || key == LogicalKeyboardKey.end;
+        if (_policy.exclusive &&
+            (movesFocus || (absolute && next != _current))) {
+          widget.onActivate(_policy.floors[next].id);
+        }
       }
     } else if (key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter ||

@@ -483,6 +483,34 @@ void main() {
     await settleMapFixture(tester, h);
   });
 
+  testWidgets('Home and End select the focused deck after Auto resumes', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester, exclusiveLabs: true, extraFloors: 1);
+    await _labs(tester, h);
+    final maps = h.services.maps;
+    maps.setPlayerSample(GamePoint(128, 128, height: 4));
+    await settleMapFixture(tester, h);
+    expect(maps.floorSelection!.visibleLayerIds, ['upper']);
+    await _focusMap(tester);
+    await _key(tester, LogicalKeyboardKey.keyF);
+
+    for (final (key, deck) in [
+      (LogicalKeyboardKey.end, 'lower'),
+      (LogicalKeyboardKey.home, 'deck-0'),
+    ]) {
+      await _key(tester, key);
+      expect(maps.floorSelection!.visibleLayerIds, [deck]);
+      await _key(tester, LogicalKeyboardKey.keyA);
+      expect(maps.floorSelection!.visibleLayerIds, ['upper']);
+      expect(maps.automaticFloorFollowing, isTrue);
+      await _key(tester, key);
+      expect(maps.floorSelection!.visibleLayerIds, [deck]);
+      expect(maps.automaticFloorFollowing, isFalse);
+    }
+    await settleMapFixture(tester, h);
+  });
+
   testWidgets(
     'additive keyboard traversal moves focus before changing visibility',
     (tester) async {
