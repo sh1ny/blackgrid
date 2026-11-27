@@ -91,6 +91,64 @@ void main() {
   });
 
   group('prepare refresh', () {
+    test('reviewed floor order is rejected on non-refresh commands and cannot be repeated', () async {
+      for (final arguments in [
+        ['check', '--packs', 'never-opened', '--reviewed-floor-order'],
+        [
+          'refresh',
+          '--packs',
+          'never-opened',
+          '--pubspec',
+          'never-opened',
+          '--reviewed-floor-order',
+          '--reviewed-floor-order',
+        ],
+      ]) {
+        await expectLater(
+          runPrepare(arguments),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('valid once on refresh'),
+            ),
+          ),
+        );
+      }
+    });
+
+    test('reviewed floor order refresh still checks the lock before creating a candidate', () async {
+      final root = await Directory.systemTemp.createTemp(
+        'blackgrid-floor-order-lock-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      final lock = File('${root.path}/pubspec.lock');
+      await lock.writeAsString(_lock(const ['vector_graphics_codec']));
+      final work = Directory('${root.path}/work');
+      await expectLater(
+        runPrepare(
+          [
+            'refresh',
+            '--packs',
+            'never-opened',
+            '--pubspec',
+            'never-opened',
+            '--reviewed-floor-order',
+          ],
+          lockPath: lock.path,
+          candidateParent: work,
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('vector_graphics_codec'),
+          ),
+        ),
+      );
+      expect(await work.exists(), isFalse);
+    });
+
     test('prepare refresh with an incomplete lock fails before creating a candidate', () async {
       final root = await Directory.systemTemp.createTemp(
         'blackgrid-refresh-lock-',

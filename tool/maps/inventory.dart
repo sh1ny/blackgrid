@@ -126,11 +126,12 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
     'tileImageExtent': 256,
     'nativeTilePixels': 256,
   };
+  // Keep the reviewed navigation lists below ordered bottom to top.
   List<Map<String, Object?>> buildingFloors() => [
+    floor('Underground_Level'),
     floor('Ground_Level', base: true, attached: ['First_Floor']),
     floor('Second_Floor'),
     floor('Third_Floor'),
-    floor('Underground_Level'),
   ];
   switch (sourceKey) {
     case 'factory':
@@ -145,10 +146,10 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
         frame: [130.81831, 141.23242],
         rotation: 90,
         floors: [
+          floor('Basement'),
           floor('Ground_Floor', base: true),
           floor('Second_Floor'),
           floor('Third_Floor'),
-          floor('Basement'),
         ],
       );
     case 'customs':
@@ -165,6 +166,7 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
           ],
           frame: [1062.4827, 535.17401],
           floors: [
+            floor('Underground_Level'),
             floor('Ground_Level', base: true, attached: ['First_Floor']),
             floor('Second_Floor'),
             floor('Third_Floor'),
@@ -172,7 +174,6 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
               'Fourth_Floor',
               tilePath: 'https://assets.tarkov.dev/maps/customs_0.16/4th/{z}/{x}/{y}.png',
             ),
-            floor('Underground_Level'),
           ],
         ),
         'rasterOverlayFrame': rasterOverlayFrame,
@@ -239,6 +240,7 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
           ],
           frame: [827.28742, 761.16437],
           floors: [
+            floor('Bunkers'),
             floor('Ground_Level', base: true),
             for (final (id, path) in const [
               ('Second_Floor', '2nd'),
@@ -251,7 +253,6 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
                 tilePath:
                     'https://assets.tarkov.dev/maps/reserve/$path/{z}/{x}/{y}.png',
               ),
-            floor('Bunkers'),
           ],
         ),
         'rasterOverlayFrame': rasterOverlayFrame,
@@ -279,12 +280,12 @@ Map<String, Object?> additionalCalibrationFor(String sourceKey) {
         ],
         frame: [605.32395, 831.57753],
         floors: [
+          floor('Underground_Level'),
           floor('Ground_Level', base: true, attached: ['First_Floor']),
           floor('Second_Floor'),
           floor('Third_Floor'),
           floor('Fourth_Floor'),
           floor('Fifth_Floor'),
-          floor('Underground_Level'),
         ],
       );
     case 'ground-zero':

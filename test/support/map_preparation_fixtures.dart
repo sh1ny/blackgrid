@@ -87,7 +87,10 @@ class MapPreparationFixtures {
           else if (local['id'] == 'icebreaker')
             'Helipad'
           else
-            (local['floors'] as List).first['id'] as String,
+            (local['floors'] as List).singleWhere(
+                  (floor) => floor['base'] == true,
+                )['id']
+                as String,
         },
     };
     for (final local in calibration['maps'] as List) {
@@ -372,7 +375,6 @@ void _giveFloorBandHeights(
   List<Map<String, Object?>> floors,
 ) {
   for (final band in placeLabelBandTable[mapId] ?? const <LabelFloorBand>[]) {
-    final index = floors.indexWhere((floor) => floor['id'] == band.floorId);
     final height = [band.min, band.max];
     switch (band.source) {
       case MapHeightRange():
@@ -380,7 +382,15 @@ void _giveFloorBandHeights(
       case InterchangeHeightRange():
         interactive['_heightRange'] = height;
       case LayerExtent(:final name, :final extentIndex):
-        final layer = (interactive['layers'] as List)[index - 1] as Map;
+        final floor = floors.singleWhere(
+          (floor) => floor['id'] == band.floorId,
+        );
+        final layer = (interactive['layers'] as List).singleWhere(
+          (layer) =>
+              layer['svgLayer'] == floor['id'] ||
+              (floor['sourceTileUrl'] != null &&
+                  layer['tilePath'] == floor['sourceTileUrl']),
+        ) as Map;
         layer['name'] = name;
         final extents = (layer['extents'] ??= <Object>[]) as List;
         while (extents.length <= extentIndex) {
@@ -422,6 +432,7 @@ Future<Directory> materializeFullRaw(Directory raw) async {
   final solid = png(256, 256), empty = png(256, 256, empty: true);
   for (final local in locals) {
     final floors = (local['floors'] as List).cast<Map<String, Object?>>();
+    final base = floors.singleWhere((floor) => floor['base'] == true);
     final geometry = local['geometry'] as Map;
     final calibrationEvidence =
         local['calibrationEvidence'] as Map? ?? const {};
@@ -444,13 +455,13 @@ Future<Directory> materializeFullRaw(Directory raw) async {
           if (geometry['legacyPinBounds'] != null)
             'svgBounds': geometry['legacyPinBounds'],
           if (local['kind'] == 'vector') ...{
-            'svgLayer': floors.first['id'],
-            if (dependencyPaths.containsKey(floors.first['id']))
-              'tilePath': dependencyPaths[floors.first['id']],
+            'svgLayer': base['id'],
+            if (dependencyPaths.containsKey(base['id']))
+              'tilePath': dependencyPaths[base['id']],
           } else
-            'tilePath': floors.first['sourceTileUrl'],
+            'tilePath': base['sourceTileUrl'],
           'layers': [
-            for (final floor in floors.skip(1))
+            for (final floor in floors.where((floor) => floor != base))
               <String, Object?>{
                 if (local['kind'] == 'vector' &&
                     floor['sourceTileUrl'] == null) ...{

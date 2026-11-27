@@ -12,44 +12,44 @@ void main() {
   // policy.floors or projection output. These are policy/parity tests, not
   // independent game-to-artwork placement qualification.
   final conventionalFloors = <String, List<String>>{
-    'factory': ['Ground_Floor', 'Second_Floor', 'Third_Floor', 'Basement'],
+    'factory': ['Basement', 'Ground_Floor', 'Second_Floor', 'Third_Floor'],
     'customs': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
       'Fourth_Floor',
-      'Underground_Level',
     ],
     'woods': ['Ground_Level'],
     'shoreline': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
-      'Underground_Level',
     ],
     'interchange': ['Ground_Level', 'First_Floor', 'Second_Floor'],
     'reserve': [
+      'Bunkers',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
       'Fourth_Floor',
       'Fifth_Floor',
-      'Bunkers',
     ],
     'lighthouse': ['Ground_Level'],
     'streetsoftarkov': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
       'Fourth_Floor',
       'Fifth_Floor',
-      'Underground_Level',
     ],
     'groundzero': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
-      'Underground_Level',
     ],
     'terminal': ['Ground_Level'],
     'labyrinth': ['Main_Level'],
@@ -70,8 +70,14 @@ void main() {
           assetRoot: 'fixture/',
         );
         final policy = map.floorPolicy;
+        final baseId = switch (entry.key) {
+          'factory' => 'Ground_Floor',
+          'labyrinth' => 'Main_Level',
+          _ => 'Ground_Level',
+        };
+        final overlays = entry.value.where((id) => id != baseId).toList();
         final expectedBase = [
-          entry.value.first,
+          baseId,
           if (attachedBaseMaps.contains(entry.key)) 'First_Floor',
         ];
         expect(policy.selectableFloors.map((floor) => floor.id), entry.value);
@@ -79,7 +85,7 @@ void main() {
         expect(policy.exclusive, isFalse);
         expect(policy.supportsAutomaticHeight, isFalse);
         var selection = policy.reset();
-        for (final id in entry.value.skip(1)) {
+        for (final id in overlays) {
           expect(
             selection.isVisible(
               floorId: id,
@@ -97,8 +103,8 @@ void main() {
             isTrue,
           );
         }
-        expect(selection.selectedOverlayIds, entry.value.skip(1).toSet());
-        for (final id in entry.value.skip(1).toList().reversed) {
+        expect(selection.selectedOverlayIds, overlays.toSet());
+        for (final id in overlays.reversed) {
           selection = selection.toggle(id);
           expect(selection.isLayerVisible(id), isFalse);
           expect(selection.visibleLayerIds, containsAll(expectedBase));

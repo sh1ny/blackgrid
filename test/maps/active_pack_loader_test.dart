@@ -27,6 +27,20 @@ void main() {
         reason: map.id,
       );
     }
+    for (final (id, first, base) in const [
+      ('factory', 'Basement', 'Ground_Floor'),
+      ('customs', 'Underground_Level', 'Ground_Level'),
+      ('shoreline', 'Underground_Level', 'Ground_Level'),
+      ('thelab', 'Technical_Level', 'First_Level'),
+      ('reserve', 'Bunkers', 'Ground_Level'),
+      ('streetsoftarkov', 'Underground_Level', 'Ground_Level'),
+      ('groundzero', 'Underground_Level', 'Ground_Level'),
+    ]) {
+      final policy = pack.byId[id]!.floorPolicy;
+      expect(policy.floors.first.id, first, reason: id);
+      expect(policy.floors[1].id, base, reason: id);
+      expect(policy.reset().visibleLayerIds.first, base, reason: id);
+    }
     final reserve = pack.byId['reserve']!.floorPolicy;
     expect(
       reserve.floorForPosition(GamePoint(-100, 0, height: -9))?.id,
@@ -46,6 +60,8 @@ void main() {
       'Third_Floor',
     );
     final icebreaker = pack.byId['icebreaker']!.floorPolicy;
+    expect(icebreaker.floors[6].id, 'Infirmary');
+    expect(icebreaker.reset().visibleLayerIds, ['Infirmary']);
     expect(
       icebreaker.floorForPosition(GamePoint(0, 0, height: 18.919))?.id,
       'Storage_Security',

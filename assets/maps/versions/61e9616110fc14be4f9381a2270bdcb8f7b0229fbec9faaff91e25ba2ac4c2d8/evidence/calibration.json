@@ -19,6 +19,13 @@
       "floors": [
         {
           "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Basement",
+          "manual": true
+        },
+        {
+          "attachedIds": [],
           "base": true,
           "exclusive": false,
           "id": "Ground_Floor",
@@ -36,13 +43,6 @@
           "base": false,
           "exclusive": false,
           "id": "Third_Floor",
-          "manual": true
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Basement",
           "manual": true
         }
       ],
@@ -93,6 +93,13 @@
       },
       "floors": [
         {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Underground_Level",
+          "manual": true
+        },
+        {
           "attachedIds": [
             "First_Floor"
           ],
@@ -122,13 +129,6 @@
           "id": "Fourth_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/customs_0.16/4th/{z}/{x}/{y}.png"
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Underground_Level",
-          "manual": true
         }
       ],
       "geometry": {
@@ -240,6 +240,13 @@
       },
       "floors": [
         {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Underground_Level",
+          "manual": true
+        },
+        {
           "attachedIds": [
             "First_Floor"
           ],
@@ -260,13 +267,6 @@
           "base": false,
           "exclusive": false,
           "id": "Third_Floor",
-          "manual": true
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Underground_Level",
           "manual": true
         }
       ],
@@ -505,6 +505,14 @@
       "floors": [
         {
           "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Technical_Level",
+          "manual": true,
+          "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/technical/{z}/{x}/{y}.png"
+        },
+        {
+          "attachedIds": [],
           "base": true,
           "exclusive": false,
           "id": "First_Level",
@@ -518,14 +526,6 @@
           "id": "Second_Level",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/2nd/{z}/{x}/{y}.png"
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Technical_Level",
-          "manual": true,
-          "sourceTileUrl": "https://assets.tarkov.dev/maps/labs_v4/technical/{z}/{x}/{y}.png"
         }
       ],
       "geometry": {
@@ -575,6 +575,13 @@
       "floors": [
         {
           "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Bunkers",
+          "manual": true
+        },
+        {
+          "attachedIds": [],
           "base": true,
           "exclusive": false,
           "id": "Ground_Level",
@@ -611,13 +618,6 @@
           "id": "Fifth_Floor",
           "manual": true,
           "sourceTileUrl": "https://assets.tarkov.dev/maps/reserve/5th/{z}/{x}/{y}.png"
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Bunkers",
-          "manual": true
         }
       ],
       "geometry": {
@@ -729,6 +729,13 @@
       },
       "floors": [
         {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Underground_Level",
+          "manual": true
+        },
+        {
           "attachedIds": [
             "First_Floor"
           ],
@@ -763,13 +770,6 @@
           "base": false,
           "exclusive": false,
           "id": "Fifth_Floor",
-          "manual": true
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Underground_Level",
           "manual": true
         }
       ],
@@ -820,6 +820,13 @@
       },
       "floors": [
         {
+          "attachedIds": [],
+          "base": false,
+          "exclusive": false,
+          "id": "Underground_Level",
+          "manual": true
+        },
+        {
           "attachedIds": [
             "First_Floor"
           ],
@@ -840,13 +847,6 @@
           "base": false,
           "exclusive": false,
           "id": "Third_Floor",
-          "manual": true
-        },
-        {
-          "attachedIds": [],
-          "base": false,
-          "exclusive": false,
-          "id": "Underground_Level",
           "manual": true
         }
       ],

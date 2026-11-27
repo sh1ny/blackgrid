@@ -21,7 +21,7 @@ import 'package:blackgrid/maps/live_map_normalizer.dart'
         LiveMapSourceBodies,
         LiveMapBinding;
 import 'package:blackgrid/maps/prepared_map.dart'
-    show preparedFloorExtents, preparedPackVersion;
+    show preparedFloorExtents, preparedPackVersion, rasterPaintOrder;
 
 import 'svg.dart';
 
@@ -146,7 +146,7 @@ class FrozenInputs {
     this._files,
     this._unverified,
     this._missing, [
-    this._migratedCalibration,
+    this._calibrationOverride,
   ]);
 
   /// The parsed `sources.json` index.
@@ -158,7 +158,7 @@ class FrozenInputs {
 
   /// Listed sources no file carries, with the message to throw reading each.
   final Map<String, String> _missing;
-  final Uint8List? _migratedCalibration;
+  final Uint8List? _calibrationOverride;
 
   /// Opens the raw generation at [root] and hashes every listed source.
   static Future<FrozenInputs> open(Directory root) async {
@@ -247,8 +247,8 @@ class FrozenInputs {
   /// Throws a [FormatException] when [path] is not a listed source or no file
   /// carries it.
   Future<Uint8List> bytes(String path) async {
-    if (path == 'calibration.json' && _migratedCalibration != null) {
-      return _migratedCalibration;
+    if (path == 'calibration.json' && _calibrationOverride != null) {
+      return _calibrationOverride;
     }
     if (_missing[path] case final message?) throw FormatException(message);
     final file = _files[path];
@@ -313,7 +313,7 @@ class FrozenInputs {
     return FrozenInputs._(derivedIndex, files, unverified, _missing);
   }
 
-  FrozenInputs _withMigratedCalibration(Uint8List bytes) {
+  FrozenInputs _withCalibration(Uint8List bytes) {
     final hash = _hash(bytes);
     final derived = <String, dynamic>{
       ...index,
@@ -1819,7 +1819,7 @@ Future<Map<String, dynamic>> validateCandidate(
     _validateMetadataCalibration(expected, upstream);
     final expectedFloors = reconcileFloors(expected, upstream);
     if (floors.length != expectedFloors.length) {
-      throw const FormatException('Candidate lost floor families');
+      throw FormatException('${map['id']}: candidate lost floor families');
     }
     if (map['kind'] == 'vector') {
       final sourcePath =
@@ -1848,6 +1848,12 @@ Future<Map<String, dynamic>> validateCandidate(
     }
     for (var i = 0; i < floors.length; i++) {
       final floor = floors[i];
+      if (floor['id'] != expectedFloors[i]['id']) {
+        throw FormatException(
+          '${map['id']}: floor order differs from frozen calibration at '
+          '${floor['id']} (expected ${expectedFloors[i]['id']})',
+        );
+      }
       final metadata = Map<String, dynamic>.from(floor)..remove('artwork');
       if (canonicalJson(metadata) != canonicalJson(expectedFloors[i])) {
         throw FormatException(
@@ -2271,6 +2277,7 @@ class PackChangeReport {
 class _Tally {
   int files = 0;
   bool values = false;
+  String? floorOrder;
 }
 
 /// Compares two manifests and groups every difference by owner.
@@ -2372,6 +2379,15 @@ PackChangeReport packChangeReport(
         for (final map in pair)
           {for (final entry in listOf(map?[key])) entry['id'] as String: entry},
       ];
+      if (key == 'floors') {
+        final [before, after] = bySide;
+        if (before.length == after.length &&
+            before.keys.every(after.containsKey) &&
+            same(before.keys.toList()) != same(after.keys.toList())) {
+          tally(id).floorOrder = after.keys.join(' → ');
+          valueKeys.add('$id floor order');
+        }
+      }
       final entryIds = <String>{for (final side in bySide) ...side.keys};
       for (final entryId in entryIds) {
         final label = '$id $prefix$entryId';
@@ -2410,7 +2426,9 @@ PackChangeReport packChangeReport(
     for (final key in manifest.keys)
       if (key != 'toolchain') key: manifest[key],
   };
-  if (!tallies.values.any((t) => t.files > 0 || t.values) &&
+  if (!tallies.values.any(
+        (t) => t.files > 0 || t.values || t.floorOrder != null,
+      ) &&
       same(withoutToolchain(committed)) != same(withoutToolchain(rebuilt))) {
     tally('pack').values = true;
     valueKeys.add('unattributed manifest values');
@@ -2418,6 +2436,9 @@ PackChangeReport packChangeReport(
 
   final lines = <String>[];
   for (final MapEntry(key: label, value: t) in tallies.entries) {
+    if (t.floorOrder case final order?) {
+      lines.add('$label: floor order changed ($order)');
+    }
     if (t.files == 0 && !t.values) continue;
     if (label == 'pack' || mapIds.contains(label)) {
       lines.add('$label: manifest values changed');
@@ -2681,6 +2702,183 @@ void validateMetadataPreservation(
   }
 }
 
+List<Map<String, dynamic>> _mapRecords(Map<String, dynamic> document) =>
+    (document['maps'] as List).cast<Map<String, dynamic>>();
+
+List<Map<String, dynamic>> _floorRecords(Map<String, dynamic> map) =>
+    (map['floors'] as List).cast<Map<String, dynamic>>();
+
+List<Map<String, dynamic>> _floorsInReviewedOrder(
+  Map<String, dynamic> map,
+  List<String>? order,
+) {
+  final floors = _floorRecords(map);
+  final byId = {for (final floor in floors) floor['id'] as String: floor};
+  if (order == null ||
+      byId.length != floors.length ||
+      order.length != floors.length ||
+      order.toSet().length != order.length ||
+      !order.every(byId.containsKey)) {
+    throw FormatException(
+      '${map['id']}: reviewed floor IDs must be an exact permutation',
+    );
+  }
+  return [for (final id in order) byId[id]!];
+}
+
+/// Applies reviewed identities to generation-owned calibration records.
+///
+/// The order must name every map and floor exactly once. Additive tile-backed
+/// overlays keep the relative paint order used by the runtime.
+Map<String, dynamic> reorderFloorCalibration(
+  Map<String, dynamic> baseline,
+  Map<String, List<String>> reviewedFloorOrder,
+) {
+  final maps = <Map<String, dynamic>>[];
+  final unreviewed = reviewedFloorOrder.keys.toSet();
+  for (final map in _mapRecords(baseline)) {
+    final id = map['id'] as String;
+    if (!unreviewed.remove(id)) {
+      throw FormatException(
+        '$id: reviewed floor order is missing or the map is duplicated',
+      );
+    }
+    final floors = _floorRecords(map);
+    final ordered = _floorsInReviewedOrder(map, reviewedFloorOrder[id]);
+    final base = floors.singleWhere((floor) => floor['base'] == true);
+    if (base['exclusive'] != true) {
+      Iterable<Object?> paintStack(List<Map<String, dynamic>> records) sync* {
+        for (final floor in rasterPaintOrder(
+          records,
+          records.indexOf(base),
+          exclusive: false,
+        )) {
+          if (floor != base &&
+              (map['kind'] == 'raster' || _isRasterOverlay(floor))) {
+            yield floor['id'];
+          }
+        }
+      }
+
+      if (canonicalJson(paintStack(floors).toList()) !=
+          canonicalJson(paintStack(ordered).toList())) {
+        throw FormatException(
+          '$id: reviewed floor order would change additive raster paint order',
+        );
+      }
+    }
+    maps.add({...map, 'floors': ordered});
+  }
+  if (unreviewed.isNotEmpty) {
+    throw FormatException(
+      'Unknown maps in reviewed floor order: ${unreviewed.join(', ')}',
+    );
+  }
+  return {...baseline, 'maps': maps};
+}
+
+/// Rejects candidate drift outside a reviewed floor permutation.
+///
+/// [expectedSources] is the verified baseline index with only the calibration
+/// hash rebound. The rebuilt candidate must already have passed normal binary,
+/// source and manifest validation.
+void validateFloorOrderPreservation(
+  Map<String, dynamic> baseline,
+  Map<String, dynamic> candidate, {
+  required Map<String, List<String>> reviewedFloorOrder,
+  required Map<String, dynamic> expectedSources,
+  required Map<String, dynamic> candidateSources,
+}) {
+  final expectedRecords = FrozenInputs._sourceList(expectedSources);
+  final actualRecords = FrozenInputs._sourceList(candidateSources);
+  if (!_sameMapExcept(expectedSources, candidateSources, const {'sources'}) ||
+      expectedRecords.length != actualRecords.length) {
+    throw const FormatException(
+      'Floor-order rebuild changed the source index inventory or fields',
+    );
+  }
+  for (final (index, record) in expectedRecords.indexed) {
+    if (canonicalJson(record) != canonicalJson(actualRecords[index])) {
+      throw FormatException(
+        'Floor-order rebuild changed a source record: ${record['path']}',
+      );
+    }
+  }
+  final sourceHash = _hash(utf8.encode(canonicalJson(expectedSources)));
+  final calibrationHash = expectedRecords.singleWhere(
+    (record) => record['path'] == 'calibration.json',
+  )['sha256'];
+  if (candidate['sourceGeneration'] != sourceHash) {
+    throw const FormatException('Floor-order rebuild changed sourceGeneration');
+  }
+  if (!_sameMapExcept(baseline, candidate, const {
+    'maps',
+    'outputs',
+    'sourceGeneration',
+    'toolchain',
+  })) {
+    throw const FormatException(
+      'Floor-order rebuild changed manifest settings',
+    );
+  }
+
+  final before = _mapRecords(baseline);
+  final after = _mapRecords(candidate);
+  if (before.length != after.length) {
+    throw const FormatException(
+      'Floor-order rebuild changed the map inventory',
+    );
+  }
+  for (final (index, map) in before.indexed) {
+    final id = map['id'] as String;
+    final rebuilt = after[index];
+    if (!_sameMapExcept(map, rebuilt, const {'floors'})) {
+      throw FormatException(
+        '$id: floor-order rebuild changed preserved map data',
+      );
+    }
+    final expected = _floorsInReviewedOrder(map, reviewedFloorOrder[id]);
+    final actual = _floorRecords(rebuilt);
+    if (expected.length != actual.length) {
+      throw FormatException(
+        '$id: floor-order rebuild changed the floor inventory',
+      );
+    }
+    for (final (floorIndex, floor) in expected.indexed) {
+      if (canonicalJson(floor) != canonicalJson(actual[floorIndex])) {
+        throw FormatException(
+          '$id ${floor['id']}: floor-order rebuild changed a floor record or its position',
+        );
+      }
+    }
+  }
+
+  final beforeOutputs = (baseline['outputs'] as List)
+      .cast<Map<String, dynamic>>();
+  final afterOutputs = (candidate['outputs'] as List)
+      .cast<Map<String, dynamic>>();
+  if (beforeOutputs.length != afterOutputs.length) {
+    throw const FormatException(
+      'Floor-order rebuild changed the output inventory',
+    );
+  }
+  for (final (index, output) in beforeOutputs.indexed) {
+    final path = output['path'] as String;
+    final expectedHash = switch (path) {
+      'evidence/calibration.json' => calibrationHash,
+      'evidence/sources.json' => sourceHash,
+      _ => output['sha256'],
+    };
+    final actual = afterOutputs[index];
+    if (actual['sha256'] != expectedHash ||
+        !_sameMapExcept(output, actual, const {'sha256'})) {
+      throw FormatException(
+        'Floor-order rebuild changed a preserved output or hash: $path',
+      );
+    }
+  }
+}
+
 /// Rebuilds the active generation of [packs] into [candidate] from the
 /// generation's own carried inputs, and returns the verified committed
 /// generation with the rebuilt manifest.
@@ -2692,11 +2890,28 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
   Directory candidate, {
   required Map<String, String> toolchain,
   VectorEncoder encode = _encodeVector,
+  Map<String, List<String>>? reviewedFloorOrder,
 }) async {
   final committed = await verifyCommittedGeneration(packs);
   var frozen = await FrozenInputs.fromGeneration(committed.directory);
   var context = await MapBuildContext.fromGeneration(committed);
-  if (committed.manifest['preparationVersion'] == 4) {
+  if (reviewedFloorOrder != null) {
+    if (committed.manifest['preparationVersion'] != preparedPackVersion) {
+      throw const FormatException(
+        'Floor-order rebuild requires the current pack format; run the default rebuild first',
+      );
+    }
+    final calibration = reorderFloorCalibration(
+      context.calibration,
+      reviewedFloorOrder,
+    );
+    frozen = frozen._withCalibration(utf8.encode(canonicalJson(calibration)));
+    context = MapBuildContext.reviewed(
+      calibration: calibration,
+      sourceLock: context.sourceLock,
+      noticeBytes: context.noticeBytes,
+    );
+  } else if (committed.manifest['preparationVersion'] == 4) {
     final calibration = jsonDecode(
       await frozen.text('calibration.json'),
     ) as Map<String, dynamic>;
@@ -2714,7 +2929,7 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
       }
     }
     if (changed) {
-      frozen = frozen._withMigratedCalibration(
+      frozen = frozen._withCalibration(
         Uint8List.fromList(utf8.encode(canonicalJson(calibration))),
       );
       context = MapBuildContext.reviewed(
@@ -2731,6 +2946,15 @@ Future<(CommittedGeneration, Map<String, dynamic>)> _rebuildActive(
     toolchain: toolchain,
     encode: encode,
   );
+  if (reviewedFloorOrder != null) {
+    validateFloorOrderPreservation(
+      committed.manifest,
+      rebuilt,
+      reviewedFloorOrder: reviewedFloorOrder,
+      expectedSources: frozen.index,
+      candidateSources: await _readJson(candidate, 'evidence/sources.json'),
+    );
+  }
   return (committed, rebuilt);
 }
 
@@ -3381,11 +3605,11 @@ String _refreshStamp(DateTime moment) {
 ///
 /// The publication transaction rechecks the committed baseline immediately
 /// before promotion and reports the actual pointer, pubspec, pruning and
-/// candidate-cleanup state after an interruption. When [metadataInputs] is
-/// omitted, the committed generation's inputs are rebuilt as usual. When
-/// supplied, only its six replacement metadata sources may differ from the
-/// verified baseline. [encode] replaces the vector encoder of the rebuild only;
-/// validation always uses the real one.
+/// candidate-cleanup state after an interruption. By default, the committed
+/// generation's inputs are rebuilt as usual. With [metadataInputs] only the
+/// six replacement metadata sources may differ. With [reviewedFloorOrder]
+/// only the frozen floor order and its hashes may differ. These modes cannot
+/// be combined. [encode] replaces the build encoder, not the validator's.
 Future<MapPackRefresh> refreshActive(
   Directory packs,
   File pubspec, {
@@ -3395,8 +3619,14 @@ Future<MapPackRefresh> refreshActive(
   DateTime? now,
   VectorEncoder? encode,
   FrozenInputs? metadataInputs,
+  Map<String, List<String>>? reviewedFloorOrder,
   void Function(String line)? log,
 }) async {
+  if (metadataInputs != null && reviewedFloorOrder != null) {
+    throw const FormatException(
+      'Floor-order rebuild cannot be combined with metadata renewal',
+    );
+  }
   final void Function(String) say = log ?? stdout.writeln;
   final root = requireRepoRelativePackRoot(assetRoot);
   await requireNoInterruptedPromotion(packs);
@@ -3414,6 +3644,7 @@ Future<MapPackRefresh> refreshActive(
         candidate,
         toolchain: toolchain,
         encode: encode ?? _encodeVector,
+        reviewedFloorOrder: reviewedFloorOrder,
       );
     } else {
       committed = await verifyCommittedGeneration(packs);
@@ -3433,15 +3664,17 @@ Future<MapPackRefresh> refreshActive(
     }
     final report = packChangeReport(committed.manifest, rebuilt);
     _reportDetails(report).forEach(say);
-    say(
-      report.changed
-          ? metadataInputs == null
-                ? 'Artwork changed: the owner must check the maps listed above '
-                      'in the app before merge.'
-                : 'Metadata changed: the owner must check the maps listed '
-                      'above in the app before merge.'
-          : 'Only the toolchain record changed: no owner check is needed.',
-    );
+    say(switch ((
+      report.changed,
+      reviewedFloorOrder != null,
+      metadataInputs != null,
+    )) {
+      (false, _, _) =>
+        'Only the toolchain record changed: no owner check is needed.',
+      (true, true, _) => 'Floor order changed: the owner must check the maps listed above in the app before merge.',
+      (true, _, true) => 'Metadata changed: the owner must check the maps listed above in the app before merge.',
+      _ => 'Artwork changed: the owner must check the maps listed above in the app before merge.',
+    });
     return await runMapPackPublicationTransaction(
       candidate: candidate,
       packs: packs,

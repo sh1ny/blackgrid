@@ -256,9 +256,9 @@ Map<String, Object?> calibrationFor(String sourceKey) {
           'nativeTilePixels': 256,
         },
         'floors': [
+          floor('Technical_Level', tilePath: labsTiles[2]),
           floor('First_Level', base: true, tilePath: labsTiles[0]),
           floor('Second_Level', tilePath: labsTiles[1]),
-          floor('Technical_Level', tilePath: labsTiles[2]),
         ],
       };
     case 'icebreaker':
