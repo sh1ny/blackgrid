@@ -147,8 +147,11 @@ void main() {
       ];
       final policy = MapFloorPolicy(
         mapId: 'synthetic',
-        base: MapFloor(id: 'Base', label: 'Base'),
-        overlays: reverse ? floors.reversed : floors,
+        baseId: 'Base',
+        floors: [
+          MapFloor(id: 'Base', label: 'Base'),
+          ...(reverse ? floors.reversed : floors),
+        ],
       );
       expect(policy.supportsAutomaticHeight, isTrue);
       // A beats B's higher minimum, even when A's wider span is visited first.
@@ -174,9 +177,10 @@ void main() {
   test('exclusive selection resolves a known gap to base', () {
     final policy = MapFloorPolicy(
       mapId: 'synthetic',
-      base: MapFloor(id: 'Base', label: 'Base'),
+      baseId: 'Base',
       exclusive: true,
-      overlays: [
+      floors: [
+        MapFloor(id: 'Base', label: 'Base'),
         MapFloor(
           id: 'Lower',
           label: 'Lower',
@@ -201,6 +205,25 @@ void main() {
     ]);
   });
 
+  test('selecting the additive base resets overlays', () {
+    final map = PreparedMap.fromJson(
+      preparedMapMetadataFixture('customs'),
+      assetRoot: 'fixture/',
+    );
+    final policy = map.floorPolicy;
+    final shown = policy.reset().toggle('Second_Floor').toggle('Third_Floor');
+    expect(shown.selectOnly('Third_Floor').visibleLayerIds, [
+      'Ground_Level',
+      'First_Floor',
+      'Third_Floor',
+    ]);
+    expect(shown.selectOnly(policy.base.id).visibleLayerIds, [
+      'Ground_Level',
+      'First_Floor',
+    ]);
+    expect(shown.toggle(policy.base.id).selectedOverlayIds, isEmpty);
+  });
+
   test('invalid finite bands and structural floor identities reject', () {
     for (final value in [
       double.nan,
@@ -216,12 +239,11 @@ void main() {
     expect(
       () => MapFloorPolicy(
         mapId: 'thelab',
-        base: MapFloor(
-          id: 'base',
-          label: 'Base',
-          attachedLayerIds: ['attached'],
-        ),
-        overlays: [MapFloor(id: 'attached', label: 'Invalid')],
+        baseId: 'base',
+        floors: [
+          MapFloor(id: 'base', label: 'Base', attachedLayerIds: ['attached']),
+          MapFloor(id: 'attached', label: 'Invalid'),
+        ],
       ),
       throwsArgumentError,
     );

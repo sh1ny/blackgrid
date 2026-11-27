@@ -7,7 +7,7 @@
 | The floor rail sits under the picker | Choosing a floor | `test/ui/map_workspace_controls_test.dart` | map-controls: Choosing a floor | red |
 | The floor rail sits under the picker | An exclusive deck is chosen | `test/ui/map_floor_rail_test.dart` | a manual deck choice checks exactly one floor | red |
 | The floor rail sits under the picker | Multiple additive floors | `test/ui/map_floor_rail_test.dart` | checked overlays retain the base and show the ground divider | red |
-| The floor rail sits under the picker | Reset to the base | `test/maps/map_floors_test.dart` | selecting the additive base resets overlays | red |
+| The floor rail sits under the picker | Reset to the base | `test/maps/map_floors_test.dart` | selecting the additive base resets overlays | green |
 | The floor rail sits under the picker | Manual-only floors | `test/ui/map_floor_rail_test.dart` | multiple manual floors have no Auto switch | red |
 | The floor rail sits under the picker | One floor with Auto | `test/ui/map_floor_rail_test.dart` | a single Auto floor has no adjacent step | red |
 | The floor rail sits under the picker | Map with no floors | `test/ui/map_workspace_controls_test.dart` | map-controls: Map with no floors | green |
@@ -39,7 +39,7 @@
 | Marker selection is cleared consistently | Escape leaves the floor rail without clearing selection | `test/maps/map_viewport_test.dart` | Escape repeats after leaving the rail do not dismiss a marker | red |
 | Existing offline and metadata-only workflows remain independent | Pending source and calibration changes | `test/maps/map_preparation_qualification_test.dart` | default rebuild ignores the pending reviewed floor order | red |
 | Existing offline and metadata-only workflows remain independent | Metadata-only preservation fails | `test/maps/map_generation_inputs_test.dart` | metadata preservation rejects forbidden artifact differences | green |
-| Floor arrays preserve the reviewed bottom-to-top order | Base in the middle of a deck stack | `test/maps/map_scene_test.dart` | prepared array keeps a middle base without changing initial visibility | red |
+| Floor arrays preserve the reviewed bottom-to-top order | Base in the middle of a deck stack | `test/maps/map_scene_test.dart` | prepared array keeps a middle base without changing initial visibility | green |
 | Floor arrays preserve the reviewed bottom-to-top order | Floor order is changed after preparation | `test/maps/map_preparation_qualification_test.dart` | validator rejects a floor array reordered outside its calibration | red |
 | Floor arrays preserve the reviewed bottom-to-top order | Reordering does not change artwork or classification | `test/maps/map_preparation_qualification_test.dart`, `test/maps/map_scene_test.dart` | explicit floor-order rebuild preserves frozen facts; reordered Labs tiles keep the incumbent paint stack | red |
 | An explicit offline rebuild may update only floor order | A reviewed floor permutation is promoted | `test/maps/map_preparation_qualification_test.dart` | explicit floor-order rebuild preserves frozen facts | red |
@@ -49,9 +49,9 @@
 
 ## 1. Floor policy and paint order
 
-- [ ] 1.1 Record ADR-0052 and index it in `openspec/architecture.md` (C1). Document navigation array authority, the explicit rebuild guard, separate base and classification rules, and the unchanged default rebuild. Verify the index links to an accepted ADR with the scoped decision.
-- [ ] 1.2 Write loader and scene regressions for the middle base and overlapping coloured Labs tiles. Compare incumbent and reordered records at the actual paint boundary. Write lowest-layer selection tests for additive reset and exclusive or single-destination selection, including the controller's per-map Auto override and one final visibility state. Confirm the changed-behavior tests are red before code.
-- [ ] 1.3 Preserve the manifest sequence in `MapFloorPolicy` and the loader. Keep the base flag, layer ownership, extent tie-break and visibility. Add a single controller command for exclusive activation and stepping. Preserve the faded base and tile stacking under D2; expose the shared relative-order rule to the pack tool. Update existing policy and loader assertions to the intended output for the incumbent manifest. Verify `test/maps/map_floors_test.dart`, `test/maps/map_controller_test.dart` and `test/maps/map_scene_test.dart`.
+- [x] 1.1 Record ADR-0052 and index it in `openspec/architecture.md` (C1). Document navigation array authority, the explicit rebuild guard, separate base and classification rules, and the unchanged default rebuild. Verify the index links to an accepted ADR with the scoped decision.
+- [x] 1.2 Write loader and scene regressions for the middle base and overlapping coloured Labs tiles. Compare incumbent and reordered records at the actual paint boundary. Write lowest-layer selection tests for additive reset and exclusive or single-destination selection, including the controller's per-map Auto override and one final visibility state. Confirm the changed-behavior tests are red before code.
+- [x] 1.3 Preserve the manifest sequence in `MapFloorPolicy` and the loader. Keep the base flag, layer ownership, extent tie-break and visibility. Add a single controller command for exclusive activation and stepping. Preserve the faded base and tile stacking under D2; expose the shared relative-order rule to the pack tool. Update existing policy and loader assertions to the intended output for the incumbent manifest. Verify `test/maps/map_floors_test.dart`, `test/maps/map_controller_test.dart` and `test/maps/map_scene_test.dart`.
 
 ## 2. Floor rail and focus
 

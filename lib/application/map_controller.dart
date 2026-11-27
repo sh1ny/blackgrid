@@ -58,6 +58,7 @@ class MapController extends ChangeNotifier {
   String? _selectedMarkerId;
   Set<String> _raidHighlights = const {};
   GamePoint? _playerPosition;
+  MapFloor? _playerFloor;
   double? _forwardX;
   double? _forwardZ;
   final Map<String, bool> _automaticFloors = {};
@@ -102,6 +103,10 @@ class MapController extends ChangeNotifier {
   String get questName => _questName;
   String get questTrader => _questTrader;
   GamePoint? get playerPosition => _playerPosition;
+
+  /// The active map's resolved player floor, independent of Auto and selection.
+  MapFloor? get playerFloor => _playerFloor;
+
   bool get automaticFloorSupported =>
       _floorSelection?.policy.supportsAutomaticHeight ?? false;
   bool get automaticFloorFollowing =>
@@ -212,6 +217,7 @@ class MapController extends ChangeNotifier {
       return;
     }
     _floorSelection = _floors[map.id] ?? map.floorPolicy.reset();
+    _playerFloor = map.floorPolicy.floorForPosition(_playerPosition);
     _floors[map.id] = _floorSelection!;
     final savedView = _views[map.id];
     _transform =
@@ -402,6 +408,7 @@ class MapController extends ChangeNotifier {
 
   void _clearEvidence() {
     _playerPosition = null;
+    _playerFloor = null;
     _forwardX = null;
     _forwardZ = null;
     _raidHighlights = const {};
@@ -433,6 +440,7 @@ class MapController extends ChangeNotifier {
       return;
     }
     _playerPosition = position;
+    _playerFloor = _floorSelection?.policy.floorForPosition(position);
     _forwardX = forwardX;
     _forwardZ = forwardZ;
     _followPlayerFloor();
@@ -546,9 +554,23 @@ class MapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Selects one destination, keeping the base drawn on additive maps.
+  ///
+  /// Like a manual toggle, this stops Auto on the selected map only.
+  void showOnlyFloor(String floorId) {
+    final selection = _floorSelection;
+    if (_disposed || selection == null) return;
+    final next = selection.selectOnly(floorId);
+    _automaticFloors[_selectedMapId!] = false;
+    _setFloors(next);
+    notifyListeners();
+  }
+
   void _followPlayerFloor() {
-    if (!automaticFloorFollowing) return;
-    _setFloors(_floorSelection!.followPosition(_playerPosition));
+    final floor = _playerFloor;
+    if (automaticFloorFollowing && floor != null) {
+      _setFloors(_floorSelection!.selectOnly(floor.id));
+    }
   }
 
   void _setFloors(MapFloorSelection value) {

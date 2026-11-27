@@ -239,10 +239,7 @@ void main() {
       expect(map.displayFrame.sceneExtent.width, frame['width']);
       expect(map.displayFrame.sceneExtent.height, frame['height']);
       expect(map.floorPolicy.floors.map((floor) => floor.id), [
-        for (final floor in authored['floors'] as List)
-          if (floor['base'] == true) floor['id'],
-        for (final floor in authored['floors'] as List)
-          if (floor['base'] != true) floor['id'],
+        for (final floor in authored['floors'] as List) floor['id'],
       ]);
       expect(map.categories, {
         'QuestItems',
@@ -627,7 +624,7 @@ void main() {
   }
 
   // #130: raster overlay tiles stay over the faded base, at full strength,
-  // even when the base's tiles come last in the pack's tile order.
+  // even when the base is last in the prepared floor array.
   for (final baseLast in [false, true]) {
     test('the-lab: raster overlay tiles stay over the faded base'
         '${baseLast ? ' listed last' : ''}', () async {
@@ -640,9 +637,7 @@ void main() {
         expect(floors.last['base'], isTrue);
       }
       final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
-      final base = map.floorPolicy.base.id;
       expect(map.components, isEmpty, reason: 'only tiles draw on Labs');
-      expect(map.tiles.last.floorId == base, baseLast);
       final scenes = _FloorFadeScenes(map);
       addTearDown(scenes.dispose);
       for (final floor in map.floorPolicy.overlays) {
@@ -779,6 +774,74 @@ void main() {
     expect(owner.pictureApproximateBytes, greaterThan(0));
     expect(owner.imageDecodedBytes, 0);
     expect(owner.accountedBytes, lessThanOrEqualTo(owner.maxBytes));
+  });
+
+  test(
+    'prepared array keeps a middle base without changing initial visibility',
+    () {
+      final raw = _rasterMap();
+      final floors = (raw['floors'] as List).cast<Map<String, dynamic>>();
+      final lower = <String, dynamic>{
+        ...floors.last,
+        'id': 'Lower',
+        'artwork': {'tiles': <Object>[]},
+      };
+      raw['floors'] = [lower, ...floors];
+      final policy = PreparedMap.fromJson(
+        raw,
+        assetRoot: 'fixture/',
+      ).floorPolicy;
+      expect(policy.floors.map((floor) => floor.id), [
+        'Lower',
+        'Base',
+        'Upper',
+      ]);
+      expect(policy.base.id, 'Base');
+      expect(policy.reset().visibleLayerIds, ['Base']);
+    },
+  );
+
+  test('reordered Labs tiles keep the incumbent paint stack', () async {
+    final raw = _rasterMap();
+    final floors = (raw['floors'] as List).cast<Map<String, dynamic>>();
+    for (final floor in floors) {
+      floor['exclusive'] = false;
+    }
+    final technical = <String, dynamic>{
+      ...floors.last,
+      'id': 'Technical',
+      'artwork': {
+        'tiles': [
+          {'x': 0, 'y': 0, 'empty': false, 'path': 'technical-0.png'},
+        ],
+      },
+    };
+    final owner = NativeMapResourceOwner(
+      PreparedMapPackLoader(
+        loadBytes: (path) async =>
+            _png(red: path.contains('technical') ? 200 : 100),
+      ),
+    );
+    addTearDown(owner.dispose);
+    for (final order in [
+      [...floors, technical],
+      [technical, ...floors],
+    ]) {
+      raw['floors'] = order;
+      final map = PreparedMap.fromJson(raw, assetRoot: 'fixture/');
+      final scene = (await owner.loadScene(
+        map,
+        map.floorPolicy.reset().select('Upper').select('Technical'),
+        MapViewTransform(),
+        const ui.Size(32, 32),
+        isCurrent: () => true,
+      ))!;
+      try {
+        expect(_rgba(await _render(scene, 32), 32, 0, 0), [200, 0, 0, 255]);
+      } finally {
+        scene.dispose();
+      }
+    }
   });
 
   test('raster demand decodes only visible active floors and evicts unleased tiles', () async {
