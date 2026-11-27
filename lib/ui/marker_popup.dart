@@ -134,6 +134,8 @@ class MarkerPopup extends StatelessWidget {
       LogicalKeyboardKey.arrowUp,
       LogicalKeyboardKey.arrowDown,
       LogicalKeyboardKey.home,
+      LogicalKeyboardKey.pageUp,
+      LogicalKeyboardKey.pageDown,
       LogicalKeyboardKey.add,
       LogicalKeyboardKey.equal,
       LogicalKeyboardKey.numpadAdd,

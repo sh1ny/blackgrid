@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
@@ -9,6 +10,7 @@ import '../application/app_services.dart';
 import '../application/map_controller.dart';
 import '../application/map_session_controller.dart';
 import '../domain/map_coordinates.dart';
+import '../domain/map_floors.dart';
 import '../domain/map_marker_query.dart';
 import '../domain/map_place_labels.dart';
 import '../domain/map_zone_style.dart';
@@ -18,6 +20,7 @@ import '../maps/map_marker_icons.dart';
 import '../maps/map_palette.dart';
 import '../maps/marker_presentation.dart';
 import '../maps/prepared_map.dart';
+import 'map_floor_rail.dart';
 import 'marker_popup.dart';
 import 'pin_editor.dart';
 import 'labels.dart';
@@ -39,10 +42,13 @@ const _controlHelp = [
   ('Mouse wheel or + / - outside the bubble', 'Zoom in or out'),
   ('Home', 'Fit the map to the view'),
   ('C', 'Center on your position'),
+  ('Page Up / Page Down', 'Step one floor'),
+  ('A · Auto', 'Toggle Auto floor following'),
+  ('F · Floors', 'Focus the floor rail'),
   ('Enter', 'Browse markers'),
   ('N or right-click', 'Add a pin'),
   ('Delete', 'Remove the selected pin'),
-  ('Escape', 'Clear the selection'),
+  ('Escape', 'Leave the floor rail or clear the map selection'),
   ('Hover over an extract', 'Show its area'),
 ];
 
@@ -55,9 +61,6 @@ String _creditText(PreparedMap map) => switch (map.attribution['author']) {
   final String author when author.isNotEmpty => 'Map creator: $author',
   _ => map.name,
 };
-
-/// The id of the floor control's Auto segment.
-const _autoFloor = 'auto';
 
 /// The map ground stays dark in both rooms (DESIGN.md X6), so controls drawn on
 /// it take the dark room's roles, as the map's own text does.
@@ -104,6 +107,10 @@ class _MapWorkspaceState extends State<MapWorkspace> {
   String? _selectedPin;
   String? _selectedPinMapId;
   final _focus = FocusNode(debugLabel: 'Native map workspace');
+  final _rail = GlobalKey<MapFloorRailState>();
+  bool _railCollapsed = false;
+  Timer? _floorToastTimer;
+  (String mapId, String message)? _floorToast;
   MapController get maps => widget.services.maps;
 
   @override
@@ -129,6 +136,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     services.settings.removeListener(_syncQuestFilter);
     services.manualProgress.detach();
     _focus.dispose();
+    _floorToastTimer?.cancel();
     super.dispose();
   }
 
@@ -412,6 +420,9 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
+    if (_focus.hasPrimaryFocus && _floorKey(event) == KeyEventResult.handled) {
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.arrowLeft) {
       maps.panBy(40, 0);
     } else if (key == LogicalKeyboardKey.arrowRight) {
@@ -448,6 +459,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         }
       }
     } else if (key == LogicalKeyboardKey.escape) {
+      if (event is KeyRepeatEvent) return KeyEventResult.handled;
       maps.setSelectedMarker(null);
       setState(() {
         _selectedPin = null;
@@ -483,17 +495,70 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     }
   }
 
-  void _setFloorSelection(Set<String> next, Set<String> current) {
-    for (final id in {
-      ...next.difference(current),
-      ...current.difference(next),
-    }) {
-      if (id == _autoFloor) {
-        maps.setAutomaticFloorFollowing(!maps.automaticFloorFollowing);
-      } else {
-        maps.toggleFloor(id);
-      }
+  MapFloorSelection? get _railSelection {
+    final selection = maps.floorSelection;
+    if (selection == null || maps.error != null || maps.unavailable) {
+      return null;
     }
+    final policy = selection.policy;
+    return policy.floors.length > 1 || policy.supportsAutomaticHeight
+        ? selection
+        : null;
+  }
+
+  KeyEventResult _floorKey(KeyEvent event) {
+    // Flutter otherwise invokes the route's default page-scroll action.
+    if (_railSelection == null) {
+      return switch (event.logicalKey) {
+        LogicalKeyboardKey.pageUp ||
+        LogicalKeyboardKey.pageDown => KeyEventResult.handled,
+        _ => KeyEventResult.ignored,
+      };
+    }
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.pageUp || LogicalKeyboardKey.pageDown:
+        if (event is KeyDownEvent || event is KeyRepeatEvent) {
+          _stepFloor(event.logicalKey == LogicalKeyboardKey.pageUp ? 1 : -1);
+        }
+      case LogicalKeyboardKey.keyA:
+        if (!maps.automaticFloorSupported) return KeyEventResult.ignored;
+        if (event is KeyDownEvent) _toggleAutomaticFloor();
+      case LogicalKeyboardKey.keyF:
+        if (event is KeyDownEvent) _rail.currentState?.focusCurrent();
+      default:
+        return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
+
+  void _toggleAutomaticFloor() =>
+      maps.setAutomaticFloorFollowing(!maps.automaticFloorFollowing);
+
+  void _stepFloor(int by) {
+    final selection = _railSelection;
+    if (selection == null) return;
+    final floors = selection.policy.floors;
+    final next = selection.currentIndex + by;
+    if (next < 0 || next >= floors.length) return;
+    final floor = floors[next];
+    maps.showOnlyFloor(floor.id);
+    _rail.currentState?.revealStep(next);
+    _floorToastTimer?.cancel();
+    setState(
+      () => _floorToast = (
+        selection.policy.mapId,
+        'Floor: ${floor.label}, ${next + 1} of ${floors.length}',
+      ),
+    );
+    _floorToastTimer = Timer(const Duration(milliseconds: 2600), () {
+      setState(() => _floorToast = null);
+    });
+  }
+
+  KeyEventResult _railKey(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.escape) return _floorKey(event);
+    if (event is KeyDownEvent) _focus.requestFocus();
+    return KeyEventResult.handled;
   }
 
   void _closePin() {
@@ -559,40 +624,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         iconAlignment: IconAlignment.end,
         label: Text(mapLabel(current)),
       ),
-    );
-  }
-
-  /// Auto, when the map follows height, then each floor of the map.
-  Widget? _floorControl(PreparedMap? map) {
-    if (map == null || maps.error != null || maps.unavailable) return null;
-    final floors = map.floorPolicy.floors;
-    final selection = maps.floorSelection;
-    final auto = maps.automaticFloorSupported;
-    if (!auto && floors.isEmpty) return null;
-    final selected = {
-      if (auto && maps.automaticFloorFollowing) _autoFloor,
-      for (final floor in floors)
-        if (selection?.isLayerVisible(floor.id) ?? false) floor.id,
-    };
-    return SegmentedButton<String>(
-      key: const Key('map-floor-control'),
-      multiSelectionEnabled: true,
-      emptySelectionAllowed: true,
-      showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        foregroundColor: _overlayInk.inkSecondary,
-        selectedForegroundColor: _overlayInk.ink,
-        backgroundColor: _overlayInk.raised,
-        selectedBackgroundColor: _overlayInk.segmentOn,
-        side: BorderSide(color: _overlayInk.hairlineStrong),
-      ),
-      segments: [
-        if (auto) const ButtonSegment(value: _autoFloor, label: Text('Auto')),
-        for (final floor in floors)
-          ButtonSegment(value: floor.id, label: Text(floor.label)),
-      ],
-      selected: selected,
-      onSelectionChanged: (next) => _setFloorSelection(next, selected),
     );
   }
 
@@ -751,9 +782,31 @@ class _MapWorkspaceState extends State<MapWorkspace> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) maps.updateViewport(size);
           });
-          // The action stack takes the right edge; the rest keeps clear of it.
-          final clearWidth = math.max(0.0, size.width - 2 * _overlayInset - 48);
-          final floors = _floorControl(map);
+          final selection = _railSelection;
+          final rail = selection == null
+              ? null
+              : LayoutId(
+                  id: _MapOverlay.rail,
+                  child: MapFloorRail(
+                    key: _rail,
+                    selection: selection,
+                    playerFloor: maps.playerFloor,
+                    autoFollowing: maps.automaticFloorFollowing,
+                    collapsed: _railCollapsed,
+                    onActivate: selection.policy.exclusive
+                        ? maps.showOnlyFloor
+                        : maps.toggleFloor,
+                    onStep: _stepFloor,
+                    onToggleAuto: _toggleAutomaticFloor,
+                    onCollapseChanged: (value) =>
+                        setState(() => _railCollapsed = value),
+                    onFocusChanged: (_) {
+                      if (mounted) setState(() {});
+                    },
+                    onKeyEvent: _railKey,
+                  ),
+                );
+          final railFocused = _rail.currentState?.hasFocus ?? false;
           return DecoratedBox(
             decoration: BoxDecoration(
               color: context.blackgrid.mapGround,
@@ -766,199 +819,190 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                   Focus(
                     focusNode: _focus,
                     onKeyEvent: (_, event) => _key(event),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Listener(
-                          onPointerSignal: (event) {
-                            if (event is PointerScrollEvent && map != null) {
-                              GestureBinding.instance.pointerSignalResolver
-                                  .register(event, (_) {
-                                    maps.zoomAt(
+                    child: Listener(
+                      onPointerSignal: (event) {
+                        if (event is PointerScrollEvent && map != null) {
+                          GestureBinding.instance.pointerSignalResolver
+                              .register(event, (_) {
+                                maps.zoomAt(
+                                  ViewportPoint(
+                                    event.localPosition.dx,
+                                    event.localPosition.dy,
+                                  ),
+                                  event.scrollDelta.dy < 0 ? 1.15 : 1 / 1.15,
+                                );
+                              });
+                        }
+                      },
+                      child: MouseRegion(
+                        onHover: _hover,
+                        onExit: (_) => _leave(),
+                        child: GestureDetector(
+                          key: const Key('native-map-viewport'),
+                          behavior: HitTestBehavior.opaque,
+                          onPanUpdate: map == null
+                              ? null
+                              : (event) =>
+                                    maps.panBy(event.delta.dx, event.delta.dy),
+                          onTapUp: (event) => _select(
+                            ViewportPoint(
+                              event.localPosition.dx,
+                              event.localPosition.dy,
+                            ),
+                          ),
+                          onSecondaryTapUp: map == null
+                              ? null
+                              : (event) {
+                                  if (!widget.services.settings.busy) {
+                                    _createPinAt(
                                       ViewportPoint(
                                         event.localPosition.dx,
                                         event.localPosition.dy,
                                       ),
-                                      event.scrollDelta.dy < 0
-                                          ? 1.15
-                                          : 1 / 1.15,
                                     );
-                                  });
-                            }
-                          },
-                          child: MouseRegion(
-                            onHover: _hover,
-                            onExit: (_) => _leave(),
-                            child: GestureDetector(
-                              key: const Key('native-map-viewport'),
-                              behavior: HitTestBehavior.opaque,
-                              onPanUpdate: map == null
-                                  ? null
-                                  : (event) => maps.panBy(
-                                      event.delta.dx,
-                                      event.delta.dy,
-                                    ),
-                              onTapUp: (event) => _select(
-                                ViewportPoint(
-                                  event.localPosition.dx,
-                                  event.localPosition.dy,
+                                  }
+                                },
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CustomPaint(
+                                painter: _MapPainter(
+                                  maps,
+                                  widget.services.markerIcons,
+                                  pins,
+                                  showPins:
+                                      widget
+                                          .services
+                                          .settings
+                                          .settings
+                                          .markerFilters['CustomPins'] !=
+                                      false,
+                                  selectedMarker: selected?.id,
+                                  hoveredMarker: _liveHover,
+                                  selectedPin: selectedPin?.id,
+                                  selectMarker: _selectMarker,
+                                  selectPin: (id) {
+                                    _focus.requestFocus();
+                                    maps.setSelectedMarker(null);
+                                    setState(() {
+                                      _selectedPin = id;
+                                      _selectedPinMapId = maps.selectedMapId;
+                                    });
+                                  },
                                 ),
                               ),
-                              onSecondaryTapUp: map == null
-                                  ? null
-                                  : (event) {
-                                      if (!widget.services.settings.busy) {
-                                        _createPinAt(
-                                          ViewportPoint(
-                                            event.localPosition.dx,
-                                            event.localPosition.dy,
-                                          ),
-                                        );
-                                      }
-                                    },
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  CustomPaint(
-                                    painter: _MapPainter(
-                                      maps,
-                                      widget.services.markerIcons,
-                                      pins,
-                                      showPins:
-                                          widget
-                                              .services
-                                              .settings
-                                              .settings
-                                              .markerFilters['CustomPins'] !=
-                                          false,
-                                      selectedMarker: selected?.id,
-                                      hoveredMarker: _liveHover,
-                                      selectedPin: selectedPin?.id,
-                                      selectMarker: _selectMarker,
-                                      selectPin: (id) {
-                                        _focus.requestFocus();
-                                        maps.setSelectedMarker(null);
-                                        setState(() {
-                                          _selectedPin = id;
-                                          _selectedPinMapId =
-                                              maps.selectedMapId;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  if (maps.loading)
-                                    const Align(
-                                      alignment: Alignment.topCenter,
-                                      child: LinearProgressIndicator(),
-                                    ),
-                                  if (maps.error != null || maps.unavailable)
-                                    Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(24),
-                                        child: Text(
-                                          maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
-                                          textAlign: TextAlign.center,
-                                          // The map ground stays dark in
-                                          // both rooms (DESIGN.md X6), so
-                                          // text on it takes dark-room ink.
-                                          style: TextStyle(
-                                            color:
-                                                EmberColors.dark.inkSecondary,
-                                          ),
-                                        ),
+                              if (maps.loading)
+                                const Align(
+                                  alignment: Alignment.topCenter,
+                                  child: LinearProgressIndicator(),
+                                ),
+                              if (maps.error != null || maps.unavailable)
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Text(
+                                      maps.error ?? 'Artwork is not bundled for this map. Saved preferences and pins remain available.',
+                                      textAlign: TextAlign.center,
+                                      // The map ground stays dark in
+                                      // both rooms (DESIGN.md X6), so
+                                      // text on it takes dark-room ink.
+                                      style: TextStyle(
+                                        color: EmberColors.dark.inkSecondary,
                                       ),
                                     ),
-                                ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // These overlays are outside the canvas Focus and gesture
+                  // detector. Moving the keyed popup and rail changes their
+                  // paint and hit-test order without remounting them.
+                  CustomMultiChildLayout(
+                    delegate: _MapOverlayLayout(),
+                    children: [
+                      if (!railFocused && rail != null) rail,
+                      if (selectedProjection != null &&
+                          selectedProjection.viewportPoint.x >= 0 &&
+                          selectedProjection.viewportPoint.y >= 0 &&
+                          selectedProjection.viewportPoint.x < size.width &&
+                          selectedProjection.viewportPoint.y < size.height)
+                        LayoutId(
+                          id: _MapOverlay.popup,
+                          child: MarkerPopup(
+                            key: ValueKey(selectedProjection.marker.id),
+                            presentation: presentMarker(
+                              selectedProjection.marker,
+                              mapMarkers: maps.activeMarkers,
+                              activeMode: widget.services.catalog.mode,
+                              catalogSnapshot: widget.services.catalog.snapshot,
+                            ),
+                            anchor: Offset(
+                              selectedProjection.viewportPoint.x,
+                              selectedProjection.viewportPoint.y,
+                            ),
+                            onClose: _closeMarker,
+                          ),
+                        ),
+                      if (railFocused && rail != null) rail,
+                      LayoutId(
+                        id: _MapOverlay.picker,
+                        child: _mapPicker(context),
+                      ),
+                      LayoutId(
+                        id: _MapOverlay.actions,
+                        child: _actionStack(map, visible),
+                      ),
+                      if (selectedPin != null)
+                        LayoutId(
+                          id: _MapOverlay.pin,
+                          child: _pinBar(selectedPin),
+                        ),
+                      if (map != null)
+                        LayoutId(
+                          id: _MapOverlay.credit,
+                          child: Text(
+                            _creditText(map),
+                            key: const Key('map-attribution'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: EmberType.label.copyWith(
+                              color: _overlayInk.ink,
+                            ),
+                          ),
+                        ),
+                      if (_floorToast case (final mapId, final message)
+                          when selection?.policy.mapId == mapId)
+                        LayoutId(
+                          id: _MapOverlay.toast,
+                          child: IgnorePointer(
+                            child: Semantics(
+                              key: const Key('map-floor-toast'),
+                              container: true,
+                              liveRegion: true,
+                              child: DecoratedBox(
+                                decoration: _overlaySurface,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    message,
+                                    style: EmberType.control.copyWith(
+                                      color: _overlayInk.ink,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        if (selectedProjection != null &&
-                            selectedProjection.viewportPoint.x >= 0 &&
-                            selectedProjection.viewportPoint.y >= 0 &&
-                            selectedProjection.viewportPoint.x < size.width &&
-                            selectedProjection.viewportPoint.y < size.height)
-                          Builder(
-                            builder: (context) {
-                              final marker = selectedProjection.marker;
-                              final mode = widget.services.catalog.mode;
-                              final snapshot = widget.services.catalog.snapshot;
-                              final matchingSnapshot = snapshot?.mode == mode
-                                  ? snapshot
-                                  : null;
-                              final presentation = presentMarker(
-                                marker,
-                                mapMarkers: maps.activeMarkers,
-                                activeMode: mode,
-                                catalogSnapshot: matchingSnapshot,
-                              );
-                              return MarkerPopup(
-                                key: ValueKey(marker.id),
-                                presentation: presentation,
-                                anchor: Offset(
-                                  selectedProjection.viewportPoint.x,
-                                  selectedProjection.viewportPoint.y,
-                                ),
-                                onClose: _closeMarker,
-                              );
-                            },
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
-                  // The controls are siblings of the Focus and the gesture
-                  // detector, so a key or a click on them never reaches the
-                  // map's own handlers.
-                  Positioned(
-                    left: _overlayInset,
-                    top: _overlayInset,
-                    width: clearWidth,
-                    child: Row(
-                      children: [
-                        _mapPicker(context),
-                        if (floors != null) ...[
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: floors,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    right: _overlayInset,
-                    top: _overlayInset,
-                    child: _actionStack(map, visible),
-                  ),
-                  if (selectedPin != null)
-                    Positioned(
-                      left: _overlayInset,
-                      bottom: _overlayInset + 24,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: clearWidth),
-                        child: _pinBar(selectedPin),
-                      ),
-                    ),
-                  if (map != null)
-                    Positioned(
-                      left: _overlayInset,
-                      bottom: _overlayInset - 4,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: clearWidth),
-                        child: Text(
-                          _creditText(map),
-                          key: const Key('map-attribution'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: EmberType.label.copyWith(
-                            color: _overlayInk.ink,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -967,6 +1011,61 @@ class _MapWorkspaceState extends State<MapWorkspace> {
       );
     },
   );
+}
+
+enum _MapOverlay { picker, rail, popup, actions, pin, credit, toast }
+
+/// Places the rail between the measured picker and the bottom overlays.
+class _MapOverlayLayout extends MultiChildLayoutDelegate {
+  @override
+  void performLayout(Size size) {
+    final clearWidth = math.max(0.0, size.width - 2 * _overlayInset - 48);
+    final left = BoxConstraints(maxWidth: clearWidth);
+    final picker = layoutChild(_MapOverlay.picker, left);
+    positionChild(
+      _MapOverlay.picker,
+      const Offset(_overlayInset, _overlayInset),
+    );
+    final actions = layoutChild(_MapOverlay.actions, const BoxConstraints());
+    positionChild(
+      _MapOverlay.actions,
+      Offset(size.width - _overlayInset - actions.width, _overlayInset),
+    );
+    var bottom = size.height - _overlayInset;
+    if (hasChild(_MapOverlay.credit)) {
+      final credit = layoutChild(_MapOverlay.credit, left);
+      bottom = size.height - _overlayInset + 4 - credit.height;
+      positionChild(_MapOverlay.credit, Offset(_overlayInset, bottom));
+    }
+    if (hasChild(_MapOverlay.pin)) {
+      final pin = layoutChild(_MapOverlay.pin, left);
+      final pinTop = size.height - _overlayInset - 24 - pin.height;
+      positionChild(_MapOverlay.pin, Offset(_overlayInset, pinTop));
+      bottom = math.min(bottom, pinTop);
+    }
+    if (hasChild(_MapOverlay.rail)) {
+      final top = _overlayInset + picker.height + 6;
+      layoutChild(
+        _MapOverlay.rail,
+        left.copyWith(maxHeight: math.max(0.0, bottom - top - 8)),
+      );
+      positionChild(_MapOverlay.rail, Offset(_overlayInset, top));
+    }
+    if (hasChild(_MapOverlay.popup)) {
+      layoutChild(_MapOverlay.popup, BoxConstraints.tight(size));
+      positionChild(_MapOverlay.popup, Offset.zero);
+    }
+    if (hasChild(_MapOverlay.toast)) {
+      final toast = layoutChild(_MapOverlay.toast, left);
+      positionChild(
+        _MapOverlay.toast,
+        Offset((size.width - toast.width) / 2, bottom - toast.height - 8),
+      );
+    }
+  }
+
+  @override
+  bool shouldRelayout(_MapOverlayLayout oldDelegate) => false;
 }
 
 const _labelFontSize = 12.0;

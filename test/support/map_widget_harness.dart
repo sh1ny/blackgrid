@@ -56,6 +56,9 @@ class MapWidgetHarness {
     http.Client? client,
     Map<String, Object?> attribution = _fixtureAttribution,
     String? shorelineName,
+    int extraFloors = 0,
+    bool exclusiveLabs = false,
+    bool singleFloor = false,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -84,6 +87,9 @@ class MapWidgetHarness {
             extraLabels: extraLabels,
             attribution: attribution,
             name: id == 'shoreline' ? shorelineName : null,
+            extraFloors: extraFloors,
+            exclusive: id == 'thelab' && exclusiveLabs,
+            singleFloor: singleFloor,
           ),
       ],
     );
@@ -154,6 +160,9 @@ Map<String, Object?> _map(
   List<Map<String, Object?>> extraLabels = const [],
   Map<String, Object?> attribution = _fixtureAttribution,
   String? name,
+  int extraFloors = 0,
+  bool exclusive = false,
+  bool singleFloor = false,
 }) => {
   'id': id,
   'name': name ?? (id == 'thelab' ? 'Fixture Labs' : 'Fixture Shoreline'),
@@ -179,8 +188,26 @@ Map<String, Object?> _map(
   },
   'displayCrop': {'left': 0, 'top': 0, 'right': 256, 'bottom': 256},
   'floors': [
-    _floor('ground', 'Ground', base: true),
-    _floor('upper', 'Upper', base: false, automatic: id == 'thelab'),
+    if (extraFloors > 0 && !singleFloor)
+      _floor('lower', 'Lower', base: false, exclusive: exclusive),
+    _floor(
+      'ground',
+      'Ground',
+      base: true,
+      exclusive: exclusive,
+      automatic: id == 'thelab' && singleFloor,
+    ),
+    if (!singleFloor)
+      _floor(
+        'upper',
+        'Upper',
+        base: false,
+        exclusive: exclusive,
+        automatic: id == 'thelab',
+      ),
+    if (!singleFloor)
+      for (var i = 0; i < extraFloors; i++)
+        _floor('deck-$i', 'Deck ${i + 1}', base: false, exclusive: exclusive),
   ],
   'markers': [
     _marker(
@@ -192,15 +219,16 @@ Map<String, Object?> _map(
       128,
       128,
     ),
-    _marker(
-      'upper-exit',
-      'Upper exit',
-      'upper',
-      'extracts',
-      'PmcExtracts',
-      192,
-      192,
-    ),
+    if (!singleFloor)
+      _marker(
+        'upper-exit',
+        'Upper exit',
+        'upper',
+        'extracts',
+        'PmcExtracts',
+        192,
+        192,
+      ),
     {
       ..._marker(
         'ground-hazard',
@@ -229,12 +257,13 @@ Map<String, Object?> _floor(
   String label, {
   required bool base,
   bool automatic = false,
+  bool exclusive = false,
 }) => {
   'id': id,
   'label': label,
   'base': base,
   'manual': true,
-  'exclusive': false,
+  'exclusive': exclusive,
   'attachedIds': <String>[],
   'extents': [
     if (automatic)
@@ -288,6 +317,9 @@ Future<MapWidgetHarness> pumpMapFixture(
   bool autoDispose = true,
   Map<String, Object?> attribution = _fixtureAttribution,
   String? shorelineName,
+  int extraFloors = 0,
+  bool exclusiveLabs = false,
+  bool singleFloor = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -307,6 +339,9 @@ Future<MapWidgetHarness> pumpMapFixture(
       client: client,
       attribution: attribution,
       shorelineName: shorelineName,
+      extraFloors: extraFloors,
+      exclusiveLabs: exclusiveLabs,
+      singleFloor: singleFloor,
     ),
   ))!;
   if (autoDispose) addPumpedTearDown(tester, harness.dispose);
@@ -321,14 +356,8 @@ Future<void> settleMapFixture(
   MapWidgetHarness harness,
 ) async {
   await tester.pump();
-  final elapsed = Stopwatch()..start();
   while (harness.services.maps.loading) {
-    if (elapsed.elapsed > const Duration(seconds: 10)) {
-      throw StateError('Fixture artwork did not finish loading.');
-    }
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 10)),
-    );
+    await tester.runAsync(() => Future<void>(() {}));
     await tester.pump();
   }
   await drainLocalProgress(tester, harness);

@@ -53,11 +53,7 @@ Map<String, List<PreparedMarker>> _popupMarkers(
     },
 };
 
-/// The Upper segment of the floor control over the map.
-final _upperFloor = find.descendant(
-  of: find.byKey(const Key('map-floor-control')),
-  matching: find.text('Upper'),
-);
+final _upperFloor = find.byKey(const Key('map-floor-upper'));
 
 Finder get _viewport => find.byKey(const Key('native-map-viewport'));
 Finder get _markerBrowser => find.byTooltip('Browse markers');

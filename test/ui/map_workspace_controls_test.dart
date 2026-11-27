@@ -7,6 +7,7 @@ import 'package:blackgrid/domain/local_progress.dart';
 import 'package:blackgrid/domain/map_coordinates.dart';
 import 'package:blackgrid/domain/raid_panel_text_parser.dart';
 import 'package:blackgrid/domain/settings.dart';
+import 'package:blackgrid/ui/app.dart';
 import 'package:blackgrid/ui/map_screen.dart';
 import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/map_workspace.dart';
@@ -498,40 +499,73 @@ void main() {
   testWidgets('map-controls: Choosing a floor', (tester) async {
     final h = await pumpMapFixture(tester);
     final maps = h.services.maps;
-    SegmentedButton<String> control() =>
-        tester.widget<SegmentedButton<String>>(_floorControl);
-    Finder segment(String label) =>
-        find.descendant(of: _floorControl, matching: find.text(label));
-    // Beside the picker, on the same row.
+    final ground = find.byKey(const Key('map-floor-ground'));
+    final upper = find.byKey(const Key('map-floor-upper'));
+    bool toggled(Finder row) =>
+        tester.getSemantics(row).getSemanticsData().flagsCollection.isToggled ==
+        ui.Tristate.isTrue;
+
+    expect(tester.getTopLeft(_floorControl).dx, tester.getTopLeft(_picker).dx);
     expect(
-      (tester.getCenter(_floorControl).dy - tester.getCenter(_picker).dy).abs(),
-      lessThan(8),
+      tester.getTopLeft(_floorControl).dy,
+      greaterThan(tester.getBottomLeft(_picker).dy),
     );
-    expect(segment('Ground'), findsOneWidget);
-    expect(segment('Upper'), findsOneWidget);
-    expect(segment('Auto'), findsNothing);
-    expect(control().selected, {'ground'});
-
-    await tester.tap(segment('Upper'));
+    expect(toggled(ground), isTrue);
+    expect(toggled(upper), isFalse);
+    await tester.tap(upper);
     await settleMapFixture(tester, h);
-    expect(maps.floorSelection!.isLayerVisible('upper'), isTrue);
-    expect(control().selected, containsAll(['ground', 'upper']));
-
-    await tester.tap(segment('Upper'));
+    expect(maps.floorSelection!.visibleLayerIds, ['ground', 'upper']);
+    expect(toggled(upper), isTrue);
+    await tester.tap(upper);
     await settleMapFixture(tester, h);
-    expect(maps.floorSelection!.isLayerVisible('upper'), isFalse);
-    expect(control().selected, isNot(contains('upper')));
+    expect(maps.floorSelection!.visibleLayerIds, ['ground']);
+    expect(toggled(upper), isFalse);
+  });
 
-    // A map with automatic floors leads with Auto, which follows the player.
+  testWidgets('collapse survives a hidden rail but not a remounted workspace', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester, singleFloor: true);
     await tester.runAsync(() => h.services.settings.setMap('thelab'));
     await settleMapFixture(tester, h);
-    expect(maps.automaticFloorSupported, isTrue);
-    expect(segment('Auto'), findsOneWidget);
-    expect(control().selected, contains('auto'));
-    await tester.tap(segment('Auto'));
+    await tester.tap(find.byTooltip('Collapse floors'));
+    await tester.pump();
+    for (final id in ['shoreline', 'thelab']) {
+      await tester.runAsync(() => h.services.settings.setMap(id));
+      await settleMapFixture(tester, h);
+      if (id == 'shoreline') expect(_floorControl, findsNothing);
+    }
+    expect(find.byTooltip('Expand floors'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('nav-scanner')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-map')));
     await settleMapFixture(tester, h);
-    expect(maps.automaticFloorFollowing, isFalse);
-    expect(control().selected, isNot(contains('auto')));
+    expect(find.byTooltip('Expand floors'), findsOneWidget);
+    final app = tester.widget(find.byType(BlackgridApp));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(app);
+    await settleMapFixture(tester, h);
+    expect(find.byTooltip('Collapse floors'), findsOneWidget);
+  });
+
+  testWidgets('a map without a rail ignores floor shortcuts', (tester) async {
+    final h = await pumpMapFixture(tester, singleFloor: true);
+    await tester.tapAt(tester.getCenter(_viewport));
+    await tester.pump();
+    final focus = FocusManager.instance.primaryFocus;
+    final selection = h.services.maps.floorSelection;
+    for (final key in [
+      LogicalKeyboardKey.keyA,
+      LogicalKeyboardKey.keyF,
+      LogicalKeyboardKey.pageUp,
+      LogicalKeyboardKey.pageDown,
+    ]) {
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+    }
+    expect(h.services.maps.floorSelection, same(selection));
+    expect(FocusManager.instance.primaryFocus, same(focus));
+    expect(find.byKey(const Key('map-floor-toast')), findsNothing);
   });
 
   testWidgets('map-controls: Map with no floors', (tester) async {

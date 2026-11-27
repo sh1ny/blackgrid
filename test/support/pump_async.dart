@@ -7,9 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// A mounted Map reads local progress, and that read only finishes while
 /// frames are pumped and real file and database I/O progresses, which crosses
-/// an isolate. Waiting on such work without pumping, as a plain
-/// `addTearDown(services.dispose)` does, never returns. The poll is bounded:
-/// it throws after 10 seconds.
+/// an isolate. The widget test's outer timeout is the hang guard.
 Future<void> pumpUntilComplete(
   WidgetTester tester,
   Future<void> Function() work,
@@ -27,14 +25,8 @@ Future<void> pumpUntilComplete(
       },
     ),
   );
-  final elapsed = Stopwatch()..start();
   while (!done) {
-    if (elapsed.elapsed > const Duration(seconds: 10)) {
-      throw StateError('The work did not complete within 10 seconds.');
-    }
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 10)),
-    );
+    await tester.runAsync(() => Future<void>(() {}));
     await tester.pump();
   }
   if (failure case final error?) {

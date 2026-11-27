@@ -13,11 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/m1_widget_harness.dart';
 import '../support/map_widget_harness.dart';
 
-/// The Upper segment of the floor control over the map.
-final _upperFloor = find.descendant(
-  of: find.byKey(const Key('map-floor-control')),
-  matching: find.text('Upper'),
-);
+final _upperFloor = find.byKey(const Key('map-floor-upper'));
+final _groundFloor = find.byKey(const Key('map-floor-ground'));
+final _closePopup = find.byTooltip('Close marker details');
 
 Finder get _viewport => find.byKey(const Key('native-map-viewport'));
 
@@ -77,6 +75,15 @@ Future<void> _wheel(
   tester.binding.handlePointerEvent(
     PointerScrollEvent(position: position, scrollDelta: Offset(0, delta)),
   );
+  await settleMapFixture(tester, h);
+}
+
+Future<void> _openLeftPopup(WidgetTester tester, MapWidgetHarness h) async {
+  final marker = ScenePoint(128, 128);
+  await tester.tapAt(_project(tester, h, marker));
+  final target = tester.getTopLeft(_viewport) + const Offset(60, 170);
+  final delta = target - _project(tester, h, marker);
+  h.services.maps.panBy(delta.dx, delta.dy);
   await settleMapFixture(tester, h);
 }
 
@@ -650,6 +657,113 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'overlapping rail and popup exchange priority without changing the map',
+    (tester) async {
+      final h = await pumpMapFixture(tester);
+      await _openLeftPopup(tester, h);
+      final popup = find.byKey(const Key('marker-popup'));
+      final bubble = tester.element(popup);
+      final row = [_upperFloor, _groundFloor].firstWhere(
+        (row) => tester.getRect(popup).contains(tester.getCenter(row)),
+      );
+      final maps = h.services.maps;
+      final view = maps.transform;
+      expect(_closePopup.hitTestable(), findsOneWidget);
+      expect(row.hitTestable(), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+      await tester.pumpAndSettle();
+      expect(row.hitTestable(), findsOneWidget);
+      expect(tester.element(popup), same(bubble));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(row.hitTestable(), findsNothing);
+      expect(_closePopup.hitTestable(), findsOneWidget);
+      expect(maps.selectedMarkerProjection?.marker.id, 'ground-exit');
+      expect(maps.transform, same(view));
+      await tester.tap(_closePopup);
+      await tester.pumpAndSettle();
+      expect(popup, findsNothing);
+    },
+  );
+
+  testWidgets('Escape repeats after leaving the rail do not dismiss a marker', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    await tester.tapAt(_project(tester, h, ScenePoint(128, 128)));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await tester.pumpAndSettle();
+    const key = LogicalKeyboardKey.escape;
+    await tester.sendKeyDownEvent(key);
+    await tester.pump();
+    expect(_closePopup, findsOneWidget);
+    await tester.sendKeyRepeatEvent(key);
+    await tester.pump();
+    expect(_closePopup, findsOneWidget);
+    await tester.sendKeyUpEvent(key);
+    await tester.sendKeyEvent(key);
+    await tester.pumpAndSettle();
+    expect(_closePopup, findsNothing);
+  });
+
+  testWidgets('focused popup and text inputs do not run floor shortcuts', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    final maps = h.services.maps;
+    await tester.runAsync(() => h.services.settings.setMap('thelab'));
+    await settleMapFixture(tester, h);
+    await _openLeftPopup(tester, h);
+    final popup = tester.element(find.byKey(const Key('marker-popup')));
+    bool popupFocused() {
+      var focused = false;
+      FocusManager.instance.primaryFocus?.context?.visitAncestorElements((
+        node,
+      ) {
+        focused = node == popup;
+        return !focused;
+      });
+      return focused;
+    }
+
+    for (var i = 0; i < 40 && !popupFocused(); i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    expect(popupFocused(), isTrue);
+    final selection = maps.floorSelection;
+    final focus = FocusManager.instance.primaryFocus;
+    for (final key in [
+      LogicalKeyboardKey.keyA,
+      LogicalKeyboardKey.keyF,
+      LogicalKeyboardKey.pageUp,
+    ]) {
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+    }
+    expect(FocusManager.instance.primaryFocus, same(focus));
+    expect(maps.floorSelection, same(selection));
+    expect(maps.automaticFloorFollowing, isTrue);
+
+    final input = find.widgetWithText(TextField, 'Find markers');
+    await tester.ensureVisible(input);
+    await tester.tap(input);
+    await tester.pump();
+    final search = tester.widget<EditableText>(
+      find.descendant(of: input, matching: find.byType(EditableText)),
+    );
+    expect(search.focusNode.hasPrimaryFocus, isTrue);
+    for (final key in [LogicalKeyboardKey.keyA, LogicalKeyboardKey.keyF]) {
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+    }
+    expect(search.focusNode.hasPrimaryFocus, isTrue);
+    expect(maps.floorSelection, same(selection));
+    expect(maps.automaticFloorFollowing, isTrue);
+  });
+
   for (final map in ['shoreline', 'thelab']) {
     testWidgets(
       '$map overflowing saved pin stays editable without paint errors',
@@ -1137,14 +1251,13 @@ void main() {
       expect(after.translationY, before.translationY);
       expect(h.services.maps.floorSelection!.isLayerVisible('upper'), isTrue);
       expect(find.text('Upper exit'), findsOneWidget);
-      // The floor control shows the restored selection.
       expect(
         tester
-            .widget<SegmentedButton<String>>(
-              find.byKey(const Key('map-floor-control')),
-            )
-            .selected,
-        contains('upper'),
+            .getSemantics(_upperFloor)
+            .getSemanticsData()
+            .flagsCollection
+            .isToggled,
+        ui.Tristate.isTrue,
       );
       await tester.tap(find.byTooltip('Close marker details'));
       await settleMapFixture(tester, h);

@@ -32,7 +32,9 @@ Blackgrid never asks the game where you are. It reads two kinds of files that th
 
 Your position changes on the map only when you take a screenshot. Blackgrid does not track you live.
 
-On maps with an **Auto** floor button, Auto starts on and follows your sampled position's height and, where available, the floor's horizontal bounds. This includes Reserve and Streets. Missing height leaves the current floor unchanged. Selecting a floor yourself turns Auto off for that map for the current Blackgrid session; switching maps and back keeps that override. Select **Auto** again to resume following.
+The floor rail under the map picker lists floors from top to bottom. Icebreaker shows one deck at a time; on other maps, you can show several floors over the always-visible base. Scroll the rail for more floors or collapse it to a one-line stepper. With the map or rail focused, **Page Up / Page Down** step one floor, **F** focuses the rail, and **A** toggles Auto where available.
+
+On maps with **Auto**, it starts on and follows the height and, where available, the horizontal bounds of your screenshot position. The rail marks that floor **You** even when Auto is off. Missing height leaves the current floor unchanged. Selecting a floor yourself turns Auto off for that map until you turn it back on or restart Blackgrid.
 
 To see which extracts you have, press O in raid to open the list of your extracts and transits, then take a screenshot. Blackgrid reads the names from the screenshot with the text recognition built into Windows, and highlights those extracts on the map.
 
