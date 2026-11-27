@@ -1,6 +1,7 @@
 import 'dart:ui' show CheckedState, Tristate;
 
 import 'package:blackgrid/domain/map_coordinates.dart';
+import 'package:blackgrid/ui/ember/ember_tokens.dart';
 import 'package:blackgrid/ui/map_floor_rail.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +30,53 @@ Future<void> _focusMap(WidgetTester tester) async {
 Future<void> _labs(WidgetTester tester, MapWidgetHarness harness) async {
   await tester.runAsync(() => harness.services.settings.setMap('thelab'));
   await settleMapFixture(tester, harness);
+}
+
+Future<void> _tabToAction(WidgetTester tester, Finder label) async {
+  final action = tester.element(
+    find.ancestor(of: label, matching: find.byType(InkWell)).first,
+  );
+  bool focused() {
+    var match = false;
+    FocusManager.instance.primaryFocus?.context?.visitAncestorElements((
+      element,
+    ) {
+      match = element == action;
+      return !match;
+    });
+    return match;
+  }
+
+  final visited = <String?>[];
+  for (var i = 0; i < 12 && !focused(); i++) {
+    await _key(tester, LogicalKeyboardKey.tab);
+    visited.add(FocusManager.instance.primaryFocus?.debugLabel);
+  }
+  expect(
+    focused(),
+    isTrue,
+    reason: 'Tab should reach $label (visited $visited)',
+  );
+}
+
+void _expectFocusOutline(WidgetTester tester, Finder label) {
+  final action = find.ancestor(of: label, matching: find.byType(InkWell)).first;
+  final railLuminance = EmberColors.dark.raised.computeLuminance();
+  final outlines = tester
+      .widgetList<DecoratedBox>(
+        find.descendant(of: action, matching: find.byType(DecoratedBox)),
+      )
+      .any((box) {
+        if (box.decoration case BoxDecoration(border: final Border border)) {
+          final ink = border.top.color.computeLuminance();
+          final contrast = (ink > railLuminance)
+              ? (ink + .05) / (railLuminance + .05)
+              : (railLuminance + .05) / (ink + .05);
+          return border.top.width >= 2 && contrast >= 3;
+        }
+        return false;
+      });
+  expect(outlines, isTrue);
 }
 
 void main() {
@@ -128,6 +176,11 @@ void main() {
     expect(find.textContaining('more above'), findsOneWidget);
     expect(find.textContaining('more below'), findsOneWidget);
     expect(h.services.maps.transform, same(before));
+    await _focusMap(tester);
+    await _key(tester, LogicalKeyboardKey.keyF);
+    final cue = find.textContaining('more above');
+    await _tabToAction(tester, cue);
+    _expectFocusOutline(tester, cue);
   });
 
   testWidgets('growing the viewport clears both overflow cues', (tester) async {
@@ -269,6 +322,64 @@ void main() {
     );
   });
 
+  testWidgets('modified floor letters leave Auto and focus alone', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    await _labs(tester, h);
+    await _focusMap(tester);
+    Future<void> controlLetters() async {
+      final original = FocusManager.instance.primaryFocus;
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await _key(tester, LogicalKeyboardKey.keyA);
+      await _key(tester, LogicalKeyboardKey.keyF);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      expect(FocusManager.instance.primaryFocus, same(original));
+      expect(h.services.maps.automaticFloorFollowing, isTrue);
+    }
+
+    await controlLetters();
+    await _key(tester, LogicalKeyboardKey.keyF);
+    final auto = _text('Auto');
+    await _tabToAction(tester, auto);
+    _expectFocusOutline(tester, auto);
+    await controlLetters();
+  });
+
+  testWidgets('a focused rail that disappears returns focus to the map', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester, singleFloor: true);
+    await _labs(tester, h);
+    await tester.tap(_row('ground'));
+    await tester.pump();
+    await tester.runAsync(() => h.services.settings.setMap('shoreline'));
+    await settleMapFixture(tester, h);
+    expect(_rail, findsNothing);
+    final maps = h.services.maps;
+    final before = maps.transform.translationX;
+    await _key(tester, LogicalKeyboardKey.arrowRight);
+    expect(maps.transform.translationX, before - 40);
+    await settleMapFixture(tester, h);
+  });
+
+  testWidgets('a step toast does not return after switching maps', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(tester);
+    await _focusMap(tester);
+    await _key(tester, LogicalKeyboardKey.pageUp);
+    final toast = find.byKey(const Key('map-floor-toast'));
+    expect(toast, findsOneWidget);
+    for (final id in ['thelab', 'shoreline']) {
+      await tester.runAsync(() => h.services.settings.setMap(id));
+      await tester.pump();
+      expect(h.services.maps.selectedMapId, id);
+      expect(toast, findsNothing);
+    }
+    await settleMapFixture(tester, h);
+  });
+
   testWidgets('exclusive keyboard traversal selects and reveals the deck', (
     tester,
   ) async {
@@ -379,10 +490,15 @@ void main() {
     await tester.tap(find.byTooltip('Floor up'));
     await tester.pump();
     expect(_text('Deck 8'), findsOneWidget);
+    await resize(140);
+    expect(_text('Deck 8'), findsOneWidget);
+    expect(_list, findsNothing);
     await resize(280);
     await tester.pump();
     expect(_text('16 floors'), findsOneWidget);
     expect(_row('deck-8').hitTestable(), findsOneWidget);
+    expect(_text('4 more above'), findsOneWidget);
+    expect(_text('7 more below'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -118,6 +118,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     super.initState();
     maps.addListener(_rehover);
     maps.addListener(_dropPinForMarker);
+    maps.addListener(_syncFloorRail);
     final services = widget.services;
     services.manualProgress.addListener(_syncQuestFilter);
     services.settings.addListener(_syncQuestFilter);
@@ -131,6 +132,7 @@ class _MapWorkspaceState extends State<MapWorkspace> {
   void dispose() {
     maps.removeListener(_rehover);
     maps.removeListener(_dropPinForMarker);
+    maps.removeListener(_syncFloorRail);
     final services = widget.services;
     services.manualProgress.removeListener(_syncQuestFilter);
     services.settings.removeListener(_syncQuestFilter);
@@ -506,6 +508,17 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         : null;
   }
 
+  void _syncFloorRail() {
+    if (_floorToast case (final mapId, _) when maps.selectedMapId != mapId) {
+      _floorToastTimer?.cancel();
+      _floorToastTimer = null;
+      _floorToast = null;
+    }
+    if (_rail.currentState?.hasFocus == true && _railSelection == null) {
+      _focus.requestFocus();
+    }
+  }
+
   KeyEventResult _floorKey(KeyEvent event) {
     // Flutter otherwise invokes the route's default page-scroll action.
     if (_railSelection == null || _rail.currentState?.isVisible != true) {
@@ -520,11 +533,25 @@ class _MapWorkspaceState extends State<MapWorkspace> {
         if (event is KeyDownEvent || event is KeyRepeatEvent) {
           _stepFloor(event.logicalKey == LogicalKeyboardKey.pageUp ? 1 : -1);
         }
-      case LogicalKeyboardKey.keyA:
-        if (!maps.automaticFloorSupported) return KeyEventResult.ignored;
-        if (event is KeyDownEvent) _toggleAutomaticFloor();
-      case LogicalKeyboardKey.keyF:
-        if (event is KeyDownEvent) _rail.currentState?.focusCurrent();
+      case LogicalKeyboardKey.keyA || LogicalKeyboardKey.keyF:
+        final keyboard = HardwareKeyboard.instance;
+        if (keyboard.isControlPressed ||
+            keyboard.isAltPressed ||
+            keyboard.isMetaPressed ||
+            keyboard.isShiftPressed) {
+          return KeyEventResult.ignored;
+        }
+        final auto = event.logicalKey == LogicalKeyboardKey.keyA;
+        if (auto && !maps.automaticFloorSupported) {
+          return KeyEventResult.ignored;
+        }
+        if (event is KeyDownEvent) {
+          if (auto) {
+            _toggleAutomaticFloor();
+          } else {
+            _rail.currentState?.focusCurrent();
+          }
+        }
       default:
         return KeyEventResult.ignored;
     }
@@ -553,12 +580,6 @@ class _MapWorkspaceState extends State<MapWorkspace> {
     _floorToastTimer = Timer(const Duration(milliseconds: 2600), () {
       setState(() => _floorToast = null);
     });
-  }
-
-  KeyEventResult _railKey(KeyEvent event) {
-    if (event.logicalKey != LogicalKeyboardKey.escape) return _floorKey(event);
-    if (event is KeyDownEvent) _focus.requestFocus();
-    return KeyEventResult.handled;
   }
 
   void _closePin() {
@@ -803,7 +824,8 @@ class _MapWorkspaceState extends State<MapWorkspace> {
                     onFocusChanged: (_) {
                       if (mounted) setState(() {});
                     },
-                    onKeyEvent: _railKey,
+                    onReturnToMap: _focus.requestFocus,
+                    onKeyEvent: _floorKey,
                   ),
                 );
           final railFocused = _rail.currentState?.hasFocus ?? false;

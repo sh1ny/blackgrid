@@ -12,6 +12,7 @@ import 'ember/ember_toggle_switch.dart';
 import 'ember/ember_tokens.dart';
 
 const _ink = EmberColors.dark;
+final _focusSide = BorderSide(color: _ink.focus, width: 2);
 
 /// The Map's floating deck list and compact floor stepper.
 class MapFloorRail extends StatefulWidget {
@@ -27,6 +28,7 @@ class MapFloorRail extends StatefulWidget {
     required this.onToggleAuto,
     required this.onCollapseChanged,
     required this.onFocusChanged,
+    required this.onReturnToMap,
     required this.onKeyEvent,
   });
 
@@ -57,7 +59,10 @@ class MapFloorRail extends StatefulWidget {
   /// Reports whether any rail control has focus.
   final ValueChanged<bool> onFocusChanged;
 
-  /// Handles the shared Map floor shortcuts and Escape.
+  /// Returns keyboard focus to the map without changing its selection.
+  final VoidCallback onReturnToMap;
+
+  /// Handles the shared Map floor shortcuts.
   final KeyEventResult Function(KeyEvent) onKeyEvent;
 
   @override
@@ -225,10 +230,16 @@ class MapFloorRailState extends State<MapFloorRail> {
       final compactHeight = _rowHeight + 12;
       final visible =
           constraints.maxHeight >= compactHeight && constraints.maxWidth >= 96;
-      // Reserve room for the header, Auto and at least one full row.
+      // Leave room for one full row and both cues when floors can clip.
+      final listMinimum = math.min(_contentHeight, _rowHeight + 2 * _cueHeight);
       final expandedHeight =
-          compactHeight + _rowHeight + (_showAuto ? 2 * _rowHeight : 0);
+          compactHeight + listMinimum + (_showAuto ? 2 * _rowHeight : 0);
       final expandFits = visible && constraints.maxHeight >= expandedHeight;
+      if (!visible && _isVisible && _scope.hasFocus) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isVisible) widget.onReturnToMap();
+        });
+      }
       if (expandFits != _expandFits && visible && !widget.collapsed) {
         _scheduleReveal();
         if (_scope.hasFocus) {
@@ -250,7 +261,13 @@ class MapFloorRailState extends State<MapFloorRail> {
       skipTraversal: _expandFits,
       canRequestFocus: !_expandFits,
       onFocusChange: widget.onFocusChanged,
-      onKeyEvent: (_, event) => widget.onKeyEvent(event),
+      onKeyEvent: (_, event) {
+        if (event.logicalKey != LogicalKeyboardKey.escape) {
+          return widget.onKeyEvent(event);
+        }
+        if (event is KeyDownEvent) widget.onReturnToMap();
+        return KeyEventResult.handled;
+      },
       child: Listener(
         key: const Key('map-floor-control'),
         behavior: HitTestBehavior.opaque,
@@ -266,11 +283,9 @@ class MapFloorRailState extends State<MapFloorRail> {
             builder: (context, child) => Material(
               color: _ink.raised,
               shape: RoundedRectangleBorder(
-                side: BorderSide(
-                  color: _scope.hasPrimaryFocus
-                      ? _ink.focus
-                      : _ink.hairlineStrong,
-                ),
+                side: _scope.hasPrimaryFocus
+                    ? _focusSide
+                    : BorderSide(color: _ink.hairlineStrong),
                 borderRadius: const BorderRadius.all(
                   Radius.circular(EmberRadius.l),
                 ),
@@ -360,11 +375,9 @@ class MapFloorRailState extends State<MapFloorRail> {
       label: 'Auto',
       value: status,
       toggled: widget.autoFollowing,
-      child: InkWell(
+      child: _RailAction(
         onTap: widget.onToggleAuto,
-        hoverColor: _ink.hover,
-        focusColor: _ink.accentSoft,
-        borderRadius: BorderRadius.circular(EmberRadius.m),
+        radius: EmberRadius.m,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: ExcludeSemantics(
@@ -395,10 +408,7 @@ class MapFloorRailState extends State<MapFloorRail> {
   Widget _list() => LayoutBuilder(
     builder: (context, constraints) {
       final hasOverflow = _contentHeight > constraints.maxHeight;
-      final cueHeight =
-          hasOverflow && constraints.maxHeight >= _rowHeight + 2 * _cueHeight
-          ? _cueHeight
-          : 0.0;
+      final cueHeight = hasOverflow ? _cueHeight : 0.0;
       final height = math.min(
         _contentHeight,
         constraints.maxHeight - 2 * cueHeight,
@@ -498,14 +508,12 @@ class MapFloorRailState extends State<MapFloorRail> {
     width: double.infinity,
     child: count == 0
         ? null
-        : InkWell(
+        : _RailAction(
             onTap: () => _scrollTo(
               _scroll.offset +
                   _scroll.position.viewportDimension * (above ? -.8 : .8),
             ),
-            hoverColor: _ink.hover,
-            focusColor: _ink.accentSoft,
-            borderRadius: BorderRadius.circular(EmberRadius.s),
+            radius: EmberRadius.s,
             child: Center(
               child: _meta('$count more ${above ? 'above' : 'below'}'),
             ),
@@ -569,7 +577,7 @@ class MapFloorRailState extends State<MapFloorRail> {
             borderRadius: BorderRadius.circular(EmberRadius.m),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                border: focused ? Border.all(color: _ink.focus) : null,
+                border: focused ? Border.fromBorderSide(_focusSide) : null,
                 borderRadius: BorderRadius.circular(EmberRadius.m),
               ),
               child: Row(
@@ -655,9 +663,8 @@ Widget _iconButton(
           states.contains(WidgetState.focused) ? _ink.accentSoft : _ink.hover,
     ),
     side: WidgetStateProperty.resolveWith(
-      (states) => states.contains(WidgetState.focused)
-          ? BorderSide(color: _ink.focus)
-          : BorderSide.none,
+      (states) =>
+          states.contains(WidgetState.focused) ? _focusSide : BorderSide.none,
     ),
     shape: const WidgetStatePropertyAll(
       RoundedRectangleBorder(
@@ -671,6 +678,45 @@ Widget _iconButton(
     minimumSize: const WidgetStatePropertyAll(Size.square(26)),
   ),
 );
+
+class _RailAction extends StatefulWidget {
+  const _RailAction({
+    required this.onTap,
+    required this.radius,
+    required this.child,
+  });
+
+  final VoidCallback onTap;
+  final double radius;
+  final Widget child;
+
+  @override
+  State<_RailAction> createState() => _RailActionState();
+}
+
+class _RailActionState extends State<_RailAction> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(widget.radius);
+    return InkWell(
+      onTap: widget.onTap,
+      onFocusChange: (value) => setState(() => _focused = value),
+      hoverColor: _ink.hover,
+      focusColor: _ink.accentSoft,
+      borderRadius: radius,
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          border: _focused ? Border.fromBorderSide(_focusSide) : null,
+          borderRadius: radius,
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
 
 Widget _meta(String label) => Text(
   label,
@@ -783,6 +829,7 @@ Widget floorRailPreview() {
         }),
         onCollapseChanged: (value) => setState(() => collapsed = value),
         onFocusChanged: (_) {},
+        onReturnToMap: () {},
         onKeyEvent: (_) => KeyEventResult.ignored,
       ),
     ),
