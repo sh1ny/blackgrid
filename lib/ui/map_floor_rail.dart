@@ -79,6 +79,7 @@ class MapFloorRailState extends State<MapFloorRail> {
   double _rowHeight = 28;
   double _dividerHeight = 18;
   double _cueHeight = 24;
+  double? _listHeight;
   bool _revealPending = false;
   bool _isVisible = false;
   bool _expandFits = false;
@@ -112,7 +113,7 @@ class MapFloorRailState extends State<MapFloorRail> {
 
   /// Keeps a step's destination visible without taking focus from other controls.
   void revealStep(int index) {
-    if (_listFocus.hasFocus) {
+    if (_listFocus.hasPrimaryFocus) {
       _focusRow(index);
     } else {
       _scheduleReveal();
@@ -139,7 +140,7 @@ class MapFloorRailState extends State<MapFloorRail> {
     super.didUpdateWidget(oldWidget);
     if (_policy != oldWidget.selection.policy ||
         (oldWidget.collapsed && !widget.collapsed)) {
-      _focusedIndex = _listFocus.hasFocus ? _current : null;
+      _focusedIndex = _listFocus.hasPrimaryFocus ? _current : null;
       _scheduleReveal();
     } else if (_focusedIndex == null &&
         oldWidget.selection.currentIndex != _current) {
@@ -199,7 +200,8 @@ class MapFloorRailState extends State<MapFloorRail> {
     _scheduleReveal();
   }
 
-  KeyEventResult _rowKey(FocusNode _, KeyEvent event) {
+  KeyEventResult _rowKey(FocusNode node, KeyEvent event) {
+    if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
     final key = event.logicalKey;
     final index = _focusedIndex ?? _current;
     final next = switch (key) {
@@ -413,23 +415,27 @@ class MapFloorRailState extends State<MapFloorRail> {
         _contentHeight,
         constraints.maxHeight - 2 * cueHeight,
       );
-      return Focus(
-        focusNode: _listFocus,
-        includeSemantics: false,
-        onFocusChange: (focused) {
-          setState(
-            () => _focusedIndex = focused ? _focusedIndex ?? _current : null,
-          );
-          if (focused) _scheduleReveal();
-        },
-        onKeyEvent: _rowKey,
-        child: Semantics(
-          container: true,
-          explicitChildNodes: true,
-          label: 'Floors',
-          role: _policy.exclusive ? SemanticsRole.radioGroup : null,
-          child: ListenableBuilder(
-            listenable: _scroll,
+      if (_listHeight != height) {
+        _listHeight = height;
+        if (_listFocus.hasPrimaryFocus) _scheduleReveal();
+      }
+      return ListenableBuilder(
+        listenable: _scroll,
+        child: Focus(
+          focusNode: _listFocus,
+          includeSemantics: false,
+          onFocusChange: (focused) {
+            setState(
+              () => _focusedIndex = focused ? _focusedIndex ?? _current : null,
+            );
+            if (focused) _scheduleReveal();
+          },
+          onKeyEvent: _rowKey,
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            label: 'Floors',
+            role: _policy.exclusive ? SemanticsRole.radioGroup : null,
             child: SizedBox(
               height: height,
               child: ListView.builder(
@@ -453,34 +459,34 @@ class MapFloorRailState extends State<MapFloorRail> {
                 },
               ),
             ),
-            builder: (context, child) {
-              final offset = _scroll.hasClients
-                  ? _scroll.offset
-                        .clamp(0.0, math.max(0.0, _contentHeight - height))
-                        .toDouble()
-                  : 0.0;
-              final above = _clippedFloors(offset, fromTop: true);
-              final below = _clippedFloors(
-                _contentHeight - height - offset,
-                fromTop: false,
-              );
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (cueHeight > 0) _cue(above, true, cueHeight),
-                  Stack(
-                    children: [
-                      child!,
-                      if (above > 0) _fade(Alignment.topCenter),
-                      if (below > 0) _fade(Alignment.bottomCenter),
-                    ],
-                  ),
-                  if (cueHeight > 0) _cue(below, false, cueHeight),
-                ],
-              );
-            },
           ),
         ),
+        builder: (context, child) {
+          final offset = _scroll.hasClients
+              ? _scroll.offset
+                    .clamp(0.0, math.max(0.0, _contentHeight - height))
+                    .toDouble()
+              : 0.0;
+          final above = _clippedFloors(offset, fromTop: true);
+          final below = _clippedFloors(
+            _contentHeight - height - offset,
+            fromTop: false,
+          );
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (cueHeight > 0) _cue(above, true, cueHeight),
+              Stack(
+                children: [
+                  child!,
+                  if (above > 0) _fade(Alignment.topCenter),
+                  if (below > 0) _fade(Alignment.bottomCenter),
+                ],
+              ),
+              if (cueHeight > 0) _cue(below, false, cueHeight),
+            ],
+          );
+        },
       );
     },
   );
@@ -544,7 +550,8 @@ class MapFloorRailState extends State<MapFloorRail> {
     final current = index == _current;
     final visible = widget.selection.isLayerVisible(floor.id);
     final player = floor.id == widget.playerFloor?.id;
-    final focused = _listFocus.hasFocus && index == (_focusedIndex ?? _current);
+    final focused =
+        _listFocus.hasPrimaryFocus && index == (_focusedIndex ?? _current);
     final label =
         '${floor.label}${base ? ', base, always drawn' : ''}${player ? ', You' : ''}';
     void activate() {

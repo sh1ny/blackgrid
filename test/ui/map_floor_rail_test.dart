@@ -181,6 +181,18 @@ void main() {
     final cue = find.textContaining('more above');
     await _tabToAction(tester, cue);
     _expectFocusOutline(tester, cue);
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(of: _list, matching: find.byType(Scrollable)),
+        )
+        .position;
+    final offset = position.pixels;
+    final selection = h.services.maps.floorSelection;
+    final auto = h.services.maps.automaticFloorFollowing;
+    await _key(tester, LogicalKeyboardKey.enter);
+    expect(position.pixels, lessThan(offset));
+    expect(h.services.maps.floorSelection, same(selection));
+    expect(h.services.maps.automaticFloorFollowing, auto);
   });
 
   testWidgets('growing the viewport clears both overflow cues', (tester) async {
@@ -192,6 +204,32 @@ void main() {
     expect(find.textContaining('more below'), findsNothing);
     expect(_row('lower').hitTestable(), findsOneWidget);
     expect(_row('deck-18').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('a shorter expanded rail keeps its focused row in view', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(
+      tester,
+      size: const Size(1590, 860),
+      extraFloors: 36,
+    );
+    await _focusMap(tester);
+    await _key(tester, LogicalKeyboardKey.keyF);
+    final selection = h.services.maps.floorSelection;
+    final focus = FocusManager.instance.primaryFocus;
+    expect(_row('ground').hitTestable(), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1590, 600);
+    await tester.pumpAndSettle();
+    expect(_list, findsOneWidget);
+    expect(_row('ground').hitTestable(), findsOneWidget);
+    expect(
+      tester.getRect(_list).bottom,
+      greaterThanOrEqualTo(tester.getRect(_row('ground')).bottom),
+    );
+    expect(FocusManager.instance.primaryFocus, same(focus));
+    expect(h.services.maps.floorSelection, same(selection));
   });
 
   testWidgets('the compact line retains current floor and Auto', (
