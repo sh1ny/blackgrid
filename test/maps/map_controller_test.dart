@@ -704,6 +704,31 @@ void main() {
     },
   );
 
+  test(
+    'a manual single-floor choice stays put until Auto is re-enabled',
+    () async {
+      final controller = _controller();
+      addTearDown(controller.dispose);
+      await controller.initialize(selectedMapId: 'icebreaker');
+      controller.setPlayerSample(GamePoint(8, 24, height: 3));
+      expect(controller.playerFloor?.id, 'Upper');
+      final choices = <Set<String>>[];
+      controller.addListener(
+        () => choices.add(controller.floorSelection!.selectedOverlayIds),
+      );
+
+      controller.showOnlyFloor('Base');
+      expect(choices, isNotEmpty);
+      expect(choices, everyElement(isEmpty));
+      expect(controller.playerFloor?.id, 'Upper');
+      expect(controller.automaticFloorFollowing, isFalse);
+      controller.setPlayerSample(GamePoint(9, 24, height: 4));
+      expect(controller.floorSelection!.visibleLayerIds, ['Base']);
+      controller.setAutomaticFloorFollowing(true);
+      expect(controller.floorSelection!.visibleLayerIds, ['Upper']);
+    },
+  );
+
   test('new pin intents reject artwork padding without altering old pin projection', () async {
     final controller = _controller();
     addTearDown(controller.dispose);

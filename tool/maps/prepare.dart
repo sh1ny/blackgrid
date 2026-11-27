@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import 'calibration.dart';
 import 'pack.dart';
 
 import 'package:blackgrid/maps/live_map_normalizer.dart' show canonicalJson;
@@ -15,7 +16,7 @@ const usage = '''Independent offline map preparation (standalone Dart)
   dart run tool/maps/prepare.dart promote --candidate <compiled-directory> --packs <pack-root>
   dart run tool/maps/prepare.dart assets --packs <repo-relative-pack-root>
   dart run tool/maps/prepare.dart check --packs <pack-root>
-  dart run tool/maps/prepare.dart refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
+  dart run tool/maps/prepare.dart refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml> [--reviewed-floor-order]
   dart run tool/maps/prepare.dart artwork-refresh --packs <repo-relative-pack-root> --pubspec <pubspec.yaml> --stage <fresh-directory> [--reviewed-calibration-update]
   dart run tool/maps/prepare.dart artwork-publish --candidate <staged-directory> --packs <repo-relative-pack-root> --pubspec <pubspec.yaml>
 
@@ -86,7 +87,13 @@ anything else when an interrupted promotion left active.next.json or a
 versions/.<id>.staging folder. A mismatch ends with the instruction to run
 mise run maps:rebuild.
 The CLI's refresh rebuilds the active generation from its carried inputs; it
-does not acquire a new source snapshot. The separate `artwork-refresh` operation
+does not acquire a new source snapshot. The --reviewed-floor-order flag
+adopts only the bottom-to-top order from the reviewed lists, with the same
+map and floor IDs and the same raster paint order. This mode requires the
+current pack format. It leaves every floor record and other source unchanged.
+Publish the floor-order refresh before staging any separate artwork update.
+
+The separate artwork-refresh operation
 retains the verified generation's six regular-mode snapshots while acquiring
 only reviewed metadata, primary vector sources, the five locked terms documents
 and raster resources, then builds a compiled non-publishing candidate and
@@ -174,6 +181,7 @@ Future<void> runPrepare(
   final command = arguments.first;
   final values = <String, String>{};
   var reviewedCalibrationUpdate = false;
+  var reviewedFloorOrder = false;
   var i = 1;
   while (i < arguments.length) {
     final key = arguments[i];
@@ -184,6 +192,16 @@ Future<void> runPrepare(
         );
       }
       reviewedCalibrationUpdate = true;
+      i++;
+      continue;
+    }
+    if (key == '--reviewed-floor-order') {
+      if (command != 'refresh' || reviewedFloorOrder) {
+        throw const FormatException(
+          '--reviewed-floor-order is valid once on refresh',
+        );
+      }
+      reviewedFloorOrder = true;
       i++;
       continue;
     }
@@ -262,6 +280,16 @@ Future<void> runPrepare(
         toolchain: await readToolchain(),
         assetRoot: values['--packs']!,
         candidateParent: candidateParent,
+        reviewedFloorOrder: reviewedFloorOrder
+            ? {
+                for (final entry in supportedMapSources.entries)
+                  entry.key: [
+                    for (final floor
+                        in calibrationFor(entry.value)['floors'] as List)
+                      floor['id'] as String,
+                  ],
+              }
+            : null,
       );
       stdout.writeln('Map pack ${result.id} is now active.');
     case 'artwork-publish':

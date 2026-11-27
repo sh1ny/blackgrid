@@ -232,6 +232,25 @@ void main() {
     ]);
   });
 
+  test(
+    'a floor permutation reports the map and its new order, not artwork',
+    () {
+      final before = _manifest(_hashes());
+      final after = _manifest(_hashes());
+      for (final manifest in [before, after]) {
+        final floors = manifest['maps'][1]['floors'] as List;
+        floors.add({'id': 'Technical_Level', 'artwork': <String, dynamic>{}});
+        if (identical(manifest, after)) floors.insert(0, floors.removeLast());
+      }
+      final report = packChangeReport(before, after);
+      expect(report.lines, [
+        'thelab: floor order changed (Technical_Level → First_Level)',
+      ]);
+      expect(report.valueKeys, ['thelab floor order']);
+      expect(report.paths, isEmpty);
+    },
+  );
+
   test('unattributed evidence and top-level values go to other and pack', () {
     final report = packChangeReport(
       _manifest(_hashes()),

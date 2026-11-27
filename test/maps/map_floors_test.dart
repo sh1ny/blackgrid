@@ -12,44 +12,44 @@ void main() {
   // policy.floors or projection output. These are policy/parity tests, not
   // independent game-to-artwork placement qualification.
   final conventionalFloors = <String, List<String>>{
-    'factory': ['Ground_Floor', 'Second_Floor', 'Third_Floor', 'Basement'],
+    'factory': ['Basement', 'Ground_Floor', 'Second_Floor', 'Third_Floor'],
     'customs': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
       'Fourth_Floor',
-      'Underground_Level',
     ],
     'woods': ['Ground_Level'],
     'shoreline': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
-      'Underground_Level',
     ],
     'interchange': ['Ground_Level', 'First_Floor', 'Second_Floor'],
     'reserve': [
+      'Bunkers',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
       'Fourth_Floor',
       'Fifth_Floor',
-      'Bunkers',
     ],
     'lighthouse': ['Ground_Level'],
     'streetsoftarkov': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
       'Fourth_Floor',
       'Fifth_Floor',
-      'Underground_Level',
     ],
     'groundzero': [
+      'Underground_Level',
       'Ground_Level',
       'Second_Floor',
       'Third_Floor',
-      'Underground_Level',
     ],
     'terminal': ['Ground_Level'],
     'labyrinth': ['Main_Level'],
@@ -70,8 +70,14 @@ void main() {
           assetRoot: 'fixture/',
         );
         final policy = map.floorPolicy;
+        final baseId = switch (entry.key) {
+          'factory' => 'Ground_Floor',
+          'labyrinth' => 'Main_Level',
+          _ => 'Ground_Level',
+        };
+        final overlays = entry.value.where((id) => id != baseId).toList();
         final expectedBase = [
-          entry.value.first,
+          baseId,
           if (attachedBaseMaps.contains(entry.key)) 'First_Floor',
         ];
         expect(policy.selectableFloors.map((floor) => floor.id), entry.value);
@@ -79,7 +85,7 @@ void main() {
         expect(policy.exclusive, isFalse);
         expect(policy.supportsAutomaticHeight, isFalse);
         var selection = policy.reset();
-        for (final id in entry.value.skip(1)) {
+        for (final id in overlays) {
           expect(
             selection.isVisible(
               floorId: id,
@@ -97,8 +103,8 @@ void main() {
             isTrue,
           );
         }
-        expect(selection.selectedOverlayIds, entry.value.skip(1).toSet());
-        for (final id in entry.value.skip(1).toList().reversed) {
+        expect(selection.selectedOverlayIds, overlays.toSet());
+        for (final id in overlays.reversed) {
           selection = selection.toggle(id);
           expect(selection.isLayerVisible(id), isFalse);
           expect(selection.visibleLayerIds, containsAll(expectedBase));
@@ -147,8 +153,11 @@ void main() {
       ];
       final policy = MapFloorPolicy(
         mapId: 'synthetic',
-        base: MapFloor(id: 'Base', label: 'Base'),
-        overlays: reverse ? floors.reversed : floors,
+        baseId: 'Base',
+        floors: [
+          MapFloor(id: 'Base', label: 'Base'),
+          ...(reverse ? floors.reversed : floors),
+        ],
       );
       expect(policy.supportsAutomaticHeight, isTrue);
       // A beats B's higher minimum, even when A's wider span is visited first.
@@ -174,9 +183,10 @@ void main() {
   test('exclusive selection resolves a known gap to base', () {
     final policy = MapFloorPolicy(
       mapId: 'synthetic',
-      base: MapFloor(id: 'Base', label: 'Base'),
+      baseId: 'Base',
       exclusive: true,
-      overlays: [
+      floors: [
+        MapFloor(id: 'Base', label: 'Base'),
         MapFloor(
           id: 'Lower',
           label: 'Lower',
@@ -201,6 +211,25 @@ void main() {
     ]);
   });
 
+  test('selecting the additive base resets overlays', () {
+    final map = PreparedMap.fromJson(
+      preparedMapMetadataFixture('customs'),
+      assetRoot: 'fixture/',
+    );
+    final policy = map.floorPolicy;
+    final shown = policy.reset().toggle('Second_Floor').toggle('Third_Floor');
+    expect(shown.selectOnly('Third_Floor').visibleLayerIds, [
+      'Ground_Level',
+      'First_Floor',
+      'Third_Floor',
+    ]);
+    expect(shown.selectOnly(policy.base.id).visibleLayerIds, [
+      'Ground_Level',
+      'First_Floor',
+    ]);
+    expect(shown.toggle(policy.base.id).selectedOverlayIds, isEmpty);
+  });
+
   test('invalid finite bands and structural floor identities reject', () {
     for (final value in [
       double.nan,
@@ -216,12 +245,11 @@ void main() {
     expect(
       () => MapFloorPolicy(
         mapId: 'thelab',
-        base: MapFloor(
-          id: 'base',
-          label: 'Base',
-          attachedLayerIds: ['attached'],
-        ),
-        overlays: [MapFloor(id: 'attached', label: 'Invalid')],
+        baseId: 'base',
+        floors: [
+          MapFloor(id: 'base', label: 'Base', attachedLayerIds: ['attached']),
+          MapFloor(id: 'attached', label: 'Invalid'),
+        ],
       ),
       throwsArgumentError,
     );

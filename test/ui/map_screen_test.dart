@@ -398,10 +398,7 @@ void main() {
       await tester.tap(fit);
       await settleMapFixture(tester, h);
       expect(h.services.maps.transform.scale, closeTo(fitScale, 1e-9));
-      final upper = find.descendant(
-        of: find.byKey(const Key('map-floor-control')),
-        matching: find.text('Upper'),
-      );
+      final upper = find.byKey(const Key('map-floor-upper'));
       await tester.ensureVisible(upper);
       await tester.pumpAndSettle();
       expect(upper.hitTestable(), findsOneWidget);

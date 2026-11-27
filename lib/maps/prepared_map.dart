@@ -8,6 +8,27 @@ import 'live_map_normalizer.dart';
 /// The only preparation version accepted by the app and candidate validator.
 const preparedPackVersion = 5;
 
+/// Visits prepared floors in the order used to collect raster artwork.
+///
+/// On additive maps, the base and higher floors precede the below-base
+/// floors. The renderer paints a faded base first when overlays are active.
+Iterable<T> rasterPaintOrder<T>(
+  List<T> floors,
+  int baseIndex, {
+  required bool exclusive,
+}) sync* {
+  if (exclusive || baseIndex == 0) {
+    yield* floors;
+    return;
+  }
+  for (var index = baseIndex; index < floors.length; index++) {
+    yield floors[index];
+  }
+  for (var index = 0; index < baseIndex; index++) {
+    yield floors[index];
+  }
+}
+
 /// Decodes a prepared floor's required height and normalized X/Z extents.
 ///
 /// Throws a [FormatException] naming [mapId] and the floor for invalid data.
@@ -249,8 +270,8 @@ class PreparedMap {
     }
     final policy = MapFloorPolicy(
       mapId: id,
-      base: floor(bases.single),
-      overlays: rawFloors.where((f) => f['base'] != true).map(floor),
+      baseId: _string(bases.single, 'id'),
+      floors: rawFloors.map(floor),
       exclusive: exclusive,
     );
     final componentsById = <String, PreparedVectorComponent>{};
@@ -306,7 +327,11 @@ class PreparedMap {
       }
     }
 
-    for (final rawFloor in rawFloors) {
+    for (final rawFloor in rasterPaintOrder(
+      rawFloors,
+      policy.baseIndex,
+      exclusive: exclusive,
+    )) {
       final floorId = _string(rawFloor, 'id');
       final art = _object(rawFloor['artwork'], 'artwork');
       if (kind == 'vector' && rawFloor['sourceTileUrl'] != null) {

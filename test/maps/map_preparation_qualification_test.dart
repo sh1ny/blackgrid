@@ -176,6 +176,30 @@ void main() {
     }
   }, timeout: fullRebuildTimeout);
 
+  test(
+    'validator rejects a floor array reordered outside its calibration',
+    () async {
+      final private = await candidate('divergent-floor-order');
+      final manifest = await readManifest(private);
+      final factory = (manifest['maps'] as List).singleWhere(
+        (map) => map['id'] == 'factory',
+      );
+      factory['floors'] = (factory['floors'] as List).reversed.toList();
+      await saveManifest(private, manifest);
+      await expectLater(
+        validateCandidate(private),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('factory'), contains('floor order')),
+          ),
+        ),
+      );
+    },
+    timeout: fullRebuildTimeout,
+  );
+
   test('verified v4 rebuild migrates only direct floor bands', () async {
     final legacy = Directory('${temporary.path}/legacy-floor-calibration');
     await copyPack(fixtures.first, legacy);
@@ -189,7 +213,12 @@ void main() {
     final lab = (calibration['maps'] as List).singleWhere(
       (map) => map['id'] == 'thelab',
     );
-    (lab['floors'] as List)[1]['heightBand'] = [3, 1000];
+    (lab['floors'] as List).singleWhere(
+      (floor) => floor['id'] == 'Second_Level',
+    )['heightBand'] = [
+      3,
+      1000,
+    ];
     for (final map in manifest['maps'] as List) {
       for (final floor in map['floors'] as List) {
         (floor as Map).remove('extents');
@@ -271,40 +300,40 @@ void main() {
       'labyrinth',
     ];
     final expectedFloorIds = {
-      'factory': ['Ground_Floor', 'Second_Floor', 'Third_Floor', 'Basement'],
+      'factory': ['Basement', 'Ground_Floor', 'Second_Floor', 'Third_Floor'],
       'customs': [
+        'Underground_Level',
         'Ground_Level',
         'Second_Floor',
         'Third_Floor',
         'Fourth_Floor',
-        'Underground_Level',
       ],
       for (final id in ['shoreline', 'groundzero'])
         id: [
+          'Underground_Level',
           'Ground_Level',
           'Second_Floor',
           'Third_Floor',
-          'Underground_Level',
         ],
       'woods': ['Ground_Level'],
       'interchange': ['Ground_Level', 'First_Floor', 'Second_Floor'],
-      'thelab': ['First_Level', 'Second_Level', 'Technical_Level'],
+      'thelab': ['Technical_Level', 'First_Level', 'Second_Level'],
       'reserve': [
+        'Bunkers',
         'Ground_Level',
         'Second_Floor',
         'Third_Floor',
         'Fourth_Floor',
         'Fifth_Floor',
-        'Bunkers',
       ],
       'lighthouse': ['Ground_Level'],
       'streetsoftarkov': [
+        'Underground_Level',
         'Ground_Level',
         'Second_Floor',
         'Third_Floor',
         'Fourth_Floor',
         'Fifth_Floor',
-        'Underground_Level',
       ],
       'terminal': ['Ground_Level'],
       'icebreaker': icebreakerSources.keys.toList(),
@@ -1628,6 +1657,7 @@ void main() {
       Map<String, String>? toolchain,
       VectorEncoder? encode,
       FrozenInputs? metadataInputs,
+      Map<String, List<String>>? reviewedFloorOrder,
     }) => refreshActive(
       packs,
       pubspec,
@@ -1638,6 +1668,7 @@ void main() {
       encode: encode,
       metadataInputs: metadataInputs,
       log: log.add,
+      reviewedFloorOrder: reviewedFloorOrder,
     );
 
     Future<List<String>> versions() async => [
@@ -1650,6 +1681,120 @@ void main() {
               await File('${packs.path}/active.json').readAsString(),
             )['version']
             as String;
+
+    Map<String, List<String>> floorOrders(Map<String, dynamic> manifest) => {
+      for (final map in manifest['maps'] as List)
+        map['id'] as String: [
+          for (final floor in map['floors'] as List) floor['id'] as String,
+        ],
+    };
+
+    List<String> otherFactoryOrder(List<String> floors) => [
+      floors.last,
+      ...floors.take(floors.length - 1),
+    ];
+
+    test('explicit floor-order rebuild preserves frozen facts', () async {
+      final previous = fixtures.first;
+      final oldId = await promoteCandidate(previous, packs);
+      final baseline = await readManifest(previous);
+      final reviewed = floorOrders(baseline);
+      await expectLater(
+        refresh(
+          reviewedFloorOrder: {
+            ...reviewed,
+            'factory': reviewed['factory']!.skip(1).toList(),
+          },
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('factory'),
+          ),
+        ),
+      );
+      expect(await activeId(), oldId);
+      expect(await pubspec.readAsString(), pubspecText);
+      reviewed['factory'] = otherFactoryOrder(reviewed['factory']!);
+      final result = await refresh(
+        toolchain: fixtureToolchain,
+        reviewedFloorOrder: reviewed,
+      );
+      expect(await activeId(), result.id);
+      expect(result.pruned, [oldId]);
+      expect(await versions(), [result.id]);
+      expect(await pubspec.readAsString(), contains('versions/${result.id}/'));
+      expect(await pubspec.readAsString(), isNot(contains(oldId)));
+      final committed = await verifyCommittedGeneration(packs);
+      expect(floorOrders(committed.manifest), reviewed);
+      final report = packChangeReport(baseline, committed.manifest);
+      expect(report.paths, [
+        'evidence/calibration.json',
+        'evidence/sources.json',
+      ]);
+      expect(
+        report.valueKeys,
+        unorderedEquals(['factory floor order', 'sourceGeneration']),
+      );
+      final beforeSources = await FrozenInputs.fromGeneration(previous);
+      final afterSources = await FrozenInputs.fromGeneration(
+        committed.directory,
+      );
+      final before = (beforeSources.index['sources'] as List).where(
+        (record) => record['path'] != 'calibration.json',
+      );
+      final after = (afterSources.index['sources'] as List).where(
+        (record) => record['path'] != 'calibration.json',
+      );
+      expect(after, before);
+      expect(
+        log,
+        contains(
+          'factory: floor order changed (${reviewed['factory']!.join(' → ')})',
+        ),
+      );
+      expect(log.last, startsWith('Floor order changed:'));
+      expect(log, isNot(contains(startsWith('Artwork changed:'))));
+      expect(
+        await checkActive(packs, toolchain: fixtureToolchain),
+        contains('reproduced byte-identically'),
+      );
+    });
+
+    test('default rebuild ignores the pending reviewed floor order', () async {
+      final previous = Directory('${temporary.path}/pending-floor-order');
+      await copyPack(fixtures.first, previous);
+      final manifest = await readManifest(previous);
+      final orders = floorOrders(manifest);
+      orders['factory'] = otherFactoryOrder(orders['factory']!);
+      final calibrationFile = packFile(previous, 'evidence/calibration.json');
+      final calibration = jsonDecode(
+        await calibrationFile.readAsString(),
+      ) as Map<String, dynamic>;
+      for (final document in [manifest, calibration]) {
+        final factory = (document['maps'] as List).singleWhere(
+          (map) => map['id'] == 'factory',
+        );
+        final floors = factory['floors'] as List;
+        factory['floors'] = [floors.last, ...floors.take(floors.length - 1)];
+      }
+      await calibrationFile.writeAsString(canonicalJson(calibration));
+      await _refreezeEvidence(previous, manifest, 'calibration.json');
+      await saveManifest(previous, manifest, refreshOutputs: true);
+      final id = await promoteCandidate(previous, packs);
+      final authored = (calibrationFor('factory')['floors'] as List).map(
+        (floor) => floor['id'],
+      );
+      expect(authored, isNot(orders['factory']));
+      final result = await refresh(toolchain: fixtureToolchain);
+      expect(result.id, id);
+      expect(result.changed, isFalse);
+      expect(
+        floorOrders((await verifyCommittedGeneration(packs)).manifest),
+        orders,
+      );
+    });
 
     const unusedTilePath =
         'tiles/customs/Ground_Level/unused-qualification.png';

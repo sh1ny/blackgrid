@@ -250,7 +250,150 @@ Map<String, dynamic> _preservedManifest({
   };
 }
 
+const _reviewedOrder = {
+  'm': ['Lower', 'Ground', 'Upper'],
+};
+const _deckRecords = [
+  {'id': 'Ground', 'base': true, 'exclusive': false},
+  {'id': 'Upper', 'base': false, 'exclusive': false, 'sourceTileUrl': 'upper'},
+  {'id': 'Lower', 'base': false, 'exclusive': false, 'sourceTileUrl': 'lower'},
+];
+
+Map<String, dynamic> _deckCalibration() => {
+  'schemaVersion': 1,
+  'maps': [
+    {'id': 'm', 'kind': 'raster', 'floors': _deckRecords},
+  ],
+};
+
 void main() {
+  test(
+    'order-only rebuild rejects missing additional and duplicate floors',
+    () {
+      final baseline = _deckCalibration();
+      final valid = reorderFloorCalibration(baseline, _reviewedOrder);
+      expect(valid['maps'][0]['floors'], [
+        _deckRecords[2],
+        _deckRecords[0],
+        _deckRecords[1],
+      ]);
+      expect(baseline['maps'][0]['floors'], _deckRecords);
+      for (final wrong in [
+        ['Lower', 'Ground'],
+        ['Lower', 'Ground', 'Upper', 'New'],
+        ['Lower', 'Ground', 'Lower'],
+      ]) {
+        expect(
+          () => reorderFloorCalibration(baseline, {'m': wrong}),
+          _formatMessage(contains('m')),
+        );
+      }
+    },
+  );
+
+  test('order-only rebuild rejects reversed overlapping raster overlays', () {
+    expect(
+      () => reorderFloorCalibration(_deckCalibration(), {
+        'm': ['Ground', 'Lower', 'Upper'],
+      }),
+      _formatMessage(allOf(contains('m'), contains('raster paint order'))),
+    );
+  });
+
+  test('order-only admission rejects source-index and candidate drift', () {
+    final index = _sourceIndex();
+    final sourceHash = _hash(utf8.encode(canonicalJson(index)));
+    final calibrationHash =
+        (index['sources'] as List).singleWhere(
+              (record) => record['path'] == 'calibration.json',
+            )['sha256']
+            as String;
+    final baseline = _preservedManifest(mapValues: {'floors': _deckRecords});
+    Map<String, dynamic> candidate({
+      Map<String, Object?> mapDrift = const {},
+      Map<String, Object?> packDrift = const {},
+      Map<String, String> hashDrift = const {},
+    }) => _preservedManifest(
+      mapValues: {
+        'floors': [_deckRecords[2], _deckRecords[0], _deckRecords[1]],
+        ...mapDrift,
+      },
+      packValues: {'sourceGeneration': sourceHash, ...packDrift},
+      hashes: {
+        'evidence/sources.json': sourceHash,
+        'evidence/calibration.json': calibrationHash,
+        ...hashDrift,
+      },
+    );
+    void validate(Map<String, dynamic> rebuilt, Map<String, dynamic> sources) =>
+        validateFloorOrderPreservation(
+          baseline,
+          rebuilt,
+          reviewedFloorOrder: _reviewedOrder,
+          expectedSources: index,
+          candidateSources: sources,
+        );
+
+    validate(candidate(), index);
+    expect(
+      () => validate(
+        candidate(),
+        _sourceIndex(
+          urls: {'metadata/maps.json': 'https://example.invalid/drift'},
+        ),
+      ),
+      _formatMessage(contains('metadata/maps.json')),
+    );
+    expect(
+      () => validate(
+        candidate(
+          mapDrift: {
+            'floors': [
+              _deckRecords[2],
+              _deckRecords[0],
+              {..._deckRecords[1], 'extents': []},
+            ],
+          },
+        ),
+        index,
+      ),
+      _formatMessage(allOf(contains('m'), contains('Upper'))),
+    );
+    expect(
+      () => validate(candidate(mapDrift: {'floors': _deckRecords}), index),
+      _formatMessage(allOf(contains('m'), contains('floor'))),
+    );
+    expect(
+      () => validate(
+        candidate(
+          mapDrift: {
+            'labels': ['moved'],
+          },
+        ),
+        index,
+      ),
+      _formatMessage(allOf(contains('m'), contains('map'))),
+    );
+    expect(
+      () => validate(
+        candidate(hashDrift: {'artwork/m/ground.vec': 'bad'}),
+        index,
+      ),
+      _formatMessage(contains('artwork/m/ground.vec')),
+    );
+    expect(
+      () => validate(
+        candidate(hashDrift: {'evidence/calibration.json': 'bad'}),
+        index,
+      ),
+      _formatMessage(contains('evidence/calibration.json')),
+    );
+    expect(
+      () => validate(candidate(packDrift: {'vectorCodecFormat': 9}), index),
+      _formatMessage(contains('manifest')),
+    );
+  });
+
   late Directory packs;
   late _Generation generation;
 

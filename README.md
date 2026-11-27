@@ -32,7 +32,9 @@ Blackgrid never asks the game where you are. It reads two kinds of files that th
 
 Your position changes on the map only when you take a screenshot. Blackgrid does not track you live.
 
-On maps with an **Auto** floor button, Auto starts on and follows your sampled position's height and, where available, the floor's horizontal bounds. This includes Reserve and Streets. Missing height leaves the current floor unchanged. Selecting a floor yourself turns Auto off for that map for the current Blackgrid session; switching maps and back keeps that override. Select **Auto** again to resume following.
+The floor rail under the map picker lists floors from top to bottom. Icebreaker shows one deck at a time; on other maps, you can show several floors over the always-visible base. Scroll the rail for more floors or collapse it to a one-line stepper. With the map or rail focused, **Page Up / Page Down** step one floor, **F** focuses the rail, and **A** toggles Auto where available.
+
+On maps with **Auto**, it starts on and follows the height and, where available, the horizontal bounds of your screenshot position. The rail marks that floor **You** even when Auto is off. Missing height leaves the current floor unchanged. Selecting a floor yourself turns Auto off for that map until you turn it back on or restart Blackgrid.
 
 To see which extracts you have, press O in raid to open the list of your extracts and transits, then take a screenshot. Blackgrid reads the names from the screenshot with the text recognition built into Windows, and highlights those extracts on the map.
 
@@ -338,7 +340,7 @@ At runtime, map artwork and calibration come only from the active pack. Marker d
 | `promote --candidate <dir> --packs <root>` | Adds a new read-only `versions/<sha256>/` folder and switches [`active.json`](assets/maps/active.json) to it in one atomic step |
 | `assets --packs <root>` | Prints the asset list for `pubspec.yaml`. Flutter does not include nested tile folders on its own |
 | `check --packs <root>` | Rebuilds the active generation offline into a temporary folder, from its own inputs, calibration, source lock and notice text. It fails unless the result is identical byte for byte. Only the recorded `toolchain` may differ. Run it as `mise run maps:check`. CI runs it on every pull request |
-| `refresh --packs <root> --pubspec <file>` | Rebuilds the committed inputs offline, validates the result and makes it active. It then rewrites the lines in `pubspec.yaml` between the `BEGIN` and `END generated map pack assets` markers, and deletes every other generation folder. Run it as `mise run maps:rebuild`. It downloads no new metadata |
+| `refresh --packs <root> --pubspec <file> [--reviewed-floor-order]` | Rebuilds the committed inputs offline, validates the result and makes it active. It rewrites the generated asset block in `pubspec.yaml` and deletes superseded generations. Run it as `mise run maps:rebuild`. It downloads no new metadata |
 | `artwork-refresh --packs <root> --pubspec <file> --stage <fresh-dir> [--reviewed-calibration-update]` | Downloads current artwork and builds a candidate in a staging folder. See [Refreshing artwork](#refreshing-artwork). Run it as `mise run maps:artwork:refresh -- --packs assets/maps --pubspec pubspec.yaml --stage <fresh-dir>`, with a new staging folder for each attempt |
 | `artwork-publish --candidate <dir> --packs <root> --pubspec <file>` | Checks a staged candidate and publishes exactly those files, without rebuilding them. See [Publishing artwork](#publishing-artwork). Run it as `mise run maps:artwork:publish -- --candidate <dir> --packs assets/maps --pubspec pubspec.yaml` |
 
@@ -380,6 +382,12 @@ Any change beyond the recorded toolchain needs an owner check before merge. This
 A dependency update that leaves `maps:check` passing needs no new pack. When `maps:check` fails, its report lists the maps and floors whose files or manifest values changed.
 
 The ordinary `refresh` command, and `mise run maps:rebuild` with it, rebuilds the exact inputs stored in the verified active generation. It uses that generation's calibration, the `sourceLock` in its manifest and its exact `NOTICE.txt` text. Neither downloads current REST metadata. The raw `rebuild` and `normalize` commands instead take their settings from the reviewed configuration.
+
+#### Changing floor order
+
+Edit the floor lists in `tool/maps/calibration.dart` and `tool/maps/inventory.dart` from bottom to top. Run `mise run maps:rebuild -- --reviewed-floor-order` to adopt the order without downloading anything. This mode requires the same map and floor IDs and the same raster paint order. It retains the frozen floor records, artwork and other source facts. Run `mise run maps:check` on the new pack and have the owner check the listed maps in the app before merge.
+
+Publish the order-only rebuild before staging a separate artwork refresh. Stage artwork against the new active generation so its calibration includes the same floor order.
 
 #### Renewing marker metadata
 

@@ -61,16 +61,19 @@ class MapFloor {
   final List<FloorExtent> extents;
 }
 
+/// The ordered, selectable floors and their associated artwork layers.
 class MapFloorPolicy {
+  /// Creates the floor policy in the supplied bottom-to-top order.
   MapFloorPolicy({
     required this.mapId,
-    required this.base,
-    Iterable<MapFloor> overlays = const [],
+    required String baseId,
+    required Iterable<MapFloor> floors,
     this.exclusive = false,
-  }) : overlays = List.unmodifiable(overlays) {
-    floors = List.unmodifiable([base, ...this.overlays]);
+  }) : floors = List.unmodifiable(floors) {
+    baseIndex = this.floors.indexWhere((floor) => floor.id == baseId);
+    if (baseIndex < 0) throw ArgumentError.value(baseId, 'baseId');
     final owners = <String, MapFloor>{};
-    for (final floor in floors) {
+    for (final floor in this.floors) {
       for (final id in [floor.id, ...floor.attachedLayerIds]) {
         if (owners.containsKey(id)) {
           throw ArgumentError(
@@ -82,16 +85,26 @@ class MapFloorPolicy {
     }
     _layerOwners = Map.unmodifiable(owners);
     _selectable = Map.unmodifiable({
-      for (final floor in floors) floor.id: floor,
+      for (final floor in this.floors) floor.id: floor,
     });
   }
   final String mapId;
-  final MapFloor base;
-  final List<MapFloor> overlays;
+
+  /// The base floor, regardless of its place in the floor array.
+  MapFloor get base => floors[baseIndex];
+
+  /// The base floor's index in [floors].
+  late final int baseIndex;
+
+  late final List<MapFloor> overlays = List.unmodifiable(
+    floors.where((floor) => floor.id != base.id),
+  );
   final bool exclusive;
   late final Map<String, MapFloor> _layerOwners;
   late final Map<String, MapFloor> _selectable;
-  late final List<MapFloor> floors;
+
+  /// Selectable floors in the prepared bottom-to-top order.
+  final List<MapFloor> floors;
   Iterable<MapFloor> get selectableFloors => _selectable.values;
 
   /// Whether any prepared floor provides automatic classification data.
@@ -134,6 +147,13 @@ class MapFloorSelection {
   final MapFloorPolicy policy;
   final Set<String> selectedOverlayIds;
 
+  /// The index of the highest visible overlay, or the base when none is shown.
+  late final int currentIndex = selectedOverlayIds.isEmpty
+      ? policy.baseIndex
+      : policy.floors.lastIndexWhere(
+          (floor) => selectedOverlayIds.contains(floor.id),
+        );
+
   MapFloorSelection select(String floorId) {
     if (!policy._selectable.containsKey(floorId)) {
       throw ArgumentError.value(
@@ -147,6 +167,29 @@ class MapFloorSelection {
       policy,
       policy.exclusive ? {floorId} : {...selectedOverlayIds, floorId},
     );
+  }
+
+  /// Shows only [floorId] and the base if this map draws additive overlays.
+  MapFloorSelection selectOnly(String floorId) {
+    if (!policy._selectable.containsKey(floorId)) {
+      throw ArgumentError.value(
+        floorId,
+        'floorId',
+        'Not a manually selectable floor.',
+      );
+    }
+    return _selectOnly(floorId);
+  }
+
+  MapFloorSelection _selectOnly(String floorId) {
+    if (floorId == policy.base.id) {
+      return selectedOverlayIds.isEmpty ? this : policy.reset();
+    }
+    if (selectedOverlayIds.length == 1 &&
+        selectedOverlayIds.contains(floorId)) {
+      return this;
+    }
+    return MapFloorSelection._(policy, {floorId});
   }
 
   MapFloorSelection toggle(String floorId) {
@@ -170,15 +213,7 @@ class MapFloorSelection {
   /// Selects the floor for [position], keeping this selection if unresolved.
   MapFloorSelection followPosition(GamePoint? position) {
     final floor = policy.floorForPosition(position);
-    if (floor == null) return this;
-    if (floor.id == policy.base.id) {
-      return selectedOverlayIds.isEmpty ? this : policy.reset();
-    }
-    if (selectedOverlayIds.length == 1 &&
-        selectedOverlayIds.contains(floor.id)) {
-      return this;
-    }
-    return MapFloorSelection._(policy, {floor.id});
+    return floor == null ? this : _selectOnly(floor.id);
   }
 
   bool isLayerVisible(String layerId) {
