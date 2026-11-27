@@ -20,4 +20,4 @@ Both manifests list the same 1,321 output paths. Only `evidence/calibration.json
 Map pack 61e9616110fc14be4f9381a2270bdcb8f7b0229fbec9faaff91e25ba2ac4c2d8 reproduced byte-identically with xml 7.0.1, image 4.13.1, vector_graphics_compiler 1.3.6, vector_graphics 1.3.1, vector_graphics_codec 1.2.0.
 ```
 
-The owner's offline app check is pending.
+On 2026-11-27, the owner accepted task 3.5 after reviewing offscreen renders of the real Map screen with regenerated production pack `61e9616110fc14be4f9381a2270bdcb8f7b0229fbec9faaff91e25ba2ac4c2d8`.

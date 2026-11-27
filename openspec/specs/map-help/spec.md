@@ -32,7 +32,7 @@ The help SHALL say, in plain language, that the player's position and facing com
 - **THEN** it contains no claim that Blackgrid captures, records or watches the game screen to find the player
 
 ### Requirement: Help lists the map controls
-The help SHALL list the map's pointer and keyboard controls: drag or arrow keys to pan, wheel or `+`/`-` to zoom, Home to fit, C to centre on the player, Enter to browse markers, N or right-click to add a pin, Delete to remove the selected pin, Escape to clear the selection, and hovering an extract to show its area. It SHALL use the same player-facing wording rules as the rest of the app.
+The help SHALL list the map's pointer and keyboard controls: drag or arrow keys to pan, wheel or `+`/`-` to zoom, Home to fit, C to centre on the player, Enter to browse markers, N or right-click to add a pin, Delete to remove the selected pin, Escape to clear selection on the canvas, and hovering an extract to show its area. It SHALL list Page Up and Page Down to step floors, A to toggle Auto, F to focus the floor rail, and Escape to return from the rail. It SHALL use the player-facing wording rules.
 
 #### Scenario: Controls section content
 - **WHEN** the help dialog is open
