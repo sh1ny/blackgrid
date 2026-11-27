@@ -123,6 +123,7 @@ class MapFloorRailState extends State<MapFloorRail> {
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(_keepScrolledFocusVisible);
     _scheduleReveal();
   }
 
@@ -195,6 +196,24 @@ class MapFloorRailState extends State<MapFloorRail> {
     );
   }
 
+  void _keepScrolledFocusVisible() {
+    if (!_listFocus.hasPrimaryFocus || _revealPending) return;
+    final position = _scroll.position;
+    final above = position.pixels;
+    final below = _contentHeight - above - position.viewportDimension;
+    var last = _clippedFloors(below, fromTop: false);
+    var first = _count - 1 - _clippedFloors(above, fromTop: true);
+    if (last > first) {
+      // At the smallest height, the viewport can show only partial rows.
+      final margin = _rowHeight - 2 * precisionErrorTolerance;
+      last = _clippedFloors(below - margin, fromTop: false);
+      first = _count - 1 - _clippedFloors(above - margin, fromTop: true);
+    }
+    final index = _focusedIndex ?? _current;
+    final visible = index.clamp(last, first);
+    if (visible != index) setState(() => _focusedIndex = visible);
+  }
+
   void _focusRow(int index) {
     setState(() => _focusedIndex = index);
     _scheduleReveal();
@@ -219,7 +238,14 @@ class MapFloorRailState extends State<MapFloorRail> {
     } else if (key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter ||
         key == LogicalKeyboardKey.space) {
-      if (event is KeyDownEvent) widget.onActivate(_policy.floors[index].id);
+      if (event is KeyDownEvent && _scroll.hasClients) {
+        final position = _scroll.position;
+        final top = _rowTop(index);
+        if (top < position.pixels + position.viewportDimension &&
+            top + _rowHeight > position.pixels) {
+          widget.onActivate(_policy.floors[index].id);
+        }
+      }
     } else {
       return KeyEventResult.ignored;
     }
@@ -242,9 +268,12 @@ class MapFloorRailState extends State<MapFloorRail> {
           if (mounted && !_isVisible) widget.onReturnToMap();
         });
       }
-      if (expandFits != _expandFits && visible && !widget.collapsed) {
-        _scheduleReveal();
-        if (_scope.hasFocus) {
+      if (expandFits != _expandFits && visible) {
+        if (!widget.collapsed) _scheduleReveal();
+        final handoff = widget.collapsed
+            ? _scope.hasPrimaryFocus || _expand.hasPrimaryFocus
+            : _scope.hasFocus;
+        if (handoff) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) focusCurrent();
           });

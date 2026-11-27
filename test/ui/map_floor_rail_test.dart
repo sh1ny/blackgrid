@@ -232,6 +232,46 @@ void main() {
     expect(h.services.maps.floorSelection, same(selection));
   });
 
+  testWidgets('scrolling a focused list moves focus without selecting a deck', (
+    tester,
+  ) async {
+    final h = await pumpMapFixture(
+      tester,
+      size: const Size(1590, 620),
+      exclusiveLabs: true,
+      extraFloors: 22,
+    );
+    await _labs(tester, h);
+    await _focusMap(tester);
+    await _key(tester, LogicalKeyboardKey.keyF);
+    final maps = h.services.maps;
+    final selection = maps.floorSelection!;
+    final current = selection.visibleLayerIds.single;
+    expect(maps.automaticFloorFollowing, isTrue);
+    expect(_row(current).hitTestable(), findsOneWidget);
+
+    await tester.drag(_list, const Offset(0, 380));
+    await tester.pumpAndSettle();
+    expect(_row(current).hitTestable(), findsNothing);
+    expect(maps.floorSelection, same(selection));
+    expect(maps.automaticFloorFollowing, isTrue);
+    final focused = find
+        .descendant(
+          of: _list,
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.focused == true,
+          ),
+        )
+        .hitTestable();
+    expect(focused, findsOneWidget);
+    final key = tester.widget<Semantics>(focused).key! as ValueKey<String>;
+    final deck = key.value.substring('map-floor-'.length);
+    await _key(tester, LogicalKeyboardKey.enter);
+    expect(maps.floorSelection!.visibleLayerIds, [deck]);
+    expect(maps.automaticFloorFollowing, isFalse);
+    await settleMapFixture(tester, h);
+  });
+
   testWidgets('the compact line retains current floor and Auto', (
     tester,
   ) async {
@@ -537,6 +577,23 @@ void main() {
     expect(_row('deck-8').hitTestable(), findsOneWidget);
     expect(_text('4 more above'), findsOneWidget);
     expect(_text('7 more below'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Collapse floors'));
+    await tester.pump();
+    final rail = tester.state<MapFloorRailState>(find.byType(MapFloorRail));
+    rail.focusCurrent();
+    await tester.pumpAndSettle();
+    expect(rail.hasFocus, isTrue);
+    await resize(140);
+    await tester.pumpAndSettle();
+    expect(rail.hasFocus, isTrue);
+    expect(_list, findsNothing);
+    await resize(280);
+    await tester.pumpAndSettle();
+    expect(_list, findsNothing);
+    await _key(tester, LogicalKeyboardKey.enter);
+    expect(_list, findsOneWidget);
+    expect(_row('deck-8').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
